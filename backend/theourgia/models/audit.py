@@ -93,6 +93,15 @@ class AuditEvent(IDMixin, TimestampMixin, table=True):
         sa_column=Column(ForeignKey("user.id", ondelete="SET NULL"), nullable=True),
     )
 
+    # Which of the actor's personas was active at the time. NULL when
+    # the action wasn't persona-scoped (system events, federation receipt
+    # under instance identity, etc.) or for audit rows that predate the
+    # introduction of the Persona substrate.
+    actor_persona_id: Optional[UUID] = Field(
+        default=None,
+        sa_column=Column(ForeignKey("persona.id", ondelete="SET NULL"), nullable=True),
+    )
+
     # On whose vault / hub it happened (one or both, or neither for system)
     vault_id: Optional[UUID] = Field(
         default=None,

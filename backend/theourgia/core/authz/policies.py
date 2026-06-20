@@ -62,9 +62,30 @@ async def owner_only_policy(
 ) -> AuthorizationDecision | None:
     """Allow if the user owns the resource. Abstain otherwise.
 
-    Looks for ``owner_id``, ``user_id``, or ``creator_id`` on the
-    resource — whichever the model uses. Resources without any of those
-    abstain (the policy isn't applicable)."""
+    Ownership is checked in this order:
+
+    1. **``owner_persona_id``** — persona-scoped ownership, the
+       canonical pattern for Phase 02+ content. Compared against
+       ``context.active_persona_id``.
+    2. **``owner_id`` / ``user_id`` / ``creator_id``** — legacy
+       user-scoped ownership. Compared against ``user.id``.
+
+    Resources with neither shape abstain — the policy isn't applicable;
+    other policies (visibility, hub role) may still authorize."""
+    # Persona-scoped ownership (preferred for new content)
+    owner_persona_id = getattr(resource, "owner_persona_id", None)
+    if owner_persona_id is not None:
+        if (
+            context.active_persona_id is not None
+            and owner_persona_id == context.active_persona_id
+        ):
+            return AuthorizationDecision.allow(
+                reason="active persona owns the resource",
+                policy_name="owner_only",
+            )
+        return None
+
+    # Legacy user-scoped ownership
     for attr in ("owner_id", "user_id", "creator_id"):
         owner_id = getattr(resource, attr, None)
         if owner_id is None:

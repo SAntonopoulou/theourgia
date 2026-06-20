@@ -147,12 +147,34 @@ class Session(IDMixin, TimestampMixin, table=True):
 
     The ``revoked_at`` column allows logout-everywhere and per-device
     revocation; ``expires_at`` provides natural expiry.
+
+    Multi-persona model: each session carries an ``active_persona_id``
+    naming which of the user's personas is currently acting. The
+    session's user_id is the auth principal (who logged in); the
+    active_persona_id is which of that user's personas is in effect
+    for the next request. Persona switching updates this column
+    rather than issuing a new session token.
     """
 
     __tablename__ = "session"
 
     user_id: UUID = Field(
         sa_column=Column(ForeignKey("user.id", ondelete="CASCADE"), nullable=False, index=True),
+    )
+
+    active_persona_id: Optional[UUID] = Field(
+        default=None,
+        sa_column=Column(
+            ForeignKey("persona.id", ondelete="SET NULL"),
+            nullable=True,
+            index=True,
+        ),
+        description=(
+            "Which of the user's personas is currently acting. NULL "
+            "for legacy sessions created before personas existed and "
+            "for sessions in the brief moment between user creation "
+            "and default-persona creation."
+        ),
     )
 
     token_hash: bytes = Field(

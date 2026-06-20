@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
 if TYPE_CHECKING:
     from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,6 +29,13 @@ class AuthzContext:
             policies registered for ``GLOBAL_RESOURCE`` often do.
         request_id: Mirrors the observability request_id so denials
             can be correlated with surrounding log lines.
+        active_persona_id: Which of the user's personas is acting on
+            this request (set from ``session.active_persona_id`` by
+            the auth dependency). Policies that authorize content by
+            ownership use this to determine "do I own this through
+            my active persona?". None during pre-persona session
+            compatibility or for system actions outside any persona
+            context.
         metadata: Free-form bag for callers to pass extra context
             (federation peer DID, plugin-host invocation source,
             anything that helps policies make better decisions).
@@ -37,4 +45,5 @@ class AuthzContext:
 
     db_session: "AsyncSession | None" = None
     request_id: str | None = None
+    active_persona_id: UUID | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
