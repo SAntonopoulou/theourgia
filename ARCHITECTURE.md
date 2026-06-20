@@ -51,7 +51,7 @@ This avoids creating two products. Same software, configurable role.
 | Search | **PostgreSQL FTS + `pgvector`** | Avoids second datastore; semantic + lexical in one place |
 | Cache / queue | **Redis 7+** | Sessions, rate limits, Celery broker |
 | Background jobs | **Celery** with Redis broker | Mature, well-known, supports cron + retries |
-| Astronomy | **Swiss Ephemeris (`pyswisseph`)** | Industry-standard precision; AGPL-compatible since we're AGPL |
+| Astronomy | **Swiss Ephemeris (`pyswisseph`)** | Industry-standard precision; we use Astrodienst's free AGPL-3.0 dual-license path (qualifies automatically since Theourgia is AGPL). Attribution rendered in chart output and about page. See [NOTICE](NOTICE) and [plan/03 §Swiss Ephemeris licensing](plan/03-time-and-cosmos.md) |
 | Cryptography | **`cryptography`** + **`libsodium`** (`PyNaCl`) | High-level primitives; audited |
 | Frontend public | **Astro 4+** | Content-first, islands of interactivity, light, easy to fork |
 | Frontend admin / editor | **React 19** | Heavy interactivity needs; runs as Astro islands or standalone SPA |

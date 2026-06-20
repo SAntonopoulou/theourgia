@@ -1,0 +1,86 @@
+Theourgia — NOTICE
+
+Theourgia is open-source software licensed under the GNU Affero General
+Public License v3.0 (AGPL-3.0). See LICENSE for the full license text.
+
+This NOTICE file lists third-party works that Theourgia incorporates,
+depends on, or distributes, along with their licenses and any attribution
+they require.
+
+================================================================================
+1. Astrological calculation engine
+================================================================================
+
+Swiss Ephemeris
+  By:           Astrodienst AG (Zürich, Switzerland)
+  Source:       https://www.astro.com/swisseph/
+  License:      Dual-licensed — AGPL-3.0 (free) OR commercial professional
+                license. Theourgia uses the free AGPL-3.0 option, which is
+                available because Theourgia itself is AGPL-3.0.
+  Python binding: `pyswisseph` (Cython wrapper, same dual license)
+                https://github.com/astrorigin/pyswisseph
+
+Required attribution (rendered in Theourgia's user-visible surfaces — about
+page, settings, docs, and astrological chart output):
+
+    Astrological calculations powered by Swiss Ephemeris
+    by Astrodienst AG (https://www.astro.com/swisseph/).
+
+
+JPL Planetary Ephemeris (DE441 / DE431)
+  By:           NASA Jet Propulsion Laboratory, California Institute of
+                Technology
+  Source:       https://ssd.jpl.nasa.gov/planets/eph_export.html
+  Status:       Work of the US Government — not subject to copyright in the
+                United States (17 U.S.C. § 105). Swiss Ephemeris derives its
+                .se1 binary data files from these planetary ephemerides.
+  Attribution:  Customary and respectful, though not legally required.
+
+Rendered in the same surfaces as the Swiss Ephemeris attribution:
+
+    Ephemeris data derived from the JPL DE441 planetary ephemeris
+    (NASA / Jet Propulsion Laboratory / California Institute of Technology).
+
+================================================================================
+2. Other third-party works (to be itemized as they are incorporated)
+================================================================================
+
+This list grows as the project incorporates additional bundled works. All
+bundled works must be AGPL-3.0-compatible. Closed-source dependencies are
+explicitly disallowed by project policy.
+
+Planned categories include:
+
+  - Python runtime dependencies (per their licenses — generally
+    MIT / BSD / Apache-2.0 / LGPL, all AGPL-3.0-compatible)
+  - JavaScript / TypeScript dependencies via npm (same compatibility rule)
+  - Bundled tarot decks (public-domain only — Rider-Waite-Smith,
+    Marseille, Etteilla, Sola Busca; Thoth deck is NOT bundled)
+  - Fonts (open-source only — SIL OFL, Apache, GPL with font exception)
+  - Icons (custom or open-source)
+
+================================================================================
+3. License obligations summary
+================================================================================
+
+By using or distributing Theourgia, you are bound by the AGPL-3.0 license
+(see LICENSE). Section 13 of AGPL-3.0 in particular requires that, when
+Theourgia is run as a network-accessible service, the source code of any
+modified version must be made available to users interacting with it
+remotely.
+
+When distributing or hosting Theourgia, you must preserve the third-party
+attributions above in user-visible surfaces (typically About / Settings /
+documentation). The platform itself renders them by default; do not remove
+them from forks.
+
+================================================================================
+4. Maintenance
+================================================================================
+
+This NOTICE file is updated whenever third-party works are added, removed,
+or relicensed. Updates ship in the same commit as the dependency change.
+
+For questions about licensing, file an issue or contact the maintainer.
+
+— Theourgia Project

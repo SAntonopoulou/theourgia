@@ -107,9 +107,42 @@ Provide a complete, multi-tradition temporal and astronomical foundation that ot
 - Festival reconstructions (especially Ancient Greek) require careful sourcing. Cite primary and secondary sources in the event metadata. Note where scholarship is contested.
 - The election finder's scoring function is itself an extension point; plugins can register custom scorers.
 
+## Swiss Ephemeris licensing (resolved upfront, 2026-06-20)
+
+Swiss Ephemeris is dual-licensed by Astrodienst AG: **AGPL-3.0 (free) OR commercial professional license** (~CHF 700+). Theourgia uses the **free AGPL-3.0 path**, which we qualify for automatically because Theourgia itself is AGPL-3.0.
+
+### What this gives us
+- Full use of `pyswisseph` (Python binding) for backend astrology calculations
+- Full distribution rights to Astrodienst's `.se1` ephemeris data files (derived from NASA JPL DE441)
+- No licensing fee; no contract with Astrodienst required; no commercial-use restrictions
+- Works for self-hosted Theourgia, for paid hosted SaaS, for derivative AGPL forks — anything AGPL-compatible
+
+### Obligations we must honor
+- **Theourgia stays AGPL-3.0** — non-negotiable; already committed in ADR-0002
+- **Attribution rendered in user-visible surfaces** (about page, settings, docs, chart output):
+  - "Astrological calculations powered by Swiss Ephemeris by Astrodienst AG (https://www.astro.com/swisseph/)."
+  - "Ephemeris data derived from the JPL DE441 planetary ephemeris (NASA / Jet Propulsion Laboratory / California Institute of Technology)."
+- **NOTICE file** in repo root listing third-party works and their licenses — already shipped (2026-06-20)
+- **Plugin SDK docs make clear** that plugins linking to the astrology module must themselves be AGPL-compatible
+
+### What this does NOT prevent
+- Paid hosted SaaS (commercial use of AGPL software is allowed; only proprietization is restricted)
+- Magicians selling books / paid newsletters through Theourgia (AGPL governs the software, not the user content)
+- Federation, plugin marketplace, community redistribution
+
+### Implementation deliverables this phase
+- `pyswisseph` declared as a backend dependency in `pyproject.toml` with version pin
+- Slimmed `.se1` ephemeris data shipped (1800–2400 AD range, ~50MB) in `backend/data/ephe/`; documentation for extending the range
+- Attribution text rendered in:
+  - About page (Phase 02 surface)
+  - Astrological chart components (default footer in chart SVG/HTML output)
+  - `docs/about/credits.md` (always linkable)
+- ADR-0006 (Swiss Ephemeris over Skyfield) explicitly documents the licensing analysis from this section
+
 ## Risks
 
-- **Risk:** Swiss Ephemeris licensing requirements within AGPL project. **Mitigation:** Document compliance: we are AGPL, we comply with SwissEph terms. Bundle license texts.
+- **Risk:** Swiss Ephemeris attribution accidentally omitted from a chart-rendering surface. **Mitigation:** Default attribution baked into the shared chart renderer; CI test that asserts the attribution string appears in any rendered chart output.
+- **Risk:** A plugin author tries to link Swiss Ephemeris code into a non-AGPL plugin. **Mitigation:** Plugin SDK docs explicit; plugin manifest license declaration validated; non-compatible-license plugins rejected at install.
 - **Risk:** Festival data quality / cultural appropriation concerns. **Mitigation:** Cite sources; consult practitioners from each tradition where possible (Hindu, Egyptian, etc.); prefer "documented practice" framing over reconstruction.
 - **Risk:** Performance of forward search across years. **Mitigation:** Precompute event streams; cache aggressively; expose progress for long-running election searches.
 
