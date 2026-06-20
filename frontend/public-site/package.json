@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@theourgia/public-site",
+  "version": "0.0.0-dev",
+  "private": true,
+  "type": "module",
+  "description": "Theourgia public-facing Astro site (landing, blogs, books, RSS)",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "lint": "biome check src",
+    "test": "vitest run",
+    "typecheck": "astro check"
+  },
+  "dependencies": {
+    "@theourgia/shared": "workspace:*"
+  }
+}

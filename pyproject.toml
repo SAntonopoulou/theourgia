@@ -1,0 +1,184 @@
+# Theourgia — root workspace pyproject.toml
+#
+# This is the top-level Python project descriptor. The actual backend
+# package lives in `backend/`. This file holds shared tool configuration
+# (Ruff, mypy, pytest) that applies across the whole monorepo.
+
+[project]
+name = "theourgia-workspace"
+version = "0.0.0-dev"
+description = "Theourgia — magickal journal CMS and full practitioner toolkit (workspace root)"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "AGPL-3.0-only" }
+authors = [
+    { name = "Soror Ευ. Α." },
+]
+
+# This top-level project intentionally has no installable code or runtime deps.
+# All packages live in `backend/` and other subdirectories.
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["backend"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Ruff — Python linter + formatter
+# https://docs.astral.sh/ruff/
+# ─────────────────────────────────────────────────────────────────────────────
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = [
+    ".venv",
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "backend/alembic/versions",  # generated migrations
+]
+
+[tool.ruff.lint]
+select = [
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "F",     # pyflakes
+    "I",     # isort
+    "N",     # pep8-naming
+    "UP",    # pyupgrade
+    "B",     # flake8-bugbear
+    "C4",    # flake8-comprehensions
+    "ASYNC", # flake8-async
+    "S",     # flake8-bandit (security)
+    "BLE",   # flake8-blind-except
+    "FBT",   # flake8-boolean-trap
+    "DTZ",   # flake8-datetimez (always use timezone-aware datetimes)
+    "T10",   # flake8-debugger (no breakpoint() in committed code)
+    "ICN",   # flake8-import-conventions
+    "LOG",   # flake8-logging
+    "G",     # flake8-logging-format
+    "PIE",   # flake8-pie
+    "T20",   # flake8-print (no print() in committed code)
+    "PT",    # flake8-pytest-style
+    "Q",     # flake8-quotes
+    "RSE",   # flake8-raise
+    "RET",   # flake8-return
+    "SIM",   # flake8-simplify
+    "TID",   # flake8-tidy-imports
+    "TC",    # flake8-type-checking
+    "ARG",   # flake8-unused-arguments
+    "PTH",   # flake8-use-pathlib
+    "ERA",   # eradicate (no commented-out code)
+    "PL",    # pylint
+    "TRY",   # tryceratops
+    "PERF",  # perflint
+    "FURB",  # refurb
+    "RUF",   # ruff-specific
+]
+ignore = [
+    "S101",   # assert in tests is fine
+    "FBT001", # boolean positional args are common in domain code
+    "FBT002",
+    "PLR0913", # many arguments is sometimes the right shape
+    "PLR2004", # magic numbers in tests are fine
+    "TRY003",  # long messages in raises is acceptable
+    "RET504",  # explicit return statements help readability
+]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/tests/**" = ["S", "PLR2004", "ARG", "ERA"]
+"backend/alembic/**" = ["INP001", "ERA"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["theourgia"]
+combine-as-imports = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# mypy — Python type checker
+# https://mypy.readthedocs.io/
+# ─────────────────────────────────────────────────────────────────────────────
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_return_any = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+check_untyped_defs = true
+strict_equality = true
+extra_checks = true
+plugins = []
+mypy_path = "backend"
+namespace_packages = true
+explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_decorators = false
+disallow_untyped_defs = false
+
+# Third-party libs without good type stubs
+[[tool.mypy.overrides]]
+module = ["swisseph.*", "pyswisseph.*"]
+ignore_missing_imports = true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# pytest
+# ─────────────────────────────────────────────────────────────────────────────
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["backend/tests"]
+pythonpath = ["backend"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--showlocals",
+    "--tb=short",
+]
+markers = [
+    "unit: fast isolated tests",
+    "integration: tests that touch external services (DB, Redis, etc.)",
+    "e2e: end-to-end tests via Playwright",
+    "slow: tests that take >1s",
+    "property: property-based tests (Hypothesis)",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning:pytest_asyncio",
+]
+asyncio_mode = "auto"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Coverage
+# ─────────────────────────────────────────────────────────────────────────────
+
+[tool.coverage.run]
+branch = true
+source = ["backend/theourgia"]
+omit = [
+    "*/alembic/versions/*",
+    "*/tests/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]
+show_missing = true
+skip_covered = false

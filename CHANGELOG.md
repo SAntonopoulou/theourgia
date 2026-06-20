@@ -30,6 +30,43 @@ Status confirmed: Theourgia qualifies for the free AGPL-3.0 path with Swiss Ephe
 
 - PROJECT_PLAN.md §8 item 4 — explicit commitment that any future hosted SaaS keeps the code AGPL-3.0 forever; revenue model is hosting fees + small profit margin only; no proprietary forks ever; competing hosted instances by other operators are by design.
 
+### Added — 2026-06-20 (Phase 00, Batch 1 — project skeleton + tooling)
+
+Phase 00 (Foundations) opens. First batch lays the monorepo skeleton and tooling configurations such that `just install` + `just check` will work end-to-end once dependencies are installed.
+
+**Top-level configuration:**
+- `.gitattributes` — line-ending normalization, binary classification, linguist hints
+- `.python-version` (3.12) and `.nvmrc` (Node 22)
+- `.env.example` — fully documented environment variable template
+- `justfile` — task runner with recipes for install, dev, lint, format, typecheck, test, migrate, build, docs, security, identity verification
+- `pyproject.toml` — root workspace with Ruff, mypy, pytest, and coverage configuration shared across the Python parts of the monorepo
+- `package.json` + `pnpm-workspace.yaml` — Node workspaces (frontend + docs)
+- `tsconfig.json` — strict TypeScript baseline shared by frontend workspaces
+- `biome.json` — JS/TS lint+format with a11y rules and the `useSortedClasses` Tailwind helper
+- `.pre-commit-config.yaml` — pre-commit hooks (gitleaks, ruff, biome, hadolint, markdownlint, conventional-commit message check)
+- `.markdownlint.json` — markdown lint config
+
+**Backend skeleton:**
+- `backend/pyproject.toml` — package manifest with planned dependencies (FastAPI, SQLModel, Alembic, asyncpg, Redis, Celery, cryptography, pyswisseph, etc.) and dev group (pytest, hypothesis, mypy, ruff, pip-audit)
+- `backend/theourgia/__init__.py`, `__about__.py`, `__main__.py` — package skeleton with version metadata
+- `backend/tests/__init__.py`, `conftest.py`, `test_smoke.py` — pytest discovery + initial smoke tests
+- `backend/README.md` — package documentation
+
+**Frontend skeleton:**
+- `frontend/shared/` — design system / shared components / i18n package skeleton
+- `frontend/public-site/` — Astro public site package skeleton
+- `frontend/admin/` — React admin SPA package skeleton
+- `frontend/README.md` and per-package READMEs
+
+**Docs scaffolding:**
+- `docs/README.md` — directory map
+- `docs/adr/README.md` + `docs/adr/template.md` — MADR-style ADR template ready for Batch 2 ADR authoring
+- `docs/user/`, `docs/admin/`, `docs/developer/` directories scaffolded with `.gitkeep`
+
+**Other:**
+- `plugins/README.md` — reference plugin directory map
+- `scripts/verify-identity.sh` — git identity guard (runnable via `just verify-identity`)
+
 **Governance:**
 - [AGPL-3.0 license](LICENSE)
 - [Code of Conduct](CODE_OF_CONDUCT.md) — Contributor Covenant 2.1 with project-specific addendum on respect for divergent magickal practice

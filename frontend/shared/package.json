@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@theourgia/shared",
+  "version": "0.0.0-dev",
+  "private": true,
+  "type": "module",
+  "description": "Theourgia shared design system, UI components, i18n, and types",
+  "license": "AGPL-3.0-only",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens": "./src/tokens.ts",
+    "./i18n": "./src/i18n/index.ts"
+  },
+  "scripts": {
+    "lint": "biome check src",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  }
+}

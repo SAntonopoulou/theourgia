@@ -1,0 +1,6 @@
+# Theourgia pnpm workspace configuration
+# https://pnpm.io/pnpm-workspace_yaml
+
+packages:
+  - "frontend/*"
+  - "docs"
