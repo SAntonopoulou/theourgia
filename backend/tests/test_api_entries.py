@@ -82,6 +82,34 @@ def test_router_is_registered_on_v1() -> None:
     assert "/api/v1/entries" in paths
     assert "/api/v1/entries/{entry_id}" in paths
     assert "/api/v1/entries/stats" in paths
+    # PATCH + DELETE share the {entry_id} path; ensure those methods exist.
+    methods = set(schema["paths"]["/api/v1/entries/{entry_id}"].keys())
+    assert "get" in methods
+    assert "patch" in methods
+    assert "delete" in methods
+
+
+def test_entry_update_payload_partial() -> None:
+    from theourgia.api.routers.v1.entries import EntryUpdate
+
+    payload = EntryUpdate()
+    assert payload.title is None
+    payload = EntryUpdate(title="New title")
+    assert payload.title == "New title"
+
+
+def test_entry_update_rejects_empty_title() -> None:
+    from theourgia.api.routers.v1.entries import EntryUpdate
+
+    with pytest.raises(ValidationError):
+        EntryUpdate(title="")
+
+
+def test_entry_update_rejects_extras() -> None:
+    from theourgia.api.routers.v1.entries import EntryUpdate
+
+    with pytest.raises(ValidationError):
+        EntryUpdate(title="x", random_field=1)  # type: ignore[call-arg]
 
 
 def test_entry_window_counts_shape() -> None:

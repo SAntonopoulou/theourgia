@@ -79,6 +79,17 @@ export function api(client: ApiClient) {
       return client.request<EntryRecord>("/api/v1/entries", { method: "POST", json: input });
     },
 
+    updateEntry(id: string, patch: Partial<CreateEntryInput>): Promise<EntryRecord> {
+      return client.request<EntryRecord>(`/api/v1/entries/${id}`, {
+        method: "PATCH",
+        json: patch,
+      });
+    },
+
+    archiveEntry(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/entries/${id}`, { method: "DELETE" });
+    },
+
     getEntryStats(opts?: { signal?: AbortSignal }): Promise<EntryStats> {
       return client.request<EntryStats>("/api/v1/entries/stats", { signal: opts?.signal });
     },

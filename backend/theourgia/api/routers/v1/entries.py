@@ -17,7 +17,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -215,3 +215,70 @@ async def get_entry(
     if row is None:
         raise HTTPException(status_code=404, detail=f"Entry {entry_id} not found")
     return _to_read(row)
+
+
+class EntryUpdate(BaseModel):
+    """Body for ``PATCH /api/v1/entries/{id}`` — every field optional."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    title: str | None = Field(default=None, min_length=1, max_length=256)
+    type: EntryTypeLiteral | None = None
+    excerpt: str | None = Field(default=None, max_length=1024)
+    glyph: str | None = Field(default=None, max_length=64)
+    body: str | None = None
+
+
+@router.patch(
+    "/entries/{entry_id}",
+    summary="Update entry",
+    description=(
+        "Partial update — only supplied fields change. Phase 02: unauthenticated; "
+        "ownership gating ships with the auth surface."
+    ),
+    response_model=EntryRead,
+)
+async def update_entry(
+    entry_id: UUID,
+    payload: EntryUpdate,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> EntryRead:
+    stmt = select(Entry).where(Entry.id == entry_id, Entry.deleted_at.is_(None))
+    result = await session.execute(stmt)
+    row = result.scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Entry {entry_id} not found")
+    if payload.title is not None:
+        row.title = payload.title
+    if payload.type is not None:
+        row.type = EntryType(payload.type)
+    if payload.excerpt is not None:
+        row.excerpt = payload.excerpt
+    if payload.glyph is not None:
+        row.glyph = payload.glyph
+    if payload.body is not None:
+        row.body = payload.body
+    await session.commit()
+    await session.refresh(row)
+    return _to_read(row)
+
+
+@router.delete(
+    "/entries/{entry_id}",
+    summary="Archive entry (soft-delete)",
+    description="Sets deleted_at. Entry no longer appears in lists or stats. Restorable via PATCH (Phase 03+).",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def archive_entry(
+    entry_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Response:
+    from datetime import UTC, datetime as _dt
+    stmt = select(Entry).where(Entry.id == entry_id, Entry.deleted_at.is_(None))
+    result = await session.execute(stmt)
+    row = result.scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Entry {entry_id} not found")
+    row.deleted_at = _dt.now(tz=UTC)
+    await session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -223,11 +223,28 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
   const entryMatch = /^\/api\/v1\/entries\/(.+)$/.exec(bare ?? "");
   if (entryMatch) {
     const [, id] = entryMatch;
-    const found = ENTRIES.find((e) => e.id === id);
-    if (!found) {
+    const idx = ENTRIES.findIndex((e) => e.id === id);
+    if (idx < 0) {
       return new NotFoundError(problem(404, "Not Found", `Entry ${id} not found`));
     }
-    return found;
+    if (method === "DELETE") {
+      ENTRIES.splice(idx, 1);
+      return null;
+    }
+    if (method === "PATCH") {
+      const patch = (body ?? {}) as Partial<EntryRecord>;
+      const current = ENTRIES[idx] as EntryRecord;
+      const updated: EntryRecord = {
+        ...current,
+        ...patch,
+        id: current.id,
+        created_at: current.created_at,
+        updated_at: new Date().toISOString(),
+      };
+      ENTRIES[idx] = updated;
+      return updated;
+    }
+    return ENTRIES[idx];
   }
 
   return new NotFoundError(problem(404, "Not Found", `No fixture for ${method} ${path}`));

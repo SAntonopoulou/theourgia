@@ -20,6 +20,7 @@ import { apiMethods } from "./data/api.js";
 import { ADMIN_NAV } from "./nav.js";
 import { Connection } from "./routes/Connection.js";
 import { Foundations } from "./routes/Foundations.js";
+import { Journal } from "./routes/Journal.js";
 import { Placeholder } from "./routes/Placeholder.js";
 import { Settings } from "./routes/Settings.js";
 import { Today } from "./routes/Today.js";
@@ -66,16 +67,7 @@ export function App() {
           <Routes>
             <Route path="/" element={<Today />} />
             <Route path="/connection" element={<Connection />} />
-            <Route
-              path="/journal"
-              element={
-                <Placeholder
-                  glyph="journal"
-                  title="Journal"
-                  body="Tiptap-based editor with the design's custom blocks. Lands when the editor surface ships."
-                />
-              }
-            />
+            <Route path="/journal" element={<Journal />} />
             <Route
               path="/library"
               element={
