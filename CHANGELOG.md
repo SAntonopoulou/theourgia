@@ -449,3 +449,33 @@ Phase 01 Batch 7 lands the cryptographic substrate for the Theourgia native fede
 - 30-day TTL ceiling on capability tokens (defense against indefinite-lifetime tokens leaking)
 
 **Phase 01 progress:** 7 of 10 batches done. Remaining: backup tooling, observability, WebAuthn + scale tests + zero-telemetry verifier.
+
+### Added — 2026-06-20 (Phase 01, Batch 8 — backup tooling)
+
+Phase 01 Batch 8 lands the Restic-based backup substrate: CLI wrapper, retention policy, run-history model, and the disaster-recovery runbook. The actual scheduled job-runner (Celery beat) wires up in Batch 9 / Observability where Celery is configured.
+
+**Backup package** (`backend/theourgia/core/backups/`):
+- `policy.py` — `RetentionPolicy` dataclass mapping to Restic's `--keep-*` flags. Defaults: 5 latest + 24 hourly + 7 daily + 4 weekly + 12 monthly + 5 yearly. Negative values rejected; zero-rules omitted from argv; tags supported (`--keep-tag`). `keeps_anything` predicate guards `prune` against accidentally deleting all snapshots.
+- `restic.py` — `ResticClient` subprocess wrapper around the `restic` binary. **Subprocess runner is dependency-injected** so tests run without the binary present. Builds env (`RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, `AWS_*`) per call so credentials never live longer than they need to. Methods: `init` / `check` / `backup` / `snapshots` / `restore` / `prune`. `backup` parses Restic's JSON line-delimited output, surfaces a typed `BackupSummary` even on failure (outcome=FAILURE), tags each snapshot with `trigger:<source>`.
+- `status.py` — `BackupOutcome` enum + `BackupSummary` dataclass returned by `ResticClient.backup`.
+
+**Models** (`backend/theourgia/models/backups.py`):
+- `BackupRun` — one row per backup attempt with started_at / finished_at / status / trigger / snapshot_id / bytes_transferred / files_new / files_changed / duration_seconds / error_message / tags_csv.
+- `BackupRunStatus` enum (running / success / failure / skipped) and `BackupTrigger` enum (scheduled / manual_api / manual_cli / pre_migration).
+
+**Migration** (`0005_backup_run.py`):
+- Creates `backup_run_status` and `backup_trigger` Postgres enums plus the `backup_run` table with indexes on `(started_at)` and `(status, started_at)`.
+- RLS: admin-only read (hub_admin or hub_officer membership required).
+
+**Documentation:**
+- `docs/admin/disaster-recovery.md` — full DR runbook covering passphrase importance, fresh-host provisioning, repo verification, snapshot listing, in-place vs full restore, post-restore smoke checks, federation key re-establishment, post-incident, drill cadence, common failure modes, and an escalation path.
+
+**Tests** (2 files, ~25 test functions):
+- `test_backups_policy.py` — defaults, all-zero rejection via `keeps_anything`, negative-value rejection, tag-only policy allowed, restic-args composition, frozen dataclass
+- `test_backups_restic.py` — fake subprocess runner records every call. Verifies: env includes repository + credentials, every command emits the right argv, snapshot JSON parsed correctly (including ISO-8601 with nanoseconds + 'Z' suffix), summary JSON parsed with both `data_added` and `total_bytes_processed` fallback, non-summary messages ignored, failure produces a typed summary (not an exception), restore rejects empty snapshot_id, prune refuses all-zeros policy, invalid JSON raises ResticError
+
+**Why subprocess (not a binding):** Restic ships no stable Python binding and is a single static binary that's trivial to include in the Docker image. Subprocess invocation is the canonical pattern; we just type-wrap it.
+
+**Encryption posture (recap from NOTICE):** Restic encrypts every snapshot under `RESTIC_PASSWORD` before any bytes leave the process. The R2/S3 backend stores opaque ciphertext; a leaked storage credential cannot decrypt backups. The trade-off — a lost passphrase is also fatal — is documented in the DR runbook.
+
+**Phase 01 progress:** 8 of 10 batches done. Remaining: observability (logging, metrics, Celery beat wiring), WebAuthn + zero-telemetry verifier + integration test fixtures.
