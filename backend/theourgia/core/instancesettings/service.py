@@ -128,9 +128,13 @@ class InstanceSettingsService:
         exposure."""
         definition = self._registry.get(key)
         if not definition.public:
+            from theourgia.core.i18n import _
+
             raise PermissionError(
-                f"setting {key!r} is not flagged public; "
-                f"non-admin readers cannot access it"
+                _(
+                    "This setting is not available to non-admin readers.",
+                    key=key,
+                )
             )
         return await self.get_typed(key, default=default)
 

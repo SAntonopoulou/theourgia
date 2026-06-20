@@ -220,7 +220,10 @@ async def test_get_public_typed_refuses_non_public(
     """A non-public setting raises PermissionError when read via the
     public path — even if the underlying store has a value."""
     await service.set("admin.maintenance_message", "Custom message")
-    with pytest.raises(PermissionError, match="not flagged public"):
+    # The English source surfaces through the i18n substrate; the
+    # match below pins the source-language phrasing so a future
+    # rewording is a deliberate decision rather than a silent regression.
+    with pytest.raises(PermissionError, match="not available to non-admin"):
         await service.get_public_typed("admin.maintenance_message")
 
 

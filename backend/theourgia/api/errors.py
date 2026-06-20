@@ -22,6 +22,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from theourgia.api.schemas import Problem
+from theourgia.core.i18n import _, _lazy
 
 __all__ = [
     "APIError",
@@ -46,14 +47,18 @@ class APIError(Exception):
     Endpoints raise these; the registered handler emits a
     :class:`Problem` response. Subclasses set the HTTP status and a
     stable ``title``.
+
+    Titles are wrapped in :func:`_lazy` so they translate against the
+    request's locale at render time. The English source is also the
+    fallback when no translation exists.
     """
 
     status_code: int = 500
-    title: str = "Internal Server Error"
+    title: Any = _lazy("Internal Server Error")
     type_uri: str = "about:blank"
 
     def __init__(self, detail: str | None = None, *, headers: dict[str, str] | None = None):
-        super().__init__(detail or self.title)
+        super().__init__(detail or str(self.title))
         self.detail = detail
         self.headers = headers or {}
 
@@ -62,49 +67,49 @@ class UnauthorizedError(APIError):
     """No credentials, or credentials that didn't authenticate."""
 
     status_code = 401
-    title = "Unauthorized"
+    title = _lazy("Unauthorized")
 
 
 class ForbiddenError(APIError):
     """Authenticated, but not permitted to perform the action."""
 
     status_code = 403
-    title = "Forbidden"
+    title = _lazy("Forbidden")
 
 
 class NotFoundError(APIError):
     """The resource does not exist (or the caller isn't allowed to know it does)."""
 
     status_code = 404
-    title = "Not Found"
+    title = _lazy("Not Found")
 
 
 class ConflictError(APIError):
     """The request conflicts with the current resource state."""
 
     status_code = 409
-    title = "Conflict"
+    title = _lazy("Conflict")
 
 
 class ValidationFailedError(APIError):
     """The request body or parameters failed validation."""
 
     status_code = 422
-    title = "Validation Failed"
+    title = _lazy("Validation Failed")
 
 
 class RateLimitedError(APIError):
     """The client exceeded the rate limit."""
 
     status_code = 429
-    title = "Too Many Requests"
+    title = _lazy("Too Many Requests")
 
 
 class ServiceUnavailableError(APIError):
     """A dependency is unavailable (DB, Redis, federation peer)."""
 
     status_code = 503
-    title = "Service Unavailable"
+    title = _lazy("Service Unavailable")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -116,16 +121,20 @@ def _problem_response(
     request: Request,
     *,
     status_code: int,
-    title: str,
+    title: Any,  # may be str or LazyString — coerced below
     type_uri: str = "about:blank",
     detail: str | None = None,
     headers: dict[str, str] | None = None,
 ) -> JSONResponse:
-    """Construct a JSONResponse carrying an RFC 7807 Problem."""
+    """Construct a JSONResponse carrying an RFC 7807 Problem.
+
+    ``title`` accepts both :class:`str` and :class:`LazyString` — the
+    latter resolves to the request's locale at coerce time via the
+    explicit ``str()`` call below."""
     request_id = getattr(request.state, "request_id", None)
     body = Problem(
         type=type_uri,
-        title=title,
+        title=str(title),
         status=status_code,
         detail=detail,
         instance=str(request.url.path),
@@ -178,7 +187,7 @@ def register_error_handlers(app: FastAPI) -> None:
         return _problem_response(
             request,
             status_code=422,
-            title="Validation Failed",
+            title=_("Validation Failed"),
             detail="; ".join(_summarize_validation_errors(exc.errors())),
         )
 
@@ -198,41 +207,48 @@ def register_error_handlers(app: FastAPI) -> None:
         return _problem_response(
             request,
             status_code=500,
-            title="Internal Server Error",
-            detail="An unexpected error occurred. The request ID identifies it in server logs.",
+            title=_("Internal Server Error"),
+            detail=_(
+                "An unexpected error occurred. "
+                "The request ID identifies it in server logs."
+            ),
         )
 
 
 def _status_phrase(code: int) -> str:
-    """Best-effort title for a given HTTP status code."""
+    """Best-effort title for a given HTTP status code.
+
+    Each phrase is returned through :func:`_` so it renders in the
+    request's locale at call time. The English source remains the
+    fallback when no translation exists for the active locale."""
     phrases = {
-        400: "Bad Request",
-        401: "Unauthorized",
-        403: "Forbidden",
-        404: "Not Found",
-        405: "Method Not Allowed",
-        406: "Not Acceptable",
-        408: "Request Timeout",
-        409: "Conflict",
-        410: "Gone",
-        411: "Length Required",
-        412: "Precondition Failed",
-        413: "Payload Too Large",
-        414: "URI Too Long",
-        415: "Unsupported Media Type",
-        416: "Range Not Satisfiable",
-        422: "Validation Failed",
-        425: "Too Early",
-        428: "Precondition Required",
-        429: "Too Many Requests",
-        431: "Request Header Fields Too Large",
-        451: "Unavailable For Legal Reasons",
-        500: "Internal Server Error",
-        501: "Not Implemented",
-        502: "Bad Gateway",
-        503: "Service Unavailable",
-        504: "Gateway Timeout",
-        505: "HTTP Version Not Supported",
+        400: _("Bad Request"),
+        401: _("Unauthorized"),
+        403: _("Forbidden"),
+        404: _("Not Found"),
+        405: _("Method Not Allowed"),
+        406: _("Not Acceptable"),
+        408: _("Request Timeout"),
+        409: _("Conflict"),
+        410: _("Gone"),
+        411: _("Length Required"),
+        412: _("Precondition Failed"),
+        413: _("Payload Too Large"),
+        414: _("URI Too Long"),
+        415: _("Unsupported Media Type"),
+        416: _("Range Not Satisfiable"),
+        422: _("Validation Failed"),
+        425: _("Too Early"),
+        428: _("Precondition Required"),
+        429: _("Too Many Requests"),
+        431: _("Request Header Fields Too Large"),
+        451: _("Unavailable For Legal Reasons"),
+        500: _("Internal Server Error"),
+        501: _("Not Implemented"),
+        502: _("Bad Gateway"),
+        503: _("Service Unavailable"),
+        504: _("Gateway Timeout"),
+        505: _("HTTP Version Not Supported"),
     }
     return phrases.get(code, "Error")
 

@@ -24,6 +24,7 @@ from uuid import UUID
 from sqlalchemy import select
 
 from theourgia.core.clock import now
+from theourgia.core.i18n import _
 from theourgia.models.persona import Persona, PersonaKind
 
 if TYPE_CHECKING:
@@ -79,7 +80,9 @@ class PersonaService:
         )
         persona = result.scalar_one_or_none()
         if persona is None:
-            raise PersonaNotFoundError(f"persona not found: {persona_id}")
+            raise PersonaNotFoundError(
+                _("Persona not found.", persona_id=str(persona_id))
+            )
         return persona
 
     async def get_by_handle(self, handle: str) -> Persona:
@@ -90,7 +93,9 @@ class PersonaService:
         )
         persona = result.scalar_one_or_none()
         if persona is None:
-            raise PersonaNotFoundError(f"persona not found: handle={handle!r}")
+            raise PersonaNotFoundError(
+                _("Persona not found.", handle=handle)
+            )
         return persona
 
     async def list_for_user(self, user_id: UUID) -> list[Persona]:
@@ -117,7 +122,7 @@ class PersonaService:
         persona = result.scalar_one_or_none()
         if persona is None:
             raise PersonaNotFoundError(
-                f"user {user_id} has no default persona"
+                _("No default persona exists for this account.")
             )
         return persona
 
@@ -140,12 +145,14 @@ class PersonaService:
         # Check uniqueness explicitly (clearer error than the DB
         # constraint kicking in at commit).
         if await self._handle_taken(handle):
-            raise PersonaConflictError(f"handle already taken: {handle!r}")
+            raise PersonaConflictError(
+                _("That handle is already in use.", handle=handle)
+            )
 
         existing_default = await self._user_has_default(user_id)
         if existing_default:
             raise PersonaConflictError(
-                f"user {user_id} already has a default persona"
+                _("This account already has a default persona.")
             )
 
         persona = Persona(
@@ -182,7 +189,9 @@ class PersonaService:
         :class:`PersonaConflictError` on handle collision."""
         self._validate_handle(handle)
         if await self._handle_taken(handle):
-            raise PersonaConflictError(f"handle already taken: {handle!r}")
+            raise PersonaConflictError(
+                _("That handle is already in use.", handle=handle)
+            )
 
         persona = Persona(
             user_id=user_id,
@@ -230,7 +239,7 @@ class PersonaService:
         if is_active is not None:
             if persona.kind == PersonaKind.DEFAULT and not is_active:
                 raise PersonaError(
-                    "cannot deactivate the default persona"
+                    _("The default persona cannot be deactivated.")
                 )
             persona.is_active = is_active
         persona.updated_at = now()
@@ -243,8 +252,10 @@ class PersonaService:
         persona = await self.get_by_id(persona_id)
         if persona.kind == PersonaKind.DEFAULT:
             raise PersonaError(
-                "cannot delete the default persona; delete the user account "
-                "to remove it"
+                _(
+                    "The default persona cannot be deleted. "
+                    "Delete the entire account to remove it."
+                )
             )
         await self._session.delete(persona)
         await self._session.flush()
@@ -257,12 +268,16 @@ class PersonaService:
 
     def _validate_handle(self, handle: str) -> None:
         if not handle:
-            raise PersonaError("handle must not be empty")
+            raise PersonaError(_("Handle must not be empty."))
         if not _HANDLE_RE.match(handle):
             raise PersonaError(
-                f"invalid handle: {handle!r}. Handles must be 3-64 chars, "
-                "start with a letter, contain only ASCII letters / digits / "
-                "underscore / hyphen, and not end with hyphen or underscore."
+                _(
+                    "Invalid handle. Handles must be 3 to 64 characters, "
+                    "start with a letter, contain only ASCII letters, "
+                    "digits, underscore, or hyphen, and not end with a "
+                    "hyphen or underscore.",
+                    handle=handle,
+                )
             )
 
     async def _handle_taken(self, handle: str) -> bool:
