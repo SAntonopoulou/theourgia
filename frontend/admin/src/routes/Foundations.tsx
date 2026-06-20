@@ -27,8 +27,11 @@ import {
   IconButton,
   MODES,
   Medallion,
+  Menu,
+  type MenuItem,
   type Mode,
   NumberInput,
+  Popover,
   Progress,
   PromptDialog,
   SegmentedControl,
@@ -42,6 +45,7 @@ import {
   TextInput,
   type Theme,
   Toast,
+  Tooltip,
   applyThemeState,
   readThemeState,
 } from "@theourgia/shared";
@@ -63,6 +67,7 @@ export function Foundations() {
   const [promptOpen, setPromptOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   function set<K extends keyof typeof state>(key: K, value: (typeof state)[K]): void {
     const next = { ...state, [key]: value };
@@ -91,7 +96,7 @@ export function Foundations() {
             color: "var(--ink-mute)",
           }}
         >
-          Phase 02 · Batches 1 + 2
+          Phase 02 · Batches 1 + 2 + 3 + 4
         </span>
         <h1
           style={{
@@ -310,13 +315,87 @@ export function Foundations() {
             body="Decrypt your vault before publishing — sealed entries cannot leave this device."
             dismissible
             onDismiss={() => setBannerDismissed(true)}
-            action={{ label: "Unseal", onClick: () => Toast.push({ tone: "info", title: "Unseal flow", body: "(placeholder)" }) }}
+            action={{
+              label: "Unseal",
+              onClick: () =>
+                Toast.push({ tone: "info", title: "Unseal flow", body: "(placeholder)" }),
+            }}
           />
         ) : (
           <Button size="sm" variant="quiet" onClick={() => setBannerDismissed(false)}>
             Show banner again
           </Button>
         )}
+      </Section>
+
+      <Section title="Anchored overlays">
+        <Row>
+          <Tooltip label="Notifications you've opted into" placement="top">
+            <Button variant="secondary" iconStart="bell">
+              Lunar phase
+            </Button>
+          </Tooltip>
+
+          <Menu
+            ariaLabel="Entry actions"
+            placement="bottom"
+            align="start"
+            trigger={
+              <Button variant="secondary" iconStart="ritual">
+                Entry actions
+              </Button>
+            }
+            items={
+              [
+                { kind: "label", label: "This entry" },
+                {
+                  kind: "item",
+                  label: "Duplicate",
+                  glyph: "scroll",
+                  onSelect: () => Toast.push({ tone: "info", title: "Duplicated" }),
+                },
+                {
+                  kind: "item",
+                  label: "Archive",
+                  glyph: "library",
+                  onSelect: () => Toast.push({ tone: "success", title: "Archived" }),
+                },
+                { kind: "separator" },
+                {
+                  kind: "item",
+                  label: "Delete",
+                  glyph: "lock",
+                  tone: "danger",
+                  onSelect: () =>
+                    Toast.push({ tone: "error", title: "Delete blocked", body: "(demo only)" }),
+                },
+              ] as MenuItem[]
+            }
+          />
+
+          <Popover
+            open={popoverOpen}
+            onClose={() => setPopoverOpen(false)}
+            placement="bottom"
+            align="start"
+            width={280}
+            trigger={
+              <Button variant="ghost" onClick={() => setPopoverOpen((p) => !p)}>
+                Open Popover
+              </Button>
+            }
+          >
+            <div style={{ padding: "var(--space-4, 16px)", display: "flex", flexDirection: "column", gap: 8 }}>
+              <h3 style={{ margin: 0, fontFamily: "var(--font-serif)", fontSize: "var(--type-h3, 16px)" }}>
+                Popover
+              </h3>
+              <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "var(--type-body-sm, 13px)" }}>
+                Anchored content with click-outside dismissal and ESC. Generic surface — Menu and
+                Tooltip are specialised versions of this.
+              </p>
+            </div>
+          </Popover>
+        </Row>
       </Section>
 
       <Section title="Overlays">

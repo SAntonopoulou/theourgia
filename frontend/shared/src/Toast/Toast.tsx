@@ -128,7 +128,6 @@ export function ToastProvider({ position = "bottom-right", max = 5 }: ToastProvi
       for (const t of timersRef.current.values()) clearTimeout(t);
       timersRef.current.clear();
     };
-    // biome-ignore lint/correctness/useExhaustiveDependencies: dismiss is stable across renders since it only touches refs + setState
   }, [max]);
 
   if (typeof document === "undefined") return null;
