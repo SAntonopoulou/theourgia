@@ -58,7 +58,7 @@ Theourgia is built in 17 phases. Each phase is architecturally dependent on prio
 | Phase | Title | Status | Plan |
 |---|---|---|---|
 | 00 | Foundations (repo, CI, dev env, docs infra) | `[x]` | [plan/00-foundations.md](plan/00-foundations.md) |
-| 01 | Core Architecture (DB, auth, plugins, encryption, backups) | `[ ]` | [plan/01-core-architecture.md](plan/01-core-architecture.md) |
+| 01 | Core Architecture (DB, auth, plugins, encryption, backups) | `[~]` | [plan/01-core-architecture.md](plan/01-core-architecture.md) |
 | 02 | Frontend Foundations (Astro, React admin, Tiptap, modals, i18n) | `[ ]` | [plan/02-frontend-foundations.md](plan/02-frontend-foundations.md) |
 | 03 | Time & Cosmos (calendars, astrology, planetary hours, election finder) | `[ ]` | [plan/03-time-and-cosmos.md](plan/03-time-and-cosmos.md) |
 | 04 | Journaling (entries, blog, library, body diagrams, quotes) | `[ ]` | [plan/04-journaling.md](plan/04-journaling.md) |
