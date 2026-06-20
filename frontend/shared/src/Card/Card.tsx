@@ -15,13 +15,7 @@
  * sizing — the design system intentionally ships one card shape.
  */
 
-import type {
-  AriaAttributes,
-  CSSProperties,
-  KeyboardEvent,
-  MouseEvent,
-  ReactNode,
-} from "react";
+import type { AriaAttributes, CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from "react";
 
 export interface CardProps extends AriaAttributes {
   /** HTML tag rendered for the surface. Defaults to ``article``. */
@@ -45,20 +39,20 @@ export function Card({
   id,
   children,
   ...aria
-}: CardProps): JSX.Element {
+}: CardProps) {
   const Tag = as;
   const composedStyle: CSSProperties = {
-    background: "var(--bg-2)",
-    border: "1px solid var(--line)",
+    backgroundColor: "var(--bg-2)",
+    borderStyle: "solid",
+    borderWidth: "1px",
+    borderColor: "var(--line)",
     borderRadius: "var(--r-lg, 12px)",
     padding: "var(--space-5, 24px)",
     boxShadow: "var(--shadow-sm)",
     fontFamily: "var(--font-serif, Georgia, serif)",
     color: "var(--ink)",
     cursor: interactive ? "pointer" : undefined,
-    transition: interactive
-      ? "border-color 150ms ease, background-color 150ms ease"
-      : undefined,
+    transition: interactive ? "border-color 150ms ease, background-color 150ms ease" : undefined,
     ...style,
   };
 

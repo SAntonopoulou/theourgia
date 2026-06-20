@@ -21,12 +21,8 @@ describe("Badge", () => {
     ["danger", "var(--danger)"],
     ["trust", "var(--accent)"],
   ])("tone=%s uses the right token color", (tone, expectedColor) => {
-    render(
-      <Badge tone={tone as "info" | "success" | "warning" | "danger" | "trust"}>
-        X
-      </Badge>,
-    );
-    expect(screen.getByText("X")).toHaveStyle({ color: expectedColor });
+    render(<Badge tone={tone as "info" | "success" | "warning" | "danger" | "trust"}>X</Badge>);
+    expect(screen.getByText("X").style.color).toBe(expectedColor);
   });
 
   it("renders a glyph when supplied", () => {

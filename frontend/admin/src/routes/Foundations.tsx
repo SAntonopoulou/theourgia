@@ -1,0 +1,336 @@
+/**
+ * Foundations smoke page — Phase 02 Batch 1.
+ *
+ * Renders every primitive shipped in this batch so we can eyeball parity
+ * against the design's `Theourgia Foundations.dc.html` reference page.
+ * Also wires up theme / mode / contrast / cvd switchers so visual axes
+ * can be flipped live.
+ */
+
+import {
+  Badge,
+  Button,
+  CONTRASTS,
+  CVDS,
+  Card,
+  Chip,
+  type Contrast,
+  type Cvd,
+  EmptyState,
+  Field,
+  Glyph,
+  IconButton,
+  MODES,
+  type Mode,
+  Skeleton,
+  Switch,
+  THEMES,
+  TextInput,
+  type Theme,
+  applyThemeState,
+  readThemeState,
+} from "@theourgia/shared";
+import { type ReactNode, useState } from "react";
+
+export function Foundations() {
+  const [state, setState] = useState(() => readThemeState());
+  const [chipOn, setChipOn] = useState(true);
+  const [switchOn, setSwitchOn] = useState(false);
+  const [text, setText] = useState("");
+
+  function set<K extends keyof typeof state>(key: K, value: (typeof state)[K]): void {
+    const next = { ...state, [key]: value };
+    setState(next);
+    applyThemeState(next);
+  }
+
+  return (
+    <main
+      style={{
+        maxWidth: 960,
+        margin: "0 auto",
+        padding: "var(--space-7, 48px) var(--space-5, 24px)",
+        display: "flex",
+        flexDirection: "column",
+        gap: "var(--space-7, 48px)",
+      }}
+    >
+      <header style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "var(--type-ui, 13px)",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "var(--ink-mute)",
+          }}
+        >
+          Phase 02 · Batch 1
+        </span>
+        <h1
+          style={{
+            margin: 0,
+            fontFamily: "var(--font-serif)",
+            fontSize: "var(--type-display, 40px)",
+            color: "var(--ink)",
+            letterSpacing: "-0.01em",
+          }}
+        >
+          Theourgia Foundations
+        </h1>
+        <p
+          style={{
+            margin: 0,
+            color: "var(--ink-soft)",
+            fontFamily: "var(--font-ui)",
+          }}
+        >
+          Smoke page exercising the token layer + bedrock primitives. Toggle the axes below to
+          verify themes, modes, contrast, and CVD-safe palettes.
+        </p>
+      </header>
+
+      <Section title="Theme axes">
+        <Axis
+          label="Theme"
+          value={state.theme}
+          options={THEMES}
+          onChange={(v) => set("theme", v as Theme)}
+        />
+        <Axis
+          label="Mode"
+          value={state.mode}
+          options={MODES}
+          onChange={(v) => set("mode", v as Mode)}
+        />
+        <Axis
+          label="Contrast"
+          value={state.contrast}
+          options={CONTRASTS}
+          onChange={(v) => set("contrast", v as Contrast)}
+        />
+        <Axis label="CVD" value={state.cvd} options={CVDS} onChange={(v) => set("cvd", v as Cvd)} />
+      </Section>
+
+      <Section title="Glyphs">
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, color: "var(--ink)" }}>
+          {GLYPHS_TO_SHOWCASE.map((g) => (
+            <div
+              key={g}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 4,
+                width: 80,
+              }}
+            >
+              <Glyph name={g} size={24} />
+              <span
+                style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-mute)" }}
+              >
+                {g}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section title="Buttons">
+        <Row>
+          <Button variant="primary" iconStart="key">
+            Primary
+          </Button>
+          <Button variant="secondary">Secondary</Button>
+          <Button variant="ghost">Ghost</Button>
+          <Button variant="danger" iconStart="lock">
+            Danger
+          </Button>
+          <Button variant="quiet">Quiet</Button>
+        </Row>
+        <Row>
+          <Button size="sm">sm</Button>
+          <Button size="md">md</Button>
+          <Button size="lg">lg</Button>
+          <Button loading>Loading</Button>
+          <Button disabled>Disabled</Button>
+        </Row>
+        <Row>
+          <IconButton glyph="bell" label="Notifications" />
+          <IconButton glyph="moon" label="Lunar" size="sm" />
+          <IconButton glyph="sun" label="Solar" size="lg" />
+        </Row>
+      </Section>
+
+      <Section title="Form fields">
+        <Field label="Magickal name" hint="Visible across the vault.">
+          <TextInput
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="Soror Ευ. Α."
+          />
+        </Field>
+        <Field label="Sealed vault" error="Passphrase required.">
+          <TextInput type="password" placeholder="••••••••" />
+        </Field>
+        <Switch checked={switchOn} onChange={setSwitchOn} label="Lunar phase notifications" />
+      </Section>
+
+      <Section title="Chips">
+        <Row>
+          <Chip label="Static" />
+          <Chip label="Toggle" selected={chipOn} onToggle={setChipOn} glyph="star" />
+          <Chip label="Removable" selected onToggle={() => undefined} removable />
+        </Row>
+      </Section>
+
+      <Section title="Badges">
+        <Row>
+          <Badge tone="neutral" glyph="scroll">
+            Neutral
+          </Badge>
+          <Badge tone="info" glyph="library">
+            Info
+          </Badge>
+          <Badge tone="success" glyph="key">
+            Verified
+          </Badge>
+          <Badge tone="warning" glyph="bell">
+            Warning
+          </Badge>
+          <Badge tone="danger" glyph="lock">
+            Danger
+          </Badge>
+          <Badge tone="trust" glyph="sigil">
+            Trust
+          </Badge>
+        </Row>
+      </Section>
+
+      <Section title="Cards">
+        <Row>
+          <Card>
+            <h3 style={{ marginTop: 0, fontFamily: "var(--font-serif)" }}>Passive card</h3>
+            <p style={{ margin: 0, color: "var(--ink-soft)" }}>
+              A structural surface used for grouping. No interaction affordance.
+            </p>
+          </Card>
+          <Card interactive onClick={() => undefined}>
+            <h3 style={{ marginTop: 0, fontFamily: "var(--font-serif)" }}>Interactive card</h3>
+            <p style={{ margin: 0, color: "var(--ink-soft)" }}>
+              Focus ring, keyboard activation, cursor change.
+            </p>
+          </Card>
+        </Row>
+      </Section>
+
+      <Section title="Empty state">
+        <EmptyState
+          glyph="journal"
+          title="No entries yet"
+          body="Open a fresh page and capture the first observation. The tradition starts with the act, not the form."
+          action={<Button variant="primary">Begin journal</Button>}
+        />
+      </Section>
+
+      <Section title="Skeleton">
+        <Row>
+          <Skeleton kind="text" width={240} />
+          <Skeleton kind="rect" width={160} height={96} />
+          <Skeleton kind="circle" width={48} height={48} />
+        </Row>
+      </Section>
+    </main>
+  );
+}
+
+const GLYPHS_TO_SHOWCASE = [
+  "journal",
+  "library",
+  "ritual",
+  "candle",
+  "sigil",
+  "scroll",
+  "pentacle",
+  "star",
+  "moon",
+  "sun",
+  "bell",
+  "calendar",
+  "compass",
+  "divination",
+  "entity",
+  "eye",
+  "feather",
+  "flask",
+  "hand",
+  "key",
+  "lock",
+  "shield",
+  "trance",
+] as const;
+
+function Section({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <h2
+        style={{
+          margin: 0,
+          fontFamily: "var(--font-serif)",
+          fontSize: "var(--type-h2, 22px)",
+          color: "var(--ink)",
+        }}
+      >
+        {title}
+      </h2>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
+    </section>
+  );
+}
+
+function Row({ children }: { children: ReactNode }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center" }}>
+      {children}
+    </div>
+  );
+}
+
+function Axis({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: readonly string[];
+  onChange: (next: string) => void;
+}) {
+  return (
+    <Row>
+      <span
+        style={{
+          minWidth: 96,
+          fontFamily: "var(--font-mono)",
+          fontSize: 12,
+          letterSpacing: "0.06em",
+          textTransform: "uppercase",
+          color: "var(--ink-mute)",
+        }}
+      >
+        {label}
+      </span>
+      {options.map((opt) => (
+        <Button
+          key={opt}
+          variant={opt === value ? "primary" : "secondary"}
+          size="sm"
+          onClick={() => onChange(opt)}
+        >
+          {opt}
+        </Button>
+      ))}
+    </Row>
+  );
+}

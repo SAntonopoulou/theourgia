@@ -20,13 +20,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 import { Glyph, type GlyphName } from "../Glyph/index.js";
 
-export type BadgeTone =
-  | "neutral"
-  | "info"
-  | "success"
-  | "warning"
-  | "danger"
-  | "trust";
+export type BadgeTone = "neutral" | "info" | "success" | "warning" | "danger" | "trust";
 
 export interface BadgeProps {
   tone?: BadgeTone;
@@ -77,13 +71,7 @@ function toneStyle(tone: BadgeTone): CSSProperties {
   }
 }
 
-export function Badge({
-  tone = "neutral",
-  glyph,
-  children,
-  className,
-  style,
-}: BadgeProps): JSX.Element {
+export function Badge({ tone = "neutral", glyph, children, className, style }: BadgeProps) {
   const composedStyle: CSSProperties = {
     ...toneStyle(tone),
     display: "inline-flex",

@@ -14,28 +14,24 @@ describe("Button", () => {
     render(<Button>Save</Button>);
     const button = screen.getByRole("button", { name: "Save" });
     expect(button).toHaveAttribute("type", "button");
-    expect(button).toHaveStyle({
-      background: "var(--accent)",
-      minHeight: "40px",
-    });
+    expect(button.style.backgroundColor).toBe("var(--accent)");
+    expect(button.style.minHeight).toBe("40px");
   });
 
   it.each([
     ["primary", "var(--accent)"],
     ["secondary", "var(--bg-2)"],
     ["danger", "var(--danger)"],
-  ])("variant=%s sets the expected background", (variant, expected) => {
-    render(
-      <Button variant={variant as "primary" | "secondary" | "danger"}>X</Button>,
-    );
-    expect(screen.getByRole("button")).toHaveStyle({ background: expected });
+  ])("variant=%s sets the expected backgroundColor", (variant, expected) => {
+    render(<Button variant={variant as "primary" | "secondary" | "danger"}>X</Button>);
+    expect(screen.getByRole("button").style.backgroundColor).toBe(expected);
   });
 
   it("ghost and quiet are transparent until they're hovered", () => {
     const { rerender } = render(<Button variant="ghost">G</Button>);
-    expect(screen.getByRole("button")).toHaveStyle({ background: "transparent" });
+    expect(screen.getByRole("button").style.backgroundColor).toBe("transparent");
     rerender(<Button variant="quiet">Q</Button>);
-    expect(screen.getByRole("button")).toHaveStyle({ background: "transparent" });
+    expect(screen.getByRole("button").style.backgroundColor).toBe("transparent");
   });
 
   it.each([
@@ -44,7 +40,7 @@ describe("Button", () => {
     ["lg", "48px"],
   ])("size=%s yields the documented min-height", (size, height) => {
     render(<Button size={size as "sm" | "md" | "lg"}>X</Button>);
-    expect(screen.getByRole("button")).toHaveStyle({ minHeight: height });
+    expect(screen.getByRole("button").style.minHeight).toBe(height);
   });
 
   it("renders an iconStart glyph before the label", () => {
@@ -79,7 +75,7 @@ describe("Button", () => {
     const button = screen.getByRole("button");
     expect(button).toBeDisabled();
     expect(button).toHaveAttribute("aria-busy", "true");
-    expect(button).toHaveStyle({ opacity: "0.7" });
+    expect(button.style.opacity).toBe("0.7");
   });
 
   it("invokes onClick when clicked (enabled, not loading)", async () => {
@@ -106,9 +102,7 @@ describe("Button", () => {
 describe("IconButton", () => {
   it("requires + exposes an accessible label", () => {
     render(<IconButton glyph="bell" label="Notifications" />);
-    expect(
-      screen.getByRole("button", { name: "Notifications" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Notifications" })).toBeInTheDocument();
   });
 
   it("renders the named glyph", () => {
@@ -122,11 +116,10 @@ describe("IconButton", () => {
     ["md", "40px"],
     ["lg", "48px"],
   ])("size=%s sets the square dimensions to %s", (size, px) => {
-    render(
-      <IconButton glyph="key" label="Keys" size={size as "sm" | "md" | "lg"} />,
-    );
+    render(<IconButton glyph="key" label="Keys" size={size as "sm" | "md" | "lg"} />);
     const button = screen.getByRole("button");
-    expect(button).toHaveStyle({ width: px, height: px });
+    expect(button.style.width).toBe(px);
+    expect(button.style.height).toBe(px);
   });
 
   it("loading disables it and marks aria-busy", () => {

@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
-  applyThemeState,
   CONTRASTS,
   CVDS,
   DEFAULT_THEME_STATE,
   MODES,
+  THEMES,
+  applyThemeState,
   readThemeState,
   setThemeState,
-  THEMES,
 } from "./theme.js";
 
 describe("theme tokens", () => {

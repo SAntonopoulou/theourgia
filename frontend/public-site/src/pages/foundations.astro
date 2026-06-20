@@ -1,0 +1,139 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const buttonStyle = (variant: string) => {
+  const colors: Record<string, string> = {
+    primary:
+      "background-color: var(--accent); color: var(--accent-ink); border-color: var(--accent);",
+    secondary: "background-color: var(--bg-2); color: var(--ink); border-color: var(--line);",
+    ghost: "background-color: transparent; color: var(--ink); border-color: transparent;",
+    danger: "background-color: var(--danger); color: var(--bg); border-color: var(--danger);",
+    quiet: "background-color: transparent; color: var(--ink-mute); border-color: transparent;",
+  };
+  return `display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 16px; border-radius: var(--r-md, 6px); border-style: solid; border-width: 1px; font-family: var(--font-ui); font-size: var(--type-body-sm, 14px); font-weight: 500; ${colors[variant] ?? colors.primary}`;
+};
+
+const badgeTones: [string, string, string][] = [
+  ["neutral", "scroll", "Neutral"],
+  ["info", "library", "Info"],
+  ["success", "key", "Verified"],
+  ["warning", "bell", "Warning"],
+  ["danger", "lock", "Danger"],
+  ["trust", "sigil", "Trust"],
+];
+
+const showcaseGlyphs = [
+  "journal",
+  "library",
+  "ritual",
+  "candle",
+  "sigil",
+  "scroll",
+  "pentacle",
+  "star",
+  "moon",
+  "sun",
+  "bell",
+  "calendar",
+  "compass",
+  "divination",
+  "entity",
+  "eye",
+  "feather",
+  "flask",
+  "hand",
+  "key",
+  "lock",
+  "shield",
+  "trance",
+];
+
+const badgeStyle = (tone: string) => {
+  const tones: Record<string, string> = {
+    neutral:
+      "background: var(--bg-3, var(--bg-2)); color: var(--ink-soft, var(--ink)); border-color: var(--line);",
+    info: "background: var(--info-soft, var(--bg-2)); color: var(--info); border-color: var(--info);",
+    success:
+      "background: var(--success-soft, var(--bg-2)); color: var(--success); border-color: var(--success);",
+    warning:
+      "background: var(--warning-soft, var(--bg-2)); color: var(--warning); border-color: var(--warning);",
+    danger:
+      "background: var(--danger-soft, var(--bg-2)); color: var(--danger); border-color: var(--danger);",
+    trust:
+      "background: var(--accent-soft, var(--bg-2)); color: var(--accent); border-color: var(--accent);",
+  };
+  return `display: inline-flex; align-items: center; gap: 4px; padding: 0 8px; height: 22px; min-width: 22px; font-family: var(--font-ui); font-size: var(--type-caption, 11px); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; border-radius: var(--r-sm, 4px); border-style: solid; border-width: 1px; ${tones[tone] ?? tones.neutral}`;
+};
+---
+
+<BaseLayout title="Foundations · Theourgia">
+  <main
+    style="max-width: 960px; margin: 0 auto; padding: var(--space-7, 48px) var(--space-5, 24px); display: flex; flex-direction: column; gap: var(--space-7, 48px);"
+  >
+    <header style="display: flex; flex-direction: column; gap: 8px;">
+      <span
+        style="font-family: var(--font-mono); font-size: var(--type-ui, 13px); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-mute);"
+      >
+        Phase 02 · Batch 1 · Astro
+      </span>
+      <h1
+        style="margin: 0; font-family: var(--font-serif); font-size: var(--type-display, 40px); color: var(--ink); letter-spacing: -0.01em;"
+      >
+        Theourgia Foundations
+      </h1>
+      <p style="margin: 0; color: var(--ink-soft); font-family: var(--font-ui);">
+        Public-site rendition of the design-system smoke page. The admin SPA at
+        <code>http://127.0.0.1:5173/</code> renders the interactive React version.
+      </p>
+    </header>
+
+    <section style="display: flex; flex-direction: column; gap: 12px;">
+      <h2 style="margin: 0; font-family: var(--font-serif); color: var(--ink);">Glyphs</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; color: var(--ink);">
+        {showcaseGlyphs.map((g) => (
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; width: 80px;">
+            <svg width="24" height="24" aria-hidden="true"><use href={`#theo-${g}`} /></svg>
+            <span style="font-family: var(--font-mono); font-size: 11px; color: var(--ink-mute);">
+              {g}
+            </span>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 12px;">
+      <h2 style="margin: 0; font-family: var(--font-serif); color: var(--ink);">Buttons</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+        {["primary", "secondary", "ghost", "danger", "quiet"].map((v) => (
+          <button type="button" style={buttonStyle(v)}>{v}</button>
+        ))}
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 12px;">
+      <h2 style="margin: 0; font-family: var(--font-serif); color: var(--ink);">Badges</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center;">
+        {badgeTones.map(([tone, glyph, label]) => (
+          <span style={badgeStyle(tone)} data-tone={tone}>
+            <svg width="12" height="12" aria-hidden="true"><use href={`#theo-${glyph}`} /></svg>
+            {label}
+          </span>
+        ))}
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 12px;">
+      <h2 style="margin: 0; font-family: var(--font-serif); color: var(--ink);">Card</h2>
+      <div style="display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+        <article
+          style="background-color: var(--bg-2); border-style: solid; border-width: 1px; border-color: var(--line); border-radius: 12px; padding: 24px; box-shadow: var(--shadow-sm); color: var(--ink);"
+        >
+          <h3 style="margin: 0 0 8px 0; font-family: var(--font-serif);">Passive card</h3>
+          <p style="margin: 0; color: var(--ink-soft);">
+            A structural surface used for grouping. No interaction affordance.
+          </p>
+        </article>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

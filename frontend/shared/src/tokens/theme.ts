@@ -32,17 +32,11 @@ export const DEFAULT_THEME_STATE: ThemeState = {
 
 const STORAGE_PREFIX = "theourgia.";
 
-function readKey<T extends string>(
-  key: string,
-  allowed: readonly T[],
-  fallback: T,
-): T {
+function readKey<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
   if (typeof localStorage === "undefined") return fallback;
   try {
     const raw = localStorage.getItem(STORAGE_PREFIX + key);
-    return raw && (allowed as readonly string[]).includes(raw)
-      ? (raw as T)
-      : fallback;
+    return raw && (allowed as readonly string[]).includes(raw) ? (raw as T) : fallback;
   } catch {
     return fallback;
   }
@@ -71,10 +65,10 @@ export function applyThemeState(state: ThemeState): void {
   root.setAttribute("data-cvd", state.cvd);
   if (typeof localStorage !== "undefined") {
     try {
-      localStorage.setItem(STORAGE_PREFIX + "theme", state.theme);
-      localStorage.setItem(STORAGE_PREFIX + "mode", state.mode);
-      localStorage.setItem(STORAGE_PREFIX + "contrast", state.contrast);
-      localStorage.setItem(STORAGE_PREFIX + "cvd", state.cvd);
+      localStorage.setItem(`${STORAGE_PREFIX}theme`, state.theme);
+      localStorage.setItem(`${STORAGE_PREFIX}mode`, state.mode);
+      localStorage.setItem(`${STORAGE_PREFIX}contrast`, state.contrast);
+      localStorage.setItem(`${STORAGE_PREFIX}cvd`, state.cvd);
     } catch {
       // localStorage may be unavailable (private mode, embedded contexts);
       // we still applied the DOM attributes — silent fallback is fine.

@@ -43,16 +43,12 @@ describe("Chip", () => {
 
   it("removable + onToggle renders as button with a Remove label", () => {
     render(<Chip label="Hellenic" removable selected onToggle={vi.fn()} />);
-    expect(
-      screen.getByRole("button", { name: "Remove Hellenic" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Remove Hellenic" })).toBeInTheDocument();
   });
 
   it("removable activation calls onToggle(false) regardless of selected state", async () => {
     const onToggle = vi.fn();
-    render(
-      <Chip label="Hellenic" removable selected onToggle={onToggle} />,
-    );
+    render(<Chip label="Hellenic" removable selected onToggle={onToggle} />);
     const user = userEvent.setup();
     await user.click(screen.getByRole("button"));
     expect(onToggle).toHaveBeenCalledWith(false);

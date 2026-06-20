@@ -37,18 +37,14 @@ describe("Skeleton", () => {
 
   it("ariaLabel can be customized", () => {
     render(<Skeleton ariaLabel="Fetching journal" />);
-    expect(screen.getByRole("status")).toHaveAccessibleName(
-      "Fetching journal",
-    );
+    expect(screen.getByRole("status")).toHaveAccessibleName("Fetching journal");
   });
 
   it("injects the pulse keyframes exactly once", () => {
     render(<Skeleton />);
     render(<Skeleton />);
     render(<Skeleton />);
-    const styles = document.querySelectorAll(
-      "style#theourgia-skeleton-pulse",
-    );
+    const styles = document.querySelectorAll("style#theourgia-skeleton-pulse");
     expect(styles).toHaveLength(1);
   });
 });

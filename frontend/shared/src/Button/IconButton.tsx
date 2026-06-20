@@ -14,10 +14,7 @@ import { Glyph, type GlyphName } from "../Glyph/index.js";
 import type { ButtonSize, ButtonVariant } from "./Button.js";
 
 export interface IconButtonProps
-  extends Omit<
-    ButtonHTMLAttributes<HTMLButtonElement>,
-    "type" | "children" | "aria-label"
-  > {
+  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "type" | "children" | "aria-label"> {
   glyph: GlyphName;
   /** Required — screen-reader-only label. */
   label: string;
@@ -76,7 +73,7 @@ export function IconButton({
   className,
   style,
   ...rest
-}: IconButtonProps): JSX.Element {
+}: IconButtonProps) {
   const isDisabled = disabled || loading;
   const composedStyle: CSSProperties = {
     ...variantStyle(variant),

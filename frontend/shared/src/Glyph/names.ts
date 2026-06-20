@@ -39,7 +39,5 @@ export type GlyphName = (typeof GLYPH_NAMES)[number];
 
 /** Type guard — runtime check that an arbitrary string is a known glyph. */
 export function isGlyphName(value: unknown): value is GlyphName {
-  return (
-    typeof value === "string" && (GLYPH_NAMES as readonly string[]).includes(value)
-  );
+  return typeof value === "string" && (GLYPH_NAMES as readonly string[]).includes(value);
 }

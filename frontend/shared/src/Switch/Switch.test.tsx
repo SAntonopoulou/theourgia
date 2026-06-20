@@ -7,15 +7,11 @@ import { Switch } from "./index.js";
 describe("Switch", () => {
   it("renders as a switch role with the label as accessible name", () => {
     render(<Switch checked={false} onChange={vi.fn()} label="Federation" />);
-    expect(
-      screen.getByRole("switch", { name: "Federation" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: "Federation" })).toBeInTheDocument();
   });
 
   it("reflects checked state via aria-checked", () => {
-    const { rerender } = render(
-      <Switch checked={false} onChange={vi.fn()} label="X" />,
-    );
+    const { rerender } = render(<Switch checked={false} onChange={vi.fn()} label="X" />);
     expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "false");
     rerender(<Switch checked onChange={vi.fn()} label="X" />);
     expect(screen.getByRole("switch")).toHaveAttribute("aria-checked", "true");
@@ -63,16 +59,10 @@ describe("Switch", () => {
     const { rerender } = render(
       <Switch checked={false} onChange={vi.fn()} label="L" labelPosition="start" />,
     );
-    const initialOrder = Array.from(
-      screen.getByRole("switch").parentElement?.childNodes ?? [],
-    );
+    const initialOrder = Array.from(screen.getByRole("switch").parentElement?.childNodes ?? []);
     expect(initialOrder[0]?.textContent).toBe("L");
-    rerender(
-      <Switch checked={false} onChange={vi.fn()} label="L" labelPosition="end" />,
-    );
-    const flippedOrder = Array.from(
-      screen.getByRole("switch").parentElement?.childNodes ?? [],
-    );
+    rerender(<Switch checked={false} onChange={vi.fn()} label="L" labelPosition="end" />);
+    const flippedOrder = Array.from(screen.getByRole("switch").parentElement?.childNodes ?? []);
     expect(flippedOrder[flippedOrder.length - 1]?.textContent).toBe("L");
   });
 });

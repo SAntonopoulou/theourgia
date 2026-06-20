@@ -25,14 +25,7 @@ export interface EmptyStateProps {
   style?: CSSProperties;
 }
 
-export function EmptyState({
-  glyph,
-  title,
-  body,
-  action,
-  className,
-  style,
-}: EmptyStateProps): JSX.Element {
+export function EmptyState({ glyph, title, body, action, className, style }: EmptyStateProps) {
   const wrapperStyle: CSSProperties = {
     display: "flex",
     flexDirection: "column",
@@ -50,13 +43,7 @@ export function EmptyState({
 
   return (
     <div className={className} style={wrapperStyle} role="status">
-      {glyph ? (
-        <Glyph
-          name={glyph}
-          size={40}
-          style={{ color: "var(--ink-mute)" }}
-        />
-      ) : null}
+      {glyph ? <Glyph name={glyph} size={40} style={{ color: "var(--ink-mute)" }} /> : null}
       <h3
         style={{
           fontFamily: "var(--font-display, var(--font-serif))",

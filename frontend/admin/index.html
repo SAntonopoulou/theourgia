@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en" data-theme="base" data-mode="dark" data-contrast="normal" data-cvd="normal">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Theourgia — Admin</title>
+    <script>
+      (function () {
+        if (typeof document === "undefined" || typeof localStorage === "undefined") return;
+        var root = document.documentElement;
+        function pick(key, allowed, fallback) {
+          try {
+            var v = localStorage.getItem("theourgia." + key);
+            return allowed.indexOf(v) >= 0 ? v : fallback;
+          } catch (_) { return fallback; }
+        }
+        root.setAttribute("data-theme", pick("theme", ["base", "hellenic", "thelemic"], "base"));
+        root.setAttribute("data-mode", pick("mode", ["dark", "light"], "dark"));
+        root.setAttribute("data-contrast", pick("contrast", ["normal", "high"], "normal"));
+        root.setAttribute("data-cvd", pick("cvd", ["normal", "safe"], "normal"));
+      })();
+    </script>
+  </head>
+  <body>
+    <!--SPRITE-->
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

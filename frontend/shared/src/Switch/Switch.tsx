@@ -37,7 +37,7 @@ export function Switch({
   id,
   className,
   style,
-}: SwitchProps): JSX.Element {
+}: SwitchProps) {
   function handleClick(): void {
     if (!disabled) onChange(!checked);
   }
@@ -84,9 +84,7 @@ export function Switch({
     transition: "left 150ms ease",
   };
 
-  const labelEl = (
-    <span style={{ userSelect: "none" }}>{label}</span>
-  );
+  const labelEl = <span style={{ userSelect: "none" }}>{label}</span>;
 
   return (
     <label className={className} style={wrapperStyle} htmlFor={id}>

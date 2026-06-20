@@ -6,9 +6,7 @@
   "type": "module",
   "description": "Theourgia shared design system, UI primitives, tokens, and i18n",
   "license": "AGPL-3.0-only",
-  "sideEffects": [
-    "*.css"
-  ],
+  "sideEffects": ["*.css"],
   "exports": {
     ".": {
       "types": "./src/index.ts",
@@ -21,15 +19,16 @@
     "./tokens/theourgia.tokens.css": "./src/tokens/theourgia.tokens.css",
     "./tokens/theourgia-icons.svg": "./src/tokens/theourgia-icons.svg",
     "./tokens/first-paint.js": "./src/tokens/first-paint.js",
-    "./tokens/tailwind-preset": "./src/tokens/tailwind.preset.cjs",
+    "./tokens/tailwind-preset": {
+      "types": "./src/tokens/tailwind-preset.d.ts",
+      "default": "./src/tokens/tailwind.preset.cjs"
+    },
     "./i18n": {
       "types": "./src/i18n/index.ts",
       "import": "./src/i18n/index.ts"
     }
   },
-  "files": [
-    "src"
-  ],
+  "files": ["src"],
   "scripts": {
     "lint": "biome check src",
     "test": "vitest run",

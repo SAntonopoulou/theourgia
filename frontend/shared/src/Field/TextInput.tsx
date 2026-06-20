@@ -10,16 +10,9 @@ import type { CSSProperties, InputHTMLAttributes } from "react";
 
 import { useField } from "./Field.js";
 
-export type TextInputProps = Omit<
-  InputHTMLAttributes<HTMLInputElement>,
-  "size"
->;
+export type TextInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, "size">;
 
-export function TextInput({
-  className,
-  style,
-  ...rest
-}: TextInputProps): JSX.Element {
+export function TextInput({ className, style, ...rest }: TextInputProps) {
   const field = useField();
   const invalid = field?.invalid ?? false;
 

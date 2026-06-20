@@ -108,5 +108,32 @@
       "allowComments": true,
       "allowTrailingCommas": false
     }
-  }
+  },
+  "overrides": [
+    {
+      "include": ["frontend/shared/src/tokens/first-paint.js"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noVar": "off",
+            "useTemplate": "off"
+          },
+          "correctness": {
+            "noInnerDeclarations": "off"
+          }
+        }
+      }
+    },
+    {
+      "include": ["**/*.astro"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "noUnusedVariables": "off",
+            "noUnusedImports": "off"
+          }
+        }
+      }
+    }
+  ]
 }

@@ -16,12 +16,12 @@
  */
 
 import {
-  cloneElement,
-  createContext,
   type CSSProperties,
-  isValidElement,
   type ReactElement,
   type ReactNode,
+  cloneElement,
+  createContext,
+  isValidElement,
   useContext,
   useId,
 } from "react";
@@ -69,7 +69,7 @@ export function Field({
   className,
   style,
   children,
-}: FieldProps): JSX.Element {
+}: FieldProps) {
   const reactId = useId();
   const inputId = id ?? `field-${reactId}`;
   const hintId = hint ? `${inputId}-hint` : undefined;

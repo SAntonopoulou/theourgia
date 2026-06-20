@@ -66,7 +66,7 @@ export function Chip({
   disabled = false,
   className,
   style,
-}: ChipProps): JSX.Element {
+}: ChipProps) {
   const interactive = Boolean(onToggle);
   const composedStyle: CSSProperties = {
     ...chipStyle(selected, disabled),

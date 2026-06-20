@@ -34,73 +34,78 @@
 :root {
   /* — Type roles ————————————————————————————————————————————————
      --font-display is overridden per theme (see below). The rest are constant. */
-  --font-display: 'Cardo', Georgia, serif;     /* titles, headings, ritual text */
-  --font-serif:   'Cardo', Georgia, serif;     /* body / long-form / polytonic   */
-  --font-ui:      'Inria Sans', system-ui, sans-serif; /* labels, controls, meta */
-  --font-mono:    'JetBrains Mono', ui-monospace, monospace; /* keys, UUIDs, gematria */
-  --font-glyph:   'Noto Sans Symbols', 'Cardo', serif; /* planetary / alchemical glyphs */
+  --font-display: "Cardo", Georgia, serif; /* titles, headings, ritual text */
+  --font-serif: "Cardo", Georgia, serif; /* body / long-form / polytonic   */
+  --font-ui: "Inria Sans", system-ui, sans-serif; /* labels, controls, meta */
+  --font-mono: "JetBrains Mono", ui-monospace, monospace; /* keys, UUIDs, gematria */
+  --font-glyph: "Noto Sans Symbols", "Cardo", serif; /* planetary / alchemical glyphs */
 
   /* Per-script faces (constant across themes) */
-  --font-hebrew: 'Frank Ruhl Libre', serif;
-  --font-arabic: 'Noto Naskh Arabic', serif;
-  --font-deva:   'Noto Serif Devanagari', serif;
-  --font-coptic: 'Noto Sans Coptic', serif;
+  --font-hebrew: "Frank Ruhl Libre", serif;
+  --font-arabic: "Noto Naskh Arabic", serif;
+  --font-deva: "Noto Serif Devanagari", serif;
+  --font-coptic: "Noto Sans Coptic", serif;
 
   /* — Type scale (px / line-height) ——————————————————————————————— */
-  --type-hero:    clamp(40px, 6vw, 68px); --leading-hero: 1.04;
-  --type-h1:      34px; --leading-h1: 1.1;
-  --type-h2:      27px; --leading-h2: 1.15;
-  --type-h3:      18px; --leading-h3: 1.2;
+  --type-hero: clamp(40px, 6vw, 68px);
+  --leading-hero: 1.04;
+  --type-h1: 34px;
+  --leading-h1: 1.1;
+  --type-h2: 27px;
+  --leading-h2: 1.15;
+  --type-h3: 18px;
+  --leading-h3: 1.2;
   --type-body-lg: 18px;
-  --type-body:    16px; --leading-body: 1.62;
+  --type-body: 16px;
+  --leading-body: 1.62;
   --type-body-sm: 14px;
-  --type-ui:      13px;
+  --type-ui: 13px;
   --type-caption: 11px;
   --tracking-eyebrow: .16em;
-  --tracking-tight:  -.01em;
+  --tracking-tight: -.01em;
 
   /* — Surfaces & ink (DARK is the default mode) ——————————————————— */
-  --bg:      #15120D;  /* page ground            */
-  --bg-2:    #1C1812;  /* card / panel surface   */
-  --bg-3:    #231E16;  /* raised / hover surface */
-  --bg-sunk: #100D09;  /* wells, insets, code    */
+  --bg: #15120d; /* page ground            */
+  --bg-2: #1c1812; /* card / panel surface   */
+  --bg-3: #231e16; /* raised / hover surface */
+  --bg-sunk: #100d09; /* wells, insets, code    */
 
-  --line:    rgba(236,229,214,.10); /* hairline divider / border       */
-  --line-2:  rgba(236,229,214,.20); /* stronger border / input outline */
+  --line: rgba(236, 229, 214, 0.1); /* hairline divider / border       */
+  --line-2: rgba(236, 229, 214, 0.2); /* stronger border / input outline */
 
-  --ink:      #ECE5D6; /* high-emphasis text  */
-  --ink-soft: #BCB29D; /* body text           */
-  --ink-mute: #897F6B; /* captions, metadata  */
+  --ink: #ece5d6; /* high-emphasis text  */
+  --ink-soft: #bcb29d; /* body text           */
+  --ink-mute: #897f6b; /* captions, metadata  */
 
   /* — Accent (overridden per theme) ——————————————————————————————— */
-  --accent:      #C7A24C;                 /* the single brand gold        */
-  --accent-ink:  #15120D;                 /* text/icon ON an accent fill  */
-  --accent-soft: rgba(199,162,76,.14);    /* tinted accent backgrounds    */
+  --accent: #c7a24c; /* the single brand gold        */
+  --accent-ink: #15120d; /* text/icon ON an accent fill  */
+  --accent-soft: rgba(199, 162, 76, 0.14); /* tinted accent backgrounds    */
 
   /* — Semantic ————————————————————————————————————————————————————— */
-  --info:    #7E91CE;
-  --success: #6BA892;
-  --warning: #C9A24C;
-  --danger:  #C8554A;
-  --danger-bg:     rgba(200,85,74,.12);
-  --danger-border: rgba(200,85,74,.45);
-  --care:      #C9A86A;                    /* wellbeing/check-in — calm, never red */
-  --care-soft: rgba(201,168,106,.12);
-  --care-line: rgba(201,168,106,.40);
+  --info: #7e91ce;
+  --success: #6ba892;
+  --warning: #c9a24c;
+  --danger: #c8554a;
+  --danger-bg: rgba(200, 85, 74, 0.12);
+  --danger-border: rgba(200, 85, 74, 0.45);
+  --care: #c9a86a; /* wellbeing/check-in — calm, never red */
+  --care-soft: rgba(201, 168, 106, 0.12);
+  --care-line: rgba(201, 168, 106, 0.4);
 
   /* — Category accents (the six practice domains) ————————————————— */
-  --c-journal:       #CDBE9E;
-  --c-divination:    #7E91CE;
-  --c-working:       #C2554A;
-  --c-entity:        #C9A24C;
-  --c-library:       #BC8050;
-  --c-synchronicity: #6BA892;
+  --c-journal: #cdbe9e;
+  --c-divination: #7e91ce;
+  --c-working: #c2554a;
+  --c-entity: #c9a24c;
+  --c-library: #bc8050;
+  --c-synchronicity: #6ba892;
 
   /* — Elemental accents (circle / talisman work) —————————————————— */
-  --air:   #C7B36A;
-  --fire:  #C2554A;
-  --water: #5E8FA8;
-  --earth: #6E8E63;
+  --air: #c7b36a;
+  --fire: #c2554a;
+  --water: #5e8fa8;
+  --earth: #6e8e63;
 
   /* — Radii ————————————————————————————————————————————————————————— */
   --r-sm: 4px;
@@ -109,82 +114,139 @@
   --r-pill: 999px;
 
   /* — Spacing ramp ————————————————————————————————————————————————— */
-  --space-1: 6px;  --space-2: 10px; --space-3: 14px;
-  --space-4: 20px; --space-5: 28px; --space-6: 38px; --space-7: 52px;
+  --space-1: 6px;
+  --space-2: 10px;
+  --space-3: 14px;
+  --space-4: 20px;
+  --space-5: 28px;
+  --space-6: 38px;
+  --space-7: 52px;
 
   /* — Elevation (shadow carries depth; surfaces stay matte) ——————— */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,.30);
-  --shadow-md: 0 8px 24px rgba(0,0,0,.35);
-  --shadow-lg: 0 22px 48px rgba(0,0,0,.50);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 22px 48px rgba(0, 0, 0, 0.5);
 
   /* — Motion (short, restrained, no bounce) ——————————————————————— */
   --transition-color: color .15s ease, background-color .15s ease, border-color .15s ease;
-  --transition-all:   all .16s ease;
+  --transition-all: all .16s ease;
 
   /* — Layout widths ———————————————————————————————————————————————— */
-  --maxw-doc:  1080px;  /* public document column     */
-  --nav-w:     248px;   /* app sidebar (VaultNav)      */
+  --maxw-doc: 1080px; /* public document column     */
+  --nav-w: 248px; /* app sidebar (VaultNav)      */
 }
 
 /* ============================================================================
    THEME — Hellenic  (display → GFS Didot; cooler, greener neutrals)
    ============================================================================ */
 [data-theme="hellenic"] {
-  --font-display: 'GFS Didot', serif;
+  --font-display: "GFS Didot", serif;
 
-  --bg: #0F1311; --bg-2: #161B18; --bg-3: #1D2420; --bg-sunk: #0B0F0D;
-  --line: rgba(226,231,222,.10); --line-2: rgba(226,231,222,.20);
-  --ink: #E9EADE; --ink-soft: #AEB6A4; --ink-mute: #7C8474;
+  --bg: #0f1311;
+  --bg-2: #161b18;
+  --bg-3: #1d2420;
+  --bg-sunk: #0b0f0d;
+  --line: rgba(226, 231, 222, 0.1);
+  --line-2: rgba(226, 231, 222, 0.2);
+  --ink: #e9eade;
+  --ink-soft: #aeb6a4;
+  --ink-mute: #7c8474;
 
-  --accent: #BFA15B; --accent-ink: #0F1311; --accent-soft: rgba(191,161,91,.14);
+  --accent: #bfa15b;
+  --accent-ink: #0f1311;
+  --accent-soft: rgba(191, 161, 91, 0.14);
 
-  --info: #5E9BA6; --success: #5E9BA6; --warning: #BFA15B; --danger: #B5573F;
-  --danger-border: rgba(181,87,63,.45);
-  --care: #9FB89A; --care-soft: rgba(159,184,154,.12); --care-line: rgba(159,184,154,.40);
+  --info: #5e9ba6;
+  --success: #5e9ba6;
+  --warning: #bfa15b;
+  --danger: #b5573f;
+  --danger-border: rgba(181, 87, 63, 0.45);
+  --care: #9fb89a;
+  --care-soft: rgba(159, 184, 154, 0.12);
+  --care-line: rgba(159, 184, 154, 0.4);
 
-  --c-divination: #5E9BA6; --c-working: #B5573F; --c-synchronicity: #5E9BA6;
-  --c-library: #A88A52; --c-entity: #BFA15B; --c-journal: #CDBE9E;
+  --c-divination: #5e9ba6;
+  --c-working: #b5573f;
+  --c-synchronicity: #5e9ba6;
+  --c-library: #a88a52;
+  --c-entity: #bfa15b;
+  --c-journal: #cdbe9e;
 
-  --fire: #B5573F; --water: #5E9BA6; --earth: #6E8E63; --air: #BFA15B;
+  --fire: #b5573f;
+  --water: #5e9ba6;
+  --earth: #6e8e63;
+  --air: #bfa15b;
 }
 
 /* ============================================================================
    THEME — Thelemic  (display → Cinzel; warmer, redder, higher contrast)
    ============================================================================ */
 [data-theme="thelemic"] {
-  --font-display: 'Cinzel', serif;
+  --font-display: "Cinzel", serif;
 
-  --bg: #100B09; --bg-2: #191210; --bg-3: #201714; --bg-sunk: #0A0706;
-  --line: rgba(239,227,203,.12); --line-2: rgba(239,227,203,.22);
-  --ink: #EFE3CB; --ink-soft: #C5B493; --ink-mute: #8C7B5E;
+  --bg: #100b09;
+  --bg-2: #191210;
+  --bg-3: #201714;
+  --bg-sunk: #0a0706;
+  --line: rgba(239, 227, 203, 0.12);
+  --line-2: rgba(239, 227, 203, 0.22);
+  --ink: #efe3cb;
+  --ink-soft: #c5b493;
+  --ink-mute: #8c7b5e;
 
-  --accent: #CDA53E; --accent-ink: #100B09; --accent-soft: rgba(205,165,62,.15);
+  --accent: #cda53e;
+  --accent-ink: #100b09;
+  --accent-soft: rgba(205, 165, 62, 0.15);
 
-  --info: #B58A3C; --success: #9A8F4E; --warning: #CDA53E; --danger: #C5392B;
-  --danger-border: rgba(197,57,43,.50);
-  --care: #CBA75A; --care-soft: rgba(203,167,90,.12); --care-line: rgba(203,167,90,.40);
+  --info: #b58a3c;
+  --success: #9a8f4e;
+  --warning: #cda53e;
+  --danger: #c5392b;
+  --danger-border: rgba(197, 57, 43, 0.5);
+  --care: #cba75a;
+  --care-soft: rgba(203, 167, 90, 0.12);
+  --care-line: rgba(203, 167, 90, 0.4);
 
-  --c-working: #C5392B; --c-divination: #B58A3C; --c-entity: #CDA53E;
-  --c-library: #B97A3A; --c-synchronicity: #9A8F4E; --c-journal: #CDBE9E;
+  --c-working: #c5392b;
+  --c-divination: #b58a3c;
+  --c-entity: #cda53e;
+  --c-library: #b97a3a;
+  --c-synchronicity: #9a8f4e;
+  --c-journal: #cdbe9e;
 
-  --fire: #C5392B; --water: #4F87A0; --earth: #7A8A52; --air: #CDA53E;
+  --fire: #c5392b;
+  --water: #4f87a0;
+  --earth: #7a8a52;
+  --air: #cda53e;
 }
 
 /* ============================================================================
    MODE — Light  (applies on top of any theme; surfaces + ink invert)
    ============================================================================ */
 [data-mode="light"] {
-  --bg: #EFE7D4; --bg-2: #F6F0E1; --bg-3: #FBF7EC; --bg-sunk: #E6DCC6;
-  --line: rgba(40,32,22,.14); --line-2: rgba(40,32,22,.26);
-  --ink: #2A2316; --ink-soft: #5A5040; --ink-mute: #867B66;
+  --bg: #efe7d4;
+  --bg-2: #f6f0e1;
+  --bg-3: #fbf7ec;
+  --bg-sunk: #e6dcc6;
+  --line: rgba(40, 32, 22, 0.14);
+  --line-2: rgba(40, 32, 22, 0.26);
+  --ink: #2a2316;
+  --ink-soft: #5a5040;
+  --ink-mute: #867b66;
 
-  --accent: #9A6E22; --accent-ink: #FBF7EC; --accent-soft: rgba(154,110,34,.14);
-  --danger: #A23A2C; --danger-border: rgba(162,58,44,.40); --danger-bg: rgba(162,58,44,.10);
-  --care: #8A6A2E; --care-soft: rgba(138,106,46,.10); --care-line: rgba(138,106,46,.34);
+  --accent: #9a6e22;
+  --accent-ink: #fbf7ec;
+  --accent-soft: rgba(154, 110, 34, 0.14);
+  --danger: #a23a2c;
+  --danger-border: rgba(162, 58, 44, 0.4);
+  --danger-bg: rgba(162, 58, 44, 0.1);
+  --care: #8a6a2e;
+  --care-soft: rgba(138, 106, 46, 0.1);
+  --care-line: rgba(138, 106, 46, 0.34);
 
-  --shadow-sm: 0 1px 3px rgba(40,32,22,.10);
-  --shadow-md: 0 8px 24px rgba(40,32,22,.14);
-  --shadow-lg: 0 22px 48px rgba(40,32,22,.20);
+  --shadow-sm: 0 1px 3px rgba(40, 32, 22, 0.1);
+  --shadow-md: 0 8px 24px rgba(40, 32, 22, 0.14);
+  --shadow-lg: 0 22px 48px rgba(40, 32, 22, 0.2);
 }
 
 /* ============================================================================
@@ -193,7 +255,10 @@
 
 /* Reduced motion — honor OS preference everywhere. */
 @media (prefers-reduced-motion: reduce) {
-  :root { --transition-color: none; --transition-all: none; }
+  :root {
+    --transition-color: none;
+    --transition-all: none;
+  }
 }
 
 /* High contrast — raise ink contrast, harden borders, drop alpha tints to solids.
@@ -201,27 +266,32 @@
 [data-contrast="high"] {
   --ink-soft: var(--ink);
   --ink-mute: var(--ink);
-  --line:    rgba(236,229,214,.32);
-  --line-2:  rgba(236,229,214,.62);
-  --accent-soft: rgba(199,162,76,.30);
-  --care-line:   var(--care);
+  --line: rgba(236, 229, 214, 0.32);
+  --line-2: rgba(236, 229, 214, 0.62);
+  --accent-soft: rgba(199, 162, 76, 0.3);
+  --care-line: var(--care);
   --danger-border: var(--danger);
 }
 [data-contrast="high"][data-mode="light"] {
-  --line:   rgba(40,32,22,.34);
-  --line-2: rgba(40,32,22,.66);
-  --accent-soft: rgba(154,110,34,.26);
+  --line: rgba(40, 32, 22, 0.34);
+  --line-2: rgba(40, 32, 22, 0.66);
+  --accent-soft: rgba(154, 110, 34, 0.26);
 }
 
 /* Colorblind-safe semantic set — a blue/amber/vermilion triad that stays
    distinguishable under deuteranopia & protanopia (the red/green confusions).
    ALWAYS pair color with an icon or shape; color alone is never the only cue. */
 [data-cvd="safe"] {
-  --info:    #4F86C6;   /* blue        */
-  --success: #1F9FA6;   /* teal-cyan   — reads distinct from warning/danger */
-  --warning: #E0A93B;   /* amber       */
-  --danger:  #D5562B;   /* vermilion   — kept far from teal in luminance */
-  --danger-border: rgba(213,86,43,.5);
-  --c-divination: #4F86C6; --c-synchronicity: #1F9FA6; --c-working: #D5562B;
-  --water: #4F86C6; --earth: #1F9FA6; --fire: #D5562B; --air: #E0A93B;
+  --info: #4f86c6; /* blue        */
+  --success: #1f9fa6; /* teal-cyan   — reads distinct from warning/danger */
+  --warning: #e0a93b; /* amber       */
+  --danger: #d5562b; /* vermilion   — kept far from teal in luminance */
+  --danger-border: rgba(213, 86, 43, 0.5);
+  --c-divination: #4f86c6;
+  --c-synchronicity: #1f9fa6;
+  --c-working: #d5562b;
+  --water: #4f86c6;
+  --earth: #1f9fa6;
+  --fire: #d5562b;
+  --air: #e0a93b;
 }

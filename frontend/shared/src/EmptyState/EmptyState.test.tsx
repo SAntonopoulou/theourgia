@@ -7,9 +7,7 @@ import { EmptyState } from "./index.js";
 describe("EmptyState", () => {
   it("renders the title as a heading", () => {
     render(<EmptyState title="Nothing written yet" />);
-    expect(
-      screen.getByRole("heading", { name: "Nothing written yet" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Nothing written yet" })).toBeInTheDocument();
   });
 
   it("uses role=status so screen readers announce the empty result", () => {
@@ -18,15 +16,8 @@ describe("EmptyState", () => {
   });
 
   it("renders body prose when supplied", () => {
-    render(
-      <EmptyState
-        title="Nothing written yet"
-        body="Your first entry begins the record."
-      />,
-    );
-    expect(
-      screen.getByText("Your first entry begins the record."),
-    ).toBeInTheDocument();
+    render(<EmptyState title="Nothing written yet" body="Your first entry begins the record." />);
+    expect(screen.getByText("Your first entry begins the record.")).toBeInTheDocument();
   });
 
   it("renders an action element when supplied", () => {

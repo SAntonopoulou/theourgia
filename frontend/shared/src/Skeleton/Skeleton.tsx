@@ -81,7 +81,7 @@ export function Skeleton({
   ariaLabel = "Loading",
   className,
   style,
-}: SkeletonProps): JSX.Element {
+}: SkeletonProps) {
   const dims = dimensions(kind, width, height);
   const composedStyle: CSSProperties = {
     ...dims,
@@ -96,9 +96,7 @@ export function Skeleton({
       role="status"
       aria-label={ariaLabel}
       aria-live="polite"
-      className={
-        className ? `${className} ${ANIMATION_NAME}` : ANIMATION_NAME
-      }
+      className={className ? `${className} ${ANIMATION_NAME}` : ANIMATION_NAME}
       style={composedStyle}
       data-kind={kind}
     />

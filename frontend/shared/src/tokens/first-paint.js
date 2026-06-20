@@ -20,7 +20,7 @@
  * (`ui.theme`, `ui.mode`, `a11y.high_contrast`, `a11y.cvd_safe`) and mirror
  * the result back to localStorage so the next first-paint matches.
  */
-(function () {
+(() => {
   if (typeof document === "undefined" || typeof localStorage === "undefined") {
     return;
   }

@@ -15,10 +15,9 @@
  */
 
 import type { CSSProperties, SVGAttributes } from "react";
-import { type GlyphName } from "./names.js";
+import type { GlyphName } from "./names.js";
 
-export interface GlyphProps
-  extends Omit<SVGAttributes<SVGSVGElement>, "children" | "ref"> {
+export interface GlyphProps extends Omit<SVGAttributes<SVGSVGElement>, "children" | "ref"> {
   /** Glyph identifier — must match a ``<symbol>`` in the engraving sprite. */
   name: GlyphName;
   /** Square render size in pixels. Defaults to 20. */
@@ -30,13 +29,7 @@ export interface GlyphProps
   title?: string;
 }
 
-export function Glyph({
-  name,
-  size = 20,
-  title,
-  style,
-  ...rest
-}: GlyphProps): JSX.Element {
+export function Glyph({ name, size = 20, title, style, ...rest }: GlyphProps) {
   const isSmall = size <= 16;
   const composedStyle: CSSProperties = {
     width: size,

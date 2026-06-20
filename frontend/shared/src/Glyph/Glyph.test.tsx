@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { Glyph, GLYPH_NAMES, isGlyphName } from "./index.js";
+import { GLYPH_NAMES, Glyph, isGlyphName } from "./index.js";
 
 describe("Glyph", () => {
   it("renders the engraving symbol by name", () => {
@@ -46,9 +46,7 @@ describe("Glyph", () => {
   });
 
   it("merges caller-supplied style", () => {
-    const { container } = render(
-      <Glyph name="bell" style={{ opacity: 0.5 }} />,
-    );
+    const { container } = render(<Glyph name="bell" style={{ opacity: 0.5 }} />);
     const svg = container.querySelector("svg");
     expect(svg?.style.opacity).toBe("0.5");
     // Token-set defaults survive

@@ -1,5 +1,5 @@
-import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
+import { defineConfig } from "astro/config";
 
 // https://astro.build/config
 export default defineConfig({
@@ -13,8 +13,7 @@ export default defineConfig({
         github: "https://github.com/SAntonopoulou/theourgia",
       },
       editLink: {
-        baseUrl:
-          "https://github.com/SAntonopoulou/theourgia/edit/main/docs/site/",
+        baseUrl: "https://github.com/SAntonopoulou/theourgia/edit/main/docs/site/",
       },
       lastUpdated: true,
       pagination: true,

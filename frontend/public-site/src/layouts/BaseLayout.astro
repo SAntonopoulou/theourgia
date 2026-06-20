@@ -1,0 +1,46 @@
+---
+import "../styles/global.css";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+
+interface Props {
+  title?: string;
+}
+
+const { title = "Theourgia" } = Astro.props;
+
+const spritePath = fileURLToPath(
+  new URL("../../../shared/src/tokens/theourgia-icons.svg", import.meta.url),
+);
+const sprite = readFileSync(spritePath, "utf8");
+---
+
+<!doctype html>
+<html lang="en" data-theme="base" data-mode="dark" data-contrast="normal" data-cvd="normal">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <title>{title}</title>
+    <script is:inline>
+      (function () {
+        if (typeof document === "undefined" || typeof localStorage === "undefined") return;
+        var root = document.documentElement;
+        function pick(key, allowed, fallback) {
+          try {
+            var v = localStorage.getItem("theourgia." + key);
+            return allowed.indexOf(v) >= 0 ? v : fallback;
+          } catch (_) { return fallback; }
+        }
+        root.setAttribute("data-theme", pick("theme", ["base", "hellenic", "thelemic"], "base"));
+        root.setAttribute("data-mode", pick("mode", ["dark", "light"], "dark"));
+        root.setAttribute("data-contrast", pick("contrast", ["normal", "high"], "normal"));
+        root.setAttribute("data-cvd", pick("cvd", ["normal", "safe"], "normal"));
+      })();
+    </script>
+  </head>
+  <body>
+    <div aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden" set:html={sprite} />
+    <slot />
+  </body>
+</html>

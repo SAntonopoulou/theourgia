@@ -22,16 +22,10 @@ import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
 
 import { Glyph, type GlyphName } from "../Glyph/index.js";
 
-export type ButtonVariant =
-  | "primary"
-  | "secondary"
-  | "ghost"
-  | "danger"
-  | "quiet";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "quiet";
 export type ButtonSize = "sm" | "md" | "lg";
 
-export interface ButtonProps
-  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "type"> {
+export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "type"> {
   /** Visual style and emphasis. */
   variant?: ButtonVariant;
   /** Default ``md``. */
@@ -63,33 +57,33 @@ function variantStyle(variant: ButtonVariant): CSSProperties {
   switch (variant) {
     case "primary":
       return {
-        background: "var(--accent)",
+        backgroundColor: "var(--accent)",
         color: "var(--accent-ink)",
-        border: "1px solid var(--accent)",
+        borderColor: "var(--accent)",
       };
     case "secondary":
       return {
-        background: "var(--bg-2)",
+        backgroundColor: "var(--bg-2)",
         color: "var(--ink)",
-        border: "1px solid var(--line)",
+        borderColor: "var(--line)",
       };
     case "ghost":
       return {
-        background: "transparent",
+        backgroundColor: "transparent",
         color: "var(--ink)",
-        border: "1px solid transparent",
+        borderColor: "transparent",
       };
     case "danger":
       return {
-        background: "var(--danger)",
+        backgroundColor: "var(--danger)",
         color: "var(--bg)",
-        border: "1px solid var(--danger)",
+        borderColor: "var(--danger)",
       };
     case "quiet":
       return {
-        background: "transparent",
+        backgroundColor: "transparent",
         color: "var(--ink-mute)",
-        border: "1px solid transparent",
+        borderColor: "transparent",
       };
   }
 }
@@ -106,7 +100,7 @@ export function Button({
   style,
   children,
   ...rest
-}: ButtonProps): JSX.Element {
+}: ButtonProps) {
   const isDisabled = disabled || loading;
   const composedStyle: CSSProperties = {
     ...variantStyle(variant),
@@ -118,6 +112,8 @@ export function Button({
     lineHeight: 1.2,
     letterSpacing: "0.01em",
     borderRadius: "var(--r-md, 6px)",
+    borderStyle: "solid",
+    borderWidth: "1px",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
