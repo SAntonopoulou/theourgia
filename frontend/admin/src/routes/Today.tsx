@@ -25,7 +25,8 @@ import {
 import { useState } from "react";
 
 import { createEntry, useRecentEntries } from "../data/useEntries.js";
-import { MOCK_IDENTITY, MOCK_LOCATION, MOCK_STATS } from "../mocks/today.js";
+import { useTodayStats, weekOverWeekDelta } from "../data/useStats.js";
+import { MOCK_IDENTITY, MOCK_LOCATION } from "../mocks/today.js";
 
 function greetingForHour(hour: number): string {
   if (hour < 5) return "Late night";
@@ -132,6 +133,7 @@ function EntriesSkeleton() {
 export function Today() {
   const [captureOpen, setCaptureOpen] = useState(false);
   const entries = useRecentEntries();
+  const stats = useTodayStats();
   const greeting = greetingForHour(new Date().getHours());
 
   async function handleSubmit(value: string): Promise<void> {
@@ -144,7 +146,7 @@ export function Today() {
         glyph: "feather",
       });
       Toast.push({ tone: "success", title: "Captured" });
-      await entries.refresh();
+      await Promise.all([entries.refresh(), stats.refresh()]);
     } catch (e) {
       Toast.push({
         tone: "error",
@@ -200,27 +202,59 @@ export function Today() {
           gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
         }}
       >
-        <Card>
-          <Stat
-            label="Entries this week"
-            value={MOCK_STATS.entriesThisWeek.value}
-            delta={MOCK_STATS.entriesThisWeek.delta}
-          />
-        </Card>
-        <Card>
-          <Stat
-            label="Synchronicities"
-            value={MOCK_STATS.synchronicities.value}
-            delta={MOCK_STATS.synchronicities.delta}
-          />
-        </Card>
-        <Card>
-          <Stat
-            label="Rites performed"
-            value={MOCK_STATS.ritesPerformed.value}
-            delta={MOCK_STATS.ritesPerformed.delta}
-          />
-        </Card>
+        {stats.status === "loading" ? (
+          <>
+            <Card>
+              <Skeleton kind="text" width={120} />
+              <div style={{ height: 8 }} />
+              <Skeleton kind="rect" width={80} height={28} />
+            </Card>
+            <Card>
+              <Skeleton kind="text" width={120} />
+              <div style={{ height: 8 }} />
+              <Skeleton kind="rect" width={80} height={28} />
+            </Card>
+            <Card>
+              <Skeleton kind="text" width={120} />
+              <div style={{ height: 8 }} />
+              <Skeleton kind="rect" width={80} height={28} />
+            </Card>
+          </>
+        ) : stats.status === "error" || !stats.data ? (
+          <Card>
+            <Stat label="Stats unavailable" value="—" />
+          </Card>
+        ) : (
+          <>
+            <Card>
+              <Stat
+                label="Entries this week"
+                value={stats.data.this_week.total}
+                delta={weekOverWeekDelta(stats.data.this_week.total, stats.data.last_week.total)}
+              />
+            </Card>
+            <Card>
+              <Stat
+                label="Synchronicities"
+                value={stats.data.this_week.by_type.synchronicity}
+                delta={weekOverWeekDelta(
+                  stats.data.this_week.by_type.synchronicity,
+                  stats.data.last_week.by_type.synchronicity,
+                )}
+              />
+            </Card>
+            <Card>
+              <Stat
+                label="Rites performed"
+                value={stats.data.this_week.by_type.ritual}
+                delta={weekOverWeekDelta(
+                  stats.data.this_week.by_type.ritual,
+                  stats.data.last_week.by_type.ritual,
+                )}
+              />
+            </Card>
+          </>
+        )}
       </section>
 
       <Card>

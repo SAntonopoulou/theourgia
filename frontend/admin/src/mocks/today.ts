@@ -1,11 +1,10 @@
 /**
- * Mock seed data for non-API parts of the Today surface.
+ * Mock seed data for the not-yet-API-backed parts of the Today surface.
  *
- * Identity, location, and stats are not yet flowing through the API
- * client — those come from auth/session + user settings + an analytics
- * endpoint that are all future batches. Entries are NO LONGER here —
- * those flow through ``apiMethods.listEntries()`` (see
- * ``frontend/shared/src/api/fixtures.ts`` for the in-memory seed).
+ * Identity comes from auth/session (future batch). Location comes from
+ * user settings (future batch). Both fall back to these constants
+ * until those endpoints exist. Entries + stats flow through
+ * ``@theourgia/shared`` API methods.
  */
 
 import type { AvatarIdentity } from "@theourgia/shared";
@@ -18,9 +17,3 @@ export const MOCK_IDENTITY: AvatarIdentity = {
 
 /** Greenwich Observatory by default — overridden once user settings ship. */
 export const MOCK_LOCATION = { lat: 51.4769, lng: 0 };
-
-export const MOCK_STATS = {
-  entriesThisWeek: { value: 12, delta: 33.3 },
-  synchronicities: { value: 4, delta: -12.5 },
-  ritesPerformed: { value: 2, delta: 100 },
-};

@@ -45,11 +45,13 @@ export interface Session {
   expires_at: string; // ISO 8601
 }
 
-/** Single entry — placeholder until the backend ships the endpoint. */
+export type EntryType = "observation" | "ritual" | "divination" | "synchronicity" | "capture";
+
+/** Single entry — wire format from ``GET /api/v1/entries``. */
 export interface EntryRecord {
   id: string;
   title: string;
-  type: "observation" | "ritual" | "divination" | "synchronicity";
+  type: EntryType;
   excerpt: string;
   glyph: string;
   created_at: string; // ISO 8601
@@ -59,8 +61,22 @@ export interface EntryRecord {
 /** Input for ``POST /api/v1/entries``. */
 export interface CreateEntryInput {
   title: string;
-  type: EntryRecord["type"];
+  type: EntryType;
   excerpt: string;
   glyph: string;
   body?: string;
+}
+
+/** Counts within a single time window. */
+export interface EntryWindowCounts {
+  total: number;
+  by_type: Record<EntryType, number>;
+}
+
+/** Response of ``GET /api/v1/entries/stats``. */
+export interface EntryStats {
+  total: number;
+  by_type: Record<EntryType, number>;
+  this_week: EntryWindowCounts;
+  last_week: EntryWindowCounts;
 }

@@ -13,6 +13,9 @@ export { defaultFixtures } from "./fixtures.js";
 export type {
   CreateEntryInput,
   EntryRecord,
+  EntryStats,
+  EntryType,
+  EntryWindowCounts,
   HealthStatus,
   Meta,
   Problem,

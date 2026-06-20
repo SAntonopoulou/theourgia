@@ -81,3 +81,43 @@ def test_router_is_registered_on_v1() -> None:
     paths = set(schema["paths"].keys())
     assert "/api/v1/entries" in paths
     assert "/api/v1/entries/{entry_id}" in paths
+    assert "/api/v1/entries/stats" in paths
+
+
+def test_entry_window_counts_shape() -> None:
+    from theourgia.api.routers.v1.entries import EntryWindowCounts
+
+    counts = EntryWindowCounts(
+        total=10,
+        by_type={
+            "observation": 5,
+            "ritual": 2,
+            "divination": 1,
+            "synchronicity": 1,
+            "capture": 1,
+        },
+    )
+    assert counts.total == 10
+    assert counts.by_type["observation"] == 5
+
+
+def test_entry_stats_shape_round_trips() -> None:
+    from theourgia.api.routers.v1.entries import EntryStats, EntryWindowCounts
+
+    by_type = {
+        "observation": 5,
+        "ritual": 2,
+        "divination": 1,
+        "synchronicity": 1,
+        "capture": 1,
+    }
+    stats = EntryStats(
+        total=10,
+        by_type=by_type,
+        this_week=EntryWindowCounts(total=3, by_type={**by_type, "observation": 2, "ritual": 1, "divination": 0, "synchronicity": 0, "capture": 0}),
+        last_week=EntryWindowCounts(total=1, by_type={**by_type, "observation": 1, "ritual": 0, "divination": 0, "synchronicity": 0, "capture": 0}),
+    )
+    dumped = stats.model_dump()
+    assert dumped["total"] == 10
+    assert dumped["this_week"]["total"] == 3
+    assert dumped["last_week"]["total"] == 1

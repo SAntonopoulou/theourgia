@@ -52,6 +52,23 @@ describe("endpoints — mock mode", () => {
   it("getEntry by unknown id throws NotFoundError", async () => {
     await expect(buildMock().getEntry("does-not-exist")).rejects.toThrow(/not found/i);
   });
+
+  it("listEntries with ?type filter narrows results", async () => {
+    const m = buildMock();
+    const divs = await m.listEntries({ type: "divination" });
+    for (const e of divs) {
+      expect(e.type).toBe("divination");
+    }
+  });
+
+  it("getEntryStats returns counts + week-over-week buckets", async () => {
+    const stats = await buildMock().getEntryStats();
+    expect(stats.total).toBeGreaterThanOrEqual(0);
+    // Every literal type appears in the by_type record (even with 0).
+    expect(stats.by_type.observation).toBeGreaterThanOrEqual(0);
+    expect(stats.this_week.total).toBeGreaterThanOrEqual(0);
+    expect(stats.last_week.total).toBeGreaterThanOrEqual(0);
+  });
 });
 
 describe("endpoints — live mode", () => {

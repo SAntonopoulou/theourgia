@@ -8,7 +8,15 @@
  */
 
 import type { ApiClient } from "./client.js";
-import type { CreateEntryInput, EntryRecord, HealthStatus, Meta, Session } from "./types.js";
+import type {
+  CreateEntryInput,
+  EntryRecord,
+  EntryStats,
+  EntryType,
+  HealthStatus,
+  Meta,
+  Session,
+} from "./types.js";
 
 export class NotImplementedError extends Error {
   constructor(endpoint: string) {
@@ -57,8 +65,9 @@ export function api(client: ApiClient) {
 
     // ─── Entries (live as of Batch 10) ───────────────────────────────
 
-    listEntries(opts?: { signal?: AbortSignal }): Promise<EntryRecord[]> {
-      return client.request<EntryRecord[]>("/api/v1/entries", { signal: opts?.signal });
+    listEntries(opts?: { signal?: AbortSignal; type?: EntryType }): Promise<EntryRecord[]> {
+      const qs = opts?.type ? `?type=${encodeURIComponent(opts.type)}` : "";
+      return client.request<EntryRecord[]>(`/api/v1/entries${qs}`, { signal: opts?.signal });
     },
 
     getEntry(id: string, opts?: { signal?: AbortSignal }): Promise<EntryRecord> {
@@ -67,6 +76,10 @@ export function api(client: ApiClient) {
 
     createEntry(input: CreateEntryInput): Promise<EntryRecord> {
       return client.request<EntryRecord>("/api/v1/entries", { method: "POST", json: input });
+    },
+
+    getEntryStats(opts?: { signal?: AbortSignal }): Promise<EntryStats> {
+      return client.request<EntryStats>("/api/v1/entries/stats", { signal: opts?.signal });
     },
   };
 }

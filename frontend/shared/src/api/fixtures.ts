@@ -10,6 +10,8 @@ import { NotFoundError } from "./errors.js";
 import type {
   CreateEntryInput,
   EntryRecord,
+  EntryStats,
+  EntryType,
   HealthStatus,
   Meta,
   Problem,
@@ -76,6 +78,58 @@ function problem(status: number, title: string, detail?: string): Problem {
   return result;
 }
 
+const ALL_ENTRY_TYPES: EntryType[] = [
+  "observation",
+  "ritual",
+  "divination",
+  "synchronicity",
+  "capture",
+];
+
+function emptyByType(): Record<EntryType, number> {
+  return {
+    observation: 0,
+    ritual: 0,
+    divination: 0,
+    synchronicity: 0,
+    capture: 0,
+  };
+}
+
+function computeStats(): EntryStats {
+  const now = Date.now();
+  const weekAgo = now - 7 * 24 * 60 * 60 * 1000;
+  const twoWeeksAgo = now - 14 * 24 * 60 * 60 * 1000;
+
+  const all = emptyByType();
+  const thisWeek = emptyByType();
+  const lastWeek = emptyByType();
+  let totalAll = 0;
+  let totalThis = 0;
+  let totalLast = 0;
+
+  for (const e of ENTRIES) {
+    const ms = new Date(e.created_at).getTime();
+    all[e.type] += 1;
+    totalAll += 1;
+    if (ms >= weekAgo) {
+      thisWeek[e.type] += 1;
+      totalThis += 1;
+    } else if (ms >= twoWeeksAgo) {
+      lastWeek[e.type] += 1;
+      totalLast += 1;
+    }
+  }
+  // Type assertion: ALL_ENTRY_TYPES enumerates the closed union; tsc can verify.
+  void ALL_ENTRY_TYPES;
+  return {
+    total: totalAll,
+    by_type: all,
+    this_week: { total: totalThis, by_type: thisWeek },
+    last_week: { total: totalLast, by_type: lastWeek },
+  };
+}
+
 interface ParsedInit {
   method: string;
   body: unknown;
@@ -111,8 +165,16 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     if (method === "DELETE") return null;
   }
 
-  if (path === "/api/v1/entries") {
-    if (method === "GET") return [...ENTRIES];
+  // Strip the querystring portion for matching but preserve it for parsing.
+  const [bare, qs = ""] = path.split("?");
+
+  if (bare === "/api/v1/entries") {
+    if (method === "GET") {
+      const params = new URLSearchParams(qs);
+      const typeFilter = params.get("type") as EntryType | null;
+      const list = typeFilter ? ENTRIES.filter((e) => e.type === typeFilter) : ENTRIES;
+      return [...list];
+    }
     if (method === "POST") {
       const input = body as CreateEntryInput;
       const next: EntryRecord = {
@@ -129,7 +191,11 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     }
   }
 
-  const entryMatch = /^\/api\/v1\/entries\/(.+)$/.exec(path);
+  if (bare === "/api/v1/entries/stats") {
+    return computeStats();
+  }
+
+  const entryMatch = /^\/api\/v1\/entries\/(.+)$/.exec(bare ?? "");
   if (entryMatch) {
     const [, id] = entryMatch;
     const found = ENTRIES.find((e) => e.id === id);

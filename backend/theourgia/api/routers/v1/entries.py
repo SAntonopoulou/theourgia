@@ -1,8 +1,9 @@
 """Entry HTTP endpoints.
 
-``GET    /api/v1/entries``      — list (no pagination yet)
-``POST   /api/v1/entries``      — create
-``GET    /api/v1/entries/{id}`` — single entry
+``GET    /api/v1/entries``           — list (optional ?type= filter)
+``GET    /api/v1/entries/stats``     — counts + week-over-week deltas
+``POST   /api/v1/entries``           — create
+``GET    /api/v1/entries/{id}``      — single entry
 
 Phase 02 NOTE: these endpoints are **unauthenticated** during foundations.
 Anonymous read + write is intentional for the dev preview. They gain auth
@@ -12,13 +13,13 @@ should also flip ``Entry.owner_id`` to NOT NULL.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import get_db_session
@@ -30,6 +31,14 @@ router = APIRouter()
 
 
 EntryTypeLiteral = Literal["observation", "ritual", "divination", "synchronicity", "capture"]
+
+_ALL_TYPES: tuple[EntryTypeLiteral, ...] = (
+    "observation",
+    "ritual",
+    "divination",
+    "synchronicity",
+    "capture",
+)
 
 
 class EntryRead(BaseModel):
@@ -58,6 +67,26 @@ class EntryCreate(BaseModel):
     body: str | None = None
 
 
+class EntryWindowCounts(BaseModel):
+    """Counts in a time window — total + per-type breakdown."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    total: int
+    by_type: dict[EntryTypeLiteral, int]
+
+
+class EntryStats(BaseModel):
+    """Response of ``GET /api/v1/entries/stats``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    total: int
+    by_type: dict[EntryTypeLiteral, int]
+    this_week: EntryWindowCounts
+    last_week: EntryWindowCounts
+
+
 def _to_read(row: Entry) -> EntryRead:
     return EntryRead(
         id=str(row.id),
@@ -70,25 +99,76 @@ def _to_read(row: Entry) -> EntryRead:
     )
 
 
+def _empty_by_type() -> dict[EntryTypeLiteral, int]:
+    return {t: 0 for t in _ALL_TYPES}
+
+
 @router.get(
     "/entries",
     summary="List entries",
-    description="Returns all non-deleted entries in reverse-chronological order.",
+    description="Returns non-deleted entries in reverse-chronological order. Optional ``?type=`` filter.",
     response_model=list[EntryRead],
 )
 async def list_entries(
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    type: EntryTypeLiteral | None = None,
     limit: int = 50,
 ) -> list[EntryRead]:
-    stmt = (
-        select(Entry)
-        .where(Entry.deleted_at.is_(None))
-        .order_by(Entry.created_at.desc())
-        .limit(min(limit, 200))
-    )
+    stmt = select(Entry).where(Entry.deleted_at.is_(None))
+    if type is not None:
+        stmt = stmt.where(Entry.type == EntryType(type))
+    stmt = stmt.order_by(Entry.created_at.desc()).limit(min(limit, 200))
     result = await session.execute(stmt)
     rows = result.scalars().all()
     return [_to_read(row) for row in rows]
+
+
+@router.get(
+    "/entries/stats",
+    summary="Entry counts + week-over-week deltas",
+    description=(
+        "Returns total entry count, per-type breakdown, and counts for the "
+        "current and previous UTC-week windows. Soft-deleted entries excluded."
+    ),
+    response_model=EntryStats,
+)
+async def get_entry_stats(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> EntryStats:
+    now = datetime.now(tz=UTC)
+    week_ago = now - timedelta(days=7)
+    two_weeks_ago = now - timedelta(days=14)
+
+    async def _counts(since: datetime | None = None, until: datetime | None = None) -> EntryWindowCounts:
+        stmt = (
+            select(Entry.type, func.count(Entry.id))
+            .where(Entry.deleted_at.is_(None))
+            .group_by(Entry.type)
+        )
+        if since is not None:
+            stmt = stmt.where(Entry.created_at >= since)
+        if until is not None:
+            stmt = stmt.where(Entry.created_at < until)
+        result = await session.execute(stmt)
+        by_type = _empty_by_type()
+        total = 0
+        for row_type, row_count in result.all():
+            literal = row_type.value if isinstance(row_type, EntryType) else str(row_type)
+            count_int = int(row_count)
+            by_type[literal] = count_int  # type: ignore[index]
+            total += count_int
+        return EntryWindowCounts(total=total, by_type=by_type)
+
+    all_time = await _counts()
+    this_week = await _counts(since=week_ago)
+    last_week = await _counts(since=two_weeks_ago, until=week_ago)
+
+    return EntryStats(
+        total=all_time.total,
+        by_type=all_time.by_type,
+        this_week=this_week,
+        last_week=last_week,
+    )
 
 
 @router.post(
