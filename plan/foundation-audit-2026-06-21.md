@@ -135,3 +135,28 @@ The audit can detect *patterns*. It can't detect:
 - Edge cases that surface only when real user data lands
 
 Those concerns get caught by real testing as features land. The audit's job is to verify that **the substrate is the canonical path** — and it is.
+
+## Follow-up: translation pass (added after substrate sweep)
+
+Sophia flagged after the post-audit work: "you're using english we're going to have to do another pass for translation."
+
+She's right. As the persona, instance-settings, cache, clock, and user-settings substrates were built, error messages and validation strings were written in English source rather than wrapped in `_()`. This is exactly the kind of inline / inconsistent pattern the i18n substrate exists to prevent — but in practice every substrate that raises exceptions whose messages might surface to users needs a deliberate pass.
+
+**Scope of the translation pass:**
+
+| Tier | Examples | Priority |
+|---|---|---|
+| **A — user-facing** (returned to clients in 4xx/5xx responses) | `PersonaError` messages in `core/persona/service.py:82, 93, 143, 185, 240, 244, 260`; `PermissionError` raised by `core/instancesettings/service.py:get_public_typed`; APIError titles in `core/api/errors.py` | Wrap in `_lazy(...)` at definition site |
+| **B — admin-facing** (only seen by hub admins / operators) | Audit log free-form fields, dashboard error displays | Wrap when the admin UI ships |
+| **C — developer-only** (never surface to users) | `KeyError` / `ValueError` raised on registry misuse — `core/instancesettings/registry.py:127`, `core/usersettings/registry.py:148`, etc. | Leave in English (these are programming errors, not user errors) |
+
+**When to do the pass:** Before Phase 02 endpoints land. The persona / instance-settings / etc. exceptions become user-facing only when the API surfaces them, which happens with the Phase 02 account-management UI. The substrate code itself has no API surface yet.
+
+**Going-forward discipline:** When adding new substrate code, if it raises an exception whose message could plausibly surface to a user, wrap the message in `_lazy(...)` at the raise site. Don't accumulate English literals and translate later — that pattern is exactly what the i18n substrate was built to prevent.
+
+**Updated remediation list:**
+
+1. **D — Per-feature GDPR registration** (deferred to Phase 02+ feature work).
+2. **Translation pass** (this section) — schedule before any Phase 02 endpoint exposes the new substrates' exceptions to users.
+
+The DB-pool-settings finding from the original audit is fixed (commit `1396321`).
