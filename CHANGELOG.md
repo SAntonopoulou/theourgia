@@ -242,3 +242,43 @@ Phase 01 (Core Architecture) opens. First batch establishes the data layer found
 - `conftest.py` — autouse fixture forcing `THEOURGIA_ENV=test` for the session
 
 **README roadmap** updated: Phase 01 now `[~]` in-progress.
+
+### Added — 2026-06-20 (Phase 01, Batch 2 — encryption layer)
+
+Phase 01 Batch 2 lands the cryptographic foundation: both encryption modes, key management, KDF parameters, and a comprehensive test suite. **This is the most security-critical batch in the project.** Crypto review is part of Phase 01's Definition of Done; this code is written with that future review in mind.
+
+**Two encryption modes:**
+- **Mode A** — server-side AES-256-GCM. Per-vault data keys (DEKs) wrapped by a server master key derived from `THEOURGIA_MASTER_ENCRYPTION_KEY`. Server can decrypt; supports server-side search.
+- **Mode B** — zero-knowledge XChaCha20-Poly1305 (libsodium). Key derived in the browser from a passphrase the server never sees. Production encrypt/decrypt happens client-side; the Python implementation is reference + test oracle + admin diagnostics.
+
+**Crypto package** (`backend/theourgia/core/crypto/`):
+- `types.py` — `EncryptionMode` enum, `EncryptionError` / `DecryptionError` / `InvalidEnvelopeError`
+- `envelope.py` — versioned self-describing binary envelope: `[ver][mode][key_id 16B][nonce_len][nonce N][ciphertext+tag]`. Version byte allows future algorithm migration.
+- `keys.py` — `MasterKey` (derived from secret via SHA-256, repr-safe), `DataKey`, `generate_data_key`, `wrap_data_key`, `unwrap_data_key`. Wrap uses deterministic nonce derived from key_id (single key per id, makes wrapping stable).
+- `mode_a.py` — `encrypt`/`decrypt` API for server-side AES-GCM with optional AAD binding.
+- `mode_b.py` — Python reference for libsodium XChaCha20-Poly1305 (frontend matches this contract).
+- `kdf.py` — Argon2id (RFC 9106 hybrid) parameter generation and key derivation. INTERACTIVE-grade defaults (time_cost=3, memory_cost=64 MiB, parallelism=4). Strict validation.
+
+**Models** (`backend/theourgia/models/crypto.py`):
+- `VaultKey` — per-vault data key in wrapped form; `active` flag with partial unique index ensuring at most one active key per vault; rotation never deletes (old keys retained for old blobs).
+- `SealedKdfParams` — Argon2id params per (user, scope); recovery fingerprint column for opt-in recovery flow.
+
+**Migration** (`0002_encryption_tables.py`):
+- Creates `vault_key` with partial unique index `uq_vault_key_one_active` (`UNIQUE ... WHERE active = true`)
+- Creates `sealed_kdf_params` with unique `(user_id, scope)`
+- Enables RLS on both tables with scope-appropriate policies (vault_key owner-write + member-read; sealed_kdf_params owner-only)
+
+**Tests** (5 files, ~30 test functions including Hypothesis property tests):
+- `test_crypto_envelope.py` — round-trip, version/mode rejection, length validation, property test across modes + sizes
+- `test_crypto_keys.py` — master key from secret, repr leak-prevention, wrap/unwrap round-trip, tampering detection
+- `test_crypto_mode_a.py` — round-trip, fresh nonce per encryption, wrong-key/tampered/AAD-mismatch rejection, empty + large plaintexts, property test
+- `test_crypto_mode_b.py` — same shape as Mode A
+- `test_crypto_kdf.py` — determinism, salt variance, parameter validation, key-length variants
+
+**Security properties verified by tests:**
+- Master / data keys never appear in `repr` or `str` output
+- AEAD failures produce indistinguishable `DecryptionError` (key, tamper, AAD mismatch all surface the same way at the boundary)
+- Nonce reuse impossible (random per encryption, distinct outputs verified)
+- AAD binding prevents cross-row ciphertext swap
+- Wrong envelope version is rejected
+- Truncated / oversized inputs are rejected
