@@ -26,14 +26,18 @@ from theourgia.api.routers import register_routers
 from theourgia.core.authz.defaults import register_default_policies
 from theourgia.core.config import get_settings
 from theourgia.core.i18n.factory import build_translator_from_settings
+from theourgia.core.instancesettings.defaults import (
+    register_default_instance_settings,
+)
 from theourgia.core.observability import configure_logging, get_logger
 from theourgia.core.usersettings.defaults import register_default_settings
 
-# Install substrate baselines at module-import time. Both
-# register_default_* are idempotent, so repeated import (e.g. in
-# tests that build their own apps via create_app()) is safe.
+# Install substrate baselines at module-import time. All three
+# register_default_* functions are idempotent, so repeated import
+# (e.g. in tests that build their own apps via create_app()) is safe.
 register_default_policies()
 register_default_settings()
+register_default_instance_settings()
 
 __all__ = ["create_app", "app"]
 
