@@ -204,3 +204,41 @@ Phase 00 status: **done.** Phase 01 (Core Architecture) is next — database sch
 ### Status
 
 Project remains in **planning phase** with **Phase 00 complete**. No runnable application code yet — the next phase produces the data layer and security foundation everything else builds on.
+
+### Added — 2026-06-20 (Phase 01, Batch 1 — data layer foundations)
+
+Phase 01 (Core Architecture) opens. First batch establishes the data layer foundations: settings, async DB engine, base model mixins, identity tables, audit log, the first Alembic migration with PostgreSQL extensions and RLS policy scaffolding, plus a stack of smoke + property tests.
+
+**Core infrastructure:**
+- `backend/theourgia/core/config.py` — `Settings` via `pydantic-settings`; secrets required in non-test environments enforced by `require_secrets_or_raise`; `get_settings` cached for process lifetime
+- `backend/theourgia/core/ids.py` — UUIDv7 generator per RFC 9562 (time-ordered primary keys until stdlib ships v7)
+- `backend/theourgia/core/timeutil.py` — timezone-aware helpers (`utcnow`, `utc_from_iso`, `to_iso`) that refuse naive datetimes
+- `backend/theourgia/core/db.py` — async engine + sessionmaker via SQLAlchemy 2.x + asyncpg; FastAPI `get_session` dependency + standalone `session_scope` context manager
+
+**Models:**
+- `backend/theourgia/models/base.py` — `IDMixin` (UUIDv7), `TimestampMixin` (tz-aware created_at/updated_at), `SoftDeleteMixin`
+- `backend/theourgia/models/identity.py` — `User`, `Session`, `Vault`, `Hub`, `Membership` (with `MembershipRole` enum: 3 vault roles + 5 hub roles), `PrivateViewer`
+- `backend/theourgia/models/audit.py` — `AuditEvent` (append-only by app convention) with `AuditEventKind` and `AuditOutcome` enums
+
+**Migration infrastructure:**
+- `backend/alembic.ini` — Alembic config; reads URL from `theourgia.core.config`; post-write hook runs Ruff format on generated migrations
+- `backend/alembic/env.py` — async-aware Alembic env; uses migration-role URL if set, falls back to app-role URL
+- `backend/alembic/script.py.mako` — migration file template
+
+**First migration** (`0001_initial_extensions_and_identity.py`):
+- Enables PostgreSQL extensions: pgcrypto, citext, pg_trgm, unaccent, vector
+- Creates enums (`membership_role`, `audit_event_kind`, `audit_outcome`)
+- Creates identity tables (`user`, `session`, `vault`, `hub`, `membership`, `private_viewer`)
+- Creates `audit_event` with an immutability trigger that raises on UPDATE/DELETE (DB-level enforcement of append-only convention)
+- Enables Row-Level Security on all identity tables
+- Defines RLS policies: user self-access, vault owner-write + member-read, hub member-read, membership self-read, private viewer owner+self-read, audit_event scoped read (own actor, own vault as owner, own hub as admin/officer)
+- Foundation for content-table RLS policies that land in subsequent migrations
+
+**Tests:**
+- `test_uuid7.py` — version + variant bits, uniqueness, time-ordering, Hypothesis property test
+- `test_timeutil.py` — UTC enforcement, ISO round-trip, naive-datetime rejection
+- `test_config.py` — Settings defaults, cache behavior, secret-enforcement contract
+- `test_models_identity.py` — round-trip instantiation of all identity + audit models, enum coverage, tz-awareness checks
+- `conftest.py` — autouse fixture forcing `THEOURGIA_ENV=test` for the session
+
+**README roadmap** updated: Phase 01 now `[~]` in-progress.
