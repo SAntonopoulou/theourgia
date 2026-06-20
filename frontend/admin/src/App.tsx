@@ -21,6 +21,7 @@ import { ADMIN_NAV } from "./nav.js";
 import { Connection } from "./routes/Connection.js";
 import { Foundations } from "./routes/Foundations.js";
 import { Placeholder } from "./routes/Placeholder.js";
+import { Settings } from "./routes/Settings.js";
 import { Today } from "./routes/Today.js";
 
 // Vite's BASE_URL: "/" in dev, "/admin/" in prod. BrowserRouter
@@ -145,16 +146,7 @@ export function App() {
                 />
               }
             />
-            <Route
-              path="/settings"
-              element={
-                <Placeholder
-                  glyph="key"
-                  title="Settings"
-                  body="Account, security, encryption mode, federation, plugins, theme. Lands when the surface ships."
-                />
-              }
-            />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/foundations" element={<Foundations />} />
             <Route
               path="*"
