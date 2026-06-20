@@ -10,7 +10,9 @@
  * package.json::exports — those are static assets, not JS exports.
  */
 
+export * from "./api/index.js";
 export * from "./AppShell/index.js";
+export * from "./auth/index.js";
 export * from "./Avatar/index.js";
 export * from "./Badge/index.js";
 export * from "./Banner/index.js";

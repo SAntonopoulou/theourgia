@@ -18,4 +18,5 @@ export const ADMIN_NAV: VaultNavItem[] = [
   { to: "/analytics", label: "Analytics", glyph: "compass" },
   { to: "/settings", label: "Settings", glyph: "key" },
   { to: "/foundations", label: "Foundations", glyph: "scroll", dev: true },
+  { to: "/connection", label: "Connection", glyph: "compass", dev: true },
 ];

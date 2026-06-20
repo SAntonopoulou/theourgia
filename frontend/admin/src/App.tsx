@@ -8,6 +8,7 @@
 
 import {
   AppShell,
+  AuthProvider,
   PublicChrome,
   ToastProvider,
   VaultNav,
@@ -15,7 +16,9 @@ import {
 } from "@theourgia/shared";
 import { BrowserRouter, NavLink, Route, Routes, useLocation } from "react-router-dom";
 
+import { apiMethods } from "./data/api.js";
 import { ADMIN_NAV } from "./nav.js";
+import { Connection } from "./routes/Connection.js";
 import { Foundations } from "./routes/Foundations.js";
 import { Placeholder } from "./routes/Placeholder.js";
 import { Today } from "./routes/Today.js";
@@ -55,12 +58,13 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 export function App() {
   return (
-    <>
+    <AuthProvider api={apiMethods}>
       <ToastProvider />
       <BrowserRouter basename={ROUTER_BASENAME}>
         <Shell>
           <Routes>
             <Route path="/" element={<Today />} />
+            <Route path="/connection" element={<Connection />} />
             <Route
               path="/journal"
               element={
@@ -165,6 +169,6 @@ export function App() {
           </Routes>
         </Shell>
       </BrowserRouter>
-    </>
+    </AuthProvider>
   );
 }
