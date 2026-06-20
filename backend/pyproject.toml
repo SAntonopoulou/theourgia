@@ -80,6 +80,9 @@ email-mailgun = ["requests >=2.32,<3.0"]
 # Crash reporting — opt-in. Theourgia ships with zero telemetry by default.
 sentry = ["sentry-sdk[fastapi,celery] >=2.20,<3.0"]
 
+# S3-compatible storage — install when THEOURGIA_STORAGE_BACKEND=s3.
+storage-s3 = ["boto3 >=1.35,<2.0"]
+
 [dependency-groups]
 dev = [
     # Test framework

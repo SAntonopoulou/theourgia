@@ -147,6 +147,31 @@ class Settings(BaseSettings):
     """Directory containing per-locale ``LC_MESSAGES/messages.mo``
     catalogs, in the Babel layout."""
 
+    # ── Storage ───────────────────────────────────────────────────────────
+    storage_backend: str = Field(default="local", alias="THEOURGIA_STORAGE_BACKEND")
+    """Selected storage backend: local, s3, or null."""
+    storage_local_path: Path = Field(
+        default=Path("/var/lib/theourgia/storage"),
+        alias="THEOURGIA_STORAGE_LOCAL_PATH",
+    )
+    storage_max_upload_size: int = Field(
+        default=50 * 1024 * 1024, alias="THEOURGIA_STORAGE_MAX_UPLOAD_SIZE"
+    )
+    """Per-upload cap in bytes; default 50 MiB."""
+
+    storage_s3_bucket: str = Field(default="", alias="THEOURGIA_STORAGE_S3_BUCKET")
+    storage_s3_endpoint: str = Field(default="", alias="THEOURGIA_STORAGE_S3_ENDPOINT")
+    storage_s3_region: str = Field(default="auto", alias="THEOURGIA_STORAGE_S3_REGION")
+    storage_s3_access_key: SecretStr | None = Field(
+        default=None, alias="THEOURGIA_STORAGE_S3_ACCESS_KEY"
+    )
+    storage_s3_secret_key: SecretStr | None = Field(
+        default=None, alias="THEOURGIA_STORAGE_S3_SECRET_KEY"
+    )
+    storage_s3_use_ssl: bool = Field(
+        default=True, alias="THEOURGIA_STORAGE_S3_USE_SSL"
+    )
+
     # ── Observability ─────────────────────────────────────────────────────
     sentry_dsn: SecretStr | None = Field(default=None, alias="THEOURGIA_SENTRY_DSN")
     """Crash reporting DSN. **Off by default** — Theourgia ships with

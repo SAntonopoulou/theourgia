@@ -702,3 +702,57 @@ Third of the five-batch substrate sweep. The integration spine — plugins, fede
 **Test discipline:** ran `pytest -q` to green (618 passed, 0 failed) before commit.
 
 **Substrate sweep progress:** 3 of 5 (email ✓, i18n ✓, events ✓ → notifications → uploads).
+
+### Added — 2026-06-21 (Substrate sweep S4 — notifications)
+
+Fourth substrate. Multi-channel user notifications with per-user preference gating. Pattern: `notification_service.send_to_user(user_id=..., template=..., context={...})`.
+
+**`core/notifications/`** package — `NotificationMessage` + `DeliveryChannel` (in_app / email / web_push); `NotificationTemplate` registry with `string.Template`-style substitution; `PreferenceSet` + `PreferenceResolver` Protocol; `NotificationService` orchestrator with `RecipientLookup`; channel implementations (`InAppChannel` writes Notification rows; `EmailChannel` bridges to S1 email substrate; `WebPushChannel` is a stub until the frontend ships a service worker in Phase 02+).
+
+**Models + migration `0009`** — `Notification` (owner-RW RLS, kind, read_state enum, action_url) + `NotificationPreferenceRow` (per-(user, kind) channel allowlist + `fully_muted` flag). Both tables owner-RW RLS.
+
+**Tests** (5 files, ~46 functions) — message invariants, template substitution + validation + registry CRUD + by_kind, preferences (defaults + per-kind restrict + unspecified-kind fallback + empty=disabled + fully_muted + intersection-with-defaults), channels (web_push stub, email bridging with `notif.` prefix + action URL appended to text+HTML), service end-to-end (default dispatch, preferences restrict, muted, unknown recipient, missing template, one-failure doesn't block others, all-failures re-raises, channel-not-installed silently skipped).
+
+**Substrate sweep progress:** 4 of 5 (email ✓, i18n ✓, events ✓, notifications ✓ → uploads).
+
+### Added — 2026-06-21 (Substrate sweep S5 — object storage)
+
+**Final substrate.** User uploads — avatars, sigil images, ritual photos, audio recordings, divination screenshots. Pluggable backends; provider-key choice is per-operator.
+
+**`core/storage/`** package:
+- `validators.py` — filename-based content-type detection via stdlib `mimetypes`, size guard with `DEFAULT_MAX_SIZE=50 MiB`, `ValidationError` (extends ValueError).
+- `service.py` — `StorageService` orchestrator. `put` / `get` / `delete` / `exists` / `stat` / `presigned_get_url` / `presigned_put_url`. Validates size, wraps backend, persists `Upload` row when a `db_session` is supplied; on delete flips row status to DELETED rather than removing (audit trail retention). `presigned_put_url` caps `max_size` at the service's configured limit.
+- `factory.py` — `build_storage_service(settings)` + `build_backend_from_settings(settings)`.
+- `backends/base.py` — `StorageBackend` Protocol + `StorageObject` + `StorageDeliveryError`.
+- `backends/null.py` — `NullStorageBackend` for tests (in-memory; records `stored`, `deletions`, `presigned_get_calls`, `presigned_put_calls`).
+- `backends/local.py` — `LocalFSBackend`. Stores under a root directory. **Refuses path traversal** (`..`, absolute paths, anything that resolves outside root). SHA-256 etag. `put`/`get`/`delete` via `asyncio.to_thread` so the event loop doesn't block on disk I/O. Presigned PUT explicitly unsupported (raises `StorageDeliveryError`).
+- `backends/s3.py` — `S3CompatibleBackend` with `S3Config` dataclass. **Lazy import of boto3** so the module is importable without the `[storage-s3]` extra (raises a clear `StorageDeliveryError` only when an operator actually selects this backend without installing boto3). Works against any S3 API (R2, B2, Hetzner, MinIO, AWS S3). Single-shot async client construction protected by `asyncio.Lock`. Generates presigned GET + PUT URLs via boto3.
+
+**Models** (`models/uploads.py`):
+- `Upload` table — storage_key (unique), content_type, size_bytes, etag, backend, status, owner_id (FK to user, ON DELETE SET NULL so deleted users don't orphan rows).
+- `UploadStatus` enum (active / deleted / failed).
+
+**Migration `0010_upload.py`** — table + indexes (owner, storage_key unique, status) + RLS (owner reads own rows; admins read all).
+
+**Settings** (`core/config.py`):
+- `THEOURGIA_STORAGE_BACKEND` (default: local)
+- `THEOURGIA_STORAGE_LOCAL_PATH` (default: /var/lib/theourgia/storage)
+- `THEOURGIA_STORAGE_MAX_UPLOAD_SIZE` (default: 50 MiB)
+- S3: `THEOURGIA_STORAGE_S3_BUCKET` / `_ENDPOINT` / `_REGION` / `_ACCESS_KEY` / `_SECRET_KEY` / `_USE_SSL`
+
+**Dependencies:**
+- New optional `[storage-s3]` extra: `boto3 >=1.35,<2.0`.
+
+**Documentation:**
+- `docs/admin/storage.md` — operator runbook: backend selection table, required settings, local-FS, S3-compatible setup, common providers (R2, B2, Hetzner, AWS, MinIO), CORS, lifecycle, IAM, backup notes.
+- `docs/dev/storage.md` — developer guide: substrate map, small-upload pattern (`service.put`), large-upload pattern (presigned PUT), deletion pattern (soft-delete via status flip), testing with `NullStorageBackend`, key-naming convention, content-type sniff-vs-trust ("re-validate bytes before processing"), service-vs-backend (always through the service).
+
+**Tests (4 files, ~37 functions):**
+- `test_storage_validators.py` — `detect_content_type` known + unknown extensions; `validate_size` happy path, oversize rejection, negative rejection, custom max; ValidationError extends ValueError
+- `test_storage_backends.py` — NullStorageBackend protocol satisfaction + round-trip + missing-get raises + idempotent delete + exists + stat + presigned URLs record calls; LocalFSBackend round-trip + subdir creation + **path traversal rejection** + absolute-path rejection + missing-get raises + idempotent delete + SHA-256 etag verification + presigned PUT raises + empty-root rejection
+- `test_storage_service.py` — put stores via backend; size validation; get/delete/exists forward correctly; presigned URLs forward; **presigned PUT caps max_size to service limit** (prevents callers from exceeding the operator's configured upload limit)
+- `test_storage_factory.py` — local + null + s3 selection; S3 requires bucket + endpoint; unknown backend rejection; max-size propagation
+
+**Test discipline:** ran `pytest -q` to green (705 passed, 0 failed) before commit.
+
+**Substrate sweep progress: 5 of 5 COMPLETE.** All substrates landed: email ✓, i18n ✓, events ✓, notifications ✓, uploads ✓. Phase 02 (Frontend Foundations) can now resume once the designer's design-system handoff lands.
