@@ -282,3 +282,37 @@ Phase 01 Batch 2 lands the cryptographic foundation: both encryption modes, key 
 - AAD binding prevents cross-row ciphertext swap
 - Wrong envelope version is rejected
 - Truncated / oversized inputs are rejected
+
+### Added — 2026-06-20 (Phase 01, Batch 3 — authentication)
+
+Phase 01 Batch 3 lands the authentication primitives: password hashing, TOTP 2FA + backup codes, opaque session/reset tokens, account lockout with exponential backoff.
+
+**Auth package** (`backend/theourgia/core/auth/`):
+- `passwords.py` — Argon2id password hashing (PHC format); INTERACTIVE-grade parameters; `verify_password` constant-time; `needs_rehash` for parameter upgrades on next login
+- `tokens.py` — opaque random tokens (256 bits entropy via `secrets.token_urlsafe(32)`); stored as SHA-256 hex; `tokens_match` constant-time
+- `totp.py` — RFC 6238 / RFC 4226 implementation using only stdlib (`hmac`, `hashlib`, `struct`); 160-bit base32 secrets; `otpauth://` provisioning URI for QR display; ±1 step skew tolerance on verify; **RFC 4226 §D test vector verified**
+- TOTP backup codes — 10 codes per set, `XXXX-XXXX` format, hash-stored (SHA-256 of normalized form), constant-time match across all stored hashes
+- `lockout.py` — exponential backoff ladder: 5 failures → 60s, 10 → 5min, 15 → 30min, 20 → 1h, beyond → up to 24h cap
+
+**Models** (`backend/theourgia/models/auth.py`):
+- `BackupCode` — one row per code; `code_hash` unique; `used_at` timestamp for one-time-use enforcement
+- `PasswordResetToken` — single-use, short-lived; `token_hash` unique; explicit `expires_at`; `requested_from_ip` for audit
+
+**Migration** (`0003_auth_tables.py`):
+- Creates `backup_code` and `password_reset_token` tables
+- Enables RLS with self-only policies on both (a user sees only their own codes/tokens)
+
+**Tests** (4 files, ~50 test functions):
+- `test_auth_passwords.py` — PHC format, round-trip, empty/malformed rejection, fresh salt per hash, rehash detection, property test
+- `test_auth_totp.py` — secret length, code format, time-step verification, skew tolerance, provisioning URI fields, RFC 4226 test vector, backup code generation + normalization + constant-time verification
+- `test_auth_tokens.py` — entropy, hash determinism, constant-time match
+- `test_auth_lockout.py` — ladder monotonicity, threshold transitions, cap behavior, `is_locked` boundary conditions
+
+**Security properties verified by tests:**
+- Empty / malformed inputs never pass verification
+- Each password hash uses a fresh salt
+- Backup code verification is constant-time across all stored hashes (no early-exit timing leak)
+- RFC 4226 known-answer test vector passes
+- Lockout escalates monotonically and is bounded by `MAX_LOCKOUT`
+
+Note: WebAuthn / passkey support is deferred to Batch 10 per the Phase 01 plan; TOTP is the 2FA path landed here.
