@@ -527,3 +527,47 @@ Phase 01 Batch 9 lands the operability substrate: structured logging with reques
 - `test_tasks_celery.py` — broker is Redis; JSON-only serialization (pickle explicitly absent); reliability flags set; UTC enforced; beat schedule includes both daily + hourly_incremental with correct task names + kwargs + queue routing; `run_scheduled_backup` registered with the app via import side-effect
 
 **Phase 01 progress:** 9 of 10 batches done. One remaining: WebAuthn + zero-telemetry verifier + integration test fixtures.
+
+### Added — 2026-06-20 (Phase 01, Batch 10 — WebAuthn, zero-telemetry verifier, fixtures)
+
+Phase 01 Batch 10 closes Phase 01 (Core Architecture). WebAuthn passkey substrate, a CI-enforceable zero-telemetry verifier, and the conftest fixtures that future integration tests will build on.
+
+**WebAuthn substrate** (`core/auth/`):
+- `challenges.py` — `ChallengeStore` Protocol (runtime-checkable) with `InMemoryChallengeStore` (tests / single-process dev) and `RedisChallengeStore` (production, SETEX + GETDEL for atomic write-with-ttl + read-and-delete). 5-minute default TTL (`DEFAULT_CHALLENGE_TTL_SECONDS`). Namespaced keys (`reg:<user>` vs `auth:<session>`) so a stolen registration challenge can't be replayed as authentication.
+- `webauthn.py` — `WebauthnService` orchestrating both ceremonies. **Sign-count regression detection** — if the authenticator reports a count ≤ the stored count (after the first non-zero observation), raises `VerificationFailedError("possible clone")`. Lazy imports of `py-webauthn` so the wrapper module is importable without the library (tests use a stubbed module). Distinct error taxonomy: `WebauthnError` → `ChallengeExpiredError` / `VerificationFailedError`. Library errors are wrapped, never leaked.
+
+**WebauthnCredential model** (`models/webauthn.py`):
+- Per-user, multi-credential. Fields: credential_id (LargeBinary, unique), public_key (LargeBinary), sign_count, transports_csv, aaguid, attestation_format, credential_device_type, credential_backed_up, label, last_used_at, revoked_at.
+- Attestation set to `NONE` at registration — practitioners may consider attestation collection intrusive; the model accepts whatever the library returns but the policy is don't-collect.
+
+**Migration 0006** (`0006_webauthn_credential.py`):
+- Table + unique index on `credential_id` + per-user index. RLS policy: `user_id = current_setting('theourgia.current_user_id')` for ALL operations.
+
+**Zero-telemetry verifier** (`backend/theourgia/scripts/verify_zero_telemetry.py`):
+- Three CI-enforceable checks:
+  1. `/api/v1/meta` route source contains literal `telemetry="none"` (the public claim).
+  2. `init_sentry(stock settings) → False` (Sentry is opt-in only).
+  3. Telemetry SDK blocklist (`mixpanel`, `posthog`, `amplitude`, `segment_analytics`, `rudderstack`, `datadog`, `newrelic`, `rollbar`, …) not importable in default install.
+- CLI entry point: `python -m theourgia.scripts.verify_zero_telemetry` (exits 0 on PASS, non-zero with diagnostics on FAIL).
+- `VerifierResult` dataclass with `passed` + `failures` for programmatic use.
+
+**Integration test fixtures** (`tests/conftest.py` — extended):
+- New fixtures: `anyio_backend` (asyncio), `reset_settings` (clears cache around test), `stock_env` (no operator opt-ins — clears SENTRY_DSN, RESTIC_*, AWS_*), `app` (fresh FastAPI app per test), `async_client` (`httpx.AsyncClient` over `ASGITransport`), `postgres_url` (env-driven, None when not set so tests can `pytest.skip` gracefully).
+- Existing session-scoped `_set_test_environment` (THEOURGIA_ENV=test) preserved.
+
+**Documentation:**
+- `docs/dev/testing.md` — testing guide: layout, runner commands, fixtures table, async pattern, endpoint pattern, DB-skip pattern, third-party-library-wrapper pattern (stub the library, test the wrapper), zero-telemetry verifier instructions, coverage targets, slow-test discipline.
+- `plan/01-status.md` — **Phase 01 closing summary** (cold-start reference). Lists every batch with its deliverables, what was deliberately deferred, the test-enforced invariants, and the cold-start sequence for picking up Phase 02 after the design system lands.
+
+**Tests** (3 files, ~35 functions):
+- `test_challenges.py` — round-trip; single-use take semantics; TTL honored; Protocol satisfaction; Redis store uses SETEX + GETDEL; handles both async and sync Redis clients; decodes str values; custom prefix
+- `test_webauthn.py` — fake `webauthn` module via `sys.modules` injection (autouse); registration round-trip; challenge stored + consumed; no-begin → ChallengeExpiredError; second finish without re-begin → expired (single use); library errors wrapped as VerificationFailedError; authentication happy path; sign-count regression → VerificationFailedError("clone"); zero-count history accepted; registration / authentication key namespaces are distinct
+- `test_zero_telemetry.py` — CLI verifier passes on this repo; blocklist contains known SDKs; meta endpoint returns telemetry: "none"; Sentry off without DSN; verifier returns structured result; verifier detects a simulated blocklist violation; `main([])` exits 0
+
+**Phase 01 progress:** **10 of 10 batches done. Phase 01 complete.**
+
+### Phase 01 closing notes — 2026-06-20
+
+Phase 01 (Core Architecture) is closed. Ten batches landed across the data layer, encryption, auth, authorization, API substrate, plugin host, federation primitives, backup tooling, observability, and WebAuthn + verifier infrastructure. See [plan/01-status.md](plan/01-status.md) for the cold-start reference.
+
+**Next: Phase 02 (Frontend Foundations).** Blocked on the designer's design system handoff. When that lands, the cold-start sequence is documented in `plan/01-status.md`.

@@ -17,6 +17,16 @@ from theourgia.models import (  # noqa: F401
     crypto,
     identity,
     plugins,
+    webauthn,
 )
 
-__all__ = ["audit", "auth", "backups", "base", "crypto", "identity", "plugins"]
+__all__ = [
+    "audit",
+    "auth",
+    "backups",
+    "base",
+    "crypto",
+    "identity",
+    "plugins",
+    "webauthn",
+]
