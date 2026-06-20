@@ -571,3 +571,49 @@ Phase 01 Batch 10 closes Phase 01 (Core Architecture). WebAuthn passkey substrat
 Phase 01 (Core Architecture) is closed. Ten batches landed across the data layer, encryption, auth, authorization, API substrate, plugin host, federation primitives, backup tooling, observability, and WebAuthn + verifier infrastructure. See [plan/01-status.md](plan/01-status.md) for the cold-start reference.
 
 **Next: Phase 02 (Frontend Foundations).** Blocked on the designer's design system handoff. When that lands, the cold-start sequence is documented in `plan/01-status.md`.
+
+### Added — 2026-06-20 (Substrate sweep S1 — email)
+
+First of a five-batch substrate sweep landing between Phase 01 and Phase 02 (while waiting for the designer's design-system handoff). See [plan/substrate-sweep.md](plan/substrate-sweep.md) for the full plan. The "scaffold-now, real-impl-per-batch-later" pattern — same shape the Batch 8 Restic substrate had before Batch 9 wired it up.
+
+**`core/email/` package:**
+- `message.py` — `EmailMessage`, `EmailAddress`, `Attachment` frozen dataclasses. Construction-time validation (RFC 5322-ish email shape, attachment size cap at 25 MiB, at-least-one-body invariant).
+- `templates.py` — `EmailTemplate` + `TemplateRegistry`. `string.Template` `$key`/`${key}` substitution — predictable, no Jinja-style logic. Missing keys raise `KeyError` by default (with `safe_substitute=True` opt-in for partial rendering). `default_registry` module-level singleton; features register their templates at import time.
+- `service.py` — `EmailService` orchestrator. Renders template, builds message with operator-configured default sender, dispatches to backend, persists to `EmailLog`, returns `EmailSendResult`. Supports `dry_run=True` for staging where you want to behave like production but skip actual delivery.
+- `factory.py` — `build_email_service(settings)` and `build_backend_from_settings(settings)`. Selects backend from `THEOURGIA_EMAIL_BACKEND` (console / null / smtp / resend); enforces required env vars per backend.
+- `backends/` — four backends shipped, more to follow:
+  - `console.py` — dev: pretty-prints to stderr
+  - `null.py` — tests: records sends + `find_by_template` / `find_by_recipient` helpers for assertions
+  - `smtp.py` — stdlib `smtplib` via `asyncio.to_thread`; full MIME construction including HTML alternate, attachments, custom headers
+  - `resend.py` — Resend API; lazy import so the module is importable even without the `[email-resend]` extra installed
+
+**Celery task** (`core/tasks/email.py`):
+- `send_email_async` — fire-and-forget delivery for non-critical-path sends. Automatic retry with exponential backoff (max 5 attempts, capped at 10 min). JSON-serializable arguments only (Celery's serializer).
+
+**Models** (`models/email.py`):
+- `EmailLog` table — one row per send attempt. `template_name` / `sender_email` / `recipient_csv` / `subject` / `provider` / `provider_message_id` / `status` (sent | failed | queued) / `error_message` / `tags_csv`. RLS: admin-only read.
+
+**Migration `0007_email_log.py`** — table + `email_log_status` enum + RLS policy.
+
+**Settings** (`core/config.py`):
+- `THEOURGIA_EMAIL_BACKEND`, `THEOURGIA_EMAIL_DEFAULT_FROM`, `THEOURGIA_EMAIL_DEFAULT_FROM_NAME`, `THEOURGIA_EMAIL_DRY_RUN`
+- Resend: `THEOURGIA_RESEND_API_KEY`
+- SMTP: `THEOURGIA_SMTP_HOST` / `PORT` / `USERNAME` / `PASSWORD` / `USE_STARTTLS` / `USE_SSL`
+
+**Documentation:**
+- `docs/admin/email.md` — operator runbook: backend selection table, required settings, Resend setup, SMTP setup, dry-run for staging, audit / diagnostics, failure-handling, "adding a template" pointer.
+- `docs/dev/email.md` — developer guide: substrate map, register-a-template pattern, send-from-a-feature pattern, sync-vs-async trade-off, testing pattern with `NullEmailBackend`, style notes (no embedded tracking — zero-telemetry promise extends to outbound mail), add-a-provider checklist.
+
+**Tests (5 files, ~70 functions):**
+- `test_email_message.py` — EmailAddress validation + formatting (with quote escaping); Attachment validation + size cap; EmailMessage invariants
+- `test_email_templates.py` — substitution, missing-key raises, safe_substitute, registry duplicate-rejection + overwrite flag
+- `test_email_backends.py` — protocol satisfaction; console writes to stream; null records + helpers; resend builds payload + wraps errors + lazy import; smtp full MIME construction + stub smtplib + error wrapping
+- `test_email_service.py` — render + send; default sender; explicit sender override; list recipients; cc/bcc; tags; missing template; missing context var; dry_run short-circuits backend
+- `test_email_factory.py` — console/null/resend/smtp selection from settings; required-env enforcement; SecretStr handling; unknown backend rejection; dry_run flag propagation
+
+**Tooling fix:**
+- `pyproject.toml` — added `ignore::pytest.PytestUnraisableExceptionWarning` to filterwarnings. `asyncio.to_thread` triggers internal-pipe resource warnings that pytest attributes to nearby tests; not actionable (the resources are inside CPython's asyncio scaffolding, not our code).
+
+**Test discipline:** ran `pytest -q` to green (528 passed, 0 failed) before commit.
+
+**Substrate sweep progress:** 1 of 5 (email ✓ → i18n → events → notifications → uploads).

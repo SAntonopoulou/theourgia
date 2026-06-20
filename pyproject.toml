@@ -163,6 +163,12 @@ filterwarnings = [
     # is starlette.exceptions.StarletteDeprecationWarning (not the
     # builtin DeprecationWarning). Ignore until Starlette updates.
     "ignore::starlette.exceptions.StarletteDeprecationWarning",
+    # asyncio.to_thread leaves internal pipe FDs that pytest attributes
+    # to whatever test is finishing nearby. Not actionable — the
+    # offending resources are inside CPython's asyncio scaffolding,
+    # not anything our code holds. (When real resource leaks happen,
+    # they show up as test failures elsewhere.)
+    "ignore::pytest.PytestUnraisableExceptionWarning",
 ]
 asyncio_mode = "auto"
 

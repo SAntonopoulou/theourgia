@@ -105,6 +105,32 @@ class Settings(BaseSettings):
         alias="THEOURGIA_BACKUP_EXCLUDE_PATTERNS",
     )
 
+    # ── Email ─────────────────────────────────────────────────────────────
+    email_backend: str = Field(default="console", alias="THEOURGIA_EMAIL_BACKEND")
+    """Selected delivery backend. One of: console, null, smtp, resend.
+    (Additional providers — ses, postmark, mailgun — land as needed.)"""
+    email_default_from: str = Field(default="", alias="THEOURGIA_EMAIL_DEFAULT_FROM")
+    email_default_from_name: str = Field(
+        default="", alias="THEOURGIA_EMAIL_DEFAULT_FROM_NAME"
+    )
+    email_dry_run: bool = Field(default=False, alias="THEOURGIA_EMAIL_DRY_RUN")
+    """When True, behave as if sending but skip the actual delivery."""
+
+    # Resend
+    resend_api_key: SecretStr | None = Field(
+        default=None, alias="THEOURGIA_RESEND_API_KEY"
+    )
+
+    # SMTP
+    smtp_host: str = Field(default="", alias="THEOURGIA_SMTP_HOST")
+    smtp_port: int = Field(default=587, alias="THEOURGIA_SMTP_PORT")
+    smtp_username: str = Field(default="", alias="THEOURGIA_SMTP_USERNAME")
+    smtp_password: SecretStr | None = Field(
+        default=None, alias="THEOURGIA_SMTP_PASSWORD"
+    )
+    smtp_use_starttls: bool = Field(default=True, alias="THEOURGIA_SMTP_USE_STARTTLS")
+    smtp_use_ssl: bool = Field(default=False, alias="THEOURGIA_SMTP_USE_SSL")
+
     # ── Observability ─────────────────────────────────────────────────────
     sentry_dsn: SecretStr | None = Field(default=None, alias="THEOURGIA_SENTRY_DSN")
     """Crash reporting DSN. **Off by default** — Theourgia ships with
