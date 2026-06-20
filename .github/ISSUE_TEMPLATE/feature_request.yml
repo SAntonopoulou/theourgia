@@ -1,0 +1,94 @@
+name: Feature request
+description: Suggest a feature or enhancement.
+title: "[feature] "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to propose a feature. The project's full
+        roadmap and feature catalog are in [FEATURES.md](https://github.com/SAntonopoulou/theourgia/blob/main/FEATURES.md)
+        — please check whether your feature is already planned. If it is,
+        an issue isn't needed; if it isn't, please describe the use case
+        and why it matters.
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: What practice / use case does this serve?
+      description: |
+        Describe the magickal practice, workflow, or community need this
+        feature would support. Specific examples are more valuable than
+        abstract requests.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed feature
+      description: How would the feature work? What would users see / do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+      description: Other ways the use case could be served (workflows, existing features, external tools).
+
+  - type: dropdown
+    id: tradition
+    attributes:
+      label: Tradition context (if applicable)
+      multiple: true
+      options:
+        - General / cross-tradition
+        - Thelema / OTO
+        - Chaos magic
+        - Hellenic theurgia
+        - Witchcraft (eclectic)
+        - Witchcraft (specific tradition)
+        - Hermetic / Ceremonial
+        - Folk practice
+        - Hindu / Vedic
+        - Buddhist
+        - Egyptian reconstructionism
+        - Norse / Heathen
+        - Other (describe)
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Which phase do you think this belongs in?
+      description: See PROJECT_PLAN.md for the phase index.
+      options:
+        - Not sure
+        - "00 — Foundations"
+        - "01 — Core Architecture"
+        - "02 — Frontend Foundations"
+        - "03 — Time & Cosmos"
+        - "04 — Journaling"
+        - "05 — Magical Beings"
+        - "06 — Divination & Practice Logs"
+        - "07 — Workshop"
+        - "08 — Linguistic Tools"
+        - "09 — Synchronicity & Analytics"
+        - "10 — Publishing & Monetization"
+        - "11 — Media Library"
+        - "12 — Federation"
+        - "13 — ActivityPub"
+        - "14 — Plugin Ecosystem"
+        - "15 — Hardening & Launch"
+        - "16 — AI Agent Integration"
+        - Plugin (not core)
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I have read FEATURES.md and this is not already planned
+          required: true
+        - label: I have searched existing issues and this is not a duplicate
+          required: true

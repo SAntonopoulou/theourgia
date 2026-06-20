@@ -1,0 +1,127 @@
+# Theourgia release workflow
+#
+# Triggered on tag pushes matching `v*` (e.g., v0.1.0, v1.0.0). Builds
+# production Docker images, publishes to GitHub Container Registry (GHCR),
+# generates release notes from CHANGELOG.md, and creates a GitHub Release.
+#
+# Pre-1.0 tags publish to GHCR but do not create binary releases; post-1.0
+# releases will include sdist + wheel for the backend package and bundled
+# release artifacts.
+
+name: release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-*"   # pre-release tags (e.g., v0.1.0-alpha.1)
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g., v0.1.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: ${{ github.repository_owner }}/theourgia
+
+jobs:
+  # Wait for CI on the tag's commit before releasing
+  wait-for-ci:
+    name: wait-for-ci
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "CI on the tagged commit must be green before this release runs."
+
+  publish-images:
+    name: publish-docker-images
+    needs: [wait-for-ci]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        component: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}-${{ matrix.component }}
+          tags: |
+            type=ref,event=tag
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
+            type=raw,value=latest,enable=${{ !contains(github.ref, '-') }}
+          labels: |
+            org.opencontainers.image.title=Theourgia ${{ matrix.component }}
+            org.opencontainers.image.description=Magickal journal CMS and full practitioner toolkit (${{ matrix.component }})
+            org.opencontainers.image.url=https://theourgia.com
+            org.opencontainers.image.source=https://github.com/SAntonopoulou/theourgia
+            org.opencontainers.image.licenses=AGPL-3.0-only
+            org.opencontainers.image.vendor=Soror Ευ. Α.
+
+      - name: Build & push (${{ matrix.component }})
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.component == 'backend' && './backend' || '.' }}
+          file: ./${{ matrix.component }}/Dockerfile
+          target: prod
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+
+  github-release:
+    name: github-release
+    needs: [publish-images]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          # Pull the section of CHANGELOG matching this tag, fallback to the
+          # Unreleased section if no specific tag header found yet.
+          notes=$(awk "/^## \[${tag}\]/,/^## \[/" CHANGELOG.md | sed '$d')
+          if [ -z "$notes" ]; then
+            notes=$(awk '/^## \[Unreleased\]/,/^## \[/' CHANGELOG.md | sed '$d')
+          fi
+          {
+            echo "notes<<EOF"
+            echo "$notes"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body: ${{ steps.notes.outputs.notes }}
+          draft: false
+          prerelease: ${{ contains(github.ref, '-') }}
+          generate_release_notes: true

@@ -1,0 +1,345 @@
+# Theourgia CI workflow
+#
+# Runs on every push to main and every PR. Reports status; during v0.x
+# this is informational rather than merge-blocking (per PROJECT_PLAN §8
+# resolved decisions). Branch protection will require green CI after v1.0.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel in-progress runs of this workflow for the same ref on new pushes
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+  PNPM_VERSION: "9.15.0"
+  UV_VERSION: "0.5.13"
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────
+  # Identity guard — verify any commits in the PR/push are attributed to an
+  # allowlisted SAntonopoulou email. Prevents the OGirly attribution mistake.
+  # ────────────────────────────────────────────────────────────────────────
+  identity:
+    name: identity-guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify commit authors
+        run: |
+          set -euo pipefail
+          ALLOWED=("santonopoulou@protonmail.com" "s.willowood@acg.edu" "sophia@opaseltd.com")
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          else
+            range="${{ github.event.before }}..${{ github.event.after }}"
+          fi
+
+          # Handle initial push (before is all zeros)
+          if [[ "$range" == "0000000000000000000000000000000000000000..."* ]]; then
+            range="HEAD~1..HEAD"
+          fi
+
+          mapfile -t emails < <(git log --format=%ae "$range" 2>/dev/null | sort -u)
+
+          for email in "${emails[@]}"; do
+            ok=false
+            for allowed in "${ALLOWED[@]}"; do
+              [[ "$email" == "$allowed" ]] && ok=true
+            done
+            if ! $ok; then
+              echo "::error::commit author '$email' is not on the SAntonopoulou allowlist"
+              echo "Allowed: ${ALLOWED[*]}"
+              exit 1
+            fi
+            echo "✓ $email"
+          done
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Python lint + format + type check
+  # ────────────────────────────────────────────────────────────────────────
+  python-lint:
+    name: python-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Sync deps
+        working-directory: backend
+        run: uv sync --all-extras --dev
+
+      - name: Ruff lint
+        working-directory: backend
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        working-directory: backend
+        run: uv run ruff format --check .
+
+      - name: mypy
+        working-directory: backend
+        run: uv run mypy theourgia
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Python tests (with Postgres + Redis services)
+  # ────────────────────────────────────────────────────────────────────────
+  python-test:
+    name: python-test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: theourgia
+          POSTGRES_PASSWORD: theourgia
+          POSTGRES_DB: theourgia_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U theourgia"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql+asyncpg://theourgia:theourgia@localhost:5432/theourgia_test
+      REDIS_URL: redis://localhost:6379/0
+      THEOURGIA_ENV: test
+      THEOURGIA_SECRET_KEY: ci-test-secret-key-not-for-any-real-deployment
+      THEOURGIA_MASTER_ENCRYPTION_KEY: ci-test-master-key-not-for-any-real-deployment
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Sync deps
+        working-directory: backend
+        run: uv sync --all-extras --dev
+
+      - name: Run pytest
+        working-directory: backend
+        run: uv run pytest --cov=theourgia --cov-report=xml --cov-report=term-missing -vv
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-xml
+          path: backend/coverage.xml
+          retention-days: 7
+
+  # ────────────────────────────────────────────────────────────────────────
+  # TypeScript / JS lint + format
+  # ────────────────────────────────────────────────────────────────────────
+  ts-lint:
+    name: typescript-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install deps
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Biome check
+        run: pnpm exec biome check .
+
+  # ────────────────────────────────────────────────────────────────────────
+  # TypeScript type check
+  # ────────────────────────────────────────────────────────────────────────
+  ts-typecheck:
+    name: typescript-typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile=false
+
+      - name: tsc (per workspace)
+        run: pnpm -r exec tsc --noEmit
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Markdown lint
+  # ────────────────────────────────────────────────────────────────────────
+  markdown-lint:
+    name: markdown-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DavidAnson/markdownlint-cli2-action@v17
+        with:
+          config: ".markdownlint.json"
+          globs: |
+            **/*.md
+            !**/node_modules
+            !**/CHANGELOG.md
+            !cohort-correspondence/**
+            !design-handoffs/**
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Secret scanning (gitleaks)
+  # ────────────────────────────────────────────────────────────────────────
+  secret-scan:
+    name: secret-scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_NOTIFY_USER_LIST: "@SAntonopoulou"
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Dependency vulnerability audit
+  # ────────────────────────────────────────────────────────────────────────
+  dep-audit:
+    name: dep-audit
+    runs-on: ubuntu-latest
+    continue-on-error: true  # advisory during v0.x; required post-1.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: pip-audit (Python)
+        working-directory: backend
+        run: |
+          uv sync --all-extras --dev
+          uv run pip-audit --ignore-vuln GHSA-xxxx-xxxx-xxxx || true
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: pnpm audit (JS)
+        run: pnpm audit --prod || true
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Docker image build (smoke test that images build cleanly)
+  # ────────────────────────────────────────────────────────────────────────
+  docker-build:
+    name: docker-build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image (prod target)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          target: prod
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: theourgia/backend:ci
+
+      - name: Build frontend image (prod target)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./frontend/Dockerfile
+          target: prod
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: theourgia/frontend:ci
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Zero-telemetry verification
+  # Checks that no outbound network calls exist outside the allowlist of
+  # user-action-triggered destinations (federation, Stripe, email, etc.).
+  # Actual implementation lands in Phase 01; this step runs the verifier
+  # script if it exists.
+  # ────────────────────────────────────────────────────────────────────────
+  no-telemetry:
+    name: no-telemetry-verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Run verifier (if script exists)
+        working-directory: backend
+        run: |
+          if [ -f theourgia/scripts/verify_no_telemetry.py ]; then
+            uv sync --all-extras --dev
+            uv run python -m theourgia.scripts.verify_no_telemetry
+          else
+            echo "Zero-telemetry verifier not yet implemented (Phase 01)."
+            echo "This step will become enforcing once the script lands."
+          fi

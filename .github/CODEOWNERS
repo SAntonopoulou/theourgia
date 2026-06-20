@@ -1,0 +1,32 @@
+# Theourgia CODEOWNERS
+# https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Code owners are automatically requested for review when matching files
+# change. Initially everything routes to @SAntonopoulou; ownership is
+# delegated to subsystem maintainers as the contributor community grows.
+
+# Default: maintainer reviews everything
+*                              @SAntonopoulou
+
+# Planning / governance documents — maintainer must sign off
+/PROJECT_PLAN.md               @SAntonopoulou
+/ARCHITECTURE.md               @SAntonopoulou
+/FEATURES.md                   @SAntonopoulou
+/CHANGELOG.md                  @SAntonopoulou
+/LICENSE                       @SAntonopoulou
+/NOTICE                        @SAntonopoulou
+/CODE_OF_CONDUCT.md            @SAntonopoulou
+/CONTRIBUTING.md               @SAntonopoulou
+/SECURITY.md                   @SAntonopoulou
+/plan/                         @SAntonopoulou
+/docs/adr/                     @SAntonopoulou
+
+# CI / release infrastructure
+/.github/workflows/            @SAntonopoulou
+/Dockerfile                    @SAntonopoulou
+/docker-compose*.yml           @SAntonopoulou
+/Caddyfile.example             @SAntonopoulou
+/justfile                      @SAntonopoulou
+
+# Identity guard — must not be tampered with
+/scripts/verify-identity.sh    @SAntonopoulou

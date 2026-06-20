@@ -1,0 +1,74 @@
+name: Tradition-specific feedback
+description: The plan / docs / product misunderstands or oversimplifies a tradition you practice.
+title: "[tradition] "
+labels: ["tradition-feedback", "documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This template is for letting the project know where it has
+        misunderstood, oversimplified, or got wrong something about a
+        specific magickal tradition. This kind of feedback is genuinely
+        valuable — the project aspires to be tradition-respectful and
+        deeply correct, not to flatten distinct practices into a generic
+        substrate.
+
+        You do not need to "fix" the project's understanding in your
+        report — just point at what's off and (if you can) where to read
+        more.
+
+  - type: input
+    id: tradition
+    attributes:
+      label: Tradition
+      description: Name the tradition (or branch/lineage if relevant).
+      placeholder: "Hellenic theurgia (late-antique) / OTO / Wicca (Gardnerian) / …"
+    validations:
+      required: true
+
+  - type: textarea
+    id: where
+    attributes:
+      label: Where is the problem?
+      description: |
+        Link to or quote the specific file / section / feature that's off.
+        Examples: PROJECT_PLAN.md §4 Magical Beings; the planetary hour
+        calculator's defaults; the bundled tarot deck attributions.
+    validations:
+      required: true
+
+  - type: textarea
+    id: whats-off
+    attributes:
+      label: What's off about it?
+      description: What does the current state get wrong, miss, or overstate?
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-it-should-be
+    attributes:
+      label: What would be more accurate?
+      description: |
+        If you can, describe what the better representation would be — but
+        if you can only point at the problem and not the fix, that's also
+        fine. Don't gatekeep yourself out of contributing because you
+        don't have a complete solution.
+
+  - type: textarea
+    id: sources
+    attributes:
+      label: Sources / references
+      description: |
+        Books, primary sources, scholarly works, or practitioners we should
+        consult. Citation format flexible — Author, Title, Year, Press is
+        ideal but not required.
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Disclosure level
+      description: This affects how we handle the feedback.
+      options:
+        - label: This information is freely shareable / public knowledge
+        - label: This information is closed-tradition; please discuss before any public change

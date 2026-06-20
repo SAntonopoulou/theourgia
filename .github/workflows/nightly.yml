@@ -1,0 +1,145 @@
+# Theourgia nightly workflow
+#
+# Runs daily at 03:00 UTC. Extended audits that are too slow / noisy for
+# every-PR runs: deep dependency vulnerability scans, license compatibility
+# verification, SBOM generation. Reports via workflow run status; failures
+# do not block ongoing development during v0.x but should be investigated.
+
+name: nightly
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write  # for uploading SARIF
+
+env:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+  PNPM_VERSION: "9.15.0"
+  UV_VERSION: "0.5.13"
+
+jobs:
+  deep-dep-audit:
+    name: deep-dep-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Python pip-audit (full)
+        working-directory: backend
+        run: |
+          uv sync --all-extras --dev
+          uv run pip-audit --format json > pip-audit.json || true
+
+      - name: Upload pip-audit results
+        uses: actions/upload-artifact@v4
+        with:
+          name: pip-audit-${{ github.run_id }}
+          path: backend/pip-audit.json
+          retention-days: 30
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile=false
+
+      - name: pnpm audit (full)
+        run: pnpm audit --json > pnpm-audit.json || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pnpm-audit-${{ github.run_id }}
+          path: pnpm-audit.json
+          retention-days: 30
+
+  license-compatibility:
+    name: license-compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+
+      - run: uv python install ${{ env.PYTHON_VERSION }}
+
+      - name: Verify Python deps are AGPL-3.0-compatible
+        working-directory: backend
+        run: |
+          uv sync --all-extras --dev
+          # Check that every direct dep is AGPL-compatible (MIT / BSD / Apache-2.0
+          # / LGPL / GPL / AGPL). Reject if any dep is incompatible.
+          uv pip install pip-licenses
+          uv run pip-licenses --format=json --with-license-file > licenses-python.json
+
+          python3 - <<'PYEOF'
+          import json, sys
+          AGPL_COMPATIBLE = {
+              "MIT License", "MIT", "BSD License", "BSD-2-Clause", "BSD-3-Clause",
+              "Apache Software License", "Apache 2.0", "Apache-2.0",
+              "GNU Lesser General Public License v2 or later (LGPLv2+)",
+              "GNU Lesser General Public License v3 or later (LGPLv3+)",
+              "GNU General Public License v2 or later (GPLv2+)",
+              "GNU General Public License v3 or later (GPLv3+)",
+              "GNU Affero General Public License v3", "AGPL-3.0",
+              "AGPL-3.0-only", "AGPL-3.0-or-later",
+              "ISC License (ISCL)", "ISC", "Python Software Foundation License",
+              "Mozilla Public License 2.0 (MPL 2.0)", "MPL-2.0",
+              "Public Domain", "Unlicense",
+              "The Unlicense (Unlicense)",
+          }
+          with open("licenses-python.json") as f:
+              data = json.load(f)
+          bad = [d for d in data if d.get("License", "UNKNOWN") not in AGPL_COMPATIBLE]
+          if bad:
+              print("INCOMPATIBLE LICENSES DETECTED:")
+              for d in bad:
+                  print(f"  - {d['Name']}: {d['License']}")
+              sys.exit(1)
+          print(f"All {len(data)} Python deps AGPL-compatible.")
+          PYEOF
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: licenses-python-${{ github.run_id }}
+          path: backend/licenses-python.json
+          retention-days: 90
+
+  sbom:
+    name: sbom-generation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate SBOM (CycloneDX)
+        uses: anchore/sbom-action@v0
+        with:
+          format: cyclonedx-json
+          artifact-name: theourgia-sbom.cdx.json
+          output-file: ./sbom.cdx.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.run_id }}
+          path: sbom.cdx.json
+          retention-days: 90
