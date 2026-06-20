@@ -81,6 +81,11 @@ class Settings(BaseSettings):
         default=RedisDsn("redis://localhost:6379/0"), alias="REDIS_URL"
     )
 
+    # ── Cache ─────────────────────────────────────────────────────────────
+    cache_backend: str = Field(default="memory", alias="THEOURGIA_CACHE_BACKEND")
+    """Selected cache backend: memory or redis. Default ``memory`` is
+    safe for tests + single-process dev; production should use ``redis``."""
+
     # ── Astrology ─────────────────────────────────────────────────────────
     ephe_path: Path = Field(default=Path("backend/data/ephe"), alias="THEOURGIA_EPHE_PATH")
 
