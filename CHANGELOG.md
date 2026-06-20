@@ -667,3 +667,38 @@ Second of the five-batch substrate sweep. Babel-backed translator with contextva
 **Test discipline:** ran `pytest -q` to green (584 passed, 0 failed) before commit.
 
 **Substrate sweep progress:** 2 of 5 (email ✓, i18n ✓ → events → notifications → uploads).
+
+### Added — 2026-06-20 (Substrate sweep S3 — domain events + transactional outbox)
+
+Third of the five-batch substrate sweep. The integration spine — plugins, federation, AI agents, notifications, and email digests all consume from the same bus. Without this, every feature inlines its own hooks for each subscriber type.
+
+**`core/events/` package:**
+- `event.py` — `DomainEvent` frozen dataclass with type tag, payload, id, occurred_at, actor_id, request_id, metadata. Construction-time validation (type must be dotted). `to_dict` / `from_dict` round-trip for outbox persistence.
+- `registry.py` — `EventType` + `EventTypeRegistry` with `register_event_type()` convenience. Names are stable identifiers (same discipline as `Scope` and `Capability`); duplicate registration raises at import time.
+- `bus.py` — `EventBus` for in-process synchronous fan-out. Subscription patterns: exact (`"entry.created"`), prefix wildcard (`"entry.*"`), catch-all (`"*"`). Handlers run in registration order; exception in one handler doesn't prevent later handlers from running. Strict-registry mode (default on) raises for unregistered event types — caught at publish, not in production.
+- `outbox.py` — `enqueue_event()` writes a row inside the caller's transaction; `OutboxDispatcher.tick()` drains pending rows, fans out via the bus, retries with backoff on failure, marks `dead` after `max_attempts` (default 10).
+
+**Models** (`models/events.py`):
+- `OutboxEvent` table — event_id (unique, mirrors `DomainEvent.id` for dedup), event_type, payload_json, status (pending / delivered / dead), scheduled_for, delivered_at, attempts, last_error, actor_id.
+- `OutboxStatus` enum.
+
+**Migration `0008_outbox_event.py`** — table + `outbox_status` enum + indexes (`(status, scheduled_for)` and `event_type`) + RLS (admin-only read).
+
+**When to use which:**
+- **In-process (`EventBus.publish`)** — synchronous reactions inside the current request: plugin hooks, in-memory cache invalidation.
+- **Outbox (`enqueue_event`)** — durable side-effects: federation delivery, email sending, notification dispatch, webhooks. Survives process death; supports retry; at-least-once delivery.
+- Most events use **both** — feature publishes once, durable subscribers see the outbox row, synchronous subscribers see the bus event.
+
+**At-least-once delivery contract:** documented in `docs/dev/events.md`. Outbox-routed subscribers must be idempotent (typically keyed on `event.id` for dedup). In-process publication is exactly-once within the process boundary.
+
+**Documentation:**
+- `docs/dev/events.md` — developer guide: substrate map, in-process vs outbox decision, declare-an-event pattern, publish patterns (both), subscribe pattern, testing pattern, at-least-once contract, dispatcher loop.
+
+**Tests (3 files, ~34 functions):**
+- `test_events_event.py` — construction, payload, frozen, dotted-type validation, to_dict / from_dict round-trip including UUID + tz-aware timestamp + `Z` suffix
+- `test_events_registry.py` — register / get / has / all / by_owner / overwrite / duplicate-rejection / convenience helper
+- `test_events_bus.py` — subscribe / unsubscribe; exact / dot-star / wildcard pattern matching; multiple subscribers; registration order; strict-registry rejection; strict-registry off; handler exceptions don't prevent later handlers but first exception re-raises; sync handlers via wrapper AND directly; handlers_for introspection; clear all
+
+**Test discipline:** ran `pytest -q` to green (618 passed, 0 failed) before commit.
+
+**Substrate sweep progress:** 3 of 5 (email ✓, i18n ✓, events ✓ → notifications → uploads).
