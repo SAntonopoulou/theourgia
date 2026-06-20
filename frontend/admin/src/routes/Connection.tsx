@@ -13,6 +13,7 @@ import {
   Card,
   type HealthStatus,
   type Meta,
+  PromptDialog,
   StatusDot,
   useAuth,
 } from "@theourgia/shared";
@@ -103,6 +104,7 @@ export function Connection() {
   );
   const [meta, refreshMeta] = useProbe<Meta>(useCallback(() => apiMethods.getMeta(), []));
   const auth = useAuth();
+  const [signinOpen, setSigninOpen] = useState(false);
 
   return (
     <div
@@ -234,16 +236,40 @@ export function Connection() {
               {auth.error.message}
             </div>
           ) : null}
-          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
             <Button size="sm" variant="secondary" onClick={() => void auth.refresh()}>
               refresh()
             </Button>
             <Button size="sm" variant="quiet" onClick={() => void auth.signOut()}>
               signOut()
             </Button>
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={() => setSigninOpen(true)}
+              disabled={auth.status === "authenticated"}
+            >
+              Demo signin
+            </Button>
           </div>
         </div>
       </Card>
+
+      <PromptDialog
+        open={signinOpen}
+        title="Demo signin"
+        label="Magickal name"
+        placeholder="Soror Ευ. Α."
+        validate={(v) => (v.trim().length < 1 ? "A name is required." : null)}
+        confirmLabel="Sign in"
+        onSubmit={(value) => {
+          setSigninOpen(false);
+          void auth.signInDemo({ magickal_name: value }).catch(() => {
+            // signInDemo already surfaces the error into auth.error
+          });
+        }}
+        onCancel={() => setSigninOpen(false)}
+      />
     </div>
   );
 }

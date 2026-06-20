@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { ApiClient } from "./client.js";
-import { NotImplementedError, api } from "./endpoints.js";
+import { api } from "./endpoints.js";
 import { defaultFixtures } from "./fixtures.js";
 
 function buildMock(): ReturnType<typeof api> {
@@ -76,8 +76,10 @@ describe("endpoints — live mode", () => {
     return api(new ApiClient({ baseUrl: "https://api.test", mock: false }));
   }
 
-  it("auth endpoints still throw NotImplementedError (backend route pending)", async () => {
-    await expect(liveApi().getCurrentSession()).rejects.toBeInstanceOf(NotImplementedError);
-    await expect(liveApi().signOut()).rejects.toBeInstanceOf(NotImplementedError);
+  it("auth endpoint methods exist and are callable (network would resolve in real life)", () => {
+    const live = liveApi();
+    expect(typeof live.getCurrentSession).toBe("function");
+    expect(typeof live.signOut).toBe("function");
+    expect(typeof live.demoSignIn).toBe("function");
   });
 });

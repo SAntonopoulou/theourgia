@@ -146,4 +146,38 @@ describe("AuthContext", () => {
       expect(screen.getByTestId("name").textContent).toBe("After Refresh");
     });
   });
+
+  it("signInDemo flips status to authenticated and stores the returned session", async () => {
+    function Probe() {
+      const { status, session, signInDemo } = useAuth();
+      return (
+        <div>
+          <span data-testid="status">{status}</span>
+          <span data-testid="name">{session?.display_name ?? "no-session"}</span>
+          <button type="button" onClick={() => void signInDemo({ magickal_name: "Soror New" })}>
+            Sign in
+          </button>
+        </div>
+      );
+    }
+    const a: ReturnType<typeof api> = {
+      ...buildMockApi(),
+      getCurrentSession: async () => null,
+    };
+    render(
+      <AuthProvider api={a}>
+        <Probe />
+      </AuthProvider>,
+    );
+    await waitFor(() => {
+      expect(screen.getByTestId("status").textContent).toBe("unauthenticated");
+    });
+    await act(async () => {
+      await userEvent.setup().click(screen.getByRole("button", { name: "Sign in" }));
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("status").textContent).toBe("authenticated");
+    });
+    expect(screen.getByTestId("name").textContent).toBe("Soror New");
+  });
 });

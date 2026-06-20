@@ -41,26 +41,26 @@ export function api(client: ApiClient) {
       return client.request<Meta>("/api/v1/meta", { signal: opts?.signal });
     },
 
-    // ─── Auth (contract shape; backend routes pending) ───────────────
+    // ─── Auth (live as of Batch 12) ──────────────────────────────────
 
-    /**
-     * GET /api/v1/auth/session — return the current session if one exists.
-     * Endpoint not yet implemented; in mock mode the fixture provides the
-     * value, in live mode this throws NotImplementedError until the
-     * backend ships the route.
-     */
-    async getCurrentSession(opts?: { signal?: AbortSignal }): Promise<Session | null> {
-      if (client.isMock()) {
-        return client.request<Session | null>("/api/v1/auth/session", { signal: opts?.signal });
-      }
-      throw new NotImplementedError("GET /api/v1/auth/session");
+    getCurrentSession(opts?: { signal?: AbortSignal }): Promise<Session | null> {
+      return client.request<Session | null>("/api/v1/auth/session", { signal: opts?.signal });
     },
 
-    async signOut(): Promise<void> {
-      if (client.isMock()) {
-        return client.request<void>("/api/v1/auth/session", { method: "DELETE" });
-      }
-      throw new NotImplementedError("DELETE /api/v1/auth/session");
+    signOut(): Promise<void> {
+      return client.request<void>("/api/v1/auth/session", { method: "DELETE" });
+    },
+
+    /**
+     * POST /api/v1/auth/demo-signin — find-or-create a demo user and
+     * open a session. PHASE 02 ONLY; replaced by the WebAuthn ceremony
+     * in a later batch.
+     */
+    demoSignIn(input: { magickal_name: string }): Promise<Session> {
+      return client.request<Session>("/api/v1/auth/demo-signin", {
+        method: "POST",
+        json: input,
+      });
     },
 
     // ─── Entries (live as of Batch 10) ───────────────────────────────

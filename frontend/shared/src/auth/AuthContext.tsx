@@ -40,6 +40,11 @@ export interface AuthContextValue {
   refresh(): Promise<void>;
   /** Sign out — invalidates the current session. */
   signOut(): Promise<void>;
+  /**
+   * PHASE 02 demo signin — opens a session against a find-or-create
+   * development user. Replaced by the WebAuthn flow in a later batch.
+   */
+  signInDemo(input: { magickal_name: string }): Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -105,14 +110,33 @@ export function AuthProvider({ api, children, skipInitialRefresh = false }: Auth
     setStatus("unauthenticated");
   }, [api]);
 
+  const signInDemo = useCallback(
+    async (input: { magickal_name: string }) => {
+      setError(null);
+      setStatus("checking");
+      try {
+        const next = await api.demoSignIn(input);
+        if (!mounted.current) return;
+        setSession(next);
+        setStatus("authenticated");
+      } catch (e) {
+        if (!mounted.current) return;
+        setError(e instanceof Error ? e : new Error(String(e)));
+        setStatus("unauthenticated");
+        throw e;
+      }
+    },
+    [api],
+  );
+
   useEffect(() => {
     if (skipInitialRefresh) return;
     void refresh();
   }, [skipInitialRefresh, refresh]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, session, error, refresh, signOut }),
-    [status, session, error, refresh, signOut],
+    () => ({ status, session, error, refresh, signOut, signInDemo }),
+    [status, session, error, refresh, signOut, signInDemo],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

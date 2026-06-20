@@ -165,6 +165,19 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     if (method === "DELETE") return null;
   }
 
+  if (path === "/api/v1/auth/demo-signin") {
+    if (method === "POST") {
+      // Mock mode synthesises a session from the submitted name.
+      const input = (body ?? {}) as { magickal_name?: string };
+      const name = input.magickal_name ?? "Soror Ευ. Α.";
+      return {
+        ...SESSION,
+        display_name: name,
+        magickal_name: name,
+      } satisfies Session;
+    }
+  }
+
   // Strip the querystring portion for matching but preserve it for parsing.
   const [bare, qs = ""] = path.split("?");
 

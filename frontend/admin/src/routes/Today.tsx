@@ -10,6 +10,7 @@
 
 import {
   Avatar,
+  type AvatarIdentity,
   Button,
   Card,
   CelestialBand,
@@ -21,6 +22,7 @@ import {
   Skeleton,
   Stat,
   Toast,
+  useSession,
 } from "@theourgia/shared";
 import { useState } from "react";
 
@@ -134,6 +136,10 @@ export function Today() {
   const [captureOpen, setCaptureOpen] = useState(false);
   const entries = useRecentEntries();
   const stats = useTodayStats();
+  const session = useSession();
+  const identity: AvatarIdentity = session
+    ? { name: session.display_name, glyph: "moon", tone: "accent" }
+    : MOCK_IDENTITY;
   const greeting = greetingForHour(new Date().getHours());
 
   async function handleSubmit(value: string): Promise<void> {
@@ -167,7 +173,7 @@ export function Today() {
       }}
     >
       <header style={{ display: "flex", alignItems: "center", gap: "var(--space-4, 16px)" }}>
-        <Avatar identity={MOCK_IDENTITY} size="lg" />
+        <Avatar identity={identity} size="lg" />
         <div style={{ display: "flex", flexDirection: "column" }}>
           <span
             style={{
@@ -188,7 +194,7 @@ export function Today() {
               color: "var(--ink)",
             }}
           >
-            {MOCK_IDENTITY.name}
+            {identity.name}
           </h1>
         </div>
       </header>
