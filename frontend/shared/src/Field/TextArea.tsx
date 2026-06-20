@@ -30,6 +30,7 @@ export function TextArea({
   const invalid = field?.invalid ?? false;
   const ref = useRef<HTMLTextAreaElement | null>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: value is the trigger for re-measuring; ref.current is a stable handle
   useEffect(() => {
     if (!autoGrow) return;
     const el = ref.current;

@@ -1,5 +1,5 @@
 /**
- * Foundations smoke page — Phase 02 Batches 1 + 2.
+ * Foundations smoke page — Phase 02 Batches 1 + 2 + 3.
  *
  * Renders every primitive shipped so far so we can eyeball parity against
  * the design's `Theourgia Foundations.dc.html` reference page. Wires up
@@ -8,15 +8,19 @@
  */
 
 import {
+  AlertDialog,
   Avatar,
   Badge,
+  Banner,
   Button,
   CONTRASTS,
   CVDS,
   Card,
   Chip,
+  ConfirmDialog,
   type Contrast,
   type Cvd,
+  Drawer,
   EmptyState,
   Field,
   Glyph,
@@ -26,6 +30,7 @@ import {
   type Mode,
   NumberInput,
   Progress,
+  PromptDialog,
   SegmentedControl,
   Select,
   Skeleton,
@@ -36,6 +41,7 @@ import {
   TextArea,
   TextInput,
   type Theme,
+  Toast,
   applyThemeState,
   readThemeState,
 } from "@theourgia/shared";
@@ -52,6 +58,11 @@ export function Foundations() {
   const [tradition, setTradition] = useState("hellenic");
   const [count, setCount] = useState(7);
   const [reflection, setReflection] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [promptOpen, setPromptOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   function set<K extends keyof typeof state>(key: K, value: (typeof state)[K]): void {
     const next = { ...state, [key]: value };
@@ -290,6 +301,127 @@ export function Foundations() {
           <StatusDot status="neutral" label="archived" />
         </Row>
       </Section>
+
+      <Section title="Banner">
+        {!bannerDismissed ? (
+          <Banner
+            tone="warning"
+            title="Encryption mode is sealed"
+            body="Decrypt your vault before publishing — sealed entries cannot leave this device."
+            dismissible
+            onDismiss={() => setBannerDismissed(true)}
+            action={{ label: "Unseal", onClick: () => Toast.push({ tone: "info", title: "Unseal flow", body: "(placeholder)" }) }}
+          />
+        ) : (
+          <Button size="sm" variant="quiet" onClick={() => setBannerDismissed(false)}>
+            Show banner again
+          </Button>
+        )}
+      </Section>
+
+      <Section title="Overlays">
+        <Row>
+          <Button variant="danger" onClick={() => setConfirmOpen(true)}>
+            Open ConfirmDialog
+          </Button>
+          <Button variant="primary" onClick={() => setAlertOpen(true)}>
+            Open AlertDialog
+          </Button>
+          <Button variant="secondary" onClick={() => setPromptOpen(true)}>
+            Open PromptDialog
+          </Button>
+          <Button variant="secondary" onClick={() => setDrawerOpen(true)}>
+            Open Drawer
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() =>
+              Toast.push({
+                tone: "success",
+                title: "Saved",
+                body: "Entry locked into the vault.",
+                action: {
+                  label: "Undo",
+                  onClick: () => Toast.push({ tone: "info", title: "Reverted" }),
+                },
+              })
+            }
+          >
+            Push toast
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() =>
+              Toast.push({
+                tone: "error",
+                title: "Federation peer unreachable",
+                body: "Retrying in 30s…",
+              })
+            }
+          >
+            Push error toast
+          </Button>
+        </Row>
+      </Section>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        tone="destructive"
+        title="Archive this entry?"
+        body="Archived entries can be restored within 30 days. After that, sealed entries are unrecoverable."
+        confirmLabel="Archive"
+        onConfirm={() => {
+          setConfirmOpen(false);
+          Toast.push({ tone: "success", title: "Entry archived" });
+        }}
+        onCancel={() => setConfirmOpen(false)}
+      />
+
+      <AlertDialog
+        open={alertOpen}
+        tone="danger"
+        title="Sealed entries are zero-knowledge"
+        body="You are about to seal this entry with your passphrase. If you lose the passphrase, the content is unrecoverable — not even Theourgia can read it."
+        acknowledgeLabel="I understand"
+        onAcknowledge={() => setAlertOpen(false)}
+      />
+
+      <PromptDialog
+        open={promptOpen}
+        title="New magickal name"
+        label="Magickal name"
+        defaultValue=""
+        placeholder="Soror Ευ. Α."
+        validate={(v) => (v.trim().length < 3 ? "Must be at least 3 characters." : null)}
+        confirmLabel="Save"
+        onSubmit={(value) => {
+          setPromptOpen(false);
+          Toast.push({ tone: "success", title: `Saved as ${value}` });
+        }}
+        onCancel={() => setPromptOpen(false)}
+      />
+
+      <Drawer
+        open={drawerOpen}
+        side="right"
+        title="Vault settings"
+        onClose={() => setDrawerOpen(false)}
+      >
+        <Field label="Tradition">
+          <Select
+            value={tradition}
+            onChange={(e) => setTradition(e.target.value)}
+            options={[
+              { value: "base", label: "Base" },
+              { value: "hellenic", label: "Hellenic" },
+              { value: "thelemic", label: "Thelemic" },
+            ]}
+          />
+        </Field>
+        <p style={{ color: "var(--ink-soft)", marginTop: "var(--space-4, 16px)" }}>
+          Drawers focus-trap, lock body scroll, and close on Escape — same as dialogs.
+        </p>
+      </Drawer>
 
       <Section title="Chips">
         <Row>

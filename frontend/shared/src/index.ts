@@ -4,7 +4,7 @@
  * Imports here are barrel exports of:
  *   - the token layer (theme types + apply/read helpers)
  *   - the i18n shim (passthrough today; real catalog later)
- *   - the UI primitives
+ *   - the UI primitives + overlay family
  *
  * For the CSS file and the icon sprite, import via the sub-paths declared in
  * package.json::exports — those are static assets, not JS exports.
@@ -12,9 +12,12 @@
 
 export * from "./Avatar/index.js";
 export * from "./Badge/index.js";
+export * from "./Banner/index.js";
 export * from "./Button/index.js";
 export * from "./Card/index.js";
 export * from "./Chip/index.js";
+export * from "./Dialog/index.js";
+export * from "./Drawer/index.js";
 export * from "./EmptyState/index.js";
 export * from "./Field/index.js";
 export * from "./Glyph/index.js";
@@ -25,4 +28,5 @@ export * from "./Skeleton/index.js";
 export * from "./Stat/index.js";
 export * from "./StatusDot/index.js";
 export * from "./Switch/index.js";
+export * from "./Toast/index.js";
 export * from "./tokens/index.js";
