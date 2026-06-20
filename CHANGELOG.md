@@ -418,3 +418,34 @@ Phase 01 Batch 6 lands the plugin extension framework: manifest schema + parser,
 - Defense in depth applies here too: capabilities clipped at context construction, checked at use, RLS on persisted plugin tables, planned process isolation for high-risk caps
 
 **Phase 01 progress:** 6 of 10 batches done.
+
+### Added — 2026-06-20 (Phase 01, Batch 7 — federation primitives)
+
+Phase 01 Batch 7 lands the cryptographic substrate for the Theourgia native federation protocol: per-instance Ed25519 keypair, HTTP message signatures (focused RFC 9421 subset), capability tokens (EdDSA-signed JWTs), DID identity helpers, and the ``.well-known/theourgia/actor`` publication endpoint. The full federation operations (Push, Pull, Mirror, Invite, RitualSchedule, …) land in Phase 12; this batch lands the primitives Phase 12 will compose.
+
+**Federation package** (`backend/theourgia/core/federation/`):
+- `identity.py` — DID syntax (``did:theourgia:host`` for instances, ``did:theourgia:host:vault:slug`` and ``did:theourgia:host:hub:slug`` for actors). ``make_instance_id``, ``make_actor_id``, ``parse_actor_id``, ``ActorKind`` enum. Strict regex validation of host + slug; lowercases hosts; rejects ``ActorKind.INSTANCE`` from ``make_actor_id`` (use the dedicated builder).
+- `keys.py` — Ed25519 keypair management. ``generate_keypair``, ``load_or_create_keypair`` (idempotent; generates on first call, reuses thereafter; writes private key as PKCS8 PEM with mode 0600 via ``os.open(O_EXCL)``; recreates public-key file if absent). ``serialize_public_key`` / ``deserialize_public_key`` produce URL-safe base64 (no padding) of the 32-byte raw key — what we expose in ``.well-known/theourgia/actor``. ``InstanceKeypair`` repr never leaks key bytes. Permissive permissions on the private key file produce a logged warning. Loading a non-Ed25519 key raises.
+- `http_signatures.py` — RFC 9421 focused subset. Covered components: ``@method``, ``@path``, ``host``, ``date``, ``content-digest``. Algorithm: Ed25519 only. Single signature label ``sig``. ``sign_request`` / ``verify_request`` / ``build_signature_base`` / ``content_digest_header``. Replay protection via ``SIGNATURE_MAX_AGE_SECONDS=300`` and ``SIGNATURE_MAX_FUTURE_SKEW_SECONDS=60``. Verifier rejects: missing signature headers, malformed signature input, unsupported algorithm, too-old or too-future signatures, keyid mismatch (when expected), tampered method / path / host / body (via Content-Digest), wrong public key.
+- `capability_tokens.py` — EdDSA-signed JWTs. ``issue_capability_token`` / ``verify_capability_token`` / ``CapabilityToken`` dataclass. Claims: ``iss`` / ``sub`` / ``aud`` / ``cap`` / ``iat`` / ``nbf`` / ``exp`` / ``jti``. Issuance validates: all three actor fields parse as DIDs, capabilities list non-empty, TTL positive and ≤ 30 days. Verification validates: signature, expiry, not-before, audience (if expected), issuer (if expected), all claims present, all DIDs parseable, required capability (if specified). Default TTL = 1 hour. Replay-cache bookkeeping (``jti``) is the caller's responsibility — lands with federation operations in Phase 12.
+
+**API endpoint:**
+- `api/routers/well_known.py` — ``GET /.well-known/theourgia/actor`` returns ``{did, public_key, public_key_algorithm, api_base, software, software_version, protocol_versions}``. Unauthenticated (federation peers need to read this to verify signatures). Lazy-loads the instance keypair on first access; ``ServiceUnavailableError`` if key file unreadable.
+- ``register_routers`` wires the well-known router under the ``federation`` tag.
+
+**Tests** (4 files, ~50 test functions):
+- `test_federation_identity.py` — instance/vault/hub DID construction and parsing, lowercase normalization, port allowance, rejection of bad hosts and slugs, round-trip
+- `test_federation_keys.py` — keypair generation determinism, randomness, repr no-leak, serialize / deserialize round-trip, ``load_or_create`` idempotence, restrictive private-key permissions (no group/other), public-key recreation when missing, rejection of non-Ed25519 keys
+- `test_federation_http_signatures.py` — sign / verify round-trip, tampered method / path / host / body detection, wrong public key, unsupported algorithm, too-old / too-future signatures, keyid mismatch, missing / malformed signature headers, signature base composition, body integrity via Content-Digest
+- `test_federation_capability_tokens.py` — issue/verify round-trip, fresh ``jti`` per issue, wrong key fails, expired fails, audience / issuer mismatch fails, required-capability check, empty-capabilities / non-positive / absurd-TTL rejection, invalid-DID issuer rejection, empty-token rejection, iat / nbf / exp relationship
+
+**Security properties verified by tests:**
+- Key material never appears in ``repr`` / ``str``
+- Replay window enforced (signatures > 5 min old refused)
+- Future-skew bounded (signatures > 60 s ahead refused)
+- AAD-equivalent guarantee for HTTP: tampering with any covered component (including body via Content-Digest) breaks the signature
+- Algorithm pinning at verifier (no RSA / HMAC / "none" downgrade attacks)
+- Capability tokens enforce structural validity of all DID claims before trusting them
+- 30-day TTL ceiling on capability tokens (defense against indefinite-lifetime tokens leaking)
+
+**Phase 01 progress:** 7 of 10 batches done. Remaining: backup tooling, observability, WebAuthn + scale tests + zero-telemetry verifier.
