@@ -59,9 +59,8 @@ describe("endpoints — live mode", () => {
     return api(new ApiClient({ baseUrl: "https://api.test", mock: false }));
   }
 
-  it("contract-shaped endpoints throw NotImplementedError when not mocking", async () => {
+  it("auth endpoints still throw NotImplementedError (backend route pending)", async () => {
     await expect(liveApi().getCurrentSession()).rejects.toBeInstanceOf(NotImplementedError);
-    await expect(liveApi().listEntries()).rejects.toBeInstanceOf(NotImplementedError);
     await expect(liveApi().signOut()).rejects.toBeInstanceOf(NotImplementedError);
   });
 });

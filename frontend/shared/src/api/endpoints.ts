@@ -55,27 +55,18 @@ export function api(client: ApiClient) {
       throw new NotImplementedError("DELETE /api/v1/auth/session");
     },
 
-    // ─── Entries (contract shape; backend routes pending) ────────────
+    // ─── Entries (live as of Batch 10) ───────────────────────────────
 
-    async listEntries(opts?: { signal?: AbortSignal }): Promise<EntryRecord[]> {
-      if (client.isMock()) {
-        return client.request<EntryRecord[]>("/api/v1/entries", { signal: opts?.signal });
-      }
-      throw new NotImplementedError("GET /api/v1/entries");
+    listEntries(opts?: { signal?: AbortSignal }): Promise<EntryRecord[]> {
+      return client.request<EntryRecord[]>("/api/v1/entries", { signal: opts?.signal });
     },
 
-    async getEntry(id: string, opts?: { signal?: AbortSignal }): Promise<EntryRecord> {
-      if (client.isMock()) {
-        return client.request<EntryRecord>(`/api/v1/entries/${id}`, { signal: opts?.signal });
-      }
-      throw new NotImplementedError(`GET /api/v1/entries/${id}`);
+    getEntry(id: string, opts?: { signal?: AbortSignal }): Promise<EntryRecord> {
+      return client.request<EntryRecord>(`/api/v1/entries/${id}`, { signal: opts?.signal });
     },
 
-    async createEntry(input: CreateEntryInput): Promise<EntryRecord> {
-      if (client.isMock()) {
-        return client.request<EntryRecord>("/api/v1/entries", { method: "POST", json: input });
-      }
-      throw new NotImplementedError("POST /api/v1/entries");
+    createEntry(input: CreateEntryInput): Promise<EntryRecord> {
+      return client.request<EntryRecord>("/api/v1/entries", { method: "POST", json: input });
     },
   };
 }
