@@ -380,3 +380,41 @@ Phase 01 Batch 4 lands the application-layer authorization primitives: visibilit
 **Deferred to Batch 5b:** rate limiting (Redis-backed counter + sliding window) and idempotency-key middleware. These need Redis fixtures we don't have yet; the foundation here makes them drop-in additions.
 
 **Phase 01 progress:** 5 of 10 batches done — *the halfway mark*. The runnable backend application now exists; subsequent batches add features (plugins, federation, backups, observability).
+
+### Added — 2026-06-20 (Phase 01, Batch 6 — plugin substrate)
+
+Phase 01 Batch 6 lands the plugin extension framework: manifest schema + parser, capability vocabulary, extension point taxonomy, in-process extension registry, plugin lifecycle state machine, sandboxed plugin context, and the discovery + activation loader.
+
+**Plugin package** (`backend/theourgia/core/plugins/`):
+- `manifest.py` — Strict Pydantic schema for `plugin.toml`. Validates name format (lowercase-hyphen, 2–64 chars), SemVer 2.0 version, entrypoint shape (`module:callable`), license string, theourgia-version range. Cross-field validators: `db.migrations` capability requires `entrypoint.migrations` path; duplicate caps / extension points rejected; `extra='forbid'` so typos fail loudly. Accepts both flat array and nested sub-section TOML styles for capabilities / extension_points / allowed_hosts.
+- `capabilities.py` — `Capability` enum with 23 dotted-domain values (read, write, ui, db, network, fs, notif, federation, agent). `from_string` for round-trip parsing; `domain` property for grouping.
+- `extension_points.py` — `ExtensionPoint` enum with 22 named hooks across time/cosmology, divination, linguistic, reference, workshop, UI, integrations, federation domains. Stable slug values; new points require ADR.
+- `state.py` — `PluginState` enum + `allowed_transition` lookup. INSTALLED → ACTIVE/ERROR/UNINSTALLING; ACTIVE → INACTIVE/ERROR/UNINSTALLING; INACTIVE → ACTIVE/ERROR/UNINSTALLING; ERROR → recovery paths; UNINSTALLING is terminal.
+- `registry.py` — Thread-safe `ExtensionRegistry` keyed by (plugin, point, name); singleton via `get_registry()`; tests use `reset_registry()` for isolation. Methods: `register`, `unregister_plugin`, `implementations_for`, `all_registrations`, `plugin_count`, `clear`.
+- `context.py` — `PluginContext` capability-scoped sandbox passed to plugin setup. Exposes identity, granted capabilities (frozenset), namespaced logger (`theourgia.plugin.<name>`), settings, `register_extension`, `require_capability` / `has_capability`. Custom `CapabilityDeniedError`. `repr` never leaks settings.
+- `loader.py` — `PluginLoader.activate(manifest, granted_capabilities)` imports the module, calls setup with a context, records teardown function if returned. Effective capabilities = granted ∩ manifest-requested (host cannot widen). Partial registrations rolled back if setup raises. `deactivate` calls teardown (logs but does not propagate teardown exceptions — gone means gone), unregisters extensions. `discover_manifests(root)` recursively finds `plugin.toml` files, sorted for determinism.
+
+**Models** (`backend/theourgia/models/plugins.py`):
+- `PluginInstall` — installed plugin per-vault; lifecycle state; manifest_json snapshot; signature + public_key for future Phase 14 verification
+- `PluginCapabilityGrant` — explicit capability grants per plugin install; `granted_by_user_id` for audit
+- `PluginSetting` — JSONB key/value per plugin install
+
+**Migration** (`0004_plugin_tables.py`):
+- Creates `plugin_state` and `plugin_capability` Postgres enums (must stay in sync with Python enums)
+- Creates three tables with appropriate FKs, indexes, unique constraints
+- RLS enabled on all three with policies routing through vault ownership
+
+**Tests** (6 files, ~50 test functions):
+- `test_plugin_manifest.py` — parse minimal + full; sub-section style accepted; bad capability/extension-point/SemVer/name rejected; duplicate detection; `db.migrations` requires migrations path; backend entrypoint format validation; load from file/directory; missing-file FileNotFoundError; extra field rejected
+- `test_plugin_capabilities.py` — dotted-lowercase format, round-trip parsing, unknown rejection, domain property, uniqueness, critical caps present
+- `test_plugin_state.py` — self-transitions forbidden, allowed transitions parameterized, UNINSTALLING terminal, INSTALLED→INACTIVE skip-forbidden, ACTIVE→INSTALLED reverse-forbidden
+- `test_plugin_registry.py` — register + retrieve, duplicate (plugin,point,name) raises, same-name-different-plugins allowed, same-name-different-points allowed, unregister_plugin removes all, unknown unregister returns 0, all_registrations across points, clear empties, singleton + reset_registry
+- `test_plugin_context.py` — identity, frozen capabilities (cannot mutate), `has_capability` / `require_capability`, logger namespace, settings retrieval, `register_extension` writes through, repr never leaks settings, error message contents
+- `test_plugin_loader.py` — discover empty/nested/missing, activate imports + registers, granted capabilities clipped to manifest-requested, activate-twice rejected, missing module/callable raise, partial-registration rollback on setup exception, deactivate calls teardown + unregisters, deactivate-unknown raises, teardown exceptions logged but don't block removal
+
+**Architectural posture:**
+- Plugin contracts (manifest schema, extension point taxonomy, capability vocabulary) are stable now even though enforcement (process isolation, signed-release verification) finalizes in Phase 14
+- Plugin authors can write against this API today; what hardens between now and Phase 14 is the runtime, not the surface
+- Defense in depth applies here too: capabilities clipped at context construction, checked at use, RLS on persisted plugin tables, planned process isolation for high-risk caps
+
+**Phase 01 progress:** 6 of 10 batches done.

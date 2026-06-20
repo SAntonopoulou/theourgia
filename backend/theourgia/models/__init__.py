@@ -9,6 +9,6 @@ when it inspects the metadata — so all model modules are imported here.
 from __future__ import annotations
 
 # Import all model modules so SQLModel.metadata sees them.
-from theourgia.models import audit, auth, base, crypto, identity  # noqa: F401
+from theourgia.models import audit, auth, base, crypto, identity, plugins  # noqa: F401
 
-__all__ = ["audit", "auth", "base", "crypto", "identity"]
+__all__ = ["audit", "auth", "base", "crypto", "identity", "plugins"]
