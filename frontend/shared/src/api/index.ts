@@ -20,4 +20,5 @@ export type {
   Meta,
   Problem,
   Session,
+  UserLocation,
 } from "./types.js";

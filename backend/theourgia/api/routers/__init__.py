@@ -15,6 +15,7 @@ from theourgia.api.routers import health, metrics, well_known
 from theourgia.api.routers.v1 import auth as v1_auth
 from theourgia.api.routers.v1 import entries as v1_entries
 from theourgia.api.routers.v1 import meta as v1_meta
+from theourgia.api.routers.v1 import user_settings as v1_user_settings
 
 __all__ = ["register_routers"]
 
@@ -33,4 +34,5 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_meta.router, tags=["meta"])
     v1.include_router(v1_auth.router, tags=["auth"])
     v1.include_router(v1_entries.router, tags=["entries"])
+    v1.include_router(v1_user_settings.router, tags=["user_settings"])
     app.include_router(v1)

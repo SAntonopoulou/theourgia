@@ -16,6 +16,7 @@ import type {
   HealthStatus,
   Meta,
   Session,
+  UserLocation,
 } from "./types.js";
 
 export class NotImplementedError extends Error {
@@ -80,6 +81,21 @@ export function api(client: ApiClient) {
 
     getEntryStats(opts?: { signal?: AbortSignal }): Promise<EntryStats> {
       return client.request<EntryStats>("/api/v1/entries/stats", { signal: opts?.signal });
+    },
+
+    // ─── User settings (Phase 02 minimal slice) ──────────────────────
+
+    getMyLocation(opts?: { signal?: AbortSignal }): Promise<UserLocation> {
+      return client.request<UserLocation>("/api/v1/users/me/settings/location", {
+        signal: opts?.signal,
+      });
+    },
+
+    putMyLocation(location: UserLocation): Promise<UserLocation> {
+      return client.request<UserLocation>("/api/v1/users/me/settings/location", {
+        method: "PUT",
+        json: location,
+      });
     },
   };
 }

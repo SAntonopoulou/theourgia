@@ -27,6 +27,7 @@ import {
 import { useState } from "react";
 
 import { createEntry, useRecentEntries } from "../data/useEntries.js";
+import { useMyLocation } from "../data/useLocation.js";
 import { useTodayStats, weekOverWeekDelta } from "../data/useStats.js";
 import { MOCK_IDENTITY, MOCK_LOCATION } from "../mocks/today.js";
 
@@ -140,6 +141,8 @@ export function Today() {
   const identity: AvatarIdentity = session
     ? { name: session.display_name, glyph: "moon", tone: "accent" }
     : MOCK_IDENTITY;
+  const locationCall = useMyLocation({ enabled: session !== null });
+  const location = locationCall.data ?? MOCK_LOCATION;
   const greeting = greetingForHour(new Date().getHours());
 
   async function handleSubmit(value: string): Promise<void> {
@@ -199,7 +202,7 @@ export function Today() {
         </div>
       </header>
 
-      <CelestialBand lat={MOCK_LOCATION.lat} lng={MOCK_LOCATION.lng} />
+      <CelestialBand lat={location.lat} lng={location.lng} />
 
       <section
         style={{

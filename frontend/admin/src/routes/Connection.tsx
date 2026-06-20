@@ -20,6 +20,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 
 import { API_BASE_URL, API_MODE, apiMethods } from "../data/api.js";
+import { putMyLocation } from "../data/useLocation.js";
 
 interface ProbeState<T> {
   status: "idle" | "loading" | "ok" | "error";
@@ -105,6 +106,7 @@ export function Connection() {
   const [meta, refreshMeta] = useProbe<Meta>(useCallback(() => apiMethods.getMeta(), []));
   const auth = useAuth();
   const [signinOpen, setSigninOpen] = useState(false);
+  const [locationOpen, setLocationOpen] = useState(false);
 
   return (
     <div
@@ -251,6 +253,14 @@ export function Connection() {
             >
               Demo signin
             </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setLocationOpen(true)}
+              disabled={auth.status !== "authenticated"}
+            >
+              Set location
+            </Button>
           </div>
         </div>
       </Card>
@@ -269,6 +279,34 @@ export function Connection() {
           });
         }}
         onCancel={() => setSigninOpen(false)}
+      />
+
+      <PromptDialog
+        open={locationOpen}
+        title="Set your location"
+        label="lat,lng (decimal degrees)"
+        placeholder="51.4769, 0.0"
+        defaultValue=""
+        validate={(v) => {
+          const m = v.split(",").map((s) => Number.parseFloat(s.trim()));
+          if (m.length !== 2 || m.some(Number.isNaN)) return "Format: lat,lng (e.g. 51.4769, 0.0)";
+          const [lat, lng] = m as [number, number];
+          if (lat < -90 || lat > 90) return "Latitude must be between -90 and 90";
+          if (lng < -180 || lng > 180) return "Longitude must be between -180 and 180";
+          return null;
+        }}
+        confirmLabel="Save"
+        onSubmit={(value) => {
+          setLocationOpen(false);
+          const [lat, lng] = value.split(",").map((s) => Number.parseFloat(s.trim())) as [
+            number,
+            number,
+          ];
+          void putMyLocation({ lat, lng }).catch(() => {
+            // surfaces via the user noticing CelestialBand didn't update
+          });
+        }}
+        onCancel={() => setLocationOpen(false)}
       />
     </div>
   );

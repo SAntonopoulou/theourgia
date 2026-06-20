@@ -41,6 +41,8 @@ const SESSION: Session = {
   expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
 };
 
+const MOCK_LOCATION = { lat: 51.4769, lng: 0 };
+
 const ENTRIES: EntryRecord[] = [
   {
     id: "1",
@@ -206,6 +208,16 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
 
   if (bare === "/api/v1/entries/stats") {
     return computeStats();
+  }
+
+  if (bare === "/api/v1/users/me/settings/location") {
+    if (method === "GET") return { ...MOCK_LOCATION };
+    if (method === "PUT") {
+      const input = (body ?? {}) as { lat?: number; lng?: number };
+      if (typeof input.lat === "number") MOCK_LOCATION.lat = input.lat;
+      if (typeof input.lng === "number") MOCK_LOCATION.lng = input.lng;
+      return { ...MOCK_LOCATION };
+    }
   }
 
   const entryMatch = /^\/api\/v1\/entries\/(.+)$/.exec(bare ?? "");

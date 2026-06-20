@@ -80,3 +80,9 @@ export interface EntryStats {
   this_week: EntryWindowCounts;
   last_week: EntryWindowCounts;
 }
+
+/** Response of ``GET /api/v1/users/me/settings/location``. */
+export interface UserLocation {
+  lat: number;
+  lng: number;
+}
