@@ -24,6 +24,7 @@ from theourgia.api.lifespan import lifespan
 from theourgia.api.middleware import register_middleware
 from theourgia.api.routers import register_routers
 from theourgia.core.config import get_settings
+from theourgia.core.i18n.factory import build_translator_from_settings
 from theourgia.core.observability import configure_logging, get_logger
 
 __all__ = ["create_app", "app"]
@@ -51,6 +52,10 @@ def create_app() -> FastAPI:
         level=settings.log_level.upper(),
         json_output=settings.resolved_log_format == "json",
     )
+
+    # Install the process-wide translator so ``_()`` calls anywhere
+    # in the codebase resolve against the configured catalogs.
+    build_translator_from_settings(settings)
 
     is_dev_or_test = settings.is_development or settings.is_test
     docs_url = "/api/docs" if is_dev_or_test else None

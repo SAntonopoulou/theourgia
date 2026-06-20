@@ -27,6 +27,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from theourgia.core.config import Settings
+from theourgia.core.i18n.middleware import LocaleMiddleware
 from theourgia.core.ids import uuid7
 from theourgia.core.observability.context import (
     bind_request_id,
@@ -116,9 +117,19 @@ def register_middleware(app: FastAPI, settings: Settings) -> None:
         allow_origins=allow_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
-        expose_headers=["X-Request-ID"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID", "Accept-Language"],
+        expose_headers=["X-Request-ID", "Content-Language"],
         max_age=600,
+    )
+
+    # Locale negotiation runs before request ID so error responses
+    # constructed during request-id processing can already use the
+    # negotiated locale. Middleware stacks are LIFO, so we add Locale
+    # first (it ends up further inside) and RequestID last (outermost).
+    app.add_middleware(
+        LocaleMiddleware,
+        supported_locales=list(settings.supported_locales),
+        default_locale=settings.default_locale,
     )
 
     # Request-ID is added last so it ends up outermost (middleware stacks

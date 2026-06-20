@@ -131,6 +131,22 @@ class Settings(BaseSettings):
     smtp_use_starttls: bool = Field(default=True, alias="THEOURGIA_SMTP_USE_STARTTLS")
     smtp_use_ssl: bool = Field(default=False, alias="THEOURGIA_SMTP_USE_SSL")
 
+    # ── i18n ──────────────────────────────────────────────────────────────
+    default_locale: str = Field(default="en", alias="THEOURGIA_DEFAULT_LOCALE")
+    """Locale used when no Accept-Language match is found."""
+    supported_locales: list[str] = Field(
+        default_factory=lambda: ["en"],
+        alias="THEOURGIA_SUPPORTED_LOCALES",
+    )
+    """Locales the instance has translations for. Comma-separated env
+    var (e.g. ``en,es,fr,pt-BR``). Each must have a matching catalog
+    under :attr:`locales_path` for translations to take effect."""
+    locales_path: Path = Field(
+        default=Path("backend/locales"), alias="THEOURGIA_LOCALES_PATH"
+    )
+    """Directory containing per-locale ``LC_MESSAGES/messages.mo``
+    catalogs, in the Babel layout."""
+
     # ── Observability ─────────────────────────────────────────────────────
     sentry_dsn: SecretStr | None = Field(default=None, alias="THEOURGIA_SENTRY_DSN")
     """Crash reporting DSN. **Off by default** — Theourgia ships with

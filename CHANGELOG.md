@@ -617,3 +617,53 @@ First of a five-batch substrate sweep landing between Phase 01 and Phase 02 (whi
 **Test discipline:** ran `pytest -q` to green (528 passed, 0 failed) before commit.
 
 **Substrate sweep progress:** 1 of 5 (email ✓ → i18n → events → notifications → uploads).
+
+### Added — 2026-06-20 (Substrate sweep S2 — i18n)
+
+Second of the five-batch substrate sweep. Babel-backed translator with contextvar-driven locale resolution. Every user-facing string from this point onward should flow through `_()`; the retrofit of Phase 01 hardcoded strings comes alongside the features that own them.
+
+**`core/i18n/` package:**
+- `locale.py` — `bind_locale` / `get_current_locale` / `clear_locale` over a `ContextVar`. Same propagation pattern as the observability context: survives `await` boundaries, propagates into spawned tasks.
+- `negotiation.py` — `parse_accept_language` + `negotiate_locale`. RFC 7231-style parsing with permissive whitespace handling (some clients send `q = 0.5`). Negotiation matches exact tag first, then language-only prefix (`en-US` → `en`), then falls back to default. Malformed `q=` values silently degrade rather than 500.
+- `catalog.py` — `Catalog` Protocol + `InMemoryCatalog` (tests, programmatic use) + `BabelCatalog` (production, wraps `babel.support.Translations`).
+- `translator.py` — `Translator` Protocol + `InMemoryTranslator` + `BabelTranslator`. Per-locale catalog cache (load-once, lock-free reads). Process-wide singleton via `configure_translator()` / `get_translator()`; tests reset between runs.
+- `lazy.py` — `LazyString` for module-level constants. Resolves at `str()` coercion time, not at import time. Equality with both `LazyString` and plain `str`; concatenation works in both directions; intentionally **unhashable** (would compare equal to different strings in different locales).
+- `middleware.py` — `LocaleMiddleware` (raw ASGI). Negotiation order: `?locale=xx` query override → `Accept-Language` header → default. Defensive header-length cap at 200 chars (clients sometimes send pathologically long Accept-Language values).
+- `factory.py` — `build_translator_from_settings()`.
+
+**Convenience aliases at the package root:**
+- `_` = `gettext` — the canonical call point inside request handlers
+- `_lazy` = `gettext_lazy` — for module-level strings (CRITICAL — direct `_()` at module scope freezes the translation to import-time locale)
+- `_n` = `ngettext` — pluralization
+- `_n_lazy` = `ngettext_lazy` — lazy plural
+
+**Settings** (`core/config.py`):
+- `THEOURGIA_DEFAULT_LOCALE` (default: `en`)
+- `THEOURGIA_SUPPORTED_LOCALES` (comma-separated list; default: `[en]`)
+- `THEOURGIA_LOCALES_PATH` (Babel catalog directory; default: `backend/locales`)
+
+**Wiring:**
+- `create_app()` calls `build_translator_from_settings()` after `configure_logging()` so the translator is ready before any user-facing string is produced.
+- `register_middleware()` mounts `LocaleMiddleware` inside `RequestIDMiddleware` so error responses constructed during request-ID processing already see the negotiated locale.
+- CORS: added `Accept-Language` to allowed request headers and `Content-Language` to exposed response headers (the latter for when Phase 02 starts emitting it).
+
+**Babel infrastructure:**
+- `backend/babel.cfg` — message-extraction configuration for `pybabel extract`.
+- `backend/locales/en/LC_MESSAGES/messages.po` — initial empty source catalog with proper PO headers, including `Plural-Forms: nplurals=2; plural=(n != 1);`.
+
+**Dependencies:**
+- Added `babel >=2.13,<3.0` to core dependencies.
+
+**Documentation:**
+- `docs/admin/i18n.md` — operator runbook: configuration, adding a translation (extract / init / translate / compile cycle), negotiation rules, what happens on miss, diagnostics.
+- `docs/dev/i18n.md` — developer guide: substrate map, canonical call points, lazy-vs-eager pattern with the import-time freeze gotcha, marking strings for extraction, pluralization, testing pattern, style rules ("would a user ever see this?"), common gotchas (no sentence-splitting across `_()` calls, Babel formatters for numbers/dates/currency).
+
+**Tests (4 files, ~50 functions):**
+- `test_i18n_negotiation.py` — parse empty / single / multi-locale / quality / case / whitespace / malformed-q / out-of-range-q; negotiate exact-match / quality-priority / prefix-match / case-preservation / realistic headers
+- `test_i18n_catalog.py` — protocol satisfaction; empty + populated; plural singular/plural/fallback
+- `test_i18n_translator.py` — passthrough when unconfigured; gettext per-locale; default-locale fallback; unsupported-locale fallback; missing-message passthrough; substitution; ngettext singular + plural + localized; LazyString resolves at str-time; LazyString updates with locale rebinding; LazyString equality both directions; LazyString concatenation both directions; LazyString unhashable
+- `test_i18n_middleware.py` — default when no header; negotiate from header; fallback when no match; prefix match; query-param override; query-param ignored when unsupported; locale cleared after request; pathologically long header doesn't crash; locale bound during request body
+
+**Test discipline:** ran `pytest -q` to green (584 passed, 0 failed) before commit.
+
+**Substrate sweep progress:** 2 of 5 (email ✓, i18n ✓ → events → notifications → uploads).

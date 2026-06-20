@@ -1,0 +1,25 @@
+#
+# Theourgia — English message catalog (source)
+#
+# This is the source-language catalog. Strings here are the canonical
+# English forms that translators of other locales target. To extract
+# messages from source, regenerate this file with ``pybabel extract``
+# (see docs/dev/i18n.md).
+#
+# Until features start declaring translatable strings, this catalog
+# is empty — and that's fine: BabelTranslator with no catalog acts as
+# a passthrough.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: theourgia\n"
+"Report-Msgid-Bugs-To: https://github.com/SAntonopoulou/theourgia/issues\n"
+"POT-Creation-Date: 2026-06-20 12:00+0000\n"
+"PO-Revision-Date: 2026-06-20 12:00+0000\n"
+"Last-Translator: Soror Ευ. Α. <noreply@theourgia.example>\n"
+"Language: en\n"
+"Language-Team: en <noreply@theourgia.example>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"

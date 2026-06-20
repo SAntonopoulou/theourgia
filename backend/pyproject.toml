@@ -61,6 +61,7 @@ dependencies = [
     "orjson >=3.10,<4.0",
     "structlog >=24.1,<27.0",
     "prometheus-client >=0.21,<1.0",
+    "babel >=2.13,<3.0",
 ]
 
 [project.optional-dependencies]
