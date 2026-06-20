@@ -16,6 +16,7 @@ export * from "./Badge/index.js";
 export * from "./Banner/index.js";
 export * from "./Button/index.js";
 export * from "./Card/index.js";
+export * from "./CelestialBand/index.js";
 export * from "./Chip/index.js";
 export * from "./Dialog/index.js";
 export * from "./Drawer/index.js";

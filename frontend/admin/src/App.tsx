@@ -18,6 +18,7 @@ import { BrowserRouter, NavLink, Route, Routes, useLocation } from "react-router
 import { ADMIN_NAV } from "./nav.js";
 import { Foundations } from "./routes/Foundations.js";
 import { Placeholder } from "./routes/Placeholder.js";
+import { Today } from "./routes/Today.js";
 
 // Vite's BASE_URL: "/" in dev, "/admin/" in prod. BrowserRouter
 // basename wants no trailing slash; trim it.
@@ -59,16 +60,7 @@ export function App() {
       <BrowserRouter basename={ROUTER_BASENAME}>
         <Shell>
           <Routes>
-            <Route
-              path="/"
-              element={
-                <Placeholder
-                  glyph="sun"
-                  title="Today"
-                  body="Today's planetary hour, lunar phase, and recent entries. Lands when the dashboard surface ships."
-                />
-              }
-            />
+            <Route path="/" element={<Today />} />
             <Route
               path="/journal"
               element={

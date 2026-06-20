@@ -108,6 +108,10 @@ importers:
         version: 2.1.9(@types/node@24.13.2)(happy-dom@15.11.7)
 
   frontend/shared:
+    dependencies:
+      suncalc:
+        specifier: ^1.9.0
+        version: 1.9.0
     devDependencies:
       '@testing-library/jest-dom':
         specifier: ^6.6.3
@@ -124,6 +128,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.0.0
         version: 19.2.3(@types/react@19.2.17)
+      '@types/suncalc':
+        specifier: ^1.9.2
+        version: 1.9.2
       happy-dom:
         specifier: ^15.11.7
         version: 15.11.7
@@ -1155,6 +1162,9 @@ packages:
 
   '@types/sax@1.2.7':
     resolution: {integrity: sha512-rO73L89PJxeYM3s3pPPjiPgVVcymqU490g0YO5n5By0k2Erzj6tay/4lr1CHAAU4JyOWd1rpQ8bCf6cZfHU96A==}
+
+  '@types/suncalc@1.9.2':
+    resolution: {integrity: sha512-ATAGBHHfA1TlE2tjfidLyTcysjoT2JHHEAmWRULh73SU9UTn++j5fqHEW16X6Y/2Li87jEQXzgu4R/OOdlDqzw==}
 
   '@types/unist@2.0.11':
     resolution: {integrity: sha512-CmBKiL6NNo/OqgmMn95Fk9Whlp2mtvIv+KNpQKN2F4SjvrEesubTRWGYSg+BnWZOnlCaSTU1sMpsBOzgbYhnsA==}
@@ -2700,6 +2710,9 @@ packages:
     engines: {node: '>=16 || 14 >=14.17'}
     hasBin: true
 
+  suncalc@1.9.0:
+    resolution: {integrity: sha512-vMJ8Byp1uIPoj+wb9c1AdK4jpkSKVAywgHX0lqY7zt6+EWRRC3Z+0Ucfjy/0yxTVO1hwwchZe4uoFNqrIC24+A==}
+
   supports-preserve-symlinks-flag@1.0.0:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
@@ -4119,6 +4132,8 @@ snapshots:
   '@types/sax@1.2.7':
     dependencies:
       '@types/node': 22.20.0
+
+  '@types/suncalc@1.9.2': {}
 
   '@types/unist@2.0.11': {}
 
@@ -6233,6 +6248,8 @@ snapshots:
       pirates: 4.0.7
       tinyglobby: 0.2.17
       ts-interface-checker: 0.1.13
+
+  suncalc@1.9.0: {}
 
   supports-preserve-symlinks-flag@1.0.0: {}
 
