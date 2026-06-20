@@ -8,6 +8,8 @@
 
 import { NotFoundError } from "./errors.js";
 import type {
+  BookRecord,
+  CreateBookInput,
   CreateEntryInput,
   EntryRecord,
   EntryStats,
@@ -42,6 +44,31 @@ const SESSION: Session = {
 };
 
 const MOCK_LOCATION = { lat: 51.4769, lng: 0 };
+
+const BOOKS: BookRecord[] = [
+  {
+    id: "b1",
+    title: "Three Books of Occult Philosophy",
+    author: "Heinrich Cornelius Agrippa",
+    year: 1533,
+    isbn: "",
+    tradition: "hermetic",
+    notes: "Foundational synthesis of natural, celestial, and ceremonial magic.",
+    created_at: TWO_HOURS_AGO,
+    updated_at: TWO_HOURS_AGO,
+  },
+  {
+    id: "b2",
+    title: "The Picatrix (Ghāyat al-Ḥakīm)",
+    author: "Anonymous (Pseudo-al-Majrīṭī)",
+    year: 1000,
+    isbn: "",
+    tradition: "hermetic",
+    notes: "Andalusian translation; the medieval West's primary source for talismanic magic.",
+    created_at: NOW_ISO,
+    updated_at: NOW_ISO,
+  },
+];
 
 const ENTRIES: EntryRecord[] = [
   {
@@ -218,6 +245,58 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
       if (typeof input.lng === "number") MOCK_LOCATION.lng = input.lng;
       return { ...MOCK_LOCATION };
     }
+  }
+
+  if (bare === "/api/v1/books") {
+    if (method === "GET") {
+      const params = new URLSearchParams(qs);
+      const traditionFilter = params.get("tradition");
+      const list = traditionFilter ? BOOKS.filter((b) => b.tradition === traditionFilter) : BOOKS;
+      return [...list];
+    }
+    if (method === "POST") {
+      const input = body as CreateBookInput;
+      const next: BookRecord = {
+        id: String(Date.now()),
+        title: input.title,
+        author: input.author ?? "",
+        year: input.year ?? null,
+        isbn: input.isbn ?? "",
+        tradition: input.tradition ?? "",
+        notes: input.notes ?? null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      BOOKS.unshift(next);
+      return next;
+    }
+  }
+
+  const bookMatch = /^\/api\/v1\/books\/(.+)$/.exec(bare ?? "");
+  if (bookMatch) {
+    const [, id] = bookMatch;
+    const idx = BOOKS.findIndex((b) => b.id === id);
+    if (idx < 0) {
+      return new NotFoundError(problem(404, "Not Found", `Book ${id} not found`));
+    }
+    if (method === "DELETE") {
+      BOOKS.splice(idx, 1);
+      return null;
+    }
+    if (method === "PATCH") {
+      const patch = (body ?? {}) as Partial<BookRecord>;
+      const current = BOOKS[idx] as BookRecord;
+      const updated: BookRecord = {
+        ...current,
+        ...patch,
+        id: current.id,
+        created_at: current.created_at,
+        updated_at: new Date().toISOString(),
+      };
+      BOOKS[idx] = updated;
+      return updated;
+    }
+    return BOOKS[idx];
   }
 
   const entryMatch = /^\/api\/v1\/entries\/(.+)$/.exec(bare ?? "");

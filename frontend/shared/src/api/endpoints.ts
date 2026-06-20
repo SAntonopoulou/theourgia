@@ -9,6 +9,8 @@
 
 import type { ApiClient } from "./client.js";
 import type {
+  BookRecord,
+  CreateBookInput,
   CreateEntryInput,
   EntryRecord,
   EntryStats,
@@ -107,6 +109,32 @@ export function api(client: ApiClient) {
         method: "PUT",
         json: location,
       });
+    },
+
+    // ─── Library ─────────────────────────────────────────────────────
+
+    listBooks(opts?: { signal?: AbortSignal; tradition?: string }): Promise<BookRecord[]> {
+      const qs = opts?.tradition ? `?tradition=${encodeURIComponent(opts.tradition)}` : "";
+      return client.request<BookRecord[]>(`/api/v1/books${qs}`, { signal: opts?.signal });
+    },
+
+    getBook(id: string, opts?: { signal?: AbortSignal }): Promise<BookRecord> {
+      return client.request<BookRecord>(`/api/v1/books/${id}`, { signal: opts?.signal });
+    },
+
+    createBook(input: CreateBookInput): Promise<BookRecord> {
+      return client.request<BookRecord>("/api/v1/books", { method: "POST", json: input });
+    },
+
+    updateBook(id: string, patch: Partial<CreateBookInput>): Promise<BookRecord> {
+      return client.request<BookRecord>(`/api/v1/books/${id}`, {
+        method: "PATCH",
+        json: patch,
+      });
+    },
+
+    archiveBook(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/books/${id}`, { method: "DELETE" });
     },
   };
 }

@@ -21,6 +21,7 @@ import { ADMIN_NAV } from "./nav.js";
 import { Connection } from "./routes/Connection.js";
 import { Foundations } from "./routes/Foundations.js";
 import { Journal } from "./routes/Journal.js";
+import { Library } from "./routes/Library.js";
 import { Placeholder } from "./routes/Placeholder.js";
 import { Settings } from "./routes/Settings.js";
 import { Today } from "./routes/Today.js";
@@ -68,16 +69,7 @@ export function App() {
             <Route path="/" element={<Today />} />
             <Route path="/connection" element={<Connection />} />
             <Route path="/journal" element={<Journal />} />
-            <Route
-              path="/library"
-              element={
-                <Placeholder
-                  glyph="library"
-                  title="Library"
-                  body="Books, essays, and reading lists. Lands when the library surface ships."
-                />
-              }
-            />
+            <Route path="/library" element={<Library />} />
             <Route
               path="/entities"
               element={

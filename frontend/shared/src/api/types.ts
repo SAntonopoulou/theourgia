@@ -86,3 +86,26 @@ export interface UserLocation {
   lat: number;
   lng: number;
 }
+
+/** Single book — wire format from ``GET /api/v1/books``. */
+export interface BookRecord {
+  id: string;
+  title: string;
+  author: string;
+  year: number | null;
+  isbn: string;
+  tradition: string;
+  notes: string | null;
+  created_at: string; // ISO 8601
+  updated_at: string; // ISO 8601
+}
+
+/** Input for ``POST /api/v1/books``. */
+export interface CreateBookInput {
+  title: string;
+  author?: string;
+  year?: number | null;
+  isbn?: string;
+  tradition?: string;
+  notes?: string | null;
+}

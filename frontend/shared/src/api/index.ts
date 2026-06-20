@@ -11,6 +11,8 @@ export { api, NotImplementedError } from "./endpoints.js";
 export type { Api } from "./endpoints.js";
 export { defaultFixtures } from "./fixtures.js";
 export type {
+  BookRecord,
+  CreateBookInput,
   CreateEntryInput,
   EntryRecord,
   EntryStats,
