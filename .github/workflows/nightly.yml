@@ -1,15 +1,17 @@
 # Theourgia nightly workflow
 #
-# Runs daily at 03:00 UTC. Extended audits that are too slow / noisy for
-# every-PR runs: deep dependency vulnerability scans, license compatibility
-# verification, SBOM generation. Reports via workflow run status; failures
-# do not block ongoing development during v0.x but should be investigated.
+# **Cron schedule disabled as of 2026-06-21.** During v0.x development
+# we don't want a daily run burning Actions minutes on a project that
+# isn't yet shipping. The workflow remains intact and can still be
+# triggered manually via the Actions tab (workflow_dispatch). The
+# nightly cron will be re-enabled at v1.0 alongside the rest of CI.
 
 name: nightly
 
 on:
-  schedule:
-    - cron: "0 3 * * *"
+  # Re-enable post-v1.0:
+  # schedule:
+  #   - cron: "0 3 * * *"
   workflow_dispatch:
 
 permissions:

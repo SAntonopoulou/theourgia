@@ -1,8 +1,19 @@
 # Theourgia CI workflow
 #
-# Runs on every push to main and every PR. Reports status; during v0.x
-# this is informational rather than merge-blocking (per PROJECT_PLAN §8
-# resolved decisions). Branch protection will require green CI after v1.0.
+# **PARED DOWN AS OF 2026-06-21.** During v0.x development we run the
+# full test suite locally before every push (see
+# feedback_run_tests_as_you_develop in project memory) and don't want
+# to burn Actions minutes on every commit. This file keeps the small,
+# cheap, security-relevant jobs running on push:
+#
+#   - identity-guard      — prevents OGirly/ShihoSakura attribution mistakes
+#   - secret-scan         — gitleaks for committed-secrets detection
+#   - no-telemetry-verify — enforces the zero-telemetry promise
+#
+# Everything else (python-lint, python-test, ts-lint, ts-typecheck,
+# markdown-lint, dep-audit, docker-build) is **disabled** and will be
+# re-enabled once we reach v1.0. The history is preserved at
+# 6afc51a (the cache substrate commit) for the full job set.
 
 name: ci
 
@@ -23,8 +34,6 @@ permissions:
 
 env:
   PYTHON_VERSION: "3.12"
-  NODE_VERSION: "22"
-  PNPM_VERSION: "9.15.0"
   UV_VERSION: "0.5.13"
 
 jobs:
@@ -73,166 +82,7 @@ jobs:
           done
 
   # ────────────────────────────────────────────────────────────────────────
-  # Python lint + format + type check
-  # ────────────────────────────────────────────────────────────────────────
-  python-lint:
-    name: python-lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v3
-        with:
-          version: ${{ env.UV_VERSION }}
-          enable-cache: true
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Sync deps
-        working-directory: backend
-        run: uv sync --all-extras --dev
-
-      - name: Ruff lint
-        working-directory: backend
-        run: uv run ruff check .
-
-      - name: Ruff format check
-        working-directory: backend
-        run: uv run ruff format --check .
-
-      - name: mypy
-        working-directory: backend
-        run: uv run mypy theourgia
-
-  # ────────────────────────────────────────────────────────────────────────
-  # Python tests (with Postgres + Redis services)
-  # ────────────────────────────────────────────────────────────────────────
-  python-test:
-    name: python-test
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: theourgia
-          POSTGRES_PASSWORD: theourgia
-          POSTGRES_DB: theourgia_test
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U theourgia"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports: ["6379:6379"]
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-    env:
-      DATABASE_URL: postgresql+asyncpg://theourgia:theourgia@localhost:5432/theourgia_test
-      REDIS_URL: redis://localhost:6379/0
-      THEOURGIA_ENV: test
-      THEOURGIA_SECRET_KEY: ci-test-secret-key-not-for-any-real-deployment
-      THEOURGIA_MASTER_ENCRYPTION_KEY: ci-test-master-key-not-for-any-real-deployment
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@v3
-        with:
-          version: ${{ env.UV_VERSION }}
-          enable-cache: true
-
-      - name: Set up Python
-        run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: Sync deps
-        working-directory: backend
-        run: uv sync --all-extras --dev
-
-      - name: Run pytest
-        working-directory: backend
-        run: uv run pytest --cov=theourgia --cov-report=xml --cov-report=term-missing -vv
-
-      - name: Upload coverage artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-xml
-          path: backend/coverage.xml
-          retention-days: 7
-
-  # ────────────────────────────────────────────────────────────────────────
-  # TypeScript / JS lint + format
-  # ────────────────────────────────────────────────────────────────────────
-  ts-lint:
-    name: typescript-lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
-
-      - name: Install deps
-        run: pnpm install --frozen-lockfile=false
-
-      - name: Biome check
-        run: pnpm exec biome check .
-
-  # ────────────────────────────────────────────────────────────────────────
-  # TypeScript type check
-  # ────────────────────────────────────────────────────────────────────────
-  ts-typecheck:
-    name: typescript-typecheck
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
-
-      - run: pnpm install --frozen-lockfile=false
-
-      - name: tsc (per workspace)
-        run: pnpm -r exec tsc --noEmit
-
-  # ────────────────────────────────────────────────────────────────────────
-  # Markdown lint
-  # ────────────────────────────────────────────────────────────────────────
-  markdown-lint:
-    name: markdown-lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: DavidAnson/markdownlint-cli2-action@v17
-        with:
-          config: ".markdownlint.json"
-          globs: |
-            **/*.md
-            !**/node_modules
-            !**/CHANGELOG.md
-            !cohort-correspondence/**
-            !design-handoffs/**
-
-  # ────────────────────────────────────────────────────────────────────────
-  # Secret scanning (gitleaks)
+  # Secret scanning (gitleaks) — fast, cheap, security-critical.
   # ────────────────────────────────────────────────────────────────────────
   secret-scan:
     name: secret-scan
@@ -248,78 +98,8 @@ jobs:
           GITLEAKS_NOTIFY_USER_LIST: "@SAntonopoulou"
 
   # ────────────────────────────────────────────────────────────────────────
-  # Dependency vulnerability audit
-  # ────────────────────────────────────────────────────────────────────────
-  dep-audit:
-    name: dep-audit
-    runs-on: ubuntu-latest
-    continue-on-error: true  # advisory during v0.x; required post-1.0
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@v3
-        with:
-          version: ${{ env.UV_VERSION }}
-
-      - run: uv python install ${{ env.PYTHON_VERSION }}
-
-      - name: pip-audit (Python)
-        working-directory: backend
-        run: |
-          uv sync --all-extras --dev
-          uv run pip-audit --ignore-vuln GHSA-xxxx-xxxx-xxxx || true
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: "pnpm"
-
-      - name: pnpm audit (JS)
-        run: pnpm audit --prod || true
-
-  # ────────────────────────────────────────────────────────────────────────
-  # Docker image build (smoke test that images build cleanly)
-  # ────────────────────────────────────────────────────────────────────────
-  docker-build:
-    name: docker-build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Build backend image (prod target)
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          target: prod
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          tags: theourgia/backend:ci
-
-      - name: Build frontend image (prod target)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: ./frontend/Dockerfile
-          target: prod
-          push: false
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          tags: theourgia/frontend:ci
-
-  # ────────────────────────────────────────────────────────────────────────
-  # Zero-telemetry verification
-  # Checks that no outbound network calls exist outside the allowlist of
-  # user-action-triggered destinations (federation, Stripe, email, etc.).
-  # Actual implementation lands in Phase 01; this step runs the verifier
-  # script if it exists.
+  # Zero-telemetry verifier — runs the script that enforces our promise.
+  # Cheap; protects a load-bearing project commitment.
   # ────────────────────────────────────────────────────────────────────────
   no-telemetry:
     name: no-telemetry-verify
@@ -333,13 +113,13 @@ jobs:
 
       - run: uv python install ${{ env.PYTHON_VERSION }}
 
-      - name: Run verifier (if script exists)
+      - name: Run verifier
         working-directory: backend
         run: |
-          if [ -f theourgia/scripts/verify_no_telemetry.py ]; then
+          if [ -f theourgia/scripts/verify_zero_telemetry.py ]; then
             uv sync --all-extras --dev
-            uv run python -m theourgia.scripts.verify_no_telemetry
+            uv run python -m theourgia.scripts.verify_zero_telemetry
           else
-            echo "Zero-telemetry verifier not yet implemented (Phase 01)."
+            echo "Zero-telemetry verifier not yet implemented."
             echo "This step will become enforcing once the script lands."
           fi
