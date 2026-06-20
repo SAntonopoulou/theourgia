@@ -4,16 +4,52 @@
   "version": "0.0.0-dev",
   "private": true,
   "type": "module",
-  "description": "Theourgia shared design system, UI components, i18n, and types",
+  "description": "Theourgia shared design system, UI primitives, tokens, and i18n",
   "license": "AGPL-3.0-only",
+  "sideEffects": [
+    "*.css"
+  ],
   "exports": {
-    ".": "./src/index.ts",
-    "./tokens": "./src/tokens.ts",
-    "./i18n": "./src/i18n/index.ts"
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts"
+    },
+    "./tokens": {
+      "types": "./src/tokens/index.ts",
+      "import": "./src/tokens/index.ts"
+    },
+    "./tokens/theourgia.tokens.css": "./src/tokens/theourgia.tokens.css",
+    "./tokens/theourgia-icons.svg": "./src/tokens/theourgia-icons.svg",
+    "./tokens/first-paint.js": "./src/tokens/first-paint.js",
+    "./tokens/tailwind-preset": "./src/tokens/tailwind.preset.cjs",
+    "./i18n": {
+      "types": "./src/i18n/index.ts",
+      "import": "./src/i18n/index.ts"
+    }
   },
+  "files": [
+    "src"
+  ],
   "scripts": {
     "lint": "biome check src",
     "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "happy-dom": "^15.11.7",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
   }
 }

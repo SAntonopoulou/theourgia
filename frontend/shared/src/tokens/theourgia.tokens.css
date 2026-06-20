@@ -1,0 +1,227 @@
+/* ============================================================================
+   THEOURGIA — Design Tokens
+   ----------------------------------------------------------------------------
+   The portable token layer behind every Theourgia surface. Drop this file in,
+   then style with var(--token) only — never hard-coded colors or fonts.
+
+   HOW THEMING WORKS
+   -----------------
+   Two independent axes, set as attributes on any ancestor (usually <html> or
+   the app root):
+
+     <html data-theme="base|hellenic|thelemic" data-mode="dark|light">
+
+   • data-theme  swaps brand identity — including the *display font* (base→Cardo,
+                 hellenic→GFS Didot, thelemic→Cinzel) and the accent + category
+                 hues. This proves font-and-color themeability from one attribute.
+   • data-mode   swaps the surface/ink ramp between dark (leads) and light.
+
+   The cascade is: :root (base + dark defaults) → [data-theme=…] overrides →
+   [data-mode="light"] overrides. Later rules win, so a theme sets accent/fonts
+   and mode sets surfaces; they compose cleanly.
+
+   Tokens only ever change *values* across themes/modes — never their *names* —
+   so any component built on var(--token) re-skins for free.
+
+   Per-script faces (--font-hebrew, --font-arabic, …) are constant across themes;
+   apply them on elements whose lang/script needs them.
+
+   Accessibility: contrast pairs are tuned for WCAG 2.2 AA in both modes.
+   high-contrast / colorblind-safe / reduced-motion variants attach as additional
+   [data-*] blocks following the same pattern (stubs at the foot of this file).
+   ============================================================================ */
+
+:root {
+  /* — Type roles ————————————————————————————————————————————————
+     --font-display is overridden per theme (see below). The rest are constant. */
+  --font-display: 'Cardo', Georgia, serif;     /* titles, headings, ritual text */
+  --font-serif:   'Cardo', Georgia, serif;     /* body / long-form / polytonic   */
+  --font-ui:      'Inria Sans', system-ui, sans-serif; /* labels, controls, meta */
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace; /* keys, UUIDs, gematria */
+  --font-glyph:   'Noto Sans Symbols', 'Cardo', serif; /* planetary / alchemical glyphs */
+
+  /* Per-script faces (constant across themes) */
+  --font-hebrew: 'Frank Ruhl Libre', serif;
+  --font-arabic: 'Noto Naskh Arabic', serif;
+  --font-deva:   'Noto Serif Devanagari', serif;
+  --font-coptic: 'Noto Sans Coptic', serif;
+
+  /* — Type scale (px / line-height) ——————————————————————————————— */
+  --type-hero:    clamp(40px, 6vw, 68px); --leading-hero: 1.04;
+  --type-h1:      34px; --leading-h1: 1.1;
+  --type-h2:      27px; --leading-h2: 1.15;
+  --type-h3:      18px; --leading-h3: 1.2;
+  --type-body-lg: 18px;
+  --type-body:    16px; --leading-body: 1.62;
+  --type-body-sm: 14px;
+  --type-ui:      13px;
+  --type-caption: 11px;
+  --tracking-eyebrow: .16em;
+  --tracking-tight:  -.01em;
+
+  /* — Surfaces & ink (DARK is the default mode) ——————————————————— */
+  --bg:      #15120D;  /* page ground            */
+  --bg-2:    #1C1812;  /* card / panel surface   */
+  --bg-3:    #231E16;  /* raised / hover surface */
+  --bg-sunk: #100D09;  /* wells, insets, code    */
+
+  --line:    rgba(236,229,214,.10); /* hairline divider / border       */
+  --line-2:  rgba(236,229,214,.20); /* stronger border / input outline */
+
+  --ink:      #ECE5D6; /* high-emphasis text  */
+  --ink-soft: #BCB29D; /* body text           */
+  --ink-mute: #897F6B; /* captions, metadata  */
+
+  /* — Accent (overridden per theme) ——————————————————————————————— */
+  --accent:      #C7A24C;                 /* the single brand gold        */
+  --accent-ink:  #15120D;                 /* text/icon ON an accent fill  */
+  --accent-soft: rgba(199,162,76,.14);    /* tinted accent backgrounds    */
+
+  /* — Semantic ————————————————————————————————————————————————————— */
+  --info:    #7E91CE;
+  --success: #6BA892;
+  --warning: #C9A24C;
+  --danger:  #C8554A;
+  --danger-bg:     rgba(200,85,74,.12);
+  --danger-border: rgba(200,85,74,.45);
+  --care:      #C9A86A;                    /* wellbeing/check-in — calm, never red */
+  --care-soft: rgba(201,168,106,.12);
+  --care-line: rgba(201,168,106,.40);
+
+  /* — Category accents (the six practice domains) ————————————————— */
+  --c-journal:       #CDBE9E;
+  --c-divination:    #7E91CE;
+  --c-working:       #C2554A;
+  --c-entity:        #C9A24C;
+  --c-library:       #BC8050;
+  --c-synchronicity: #6BA892;
+
+  /* — Elemental accents (circle / talisman work) —————————————————— */
+  --air:   #C7B36A;
+  --fire:  #C2554A;
+  --water: #5E8FA8;
+  --earth: #6E8E63;
+
+  /* — Radii ————————————————————————————————————————————————————————— */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 14px;
+  --r-pill: 999px;
+
+  /* — Spacing ramp ————————————————————————————————————————————————— */
+  --space-1: 6px;  --space-2: 10px; --space-3: 14px;
+  --space-4: 20px; --space-5: 28px; --space-6: 38px; --space-7: 52px;
+
+  /* — Elevation (shadow carries depth; surfaces stay matte) ——————— */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.30);
+  --shadow-md: 0 8px 24px rgba(0,0,0,.35);
+  --shadow-lg: 0 22px 48px rgba(0,0,0,.50);
+
+  /* — Motion (short, restrained, no bounce) ——————————————————————— */
+  --transition-color: color .15s ease, background-color .15s ease, border-color .15s ease;
+  --transition-all:   all .16s ease;
+
+  /* — Layout widths ———————————————————————————————————————————————— */
+  --maxw-doc:  1080px;  /* public document column     */
+  --nav-w:     248px;   /* app sidebar (VaultNav)      */
+}
+
+/* ============================================================================
+   THEME — Hellenic  (display → GFS Didot; cooler, greener neutrals)
+   ============================================================================ */
+[data-theme="hellenic"] {
+  --font-display: 'GFS Didot', serif;
+
+  --bg: #0F1311; --bg-2: #161B18; --bg-3: #1D2420; --bg-sunk: #0B0F0D;
+  --line: rgba(226,231,222,.10); --line-2: rgba(226,231,222,.20);
+  --ink: #E9EADE; --ink-soft: #AEB6A4; --ink-mute: #7C8474;
+
+  --accent: #BFA15B; --accent-ink: #0F1311; --accent-soft: rgba(191,161,91,.14);
+
+  --info: #5E9BA6; --success: #5E9BA6; --warning: #BFA15B; --danger: #B5573F;
+  --danger-border: rgba(181,87,63,.45);
+  --care: #9FB89A; --care-soft: rgba(159,184,154,.12); --care-line: rgba(159,184,154,.40);
+
+  --c-divination: #5E9BA6; --c-working: #B5573F; --c-synchronicity: #5E9BA6;
+  --c-library: #A88A52; --c-entity: #BFA15B; --c-journal: #CDBE9E;
+
+  --fire: #B5573F; --water: #5E9BA6; --earth: #6E8E63; --air: #BFA15B;
+}
+
+/* ============================================================================
+   THEME — Thelemic  (display → Cinzel; warmer, redder, higher contrast)
+   ============================================================================ */
+[data-theme="thelemic"] {
+  --font-display: 'Cinzel', serif;
+
+  --bg: #100B09; --bg-2: #191210; --bg-3: #201714; --bg-sunk: #0A0706;
+  --line: rgba(239,227,203,.12); --line-2: rgba(239,227,203,.22);
+  --ink: #EFE3CB; --ink-soft: #C5B493; --ink-mute: #8C7B5E;
+
+  --accent: #CDA53E; --accent-ink: #100B09; --accent-soft: rgba(205,165,62,.15);
+
+  --info: #B58A3C; --success: #9A8F4E; --warning: #CDA53E; --danger: #C5392B;
+  --danger-border: rgba(197,57,43,.50);
+  --care: #CBA75A; --care-soft: rgba(203,167,90,.12); --care-line: rgba(203,167,90,.40);
+
+  --c-working: #C5392B; --c-divination: #B58A3C; --c-entity: #CDA53E;
+  --c-library: #B97A3A; --c-synchronicity: #9A8F4E; --c-journal: #CDBE9E;
+
+  --fire: #C5392B; --water: #4F87A0; --earth: #7A8A52; --air: #CDA53E;
+}
+
+/* ============================================================================
+   MODE — Light  (applies on top of any theme; surfaces + ink invert)
+   ============================================================================ */
+[data-mode="light"] {
+  --bg: #EFE7D4; --bg-2: #F6F0E1; --bg-3: #FBF7EC; --bg-sunk: #E6DCC6;
+  --line: rgba(40,32,22,.14); --line-2: rgba(40,32,22,.26);
+  --ink: #2A2316; --ink-soft: #5A5040; --ink-mute: #867B66;
+
+  --accent: #9A6E22; --accent-ink: #FBF7EC; --accent-soft: rgba(154,110,34,.14);
+  --danger: #A23A2C; --danger-border: rgba(162,58,44,.40); --danger-bg: rgba(162,58,44,.10);
+  --care: #8A6A2E; --care-soft: rgba(138,106,46,.10); --care-line: rgba(138,106,46,.34);
+
+  --shadow-sm: 0 1px 3px rgba(40,32,22,.10);
+  --shadow-md: 0 8px 24px rgba(40,32,22,.14);
+  --shadow-lg: 0 22px 48px rgba(40,32,22,.20);
+}
+
+/* ============================================================================
+   ACCESSIBILITY VARIANTS — same attribute pattern; fill in as adopted.
+   ============================================================================ */
+
+/* Reduced motion — honor OS preference everywhere. */
+@media (prefers-reduced-motion: reduce) {
+  :root { --transition-color: none; --transition-all: none; }
+}
+
+/* High contrast — raise ink contrast, harden borders, drop alpha tints to solids.
+   Pair with the active theme/mode; works on top of either dark or light. */
+[data-contrast="high"] {
+  --ink-soft: var(--ink);
+  --ink-mute: var(--ink);
+  --line:    rgba(236,229,214,.32);
+  --line-2:  rgba(236,229,214,.62);
+  --accent-soft: rgba(199,162,76,.30);
+  --care-line:   var(--care);
+  --danger-border: var(--danger);
+}
+[data-contrast="high"][data-mode="light"] {
+  --line:   rgba(40,32,22,.34);
+  --line-2: rgba(40,32,22,.66);
+  --accent-soft: rgba(154,110,34,.26);
+}
+
+/* Colorblind-safe semantic set — a blue/amber/vermilion triad that stays
+   distinguishable under deuteranopia & protanopia (the red/green confusions).
+   ALWAYS pair color with an icon or shape; color alone is never the only cue. */
+[data-cvd="safe"] {
+  --info:    #4F86C6;   /* blue        */
+  --success: #1F9FA6;   /* teal-cyan   — reads distinct from warning/danger */
+  --warning: #E0A93B;   /* amber       */
+  --danger:  #D5562B;   /* vermilion   — kept far from teal in luminance */
+  --danger-border: rgba(213,86,43,.5);
+  --c-divination: #4F86C6; --c-synchronicity: #1F9FA6; --c-working: #D5562B;
+  --water: #4F86C6; --earth: #1F9FA6; --fire: #D5562B; --air: #E0A93B;
+}
