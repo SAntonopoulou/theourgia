@@ -105,18 +105,24 @@ def register_default_policies(
 ) -> None:
     """Install the substrate's baseline policies on ``registry``.
 
-    Called once at app start. Idempotent across calls (each
-    registration appends a fresh entry; the registry doesn't
-    deduplicate, so callers shouldn't invoke this multiple times in
-    production)."""
+    **Idempotent** — safe to call multiple times. Each baseline is
+    skipped if a policy of the same name is already registered for the
+    global resource. This matters in tests that clear the registry
+    mid-run and want to re-install the baseline without duplication."""
     target = registry or default_policy_registry
-    target.register(
-        _self_scope_policy,
-        name="self_scope",
-        resource_type="__global__",
-    )
-    target.register(
-        _hub_officer_global_policy,
-        name="hub_officer_global",
-        resource_type="__global__",
-    )
+    existing_global_names = {
+        name for name, _ in target.policies_for("__global__")
+    }
+
+    if "self_scope" not in existing_global_names:
+        target.register(
+            _self_scope_policy,
+            name="self_scope",
+            resource_type="__global__",
+        )
+    if "hub_officer_global" not in existing_global_names:
+        target.register(
+            _hub_officer_global_policy,
+            name="hub_officer_global",
+            resource_type="__global__",
+        )

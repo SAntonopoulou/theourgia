@@ -21,6 +21,7 @@ from theourgia.models import (  # noqa: F401
     notifications,
     plugins,
     uploads,
+    usersettings,
     webauthn,
 )
 
@@ -36,5 +37,6 @@ __all__ = [
     "notifications",
     "plugins",
     "uploads",
+    "usersettings",
     "webauthn",
 ]
