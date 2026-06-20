@@ -344,3 +344,39 @@ Phase 01 Batch 4 lands the application-layer authorization primitives: visibilit
 2. Database checks via Row-Level Security policies (declared in earlier migrations, activated per-request via `set_current_user_id`)
 3. Audit log via `AuditLogger` for security-relevant events (sealed reads, visibility downgrades, federation operations, plugin lifecycle)
 4. Defense in depth: a bug in any single layer does not produce a security failure on its own.
+
+### Added — 2026-06-20 (Phase 01, Batch 5 — FastAPI app + API contract)
+
+**The platform exists as a runnable HTTP server.** Phase 01 Batch 5 lands the FastAPI application factory, lifespan, error handling, middleware, dependency injection, and the first endpoints (health, readiness, metadata).
+
+**API package** (`backend/theourgia/api/`):
+- `app.py` — `create_app()` factory and module-level `app` singleton. Customizes OpenAPI with bearer security scheme, license, contact, servers; exposes Swagger UI at `/api/docs` and OpenAPI JSON at `/api/openapi.json`. Production hides Swagger by default (machine clients still get the JSON).
+- `lifespan.py` — startup validates required secrets (refuses to start without them in non-test envs); shutdown disposes the SQLAlchemy engine cleanly.
+- `errors.py` — RFC 7807 `application/problem+json` translator. Defines `APIError` base + `UnauthorizedError` / `ForbiddenError` / `NotFoundError` / `ConflictError` / `ValidationFailedError` / `RateLimitedError` / `ServiceUnavailableError`. Catch-all handler logs full traceback but emits a generic Problem to clients (never leaks internals). Translates FastAPI `RequestValidationError` into a Problem with field-level summaries.
+- `schemas.py` — `Problem` (RFC 7807 with `request_id` extension) and `Meta` (instance metadata response).
+- `middleware.py` — `RequestIDMiddleware` (generates UUIDv7 if absent; accepts inbound if sane; echoes in `X-Request-ID`); CORS configured per-env (dev allows localhost frontend origins, production locked to `BASE_URL`).
+- `deps.py` — dependency injection:
+  - `get_db_session` (request-scoped async session)
+  - `get_current_user` (extracts bearer, hashes via `hash_token`, looks up session row, checks revoked/expired, fetches user, **sets the RLS GUC on the session**)
+  - `get_optional_current_user` (returns `None` on no/bad auth instead of raising)
+  - `require_scope(scope)` factory (current impl: any authenticated user; tightens as resource routers land)
+  - Convenience `Annotated` aliases: `DBSession`, `CurrentUser`, `OptionalCurrentUser`
+- `routers/health.py` — `/healthz` (liveness, no deps) and `/readyz` (readiness, checks DB connectivity); both emit `Problem` on failure.
+- `routers/v1/meta.py` — `/api/v1/meta` returning instance_id, version, api_version, environment, `telemetry: none`, license, source URL.
+- Updated `__main__.py` to actually run uvicorn (replaces the planning-phase placeholder).
+
+**Tests** (3 files, ~25 test functions using `httpx.ASGITransport`):
+- `test_api_app.py` — app constructs; healthz returns ok; request-ID propagation (inbound passes, malformed dropped, absent generates UUIDv7); meta endpoint shape; OpenAPI schema with bearer security scheme; docs UI in non-prod; 404 returns Problem; CORS preflight allowed in dev.
+- `test_api_errors.py` — every APIError subclass maps to the right HTTP status with `application/problem+json` content-type; Retry-After header preserved; **unhandled exceptions return generic 500 Problem without leaking internals**; FastAPI validation errors render as Problem with field summaries.
+- `test_api_deps.py` — auth dependency: rejects missing/bad/revoked/expired tokens; accepts valid; **sets RLS GUC on success**; optional variant returns None instead of raising; scope dependency requires authentication.
+
+**You can now:**
+- Build and inspect the OpenAPI schema (`curl /api/openapi.json`)
+- Probe liveness / readiness (`curl /healthz`, `/readyz`)
+- Discover the instance via `/api/v1/meta`
+- Raise project-defined error types and have them render as RFC 7807 Problems
+- Authenticate any future endpoint via bearer-token dependencies with automatic RLS GUC setting
+
+**Deferred to Batch 5b:** rate limiting (Redis-backed counter + sliding window) and idempotency-key middleware. These need Redis fixtures we don't have yet; the foundation here makes them drop-in additions.
+
+**Phase 01 progress:** 5 of 10 batches done — *the halfway mark*. The runnable backend application now exists; subsequent batches add features (plugins, federation, backups, observability).

@@ -1,17 +1,36 @@
-"""Placeholder entry point for the Theourgia backend.
+"""Entry point — run the Theourgia backend via Uvicorn.
 
-Phase 01 (Core Architecture) will replace this with the real FastAPI
-application bootstrap and CLI dispatcher.
+Usage::
+
+    python -m theourgia                       # uvicorn-wrapped server
+    uvicorn theourgia.api.app:app             # direct uvicorn invocation
+
+The Docker images use ``uvicorn theourgia.api.app:app`` so process
+management (workers, lifecycle, reload in dev) lives in uvicorn rather
+than this module.
 """
 
-from theourgia.__about__ import __version__
+from __future__ import annotations
 
 
 def main() -> None:
-    """Print version and a planning-phase notice. Replaced in Phase 01."""
-    print(f"Theourgia backend {__version__}")  # noqa: T201
-    print("Planning phase — no runnable application yet.")  # noqa: T201
-    print("See PROJECT_PLAN.md and FEATURES.md for the roadmap.")  # noqa: T201
+    """Run the Theourgia backend via Uvicorn.
+
+    Reads ``HOST`` and ``PORT`` from the environment (defaults
+    ``0.0.0.0:8000``). For development with hot reload, pass ``--reload``
+    via ``uvicorn theourgia.api.app:app --reload`` instead — this entry
+    point is for production / scripted runs.
+    """
+    import os
+
+    import uvicorn
+
+    uvicorn.run(
+        "theourgia.api.app:app",
+        host=os.environ.get("HOST", "0.0.0.0"),  # noqa: S104 — bind 0.0.0.0 by intent
+        port=int(os.environ.get("PORT", "8000")),
+        log_level=os.environ.get("THEOURGIA_LOG_LEVEL", "info").lower(),
+    )
 
 
 if __name__ == "__main__":
