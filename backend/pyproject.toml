@@ -82,6 +82,7 @@ dev = [
     "pytest-asyncio >=0.25,<1.0",
     "pytest-cov >=6.0,<7.0",
     "pytest-mock >=3.14,<4.0",
+    "anyio >=4.7,<5.0",
     "hypothesis >=6.122,<7.0",
 
     # HTTP testing

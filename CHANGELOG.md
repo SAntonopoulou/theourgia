@@ -316,3 +316,31 @@ Phase 01 Batch 3 lands the authentication primitives: password hashing, TOTP 2FA
 - Lockout escalates monotonically and is bounded by `MAX_LOCKOUT`
 
 Note: WebAuthn / passkey support is deferred to Batch 10 per the Phase 01 plan; TOTP is the 2FA path landed here.
+
+### Added — 2026-06-20 (Phase 01, Batch 4 — authorization)
+
+Phase 01 Batch 4 lands the application-layer authorization primitives: visibility model, scope vocabulary, pure permission checks, RLS GUC setter, and the audit log writer.
+
+**Authz package** (`backend/theourgia/core/authz/`):
+- `visibility.py` — `Visibility` enum (SEALED=5, PERSONAL=1, VIEWER=2, NETWORK=3, PUBLIC=4) with `is_private` / `is_publishable_outbound` / `is_sealed` predicates; `AT_LEAST_INTERNAL` and `PUBLISHABLE` convenience sets
+- `scopes.py` — `Scope` string-enum with ~40 dotted scope names across 12 domains (entry, entity, vault, hub, session, user, key, sealed, plugin, federation, backup, audit, agent)
+- `checks.py` — pure permission functions: `can_read_with_visibility` (full decision table across all 5 visibilities + ownership + private viewer + hub membership) and `can_write_with_visibility` (owner or vault collaborator only)
+- `rls.py` — `set_current_user_id(session, user_id)` and `clear_current_user_id(session)` — set the `theourgia.current_user_id` GUC via `SET LOCAL` so RLS policies see the current viewer. Bound parameter (not string interpolation). Rejects non-UUID input defensively.
+- `audit.py` — `build_audit_event` pure factory + `AuditLogger` session-wrapping persister. Validates field lengths (action ≤128 chars, ip_address ≤45 chars), clamps overlong user-agent strings rather than rejecting, deep-copies the detail dict so caller mutations don't affect the persisted row.
+
+**Test infrastructure additions:**
+- Recording-session doubles in `test_authz_rls.py` and `test_authz_audit.py` so the RLS setter and audit logger can be tested without a live database. Full integration with PostgreSQL + RLS policies lands when the postgres-test-fixture infrastructure is set up in a subsequent batch.
+- `anyio` added to dev deps for async test execution
+
+**Tests** (5 files, ~50 test functions):
+- `test_authz_visibility.py` — enum value stability (persisted integers must never change), private/publishable/sealed predicates, convenience set membership
+- `test_authz_checks.py` — exhaustive decision table for `can_read_with_visibility` (public ↔ everyone, personal ↔ owner only, sealed ↔ owner only, viewer ↔ private viewer credential, network ↔ hub membership intersection, network ↔ private viewer override, anonymous ↔ public only); write checks (owner or collaborator)
+- `test_authz_scopes.py` — dotted-lowercase format, domain namespacing, uniqueness, critical scopes present
+- `test_authz_rls.py` — GUC name format, SET LOCAL emitted with bound parameter, non-UUID rejection
+- `test_authz_audit.py` — minimal + full event construction, detail dict copy semantics, all `AuditEventKind` values supported, all `AuditOutcome` values supported, action/ip_address length validation, user-agent clamping, AuditLogger persistence via session double
+
+**Authorization architecture (now explicit):**
+1. Application checks via `can_read_with_visibility` / `can_write_with_visibility` at the API boundary (Phase 01 Batch 5 will wire these into FastAPI dependencies)
+2. Database checks via Row-Level Security policies (declared in earlier migrations, activated per-request via `set_current_user_id`)
+3. Audit log via `AuditLogger` for security-relevant events (sealed reads, visibility downgrades, federation operations, plugin lifecycle)
+4. Defense in depth: a bug in any single layer does not produce a security failure on its own.
