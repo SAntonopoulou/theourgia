@@ -2,8 +2,10 @@
  * Today — the first real surface.
  *
  * Composes Avatar + CelestialBand + Stat tiles + a recent-entries Card
- * + a quick-capture button. Mock data for now; replaced with API calls
- * when the client batch lands.
+ * + a quick-capture button. Entries flow through the API client
+ * (apiMethods.listEntries / createEntry), which resolves the fixture
+ * store in mock mode or hits the backend in live mode — the surface
+ * doesn't know which one is wired.
  */
 
 import {
@@ -12,20 +14,18 @@ import {
   Card,
   CelestialBand,
   EmptyState,
+  type EntryRecord,
   Glyph,
+  type GlyphName,
   PromptDialog,
+  Skeleton,
   Stat,
   Toast,
 } from "@theourgia/shared";
 import { useState } from "react";
 
-import {
-  MOCK_ENTRIES,
-  MOCK_IDENTITY,
-  MOCK_LOCATION,
-  MOCK_STATS,
-  type RecentEntry,
-} from "../mocks/today.js";
+import { createEntry, useRecentEntries } from "../data/useEntries.js";
+import { MOCK_IDENTITY, MOCK_LOCATION, MOCK_STATS } from "../mocks/today.js";
 
 function greetingForHour(hour: number): string {
   if (hour < 5) return "Late night";
@@ -35,8 +35,9 @@ function greetingForHour(hour: number): string {
   return "Good evening";
 }
 
-function relativeTime(at: Date): string {
-  const diff = Date.now() - at.getTime();
+function relativeTime(at: string | Date): string {
+  const ms = typeof at === "string" ? new Date(at).getTime() : at.getTime();
+  const diff = Date.now() - ms;
   const minutes = Math.floor(diff / 60_000);
   if (minutes < 1) return "just now";
   if (minutes < 60) return `${minutes}m ago`;
@@ -46,7 +47,7 @@ function relativeTime(at: Date): string {
   return `${days}d ago`;
 }
 
-function EntryRow({ entry }: { entry: RecentEntry }) {
+function EntryRow({ entry }: { entry: EntryRecord }) {
   return (
     <article
       style={{
@@ -56,14 +57,8 @@ function EntryRow({ entry }: { entry: RecentEntry }) {
         borderBottom: "1px solid var(--line)",
       }}
     >
-      <span
-        style={{
-          color: "var(--accent)",
-          marginTop: 2,
-          flexShrink: 0,
-        }}
-      >
-        <Glyph name={entry.glyph} size={18} />
+      <span style={{ color: "var(--accent)", marginTop: 2, flexShrink: 0 }}>
+        <Glyph name={entry.glyph as GlyphName} size={18} />
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
@@ -92,7 +87,7 @@ function EntryRow({ entry }: { entry: RecentEntry }) {
               whiteSpace: "nowrap",
             }}
           >
-            {relativeTime(entry.at)}
+            {relativeTime(entry.created_at)}
           </span>
         </div>
         <p
@@ -110,10 +105,54 @@ function EntryRow({ entry }: { entry: RecentEntry }) {
   );
 }
 
+function EntriesSkeleton() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3, 12px)" }}>
+      {[1, 2, 3].map((i) => (
+        <div
+          key={`skel-${i}`}
+          style={{
+            display: "flex",
+            gap: "var(--space-3, 12px)",
+            padding: "var(--space-3, 12px) 0",
+            borderBottom: "1px solid var(--line)",
+          }}
+        >
+          <Skeleton kind="circle" width={18} height={18} />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+            <Skeleton kind="text" width={180} />
+            <Skeleton kind="text" width={320} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function Today() {
   const [captureOpen, setCaptureOpen] = useState(false);
-  const [entries, setEntries] = useState(MOCK_ENTRIES);
+  const entries = useRecentEntries();
   const greeting = greetingForHour(new Date().getHours());
+
+  async function handleSubmit(value: string): Promise<void> {
+    setCaptureOpen(false);
+    try {
+      await createEntry({
+        title: value.slice(0, 64),
+        type: "observation",
+        excerpt: value,
+        glyph: "feather",
+      });
+      Toast.push({ tone: "success", title: "Captured" });
+      await entries.refresh();
+    } catch (e) {
+      Toast.push({
+        tone: "error",
+        title: "Could not capture",
+        body: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
 
   return (
     <div
@@ -203,16 +242,46 @@ export function Today() {
           >
             Recent entries
           </h2>
-          <Button
-            size="sm"
-            variant="quiet"
-            onClick={() => setCaptureOpen(true)}
-            iconStart="feather"
-          >
-            Quick capture
-          </Button>
+          <div style={{ display: "flex", gap: "var(--space-2, 8px)" }}>
+            <Button
+              size="sm"
+              variant="quiet"
+              onClick={() => void entries.refresh()}
+              aria-label="Refresh entries"
+            >
+              ↻
+            </Button>
+            <Button
+              size="sm"
+              variant="quiet"
+              onClick={() => setCaptureOpen(true)}
+              iconStart="feather"
+            >
+              Quick capture
+            </Button>
+          </div>
         </div>
-        {entries.length === 0 ? (
+
+        {entries.status === "loading" ? (
+          <EntriesSkeleton />
+        ) : entries.status === "error" ? (
+          <EmptyState
+            glyph="lock"
+            title="Couldn't load entries"
+            body={entries.error?.message ?? "Unknown error fetching from the API."}
+            action={
+              <Button variant="secondary" onClick={() => void entries.refresh()}>
+                Retry
+              </Button>
+            }
+          />
+        ) : entries.data && entries.data.length > 0 ? (
+          <div>
+            {entries.data.map((entry) => (
+              <EntryRow key={entry.id} entry={entry} />
+            ))}
+          </div>
+        ) : (
           <EmptyState
             glyph="journal"
             title="Nothing yet today"
@@ -223,48 +292,6 @@ export function Today() {
               </Button>
             }
           />
-        ) : (
-          <div>
-            {entries.map((entry) => (
-              <EntryRow key={entry.id} entry={entry} />
-            ))}
-          </div>
-        )}
-        {entries.length > 0 ? (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              marginTop: "var(--space-3, 12px)",
-            }}
-          >
-            <Button
-              size="sm"
-              variant="quiet"
-              onClick={() => {
-                setEntries([]);
-                Toast.push({
-                  tone: "info",
-                  title: "All entries archived",
-                  body: "(demo only — mock data reset)",
-                });
-              }}
-            >
-              Reset (demo)
-            </Button>
-          </div>
-        ) : (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              marginTop: "var(--space-3, 12px)",
-            }}
-          >
-            <Button size="sm" variant="quiet" onClick={() => setEntries(MOCK_ENTRIES)}>
-              Restore mock entries
-            </Button>
-          </div>
         )}
       </Card>
 
@@ -275,21 +302,7 @@ export function Today() {
         placeholder="What did you notice?"
         validate={(v) => (v.trim().length < 3 ? "A few words at least." : null)}
         confirmLabel="Capture"
-        onSubmit={(value) => {
-          setCaptureOpen(false);
-          setEntries((prev) => [
-            {
-              id: String(Date.now()),
-              title: value.slice(0, 64),
-              type: "observation",
-              glyph: "feather",
-              at: new Date(),
-              excerpt: value,
-            },
-            ...prev,
-          ]);
-          Toast.push({ tone: "success", title: "Captured" });
-        }}
+        onSubmit={(value) => void handleSubmit(value)}
         onCancel={() => setCaptureOpen(false)}
       />
     </div>
