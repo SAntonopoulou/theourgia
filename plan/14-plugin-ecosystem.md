@@ -113,6 +113,45 @@ Each with a documentation page, type signatures, and at least one reference impl
 - `POST /api/v1/plugins/:id/activate`, `.../deactivate`, `.../uninstall`
 - `GET /api/v1/plugins/registry/search`
 - `POST /api/v1/plugins/:id/configure`
+- `POST /api/v1/sandbox/import` — install bundle/plugin into isolated sandbox
+- `POST /api/v1/sandbox/promote` — promote sandbox content to main vault
+- `DELETE /api/v1/sandbox` — discard sandbox
+
+### 10. Official Theourgia Plugin Registry (three-tier)
+- Hosted at `registry.theourgia.com` (or community-named subdomain — final decision via community after Phase 12 launch)
+- **Three tiers of trust**:
+  - **Tier 1 — Official**: scanned by Theourgia maintainers for update-friendliness, migration-friendliness, community code practices, security review. Highest trust. Eligible for in-product "featured" placement.
+  - **Tier 2 — Community**: signed releases from known contributors meeting a minimum quality bar (test coverage requirement, capability documentation, clean migration history). Surfaced with "community" badge.
+  - **Tier 3 — Unverified / user-supplied**: random GitHub releases; **at-your-own-risk** with explicit warning surfaced at install. Suitable for individual developers experimenting.
+- **Install-time capability review UI** — browser-extension-style permission grant; user sees every capability the plugin will use before activating
+- **Update notifications with diff-preview** before applying — shows what will change in the plugin, what migration steps will run, what new capabilities it requests
+- **Vulnerability disclosure pipeline** — signed advisories pushed to all installed instances; admin alerts surface critical vulnerabilities for plugins they have installed
+- **Tombstone on withdrawal** — existing installs keep their plugin; new fetches see deprecation notice with reason; admin's next login surfaces the deprecation
+- **Plugin author obligations clearly stated** — maintainer expectations, what "withdrawing" means, how to mark successor maintainer
+
+### 11. Sandbox-before-commit (preview-mode imports)
+- **Preview-mode installation** for both bundles AND plugins — install into an isolated sandbox area for exploration
+- **Sandbox isolation**:
+  - Sandbox content never federates
+  - Sandbox content never affects personal/main vault content
+  - Sandbox content never appears in main searches
+  - Sandbox content visible only in sandbox-specific UI views
+- **Commit-to-main flow** — after evaluation, magician can promote a tested bundle/plugin into their main vault; promotion is irrevocable (bundle data may be referenced by other content after commit)
+- **Particularly important for**:
+  - Tradition bundles ("import all of the Vedic system to see how it fits before committing")
+  - Plugins with broad capability requests
+  - Custom decks before adding to your tarot reading rotation
+- **Sandbox lifecycle** — sandboxes auto-expire after 30 days unless explicitly preserved; explicit discard always available
+
+### 12. Bundle vs. plugin distinction (UI clarity)
+- **Plugins** are code (Python + frontend modules) that extend Theourgia's functionality
+- **Bundles** are data (entity sets, ritual templates, correspondences, decks) that populate Theourgia
+- Both flow through the same registry but are **clearly distinguished in UI**:
+  - Plugins have a "code" icon and require capability review
+  - Bundles have a "scroll" icon and require an import preview (no code execution)
+- Bundles run inside the user's existing platform (no code execution, no sandbox needed beyond data isolation)
+- Plugins extend the platform itself (code, capability-sandboxed)
+- A "tradition bundle" can include a plugin if it ships custom calendar logic or divination system code
 
 ## Design notes
 

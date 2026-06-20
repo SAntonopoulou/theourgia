@@ -39,7 +39,7 @@ Build a production-grade frontend foundation: a content-first public site, a ric
 - Empty placeholder pages for each major surface (filled in subsequent phases)
 
 ### 3. Design system implementation
-- Design tokens (from `note_to_design_claude.md` deliverables) wired in as CSS custom properties + Tailwind theme extension
+- Design tokens (delivered separately by the design team) wired in as CSS custom properties + Tailwind theme extension
 - Component library at `frontend/shared/ui/`:
   - Typography primitives, buttons, inputs, selects, checkboxes, radios, switches
   - Modals, drawers, popovers, tooltips, dropdowns
@@ -92,6 +92,24 @@ Build a production-grade frontend foundation: a content-first public site, a ric
 - Reset for print, with editorial typography
 - Page break controls for entries
 - Print preview mode in editor
+
+### 9. Modal & alert system (premium-feel UX)
+- **No native browser dialogs anywhere** — `window.alert` / `window.confirm` / `window.prompt` are prohibited project-wide
+- Custom modal component family: `ConfirmDialog`, `AlertDialog`, `PromptDialog`, `Toast`, `Banner`, `Drawer`
+- Themed (light / dark / high-contrast); fully a11y-correct; focus-trapped; ESC-dismissible; keyboard-navigable
+- **ESLint / Biome rule** enforces no native dialog usage in source
+- All confirmation, error, success, warning flows route through the modal/toast system
+- Toast for transient feedback; ConfirmDialog for destructive actions; Drawer for slide-in detail views
+
+### 10. PWA-fast mobile quick-capture
+- PWA manifest + service worker for installable on-mobile experience
+- **Quick-capture surfaces** designed for sub-200ms time-to-modal:
+  - **Dream-on-wake** capture — single-field, voice-record + auto-transcribe, save with one tap
+  - **Synchronicity capture** — geolocation auto, time auto, one-tap save
+  - **Quick photo capture** for altar work / found objects, attached to entry
+- **Offline-first sync** — write at the altar with no signal, syncs cleanly when reconnected
+- Conflict-free local-write semantics (CRDT-backed for any field editable offline)
+- Background sync queue with retry / exponential backoff
 
 ## Design notes
 

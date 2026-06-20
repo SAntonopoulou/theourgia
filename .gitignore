@@ -1,19 +1,46 @@
 # Secrets — NEVER commit
 secrets
 secrets/
+
+# Environment files: ignore real configs, re-include templated examples
+# Real env files (ignored):
 *.env
 *.env.*
+# Re-included committed templates (any flavor of example / sample / template):
 !.env.example
+!.env.sample
+!.env.template
 !.env.*.example
+!.env.*.sample
+!.env.*.template
+!*.env.example
+!*.env.sample
+!*.env.template
+!example.env
+!sample.env
+!template.env
+
+# Crypto / SSH material
 *.key
 *.pem
 *.p12
+*.pfx
+*.crt
 id_rsa*
 id_ed25519*
+id_ecdsa*
+*.gpg
+*.asc
 
 # Cohort coordination / private workspace artifacts (not project deliverables)
 REPLY_FROM_PM_CLAUDE*.md
 askspmtodo
+
+# Agent-to-agent handoff documents (live in archives outside the project)
+note_to_design_claude*.md
+note_from_design_claude*.md
+note_to_*_claude*.md
+note_from_*_claude*.md
 
 # Python
 __pycache__/
@@ -68,6 +95,7 @@ pnpm-debug.log*
 !.vscode/launch.json
 !.vscode/tasks.json
 .idea/
+.obsidian/
 *.swp
 *.swo
 *.swn

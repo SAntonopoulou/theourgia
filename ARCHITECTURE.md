@@ -206,6 +206,37 @@ These are the principal database tables. Each phase plan elaborates fields.
 - `plugin_install` — installed plugins per vault/hub
 - `plugin_setting` — plugin configuration
 
+**Multi-identity (pseudonymity):**
+- `identity` — per-vault author identities (legal name, magickal name(s), order name, ancestor name)
+- `entry_identity` — which identity authored each entry/post/publication
+
+**Entity merge (alias graph):**
+- `entity_alias` — typed relationships between entities (`same-as`, `aspect-of`, `aspect-includes`, `syncretic-with`, `epithet-of`)
+- `entity_view` — user-defined named unified views (saved unions of entity_ids for display-time merge)
+
+**Lineage attestation:**
+- `attestation` — declarable claims about lineage / initiation / affiliation
+- `attestation_signature` — Ed25519 signatures from third parties (lodge masters, teachers) verifying attestations
+
+**Bundles & sharing:**
+- `bundle` — installed bundles per vault (manifest, source, signature, install date, opt-in update channel)
+- `bundle_subscription` — networks subscribed to upstream bundles
+- `bundle_tombstone` — withdrawn bundles still installed locally; new fetches see this
+
+**Time-released content:**
+- `scheduled_publication` — entries/posts/publications scheduled to release at a future timestamp or upon a trigger (posthumous, curriculum unlock)
+
+**Digital inheritance:**
+- `executor` — designated digital executors with encrypted key-shares and time-locked unlocks
+- `checkin_policy` — "if I don't log in for N months, notify [person]" rules
+- `memorial_state` — vault-level transition to memorial mode after trigger
+
+**AI agents (Phase 16):**
+- `agent` — per-vault registered agent instances (type, capabilities, memory_dir, cost_cap, model)
+- `agent_session` — spawn history with token usage
+- `agent_capability_grant` — per-agent capability allowlist (explicit consent record)
+- `agent_audit_event` — every MCP call logged per-agent
+
 ## 5. Security & Trust Model
 
 ### Threat model
@@ -248,6 +279,45 @@ Visibility is enforced at the API gateway, in the database queries via row-level
 - Hubs cannot pull content vaults haven't pushed; pull-without-push is impossible
 - ActivityPub layer only handles `public` content; never sees `viewer` / `network` / `sealed`
 
+### GDPR compliance (built-in by design)
+Theourgia self-hosted instances are GDPR-compliant by default; tooling is provided to help network hub operators be compliant for their members:
+
+- **Right to access** — `GET /api/v1/me/export` produces a full structured archive of the user's data (JSON + MBF format)
+- **Right to erasure** — `DELETE /api/v1/me` with documented limits: federated content lives on per other parties' sovereignty (tombstones propagate); legal-hold exceptions documented
+- **Data portability** — all exports in readable, machine-parseable formats (JSON, MBF, BibTeX where applicable)
+- **Privacy by design** — minimal collection, encryption at rest, no third-party trackers
+- **DPIA template** for network hub operators in `docs/admin/dpia-template.md`
+- **Breach notification runbook** in `docs/admin/security-incident-runbook.md`
+- **Cookie consent UI** for public surfaces; also enforces zero-telemetry promise (no analytics scripts visible to consent at all)
+- **Data minimization** baked into schema review process
+
+### Pseudonymity / multi-identity
+A vault supports multiple author identities — legal name, magickal name(s), order name, ancestor name, ritual-context names. Each entry, post, publication, comment is authored under one chosen identity. The platform:
+
+- **Per-content identity selection** at authoring time
+- **Selective disclosure per network** — different identities exposed to different hubs (legal-name to one, magickal name to another)
+- **Default public identity** chosen per surface (vault homepage, blog, publications)
+- **Identity verification cryptography** — each identity has its own keypair for the lineage attestation system
+- **Maintainers in documentation are referred to by chosen identity only** — see project conventions
+
+### Closed-tradition handling
+Bundles and content can declare themselves as belonging to closed traditions (active living indigenous practices, sworn-secret material, etc.):
+
+- **`closed-tradition` flag** on bundles and entries
+- **Default-block public sharing** of flagged content
+- **Respect-source notice** surfaced to importers explaining the source tradition's preference
+- **AI agent exclusion** — flagged content invisible to agents (Phase 16) regardless of user-granted scope
+- **No policing** — we are not arbiters of who may practice what; we enable practitioners to easily honor source-tradition requests
+- **Provenance preserved** — closed-tradition origin metadata cannot be stripped from bundles
+
+### Crisis-aware nudge (opt-in)
+If sustained severe distress is logged in body/mood snapshots over time, an opt-in feature can surface a discreet, tone-conscious note about non-magickal supportive resources (therapists, crisis lines in the user's region). The feature:
+
+- Is opt-in only; off by default
+- Does not pathologize magickal practice — simply acknowledges that some experiences need other support too
+- Suggests resources from a curated, regionally-aware list
+- Can be disabled at any time
+
 ## 6. Federation Protocol (Theourgia native)
 
 Designed to be simpler and more practitioner-shaped than ActivityPub.
@@ -276,6 +346,60 @@ Designed to be simpler and more practitioner-shaped than ActivityPub.
 ### ActivityPub bridge
 - The AP layer is a thin adapter: convert outgoing `public` `entry` and `newsletter` items into AP `Note` / `Article` objects, and convert incoming `Follow` / `Like` / `Announce` into Theourgia equivalents.
 - AP is never the primary data model; it is a presentation layer for the wider Fediverse.
+
+### Single Sign-On across networks
+A first-class capability for federated identity. A magician can use one identity across all the Theourgia networks they participate in, with per-hub opt-in:
+
+- **Theourgia SSO** — based on the federation protocol's per-instance keys
+- **Per-network opt-in** — hubs choose whether to accept SSO authentication for joining or commenting
+- **Used for**: requesting access to private networks, comment authentication on individual sites, auto-download authorization for subscribed bundles
+- **Individual vault sites can opt in** for their own surfaces (comments, subscription, etc.)
+- **No central authority** — there is no Theourgia SSO Server; identity provision is by the user's home vault instance
+
+## 6.5 AI Agent Integration Layer (optional, opt-in)
+
+Theourgia supports an opt-in AI agent layer for magicians who want to work alongside per-purpose Claude agents. Modeled on the daskalos pattern.
+
+```
+                    ┌──────────────────────────────────┐
+                    │      Theourgia Vault             │
+                    │  ──────────────────────────      │
+                    │  ┌──────────────────────────┐    │
+                    │  │  Agent daemon             │    │ ← scoped MCP server
+                    │  │  (FastAPI + MCP / SSE)    │◄───┼── magician's external Claude Code
+                    │  └────────┬─────────────────┘    │   (optional)
+                    │           │                       │
+                    │  ┌────────▼─────────────────┐    │
+                    │  │  Host waker               │    │
+                    │  │  (systemd --user)         │    │
+                    │  └────────┬─────────────────┘    │
+                    │           │ claude spawn         │
+                    │  ┌────────▼─────────────────┐    │
+                    │  │  Per-purpose agents       │    │
+                    │  │  • divination companion   │    │
+                    │  │  • scrying partner        │    │
+                    │  │  • ritual aide            │    │
+                    │  │  • study tutor            │    │
+                    │  │  • correspondence helper  │    │
+                    │  │  • synchronicity reviewer │    │
+                    │  └───────────────────────────┘    │
+                    └──────────────────────────────────┘
+```
+
+Key properties:
+
+- **Opt-in entirely** — zero-AI mode is the default; the daemon is an optional service
+- **User-supplied keys** — BYO Anthropic API key or Claude subscription; Theourgia never holds central keys; never bills
+- **Capability-scoped MCP** — each agent has an explicit, user-granted capability allowlist
+- **Sealed content unreachable architecturally** — the daemon has no decryption keys for `sealed` content; even if compromised it cannot expose zero-knowledge data
+- **Closed-tradition exclusion** — flagged content is excluded from all agent MCP queries regardless of granted scope
+- **Per-purpose agents** — each agent is scoped to a purpose with its own memory directory
+- **Cost controls** — per-agent and per-vault cost caps with hard cutoff
+- **Magician-side MCP** — user's own Claude Code can connect to their Theourgia vault for terminal-based collaboration
+- **Resume window** — follow-up wakes use `claude --continue` for ~20× input token reduction
+- **Per-MCP-call audit log** — every action an agent takes is logged in human-readable form
+
+Full design and implementation plan: [plan/16-ai-agent-integration.md](plan/16-ai-agent-integration.md).
 
 ## 7. Plugin Architecture
 
@@ -328,7 +452,7 @@ Plugins can extend:
 
 ### Shared
 - TypeScript types generated from FastAPI OpenAPI schema (orval or similar)
-- Shared design system (see `note_to_design_claude.md`)
+- Shared design system (delivered separately by the design team)
 - i18n via `i18next` with namespaces per module
 
 ## 9. Deployment Topology (reference for `theourgia.com`)
@@ -387,6 +511,46 @@ Both paths are first-class. Documentation and reference configs ship for both.
 - Reference Grafana dashboards
 - Health check endpoints
 - Error tracking via Sentry (self-hosted Sentry is an option; opt-in)
+
+## 10.5 Testing Strategy
+
+Theourgia maintains rigorous test coverage at every phase. Tests are written when features are built — not in a separate "testing pass."
+
+### Test types
+
+| Type | Coverage | Tooling |
+|---|---|---|
+| **Unit** | Individual functions / components | pytest (backend), Vitest (frontend) |
+| **Integration** | Cross-component (FE↔BE, federation↔AP, plugin↔host, agent↔MCP) | pytest with fixtures, Playwright |
+| **Regression** | Previously-fixed bugs + known-fragile interactions | pytest, Vitest |
+| **End-to-end** | Critical user flows (login, write, publish, federate, divination, group ritual, deploy) | Playwright |
+| **Property-based** | Crypto, astronomy, gematria ciphers, encryption round-trips | Hypothesis (Python) |
+| **Migration** | Every Alembic migration round-trips against populated DB | pytest + Alembic test harness |
+| **Security** | RLS policies, sealed-content exclusion, zero-telemetry verification | dedicated suites |
+
+### Execution model
+
+**v0.x (current era):**
+- `just test` runs the full local suite
+- On deploy to dev server, smoke tests verify health, routes, federation round-trips, migrations
+- No formal GitHub Actions CI/CD gating (small team, fast iteration)
+- Test discipline is unchanged; only the automation harness is local-first
+
+**Post-v1.0:**
+- GitHub Actions becomes the canonical gate
+- Every PR runs the full suite (lint, type-check, unit, integration, regression, security scan)
+- Deploys gated on green CI
+- Same tests as v0.x; only the runner moves
+
+### Definition of Done implications
+
+Every phase's Definition of Done requires:
+1. Tests written for all new functionality
+2. All tests pass locally
+3. Smoke tests pass on dev-server deploy
+4. Post-v1.0: passes CI on every PR
+
+No PR merges without green tests at the maturity level the project is at.
 
 ## 11. Compatibility and Migration
 

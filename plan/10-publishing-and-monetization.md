@@ -91,6 +91,34 @@ Let magicians publish their own work — books, essays, newsletters — under th
 - `GET/POST /api/v1/newsletters`, `GET/POST /api/v1/newsletters/:id/issues`
 - `POST /api/v1/newsletters/:id/subscribe`, `POST /api/v1/newsletters/:id/confirm`, `POST /api/v1/newsletters/:id/unsubscribe`
 - `GET/POST /api/v1/publications/:id/comments`
+- `GET/POST /api/v1/subscriptions` — Stripe-backed recurring billing
+- `POST /api/v1/subscriptions/:id/cancel`, `POST /api/v1/subscriptions/:id/portal-link`
+
+### 10. Subscription billing (recurring)
+- **Stripe Connect recurring products + prices** — magicians offer paid newsletters and patron tiers
+- **Per-newsletter subscription tier configuration** — free, single paid, multi-tier
+- **Subscriber portal links** — for managing subscription, updating payment method, cancellation
+- **Stripe webhook integration** for the full subscription lifecycle (active, past_due, canceled, etc.)
+- **Renewal notifications + dunning** — automatic Stripe-handled retries; failure surface in admin
+- **Subscriber-only vs. free-tier issues** — clearly distinguished in newsletter composer; access enforced at delivery + web archive
+- **Stripe Tax integration** (opt-in) for VAT / sales tax handling
+
+### 11. Print-quality typography (book-grade)
+- **True print-grade PDF** — bleed, crop marks, embedded fonts, proper imposition
+- **Typography**: drop caps, true small caps, ligatures, oldstyle figures, proper kerning, hanging punctuation
+- **Footnotes + endnotes** with chapter-scoped numbering and proper layout
+- **Auto-generated index** (with `<index-key>` markers in source content)
+- **Auto-generated glossary** (with `<glossary-term>` markers in source content)
+- **Auto-generated table of contents**
+- **Multi-language typesetting** — preserves polytonic Greek, Hebrew with niqud, etc.
+- **Print-on-demand format specs** — Lulu, BookBaby, IngramSpark specifications supported
+- Implementation: a typesetting layer (likely LuaTeX or weasyprint with significant CSS) that compiles the structured entry content into book-grade PDF
+
+### 12. Blog platform integration (Phase 04 §13)
+- The blog data layer lives in [plan/04-journaling.md](04-journaling.md) §13
+- This phase provides the **publishing surface**: blog homepage, post pages, RSS, comment moderation
+- Per-vault blog at vault's public root path or configurable subdomain
+- Blog can also be a hub-published blog (network publishes curated posts from member contributions)
 
 ## Design notes
 

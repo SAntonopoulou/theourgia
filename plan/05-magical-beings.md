@@ -125,7 +125,7 @@ Make the magician's network of relationships first-class data. Every working, of
 
 ### 10. APIs
 - `GET/POST/PATCH/DELETE /api/v1/entities`
-- `GET /api/v1/entities/:id/aggregate` — full relational dashboard data
+- `GET /api/v1/entities/:id/aggregate` — full relational dashboard data (resolves alias-graph + unified-view queries)
 - `GET/POST /api/v1/offerings`
 - `GET/POST/PATCH /api/v1/contracts`
 - `POST /api/v1/contracts/:id/fulfill-obligation`
@@ -133,6 +133,37 @@ Make the magician's network of relationships first-class data. Every working, of
 - `GET/POST /api/v1/initiations` — requires `sealed` mode handshake
 - `GET/POST /api/v1/servitors`
 - `POST /api/v1/servitors/:id/feed`
+- `GET/POST/DELETE /api/v1/entity-aliases` — relationships between entities
+- `GET/POST/PATCH/DELETE /api/v1/entity-views` — user-defined unified views
+- `GET/POST /api/v1/attestations` — lineage claims
+- `POST /api/v1/attestations/:id/sign` — counter-signing by an authority
+- `GET /api/v1/attestations/:id/verify` — public signature verification
+
+### 11. Entity alias-graph (the settled merge model)
+- **Entities are immutable nodes** — stable `id`, `origin`, `tradition_tags`; imports never overwrite personal entities
+- **Typed alias relationships** in `entity_alias` table:
+  - `same-as` — user considers the entities to be the same being
+  - `aspect-of` / `aspect-includes` — parent-child relationship (e.g., "Hekate-Soteira is an aspect of Hekate")
+  - `syncretic-with` — related but distinct; sometimes spoken to as one, sometimes as separate (common in late-antique magic)
+  - `epithet-of` — a name attached as an epithet
+- **Unified views** (`entity_view` table) — user-defined named saved queries (e.g., `Hekate-all` = union of three entity_ids); presents merged offering history, contracts, sigils across linked entities at display time only
+- **Workings, offerings, contracts always attach to specific `entity_id`** — never to the unified aggregate; write-time intent preserved across alias-graph changes
+- **Import-time alias prompting** — on bundle import, UI asks how to relate to existing same-named entities; options are `distinct` (default), `same-as`, `aspect-of`, `syncretic-with`, `epithet-of`
+- **`<entity-ref>` picker** offers specific-entity vs. unified-view selection at write time
+- **Why this model**: no data loss; multiple tradition interpretations coexist; tradition fidelity preserved (can always filter to one tradition); cross-tradition study enabled
+
+### 12. Lineage attestation + counter-signing
+- **Declarable attestations** on a magician's profile — initiations received, teachers, granted degrees, order memberships
+- **Per-attestation visibility** — private / viewer / network / public
+- **Counter-signing** by authorities — a lodge master (or other authority) signs an attestation about another magician using Ed25519; signature includes statement + signed-by + signed-at
+- **Public verification UI** — anyone viewing a magician's lineage can verify signatures against the authority's published public key (no central authority; trust webs work peer-to-peer)
+- **Revocation** — authorities can sign revocation notices; UI shows attestation as "revoked by X on Y" without erasing history
+- **Magician's own keys** — each identity (per plan/04 §15) has its own keypair; the magician signs their own initial attestation, then receives counter-signatures from authorities
+
+### 13. Multi-identity integration
+- Entity tracker integrates with the per-vault identity system (see plan/04 §15)
+- Per-identity `notes_private` on entities — different identities can have different private notes on the same entity
+- Public displays of entity work attribute to the chosen identity per-content
 
 ## Design notes
 

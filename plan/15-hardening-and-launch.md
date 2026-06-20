@@ -97,6 +97,60 @@ Take Theourgia from "fully featured" to "ready for real-world adoption by seriou
 - Mentor-program scaffolding for new contributors
 - Annual security audit cadence
 
+### 11. GDPR compliance audit
+- **Right-to-access export** end-to-end tested — produces correct, complete archive of all user data in JSON + MBF format
+- **Right-to-erasure** end-to-end tested — full erasure with documented limits (federated content lives on per other parties' sovereignty; tombstones propagate; legal-hold exceptions documented)
+- **Data portability** export validated against importing into another tool (Day One, Obsidian, etc.)
+- **DPIA template** in `docs/admin/dpia-template.md` reviewed against current GDPR / EDPB guidance
+- **Breach notification runbook** rehearsed via tabletop exercise
+- **Cookie consent UI** verified on all public surfaces; zero-telemetry promise verified by automated CI test (no outbound calls except user-action-triggered)
+- **Privacy policy template** for self-hosters published; localized for major jurisdictions where feasible
+- **Data minimization audit** — schema review confirms no PII collected without specific purpose
+
+### 12. One-command deploys + one-click migrations
+- **Bootstrap installer** (`curl -fsSL https://install.theourgia.com | bash`) verified on fresh boxes — Hetzner, DigitalOcean, Vultr, Linode, OVH; both x86_64 and aarch64
+- **Web-based first-run wizard** validated with non-technical user testing (real magicians, not developers)
+- **Migration preview UX** — magician sees "here's what will change, here's what may break" with diff display before applying
+- **One-click rollback** to previous version tested across schema-changing migrations
+- **Auto-update channel selection** (stable / beta / dev) functional; channel switching tested
+- **Health-check dashboard** in admin surfaces real-time service health, recent errors, pending updates
+
+### 13. Digital inheritance / memorial mode
+- **Designated digital executor** flow tested end-to-end:
+  - Encrypted key-share creation (Shamir's secret sharing or similar)
+  - Time-locked unlock mechanism tested
+  - Executor handoff verified — executor receives notification, follows guided unlock
+- **Check-in mechanic** ("if I don't log in for N months, notify [person]") — scheduler tested; notification dispatch verified across email + Matrix + custom channels
+- **Memorial mode transition** — vault becomes read-only after trigger; public content stays accessible; private content remains sealed (impossible to decrypt without keys); in-memoriam framing in UI ("This vault is in memoriam for [identity]. Content is preserved per the magician's wishes.")
+- **Posthumous publication** — entries scheduled to release after trigger fires; tested end-to-end with confirmable release
+- **Configurable triggers** — time-based (N months inactivity), manual (designated executor declares), or hybrid
+- **Documentation**: `docs/user/digital-inheritance.md` — gentle, complete, tone-conscious guide; includes "have this conversation with your designated executor" prompts
+
+### 14. Closed-tradition flag handling
+- Bundle import flow correctly surfaces respect-source notice with citation back to the source-tradition's preference
+- Public-share UI hard-blocks attempts to publicly share closed-tradition content; informative explanation
+- AI agent layer (Phase 16) verifies closed-tradition exclusion via property tests — no path from agent surface to flagged content regardless of granted scope
+- Documentation: explain the closed-tradition flag philosophy and how to set it on user-created content
+
+### 15. Crisis-aware nudge (opt-in)
+- **Opt-in toggle** in settings; off by default
+- **Trigger conditions** carefully tuned (sustained severe distress in body/mood snapshots over multiple sessions; one-off ratings never trigger)
+- **Regional resource list** curated; community-maintained registry of crisis lines / therapists familiar with magickal practice / supportive resources
+- **Tone discipline** — UI copy reviewed by mental-health-literate readers AND practicing magicians to avoid pathologizing magick or being dismissive of practitioner state
+- **Easy dismissal** — user can mute the nudge category indefinitely without nag
+- **Never invasive** — surfaces as a small dismissible note, never a modal interrupt
+
+### 16. Audit and synchronization of all documentation
+- README.md reflects all phase statuses correctly
+- FEATURES.md status indicators accurate
+- ARCHITECTURE.md reflects shipped reality
+- All phase plans' Definition of Done checkboxes accurate
+- CHANGELOG.md complete for all releases up to 1.0.0
+- All ADRs filed for non-obvious decisions
+- API documentation auto-generated from OpenAPI is published at `docs.theourgia.com/api`
+- User documentation has no `TODO` headers; covers every user-visible feature
+- Admin documentation covers every operational procedure
+
 ## Design notes
 
 - Launch is a beginning, not an end. Every deliverable here is something that will be revisited; do not optimize for "ship and forget."

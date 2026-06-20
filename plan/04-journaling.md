@@ -121,6 +121,33 @@ Deliver a fully realized journaling environment that a serious practitioner can 
 - `GET/POST /api/v1/library/books`
 - `GET/POST /api/v1/library/quotes`
 - `GET/POST /api/v1/body-snapshots`
+- `GET/POST /api/v1/blog-posts`, `GET/POST /api/v1/blog-posts/:id/schedule`
+- `GET/POST /api/v1/identities`, `GET /api/v1/me/identities/default`
+
+### 13. Blog platform (distinct from diary)
+- General blog functionality alongside the magical record / journal — for magicians who want a public-facing writing surface separate from their practice log
+- **Post types**: article, photo, link, quote, video embed
+- **Per-post status**: draft / scheduled / published / archived
+- **Multi-author support** when multiple identities are configured on a single vault
+- **RSS / Atom / JSON Feed** for the blog stream
+- **Per-post comments with moderation** (opt-in per post)
+- Blog data shares the entry model (kind = `blog_post`) but has its own visibility default (`public`) and its own rendering on the public site
+
+### 14. Time-released / scheduled content
+- **Scheduled publication** for any entry, blog post, publication, newsletter issue
+- **Posthumous publication** — entries scheduled to release after a digital-inheritance trigger fires (see plan/15)
+- **Curriculum unlocking** — content unlocks for subscribers on specific dates ("Lesson 7 unlocks Beltane 2027")
+- **Time-released bundles** — within a tradition bundle, individual rituals can be marked "available after [date / initiation grade attained / etc.]"
+- Background scheduler (Celery beat) handles releases; missed releases caught up on next run
+- Admin UI surfaces upcoming scheduled releases with edit / cancel controls; "what's queued" view per vault
+
+### 15. Multi-identity authoring (pseudonymity)
+- A vault supports 1+ author **identities** (legal name, magickal name(s), order name, ancestor name, ritual-context names)
+- Each entry, post, publication has an `authored_by_identity` field set at write time
+- **Identity picker in editor** — default identity per entry kind configurable in settings
+- Public displays show the chosen identity for each piece of content
+- **Identity-scoped private notes on entities** — different identities can keep separate `notes_private` on the same entity (e.g., your initiation-context name's notes on Hekate are separate from your daily-practice name's notes)
+- Default convention: built-in copy and platform-managed text always refer to the maintainer by their chosen magickal name
 
 ## Design notes
 

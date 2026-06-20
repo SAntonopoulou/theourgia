@@ -74,6 +74,25 @@ A unified, well-organized, secure media library with strong privacy defaults, vi
 - `GET /api/v1/media/:id/download` — token-gated for restricted visibility
 - `GET/POST /api/v1/albums`
 - `GET/POST /api/v1/pilgrimage-sites`
+- `GET /api/v1/calendar-feeds/:vault_slug.ics` — vault iCal feed
+- `GET /api/v1/calendar-feeds/hub/:hub_slug.ics` — hub group ritual iCal feed
+- `GET/POST /api/v1/calendar-feeds/config` — configure which event categories the feed includes
+
+### 9. iCal / WebCal feed exports
+- **Per-vault subscribable iCal feed** for planetary hours, festivals, working windows, scheduled rituals, scheduled publications
+- **Per-hub subscribable iCal feed** for scheduled group rituals — each event embeds metadata for participants' timezone-localized planetary hour
+- **Subscribable from any iCal client** — Apple Calendar, Google Calendar, Outlook, Fastmail, Thunderbird; one-way read-only export
+- **Configurable feed scope** per vault — which event categories to include (planetary hours, lunar phases, festivals only, custom)
+- **Token-protected feeds** for non-public schedules (the magician shares the unique URL with trusted readers)
+- **Per-feed cache headers** to avoid hammering the server with calendar-client polling
+- **iCal extensions** for Theourgia-specific properties (planetary hour metadata, lunar phase, tradition tags) — degrades gracefully in standard clients
+
+### 10. Network group ritual feed
+- **Per-hub iCal feed** for upcoming and recently-completed group rituals
+- **Localized in each subscriber's timezone** with planetary hour at their location embedded in each event
+- **Feed includes**: ritual title, description, materials list, links to shared ritual scripts (network-visibility content)
+- **RSVP integration** — subscribing magicians can mark attendance from their client (via webhook to Theourgia)
+- **Per-ritual cancellation** propagates through the feed
 
 ## Design notes
 

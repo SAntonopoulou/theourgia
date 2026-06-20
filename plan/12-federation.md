@@ -87,6 +87,56 @@ Enable magicians on different instances to form networks, coordinate group work,
 - Hub management endpoints
 - Group ritual endpoints
 - Private viewer management endpoints
+- `POST /api/v1/sso/authorize` — issue SSO assertion to a target hub
+- `POST /api/v1/sso/verify` — verify an SSO assertion from another instance
+- `GET/POST/PATCH /api/v1/hubs/:id/roles` — role definitions
+- `GET/POST/PATCH /api/v1/hubs/:id/permissions` — permission matrix
+- `GET /api/v1/hubs/:id/audit` — network-level audit log
+
+### 12. Single Sign-On across networks
+- **Theourgia SSO** based on the federation protocol's per-instance Ed25519 keys
+- A magician can use one identity to request joining public networks, ask to join private ones
+- **Per-network opt-in** — hubs choose whether to accept SSO authentication (set in hub admin)
+- **Used for**:
+  - Joining public networks one-click
+  - Requesting access to private networks
+  - Comment authentication on individual vault sites
+  - Subscription sign-in
+  - Bundle download authorization for paid / restricted bundles
+- **No central SSO server** — identity provision flows through the user's home vault instance via federation
+- **Per-claim signing** — SSO assertions are scoped (e.g., "this magician is requesting join to this hub") and time-limited
+- **Revocation** — SSO assertions can be revoked by the home instance immediately
+
+### 13. Admin permissions panel
+- **Configurable user levels per hub** — admin-defined roles with granular permission sets
+- **Default role bundles** (extensible):
+  - `admin` — full control of the hub
+  - `officer` — moderate content, manage members, send newsletters
+  - `moderator` — moderate content only
+  - `member` — full content access, can submit to curation
+  - `observer` — read-only public/network content
+- **Per-permission matrix** — exhaustive list of granular permissions:
+  - Edit hub content, moderate submissions, manage members, send newsletters, run analytics queries, accept federation peers, edit role definitions, manage permission matrix, view audit log, etc.
+- **UI**: admin panel with role table; per-role checkbox matrix; "preview as role X" feature for testing
+- **Per-action audit log** — every admin-panel change is itself logged
+- **Permission templates** — pre-built role bundles for common cases (coven, lodge, study group, scholarly working group)
+- **Clear feedback** — permission-denied actions surface "you cannot do X because you lack permission Y" with link to escalation path
+
+### 14. Enhanced audit log for networks
+- Network-level audit surface extending the per-vault audit scaffold from plan/01 §10
+- **Visible to**:
+  - Hub admins: all events
+  - Hub members: events affecting them or content they authored
+  - Compliance auditors (for GDPR/DPIA): exportable filtered view
+- **Event types logged**:
+  - All admin-panel changes (role, permissions, members)
+  - All content moderation actions
+  - All federation operations (peers added/removed, capability tokens issued/revoked)
+  - All member access changes
+  - All bundle publications
+  - All newsletter sends
+- **Filterable** by actor, time range, action type
+- **Exportable** for GDPR / DPIA / compliance reviews
 
 ## Design notes
 
