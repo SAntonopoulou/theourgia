@@ -385,11 +385,30 @@ export function Foundations() {
               </Button>
             }
           >
-            <div style={{ padding: "var(--space-4, 16px)", display: "flex", flexDirection: "column", gap: 8 }}>
-              <h3 style={{ margin: 0, fontFamily: "var(--font-serif)", fontSize: "var(--type-h3, 16px)" }}>
+            <div
+              style={{
+                padding: "var(--space-4, 16px)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              <h3
+                style={{
+                  margin: 0,
+                  fontFamily: "var(--font-serif)",
+                  fontSize: "var(--type-h3, 16px)",
+                }}
+              >
                 Popover
               </h3>
-              <p style={{ margin: 0, color: "var(--ink-soft)", fontSize: "var(--type-body-sm, 13px)" }}>
+              <p
+                style={{
+                  margin: 0,
+                  color: "var(--ink-soft)",
+                  fontSize: "var(--type-body-sm, 13px)",
+                }}
+              >
                 Anchored content with click-outside dismissal and ESC. Generic surface — Menu and
                 Tooltip are specialised versions of this.
               </p>

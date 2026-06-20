@@ -10,6 +10,7 @@
  * package.json::exports — those are static assets, not JS exports.
  */
 
+export * from "./AppShell/index.js";
 export * from "./Avatar/index.js";
 export * from "./Badge/index.js";
 export * from "./Banner/index.js";
@@ -21,10 +22,12 @@ export * from "./Drawer/index.js";
 export * from "./EmptyState/index.js";
 export * from "./Field/index.js";
 export * from "./Glyph/index.js";
+export * from "./hooks/index.js";
 export * from "./i18n/index.js";
 export * from "./Menu/index.js";
 export * from "./Popover/index.js";
 export * from "./Progress/index.js";
+export * from "./PublicChrome/index.js";
 export * from "./SegmentedControl/index.js";
 export * from "./Skeleton/index.js";
 export * from "./Stat/index.js";
@@ -33,3 +36,4 @@ export * from "./Switch/index.js";
 export * from "./Toast/index.js";
 export * from "./Tooltip/index.js";
 export * from "./tokens/index.js";
+export * from "./VaultNav/index.js";
