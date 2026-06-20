@@ -26,7 +26,10 @@ function inlineSprite(): Plugin {
   };
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // Dev: serve at /. Build: emit asset URLs under /admin/ so the SPA can
+  // be mounted at https://dev.theourgia.com/admin/ behind Caddy.
+  base: command === "build" ? "/admin/" : "/",
   plugins: [react(), inlineSprite()],
   server: {
     port: 5173,
@@ -37,4 +40,4 @@ export default defineConfig({
       "@": resolve(here, "./src"),
     },
   },
-});
+}));
