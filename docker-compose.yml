@@ -1,0 +1,152 @@
+# Theourgia — base docker-compose
+#
+# Used together with environment-specific overrides:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up
+#
+# By itself this file does not start a complete stack — postgres + redis run,
+# but backend / frontend container builds depend on overrides for their build
+# target and command. Use `just dev` or `just up-prod` instead of bare compose.
+
+name: theourgia
+
+services:
+  # ───────────────────────────────────────────────────────────────────────
+  # PostgreSQL
+  # ───────────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${THEOURGIA_DB_USER:-theourgia}
+      POSTGRES_PASSWORD: ${THEOURGIA_DB_PASSWORD:?THEOURGIA_DB_PASSWORD must be set in .env}
+      POSTGRES_DB: ${THEOURGIA_DB_NAME:-theourgia}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${THEOURGIA_DB_USER:-theourgia} -d ${THEOURGIA_DB_NAME:-theourgia}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - theourgia-internal
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Redis (sessions, cache, Celery broker)
+  # ───────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - theourgia-internal
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Backend (FastAPI)
+  # ───────────────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      THEOURGIA_ENV: ${THEOURGIA_ENV:-development}
+      THEOURGIA_SECRET_KEY: ${THEOURGIA_SECRET_KEY:?THEOURGIA_SECRET_KEY must be set}
+      THEOURGIA_MASTER_ENCRYPTION_KEY: ${THEOURGIA_MASTER_ENCRYPTION_KEY:?required}
+      THEOURGIA_BASE_URL: ${THEOURGIA_BASE_URL:-https://theourgia.example.com}
+      THEOURGIA_INSTANCE_ID: ${THEOURGIA_INSTANCE_ID:-theourgia.example.com}
+      THEOURGIA_LOG_LEVEL: ${THEOURGIA_LOG_LEVEL:-info}
+      DATABASE_URL: postgresql+asyncpg://${THEOURGIA_DB_USER:-theourgia}:${THEOURGIA_DB_PASSWORD}@postgres:5432/${THEOURGIA_DB_NAME:-theourgia}
+      REDIS_URL: redis://redis:6379/0
+      THEOURGIA_EPHE_PATH: /app/data/ephe
+    restart: unless-stopped
+    networks:
+      - theourgia-internal
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Celery worker (background jobs)
+  # ───────────────────────────────────────────────────────────────────────
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["celery", "-A", "theourgia.workers.app", "worker", "--loglevel=info"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      THEOURGIA_ENV: ${THEOURGIA_ENV:-development}
+      THEOURGIA_SECRET_KEY: ${THEOURGIA_SECRET_KEY}
+      THEOURGIA_MASTER_ENCRYPTION_KEY: ${THEOURGIA_MASTER_ENCRYPTION_KEY}
+      DATABASE_URL: postgresql+asyncpg://${THEOURGIA_DB_USER:-theourgia}:${THEOURGIA_DB_PASSWORD}@postgres:5432/${THEOURGIA_DB_NAME:-theourgia}
+      REDIS_URL: redis://redis:6379/0
+    restart: unless-stopped
+    networks:
+      - theourgia-internal
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Celery beat (scheduled jobs)
+  # ───────────────────────────────────────────────────────────────────────
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["celery", "-A", "theourgia.workers.app", "beat", "--loglevel=info"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      THEOURGIA_SECRET_KEY: ${THEOURGIA_SECRET_KEY}
+      THEOURGIA_MASTER_ENCRYPTION_KEY: ${THEOURGIA_MASTER_ENCRYPTION_KEY}
+      DATABASE_URL: postgresql+asyncpg://${THEOURGIA_DB_USER:-theourgia}:${THEOURGIA_DB_PASSWORD}@postgres:5432/${THEOURGIA_DB_NAME:-theourgia}
+      REDIS_URL: redis://redis:6379/0
+    restart: unless-stopped
+    networks:
+      - theourgia-internal
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Frontend (static-served by internal Caddy; reverse-proxies API to backend)
+  # ───────────────────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - theourgia-internal
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  theourgia-internal:
+    driver: bridge
+    # Internal-only network — no external interface bindings here.
+    # Per-environment overrides expose specific services to host as needed.

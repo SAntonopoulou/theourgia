@@ -1,0 +1,107 @@
+# Theourgia — development overrides for docker-compose
+#
+# Use:  docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+# Or:   just dev
+#
+# Differences from production:
+#   - Source volume-mounted for hot reload
+#   - postgres + redis exposed on 127.0.0.1 for dev tools (psql, redis-cli)
+#   - backend with --reload
+#   - Public site + admin run as separate dev servers (Astro + Vite)
+#   - No internal Caddy; devs hit each service directly on 127.0.0.1
+#   - Default insecure secrets — DO NOT use these values in production
+
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: dev
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./backend:/app:cached
+      - backend_venv:/app/.venv
+      - backend_ephe:/app/data/ephe
+    command: ["uvicorn", "theourgia.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    environment:
+      THEOURGIA_ENV: development
+      # Dev-only sentinel values; replaced by .env when contributors set their own.
+      THEOURGIA_SECRET_KEY: ${THEOURGIA_SECRET_KEY:-dev-insecure-not-for-production-use-this-key}
+      THEOURGIA_MASTER_ENCRYPTION_KEY: ${THEOURGIA_MASTER_ENCRYPTION_KEY:-dev-master-key-not-for-production-do-not-use}
+      THEOURGIA_DB_PASSWORD: ${THEOURGIA_DB_PASSWORD:-theourgia}
+      THEOURGIA_LOG_LEVEL: debug
+
+  celery:
+    build:
+      target: dev
+    volumes:
+      - ./backend:/app:cached
+      - backend_venv:/app/.venv
+    environment:
+      THEOURGIA_DB_PASSWORD: ${THEOURGIA_DB_PASSWORD:-theourgia}
+      THEOURGIA_SECRET_KEY: ${THEOURGIA_SECRET_KEY:-dev-insecure-not-for-production-use-this-key}
+      THEOURGIA_MASTER_ENCRYPTION_KEY: ${THEOURGIA_MASTER_ENCRYPTION_KEY:-dev-master-key-not-for-production-do-not-use}
+
+  celery-beat:
+    build:
+      target: dev
+    volumes:
+      - ./backend:/app:cached
+      - backend_venv:/app/.venv
+    environment:
+      THEOURGIA_DB_PASSWORD: ${THEOURGIA_DB_PASSWORD:-theourgia}
+      THEOURGIA_SECRET_KEY: ${THEOURGIA_SECRET_KEY:-dev-insecure-not-for-production-use-this-key}
+      THEOURGIA_MASTER_ENCRYPTION_KEY: ${THEOURGIA_MASTER_ENCRYPTION_KEY:-dev-master-key-not-for-production-do-not-use}
+
+  # Replace the prod 'frontend' (internal Caddy + static) with two dev servers.
+  # The prod 'frontend' service is left declared in docker-compose.yml; the
+  # dev compose simply doesn't depend on it. We add public-site + admin as
+  # new services here that run dev servers.
+  public-site:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: public-site-dev
+    ports:
+      - "127.0.0.1:4321:4321"
+    volumes:
+      - ./frontend:/app/frontend:cached
+      - ./tsconfig.json:/app/tsconfig.json:ro
+      - ./biome.json:/app/biome.json:ro
+      - public_site_node_modules:/app/node_modules
+    networks:
+      - theourgia-internal
+
+  admin:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: admin-dev
+    ports:
+      - "127.0.0.1:5173:5173"
+    volumes:
+      - ./frontend:/app/frontend:cached
+      - ./tsconfig.json:/app/tsconfig.json:ro
+      - ./biome.json:/app/biome.json:ro
+      - admin_node_modules:/app/node_modules
+    networks:
+      - theourgia-internal
+
+  # Do not start the prod 'frontend' container in dev — explicitly profiles it out.
+  frontend:
+    profiles: ["prod-only"]
+
+volumes:
+  backend_venv:
+  backend_ephe:
+  public_site_node_modules:
+  admin_node_modules:

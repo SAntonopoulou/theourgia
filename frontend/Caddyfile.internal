@@ -1,0 +1,92 @@
+# Theourgia internal frontend Caddyfile.
+#
+# This Caddy lives inside the frontend container. It serves the built static
+# files and reverse-proxies API + federation routes to the backend container.
+#
+# The HOST shared Caddy (running on the deploy host) forwards traffic to this
+# container on a localhost-only port (8190 for agent-house deployments;
+# self-hosters may pick any port). This internal Caddy does no TLS.
+
+{
+    # Global options
+    auto_https off
+    log {
+        output stdout
+        format console
+    }
+    # Use the in-container DNS resolver provided by Docker
+    servers {
+        # Disable timeouts that would interrupt long-lived federation requests
+        timeouts {
+            read_body   30s
+            read_header 10s
+            write       30s
+            idle        5m
+        }
+    }
+}
+
+:80 {
+    encode gzip zstd
+
+    # Health check endpoint
+    respond /healthz "ok" 200
+
+    # Backend API routes
+    handle /api/* {
+        reverse_proxy backend:8000 {
+            flush_interval -1
+            transport http {
+                versions 1.1 2
+            }
+            header_up X-Forwarded-Host {host}
+        }
+    }
+
+    # Federation routes (ActivityPub + native Theourgia federation)
+    handle /federation/* {
+        reverse_proxy backend:8000
+    }
+
+    handle /.well-known/* {
+        reverse_proxy backend:8000
+    }
+
+    # ActivityPub user paths
+    handle /users/* {
+        reverse_proxy backend:8000
+    }
+
+    # WebSocket upgrade for realtime subscriptions
+    handle /ws/* {
+        reverse_proxy backend:8000 {
+            flush_interval -1
+        }
+    }
+
+    # Admin SPA — anything under /app/* serves the admin shell with client-side routing
+    handle /app/* {
+        root * /srv/admin
+        try_files {path} /index.html
+        file_server
+    }
+
+    # Everything else — public Astro site
+    handle {
+        root * /srv/public-site
+        try_files {path} {path}/ /404.html
+        file_server
+    }
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "interest-cohort=()"
+        # CSP is set per-route by the backend for API responses; here we set
+        # a sensible default for static page responses.
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+        -Server
+    }
+}

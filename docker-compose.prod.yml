@@ -1,0 +1,61 @@
+# Theourgia — production overrides for docker-compose
+#
+# Use:  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# Or:   just up-prod
+#
+# Differences from base:
+#   - All required secrets must be set in .env (no dev fallbacks)
+#   - Backend without --reload, with multiple workers
+#   - Internal Caddy (frontend service) bound to 127.0.0.1:8190 — the host
+#     shared Caddy (e.g., agent-house pattern) reverse-proxies to this port
+#   - No postgres / redis external port bindings — strictly internal
+#   - Restart policies set to unless-stopped
+#   - Logging driver configured for production observability
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: prod
+    command: ["uvicorn", "theourgia.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "${THEOURGIA_WORKERS:-4}"]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  celery:
+    build:
+      target: prod
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  celery-beat:
+    build:
+      target: prod
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: prod
+    ports:
+      # Bound to host loopback only. Host shared Caddy reverse-proxies here.
+      # 8190 is Theourgia's reserved entry-point port in the agent-house
+      # convention; self-hosters may pick any port in their reserved block
+      # by overriding via .env (THEOURGIA_FRONTEND_HOST_PORT).
+      - "127.0.0.1:${THEOURGIA_FRONTEND_HOST_PORT:-8190}:80"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

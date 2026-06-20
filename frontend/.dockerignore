@@ -1,0 +1,26 @@
+# Frontend image .dockerignore
+
+.git*
+node_modules
+**/node_modules
+dist
+**/dist
+build
+**/build
+.astro
+**/.astro
+.next
+**/.next
+.svelte-kit
+**/.svelte-kit
+.turbo
+**/.turbo
+.vite
+**/.vite
+.cache
+**/.cache
+*.log
+.env
+.env.*
+!.env.example
+.DS_Store

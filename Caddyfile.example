@@ -1,0 +1,91 @@
+# Theourgia — example host-level Caddyfile for single-tenant self-hosters
+#
+# This is a REFERENCE config for self-hosters who run Theourgia on a
+# dedicated server (one host, one Theourgia instance, no other tenants).
+# Adjust the domain and Cloudflare token name to your setup.
+#
+# For multi-tenant deployments (multiple agents/projects on one host),
+# see /srv/agents/AGENT_HOUSE_DEPLOY_GUIDE.md on agent-house, or follow
+# the snippet pattern documented in docs/admin/multi-tenant-caddy.md.
+#
+# Place this at /etc/caddy/Caddyfile on a fresh host running Caddy as a
+# systemd service. Caddy must be built with the cloudflare-dns plugin
+# (use the xcaddy builder, or download a custom build from
+# https://caddyserver.com/download with the plugin selected).
+
+{
+    # Email used for Let's Encrypt account contact
+    email YOUR_EMAIL@example.com
+
+    # Optional: log to a file with rotation
+    # log {
+    #     output file /var/log/caddy/access.log {
+    #         roll_size 100mb
+    #         roll_keep 10
+    #     }
+    #     format console
+    # }
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Theourgia apex
+# ─────────────────────────────────────────────────────────────────────────────
+theourgia.example.com {
+    encode gzip zstd
+
+    # TLS via Cloudflare DNS-01 challenge.
+    # Set CLOUDFLARE_API_TOKEN in /etc/caddy/caddy.env (loaded by systemd).
+    # Token scope: Zone:DNS:Edit on the domain's zone.
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+    }
+
+    # Reverse proxy to the Theourgia internal frontend container on its
+    # bound host port. Default is 8190 per Theourgia's port convention.
+    reverse_proxy 127.0.0.1:8190 {
+        flush_interval -1
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        transport http {
+            versions 1.1 2
+        }
+    }
+
+    # Security headers — Theourgia's internal Caddy also sets these for static
+    # responses; the outer Caddy sets them again as belt-and-suspenders for
+    # API responses that pass through.
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "interest-cohort=()"
+        -Server
+    }
+
+    log {
+        output stdout
+        format console
+    }
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# www → apex redirect
+# ─────────────────────────────────────────────────────────────────────────────
+www.theourgia.example.com {
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+    }
+    redir https://theourgia.example.com{uri} permanent
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Optional: docs subdomain
+# ─────────────────────────────────────────────────────────────────────────────
+# docs.theourgia.example.com {
+#     tls {
+#         dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+#     }
+#     root * /var/www/theourgia-docs
+#     file_server
+# }

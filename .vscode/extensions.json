@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/vscode-extensions.json",
+  "recommendations": [
+    "ms-python.python",
+    "charliermarsh.ruff",
+    "ms-python.mypy-type-checker",
+    "biomejs.biome",
+    "astro-build.astro-vscode",
+    "bradlc.vscode-tailwindcss",
+    "tamasfe.even-better-toml",
+    "redhat.vscode-yaml",
+    "ms-azuretools.vscode-docker",
+    "skellock.just",
+    "yzhang.markdown-all-in-one",
+    "davidanson.vscode-markdownlint",
+    "streetsidesoftware.code-spell-checker",
+    "eamodio.gitlens",
+    "github.vscode-pull-request-github",
+    "ms-vscode-remote.remote-containers"
+  ],
+  "unwantedRecommendations": [
+    "ms-python.black-formatter",
+    "ms-python.isort",
+    "esbenp.prettier-vscode"
+  ]
+}

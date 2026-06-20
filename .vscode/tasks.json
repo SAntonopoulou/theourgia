@@ -1,0 +1,53 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Microsoft/vscode/main/extensions/configuration-editing/schemas/tasks-schema.json",
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "just: check",
+      "type": "shell",
+      "command": "just check",
+      "group": { "kind": "test", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "shared" },
+      "problemMatcher": []
+    },
+    {
+      "label": "just: lint",
+      "type": "shell",
+      "command": "just lint",
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "just: format",
+      "type": "shell",
+      "command": "just format",
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "just: typecheck",
+      "type": "shell",
+      "command": "just typecheck",
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "just: test-backend",
+      "type": "shell",
+      "command": "just test-backend",
+      "group": "test",
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "just: dev (up)",
+      "type": "shell",
+      "command": "just dev",
+      "isBackground": true,
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "just: down",
+      "type": "shell",
+      "command": "just down",
+      "presentation": { "reveal": "always", "panel": "shared" }
+    }
+  ]
+}

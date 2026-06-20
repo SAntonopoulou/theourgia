@@ -1,0 +1,72 @@
+# Theourgia top-level .dockerignore
+# Applied to all builds at the repo root.
+# Each sub-image (backend/, frontend/) has its own .dockerignore too.
+
+# VCS
+.git
+.gitignore
+.gitattributes
+
+# Editors / IDEs
+.vscode
+.idea
+.obsidian
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cohort / private workspace
+secrets
+*.env
+*.env.*
+!.env.example
+!.env.*.example
+REPLY_FROM_PM_CLAUDE*.md
+note_to_design_claude*.md
+askspmtodo
+
+# Build artifacts
+dist
+build
+out
+.astro
+.next
+.svelte-kit
+.turbo
+.vite
+.cache
+
+# Test / coverage
+htmlcov
+.coverage
+.coverage.*
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.hypothesis
+
+# Logs
+*.log
+logs
+
+# Documentation
+plan
+docs/adr
+*.md
+
+# Re-include the README inside each image at its appropriate level
+!backend/README.md
+!frontend/README.md
+
+# Node / Python local installs (re-built inside images)
+node_modules
+.venv
+venv
+__pycache__
+*.pyc
+
+# Local dev compose overrides
+docker-compose.override.yml

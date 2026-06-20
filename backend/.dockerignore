@@ -1,0 +1,27 @@
+# Backend image .dockerignore
+
+.git*
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+.coverage.*
+htmlcov
+.hypothesis
+*.egg-info
+dist
+build
+.env
+.env.*
+!.env.example
+
+# Tests (excluded from prod image; dev image includes them via volume mount)
+# Note: we copy tests into the image for the dev target; the prod stage uses
+# COPY --from=build to skip them. .dockerignore here applies before COPY in
+# the Dockerfile; we don't want to globally exclude tests because they're
+# needed for in-image test runs. So tests are NOT excluded here.

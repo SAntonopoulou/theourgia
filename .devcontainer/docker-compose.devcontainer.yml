@@ -1,0 +1,16 @@
+# Devcontainer override — adds a workspace container with the source mounted.
+# Composed with docker-compose.yml + docker-compose.dev.yml.
+
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/base:bookworm
+    volumes:
+      - ..:/workspaces/theourgia:cached
+      - /var/run/docker.sock:/var/run/docker-host.sock
+    command: ["sleep", "infinity"]
+    network_mode: host
+    user: vscode
+    # The devcontainer feature `docker-outside-of-docker` mounts the host
+    # docker socket so that `docker compose up` from inside the workspace
+    # talks to the host Docker daemon, sharing the same volume and network
+    # namespace as the postgres/redis/backend services.
