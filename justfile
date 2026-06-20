@@ -150,11 +150,11 @@ build-frontend:
 
 # Run the docs site locally (Astro Starlight)
 docs-dev:
-    pnpm --filter ./docs dev
+    pnpm --filter @theourgia/docs dev
 
 # Build docs site for production
 docs-build:
-    pnpm --filter ./docs build
+    pnpm --filter @theourgia/docs build
 
 # -----------------------------------------------------------------------------
 # Quality / pre-commit

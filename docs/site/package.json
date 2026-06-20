@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@theourgia/docs",
+  "version": "0.0.0-dev",
+  "private": true,
+  "type": "module",
+  "description": "Theourgia documentation site (Astro Starlight)",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "typecheck": "astro check"
+  },
+  "dependencies": {
+    "astro": "^4.16.18",
+    "@astrojs/starlight": "^0.30.6",
+    "@astrojs/check": "^0.9.4",
+    "sharp": "^0.33.5",
+    "typescript": "^5.7.0"
+  }
+}

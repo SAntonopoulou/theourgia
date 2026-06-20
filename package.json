@@ -18,7 +18,7 @@
   "packageManager": "pnpm@9.15.0",
   "workspaces": [
     "frontend/*",
-    "docs"
+    "docs/site"
   ],
   "scripts": {
     "lint": "biome check .",
@@ -28,8 +28,8 @@
     "test": "pnpm -r test",
     "test:e2e": "playwright test",
     "build": "pnpm -r --filter ./frontend/* build",
-    "docs:dev": "pnpm --filter ./docs dev",
-    "docs:build": "pnpm --filter ./docs build"
+    "docs:dev": "pnpm --filter @theourgia/docs dev",
+    "docs:build": "pnpm --filter @theourgia/docs build"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
