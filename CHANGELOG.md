@@ -133,6 +133,38 @@ After this batch: cloning the repo and choosing "Reopen in Container" gets you a
 - One-command deploys + one-click migrations with diff preview
 - README continuously current as community page
 
+### Added — 2026-06-20 (Phase 00, Batch 3 — CI workflows + GitHub templates)
+
+Phase 00 Batch 3 lands the CI/CD scaffolding and GitHub contributor templates. During v0.x these workflows are **informational, not merge-blocking** (per PROJECT_PLAN §8); branch protection will require green CI after v1.0.
+
+**CI workflows** (`.github/workflows/`):
+- `ci.yml` — identity guard, Python lint+test, TS lint+typecheck, markdown lint, gitleaks, dep audit, Docker build smoke, no-telemetry placeholder
+- `nightly.yml` — daily deep dep audits, AGPL license compatibility check, CycloneDX SBOM
+- `release.yml` — tag-triggered multi-arch image publish to GHCR with provenance + SBOM; GitHub Release with notes from CHANGELOG
+
+**Contributor templates** (`.github/`):
+- `ISSUE_TEMPLATE/{config,bug_report,feature_request,tradition_feedback}.yml` — structured forms; security routed to private channels
+- `pull_request_template.md` — type, phase, tests, docs/catalog updates, security, tradition-respectful review
+- `CODEOWNERS` — @SAntonopoulou as default reviewer; governance docs explicit
+- `dependabot.yml` — weekly Python + JS, monthly Actions + Docker
+
+### Added — 2026-06-20 (Phase 00, Batch 4 — initial ten ADRs)
+
+Phase 00 Batch 4 lands the ten initial Architecture Decision Records in `docs/adr/`. Each ADR captures a decision made during planning that contributors should understand without conversational context.
+
+- [ADR-0001](docs/adr/0001-record-architecture-decisions.md) — Record architecture decisions (the meta-ADR)
+- [ADR-0002](docs/adr/0002-license-agpl-3-0.md) — License is AGPL-3.0-only (with maintainer's copyleft commitment)
+- [ADR-0003](docs/adr/0003-backend-python-fastapi-sqlmodel-alembic.md) — Backend stack: Python 3.12 + FastAPI + SQLModel + Alembic
+- [ADR-0004](docs/adr/0004-frontend-astro-react.md) — Frontend split: Astro for public site + React 19 admin SPA
+- [ADR-0005](docs/adr/0005-postgresql-only.md) — PostgreSQL is the only supported database
+- [ADR-0006](docs/adr/0006-swiss-ephemeris-over-skyfield.md) — Swiss Ephemeris over Skyfield (reproducibility with established astrology tools)
+- [ADR-0007](docs/adr/0007-tiptap-editor.md) — Tiptap as the rich-text editor foundation
+- [ADR-0008](docs/adr/0008-caddy-reverse-proxy.md) — Caddy as the reference reverse proxy
+- [ADR-0009](docs/adr/0009-monorepo.md) — Single monorepo organization
+- [ADR-0010](docs/adr/0010-conventional-commits.md) — Conventional Commits + Semantic Versioning
+
+ADRs are MADR-format, never edited after acceptance — to change a decision, write a superseding ADR.
+
 ### Status
 
 Project is in **planning phase**. No runnable code yet. Implementation begins with Phase 00 (Foundations).
