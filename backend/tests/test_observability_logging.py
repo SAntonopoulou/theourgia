@@ -25,12 +25,26 @@ def _reset_context() -> None:
 
 
 def test_configure_logging_is_idempotent() -> None:
-    """Calling configure_logging multiple times must not duplicate handlers."""
+    """Calling configure_logging multiple times must not duplicate our
+    handlers.
+
+    We measure handlers we own (tagged `_theourgia_handler`) rather than
+    total handler count — pytest's logging plugin attaches its own
+    handlers that we should not disturb."""
+
+    def _own_handler_count() -> int:
+        return sum(
+            1
+            for h in logging.getLogger().handlers
+            if getattr(h, "_theourgia_handler", False)
+        )
+
     configure_logging(level="INFO", json_output=True)
-    handler_count_after_first = len(logging.getLogger().handlers)
+    after_first = _own_handler_count()
     configure_logging(level="INFO", json_output=True)
-    handler_count_after_second = len(logging.getLogger().handlers)
-    assert handler_count_after_first == handler_count_after_second == 1
+    after_second = _own_handler_count()
+    assert after_first == 1
+    assert after_second == 1
 
 
 def test_json_output_is_parseable_json(capsys: pytest.CaptureFixture[str]) -> None:

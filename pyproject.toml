@@ -158,6 +158,11 @@ markers = [
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning:pytest_asyncio",
+    # Starlette TestClient warns when used with httpx 0.28+; the
+    # ``httpx2`` replacement it suggests doesn't exist yet. The class
+    # is starlette.exceptions.StarletteDeprecationWarning (not the
+    # builtin DeprecationWarning). Ignore until Starlette updates.
+    "ignore::starlette.exceptions.StarletteDeprecationWarning",
 ]
 asyncio_mode = "auto"
 

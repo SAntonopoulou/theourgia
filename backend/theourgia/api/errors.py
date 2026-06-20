@@ -18,7 +18,7 @@ from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import ORJSONResponse
+from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from theourgia.api.schemas import Problem
@@ -120,8 +120,8 @@ def _problem_response(
     type_uri: str = "about:blank",
     detail: str | None = None,
     headers: dict[str, str] | None = None,
-) -> ORJSONResponse:
-    """Construct an ORJSONResponse carrying an RFC 7807 Problem."""
+) -> JSONResponse:
+    """Construct a JSONResponse carrying an RFC 7807 Problem."""
     request_id = getattr(request.state, "request_id", None)
     body = Problem(
         type=type_uri,
@@ -136,7 +136,7 @@ def _problem_response(
     if request_id and "x-request-id" not in {k.lower() for k in response_headers}:
         response_headers["X-Request-ID"] = request_id
 
-    return ORJSONResponse(
+    return JSONResponse(
         status_code=status_code,
         content=body,
         media_type=PROBLEM_CONTENT_TYPE,
@@ -148,7 +148,7 @@ def register_error_handlers(app: FastAPI) -> None:
     """Attach exception handlers that translate exceptions to Problem responses."""
 
     @app.exception_handler(APIError)
-    async def _on_api_error(request: Request, exc: APIError) -> ORJSONResponse:
+    async def _on_api_error(request: Request, exc: APIError) -> JSONResponse:
         return _problem_response(
             request,
             status_code=exc.status_code,
@@ -161,7 +161,7 @@ def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(StarletteHTTPException)
     async def _on_starlette_http_error(
         request: Request, exc: StarletteHTTPException
-    ) -> ORJSONResponse:
+    ) -> JSONResponse:
         return _problem_response(
             request,
             status_code=exc.status_code,
@@ -173,7 +173,7 @@ def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(RequestValidationError)
     async def _on_validation_error(
         request: Request, exc: RequestValidationError
-    ) -> ORJSONResponse:
+    ) -> JSONResponse:
         # Surface a concise summary; full per-field errors live in detail.
         return _problem_response(
             request,
@@ -183,7 +183,7 @@ def register_error_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(Exception)
-    async def _on_unhandled(request: Request, exc: Exception) -> ORJSONResponse:
+    async def _on_unhandled(request: Request, exc: Exception) -> JSONResponse:
         # Log with full traceback but emit a generic Problem so internal
         # details (paths, query shapes, secret keys present in tracebacks)
         # never reach the client.

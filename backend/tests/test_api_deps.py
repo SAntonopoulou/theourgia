@@ -90,7 +90,10 @@ class _StubSession:
                 return _ScalarResult(None)
             sql_text = str(compiled)
             for uid, user in self.users_by_id.items():
-                if str(uid) in sql_text:
+                # SQLAlchemy serializes UUIDs without hyphens in literal
+                # binds (``b343af64c00d45f8...``), but str(uid) is the
+                # hyphenated form. Match either.
+                if str(uid) in sql_text or uid.hex in sql_text:
                     return _ScalarResult(user)
             return _ScalarResult(None)
 

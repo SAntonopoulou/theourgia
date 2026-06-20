@@ -135,7 +135,9 @@ def test_property_round_trip(plaintext_len: int, mode_value: int) -> None:
     nonce_len = envelope.MODE_A_NONCE_LEN if mode == EncryptionMode.MODE_A_SERVER_AT_REST else envelope.MODE_B_NONCE_LEN
     key_id = uuid4()
     nonce = bytes(range(nonce_len))
-    ciphertext = bytes(range(plaintext_len)) + b"\x00" * envelope.AEAD_TAG_LEN
+    # bytes(range(N)) only works up to N=256; use modular indexing so
+    # the property exercises the full max_value=4096 range.
+    ciphertext = bytes(i % 256 for i in range(plaintext_len)) + b"\x00" * envelope.AEAD_TAG_LEN
     blob = envelope.encode(mode=mode, key_id=key_id, nonce=nonce, ciphertext=ciphertext)
     decoded = envelope.decode(blob)
     assert decoded.mode == mode

@@ -12,10 +12,12 @@ from theourgia.core.auth.passwords import hash_password, needs_rehash, verify_pa
 def test_hash_password_returns_phc_format() -> None:
     h = hash_password("a-strong-passphrase-of-some-sort")
     assert h.startswith("$argon2id$")
+    # PHC format: $argon2id$v=N$m=N,t=N,p=N$salt$hash — parameters after
+    # ``m=`` are comma-joined, not each prefixed with $.
     assert "$v=" in h
-    assert "$m=" in h
-    assert "$t=" in h
-    assert "$p=" in h
+    assert "m=" in h
+    assert "t=" in h
+    assert "p=" in h
 
 
 def test_hash_password_rejects_empty_string() -> None:

@@ -15,6 +15,13 @@ Output formats:
 - **Pretty / colorized** in development (human-readable terminal output).
 - Format choice is automatic from :attr:`Settings.env`; can be forced
   via ``THEOURGIA_LOG_FORMAT``.
+
+Implementation follows structlog's documented "two-pipeline" pattern:
+all rendering happens on the stdlib side via
+:class:`structlog.stdlib.ProcessorFormatter`, so structlog calls AND
+plain stdlib calls (SQLAlchemy, uvicorn) emerge through the same
+formatter. Without this pattern the renderer runs twice and the output
+ends up double-JSON-wrapped.
 """
 
 from __future__ import annotations
@@ -28,9 +35,6 @@ import structlog
 from theourgia.core.observability.context import get_request_id, get_user_id
 
 __all__ = ["configure_logging", "get_logger"]
-
-
-_configured: bool = False
 
 
 def get_logger(name: str | None = None) -> structlog.stdlib.BoundLogger:
@@ -55,12 +59,14 @@ def configure_logging(
         json_output: when ``True``, render lines as JSON; otherwise the
             colorized ConsoleRenderer is used (development mode).
     """
-    global _configured
     level_name = level.upper()
     level_value = logging.getLevelName(level_name)
     if not isinstance(level_value, int):
         level_value = logging.INFO
 
+    # Shared processors run for BOTH structlog-originated and
+    # foreign-origin (stdlib) log records. They produce the event_dict
+    # but do NOT render it — rendering happens on the stdlib side.
     shared_processors: list[Any] = [
         structlog.contextvars.merge_contextvars,
         _add_request_context,
@@ -71,45 +77,57 @@ def configure_logging(
         structlog.processors.format_exc_info,
     ]
 
+    # Configure structlog: its processors end with `wrap_for_formatter`,
+    # which packages the event_dict so the stdlib formatter can finish
+    # rendering it. cache_logger_on_first_use=False so tests that
+    # reconfigure mid-run see the new config.
+    structlog.configure(
+        processors=[
+            *shared_processors,
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        wrapper_class=structlog.stdlib.BoundLogger,
+        cache_logger_on_first_use=False,
+    )
+
+    # Pick the final renderer.
     if json_output:
         renderer: Any = structlog.processors.JSONRenderer(sort_keys=True)
     else:
         renderer = structlog.dev.ConsoleRenderer(colors=sys.stderr.isatty())
 
-    structlog.configure(
-        processors=[*shared_processors, renderer],
-        wrapper_class=structlog.make_filtering_bound_logger(level_value),
-        context_class=dict,
-        logger_factory=structlog.stdlib.LoggerFactory(),
-        cache_logger_on_first_use=True,
+    # The stdlib formatter does the actual rendering. It strips
+    # structlog's internal metadata, then runs the renderer.
+    formatter = structlog.stdlib.ProcessorFormatter(
+        foreign_pre_chain=shared_processors,
+        processors=[
+            structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+            renderer,
+        ],
     )
 
-    # Stdlib root logger — route everything through structlog's formatter
-    # so libraries that log via stdlib (SQLAlchemy, uvicorn, etc.) end up
-    # in the same JSON pipeline.
     root_logger = logging.getLogger()
     root_logger.setLevel(level_value)
 
-    # Remove any pre-existing handlers so repeat calls don't duplicate.
+    # Remove any pre-existing handlers we previously added so repeat
+    # calls don't duplicate. We only touch handlers we own (tagged via
+    # an attribute) — other handlers (pytest's, the user's custom ones)
+    # are left in place.
     for h in list(root_logger.handlers):
-        root_logger.removeHandler(h)
+        if getattr(h, "_theourgia_handler", False):
+            root_logger.removeHandler(h)
 
     handler = logging.StreamHandler(sys.stderr)
     handler.setLevel(level_value)
-    handler.setFormatter(
-        structlog.stdlib.ProcessorFormatter(
-            processor=renderer,
-            foreign_pre_chain=shared_processors,
-        )
-    )
+    handler.setFormatter(formatter)
+    handler._theourgia_handler = True  # type: ignore[attr-defined]
     root_logger.addHandler(handler)
 
     # Tame the noisiest third-party loggers in production
     if json_output:
         logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
         logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
-
-    _configured = True
 
 
 def _add_request_context(

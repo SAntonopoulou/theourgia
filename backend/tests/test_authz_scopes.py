@@ -29,6 +29,7 @@ def test_scope_namespaces_are_grouped() -> None:
         "backup",
         "audit",
         "agent",
+        "admin",
     }
     actual_domains = {scope.value.split(".", 1)[0] for scope in Scope}
     assert actual_domains.issubset(expected_domains)

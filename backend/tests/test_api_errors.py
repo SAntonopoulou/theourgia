@@ -21,6 +21,16 @@ from theourgia.api.errors import (
 from theourgia.api.middleware import register_middleware
 from theourgia.core.config import get_settings
 
+from pydantic import BaseModel
+
+
+class _ValidationBody(BaseModel):
+    """Module-level so FastAPI's Pydantic TypeAdapter can resolve the
+    ForwardRef. Local classes inside async fixtures cause
+    PydanticUserError ("not fully defined") in 0.115+."""
+
+    name: str
+
 
 @pytest.fixture
 def error_app() -> FastAPI:
@@ -71,8 +81,12 @@ def error_app() -> FastAPI:
 
 @pytest.fixture
 async def client(error_app: FastAPI) -> AsyncClient:
+    # raise_app_exceptions=False so unhandled-exception tests can
+    # assert against the 500 Problem response instead of the test
+    # client re-raising the exception. (Starlette's ServerErrorMiddleware
+    # still logs the traceback, but the response reaches the client.)
     async with AsyncClient(
-        transport=ASGITransport(app=error_app),
+        transport=ASGITransport(app=error_app, raise_app_exceptions=False),
         base_url="http://testserver",
     ) as ac:
         yield ac
@@ -136,14 +150,9 @@ async def test_validation_error_from_fastapi_renders_as_problem(client: AsyncCli
     register_error_handlers(inner)
     register_middleware(inner, settings)
 
-    from pydantic import BaseModel
-
-    class _Body(BaseModel):
-        name: str
-
     @inner.post("/needs-body")
-    async def _needs_body(_body: _Body) -> dict[str, str]:
-        return {"ok": "yes"}
+    async def _needs_body(body: _ValidationBody) -> dict[str, str]:
+        return {"ok": body.name}
 
     async with AsyncClient(
         transport=ASGITransport(app=inner),

@@ -17,7 +17,6 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import FastAPI
-from fastapi.responses import ORJSONResponse
 
 from theourgia.__about__ import __license__, __project_url__, __version__
 from theourgia.api.errors import register_error_handlers
@@ -62,7 +61,6 @@ def create_app() -> FastAPI:
         version=__version__,
         description=DESCRIPTION,
         lifespan=lifespan,
-        default_response_class=ORJSONResponse,
         docs_url=docs_url,
         redoc_url=redoc_url,
         openapi_url="/api/openapi.json",

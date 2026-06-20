@@ -92,8 +92,21 @@ def verify_zero_telemetry(
     failures: list[str] = []
 
     if check_imports:
+        import sys
+
         for name in blocklist:
-            if importlib.util.find_spec(name) is not None:
+            # find_spec misses modules that were injected into sys.modules
+            # without a __spec__ (which is how tests simulate a "present"
+            # module). Also count direct sys.modules membership.
+            spec_found = False
+            try:
+                spec_found = importlib.util.find_spec(name) is not None
+            except (ImportError, ValueError):
+                # Modules injected without a real __spec__ raise ValueError
+                # from find_spec — treat their presence in sys.modules as
+                # "importable" for blocklist purposes.
+                spec_found = name in sys.modules
+            if spec_found or name in sys.modules:
                 failures.append(
                     f"telemetry library importable in default install: {name!r} "
                     f"— move it under an opt-in [extra] in pyproject.toml"

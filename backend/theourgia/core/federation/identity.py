@@ -82,7 +82,12 @@ def make_actor_id(host: str, kind: ActorKind, slug: str) -> str:
     if kind == ActorKind.INSTANCE:
         msg = "use make_instance_id() for instance DIDs"
         raise InvalidDIDError(msg)
-    candidate = f"did:theourgia:{host.lower()}:{kind.value}:{slug.lower()}"
+    # Validate the raw slug BEFORE lowercasing. Uppercase / whitespace /
+    # other non-conforming inputs are rejected; we don't silently
+    # normalize because two slugs that lower-case to the same value
+    # would otherwise both be accepted, breaking uniqueness assumptions
+    # on the DB column.
+    candidate = f"did:theourgia:{host.lower()}:{kind.value}:{slug}"
     if not DID_REGEX.match(candidate):
         msg = f"invalid host or slug for actor DID: host={host!r}, slug={slug!r}"
         raise InvalidDIDError(msg)

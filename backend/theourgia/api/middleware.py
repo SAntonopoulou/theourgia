@@ -11,16 +11,20 @@ app factory in the order that produces a sensible composition:
 Rate limiting and idempotency-key handling land in subsequent batches
 when their backends (Redis-backed counter / idempotency cache) are in
 place.
+
+Implementation note — :class:`RequestIDMiddleware` is **raw ASGI**, not
+``BaseHTTPMiddleware``. Starlette's BaseHTTPMiddleware re-raises
+exceptions out of ``call_next`` even when an exception handler has
+already produced a response (it doesn't compose cleanly with FastAPI's
+exception-handler stack). Raw ASGI dodges that footgun by wrapping
+``send`` rather than wrapping the app's return value.
 """
 
 from __future__ import annotations
 
 from fastapi import FastAPI
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.cors import CORSMiddleware
-from starlette.requests import Request
-from starlette.responses import Response
-from starlette.types import ASGIApp
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from theourgia.core.config import Settings
 from theourgia.core.ids import uuid7
@@ -33,9 +37,10 @@ __all__ = ["RequestIDMiddleware", "register_middleware"]
 
 
 REQUEST_ID_HEADER = "X-Request-ID"
+_MAX_INBOUND_LEN = 128
 
 
-class RequestIDMiddleware(BaseHTTPMiddleware):
+class RequestIDMiddleware:
     """Propagate / generate a request correlation ID.
 
     If the inbound request carries an ``X-Request-ID`` header with a
@@ -45,35 +50,47 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     flows into every log line), and echoed back in the response header.
     """
 
-    _MAX_INBOUND_LEN: int = 128
-
     def __init__(self, app: ASGIApp) -> None:
-        super().__init__(app)
+        self.app = app
 
-    async def dispatch(  # type: ignore[override]
-        self,
-        request: Request,
-        call_next: object,
-    ) -> Response:
-        inbound = request.headers.get(REQUEST_ID_HEADER, "").strip()
-        if inbound and len(inbound) <= self._MAX_INBOUND_LEN and inbound.isprintable():
-            request_id = inbound
-        else:
-            request_id = str(uuid7())
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
 
-        request.state.request_id = request_id
+        request_id = _request_id_from_headers(scope) or str(uuid7())
+
+        # Make available downstream via request.state
+        scope.setdefault("state", {})["request_id"] = request_id
         bind_request_id(request_id)
 
+        async def send_with_header(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                # Only add if not already set by a downstream handler.
+                if not any(name.lower() == b"x-request-id" for name, _ in headers):
+                    headers.append((b"x-request-id", request_id.encode("latin-1")))
+                message["headers"] = headers
+            await send(message)
+
         try:
-            response: Response = await call_next(request)  # type: ignore[misc]
+            await self.app(scope, receive, send_with_header)
         finally:
-            # Reset observability contextvars so they don't bleed across
-            # the next reuse of this asyncio task (rare in practice with
-            # Starlette's per-request model, but defensive).
             clear_observability_context()
 
-        response.headers[REQUEST_ID_HEADER] = request_id
-        return response
+
+def _request_id_from_headers(scope: Scope) -> str | None:
+    """Pull a trusted ``X-Request-ID`` value off the ASGI scope, if any."""
+    for name, value in scope.get("headers", ()):  # name and value are bytes
+        if name.lower() == b"x-request-id":
+            try:
+                inbound = value.decode("latin-1").strip()
+            except UnicodeDecodeError:
+                return None
+            if inbound and len(inbound) <= _MAX_INBOUND_LEN and inbound.isprintable():
+                return inbound
+            return None
+    return None
 
 
 def register_middleware(app: FastAPI, settings: Settings) -> None:
