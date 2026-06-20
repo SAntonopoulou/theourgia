@@ -26,6 +26,11 @@ KEY="${THEOURGIA_DEPLOY_KEY:-$HOME/.ssh/agent-house-access-theourgia}"
 REMOTE_ROOT="${THEOURGIA_DEPLOY_ROOT:-/srv/theourgia/dev}"
 PROBE_URL="${THEOURGIA_DEPLOY_URL:-https://dev.theourgia.com}"
 
+# When set, the frontend build sees ``VITE_THEOURGIA_API_BASE`` and the
+# admin SPA switches the API client from mock fixtures to live calls.
+# Default matches the live deploy; set to "" or "mock" to force mock mode.
+THEOURGIA_API_BASE_DEFAULT="${THEOURGIA_API_BASE:-https://dev.theourgia.com}"
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PUBLIC_DIST="$REPO_ROOT/frontend/public-site/dist"
 ADMIN_DIST="$REPO_ROOT/frontend/admin/dist"
@@ -72,7 +77,13 @@ ok "ssh to $USER@$HOST"
 
 if [[ $SKIP_BUILD -eq 0 ]]; then
     step "build public-site + admin"
-    (cd "$REPO_ROOT" && pnpm --filter @theourgia/admin --filter @theourgia/public-site build) \
+    # Pass the API base to Vite. Empty string = mock mode in the admin SPA.
+    api_base="$THEOURGIA_API_BASE_DEFAULT"
+    if [[ "$api_base" == "mock" ]]; then api_base=""; fi
+    echo "    VITE_THEOURGIA_API_BASE=${api_base:-<mock>}"
+    (cd "$REPO_ROOT" \
+        && VITE_THEOURGIA_API_BASE="$api_base" \
+           pnpm --filter @theourgia/admin --filter @theourgia/public-site build) \
         || fail "build failed"
     ok "both apps built"
 else

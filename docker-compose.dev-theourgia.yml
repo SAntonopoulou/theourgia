@@ -1,0 +1,72 @@
+# Theourgia — dev.theourgia.com override
+#
+# The minimal stack for the agent-house dev deploy: Postgres + Redis +
+# Backend only. No Celery (no jobs yet). No internal Caddy frontend
+# (host Caddy serves the static frontend from /srv/theourgia/dev directly).
+#
+# Use:
+#   docker compose -f docker-compose.yml -f docker-compose.dev-theourgia.yml \
+#                  --env-file /home/theourgia/secrets/backend.env \
+#                  --env-file ./.env.dev-theourgia \
+#                  up -d --build postgres redis backend
+#
+# The backend's host port (127.0.0.1:8100) is the entry point for the
+# shared host Caddy snippet at /etc/caddy/Caddyfile.d/dev-theourgia.caddy.
+
+services:
+  backend:
+    container_name: theourgia-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: prod
+    ports:
+      # Bound to host loopback only — host Caddy reverse-proxies here.
+      - "127.0.0.1:8100:8000"
+    command:
+      [
+        "uvicorn",
+        "theourgia.api.app:app",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8000",
+        "--workers",
+        "2",
+      ]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  postgres:
+    container_name: theourgia-postgres
+    # Override to an image that ships pgvector preinstalled — backend
+    # migrations issue `CREATE EXTENSION vector`. Drop-in for postgres:16-alpine.
+    image: pgvector/pgvector:pg16
+    # No host port — internal-only network access.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  redis:
+    container_name: theourgia-redis
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  # Disable services we don't need on dev.theourgia.com yet by giving them
+  # an unsatisfiable profile. They never start unless you opt in.
+  celery:
+    profiles: ["jobs"]
+
+  celery-beat:
+    profiles: ["jobs"]
+
+  frontend:
+    profiles: ["containerised-frontend"]

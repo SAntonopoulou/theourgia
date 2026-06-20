@@ -48,12 +48,14 @@ WORKDIR /app
 # ─────────────────────────────────────────────────────────────────────────────
 FROM base AS deps
 
-# Copy only manifests for caching
-COPY pyproject.toml uv.lock* ./
+# Copy only manifests for caching. README.md is referenced by
+# pyproject.toml's [project].readme, so uv sync needs it present even
+# before the rest of the source is copied.
+COPY pyproject.toml uv.lock* README.md ./
 
 # Sync production deps. Use --frozen if uv.lock exists; otherwise generate.
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --no-dev --frozen 2>/dev/null || uv sync --no-dev
+    uv sync --no-dev --no-install-project --frozen 2>/dev/null || uv sync --no-dev --no-install-project
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 3 — dev (dev deps + full source, hot-reload friendly)
@@ -111,6 +113,7 @@ RUN mkdir -p /app/data/ephe && chown theourgia:theourgia /app/data/ephe
 USER theourgia
 
 ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONPATH="/app" \
     THEOURGIA_ENV=production
 
 EXPOSE 8000
