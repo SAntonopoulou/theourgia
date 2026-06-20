@@ -1,13 +1,14 @@
 /**
- * Foundations smoke page — Phase 02 Batch 1.
+ * Foundations smoke page — Phase 02 Batches 1 + 2.
  *
- * Renders every primitive shipped in this batch so we can eyeball parity
- * against the design's `Theourgia Foundations.dc.html` reference page.
- * Also wires up theme / mode / contrast / cvd switchers so visual axes
- * can be flipped live.
+ * Renders every primitive shipped so far so we can eyeball parity against
+ * the design's `Theourgia Foundations.dc.html` reference page. Wires up
+ * theme / mode / contrast / cvd switchers so visual axes can be flipped
+ * live.
  */
 
 import {
+  Avatar,
   Badge,
   Button,
   CONTRASTS,
@@ -21,10 +22,18 @@ import {
   Glyph,
   IconButton,
   MODES,
+  Medallion,
   type Mode,
+  NumberInput,
+  Progress,
+  SegmentedControl,
+  Select,
   Skeleton,
+  Stat,
+  StatusDot,
   Switch,
   THEMES,
+  TextArea,
   TextInput,
   type Theme,
   applyThemeState,
@@ -37,6 +46,12 @@ export function Foundations() {
   const [chipOn, setChipOn] = useState(true);
   const [switchOn, setSwitchOn] = useState(false);
   const [text, setText] = useState("");
+  const [visibility, setVisibility] = useState<
+    "personal" | "viewer" | "network" | "public" | "sealed"
+  >("viewer");
+  const [tradition, setTradition] = useState("hellenic");
+  const [count, setCount] = useState(7);
+  const [reflection, setReflection] = useState("");
 
   function set<K extends keyof typeof state>(key: K, value: (typeof state)[K]): void {
     const next = { ...state, [key]: value };
@@ -65,7 +80,7 @@ export function Foundations() {
             color: "var(--ink-mute)",
           }}
         >
-          Phase 02 · Batch 1
+          Phase 02 · Batches 1 + 2
         </span>
         <h1
           style={{
@@ -173,7 +188,107 @@ export function Foundations() {
         <Field label="Sealed vault" error="Passphrase required.">
           <TextInput type="password" placeholder="••••••••" />
         </Field>
+        <Field label="Reflection" hint="What did you notice?">
+          <TextArea
+            value={reflection}
+            onChange={(e) => setReflection(e.target.value)}
+            rows={4}
+            placeholder="The candle held its flame longer than expected…"
+          />
+        </Field>
+        <Field label="Tradition" hint="Drives the default vocabulary.">
+          <Select
+            value={tradition}
+            onChange={(e) => setTradition(e.target.value)}
+            options={[
+              { value: "base", label: "Base — no tradition framing" },
+              { value: "hellenic", label: "Hellenic" },
+              { value: "thelemic", label: "Thelemic" },
+            ]}
+          />
+        </Field>
+        <Field label="Sessions this week">
+          <NumberInput
+            value={count}
+            onChange={(e) => setCount(Number(e.target.value))}
+            min={0}
+            max={99}
+          />
+        </Field>
         <Switch checked={switchOn} onChange={setSwitchOn} label="Lunar phase notifications" />
+      </Section>
+
+      <Section title="Segmented control">
+        <SegmentedControl
+          options={[
+            { value: "personal", label: "Personal", glyph: "lock" },
+            { value: "viewer", label: "Viewer", glyph: "eye" },
+            { value: "network", label: "Network", glyph: "compass" },
+            { value: "public", label: "Public", glyph: "scroll" },
+            { value: "sealed", label: "Sealed", glyph: "key" },
+          ]}
+          value={visibility}
+          onChange={setVisibility}
+          ariaLabel="Visibility"
+        />
+      </Section>
+
+      <Section title="Identity">
+        <Row>
+          <Avatar identity={{ name: "Soror Ευ. Α.", glyph: "moon", tone: "accent" }} size="xl" />
+          <Avatar identity={{ name: "Frater Δ.", glyph: "sun" }} size="lg" />
+          <Avatar identity={{ name: "Anonymous", glyph: "entity" }} size="md" />
+          <Avatar identity={{ name: "Trace", glyph: "sigil" }} size="sm" />
+        </Row>
+        <Row>
+          <Medallion glyph="pentacle" tone="accent" />
+          <Medallion glyph="sigil" tone="info" />
+          <Medallion glyph="key" tone="success" />
+          <Medallion glyph="bell" tone="warning" />
+          <Medallion glyph="lock" tone="danger" />
+          <Medallion glyph="scroll" tone="neutral" />
+        </Row>
+      </Section>
+
+      <Section title="Stat tiles">
+        <div
+          style={{
+            display: "grid",
+            gap: "var(--space-4, 16px)",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          }}
+        >
+          <Card>
+            <Stat
+              label="Entries this week"
+              value={42}
+              spark={[2, 4, 3, 6, 5, 8, 14]}
+              delta={12.4}
+            />
+          </Card>
+          <Card>
+            <Stat label="Synchronicities" value={9} spark={[1, 2, 1, 3, 2, 0, 1]} delta={-3.1} />
+          </Card>
+          <Card>
+            <Stat label="Federation peers" value={6} tone="neutral" />
+          </Card>
+        </div>
+      </Section>
+
+      <Section title="Progress">
+        <Progress value={28} label="Backfill" />
+        <Progress value={84} label="Backup checkpoint" />
+        <Progress label="Reindexing" />
+      </Section>
+
+      <Section title="Status">
+        <Row>
+          <StatusDot status="ok" label="agent-house · operational" />
+          <StatusDot status="warn" label="cache · slow" />
+          <StatusDot status="error" label="federation-peer · unreachable" />
+          <StatusDot status="pending" label="reindex · queued" />
+          <StatusDot status="neutral" label="archived" />
+        </Row>
       </Section>
 
       <Section title="Chips">
