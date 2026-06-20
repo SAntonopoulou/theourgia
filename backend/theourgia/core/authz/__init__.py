@@ -31,21 +31,48 @@ so we can refactor internals without ripple.
 from __future__ import annotations
 
 from theourgia.core.authz.audit import AuditLogger, build_audit_event
+from theourgia.core.authz.authorize import authorize
 from theourgia.core.authz.checks import (
     can_read_with_visibility,
     can_write_with_visibility,
 )
+from theourgia.core.authz.context import AuthzContext
+from theourgia.core.authz.decisions import AuthorizationDecision
+from theourgia.core.authz.policies import (
+    hub_member_policy,
+    hub_role_policy_factory,
+    owner_only_policy,
+    visibility_based_read_policy,
+)
+from theourgia.core.authz.policy import (
+    Policy,
+    PolicyRegistry,
+    default_policy_registry,
+)
+from theourgia.core.authz.resource import GLOBAL_RESOURCE, Resource
 from theourgia.core.authz.rls import clear_current_user_id, set_current_user_id
 from theourgia.core.authz.scopes import Scope
 from theourgia.core.authz.visibility import Visibility
 
 __all__ = [
-    "Visibility",
-    "Scope",
     "AuditLogger",
+    "AuthorizationDecision",
+    "AuthzContext",
+    "GLOBAL_RESOURCE",
+    "Policy",
+    "PolicyRegistry",
+    "Resource",
+    "Scope",
+    "Visibility",
+    "authorize",
     "build_audit_event",
     "can_read_with_visibility",
     "can_write_with_visibility",
-    "set_current_user_id",
     "clear_current_user_id",
+    "default_policy_registry",
+    "hub_member_policy",
+    "hub_role_policy_factory",
+    "owner_only_policy",
+    "set_current_user_id",
+    "visibility_based_read_policy",
 ]

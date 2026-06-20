@@ -17,18 +17,25 @@ the presented token and look up the matching :class:`Session` row.
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from theourgia.api.errors import ForbiddenError, UnauthorizedError
 from theourgia.core.auth.tokens import hash_token
-from theourgia.core.authz import Scope, set_current_user_id
+from theourgia.core.authz import (
+    GLOBAL_RESOURCE,
+    AuthzContext,
+    Resource,
+    Scope,
+    authorize,
+    set_current_user_id,
+)
 from theourgia.core.db import session_scope
 from theourgia.core.observability.context import bind_user_id
 from theourgia.models.identity import Session as SessionRow
@@ -129,25 +136,90 @@ async def get_optional_current_user(
         return None
 
 
-def require_scope(scope: Scope):  # noqa: ARG001 — scope reserved for future logic
-    """Return a FastAPI dependency that enforces the calling user holds
-    the given scope.
+def require_scope(scope: Scope):
+    """Dependency that requires the user is permitted to perform
+    ``scope`` globally (no specific resource).
 
-    The current implementation accepts any authenticated user; scope
-    checks gain teeth as resource-specific routers land (the scope is
-    checked against the user's relationship to the resource in the
-    endpoint, not in this dep). This indirection means endpoints can
-    declare their scope requirements declaratively today and the
-    framework tightens enforcement over time without endpoint-level
-    edits.
+    Routes through the authorization substrate (`authorize`) against
+    :data:`GLOBAL_RESOURCE`. Features that need to gate a *global*
+    action — admin endpoints, ``backup.run``, ``hub.create``, etc. —
+    register a policy for ``resource_type="__global__"`` that consults
+    the user's roles or memberships.
+
+    For *per-resource* checks (read this entry, edit this vault),
+    prefer :func:`require_access` or call :func:`authorize` directly
+    inside the endpoint after loading the resource.
     """
 
     async def _checker(
         user: Annotated[User, Depends(get_current_user)],
+        session: Annotated[AsyncSession, Depends(get_db_session)],
+        request: Request,
     ) -> User:
-        # TODO(phase-01-batch-6+): consult the user's roles + the target
-        # resource to verify the scope. For now: authenticated == allowed.
+        decision = await authorize(
+            user=user,
+            action=scope,
+            resource=GLOBAL_RESOURCE,
+            context=AuthzContext(
+                db_session=session,
+                request_id=getattr(request.state, "request_id", None),
+            ),
+        )
+        if not decision.allowed:
+            raise ForbiddenError(decision.reason)
         return user
+
+    return _checker
+
+
+def require_access(
+    action: Scope,
+    resource_loader: "Callable[..., Awaitable[Resource]]",
+):
+    """Dependency factory: load a resource and authorize ``action``
+    against it.
+
+    ``resource_loader`` is itself a FastAPI dependency that returns the
+    :class:`Resource` instance (typically by fetching from the DB by
+    URL path param). On allow, returns the resource so the endpoint
+    can use it directly::
+
+        async def get_entry_by_id(
+            id: UUID, session: DBSession
+        ) -> Entry:
+            entry = await session.get(Entry, id)
+            if entry is None:
+                raise NotFoundError("entry not found")
+            return entry
+
+        @router.get("/entries/{id}")
+        async def get_entry(
+            entry: Annotated[
+                Entry,
+                Depends(require_access(Scope.ENTRY_READ, get_entry_by_id)),
+            ],
+        ) -> Entry:
+            return entry
+    """
+
+    async def _checker(
+        user: Annotated[User, Depends(get_current_user)],
+        session: Annotated[AsyncSession, Depends(get_db_session)],
+        request: Request,
+        resource: Annotated[Resource, Depends(resource_loader)],
+    ) -> Resource:
+        decision = await authorize(
+            user=user,
+            action=action,
+            resource=resource,
+            context=AuthzContext(
+                db_session=session,
+                request_id=getattr(request.state, "request_id", None),
+            ),
+        )
+        if not decision.allowed:
+            raise ForbiddenError(decision.reason)
+        return resource
 
     return _checker
 

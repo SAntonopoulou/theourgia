@@ -282,15 +282,53 @@ async def test_scoped_endpoint_requires_authentication(stub_session: _StubSessio
 
 
 @pytest.mark.asyncio
-async def test_scoped_endpoint_passes_for_any_authenticated_user(
+async def test_scoped_endpoint_denies_without_matching_policy(
     stub_session: _StubSession,
 ) -> None:
-    """Phase 01 implementation: any authenticated user passes scope checks.
-    Tighter per-resource enforcement lands in subsequent batches."""
+    """Substrate-S6 behavior: require_scope routes through the
+    authorization substrate. An authenticated user with no policy
+    granting Scope.ENTRY_READ globally gets 403. (The Phase 01
+    placeholder that passed any authenticated user is gone.)"""
     token = _seed_user_and_session(stub_session)
     app = _build_app(stub_session)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as ac:
         response = await ac.get(
             "/scoped", headers={"Authorization": f"Bearer {token}"}
         )
-    assert response.status_code == 200
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_scoped_endpoint_allows_when_policy_grants(
+    stub_session: _StubSession,
+) -> None:
+    """When a policy is registered that grants the action globally,
+    the same user passes."""
+    from theourgia.core.authz import (
+        AuthorizationDecision,
+        default_policy_registry,
+    )
+
+    async def _grant_entry_read(user, action, resource, context):
+        from theourgia.core.authz.scopes import Scope as _Scope
+
+        if action == _Scope.ENTRY_READ:
+            return AuthorizationDecision.allow(reason="test grant", policy_name="test_grant")
+        return None
+
+    default_policy_registry.register(
+        _grant_entry_read,
+        name="test_grant_entry_read",
+        resource_type="__global__",
+    )
+    try:
+        token = _seed_user_and_session(stub_session)
+        app = _build_app(stub_session)
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver") as ac:
+            response = await ac.get(
+                "/scoped", headers={"Authorization": f"Bearer {token}"}
+            )
+        assert response.status_code == 200
+    finally:
+        # Clean up — leave the registry as we found it
+        default_policy_registry.clear()
