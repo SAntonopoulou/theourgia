@@ -25,6 +25,7 @@
     "test": "pnpm -r test",
     "test:e2e": "playwright test",
     "build": "pnpm --filter @theourgia/admin --filter @theourgia/public-site build",
+    "deploy:dev": "bash scripts/deploy-dev.sh",
     "docs:dev": "pnpm --filter @theourgia/docs dev",
     "docs:build": "pnpm --filter @theourgia/docs build"
   },
