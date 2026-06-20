@@ -22,7 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import get_db_session
+from theourgia.api.deps import OptionalCookieUser, get_db_session
 from theourgia.models.entries import Entry, EntryType
 
 __all__ = ["router"]
@@ -184,6 +184,7 @@ async def get_entry_stats(
 async def create_entry(
     payload: EntryCreate,
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: OptionalCookieUser,
 ) -> EntryRead:
     row = Entry(
         title=payload.title,
@@ -191,6 +192,7 @@ async def create_entry(
         excerpt=payload.excerpt,
         glyph=payload.glyph,
         body=payload.body,
+        owner_id=current_user.id if current_user is not None else None,
     )
     session.add(row)
     await session.commit()

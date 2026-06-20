@@ -49,12 +49,14 @@ async def set_current_user_id(session: AsyncSession, user_id: UUID) -> None:
         msg = f"user_id must be a UUID instance, got {type(user_id).__name__}"
         raise ValueError(msg)
 
-    # We bind the user_id as a parameter rather than f-string interpolation
-    # to be unambiguous about provenance. Postgres SET commands accept
-    # bound parameters in current versions.
+    # We use set_config() rather than SET LOCAL: asyncpg's prepared-
+    # statement protocol can't bind parameters into the SET command, but
+    # set_config(name, value, is_local) is a normal SQL function and
+    # binds cleanly. is_local=true scopes the value to the current
+    # transaction (same semantic as SET LOCAL).
     await session.execute(
-        text(f"SET LOCAL {GUC_NAME} = :uid"),
-        {"uid": str(user_id)},
+        text("SELECT set_config(:name, :value, true)"),
+        {"name": GUC_NAME, "value": str(user_id)},
     )
 
 
@@ -65,4 +67,7 @@ async def clear_current_user_id(session: AsyncSession) -> None:
     to run with no current user — e.g., system-level operations
     explicitly rolled in audit log.
     """
-    await session.execute(text(f"SET LOCAL {GUC_NAME} = ''"))
+    await session.execute(
+        text("SELECT set_config(:name, '', true)"),
+        {"name": GUC_NAME},
+    )

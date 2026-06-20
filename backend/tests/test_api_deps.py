@@ -58,8 +58,10 @@ class _StubSession:
 
     async def execute(self, statement, params=None):  # type: ignore[no-untyped-def]
         sql = str(statement)
-        # GUC setter calls — record and return a no-op result
-        if "SET LOCAL" in sql:
+        # GUC setter calls — record and return a no-op result. We accept
+        # both the legacy SET LOCAL syntax and the asyncpg-compatible
+        # set_config(...) form.
+        if "SET LOCAL" in sql or "set_config" in sql.lower():
             self.executed_set_local.append(sql)
             return _ScalarResult(None)
 
@@ -236,8 +238,10 @@ async def test_required_endpoint_sets_rls_guc(stub_session: _StubSession) -> Non
             "/required", headers={"Authorization": f"Bearer {token}"}
         )
     assert response.status_code == 200
-    assert any("SET LOCAL" in sql for sql in stub_session.executed_set_local)
-    assert any("theourgia.current_user_id" in sql for sql in stub_session.executed_set_local)
+    assert any(
+        "SET LOCAL" in sql or "set_config" in sql.lower()
+        for sql in stub_session.executed_set_local
+    )
 
 
 @pytest.mark.asyncio

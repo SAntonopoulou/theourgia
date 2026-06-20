@@ -32,16 +32,16 @@ def test_guc_name_uses_theourgia_namespace() -> None:
 
 
 @pytest.mark.asyncio
-async def test_set_current_user_id_executes_set_local() -> None:
+async def test_set_current_user_id_uses_set_config_with_is_local_true() -> None:
     session = _RecordingSession()
     uid = uuid4()
     await set_current_user_id(session, uid)  # type: ignore[arg-type]
 
     assert len(session.calls) == 1
     sql, params = session.calls[0]
-    assert sql.startswith("SET LOCAL ")
-    assert GUC_NAME in sql
-    assert params == {"uid": str(uid)}
+    assert "set_config" in sql.lower()
+    assert "true" in sql.lower(), "is_local must be true to scope the GUC"
+    assert params == {"name": GUC_NAME, "value": str(uid)}
 
 
 @pytest.mark.asyncio
@@ -58,7 +58,7 @@ async def test_clear_current_user_id_clears_the_guc() -> None:
     await clear_current_user_id(session)  # type: ignore[arg-type]
 
     assert len(session.calls) == 1
-    sql, _ = session.calls[0]
-    assert sql.startswith("SET LOCAL ")
-    assert GUC_NAME in sql
-    assert "''" in sql, "clear should set the GUC to empty string"
+    sql, params = session.calls[0]
+    assert "set_config" in sql.lower()
+    assert params == {"name": GUC_NAME}
+    assert "''" in sql, "clear should pass an empty string value"

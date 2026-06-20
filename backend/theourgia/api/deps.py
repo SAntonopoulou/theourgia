@@ -21,7 +21,7 @@ from collections.abc import AsyncIterator, Awaitable, Callable
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import Depends, Request
+from fastapi import Cookie, Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
@@ -136,6 +136,37 @@ async def get_optional_current_user(
         return None
 
 
+SESSION_COOKIE_NAME = "theourgia_session"
+
+
+async def get_optional_user_from_cookie(
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    theourgia_session: Annotated[str | None, Cookie()] = None,
+) -> User | None:
+    """Cookie-backed optional auth.
+
+    Resolves the ``theourgia_session`` cookie issued by the auth router.
+    Returns the User row when the cookie names a live, unrevoked,
+    unexpired session; ``None`` otherwise. Used by routes that have a
+    public anonymous mode but want to attribute writes to the signed-in
+    user when present (Phase 02 entries router).
+    """
+    if not theourgia_session:
+        return None
+    session_row = await _resolve_session_token(theourgia_session, session)
+    if session_row is None:
+        return None
+    user_stmt = select(User).where(User.id == session_row.user_id)
+    user_result = await session.execute(user_stmt)
+    user = user_result.scalar_one_or_none()
+    if user is None:
+        return None
+    session_row.last_used_at = datetime.now(tz=UTC)
+    await set_current_user_id(session, user.id)
+    bind_user_id(user.id)
+    return user
+
+
 def require_scope(scope: Scope):
     """Dependency that requires the user is permitted to perform
     ``scope`` globally (no specific resource).
@@ -228,3 +259,4 @@ def require_access(
 DBSession = Annotated[AsyncSession, Depends(get_db_session)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
 OptionalCurrentUser = Annotated[User | None, Depends(get_optional_current_user)]
+OptionalCookieUser = Annotated[User | None, Depends(get_optional_user_from_cookie)]
