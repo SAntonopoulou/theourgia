@@ -63,6 +63,18 @@ class Settings(BaseSettings):
     migration_database_url: PostgresDsn | None = Field(
         default=None, alias="THEOURGIA_MIGRATION_DATABASE_URL"
     )
+    db_pool_size: int = Field(default=10, alias="THEOURGIA_DB_POOL_SIZE", ge=1)
+    """SQLAlchemy connection-pool size. Bump for high-concurrency
+    deployments; defaults to 10."""
+    db_max_overflow: int = Field(
+        default=20, alias="THEOURGIA_DB_MAX_OVERFLOW", ge=0
+    )
+    """Extra connections beyond pool_size to allow under burst load."""
+    db_pool_recycle_seconds: int = Field(
+        default=1800, alias="THEOURGIA_DB_POOL_RECYCLE_SECONDS", ge=60
+    )
+    """Recycle pooled connections after this many seconds. 1800 (30 min)
+    avoids server-side keepalive disconnects from most Postgres tunings."""
 
     # ── Redis ─────────────────────────────────────────────────────────────
     redis_url: RedisDsn = Field(
