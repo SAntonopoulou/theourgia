@@ -7,7 +7,7 @@ This directory hosts:
 - **`admin/`** — Self-hoster documentation (deploy, backup, operate)
 - **`developer/`** — Developer documentation (contribute, build plugins, extend)
 
-The docs site itself (Astro Starlight) is built in Phase 00 / Phase 02 and lives in a separate `docs/site/` directory (when populated).
+The docs site itself (Astro Starlight) lives in [`site/`](site/). It builds to a static site that deploys to `docs.theourgia.com`. Run `just docs-dev` from the repo root to serve it locally; `just docs-build` produces the production build.
 
 ## Status
 

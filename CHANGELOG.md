@@ -165,6 +165,42 @@ Phase 00 Batch 4 lands the ten initial Architecture Decision Records in `docs/ad
 
 ADRs are MADR-format, never edited after acceptance — to change a decision, write a superseding ADR.
 
+### Added — 2026-06-20 (Phase 00, Batch 5 — Astro Starlight docs site scaffold)
+
+Phase 00 Batch 5 lands a working Astro Starlight documentation site at `docs/site/`. The site builds, has the right sidebar shape (Start, User Guide, Admin Guide, Developer Guide, Concepts), and contains placeholder content that grows as phases land. Eventually deploys to `docs.theourgia.com`.
+
+**Site scaffolding:**
+- `docs/site/package.json` — `@theourgia/docs` workspace package; Astro 4.16 + Starlight 0.30
+- `docs/site/astro.config.mjs` — Starlight integration with GitHub social link, edit-link to repo, last-updated timestamps, multi-locale-ready (English at launch), zero third-party scripts in head (point of pride)
+- `docs/site/tsconfig.json` — extends `astro/tsconfigs/strict`
+- `docs/site/src/content.config.ts` — content collections via Starlight's loader/schema
+
+**Initial content (placeholders growing as phases land):**
+- `src/content/docs/index.mdx` — splash homepage with hero, tagline, CTAs, four-card overview, status banner
+- `src/content/docs/start/status.md` — current status + 17-phase roadmap table
+- `src/content/docs/start/privacy.md` — explicit zero-telemetry commitment with detail, GDPR commitments, encryption modes
+- `src/content/docs/concepts/architecture.md` — short overview pointing at canonical ARCHITECTURE.md
+- `src/content/docs/concepts/features.md` — 19-category feature overview pointing at canonical FEATURES.md
+- `src/content/docs/user/index.md`, `admin/index.md`, `developer/index.md` — placeholder index pages
+
+**Workspace wiring:**
+- `pnpm-workspace.yaml` updated — `docs/site` (was `docs`)
+- `package.json` scripts — `docs:dev` / `docs:build` filter `@theourgia/docs`
+- `justfile` — `docs-dev` / `docs-build` recipes use the filter
+- `docs/README.md` updated to mention the Starlight site location
+
+## Phase 00 complete (2026-06-20)
+
+All five batches of Phase 00 (Foundations) are landed:
+
+- **Batch 1:** Project skeleton + tooling configs ([commit 2c177a2](https://github.com/SAntonopoulou/theourgia/commit/2c177a2))
+- **Batch 2:** Containers + dev environment ([commit 70586ed](https://github.com/SAntonopoulou/theourgia/commit/70586ed))
+- **Batch 3:** CI workflows + GitHub templates ([commit cad065e](https://github.com/SAntonopoulou/theourgia/commit/cad065e))
+- **Batch 4:** Initial ten ADRs + changelog catch-up ([commit 10b51f0](https://github.com/SAntonopoulou/theourgia/commit/10b51f0))
+- **Batch 5:** Astro Starlight docs site scaffold ([commit 2d3f504](https://github.com/SAntonopoulou/theourgia/commit/2d3f504))
+
+Phase 00 status: **done.** Phase 01 (Core Architecture) is next — database schema, authentication framework, encryption layer, plugin substrate, federation primitives, API contract.
+
 ### Status
 
-Project is in **planning phase**. No runnable code yet. Implementation begins with Phase 00 (Foundations).
+Project remains in **planning phase** with **Phase 00 complete**. No runnable application code yet — the next phase produces the data layer and security foundation everything else builds on.
