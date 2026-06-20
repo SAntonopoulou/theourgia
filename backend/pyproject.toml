@@ -60,6 +60,7 @@ dependencies = [
     "python-multipart >=0.0.19,<1.0",
     "orjson >=3.10,<4.0",
     "structlog >=24.5,<25.0",
+    "prometheus-client >=0.21,<1.0",
 ]
 
 [project.optional-dependencies]
@@ -74,6 +75,9 @@ email-postmark = ["postmarker >=1.0,<2.0"]
 email-resend = ["resend >=2.5,<3.0"]
 email-mailgun = ["requests >=2.32,<3.0"]
 # (SMTP is built into the stdlib)
+
+# Crash reporting — opt-in. Theourgia ships with zero telemetry by default.
+sentry = ["sentry-sdk[fastapi,celery] >=2.20,<3.0"]
 
 [dependency-groups]
 dev = [

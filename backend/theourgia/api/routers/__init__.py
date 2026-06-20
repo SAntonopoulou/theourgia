@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, FastAPI
 
-from theourgia.api.routers import health, well_known
+from theourgia.api.routers import health, metrics, well_known
 from theourgia.api.routers.v1 import meta as v1_meta
 
 __all__ = ["register_routers"]
@@ -21,6 +21,7 @@ def register_routers(app: FastAPI) -> None:
     """Attach all routers to the app."""
     # Unversioned operational endpoints
     app.include_router(health.router, tags=["operations"])
+    app.include_router(metrics.router, tags=["operations"])
 
     # .well-known endpoints (federation discovery, etc.)
     app.include_router(well_known.router, tags=["federation"])

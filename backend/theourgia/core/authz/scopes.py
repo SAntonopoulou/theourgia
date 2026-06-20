@@ -85,5 +85,6 @@ class Scope(str, enum.Enum):
     BACKUP_RUN = "backup.run"
     BACKUP_RESTORE = "backup.restore"
     AUDIT_READ = "audit.read"
+    ADMIN_OBSERVE = "admin.observe"  # /metrics, observability surface
     AGENT_CONFIGURE = "agent.configure"
     AGENT_INVOKE = "agent.invoke"

@@ -24,6 +24,10 @@ from starlette.types import ASGIApp
 
 from theourgia.core.config import Settings
 from theourgia.core.ids import uuid7
+from theourgia.core.observability.context import (
+    bind_request_id,
+    clear_observability_context,
+)
 
 __all__ = ["RequestIDMiddleware", "register_middleware"]
 
@@ -37,7 +41,8 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     If the inbound request carries an ``X-Request-ID`` header with a
     reasonable value, we trust and propagate it. Otherwise a fresh
     UUIDv7 is generated. The ID is stored on ``request.state.request_id``
-    for downstream use and echoed back in the response header.
+    for downstream use, bound to the observability contextvar (so it
+    flows into every log line), and echoed back in the response header.
     """
 
     _MAX_INBOUND_LEN: int = 128
@@ -57,8 +62,16 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
             request_id = str(uuid7())
 
         request.state.request_id = request_id
+        bind_request_id(request_id)
 
-        response: Response = await call_next(request)  # type: ignore[misc]
+        try:
+            response: Response = await call_next(request)  # type: ignore[misc]
+        finally:
+            # Reset observability contextvars so they don't bleed across
+            # the next reuse of this asyncio task (rare in practice with
+            # Starlette's per-request model, but defensive).
+            clear_observability_context()
+
         response.headers[REQUEST_ID_HEADER] = request_id
         return response
 

@@ -479,3 +479,51 @@ Phase 01 Batch 8 lands the Restic-based backup substrate: CLI wrapper, retention
 **Encryption posture (recap from NOTICE):** Restic encrypts every snapshot under `RESTIC_PASSWORD` before any bytes leave the process. The R2/S3 backend stores opaque ciphertext; a leaked storage credential cannot decrypt backups. The trade-off — a lost passphrase is also fatal — is documented in the DR runbook.
 
 **Phase 01 progress:** 8 of 10 batches done. Remaining: observability (logging, metrics, Celery beat wiring), WebAuthn + zero-telemetry verifier + integration test fixtures.
+
+### Added — 2026-06-20 (Phase 01, Batch 9 — observability)
+
+Phase 01 Batch 9 lands the operability substrate: structured logging with request-ID correlation, Prometheus metrics, opt-in Sentry, and the Celery app + beat schedule that finally wires up scheduled backups.
+
+**Observability package** (`backend/theourgia/core/observability/`):
+- `context.py` — `bind_request_id` / `bind_user_id` / `clear_observability_context` over :mod:`contextvars`. Propagates per-request identifiers through every `await` boundary into logs and metrics without explicit threading.
+- `logging.py` — structlog over stdlib `logging`. **Idempotent** `configure_logging()` (no duplicate handlers on repeated calls). JSON in production / test, pretty / colorized in development; format choice automatic from `THEOURGIA_LOG_FORMAT` (`auto` resolves per-env). Custom processor pulls `request_id` and `user_id` off the contextvars onto every line. Stdlib root logger routes through structlog's `ProcessorFormatter` so libraries that log via stdlib (SQLAlchemy, uvicorn) join the same JSON stream. `uvicorn.access` and `sqlalchemy.engine` quieted to WARNING in JSON mode.
+- `metrics.py` — six initial collectors registered against a **dedicated `CollectorRegistry`** (not the prometheus_client default — keeps test isolation clean and prevents bleed from libraries that register defaults): `theourgia_http_requests_total` (counter, labels: method/path_template/status), `theourgia_http_request_duration_seconds` (histogram with tuned buckets 5ms..10s), `theourgia_backup_runs_total` (counter, labels: outcome), `theourgia_backup_run_duration_seconds` (histogram, buckets 1s..1h), `theourgia_backup_bytes_transferred_total` (counter), `theourgia_plugin_active` (gauge). `render_metrics()` returns `(body, content_type)` for the HTTP endpoint.
+- `sentry.py` — **opt-in** Sentry initialization. Empty DSN → silent no-op (preserving Theourgia's zero-telemetry default). DSN-set + sentry-sdk-missing → single warning + continue (operator misconfiguration must not crash startup). DSN-set + sentry-sdk-present → init with `send_default_pii=False`, configurable traces sample rate (default 0.0), env + release tags. FastAPI + Celery integrations loaded lazily and best-effort.
+
+**Tasks package** (`backend/theourgia/core/tasks/`):
+- `app.py` — `build_celery_app()` factory + module-level `celery_app` singleton. Configures: Redis broker + backend from `REDIS_URL`, **JSON-only serialization (no pickle)**, `task_acks_late=True`, `task_reject_on_worker_lost=True`, `worker_prefetch_multiplier=1`, `broker_connection_retry_on_startup=True`, UTC timezone, per-route queue assignments (`backups` queue for backup tasks).
+- `app.py` — beat schedule declared in source: `theourgia.backup.daily` at 03:15 UTC daily (full retention tag), `theourgia.backup.hourly_incremental` every 6 hours (incremental tag).
+- `backup.py` — `run_scheduled_backup(*, incremental: bool=False)` Celery task. Sync wrapper that uses `asyncio.run()` to call `ResticClient`; persists each run as a `BackupRun` row; emits Prometheus counters/histograms; applies retention via `DEFAULT_POLICY` after success. **Returns failure as a `BackupRun` row, not an exception** — config mistakes shouldn't burn Celery retries.
+
+**Metrics endpoint** (`backend/theourgia/api/routers/metrics.py`):
+- `GET /metrics` returns Prometheus exposition-format text. **Admin-scoped** (`admin.observe` scope) — deliberate departure from unauthenticated-`/metrics` convention to avoid fingerprinting a practitioner instance. Operators with a metrics sidecar build their own scrape with an admin token.
+
+**Wiring:**
+- `RequestIDMiddleware` now also calls `bind_request_id()` so every log line emitted during the request carries the same UUIDv7 in `request_id`. Clears observability context in a `finally` block at end-of-request to prevent bleed.
+- `get_current_user` dependency calls `bind_user_id()` after the bearer token resolves; downstream log lines and metrics carry the authenticated user id.
+- `create_app()` calls `configure_logging()` before anything else can emit a stdlib log line.
+- `lifespan` calls `init_sentry()` at startup; emits a structured `theourgia.api.starting` event with `telemetry="none"` (or `"operator_opt_in"` when Sentry was activated).
+- `register_routers()` now mounts the metrics router under operations tags.
+
+**Scopes:**
+- New scope `admin.observe` added to `Scope` enum for the `/metrics` endpoint and future observability surface.
+
+**Settings additions** (`core/config.py`):
+- `THEOURGIA_LOG_FORMAT` (`json` / `pretty` / `auto`) with a `resolved_log_format` property that resolves `auto` per environment.
+- Restic / S3 backup settings: `RESTIC_REPOSITORY`, `RESTIC_PASSWORD`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_DEFAULT_REGION`, plus `THEOURGIA_BACKUP_INCLUDE_PATHS` and `THEOURGIA_BACKUP_EXCLUDE_PATTERNS`.
+- Observability: `THEOURGIA_SENTRY_DSN` (default empty = no Sentry, preserves zero-telemetry promise) and `THEOURGIA_SENTRY_TRACES_SAMPLE_RATE` (default 0.0).
+
+**Dependencies** (`backend/pyproject.toml`):
+- Core: added `prometheus-client >=0.21,<1.0`.
+- Optional `[sentry]`: `sentry-sdk[fastapi,celery] >=2.20,<3.0`. **Off the default install path** so a stock Theourgia has no Sentry code present at all.
+
+**Documentation:**
+- `docs/admin/observability.md` — runbook covering log format/levels, metrics catalog with sample Prometheus scrape config, Sentry opt-in, Celery beat schedule + worker commands, common log lookups, and "when something is wrong" walkthrough.
+
+**Tests** (4 files, ~28 functions):
+- `test_observability_logging.py` — `configure_logging` is idempotent; JSON output is parseable; `request_id` and `user_id` appear in lines when bound; absent when not; pretty mode emits something; log-level filtering works
+- `test_observability_metrics.py` — render returns (bytes, content-type); all six metrics appear in output; counter / histogram / gauge increments visible; **registry is not the prometheus_client default** (isolation invariant); precise counter-value parsing skips `_created` lines and labelled lines
+- `test_observability_sentry.py` — empty DSN = silent no-op (the zero-telemetry-default guarantee); missing sentry-sdk = warn + continue, never crash; present DSN + fake sdk = init called with right shape (DSN, traces sample rate, `send_default_pii=False`, environment)
+- `test_tasks_celery.py` — broker is Redis; JSON-only serialization (pickle explicitly absent); reliability flags set; UTC enforced; beat schedule includes both daily + hourly_incremental with correct task names + kwargs + queue routing; `run_scheduled_backup` registered with the app via import side-effect
+
+**Phase 01 progress:** 9 of 10 batches done. One remaining: WebAuthn + zero-telemetry verifier + integration test fixtures.

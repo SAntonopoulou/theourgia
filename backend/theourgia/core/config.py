@@ -19,6 +19,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Environment = Literal["development", "production", "test"]
 LogLevel = Literal["debug", "info", "warning", "error"]
+LogFormat = Literal["json", "pretty", "auto"]
 
 
 class Settings(BaseSettings):
@@ -39,6 +40,9 @@ class Settings(BaseSettings):
     # ── Application ────────────────────────────────────────────────────────
     env: Environment = Field(default="development", alias="THEOURGIA_ENV")
     log_level: LogLevel = Field(default="info", alias="THEOURGIA_LOG_LEVEL")
+    log_format: LogFormat = Field(default="auto", alias="THEOURGIA_LOG_FORMAT")
+    """Output format for logs. ``"auto"`` picks JSON in production / test,
+    pretty in development."""
     base_url: str = Field(default="https://theourgia.example.com", alias="THEOURGIA_BASE_URL")
     instance_id: str = Field(default="theourgia.example.com", alias="THEOURGIA_INSTANCE_ID")
 
@@ -76,6 +80,37 @@ class Settings(BaseSettings):
     federation_public_key_path: Path = Field(
         default=Path("/var/lib/theourgia/federation.pub"),
         alias="THEOURGIA_FEDERATION_PUBLIC_KEY_PATH",
+    )
+
+    # ── Backups ───────────────────────────────────────────────────────────
+    restic_repository: str = Field(default="", alias="RESTIC_REPOSITORY")
+    """Restic repository URL. Empty disables scheduled backups."""
+    restic_password: SecretStr = Field(
+        default=SecretStr(""), alias="RESTIC_PASSWORD"
+    )
+    aws_access_key_id: SecretStr | None = Field(
+        default=None, alias="AWS_ACCESS_KEY_ID"
+    )
+    aws_secret_access_key: SecretStr | None = Field(
+        default=None, alias="AWS_SECRET_ACCESS_KEY"
+    )
+    aws_default_region: str = Field(default="auto", alias="AWS_DEFAULT_REGION")
+    backup_include_paths: list[Path] = Field(
+        default_factory=lambda: [Path("/srv/theourgia")],
+        alias="THEOURGIA_BACKUP_INCLUDE_PATHS",
+    )
+    """Filesystem paths included in each backup snapshot."""
+    backup_exclude_patterns: list[str] = Field(
+        default_factory=lambda: ["*.tmp", "*.log", "__pycache__"],
+        alias="THEOURGIA_BACKUP_EXCLUDE_PATTERNS",
+    )
+
+    # ── Observability ─────────────────────────────────────────────────────
+    sentry_dsn: SecretStr | None = Field(default=None, alias="THEOURGIA_SENTRY_DSN")
+    """Crash reporting DSN. **Off by default** — Theourgia ships with
+    zero telemetry. Set this to opt-in for your own instance."""
+    sentry_traces_sample_rate: float = Field(
+        default=0.0, alias="THEOURGIA_SENTRY_TRACES_SAMPLE_RATE", ge=0.0, le=1.0
     )
 
     # ── Validators ────────────────────────────────────────────────────────
@@ -122,6 +157,16 @@ class Settings(BaseSettings):
     @property
     def is_test(self) -> bool:
         return self.env == "test"
+
+    @property
+    def resolved_log_format(self) -> Literal["json", "pretty"]:
+        """Concrete log format after resolving ``"auto"``.
+
+        ``"auto"`` chooses pretty in development (terminal-friendly) and
+        JSON everywhere else (log aggregators expect JSON)."""
+        if self.log_format == "auto":
+            return "pretty" if self.is_development else "json"
+        return self.log_format
 
 
 @lru_cache(maxsize=1)

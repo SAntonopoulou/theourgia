@@ -14,7 +14,6 @@ opt back into the docs UI by setting the appropriate env var.
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 from fastapi import FastAPI
@@ -26,6 +25,7 @@ from theourgia.api.lifespan import lifespan
 from theourgia.api.middleware import register_middleware
 from theourgia.api.routers import register_routers
 from theourgia.core.config import get_settings
+from theourgia.core.observability import configure_logging, get_logger
 
 __all__ = ["create_app", "app"]
 
@@ -45,6 +45,13 @@ Open source, federated, self-hostable. AGPL-3.0 forever.
 def create_app() -> FastAPI:
     """Construct a fresh FastAPI app. Idempotent across calls."""
     settings = get_settings()
+
+    # Configure structured logging before anything else can emit a line
+    # in stdlib format. Idempotent across repeated calls.
+    configure_logging(
+        level=settings.log_level.upper(),
+        json_output=settings.resolved_log_format == "json",
+    )
 
     is_dev_or_test = settings.is_development or settings.is_test
     docs_url = "/api/docs" if is_dev_or_test else None
@@ -78,9 +85,8 @@ def create_app() -> FastAPI:
 
     _customize_openapi(app)
 
-    logging.getLogger(__name__).info(
-        "app.created",
-        extra={"env": settings.env, "version": __version__},
+    get_logger(__name__).info(
+        "app.created", env=settings.env, version=__version__
     )
 
     return app

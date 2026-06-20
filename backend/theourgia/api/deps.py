@@ -30,6 +30,7 @@ from theourgia.api.errors import ForbiddenError, UnauthorizedError
 from theourgia.core.auth.tokens import hash_token
 from theourgia.core.authz import Scope, set_current_user_id
 from theourgia.core.db import session_scope
+from theourgia.core.observability.context import bind_user_id
 from theourgia.models.identity import Session as SessionRow
 from theourgia.models.identity import User
 
@@ -110,6 +111,7 @@ async def get_current_user(
     session_row.last_used_at = datetime.now(tz=UTC)
 
     await set_current_user_id(session, user.id)
+    bind_user_id(user.id)
     return user
 
 
