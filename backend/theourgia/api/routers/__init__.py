@@ -20,12 +20,15 @@ from theourgia.api.routers.v1 import contracts as v1_contracts
 from theourgia.api.routers.v1 import entities as v1_entities
 from theourgia.api.routers.v1 import entity_aliases as v1_entity_aliases
 from theourgia.api.routers.v1 import entries as v1_entries
+from theourgia.api.routers.v1 import geomancy as v1_geomancy
+from theourgia.api.routers.v1 import iching as v1_iching
 from theourgia.api.routers.v1 import identities as v1_identities
 from theourgia.api.routers.v1 import initiations as v1_initiations
 from theourgia.api.routers.v1 import library as v1_library
 from theourgia.api.routers.v1 import meta as v1_meta
 from theourgia.api.routers.v1 import oaths as v1_oaths
 from theourgia.api.routers.v1 import offerings as v1_offerings
+from theourgia.api.routers.v1 import runes as v1_runes
 from theourgia.api.routers.v1 import schedule as v1_schedule
 from theourgia.api.routers.v1 import search as v1_search
 from theourgia.api.routers.v1 import servitors as v1_servitors
@@ -69,4 +72,7 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_attestations.router, tags=["attestations"])
     # Phase 06 divination
     v1.include_router(v1_tarot.router, tags=["tarot"])
+    v1.include_router(v1_iching.router, tags=["iching"])
+    v1.include_router(v1_geomancy.router, tags=["geomancy"])
+    v1.include_router(v1_runes.router, tags=["runes"])
     app.include_router(v1)
