@@ -29,6 +29,7 @@ export * from "./Chart/index.js";
 export * from "./Chip/index.js";
 export * from "./Dialog/index.js";
 export * from "./Drawer/index.js";
+export * from "./Election/index.js";
 export * from "./EmptyState/index.js";
 export * from "./EntityCard/index.js";
 export * from "./ExportPreview/index.js";

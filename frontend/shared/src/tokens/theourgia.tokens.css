@@ -273,6 +273,11 @@
   --sun-warm: #c7a24c;
   --sky: #5e84b0;
 
+  /* Election finder — "this hour failed the constraint". Same hue as
+   * --danger but a distinct semantic name so the meaning travels in
+   * the calling code. */
+  --fail: var(--danger);
+
   /* Search hit highlight */
   --hit: #e7c766;
   --hit-bg: rgba(199, 162, 76, 0.22);
