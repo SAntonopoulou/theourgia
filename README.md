@@ -63,7 +63,7 @@ Theourgia is built in 17 phases. Each phase is architecturally dependent on prio
 | 03 | Time & Cosmos (calendars, astrology, planetary hours, election finder) | `[x]` (Swiss Ephemeris + Hebrew/Hijri/Mayan/Egyptian/Julian + Liber Resh) | [plan/03-time-and-cosmos.md](plan/03-time-and-cosmos.md) |
 | 04 | Journaling (entries, blog, library, body diagrams, quotes) | `[~]` (backend ✓; editor live integration + print blocked on designer) | [plan/04-journaling.md](plan/04-journaling.md) |
 | 05 | Magical Beings (entities, offerings, oaths, lineage attestation) | `[x]` (backend; frontend dashboards blocked on designer handoff #3) | [plan/05-magical-beings.md](plan/05-magical-beings.md) |
-| 06 | Divination & Practice (tarot, I Ching, geomancy, scrying, rituals) | `[~]` (Tarot · I Ching · Geomancy · Runes engines shipped) | [plan/06-divination-and-practice.md](plan/06-divination-and-practice.md) |
+| 06 | Divination & Practice (tarot, I Ching, geomancy, scrying, rituals) | `[~]` (all 6 backend batches shipped; frontend per-tool UIs blocked on designer) | [plan/06-divination-and-practice.md](plan/06-divination-and-practice.md) |
 | 07 | Workshop (sigils, talismans, magical circles, tool registry) | `[ ]` | [plan/07-workshop.md](plan/07-workshop.md) |
 | 08 | Linguistic Tools (gematria, transliteration, voces magicae) | `[ ]` | [plan/08-linguistic-tools.md](plan/08-linguistic-tools.md) |
 | 09 | Synchronicity & Analytics (scientific illuminism dashboards) | `[ ]` | [plan/09-synchronicity-and-analytics.md](plan/09-synchronicity-and-analytics.md) |
@@ -197,7 +197,7 @@ theourgia/
 ├── LICENSE                ← AGPL-3.0
 ├── plan/                  ← per-phase implementation plans (00–16)
 ├── docs/                  ← will hold user/admin/developer documentation
-├── backend/               ← Python 3.12 + FastAPI + SQLModel + Alembic + Celery (1389 tests)
+├── backend/               ← Python 3.12 + FastAPI + SQLModel + Alembic + Celery (1439 tests)
 ├── frontend/              ← React 19 admin SPA · Astro 6 public site · shared design system
 ├── docs/                  ← Starlight docs site (theourgia tokens bridged onto Starlight)
 └── plugins/               ← will hold reference plugins (Phase 14+)
