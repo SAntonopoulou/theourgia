@@ -7,6 +7,258 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-21 (H01-H03 designer handoffs returned · frontend wiring sprint opens)
+
+Designer agent returned the 33-file bundle responding to designer
+handoffs 01 + 02 + 03 (Phase 03/04/05 surfaces). Unpacked at
+`/home/sophia/design-handoffs/theourgia/2026-06-21-H01-H03/`.
+
+**Foundation work (commits `b9a4b86`, `58143a2`, `7f87186`):**
+- `frontend/shared/src/tokens/theourgia.tokens.css` — extended with
+  the new H01-H03 token families: `--st-*` / `--cs-*` / `--ob-*` /
+  `--os-*` / `--is-*` / `--ss-*` / `--ts-*` (status families),
+  `--seal*` / `--verify*` / `--revoke*` (sealing + signing),
+  `--g-*` / `--cat-*` / `--rc-*` / `--fest-*` / `--pl-*` /
+  `--moon-light/dark` (category + planetary), `--hit*` / `--vis-*` /
+  `--paper*` / `--skin*` / `--edge*` / `--bind-blood` / `--warn*`
+  (affordances). Per-theme overrides under `[data-theme]` +
+  `[data-mode]` + the two `[data-theme][data-mode]` combinations.
+- Tailwind preset (`frontend/shared/src/tokens/tailwind.preset.cjs`)
+  extended to expose every new family as utility classes.
+- New backend endpoint `GET /api/v1/search` carries
+  `sealed_excluded_count` — the count of sealed entries matching the
+  metadata filters but excluded because the server can't read their
+  plaintext. Surfaces in the UI as a calm note, never red.
+- New `Adoration` model + Alembic 0031 + `GET /api/v1/resh/today` +
+  `POST /api/v1/resh/adorations` — Liber Resh API endpoint that
+  composes `core/resh/` for transition computation + streak math.
+- New `GET /api/v1/today/ledger` aggregator for the four Phase-05
+  Today cards (active practices · obligations · servitor feeding ·
+  attestation activity). Care-palette discipline encoded in payload
+  shapes — sealed checkpoints surface as `sealed_checkpoint_count`
+  with `prompt: null`.
+- New shared component `BeingsTabs` (8-tab secondary nav for the
+  Phase-05 cluster; scrollable on mobile; per-tab `--bt-*` icon hue
+  tokens added).
+- New shared SealUnlock family: `SealedBadge` (inline pill),
+  `SessionLockIndicator` (topbar pill — locking is the safe action,
+  no confirm), `SealUnlock` dialog (two policies: `session` for
+  Oaths with stay-toggle ON, `per-read` for Initiations with
+  "Stay 5 min" opt-in OFF by default).
+
+**Test counts**: 1452 backend (+13 from H01-H03 gap-fills), 375
+frontend shared (+36 from BeingsTabs 15 + SealUnlock 21), 143/143
+visual regression (no drift from token additions), 143/143
+axe-core WCAG 2.2 A+AA.
+
+**Remaining sprint queue**: B53 (compose/record primitives) → B54
+(signing UX) → B55 (entity/body/export primitives) → 5 Phase 03
+surfaces → 6 Phase 04 surfaces → 8 Phase 05 surfaces + Today
+wiring. Per-component ritual on each surface
+(`memory/feedback_read_dc_html_before_building.md`).
+
+### Added — 2026-06-21 (Phase 06 — Divination & Practice backend)
+
+Six batches closing Phase 06 backend (commits `7cd59bd` Tarot opener,
+`5bf0243` I Ching + Geomancy + Runes, `2a3ab55` lightweight engines
++ practice logs):
+
+- **Batch 44 — Tarot engine**: `Deck` / `Card` / `Spread` / `Reading`
+  models, deterministic `tarot_cast(seed)` via SHA-256-seeded
+  `random.Random`, bundled public-domain Rider-Waite-Smith (78 cards
+  with Waite *Pictorial Key* correspondences + Hebrew letter /
+  planet / zodiac / Tree-of-Life paths), 5 built-in spreads. Alembic
+  0025. 40 tests.
+- **Batch 45 — I Ching engine**: `Hexagram` + `IChingReading`
+  models. `cast_three_coins` (P=1/8, 3/8, 3/8, 1/8) +
+  `cast_yarrow_stalks` (P=1/16, 5/16, 7/16, 3/16). King Wen binary
+  table for all 64 hexagrams. Transformation hexagram after
+  changing-line flips. Bundle covers all 64 with pinyin + English
+  names + derived trigram pair + judgment + image summaries from
+  PD sources (Legge 1899). Alembic 0026. 37 tests.
+- **Batch 46 — Geomancy engine**: 16 Latin canonical figures
+  (`FigureName` enum). `combine()` is per-line XOR (single=True,
+  double=False) — commutative + associative + Populus identity +
+  self-cancellation. Mother → daughter (transpose) → niece →
+  witness → judge → reconciler cascade. 12-house chart. Bundle
+  carries Agrippa attributions (planet / zodiac / element /
+  mobility / meaning) for all 16. Alembic 0027. 30 tests.
+- **Batch 47 — Runes engine**: Multi-set schema (Elder Futhark /
+  Younger Futhark / Anglo-Saxon Futhorc / Armanen / Northumbrian).
+  Symmetric-rune handling: `reversible_flags` forces 6 symmetric
+  runes (Gebo / Hagalaz / Isa / Jera / Ingwaz / Dagaz) upright
+  regardless of the RNG roll. Elder Futhark bundle with all 24
+  runes + Unicode glyphs + aett membership + per-rune meanings
+  from PD sources. 3 built-in spreads (single / three_rune /
+  nine_rune_wyrd). Alembic 0028. 30 tests.
+- **Batch 48 — Pendulum + Bibliomancy + Horary + Scrying**: four
+  lightweight engines in one bundle. Pendulum: 4-outcome capture +
+  per-user accuracy calibration log. Bibliomancy: deterministic
+  passage picker with line / sentence / paragraph granularity +
+  whole-source fallback. Horary: composes Phase 03 `compute_chart`
+  + persists compact chart snapshot. Scrying: two-phase
+  start/end session lifecycle + cross-session symbol index.
+  Alembic 0029. 30 tests.
+- **Batch 49 — Practice logs (Phase 06 closer)**:
+  `BodyPracticeSession` (asana / pranayama / other with Liber-E-style
+  `breaks_count` refinement metric) + `BanishingLog` (10-method
+  enum, `days_with_banishing` cadence ratio rather than a "streak"
+  per tone discipline). Tree of Life paths catalog: 22 paths × 3
+  traditions (Lurianic / Golden Dawn / Thelemic) with the
+  Heh↔Tzaddi Tarot swap honored per Liber AL II:24. Alembic 0030.
+  20 tests.
+
+### Added — 2026-06-21 (Phase 05 — Magical Beings backend)
+
+Seven batches shipping the full relational ledger (commit
+`7cd59bd`):
+
+- **Batch 37 — Entity expansion + alias-graph**: `EntityKind` 6→17,
+  `EntityRelationshipStatus` / `EntityVisibility` / `EntityAliasKind`
+  enums, 14 new Entity columns (epithets / tradition_tags /
+  attributions / relationship_status / contact timestamps /
+  notes_private+shareable / visibility / origin / etc.).
+  `entity_alias` (typed directed edges) + `entity_view` (saved
+  unified views). Alembic 0022.
+- **Batch 38 — Offerings + recurring offerings**: cadence vocabulary
+  (`daily` / `weekly` / `monthly` / `lunar:deipnon` /
+  `festival:samhain` / `cron:0 6 * * 1`). Alembic 0023.
+- **Batch 39 — Contracts**: structured `our/their_obligations`
+  JSONB, `BindingKind` enum, witnesses, dissolution_ritual_id FK.
+- **Batch 40 — Oaths + Initiations**: both default sealed.
+  Initiations show only `tradition` + `status` in plaintext; the
+  rest lives in `encrypted_payload`.
+- **Batch 41 — Servitors + tasks + egregores**: matter-of-fact
+  tone — no Tamagotchi gamification.
+- **Batch 42 — Lineage attestations + Ed25519 counter-signing**:
+  `Attestation` + `AttestationSignature` with role =
+  `self`/`counter-sign`/`revocation`. Append-only signature chain.
+  Alembic 0024.
+- **Batch 43 — Phase 05 API CRUD cleanup**: 7 ledger routers
+  (offerings · contracts · oaths · initiations · servitors ·
+  entity-aliases · attestations) + entity Phase-05 column exposure
+  + `GET /entities/:id/aggregate` resolver + `core/federation/
+  signing.py` (Ed25519 canonical-bytes signing). Celery reminder
+  tasks for oath checkpoints / contract obligations (auto-flips
+  overdue) / servitor feeding / recurring offerings. 25 tests.
+
+### Added — 2026-06-21 (Phase 04 — Journaling backend)
+
+Seven batches shipping the journaling substrate (commit `7cd59bd`):
+
+- **Batch 28 — Entry expansion**: 17 entry kinds (5 legacy + 12
+  Phase 04), visibility / encryption / occurred_at / mood / energy /
+  parent_id / scheduled_publish_at / authored_by_persona_id columns,
+  `entry_revision` history table. Alembic 0017.
+- **Batch 29 — Search substrate**: Postgres FTS via stored
+  `search_tsvector` generated column + GIN index. Filter chips +
+  the sealed-excluded honesty pattern. Alembic 0018.
+- **Batch 30 — Templates**: 12 built-ins (magical-record /
+  ritual-log / dream / divination / synchronicity / liber-resh /
+  banishing / invocation / scrying / tarot-reading / pathworking /
+  astrology-reading), personal / vault-shared / publishable scopes.
+  Alembic 0019.
+- **Batch 31 — Library catalog**: `Book` extended (status /
+  holding / shelf_location / cover) + `BookNote` + `Quote` +
+  `ReadingList` + BibTeX + RIS parsers. Alembic 0020.
+- **Batch 32 — Multi-identity + blog**: `authored_by_persona_id`
+  wired, `/identities` + `/blog/{posts,feed.xml,feed.rss,feed.json}`
+  endpoints.
+- **Batch 33 — Scheduled publication**: Celery beat
+  `promote_scheduled_entries` every minute + auto-catch-up via SQL
+  `<= now()` predicate.
+- **Batch 34 — Body / audio substrate**: `BodySnapshot` (markers
+  with normalized coords + 8-swatch palette colour) +
+  `AudioAttachment`. Alembic 0021.
+
+Frontend wiring for Phase 04 surfaces (Search · Visibility ·
+Template Designer · Library · Body Sensation · Export) is the
+H02-driven slice of the active H01-H03 sprint above.
+
+### Added — 2026-06-21 (Phase 03 — Time & Cosmos)
+
+Six batches (commit `7cd59bd`):
+
+- Swiss Ephemeris (`pyswisseph`) with the mandatory AGPL
+  attribution baked into every `ChartResult.attribution` string +
+  Astro tests asserting the credit is rendered.
+- Multi-calendar engine: Hebrew (Reingold/Dershowitz, HEBREW_EPOCH
+  -1373428), Hijri, Mayan (Long Count + Tzolkin + Haab), Julian
+  via Meeus astronomical algorithms, Thelemic with Old Style + Era
+  Vulgaris dual form, Coptic, Hellenic.
+- Planetary hours (Chaldean order, proportional / unequal hours).
+- Lunar phase (terminator geometry + N/S hemisphere mirror).
+- Election finder with product scoring (one fail → zero).
+- Liber Resh four-station tracker (sunrise / noon / sunset /
+  midnight).
+- Festivals catalog with citation-kind enum (primary / scholarly /
+  community).
+
+Frontend wiring for Phase 03 surfaces (Calendar · Planetary Hours
+· Liber Resh · Election Finder · Today Widgets) is the H01-driven
+slice of the H01-H03 sprint.
+
+### Added — 2026-06-20 (Phase 02 — Frontend Foundations · total design-fidelity rewrite)
+
+Per the maintainer's "every frontend file rewrites against the
+design system" directive (memory:
+`feedback_total_frontend_rewrite.md`):
+
+- **Admin SPA** (`frontend/admin/`): every nav surface
+  ported against its `.dc.html` source from the original 50-surface
+  design system — Today · Journal · Synchronicities · Entities +
+  Profile · Library · Calendar · Divination · Sigil Studio · Circle
+  Builder · Talismans · Analytics · Ritual Feed · Hubs · Scheduler
+  · Templates · Settings · Foundations · Workshop · Quick Capture.
+- **Public site** (`frontend/public-site/`, Astro 6.4.8): Landing,
+  Blog, Essay, Profile, Hub, Memorial, Lineage, SSO, Newsletter,
+  Book, Style Guide, plus specialized modes (Trance, Ritual) and
+  print sheets (Ritual Sheet, Talisman & Sigil).
+- **Shared design system** (`frontend/shared/`): VaultNav,
+  VaultTopbar + TopbarContext, AppShell grid with the
+  scroll-convention fix, the overlay/dialog family (Confirm /
+  Alert / Prompt / Toast / Banner / Drawer / Tooltip / Popover /
+  Menu), every primitive (Button / IconButton / Field / Switch /
+  SegmentedControl / Chip / Card / Badge / Stat / Progress /
+  EmptyState / Avatar / Medallion / StatusDot), i18n catalogs
+  (English + Modern Greek + Hebrew RTL spot-check), `Chart.tsx` +
+  `ChartLegend.tsx` (SVG natal chart with Swiss Ephemeris
+  attribution).
+- **Docs site** (`docs/site/`): Starlight 0.40 with theme tokens
+  bridged onto Starlight's `--sl-color-*` API.
+- **Storybook 8.6**: 128 stories on launch.
+- **Visual regression** via Playwright + locally-served Storybook
+  (no SaaS): 128 stories with committed PNG baselines.
+- **axe-core a11y gate**: WCAG 2.2 A + AA passing across 128
+  stories.
+- **PWA** (admin): `manifest.webmanifest` + service worker +
+  `/capture` mobile-first quick-capture route.
+
+### Added — 2026-06-20 (Phase 01 — Core Architecture backend)
+
+Foundational backend substrate (commit lineage prior to `7cd59bd`):
+
+- DB substrate with SQLModel + SQLAlchemy + Alembic; ULID/UUID
+  id mixin; soft-delete + timestamp mixins; RLS for tenant
+  isolation.
+- Auth: session tokens (cookie + bearer), TOTP, WebAuthn, backup
+  codes, lockout policy.
+- Authorization substrate (`core/authz/`): policy + scope +
+  resource + decision + audit; per-resource and global gates.
+- Encryption: Mode A (server-side AES-256-GCM with wrapped DEKs)
+  + Mode B (zero-knowledge XChaCha20-Poly1305 via libsodium /
+  PyNaCl); shared versioned envelope; per-content-type config.
+- Backup substrate: Restic + R2 / S3-compatible; Celery-scheduled
+  daily full + 6-hourly incremental; policy + restore tooling.
+- Storage: pluggable backends (filesystem / R2) + Upload model
+  + validators.
+- Notifications: multi-channel substrate (in-app / email /
+  web-push stub) + template registry + per-user preferences.
+- Email substrate: pluggable backends + Jinja templates.
+- Events bus, ratelimit + idempotency, cache (in-memory + Redis),
+  GDPR substrate (export + deletion), federation key management,
+  observability (structlog + request context).
+
 ### Added — 2026-06-20 (initial planning corpus + scope expansion)
 
 **Planning corpus:**

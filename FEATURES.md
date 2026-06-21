@@ -9,6 +9,35 @@
 - Inline notes capture intent, rationale, or constraints that must survive context loss
 - See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the phase index, [ARCHITECTURE.md](ARCHITECTURE.md) for the system design
 
+## Phase Status Snapshot (2026-06-21)
+
+This is the **section-level rollup**; per-checkbox detail still lives below. For granular per-batch status, read the `plan/0X-batch-*.md` files (each batch has its own plan doc with tests + DoD).
+
+| Phase | Plan | Status | What landed |
+|---|---|---|---|
+| 00 | [Foundations](plan/00-foundations.md) | ✅ done | Monorepo, CI scaffolding (pared down until v1), dev env, docs site shell |
+| 01 | [Core Architecture](plan/01-core-architecture.md) | ✅ done | DB substrate, auth (sessions + TOTP + WebAuthn), encryption (Mode A + Mode B), backups (Restic + R2), API skeleton, RLS, observability |
+| 02 | [Frontend Foundations](plan/02-frontend-foundations.md) | ✅ done | Total design-fidelity rewrite (admin SPA · public site · shared design system · Starlight docs), Storybook + visual regression + axe-core WCAG 2.2 AA gate, PWA (manifest + offline + /capture) |
+| 03 | [Time & Cosmos](plan/03-time-and-cosmos.md) | 🟡 backend done; frontend wiring via H01 | Swiss Ephemeris attribution shipped, multi-calendar engine (Hebrew Reingold/Dershowitz, Hijri, Mayan, Julian via Meeus, Thelemic, Coptic, Hellenic), planetary hours, Liber Resh substrate + API, festivals, election finder |
+| 04 | [Journaling](plan/04-journaling.md) | 🟡 backend done; frontend wiring via H02 | Entry expansion (17 kinds + revisions + visibility + encryption), Postgres FTS + sealed-excluded honesty, templates (12 built-ins), library catalog (BibTeX/RIS), multi-identity + blog + scheduled publication, body/audio substrate |
+| 05 | [Magical Beings](plan/05-magical-beings.md) | 🟡 backend done; frontend wiring via H03 | Entity expansion + alias-graph, offerings + recurring, contracts + obligations, oaths (default sealed), initiations (sealed-only), servitors + tasks, lineage attestations + Ed25519 counter-sign, API CRUD + scheduler |
+| 06 | [Divination & Practice](plan/06-divination-and-practice.md) | 🟡 backend done; frontend wiring blocked on per-tool .dc.html | Tarot (PD Rider-Waite-Smith + 5 spreads), I Ching (64 King-Wen + coin/yarrow + transformation), Geomancy (16 figures + cascade + 12-house chart), Runes (Elder Futhark + symmetric handling), Pendulum/Bibliomancy/Horary/Scrying, body practice + banishing logs + Tree of Life paths |
+| 07 | [Workshop](plan/07-workshop.md) | ⏳ deferred until H01-H03 frontend lands | Sigil generator, talismans, magic circles, tool registry — designer-heavy; queue after the current sprint |
+| 08 | [Linguistic Tools](plan/08-linguistic-tools.md) | ⏳ planned | Gematria (multi-cipher), transliteration, voces magicae |
+| 09 | [Synchronicity & Analytics](plan/09-synchronicity-and-analytics.md) | ⏳ planned | Tagged capture, query builder, viz; needs 00-06 |
+| 10 | [Publishing & Monetization](plan/10-publishing-and-monetization.md) | ⏳ planned | Stripe Connect, subscriptions, print-quality typography |
+| 11 | [Media Library](plan/11-media-library.md) | ⏳ planned | Image / audio / video / iCal feeds / pilgrimage map |
+| 12 | [Federation](plan/12-federation.md) | ⏳ planned | Native protocol, hubs, group ritual, SSO |
+| 13 | [ActivityPub](plan/13-activitypub.md) | ⏳ planned | Fediverse interop |
+| 14 | [Plugin Ecosystem](plan/14-plugin-ecosystem.md) | ⏳ planned | SDK + registry + sandbox-before-commit |
+| 15 | [Hardening & Launch](plan/15-hardening-and-launch.md) | ⏳ planned | GDPR audit, a11y final pass, perf, inheritance / memorial |
+| 16 | [AI Agent Integration](plan/16-ai-agent-integration.md) | ⏳ planned | Daskalos-pattern daemon + MCP, BYO keys |
+
+**Backend tests: 1452 passing · Alembic chain at 0031.**
+**Frontend shared tests: 375 passing · Visual regression: 143/143 · axe-core a11y: 143/143.**
+
+The active sprint is the **H01-H03 frontend wiring** — closes Phases 03/04/05 by shipping the 21 designer surfaces against the existing backend. Per-batch tracking lives in the `plan/02-batch-*` through current `plan/0X-batch-*` files; granular per-checkbox status updates land alongside each surface as it ships (per the project's Definition of Done in [PROJECT_PLAN.md §5](PROJECT_PLAN.md#5-phasing-philosophy)).
+
 ---
 
 ## 1. Time, Calendars & Cosmology
