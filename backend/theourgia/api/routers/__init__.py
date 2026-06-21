@@ -32,6 +32,7 @@ from theourgia.api.routers.v1 import oaths as v1_oaths
 from theourgia.api.routers.v1 import offerings as v1_offerings
 from theourgia.api.routers.v1 import pendulum as v1_pendulum
 from theourgia.api.routers.v1 import practice_logs as v1_practice
+from theourgia.api.routers.v1 import resh as v1_resh
 from theourgia.api.routers.v1 import runes as v1_runes
 from theourgia.api.routers.v1 import schedule as v1_schedule
 from theourgia.api.routers.v1 import scrying as v1_scrying
@@ -39,6 +40,7 @@ from theourgia.api.routers.v1 import search as v1_search
 from theourgia.api.routers.v1 import servitors as v1_servitors
 from theourgia.api.routers.v1 import tarot as v1_tarot
 from theourgia.api.routers.v1 import templates as v1_templates
+from theourgia.api.routers.v1 import today_ledger as v1_today_ledger
 from theourgia.api.routers.v1 import user_settings as v1_user_settings
 
 __all__ = ["register_routers"]
@@ -85,4 +87,7 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_horary.router, tags=["horary"])
     v1.include_router(v1_scrying.router, tags=["scrying"])
     v1.include_router(v1_practice.router, tags=["practice"])
+    # H01-H03 backend gap-fills
+    v1.include_router(v1_resh.router, tags=["resh"])
+    v1.include_router(v1_today_ledger.router, tags=["today"])
     app.include_router(v1)

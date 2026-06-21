@@ -17,8 +17,7 @@
    • data-mode   swaps the surface/ink ramp between dark (leads) and light.
 
    The cascade is: :root (base + dark defaults) → [data-theme=…] overrides →
-   [data-mode="light"] overrides. Later rules win, so a theme sets accent/fonts
-   and mode sets surfaces; they compose cleanly.
+   [data-mode="light"] overrides → [data-theme=…][data-mode="light"] overrides.
 
    Tokens only ever change *values* across themes/modes — never their *names* —
    so any component built on var(--token) re-skins for free.
@@ -28,7 +27,22 @@
 
    Accessibility: contrast pairs are tuned for WCAG 2.2 AA in both modes.
    high-contrast / colorblind-safe / reduced-motion variants attach as additional
-   [data-*] blocks following the same pattern (stubs at the foot of this file).
+   [data-*] blocks at the foot of this file.
+
+   H01-H03 EXTENSIONS (2026-06-21)
+   --------------------------------
+   The Phase 03/04/05 surfaces introduced these new token families. None are raw
+   literals in the surfaces — every value resolves through a token below:
+     • Status / state — --st-* (entity relationship + book status), --cs-* (contract),
+       --ob-* (obligation), --os-* (oath), --is-* (initiation), --ss-* (servitor),
+       --ts-* (servitor task)
+     • Sealed / signing — --seal*, --verify*, --revoke*
+     • Category / accent — --g-* (entity-kind function groups), --cat-* (offering
+       items), --rc-* (reception scale), --fest-* (festival traditions),
+       --pl-* + --arc-day/night (planetary hours), --moon-light/dark
+     • Affordances — --hit/--hit-bg (search), --vis-* (visibility), --paper*
+       (print/export), --skin/--skin-line (body silhouette), --edge/--edge-soft
+       (alias graph), --bind-blood (contract blood binding)
    ============================================================================ */
 
 :root {
@@ -101,6 +115,11 @@
   --care-soft: rgba(201, 168, 106, 0.12);
   --care-line: rgba(201, 168, 106, 0.4);
 
+  /* Warn (Visibility downgrade gradient — amber, not red) */
+  --warn: #c0975a;
+  --warn-soft: rgba(192, 151, 90, 0.14);
+  --warn-border: rgba(192, 151, 90, 0.42);
+
   /* — Category accents (the six practice domains) ————————————————— */
   --c-journal: #cdbe9e;
   --c-divination: #7e91ce;
@@ -108,12 +127,6 @@
   --c-entity: #c9a24c;
   --c-library: #bc8050;
   --c-synchronicity: #6ba892;
-
-  /* — Elemental accents (circle / talisman work) —————————————————— */
-  --air: #c7b36a;
-  --fire: #c2554a;
-  --water: #5e8fa8;
-  --earth: #6e8e63;
 
   /* — Radii ————————————————————————————————————————————————————————— */
   --r-sm: 4px;
@@ -142,6 +155,147 @@
   /* — Layout widths ———————————————————————————————————————————————— */
   --maxw-doc: 1080px; /* public document column     */
   --nav-w: 248px; /* app sidebar (VaultNav)      */
+
+  /* ───── H01-H03 token families ─────────────────────────────────────
+     Added 2026-06-21 with the Phase 03/04/05 surface batch. All values
+     resolve here so surfaces never declare them inline. */
+
+  /* Entity relationship status (care palette — informational, not judgmental) */
+  --st-active: #7fb069;
+  --st-open: #c9a24c;
+  --st-dormant: #8c8474;
+  --st-contracted: #bfa15b;
+  --st-observing: #7e91ce;
+  --st-severed: #8a8275;
+
+  /* Book status (shares the --st- namespace per designer convention) */
+  --st-owned: var(--ink-soft);
+  --st-reading: var(--accent);
+  --st-read: var(--c-synchronicity);
+  --st-want: var(--c-divination);
+  --st-lent: var(--c-working);
+  --st-unlisted: var(--ink-mute);
+
+  /* Contract status */
+  --cs-draft: #8c8474;
+  --cs-active: #7fb069;
+  --cs-fulfilled: #c9a24c;
+  --cs-expired: #8a8275;
+  --cs-dissolved: #7e9bc0;
+  --cs-breached: #c49a5a;
+
+  /* Obligation status */
+  --ob-pending: #8c8474;
+  --ob-progress: #7e91ce;
+  --ob-fulfilled: #7fb069;
+  --ob-overdue: #c49a5a;
+  --ob-waived: #8a8275;
+
+  /* Oath status (broken/renounced/lapsed all stay in care palette) */
+  --os-active: #7fb069;
+  --os-fulfilled: #c9a24c;
+  --os-broken: #c0975a;
+  --os-renounced: #9a86b8;
+  --os-lapsed: #8a8275;
+
+  /* Initiation status */
+  --is-active: #7fb069;
+  --is-suspended: #c0975a;
+  --is-lapsed: #8a8275;
+  --is-resigned: #9a86b8;
+
+  /* Servitor status (retire / decommission both neutral) */
+  --ss-active: #7fb069;
+  --ss-dormant: #8a8275;
+  --ss-retired: #c0a15a;
+  --ss-decommissioned: #8a8694;
+
+  /* Servitor task status */
+  --ts-pending: #8c8474;
+  --ts-progress: #7e91ce;
+  --ts-completed: #7fb069;
+  --ts-abandoned: #8a8275;
+
+  /* Sealed (calm violet, NOT alarm) — Mode B encryption indicators */
+  --seal: #9a86b8;
+  --seal-soft: rgba(154, 134, 184, 0.14);
+  --seal-border: rgba(154, 134, 184, 0.4);
+
+  /* Signature verification */
+  --verify: #7fa86a;
+  --verify-soft: rgba(127, 168, 106, 0.14);
+  --revoke: #8a8275;
+  --revoke-soft: rgba(138, 130, 117, 0.16);
+
+  /* Entity-kind function groups */
+  --g-venerated: #c9a24c;
+  --g-approached: #9a86b8;
+  --g-intimate: #c58a6a;
+  --g-constructed: #6ba892;
+  --g-other: #8c9bb0;
+
+  /* Offering item categories */
+  --cat-liquid: #7e9bc0;
+  --cat-solid: #c9a24c;
+  --cat-body: #c58aa0;
+  --cat-time: #7fb069;
+
+  /* Reception scale (desaturated → brightest; NEVER red) */
+  --rc-none: #8c8474;
+  --rc-faint: #a0a88e;
+  --rc-clear: #b7a66a;
+  --rc-strong: #c9a24c;
+  --rc-over: #e0c152;
+
+  /* Festival traditions */
+  --fest-woty: #7c9a63;
+  --fest-greek: #5e9ba6;
+  --fest-roman: #b5824f;
+  --fest-hekatean: #9079a6;
+  --fest-thelemic: #c7a24c;
+
+  /* Planetary colors (Planetary Hours / Today) */
+  --pl-sun: #c7a24c;
+  --pl-moon: #aeb4bc;
+  --pl-merc: #c39a6b;
+  --pl-venus: #7c9a63;
+  --pl-mars: #c0584c;
+  --pl-jup: #5e84b0;
+  --pl-sat: #8b7e9c;
+  --arc-day: rgba(199, 162, 76, 0.07);
+  --arc-night: rgba(60, 72, 96, 0.16);
+
+  /* Lunar phase (light side vs dark side of the moon glyph) */
+  --moon-light: #e7e2d2;
+  --moon-dark: #2a2a2e;
+
+  /* Search hit highlight */
+  --hit: #e7c766;
+  --hit-bg: rgba(199, 162, 76, 0.22);
+
+  /* Visibility levels (per-rung accent on the VisibilitySelector) */
+  --vis-personal: #897f6b;
+  --vis-viewer: #5e9ba6;
+  --vis-hub: #8b7e9c;
+  --vis-public: #7c9a63;
+
+  /* Print / Export parchment palette (Ritual sheets · Talisman sheets · Export) */
+  --paper: #efe7d2;
+  --paper-2: #e6dcc2;
+  --paper-ink: #2a2316;
+  --paper-ink-soft: #5b4f38;
+  --paper-line: rgba(42, 35, 22, 0.22);
+
+  /* Body silhouette (line-only gender-neutral figures) */
+  --skin: rgba(236, 229, 214, 0.05);
+  --skin-line: rgba(236, 229, 214, 0.42);
+
+  /* Alias-graph edges */
+  --edge: #9a86b8;
+  --edge-soft: rgba(154, 134, 184, 0.16);
+
+  /* Contract blood binding (single care-desaturated drop — never gory) */
+  --bind-blood: #b06a5a;
 }
 
 /* ============================================================================
@@ -185,10 +339,11 @@
   --c-entity: #bfa15b;
   --c-journal: #cdbe9e;
 
-  --fire: #b5573f;
-  --water: #5e9ba6;
-  --earth: #6e8e63;
-  --air: #bfa15b;
+  /* H01-H03 per-theme overrides */
+  --pl-sun: #bfa15b;
+  --arc-day: rgba(191, 161, 91, 0.07);
+  --moon-light: #e4e7da;
+  --moon-dark: #23291f;
 }
 
 /* ============================================================================
@@ -232,10 +387,11 @@
   --c-synchronicity: #9a8f4e;
   --c-journal: #cdbe9e;
 
-  --fire: #c5392b;
-  --water: #4f87a0;
-  --earth: #7a8a52;
-  --air: #cda53e;
+  /* H01-H03 per-theme overrides */
+  --pl-sun: #cda53e;
+  --arc-day: rgba(205, 165, 62, 0.08);
+  --moon-light: #efe6cf;
+  --moon-dark: #241a14;
 }
 
 /* ============================================================================
@@ -266,6 +422,41 @@
   --shadow-sm: 0 1px 3px rgba(40, 32, 22, 0.1);
   --shadow-md: 0 8px 24px rgba(40, 32, 22, 0.14);
   --shadow-lg: 0 22px 48px rgba(40, 32, 22, 0.2);
+
+  /* H01-H03 light-mode overrides */
+  --pl-sun: #9a6e22;
+  --pl-moon: #6a7079;
+  --pl-merc: #946a33;
+  --pl-venus: #5c7a45;
+  --pl-mars: #a8443a;
+  --pl-jup: #3e648f;
+  --pl-sat: #6a5c7c;
+  --arc-day: rgba(154, 110, 34, 0.1);
+  --arc-night: rgba(60, 72, 96, 0.12);
+
+  --moon-light: #6e6655;
+  --moon-dark: #d8ceb8;
+
+  --vis-personal: #867b66;
+  --vis-viewer: #3e7a86;
+  --vis-hub: #6e5786;
+  --vis-public: #5c7a45;
+
+  --fest-woty: #5c7a45;
+  --fest-greek: #3e7a86;
+  --fest-roman: #92622f;
+  --fest-hekatean: #6e5786;
+  --fest-thelemic: #9a6e22;
+}
+
+/* Theme × mode combinations (moon glyph needs both axes for the lit-side hue) */
+[data-theme="hellenic"][data-mode="light"] {
+  --moon-light: #5c6450;
+  --moon-dark: #d6dac8;
+}
+[data-theme="thelemic"][data-mode="light"] {
+  --moon-light: #6a5a36;
+  --moon-dark: #dad0b6;
 }
 
 /* ============================================================================

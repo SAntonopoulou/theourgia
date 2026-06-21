@@ -86,6 +86,13 @@ class SearchHit:
 class SearchResults:
     hits: list[SearchHit]
     total: int  # total matching rows (before limit/offset)
+    sealed_excluded_count: int = 0
+    """How many sealed entries match the metadata filters (owner /
+    visibility / kinds / date range) but were necessarily excluded —
+    the server can't read their plaintext, so we can neither include
+    them in the hits nor confirm whether they'd match the FTS query.
+    The UI surfaces this as a calm count ("N sealed entries may also
+    match — unlock the vault on this device"). Never red."""
 
 
 async def search_entries(
@@ -169,4 +176,31 @@ async def search_entries(
         )
         hits.append(SearchHit(entry=entry, rank=float("nan"), matched_excerpt=excerpt))
 
-    return SearchResults(hits=hits, total=total)
+    # Count sealed entries that share the metadata filters — the
+    # honest "N sealed may also match" signal. We can't apply the FTS
+    # predicate (the server can't read the ciphertext), so this is the
+    # *upper bound*: every sealed row in the user's scope matching
+    # kind/visibility/owner/date range.
+    sealed_base = select(func.count()).select_from(Entry).where(
+        Entry.deleted_at.is_(None),
+        Entry.encryption_mode == EncryptionMode.SEALED,
+    )
+    if request.kinds:
+        sealed_base = sealed_base.where(Entry.type.in_(list(request.kinds)))
+    if request.visibilities:
+        sealed_base = sealed_base.where(
+            Entry.visibility.in_(list(request.visibilities)),
+        )
+    if request.owner_id is not None:
+        sealed_base = sealed_base.where(Entry.owner_id == request.owner_id)
+    if request.occurred_after is not None:
+        effective_when = func.coalesce(Entry.occurred_at, Entry.created_at)
+        sealed_base = sealed_base.where(effective_when >= request.occurred_after)
+    if request.occurred_before is not None:
+        effective_when = func.coalesce(Entry.occurred_at, Entry.created_at)
+        sealed_base = sealed_base.where(effective_when <= request.occurred_before)
+    sealed_count = int((await session.execute(sealed_base)).scalar_one())
+
+    return SearchResults(
+        hits=hits, total=total, sealed_excluded_count=sealed_count,
+    )

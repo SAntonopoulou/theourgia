@@ -34,6 +34,7 @@ class SearchResponse(BaseModel):
     total: int
     limit: int
     offset: int
+    sealed_excluded_count: int = 0
 
 
 @router.get(
@@ -79,4 +80,5 @@ async def search(
         total=results.total,
         limit=limit,
         offset=offset,
+        sealed_excluded_count=results.sealed_excluded_count,
     )
