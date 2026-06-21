@@ -269,6 +269,10 @@
   --moon-light: #e7e2d2;
   --moon-dark: #2a2a2e;
 
+  /* Solar adoration tracker (Liber Resh) — warm sun glyph vs night sky */
+  --sun-warm: #c7a24c;
+  --sky: #5e84b0;
+
   /* Search hit highlight */
   --hit: #e7c766;
   --hit-bg: rgba(199, 162, 76, 0.22);
