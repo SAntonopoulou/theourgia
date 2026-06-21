@@ -296,6 +296,20 @@
 
   /* Contract blood binding (single care-desaturated drop — never gory) */
   --bind-blood: #b06a5a;
+
+  /* BeingsTabs — per-tab icon hue. Each tab in the Phase-05 secondary
+     nav gets its own muted accent so the active tab is identifiable at
+     a glance even with the underline removed (a11y / colour-never-alone
+     pair still requires the glyph + label, but the hue carries the
+     domain). Verbatim from the designer's BeingsTabs.dc.html. */
+  --bt-entities: #c9a24c;
+  --bt-offerings: #7fb069;
+  --bt-contracts: #7e91ce;
+  --bt-oaths: #c0975a;
+  --bt-initiations: #a98ac0;
+  --bt-servitors: #6ba892;
+  --bt-attestations: #c58a6a;
+  --bt-aliases: #bcb29d;
 }
 
 /* ============================================================================

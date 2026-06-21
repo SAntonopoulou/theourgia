@@ -192,6 +192,15 @@ module.exports = {
         },
         // Contract blood binding
         "bind-blood": v("bind-blood"),
+        // BeingsTabs per-tab icon hues
+        "bt-entities": v("bt-entities"),
+        "bt-offerings": v("bt-offerings"),
+        "bt-contracts": v("bt-contracts"),
+        "bt-oaths": v("bt-oaths"),
+        "bt-initiations": v("bt-initiations"),
+        "bt-servitors": v("bt-servitors"),
+        "bt-attestations": v("bt-attestations"),
+        "bt-aliases": v("bt-aliases"),
       },
       fontFamily: {
         display: [v("font-display")],
