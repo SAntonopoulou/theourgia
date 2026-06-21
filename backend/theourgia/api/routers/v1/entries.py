@@ -23,15 +23,32 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import OptionalCookieUser, get_db_session
-from theourgia.models.entries import Entry, EntryType
+from theourgia.models.entries import (
+    EncryptionMode,
+    Entry,
+    EntryType,
+    EntryVisibility,
+)
 
 __all__ = ["router"]
 
 router = APIRouter()
 
 
-EntryTypeLiteral = Literal["observation", "ritual", "divination", "synchronicity", "capture"]
+# Phase 04 expanded the discriminator to 17 kinds (5 legacy + 12 new).
+# The literal here lists them all so OpenAPI clients see the full set.
+EntryTypeLiteral = Literal[
+    # Phase 02 legacy
+    "observation", "ritual", "divination", "synchronicity", "capture",
+    # Phase 04
+    "note", "ritual_log", "dream", "working", "magical_record",
+    "pathworking", "scrying", "body_practice", "meeting_note",
+    "study_note", "liber_resh", "blog_post",
+]
 
+# The 5 legacy types — used by the existing stats endpoint that
+# pre-dated the Phase 04 expansion. Phase 04 stats land in a future
+# `EntryStatsV2` shape; this list stays narrow for back-compat.
 _ALL_TYPES: tuple[EntryTypeLiteral, ...] = (
     "observation",
     "ritual",
@@ -41,8 +58,17 @@ _ALL_TYPES: tuple[EntryTypeLiteral, ...] = (
 )
 
 
+EntryVisibilityLiteral = Literal["personal", "viewer", "hub", "public"]
+EncryptionModeLiteral = Literal["none", "sealed"]
+
+
 class EntryRead(BaseModel):
-    """Wire format for a single entry — mirrors frontend ``EntryRecord``."""
+    """Wire format for a single entry — mirrors frontend ``EntryRecord``.
+
+    Phase 04 expands this with optional fields. Pre-Phase-04 clients
+    that don't ask for the new fields keep working because every new
+    column is `Optional` and `default=None`.
+    """
 
     model_config = ConfigDict(extra="forbid", from_attributes=True)
 
@@ -54,9 +80,29 @@ class EntryRead(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    # Phase 04 extras (all optional for back-compat).
+    body: str | None = None
+    visibility: EntryVisibilityLiteral = "personal"
+    encryption_mode: EncryptionModeLiteral = "none"
+    occurred_at: datetime | None = None
+    occurred_at_tz: str | None = None
+    location_lat: float | None = None
+    location_lon: float | None = None
+    mood: int | None = None
+    energy: int | None = None
+    health_notes: str | None = None
+    parent_id: str | None = None
+    scheduled_publish_at: datetime | None = None
+    # Multi-identity authoring (Batch 32).
+    authored_by_persona_id: str | None = None
+
 
 class EntryCreate(BaseModel):
-    """Body for ``POST /api/v1/entries`` — mirrors frontend ``CreateEntryInput``."""
+    """Body for ``POST /api/v1/entries`` — mirrors frontend ``CreateEntryInput``.
+
+    Phase 04 extras are optional; pre-Phase-04 client payloads still
+    validate because every new field has a default.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
@@ -65,6 +111,20 @@ class EntryCreate(BaseModel):
     excerpt: str = Field(default="", max_length=1024)
     glyph: str = Field(default="feather", max_length=64)
     body: str | None = None
+
+    # Phase 04 extras.
+    visibility: EntryVisibilityLiteral = "personal"
+    occurred_at: datetime | None = None
+    occurred_at_tz: str | None = Field(default=None, max_length=64)
+    location_lat: float | None = Field(default=None, ge=-90.0, le=90.0)
+    location_lon: float | None = Field(default=None, ge=-180.0, le=180.0)
+    mood: int | None = Field(default=None, ge=1, le=10)
+    energy: int | None = Field(default=None, ge=1, le=10)
+    health_notes: str | None = None
+    parent_id: str | None = None
+    scheduled_publish_at: datetime | None = None
+    # Multi-identity authoring (Batch 32).
+    authored_by_persona_id: str | None = None
 
 
 class EntryWindowCounts(BaseModel):
@@ -96,6 +156,23 @@ def _to_read(row: Entry) -> EntryRead:
         glyph=row.glyph,
         created_at=row.created_at,
         updated_at=row.updated_at,
+        body=row.body,
+        visibility=row.visibility.value,
+        encryption_mode=row.encryption_mode.value,
+        occurred_at=row.occurred_at,
+        occurred_at_tz=row.occurred_at_tz,
+        location_lat=row.location_lat,
+        location_lon=row.location_lon,
+        mood=row.mood,
+        energy=row.energy,
+        health_notes=row.health_notes,
+        parent_id=str(row.parent_id) if row.parent_id else None,
+        scheduled_publish_at=row.scheduled_publish_at,
+        authored_by_persona_id=(
+            str(row.authored_by_persona_id)
+            if row.authored_by_persona_id
+            else None
+        ),
     )
 
 
@@ -193,6 +270,22 @@ async def create_entry(
         glyph=payload.glyph,
         body=payload.body,
         owner_id=current_user.id if current_user is not None else None,
+        # Phase 04 extras. All optional; Entry defaults handle absent values.
+        visibility=EntryVisibility(payload.visibility),
+        occurred_at=payload.occurred_at,
+        occurred_at_tz=payload.occurred_at_tz,
+        location_lat=payload.location_lat,
+        location_lon=payload.location_lon,
+        mood=payload.mood,
+        energy=payload.energy,
+        health_notes=payload.health_notes,
+        parent_id=UUID(payload.parent_id) if payload.parent_id else None,
+        scheduled_publish_at=payload.scheduled_publish_at,
+        authored_by_persona_id=(
+            UUID(payload.authored_by_persona_id)
+            if payload.authored_by_persona_id
+            else None
+        ),
     )
     session.add(row)
     await session.commit()

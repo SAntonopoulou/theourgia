@@ -52,7 +52,7 @@ export function Drawer({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "var(--space-4, 16px) var(--space-5, 24px)",
+            padding: "16px 20px",
             borderBottom: "1px solid var(--line)",
           }}
         >
@@ -60,18 +60,18 @@ export function Drawer({
             id={titleId}
             style={{
               margin: 0,
-              fontFamily: "var(--font-serif)",
-              fontSize: "var(--type-h3, 18px)",
+              fontFamily: "var(--font-display, var(--font-serif))",
+              fontSize: 19,
               color: "var(--ink)",
             }}
           >
             {title}
           </h2>
-          <Button size="sm" variant="quiet" onClick={onClose}>
-            Close
+          <Button size="sm" variant="quiet" onClick={onClose} aria-label="Close">
+            ✕
           </Button>
         </header>
-        <div style={{ flex: 1, padding: "var(--space-5, 24px)", overflow: "auto" }}>{children}</div>
+        <div style={{ flex: 1, padding: 20, overflow: "auto" }}>{children}</div>
       </div>
     </Overlay>
   );

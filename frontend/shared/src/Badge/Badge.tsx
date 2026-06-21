@@ -1,19 +1,20 @@
 /**
- * Badge — labels with semantic tone.
+ * Badge — pill-shape label with semantic tone.
  *
- * Six tones, each pairing color with optional glyph (the color-never-alone
- * rule):
+ * Faithful to the Foundations § "Status & tags" treatment: a thin
+ * line-bordered pill on a transparent background, with the tone carried
+ * by *text color* (so it sits cleanly over any surface without competing
+ * with the page's elevation hierarchy).
  *
- *   neutral  — quiet, generic label
- *   info     — informational
- *   success  — positive state (signed, verified, OK)
- *   warning  — caveat / advisory
- *   danger   — destructive / sealed / oxblood
- *   trust    — federation trust badge (gold accent on accent-soft)
+ * Six tones, each paired with optional glyph (per the design's
+ * color-never-alone rule — see Foundations § Accessibility):
  *
- * Always paired with text or a glyph (color is never the only cue). Sizes
- * are fixed — badges should not vary in scale within a context; tones
- * carry meaning, sizes do not.
+ *   neutral  — quiet, generic label (ink-soft)
+ *   info     — informational (info hue)
+ *   success  — verified / signed / OK
+ *   warning  — pending / caveat
+ *   danger   — revoked / destructive
+ *   trust    — federation trust (accent gold)
  */
 
 import type { CSSProperties, ReactNode } from "react";
@@ -30,62 +31,35 @@ export interface BadgeProps {
   style?: CSSProperties;
 }
 
-function toneStyle(tone: BadgeTone): CSSProperties {
+function toneColor(tone: BadgeTone): string {
   switch (tone) {
     case "neutral":
-      return {
-        background: "var(--bg-3, var(--bg-2))",
-        color: "var(--ink-soft, var(--ink))",
-        border: "1px solid var(--line)",
-      };
+      return "var(--ink-soft)";
     case "info":
-      return {
-        background: "var(--info-soft, var(--bg-2))",
-        color: "var(--info)",
-        border: "1px solid var(--info)",
-      };
+      return "var(--info)";
     case "success":
-      return {
-        background: "var(--success-soft, var(--bg-2))",
-        color: "var(--success)",
-        border: "1px solid var(--success)",
-      };
+      return "var(--success)";
     case "warning":
-      return {
-        background: "var(--warning-soft, var(--bg-2))",
-        color: "var(--warning)",
-        border: "1px solid var(--warning)",
-      };
+      return "var(--warning)";
     case "danger":
-      return {
-        background: "var(--danger-soft, var(--bg-2))",
-        color: "var(--danger)",
-        border: "1px solid var(--danger)",
-      };
+      return "var(--danger)";
     case "trust":
-      return {
-        background: "var(--accent-soft, var(--bg-2))",
-        color: "var(--accent)",
-        border: "1px solid var(--accent)",
-      };
+      return "var(--accent)";
   }
 }
 
 export function Badge({ tone = "neutral", glyph, children, className, style }: BadgeProps) {
   const composedStyle: CSSProperties = {
-    ...toneStyle(tone),
     display: "inline-flex",
     alignItems: "center",
-    gap: "var(--space-1, 4px)",
-    padding: "0 var(--space-2, 8px)",
-    height: 22,
-    minWidth: 22,
+    gap: 6,
+    padding: "3px 11px",
     fontFamily: "var(--font-ui, system-ui, sans-serif)",
-    fontSize: "var(--type-caption, 11px)",
-    fontWeight: 600,
-    letterSpacing: "0.04em",
-    textTransform: "uppercase" as const,
-    borderRadius: "var(--r-sm, 4px)",
+    fontSize: 11.5,
+    color: toneColor(tone),
+    background: "transparent",
+    border: "1px solid var(--line)",
+    borderRadius: 999,
     ...style,
   };
   return (

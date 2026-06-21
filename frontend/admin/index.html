@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#15120D" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#EFE7D4" media="(prefers-color-scheme: light)" />
+    <link rel="manifest" href="/admin/manifest.webmanifest" />
+    <link rel="icon" href="/admin/icon.svg" type="image/svg+xml" />
     <title>Theourgia — Admin</title>
     <script>
       (function () {
@@ -19,7 +23,38 @@
         root.setAttribute("data-mode", pick("mode", ["dark", "light"], "dark"));
         root.setAttribute("data-contrast", pick("contrast", ["normal", "high"], "normal"));
         root.setAttribute("data-cvd", pick("cvd", ["normal", "safe"], "normal"));
+        // Locale + direction — mirrors shared/tokens/first-paint.js so the
+        // admin SPA shows the right language before React boots.
+        var REGISTERED = ["en", "el", "he"];
+        var RTL = { he: 1, ar: 1, fa: 1 };
+        function pickLocale() {
+          try {
+            var stored = localStorage.getItem("theourgia.locale");
+            if (REGISTERED.indexOf(stored) >= 0) return stored;
+          } catch (_e) {}
+          var langs = (typeof navigator !== "undefined" && navigator.languages) || [];
+          for (var i = 0; i < langs.length; i++) {
+            var l = langs[i];
+            if (REGISTERED.indexOf(l) >= 0) return l;
+            var primary = String(l).split("-")[0];
+            if (REGISTERED.indexOf(primary) >= 0) return primary;
+          }
+          return "en";
+        }
+        var locale = pickLocale();
+        root.setAttribute("lang", locale);
+        root.setAttribute("dir", RTL[locale] ? "rtl" : "ltr");
       })();
+      // Service worker registration — runs after first paint so it never
+      // blocks the shell. Only registers in production (Vite dev server's
+      // module fetch URLs don't match SW cache rules).
+      if ("serviceWorker" in navigator && location.pathname.startsWith("/admin/")) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("/admin/sw.js", { scope: "/admin/" }).catch(function () {
+            // Best-effort — failing SW registration shouldn't break the app.
+          });
+        });
+      }
     </script>
   </head>
   <body>

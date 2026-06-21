@@ -15,29 +15,31 @@ describe("Button", () => {
     const button = screen.getByRole("button", { name: "Save" });
     expect(button).toHaveAttribute("type", "button");
     expect(button.style.backgroundColor).toBe("var(--accent)");
-    expect(button.style.minHeight).toBe("40px");
+    expect(button.style.minHeight).toBe("38px");
   });
 
   it.each([
     ["primary", "var(--accent)"],
-    ["secondary", "var(--bg-2)"],
+    ["secondary", "transparent"],
     ["danger", "var(--danger)"],
   ])("variant=%s sets the expected backgroundColor", (variant, expected) => {
     render(<Button variant={variant as "primary" | "secondary" | "danger"}>X</Button>);
     expect(screen.getByRole("button").style.backgroundColor).toBe(expected);
   });
 
-  it("ghost and quiet are transparent until they're hovered", () => {
+  it("ghost, quiet, and secondary all have transparent backgrounds", () => {
     const { rerender } = render(<Button variant="ghost">G</Button>);
     expect(screen.getByRole("button").style.backgroundColor).toBe("transparent");
     rerender(<Button variant="quiet">Q</Button>);
     expect(screen.getByRole("button").style.backgroundColor).toBe("transparent");
+    rerender(<Button variant="secondary">S</Button>);
+    expect(screen.getByRole("button").style.backgroundColor).toBe("transparent");
   });
 
   it.each([
-    ["sm", "32px"],
-    ["md", "40px"],
-    ["lg", "48px"],
+    ["sm", "30px"],
+    ["md", "38px"],
+    ["lg", "46px"],
   ])("size=%s yields the documented min-height", (size, height) => {
     render(<Button size={size as "sm" | "md" | "lg"}>X</Button>);
     expect(screen.getByRole("button").style.minHeight).toBe(height);
@@ -112,9 +114,9 @@ describe("IconButton", () => {
   });
 
   it.each([
-    ["sm", "32px"],
-    ["md", "40px"],
-    ["lg", "48px"],
+    ["sm", "30px"],
+    ["md", "38px"],
+    ["lg", "46px"],
   ])("size=%s sets the square dimensions to %s", (size, px) => {
     render(<IconButton glyph="key" label="Keys" size={size as "sm" | "md" | "lg"} />);
     const button = screen.getByRole("button");

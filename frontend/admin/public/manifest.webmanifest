@@ -1,0 +1,42 @@
+{
+  "name": "Theourgia",
+  "short_name": "Theourgia",
+  "description": "Magickal journal CMS and practitioner toolkit",
+  "start_url": "/admin/capture",
+  "scope": "/admin/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#15120D",
+  "background_color": "#15120D",
+  "icons": [
+    {
+      "src": "/admin/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/admin/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quick capture",
+      "short_name": "Capture",
+      "description": "Write a quick entry",
+      "url": "/admin/capture",
+      "icons": [{ "src": "/admin/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Today",
+      "short_name": "Today",
+      "description": "Open today's vault",
+      "url": "/admin/",
+      "icons": [{ "src": "/admin/icon.svg", "sizes": "any" }]
+    }
+  ],
+  "categories": ["lifestyle", "productivity", "books"]
+}

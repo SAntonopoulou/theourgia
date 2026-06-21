@@ -13,7 +13,10 @@ export { defaultFixtures } from "./fixtures.js";
 export type {
   BookRecord,
   CreateBookInput,
+  CreateEntityInput,
   CreateEntryInput,
+  EntityKind,
+  EntityRecord,
   EntryRecord,
   EntryStats,
   EntryType,

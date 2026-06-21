@@ -1,0 +1,241 @@
+---
+/**
+ * Print — Talisman & Sigil consecration sheets.
+ *
+ * Faithful port of ``Theourgia Print - Talisman & Sigil.dc.html``. Per
+ * ``agent_onboarding.md`` § Theourgia Print - Talisman & Sigil:
+ *   · Two specimens behind a Talisman / Sigil toggle.
+ *   · Talisman: Jupiter consecration sheet — name-ring (textPath),
+ *     4×4 kamea (magic square of Jupiter), traced sigil, virtue / metal /
+ *     day / square / suffumigation table, consecration rite, signature.
+ *   · Sigil: chaos-magic statement-of-intent → reduced letters → traced
+ *     sigil on the lunar square, charging + forgetting rite.
+ *   · Drawn figures come from the Talisman designer / Sigil studio
+ *     (same kamea + trace engine) when persistence ships. For now, the
+ *     designer's demo specimens are static.
+ *   · Same **textPath even-distribution** rule as Talisman/Circle.
+ *
+ * Demo identity swapped from "Sophia" → "Theophrastos" (magickal-name
+ * rule).
+ */
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Consecration sheet — Theourgia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@600&family=Inria+Sans:wght@300;400;700&family=JetBrains+Mono:wght@400;500&family=Frank+Ruhl+Libre:wght@500&family=Noto+Sans+Symbols&display=swap"
+    />
+    <style>
+      :root {
+        --font-display: "Cardo", serif;
+        --font-cinzel: "Cinzel", serif;
+        --font-ui: "Inria Sans", sans-serif;
+        --font-mono: "JetBrains Mono", monospace;
+        --font-hebrew: "Frank Ruhl Libre", serif;
+        --font-glyph: "Noto Sans Symbols", "Cardo", serif;
+        --paper: #f2e9d4;
+        --ink: #2b2114;
+        --ink-soft: #5b4b33;
+        --ink-mute: #8a7857;
+        --rule: #c9b68c;
+        --seal: #8c2f23;
+        --gold: #9a6e22;
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+      button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+      :focus-visible { outline: 2px solid #c7a24c; outline-offset: 2px; }
+
+      .scroll::-webkit-scrollbar { width: 10px; }
+      .scroll::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, .18);
+        border-radius: 10px;
+        border: 3px solid transparent;
+        background-clip: content-box;
+      }
+
+      [data-spec][aria-pressed="true"] {
+        color: #15120d !important;
+        background: #c7a24c !important;
+      }
+
+      @page { size: A4 portrait; margin: 0; }
+      @media print {
+        .chrome { display: none !important; }
+        .surround { background: #fff !important; padding: 0 !important; overflow: visible !important; }
+        .sheet { box-shadow: none !important; margin: 0 auto !important; background: #fff !important; }
+        .sheet[data-hidden="true"] { display: none !important; }
+        body { background: #fff !important; }
+      }
+
+      @media screen and (max-width: 820px) {
+        .sheet {
+          width: 100% !important;
+          max-width: 760px;
+          min-height: 0 !important;
+          padding: 44px 30px !important;
+        }
+      }
+
+      .print-btn:hover { opacity: .9; }
+    </style>
+  </head>
+  <body>
+    <div style="height:100vh;display:flex;flex-direction:column;background:#17140F;overflow:hidden;font-family:var(--font-ui)">
+
+      <!-- CHROME -->
+      <div class="chrome" style="display:flex;align-items:center;gap:18px;padding:12px 24px;border-bottom:1px solid rgba(236,229,214,.12);background:#15120D;color:#ECE5D6;flex-wrap:wrap">
+        <div style="font-family:var(--font-display);font-size:16px">Print preview</div>
+        <span style="color:#897F6B;font-size:13px">Consecration sheet · A4 portrait</span>
+        <div role="group" aria-label="Specimen" style="display:flex;gap:2px;padding:3px;border:1px solid rgba(236,229,214,.14);border-radius:8px;margin-left:6px">
+          <button type="button" data-spec data-pick="talisman" aria-pressed="true" style="padding:6px 14px;font-family:var(--font-ui);font-size:13px;color:#BCB29D;background:transparent;border-radius:6px;transition:all .15s ease;border:none;cursor:pointer">Talisman</button>
+          <button type="button" data-spec data-pick="sigil" aria-pressed="false" style="padding:6px 14px;font-family:var(--font-ui);font-size:13px;color:#BCB29D;background:transparent;border-radius:6px;transition:all .15s ease;border:none;cursor:pointer">Sigil</button>
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px;color:#BCB29D">
+          <span style="display:flex;align-items:center;gap:7px;padding:7px 12px;border:1px solid rgba(236,229,214,.12);border-radius:8px">Paper <strong style="color:#ECE5D6;font-weight:400">A4</strong></span>
+          <button type="button" class="print-btn" onclick="window.print()" style="display:flex;align-items:center;gap:8px;padding:8px 18px;border-radius:8px;background:#C7A24C;color:#15120D;font-weight:700;font-size:13px;border:none;cursor:pointer;transition:opacity .15s ease">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2M7 14h10v7H7z"></path></svg>
+            Print
+          </button>
+        </div>
+      </div>
+
+      <!-- SURROUND -->
+      <div class="surround scroll" style="flex:1;overflow-y:auto;background:#17140F;padding:36px 24px;display:flex;justify-content:center">
+
+        <!-- TALISMAN SHEET -->
+        <div class="sheet" data-sheet="talisman" data-hidden="false" style="width:760px;min-height:1075px;flex:none;background:var(--paper);color:var(--ink);box-shadow:0 24px 60px rgba(0,0,0,.55);padding:64px 72px;font-family:var(--font-display);position:relative">
+          <div style="text-align:center;margin-bottom:24px">
+            <div style="font-family:var(--font-ui);font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:12px">From the Vault of Theophrastos · Adeptus Minor</div>
+            <h1 style="font-family:var(--font-display);font-weight:700;font-size:31px;line-height:1.12;margin:0;color:var(--ink)">Consecration of a Talisman<br>of Jupiter</h1>
+            <div style="font-family:var(--font-display);font-style:italic;font-size:16px;color:var(--ink-soft);margin-top:7px">for fortune in a venture — <span style="font-variant:small-caps">drawn in the hour of Jupiter</span></div>
+          </div>
+
+          <!-- talisman figure -->
+          <div style="display:flex;justify-content:center;margin:6px 0 24px">
+            <svg width="280" height="280" viewBox="0 0 400 400" aria-label="Talisman of Jupiter">
+              <circle cx="200" cy="200" r="196" fill="none" stroke="var(--seal)" stroke-width="1.6"></circle>
+              <circle cx="200" cy="200" r="184" fill="none" stroke="var(--seal)" stroke-width=".8" opacity=".6"></circle>
+              <circle cx="200" cy="200" r="158" fill="none" stroke="var(--rule)" stroke-width="1"></circle>
+              <circle cx="200" cy="200" r="150" fill="none" stroke="var(--rule)" stroke-width=".7" opacity=".6"></circle>
+              <defs><path id="tr-name-ring" d="M 200,30 A 170,170 0 1,1 199.9,30" fill="none"></path></defs>
+              <text fill="var(--seal)" style="font-family:var(--font-hebrew);font-size:13px"><textPath href="#tr-name-ring" textLength="1068" lengthAdjust="spacing">אל · IOPHIEL · HISMAEL · אל · IOPHIEL · HISMAEL · אל · IOPHIEL · HISMAEL · </textPath></text>
+              <!-- 4x4 kamea -->
+              <g style="font-family:var(--font-mono);font-size:30px;fill:var(--ink)" text-anchor="middle">
+                <text x="129" y="139">4</text><text x="176" y="139">14</text><text x="223" y="139">15</text><text x="270" y="139">1</text>
+                <text x="129" y="186">9</text><text x="176" y="186">7</text><text x="223" y="186">6</text><text x="270" y="186">12</text>
+                <text x="129" y="233">5</text><text x="176" y="233">11</text><text x="223" y="233">10</text><text x="270" y="233">8</text>
+                <text x="129" y="280">16</text><text x="176" y="280">2</text><text x="223" y="280">3</text><text x="270" y="280">13</text>
+              </g>
+              <g stroke="var(--rule)" stroke-width=".6" opacity=".7">
+                <line x1="153" y1="106" x2="153" y2="294"></line><line x1="200" y1="106" x2="200" y2="294"></line><line x1="247" y1="106" x2="247" y2="294"></line>
+                <line x1="106" y1="153" x2="294" y2="153"></line><line x1="106" y1="200" x2="294" y2="200"></line><line x1="106" y1="247" x2="294" y2="247"></line>
+              </g>
+              <path d="M129 130 L176 318 L294 130 L153 224 L270 271" fill="none" stroke="var(--seal)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" opacity=".9"></path>
+              <circle cx="129" cy="130" r="5.5" fill="none" stroke="var(--seal)" stroke-width="2.2"></circle>
+            </svg>
+          </div>
+
+          <table style="margin:0 auto 22px;border-collapse:collapse;font-family:var(--font-display);font-size:15px;color:var(--ink)">
+            <tr><td style="padding:5px 18px 5px 0;color:var(--ink-soft);font-style:italic">Virtue</td><td style="padding:5px 0">Jupiter — increase, fortune, grace</td></tr>
+            <tr><td style="padding:5px 18px 5px 0;color:var(--ink-soft);font-style:italic">Metal · Day</td><td style="padding:5px 0">Tin · Thursday, hour of Jupiter</td></tr>
+            <tr><td style="padding:5px 18px 5px 0;color:var(--ink-soft);font-style:italic">Square</td><td style="padding:5px 0">4 × 4 · constant 34 · sum 136</td></tr>
+            <tr><td style="padding:5px 18px 5px 0;color:var(--ink-soft);font-style:italic">Suffumigation</td><td style="padding:5px 0">Cedar, nutmeg, and saffron</td></tr>
+          </table>
+
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+            <span style="flex:1;height:1px;background:var(--rule)"></span>
+            <span style="font-family:var(--font-glyph);color:var(--seal);font-size:14px">♃</span>
+            <span style="flex:1;height:1px;background:var(--rule)"></span>
+          </div>
+          <h2 style="font-family:var(--font-display);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--seal);margin:0 0 11px">The consecration</h2>
+          <p style="font-family:var(--font-display);font-size:15.5px;line-height:1.6;color:var(--ink);margin:0;text-align:justify;text-wrap:pretty">In the hour of Jupiter, the Moon increasing, suffumigate the talisman in the smoke. Vibrate the divine name <strong>אל</strong> (El) thrice, and call upon the Intelligence <span style="font-style:italic">Iophiel</span> to bind the virtue of the star into the metal: <span style="font-style:italic">that this figure may draw fortune to its bearer, as the planet pours down his benevolence. So be it sealed.</span></p>
+
+          <div style="position:absolute;left:72px;right:72px;bottom:48px">
+            <div style="height:1px;background:var(--rule);margin-bottom:12px"></div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--font-ui);font-size:11px;color:var(--ink-mute)">
+              <span>Theophrastos · consecrated ____________</span>
+              <span style="font-style:italic;font-family:var(--font-display)">Quam dilecta tabernacula tua</span>
+              <span>fol. i</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIGIL SHEET -->
+        <div class="sheet" data-sheet="sigil" data-hidden="true" style="width:760px;min-height:1075px;flex:none;background:var(--paper);color:var(--ink);box-shadow:0 24px 60px rgba(0,0,0,.55);padding:64px 72px;font-family:var(--font-display);position:relative;display:none">
+          <div style="text-align:center;margin-bottom:24px">
+            <div style="font-family:var(--font-ui);font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:12px">From the Vault of Theophrastos · Adeptus Minor</div>
+            <h1 style="font-family:var(--font-display);font-weight:700;font-size:31px;line-height:1.12;margin:0;color:var(--ink)">A Sigil of Intent</h1>
+            <div style="font-family:var(--font-display);font-style:italic;font-size:16px;color:var(--ink-soft);margin-top:7px">charged, and given to be forgotten</div>
+          </div>
+
+          <div style="text-align:center;margin:8px 0 18px">
+            <div style="font-family:var(--font-ui);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:6px">The statement of intent</div>
+            <div style="font-family:var(--font-display);font-style:italic;font-size:19px;color:var(--ink)">It is my Will to walk unseen.</div>
+            <div style="font-family:var(--font-mono);font-size:13px;color:var(--ink-mute);margin-top:8px;letter-spacing:.1em">T · S · M · Y · W · L · K · N · → drawn upon the square of the Moon</div>
+          </div>
+
+          <!-- sigil figure -->
+          <div style="display:flex;justify-content:center;margin:4px 0 26px">
+            <svg width="300" height="300" viewBox="0 0 400 400" aria-label="Sigil of intent">
+              <circle cx="200" cy="200" r="190" fill="none" stroke="var(--seal)" stroke-width="1.6"></circle>
+              <circle cx="200" cy="200" r="178" fill="none" stroke="var(--seal)" stroke-width=".7" opacity=".55"></circle>
+              <circle cx="200" cy="200" r="150" fill="none" stroke="var(--rule)" stroke-width=".8" opacity=".7"></circle>
+              <!-- the traced sigil -->
+              <path d="M150 150 C 120 200, 180 250, 250 230 S 300 150, 230 130 C 190 120, 170 180, 220 200" fill="none" stroke="var(--seal)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+              <path d="M150 150 L150 120 M150 150 L122 150" stroke="var(--seal)" stroke-width="3" stroke-linecap="round"></path>
+              <circle cx="220" cy="200" r="7" fill="none" stroke="var(--seal)" stroke-width="3"></circle>
+              <circle cx="250" cy="230" r="3" fill="var(--seal)"></circle>
+            </svg>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+            <span style="flex:1;height:1px;background:var(--rule)"></span>
+            <span style="font-family:var(--font-glyph);color:var(--seal);font-size:14px">☽</span>
+            <span style="flex:1;height:1px;background:var(--rule)"></span>
+          </div>
+          <h2 style="font-family:var(--font-display);font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--seal);margin:0 0 11px">The charging</h2>
+          <p style="font-family:var(--font-display);font-size:15.5px;line-height:1.6;color:var(--ink);margin:0 0 16px;text-align:justify;text-wrap:pretty">Reduce the desire to this figure and to no words. Bring the mind to a single point — by gnosis, by exhaustion, by the still moment between breaths — and in that emptiness, see the sigil and release it. Then <strong>forget</strong>: burn this sheet, or bury it, that the conscious mind may not meddle with what the deep mind now carries.</p>
+          <p style="font-family:var(--font-display);font-style:italic;font-size:14.5px;line-height:1.55;color:var(--ink-soft);margin:0">Nothing is true. The working that needs no one to remember making it is the working that holds.</p>
+
+          <div style="position:absolute;left:72px;right:72px;bottom:48px">
+            <div style="height:1px;background:var(--rule);margin-bottom:12px"></div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--font-ui);font-size:11px;color:var(--ink-mute)">
+              <span>charged ____________ · destroyed ____________</span>
+              <span style="font-style:italic;font-family:var(--font-display)">Solve et coagula</span>
+              <span>fol. ii</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <script>
+      // Specimen toggle — Talisman ↔ Sigil. Print CSS hides
+      // [data-hidden="true"] sheets so only the active specimen prints.
+      const setSpec = (which: "talisman" | "sigil") => {
+        document.querySelectorAll<HTMLElement>("[data-spec]").forEach((btn) => {
+          btn.setAttribute("aria-pressed", btn.getAttribute("data-pick") === which ? "true" : "false");
+        });
+        document.querySelectorAll<HTMLElement>("[data-sheet]").forEach((sheet) => {
+          const match = sheet.getAttribute("data-sheet") === which;
+          sheet.setAttribute("data-hidden", match ? "false" : "true");
+          sheet.style.display = match ? "block" : "none";
+        });
+      };
+      document.querySelectorAll<HTMLElement>("[data-spec]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const pick = btn.getAttribute("data-pick");
+          if (pick === "talisman" || pick === "sigil") setSpec(pick);
+        });
+      });
+    </script>
+  </body>
+</html>

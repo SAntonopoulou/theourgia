@@ -18,14 +18,15 @@ export function TextInput({ className, style, ...rest }: TextInputProps) {
 
   const inputStyle: CSSProperties = {
     width: "100%",
-    padding: "var(--space-2, 8px) var(--space-3, 12px)",
-    minHeight: 40,
+    padding: "10px 13px",
+    minHeight: 38,
     fontFamily: "var(--font-ui, system-ui, sans-serif)",
-    fontSize: "var(--type-body-sm, 14px)",
+    fontSize: 14,
     color: "var(--ink)",
-    background: "var(--bg-sunk, var(--bg))",
-    border: `1px solid ${invalid ? "var(--danger)" : "var(--line)"}`,
-    borderRadius: "var(--r-md, 6px)",
+    background: "var(--bg)",
+    border: `1px solid ${invalid ? "var(--danger)" : "var(--line-2)"}`,
+    borderRadius: "var(--r-md, 8px)",
+    outline: "none",
     transition: "border-color 150ms ease, box-shadow 150ms ease",
     ...style,
   };

@@ -8,7 +8,7 @@ A magickal journal CMS and full practitioner's toolkit.
 Open source, self-hostable, federated. For working magicians.
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
-[![Status: Planning](https://img.shields.io/badge/status-planning-yellow.svg)](#status)
+[![Status: Active development](https://img.shields.io/badge/status-active_development_(Phase_06)-orange.svg)](#status)
 [![Telemetry: Zero](https://img.shields.io/badge/telemetry-zero-brightgreen.svg)](#privacy)
 [![Federated](https://img.shields.io/badge/federation-native_+_ActivityPub-purple.svg)](FEATURES.md#14-federation-networks--group-work)
 [![Plugins](https://img.shields.io/badge/plugins-from_day_one-orange.svg)](FEATURES.md#17-plugin-ecosystem)
@@ -19,7 +19,7 @@ Open source, self-hostable, federated. For working magicians.
 
 ## Status
 
-**Pre-alpha — planning phase.** No runnable code yet. The project is being designed end-to-end before implementation begins, in phases that prioritize architectural soundness and long-term maintainability over speed-to-MVP.
+**Pre-alpha — active development (Phase 06).** Foundations through the relational-ledger backend (Phases 00 → 05) are shipped; Phase 06 (Divination & Practice) is opening with the Tarot engine. Implementation follows the phase order in [PROJECT_PLAN.md](PROJECT_PLAN.md); each phase is architecturally dependent on the prior phases, not feature-priority-ordered.
 
 For the canonical feature catalog, see **[FEATURES.md](FEATURES.md)**. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
@@ -58,12 +58,12 @@ Theourgia is built in 17 phases. Each phase is architecturally dependent on prio
 | Phase | Title | Status | Plan |
 |---|---|---|---|
 | 00 | Foundations (repo, CI, dev env, docs infra) | `[x]` | [plan/00-foundations.md](plan/00-foundations.md) |
-| 01 | Core Architecture (DB, auth, plugins, encryption, backups) | `[~]` (data layer ✓, encryption ✓, auth ✓) | [plan/01-core-architecture.md](plan/01-core-architecture.md) |
-| 02 | Frontend Foundations (Astro, React admin, Tiptap, modals, i18n) | `[ ]` | [plan/02-frontend-foundations.md](plan/02-frontend-foundations.md) |
-| 03 | Time & Cosmos (calendars, astrology, planetary hours, election finder) | `[ ]` | [plan/03-time-and-cosmos.md](plan/03-time-and-cosmos.md) |
-| 04 | Journaling (entries, blog, library, body diagrams, quotes) | `[ ]` | [plan/04-journaling.md](plan/04-journaling.md) |
-| 05 | Magical Beings (entities, offerings, oaths, lineage attestation) | `[ ]` | [plan/05-magical-beings.md](plan/05-magical-beings.md) |
-| 06 | Divination & Practice (tarot, I Ching, geomancy, scrying, rituals) | `[ ]` | [plan/06-divination-and-practice.md](plan/06-divination-and-practice.md) |
+| 01 | Core Architecture (DB, auth, plugins, encryption, backups) | `[x]` | [plan/01-core-architecture.md](plan/01-core-architecture.md) |
+| 02 | Frontend Foundations (Astro, React admin, Tiptap, modals, i18n) | `[x]` (full design-fidelity port; PWA; Storybook + axe-core gate) | [plan/02-frontend-foundations.md](plan/02-frontend-foundations.md) |
+| 03 | Time & Cosmos (calendars, astrology, planetary hours, election finder) | `[x]` (Swiss Ephemeris + Hebrew/Hijri/Mayan/Egyptian/Julian + Liber Resh) | [plan/03-time-and-cosmos.md](plan/03-time-and-cosmos.md) |
+| 04 | Journaling (entries, blog, library, body diagrams, quotes) | `[~]` (backend ✓; editor live integration + print blocked on designer) | [plan/04-journaling.md](plan/04-journaling.md) |
+| 05 | Magical Beings (entities, offerings, oaths, lineage attestation) | `[x]` (backend; frontend dashboards blocked on designer handoff #3) | [plan/05-magical-beings.md](plan/05-magical-beings.md) |
+| 06 | Divination & Practice (tarot, I Ching, geomancy, scrying, rituals) | `[~]` (Tarot engine + PD Rider-Waite-Smith deck shipped) | [plan/06-divination-and-practice.md](plan/06-divination-and-practice.md) |
 | 07 | Workshop (sigils, talismans, magical circles, tool registry) | `[ ]` | [plan/07-workshop.md](plan/07-workshop.md) |
 | 08 | Linguistic Tools (gematria, transliteration, voces magicae) | `[ ]` | [plan/08-linguistic-tools.md](plan/08-linguistic-tools.md) |
 | 09 | Synchronicity & Analytics (scientific illuminism dashboards) | `[ ]` | [plan/09-synchronicity-and-analytics.md](plan/09-synchronicity-and-analytics.md) |
@@ -111,11 +111,11 @@ This README is updated continuously as phases progress. The roadmap reflects the
 <td><b>Frontend</b></td>
 <td>
 
-![Astro](https://img.shields.io/badge/Astro-4-FF5D01?logo=astro&logoColor=white)
+![Astro](https://img.shields.io/badge/Astro-6-FF5D01?logo=astro&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![Tiptap](https://img.shields.io/badge/Tiptap-extensible_editor-7B68EE)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?logo=tailwindcss&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3_(PostCSS)-06B6D4?logo=tailwindcss&logoColor=white)
 ![TanStack](https://img.shields.io/badge/TanStack-Router_+_Query-FF4154)
 
 </td>
@@ -197,8 +197,9 @@ theourgia/
 ├── LICENSE                ← AGPL-3.0
 ├── plan/                  ← per-phase implementation plans (00–16)
 ├── docs/                  ← will hold user/admin/developer documentation
-├── backend/               ← will hold Python / FastAPI source (Phase 00+)
-├── frontend/              ← will hold Astro public-site + React admin (Phase 02+)
+├── backend/               ← Python 3.12 + FastAPI + SQLModel + Alembic + Celery (1292 tests)
+├── frontend/              ← React 19 admin SPA · Astro 6 public site · shared design system
+├── docs/                  ← Starlight docs site (theourgia tokens bridged onto Starlight)
 └── plugins/               ← will hold reference plugins (Phase 14+)
 ```
 

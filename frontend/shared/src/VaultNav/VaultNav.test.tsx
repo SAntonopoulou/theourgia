@@ -2,57 +2,81 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import { VaultNav, type VaultNavItem } from "./index.js";
-
-const NAV: VaultNavItem[] = [
-  { to: "/", label: "Today", glyph: "sun" },
-  { to: "/journal", label: "Journal", glyph: "journal" },
-  { to: "/library", label: "Library", glyph: "library", badge: 3 },
-  { to: "/foundations", label: "Foundations", glyph: "scroll", dev: true },
-];
+import { DEFAULT_VAULT_NAV, VaultNav } from "./index.js";
 
 describe("VaultNav", () => {
-  it("renders one link per item", () => {
-    render(<VaultNav items={NAV} />);
-    expect(screen.getByText("Today")).toBeInTheDocument();
-    expect(screen.getByText("Journal")).toBeInTheDocument();
-    expect(screen.getByText("Library")).toBeInTheDocument();
-    expect(screen.getByText("Foundations")).toBeInTheDocument();
+  it("renders one link per item in DEFAULT_VAULT_NAV", () => {
+    render(<VaultNav />);
+    for (const section of DEFAULT_VAULT_NAV) {
+      for (const item of section.items) {
+        expect(screen.getByText(item.label)).toBeInTheDocument();
+      }
+    }
+  });
+
+  it("renders every section heading", () => {
+    render(<VaultNav />);
+    for (const section of DEFAULT_VAULT_NAV) {
+      expect(screen.getByText(section.heading)).toBeInTheDocument();
+    }
   });
 
   it("default link renderer uses <a href=>", () => {
-    const { container } = render(<VaultNav items={NAV} />);
+    const { container } = render(<VaultNav />);
     const journalLink = container.querySelector('a[href="/journal"]');
     expect(journalLink).not.toBeNull();
   });
 
-  it("isActive flips the active item's color to var(--accent)", () => {
-    render(<VaultNav items={NAV} isActive={(to) => to === "/journal"} />);
+  it("active item carries the accent-soft background + inset accent bar", () => {
+    render(<VaultNav active="journal" />);
     const journal = screen.getByText("Journal").closest("a") as HTMLElement;
-    expect(journal.style.color).toBe("var(--accent)");
+    expect(journal.style.background).toBe("var(--accent-soft)");
+    expect(journal.style.boxShadow).toBe("inset 2px 0 0 var(--accent)");
+    expect(journal.style.color).toBe("var(--ink)");
   });
 
-  it("renders a Badge when item.badge is supplied", () => {
-    render(<VaultNav items={NAV} />);
-    expect(screen.getByText("3")).toBeInTheDocument();
+  it("non-active items remain ink-soft, no background", () => {
+    render(<VaultNav active="journal" />);
+    const today = screen.getByText("Today").closest("a") as HTMLElement;
+    expect(today.style.color).toBe("var(--ink-soft)");
+    expect(today.style.background).toBe("");
   });
 
-  it("dev items get a 'dev' marker", () => {
-    render(<VaultNav items={NAV} />);
-    expect(screen.getByText("dev")).toBeInTheDocument();
+  it("Quick capture button fires onQuickCapture", async () => {
+    const onQuickCapture = vi.fn();
+    render(<VaultNav onQuickCapture={onQuickCapture} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /quick capture/i }));
+    expect(onQuickCapture).toHaveBeenCalled();
   });
 
-  it("clicking a link fires onNavigate", async () => {
+  it("Settings button fires onSettings", async () => {
+    const onSettings = vi.fn();
+    render(<VaultNav onSettings={onSettings} />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /settings/i }));
+    expect(onSettings).toHaveBeenCalled();
+  });
+
+  it("clicking a nav link fires onNavigate", async () => {
     const onNavigate = vi.fn();
-    render(<VaultNav items={NAV} onNavigate={onNavigate} />);
+    render(<VaultNav onNavigate={onNavigate} />);
     const user = userEvent.setup();
     await user.click(screen.getByText("Journal"));
     expect(onNavigate).toHaveBeenCalled();
   });
 
-  it("renders an optional heading", () => {
-    render(<VaultNav items={NAV} heading="Vault" />);
-    expect(screen.getByText("Vault")).toBeInTheDocument();
+  it("identity footer shows the supplied name + role + avatar character", () => {
+    render(<VaultNav identity={{ name: "Soror Ευ. Α.", role: "Adeptus Minor" }} />);
+    expect(screen.getByText("Soror Ευ. Α.")).toBeInTheDocument();
+    expect(screen.getByText("Adeptus Minor")).toBeInTheDocument();
+    // Default avatar char is the first letter of the name.
+    expect(screen.getByText("S")).toBeInTheDocument();
+  });
+
+  it("custom avatarChar overrides the first-letter default", () => {
+    render(<VaultNav identity={{ name: "Aspasia", avatarChar: "Σ" }} />);
+    expect(screen.getByText("Σ")).toBeInTheDocument();
   });
 
   it("custom LinkComponent is used in place of the default <a>", () => {
@@ -63,8 +87,25 @@ describe("VaultNav", () => {
         </button>
       );
     }
-    render(<VaultNav items={NAV} LinkComponent={CustomLink as never} />);
+    render(<VaultNav LinkComponent={CustomLink as never} />);
     const journal = screen.getByText("Journal").closest("button") as HTMLElement;
     expect(journal).toHaveAttribute("data-href", "/journal");
+  });
+
+  it("custom sections override the default tree", () => {
+    render(
+      <VaultNav
+        sections={[
+          {
+            heading: "Custom",
+            items: [{ key: "today", to: "/", label: "Just Today" }],
+          },
+        ]}
+      />,
+    );
+    expect(screen.getByText("Custom")).toBeInTheDocument();
+    expect(screen.getByText("Just Today")).toBeInTheDocument();
+    // Items from default sections shouldn't appear.
+    expect(screen.queryByText("Journal")).toBeNull();
   });
 });

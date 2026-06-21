@@ -1,0 +1,228 @@
+---
+/**
+ * Ritual Mode — full-screen ritual script (hands-free).
+ *
+ * Faithful port of ``Theourgia Ritual Mode.dc.html``. Per
+ * ``agent_onboarding.md`` § Theourgia Ritual Mode.dc.html:
+ *   · Full-screen huge Hebrew + transliteration + meaning per step.
+ *   · Hands-free progress: large step controls (≥44px touch), voice-
+ *     advance affordance ("Say the word aloud · advances on voice or
+ *     tap"). Voice recognition wiring lands when SpeechRecognition is
+ *     hooked up; for now Prev/Next + tap advance.
+ *   · Listening indicator pulses (animation paused under
+ *     prefers-reduced-motion).
+ *   · Theme cycler is included (LBRP example reads differently under
+ *     Cardo / GFS Didot / Cinzel).
+ *
+ * Demo ritual is the Lesser Banishing Ritual of the Pentagram (LBRP),
+ * 7 steps. Real ritual scripts are loaded from the entry composer's
+ * `/ritual` block when content persistence ships.
+ */
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ritual — Theourgia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@500;600&family=GFS+Didot&family=Inria+Sans:wght@300;400;700&family=JetBrains+Mono:wght@400&family=Frank+Ruhl+Libre:wght@500;700&family=Noto+Sans+Symbols&display=swap"
+    />
+    <style>
+      :root {
+        --font-display: "Cardo", serif;
+        --font-ui: "Inria Sans", sans-serif;
+        --font-mono: "JetBrains Mono", monospace;
+        --font-hebrew: "Frank Ruhl Libre", serif;
+        --font-glyph: "Noto Sans Symbols", "Cardo", serif;
+        --bg: #15120d;
+        --bg-2: #1c1812;
+        --bg-3: #231e16;
+        --line: rgba(236, 229, 214, .10);
+        --line-2: rgba(236, 229, 214, .20);
+        --ink: #ece5d6;
+        --ink-soft: #bcb29d;
+        --ink-mute: #897f6b;
+        --accent: #c7a24c;
+        --accent-soft: rgba(199, 162, 76, .14);
+      }
+      [data-theme="thelemic"] {
+        --font-display: "Cinzel", serif;
+        --bg: #100b09; --bg-2: #191210; --bg-3: #201714;
+        --ink: #efe3cb; --ink-soft: #c5b493; --ink-mute: #8c7b5e;
+        --accent: #cda53e; --accent-soft: rgba(205, 165, 62, .15);
+        --line: rgba(239, 227, 203, .12); --line-2: rgba(239, 227, 203, .22);
+      }
+      [data-theme="hellenic"] {
+        --font-display: "GFS Didot", serif;
+        --bg: #0f1311; --bg-2: #161b18; --bg-3: #1d2420;
+        --ink: #e9eade; --ink-soft: #aeb6a4; --ink-mute: #7c8474;
+        --accent: #bfa15b; --accent-soft: rgba(191, 161, 91, .14);
+        --line: rgba(226, 231, 222, .10); --line-2: rgba(226, 231, 222, .20);
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; -webkit-font-smoothing: antialiased; }
+      button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+      :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+
+      @keyframes pulse {
+        0%, 100% { opacity: .4; }
+        50%       { opacity: 1;  }
+      }
+      .listen { animation: pulse 2.4s ease-in-out infinite; }
+      @media (prefers-reduced-motion: reduce) { .listen { animation: none; } }
+
+      .seg-btn[data-selected="true"] {
+        color: var(--ink) !important;
+        background: var(--accent-soft) !important;
+        border-color: var(--line-2) !important;
+      }
+      .prev-btn:hover { background: var(--bg-2); }
+      .next-btn:hover { opacity: .92; }
+      .exit-btn:hover { color: var(--ink); }
+    </style>
+  </head>
+  <body>
+    <div data-ritual-root style="height:100vh;background:radial-gradient(ellipse at 50% 36%, var(--bg-2), var(--bg) 76%);color:var(--ink);font-family:var(--font-display);display:flex;flex-direction:column;overflow:hidden">
+
+      <!-- top -->
+      <div style="padding:22px 34px 0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-family:var(--font-ui);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-mute)">Ritual mode · hands-free</div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div role="group" aria-label="Theme" style="display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2)">
+              <button type="button" data-theme-pick="base" class="seg-btn" style="padding:5px 11px;font-family:var(--font-ui);font-size:12px;letter-spacing:.03em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Base</button>
+              <button type="button" data-theme-pick="hellenic" class="seg-btn" style="padding:5px 11px;font-family:var(--font-ui);font-size:12px;letter-spacing:.03em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Hel</button>
+              <button type="button" data-theme-pick="thelemic" class="seg-btn" style="padding:5px 11px;font-family:var(--font-ui);font-size:12px;letter-spacing:.03em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Thel</button>
+            </div>
+            <a href="/" class="exit-btn" aria-label="Exit ritual" style="display:flex;align-items:center;gap:7px;color:var(--ink-mute);font-family:var(--font-ui);font-size:12.5px;text-decoration:none;transition:color .15s ease">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"></path></svg>
+              Exit
+            </a>
+          </div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-family:var(--font-display);font-size:18px;color:var(--ink-soft)">The Lesser Banishing Ritual of the Pentagram</div>
+          <div style="font-family:var(--font-ui);font-size:12.5px;color:var(--ink-mute);margin-top:4px">Step <span data-step-num>1</span> of <span data-step-total>7</span> · <span data-step-name>Qabalistic Cross — Forehead</span></div>
+        </div>
+        <div style="max-width:560px;margin:16px auto 0;height:3px;border-radius:3px;background:var(--bg-3);overflow:hidden">
+          <div data-progress style="height:100%;background:var(--accent);border-radius:3px;width:14%"></div>
+        </div>
+      </div>
+
+      <!-- center script -->
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:20px 34px;min-height:0">
+        <div data-direction style="font-family:var(--font-display);font-style:italic;font-size:clamp(16px,2.2vw,22px);color:var(--accent);margin-bottom:34px;max-width:620px;text-wrap:pretty">Face East. Touch the forehead, and vibrate:</div>
+        <div data-hebrew lang="he" dir="rtl" style="font-family:var(--font-hebrew);font-weight:700;font-size:clamp(56px,11vw,128px);line-height:1;color:var(--ink);margin-bottom:18px">אַתָּה</div>
+        <div data-translit style="font-family:var(--font-display);font-size:clamp(26px,4vw,44px);color:var(--ink);margin-bottom:10px">Ateh</div>
+        <div data-meaning style="font-family:var(--font-ui);font-size:clamp(15px,2vw,19px);letter-spacing:.04em;color:var(--ink-soft)">Unto Thee</div>
+      </div>
+
+      <!-- controls -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:18px;padding:24px 34px 30px">
+        <button type="button" data-ritual-prev class="prev-btn" aria-label="Previous step" style="display:flex;align-items:center;gap:9px;padding:18px 30px;border:1px solid var(--line-2);border-radius:14px;color:var(--ink);font-family:var(--font-ui);font-size:16px;min-width:150px;justify-content:center;background:transparent;cursor:pointer;transition:background-color .15s ease">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+          Previous
+        </button>
+        <div class="listen" style="display:flex;flex-direction:column;align-items:center;gap:6px;width:120px">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"></path><path d="M5 11a7 7 0 0 0 14 0M12 18v3"></path></svg>
+          <span style="font-family:var(--font-ui);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute)">Listening</span>
+        </div>
+        <button type="button" data-ritual-next class="next-btn" aria-label="Next step" style="display:flex;align-items:center;gap:9px;padding:18px 34px;border-radius:14px;background:var(--accent);color:var(--bg);font-family:var(--font-ui);font-weight:700;font-size:16px;min-width:150px;justify-content:center;border:none;cursor:pointer;transition:opacity .15s ease">
+          Next
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>
+        </button>
+      </div>
+      <div style="text-align:center;padding-bottom:18px;font-family:var(--font-ui);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute)">Say the word aloud · advances on voice or tap · large targets for low light</div>
+    </div>
+
+    <script>
+      // LBRP steps — copied verbatim from Theourgia Ritual Mode.dc.html
+      // lines 85-92. Real ritual scripts hydrate from the entry composer's
+      // /ritual block when content persistence lands.
+      const STEPS = [
+        { name: "Qabalistic Cross — Forehead",         dir: "Face East. Touch the forehead, and vibrate:",                              he: "אַתָּה",       tr: "Ateh",                me: "Unto Thee" },
+        { name: "Qabalistic Cross — Breast",           dir: "Touch the breast, draw the light downward:",                               he: "מַלְכוּת",     tr: "Malkuth",             me: "The Kingdom" },
+        { name: "Qabalistic Cross — Right shoulder",   dir: "Touch the right shoulder:",                                                he: "וְגְבוּרָה",     tr: "ve-Geburah",          me: "and the Power" },
+        { name: "Qabalistic Cross — Left shoulder",    dir: "Touch the left shoulder:",                                                 he: "וְגְדוּלָה",     tr: "ve-Gedulah",          me: "and the Glory" },
+        { name: "Qabalistic Cross — Clasp",            dir: "Clasp the hands upon the breast:",                                         he: "לְעוֹלָם",     tr: "le-Olahm",            me: "Forever" },
+        { name: "Qabalistic Cross — Seal",             dir: "Seal the cross:",                                                          he: "אָמֵן",         tr: "Amen",                me: "Amen" },
+        { name: "Formulation — East",                  dir: "Trace the banishing pentagram of Earth toward the East, and vibrate:",     he: "יְהֹוָה",       tr: "Yod He Vau He",       me: "The name of the East" },
+      ];
+
+      let step = 0;
+
+      const numNode  = document.querySelector("[data-step-num]");
+      const totNode  = document.querySelector("[data-step-total]");
+      const nameNode = document.querySelector("[data-step-name]");
+      const dirNode  = document.querySelector("[data-direction]");
+      const heNode   = document.querySelector("[data-hebrew]");
+      const trNode   = document.querySelector("[data-translit]");
+      const meNode   = document.querySelector("[data-meaning]");
+      const progressNode = document.querySelector("[data-progress]");
+
+      const render = () => {
+        const s = STEPS[step];
+        if (!s) return;
+        if (numNode)  numNode.textContent  = String(step + 1);
+        if (totNode)  totNode.textContent  = String(STEPS.length);
+        if (nameNode) nameNode.textContent = s.name;
+        if (dirNode)  dirNode.textContent  = s.dir;
+        if (heNode)   heNode.textContent   = s.he;
+        if (trNode)   trNode.textContent   = s.tr;
+        if (meNode)   meNode.textContent   = s.me;
+        if (progressNode) (progressNode as HTMLElement).style.width = `${Math.round(((step + 1) / STEPS.length) * 100)}%`;
+      };
+
+      document.querySelector("[data-ritual-prev]")?.addEventListener("click", () => {
+        step = Math.max(0, step - 1);
+        render();
+      });
+      document.querySelector("[data-ritual-next]")?.addEventListener("click", () => {
+        step = Math.min(STEPS.length - 1, step + 1);
+        render();
+      });
+      // Keyboard advance — Space / → forward, ← backward.
+      document.addEventListener("keydown", (e) => {
+        if (e.key === " " || e.key === "ArrowRight") {
+          step = Math.min(STEPS.length - 1, step + 1);
+          render();
+          e.preventDefault();
+        } else if (e.key === "ArrowLeft") {
+          step = Math.max(0, step - 1);
+          render();
+          e.preventDefault();
+        }
+      });
+
+      render();
+
+      // Theme cycler — operates on the html root so the same data-theme
+      // CSS rules in the page <style> apply.
+      const sync = () => {
+        const theme = document.documentElement.getAttribute("data-theme") || "base";
+        document.querySelectorAll("[data-theme-pick]").forEach((el) => {
+          const matches = el.getAttribute("data-theme-pick") === theme;
+          el.setAttribute("data-selected", matches ? "true" : "false");
+          el.setAttribute("aria-pressed", matches ? "true" : "false");
+        });
+      };
+      document.addEventListener("click", (e) => {
+        const t = e.target as HTMLElement | null;
+        const pick = t?.closest("[data-theme-pick]");
+        if (pick) {
+          const v = pick.getAttribute("data-theme-pick");
+          if (v === "base" || v === "hellenic" || v === "thelemic") {
+            document.documentElement.setAttribute("data-theme", v);
+            try { localStorage.setItem("theourgia.theme", v); } catch (_) {}
+            sync();
+          }
+        }
+      });
+      sync();
+    </script>
+  </body>
+</html>

@@ -1,427 +1,834 @@
 /**
- * Settings — Phase 02 surface.
+ * Settings.
  *
- * Three sections wired to real substrate:
- *   - Identity: AuthContext (signin / signout + current session)
- *   - Theme & Display: design-system theme/mode/contrast/CVD axes
- *   - Location: per-user lat/lng via /api/v1/users/me/settings/location
+ * Composition tracks ``Theourgia Settings.dc.html``:
+ *   Topbar  · "Settings" + "Appearance, security, networks & plugins".
+ *   Subnav  · 8 sections (Account · Security & encryption · Networks &
+ *             federation · Plugins · Appearance (default) · Accessibility ·
+ *             Billing · About).
+ *   Body    · Appearance section ships first with theme cards, mode
+ *             toggle, font-role table, accessibility switches, and the
+ *             encryption-per-content-type panel.
  *
- * Future batches add: data export (GDPR), session management,
- * encryption mode, federation, plugins.
+ * Other sections render a "lands soon" stub until their backend wiring
+ * arrives. The earlier Phase-02 identity-management UI moves into the
+ * Account section in a later batch.
  */
 
 import {
-  Badge,
-  Banner,
-  Button,
-  CONTRASTS,
-  CVDS,
-  Card,
-  type Contrast,
-  type Cvd,
-  Field,
-  MODES,
-  type Mode,
-  NumberInput,
-  PromptDialog,
-  SegmentedControl,
-  Stat,
-  StatusDot,
-  Switch,
-  THEMES,
-  type Theme,
-  Toast,
   applyThemeState,
+  LanguagePicker,
+  type Mode,
   readThemeState,
-  useAuth,
+  type Theme,
+  useTopbar,
 } from "@theourgia/shared";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { putMyLocation, useMyLocation } from "../data/useLocation.js";
+type SectionKey =
+  | "account"
+  | "security"
+  | "networks"
+  | "plugins"
+  | "appearance"
+  | "accessibility"
+  | "billing"
+  | "about";
 
-function Section({
-  title,
-  description,
-  children,
-}: { title: string; description?: string; children: React.ReactNode }) {
+const SECTIONS: { key: SectionKey; label: string }[] = [
+  { key: "account", label: "Account" },
+  { key: "security", label: "Security & encryption" },
+  { key: "networks", label: "Networks & federation" },
+  { key: "plugins", label: "Plugins" },
+  { key: "appearance", label: "Appearance" },
+  { key: "accessibility", label: "Accessibility" },
+  { key: "billing", label: "Billing" },
+  { key: "about", label: "About" },
+];
+
+function Subnav({
+  active,
+  onChange,
+}: {
+  active: SectionKey;
+  onChange: (k: SectionKey) => void;
+}) {
   return (
-    <Card>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-1, 4px)",
-          marginBottom: "var(--space-3, 12px)",
-        }}
-      >
-        <h2
-          style={{
-            margin: 0,
-            fontFamily: "var(--font-serif)",
-            fontSize: "var(--type-h3, 18px)",
-            color: "var(--ink)",
-          }}
-        >
-          {title}
-        </h2>
-        {description ? (
-          <p
+    <nav
+      className="scroll"
+      style={{
+        flex: "none",
+        width: 212,
+        borderRight: "1px solid var(--line)",
+        background: "var(--bg-2)",
+        padding: "18px 14px",
+        overflowY: "auto",
+        overflowX: "hidden",
+        minHeight: 0,
+        fontFamily: "var(--font-ui)",
+        fontSize: 13.5,
+      }}
+    >
+      {SECTIONS.map((s) => {
+        const selected = s.key === active;
+        return (
+          <button
+            key={s.key}
+            type="button"
+            onClick={() => onChange(s.key)}
             style={{
-              margin: 0,
-              fontSize: "var(--type-body-sm, 13px)",
-              color: "var(--ink-soft)",
-              fontFamily: "var(--font-ui)",
+              display: "block",
+              width: "100%",
+              padding: "9px 12px",
+              borderRadius: "var(--r-md, 8px)",
+              color: selected ? "var(--ink)" : "var(--ink-soft)",
+              background: selected ? "var(--accent-soft)" : "transparent",
+              boxShadow: selected ? "inset 2px 0 0 var(--accent)" : "none",
+              border: "none",
+              fontFamily: "inherit",
+              fontSize: "inherit",
+              cursor: "pointer",
+              textAlign: "left",
+              marginBottom: 2,
             }}
           >
-            {description}
-          </p>
-        ) : null}
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3, 12px)" }}>
-        {children}
-      </div>
-    </Card>
+            {s.label}
+          </button>
+        );
+      })}
+    </nav>
   );
 }
 
-function IdentitySection() {
-  const auth = useAuth();
-  const [open, setOpen] = useState(false);
+function ThemeCard({
+  theme,
+  label,
+  family,
+  swatches,
+  selected,
+  onClick,
+}: {
+  theme: Theme;
+  label: string;
+  family: string;
+  swatches: string[];
+  selected: boolean;
+  onClick: () => void;
+}) {
   return (
-    <Section
-      title="Identity"
-      description="Who you are when you author entries. WebAuthn registration replaces demo signin in a later batch."
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={selected}
+      style={{
+        textAlign: "left",
+        padding: 16,
+        borderRadius: "var(--r-lg, 14px)",
+        background: selected ? "var(--bg-3)" : "var(--bg-2)",
+        border: `1px solid ${selected ? "var(--accent)" : "var(--line)"}`,
+        cursor: "pointer",
+        fontFamily: "inherit",
+      }}
+      data-theme-card={theme}
     >
-      {auth.status === "checking" ? (
-        <StatusDot status="pending" label="Resolving session…" />
-      ) : auth.status === "authenticated" && auth.session ? (
-        <>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <span
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--type-caption, 11px)",
-                  color: "var(--ink-mute)",
-                }}
-              >
-                magickal name
-              </span>
-              <span
-                style={{
-                  fontFamily: "var(--font-serif)",
-                  fontSize: "var(--type-body, 16px)",
-                  color: "var(--ink)",
-                }}
-              >
-                {auth.session.display_name}
-              </span>
-            </div>
-            <Badge tone="success">authenticated</Badge>
-          </div>
-          <div>
-            <Button variant="secondary" onClick={() => void auth.signOut()}>
-              Sign out
-            </Button>
-          </div>
-        </>
-      ) : (
-        <>
-          <StatusDot status="neutral" label="No active session" />
-          <div>
-            <Button variant="primary" onClick={() => setOpen(true)}>
-              Demo signin
-            </Button>
-          </div>
-        </>
-      )}
-      <PromptDialog
-        open={open}
-        title="Demo signin"
-        label="Magickal name"
-        placeholder="Soror Ευ. Α."
-        validate={(v) => (v.trim().length < 1 ? "A name is required." : null)}
-        confirmLabel="Sign in"
-        onSubmit={(value) => {
-          setOpen(false);
-          void auth.signInDemo({ magickal_name: value });
-        }}
-        onCancel={() => setOpen(false)}
-      />
-    </Section>
-  );
-}
-
-const ThemeOptions: ReadonlyArray<{ value: Theme; label: string }> = [
-  { value: "base", label: "Base" },
-  { value: "hellenic", label: "Hellenic" },
-  { value: "thelemic", label: "Thelemic" },
-];
-
-const ModeOptions: ReadonlyArray<{ value: Mode; label: string }> = [
-  { value: "dark", label: "Dark" },
-  { value: "light", label: "Light" },
-];
-
-function ThemeSection() {
-  const [state, setState] = useState(() => readThemeState());
-
-  function update<K extends keyof typeof state>(key: K, value: (typeof state)[K]): void {
-    const next = { ...state, [key]: value };
-    setState(next);
-    applyThemeState(next);
-  }
-
-  return (
-    <Section
-      title="Theme & display"
-      description="Aesthetic preferences. Persisted to localStorage; user-settings sync lands when WebAuthn ships."
-    >
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--type-caption, 11px)",
-            color: "var(--ink-mute)",
-          }}
-        >
-          THEME
-        </span>
-        <SegmentedControl
-          options={ThemeOptions}
-          value={state.theme}
-          onChange={(v) => update("theme", v)}
-          ariaLabel="Theme"
-        />
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--type-caption, 11px)",
-            color: "var(--ink-mute)",
-          }}
-        >
-          MODE
-        </span>
-        <SegmentedControl
-          options={ModeOptions}
-          value={state.mode}
-          onChange={(v) => update("mode", v)}
-          ariaLabel="Mode"
-        />
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--type-caption, 11px)",
-            color: "var(--ink-mute)",
-          }}
-        >
-          ACCESSIBILITY
-        </span>
-        <Switch
-          checked={state.contrast === "high"}
-          onChange={(checked) => update("contrast", (checked ? "high" : "normal") as Contrast)}
-          label="High contrast"
-        />
-        <Switch
-          checked={state.cvd === "safe"}
-          onChange={(checked) => update("cvd", (checked ? "safe" : "normal") as Cvd)}
-          label="Color-vision-deficiency palette"
-        />
+      <div style={{ display: "flex", gap: 5, marginBottom: 12 }}>
+        {swatches.map((color, i) => (
+          <span
+            key={`${theme}-sw-${i}`}
+            aria-hidden="true"
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              background: color,
+              border: i === 0 ? "1px solid rgba(236,229,214,0.25)" : "none",
+            }}
+          />
+        ))}
       </div>
       <div
         style={{
-          marginTop: "var(--space-2, 8px)",
-          paddingTop: "var(--space-3, 12px)",
-          borderTop: "1px solid var(--line)",
-          display: "flex",
-          gap: "var(--space-3, 12px)",
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--type-caption, 11px)",
+          fontFamily: "var(--font-display, var(--font-serif))",
+          fontSize: 16,
+          color: "var(--ink)",
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontFamily: "var(--font-ui)",
+          fontSize: 11.5,
           color: "var(--ink-mute)",
         }}
       >
-        <span>theme={state.theme}</span>
-        <span>mode={state.mode}</span>
-        <span>contrast={state.contrast}</span>
-        <span>cvd={state.cvd}</span>
-        <span style={{ marginLeft: "auto" }}>
-          (all axes: {THEMES.length}×{MODES.length}×{CONTRASTS.length}×{CVDS.length})
-        </span>
+        {family}
       </div>
-    </Section>
+    </button>
   );
 }
 
-function LocationSection() {
-  const auth = useAuth();
-  const isAuthed = auth.status === "authenticated";
-  const locationCall = useMyLocation({ enabled: isAuthed });
-  const [lat, setLat] = useState<number | null>(null);
-  const [lng, setLng] = useState<number | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  // Sync local fields with the fetched value once it arrives.
-  if (locationCall.data && lat === null && lng === null) {
-    setLat(locationCall.data.lat);
-    setLng(locationCall.data.lng);
-  }
-
-  async function save(): Promise<void> {
-    if (lat === null || lng === null) return;
-    setSaving(true);
-    try {
-      await putMyLocation({ lat, lng });
-      await locationCall.refresh();
-      Toast.push({ tone: "success", title: "Location saved" });
-    } catch (e) {
-      Toast.push({
-        tone: "error",
-        title: "Could not save location",
-        body: e instanceof Error ? e.message : String(e),
-      });
-    } finally {
-      setSaving(false);
-    }
-  }
-
+function AccessibilitySwitch({
+  label,
+  desc,
+  on,
+  onChange,
+  topBorder,
+}: {
+  label: string;
+  desc: string;
+  on: boolean;
+  onChange: (next: boolean) => void;
+  topBorder: boolean;
+}) {
   return (
-    <Section
-      title="Location"
-      description="The lat/lng CelestialBand uses to compute your planetary hour, sunrise, and sunset. Greenwich by default."
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "11px 0",
+        borderTop: topBorder ? "1px solid var(--line)" : "none",
+      }}
     >
-      {!isAuthed ? (
-        <Banner
-          tone="info"
-          title="Sign in to set your location"
-          body="Without a session, CelestialBand falls back to Greenwich (51.4769° N, 0° E)."
+      <div style={{ flex: 1 }}>
+        <div style={{ fontFamily: "var(--font-ui)", fontSize: 14, color: "var(--ink)" }}>
+          {label}
+        </div>
+        <div style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--ink-mute)" }}>
+          {desc}
+        </div>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        onClick={() => onChange(!on)}
+        style={{
+          position: "relative",
+          width: 38,
+          height: 22,
+          borderRadius: 999,
+          border: "1px solid var(--line-2)",
+          background: on ? "var(--accent-soft)" : "var(--bg-3)",
+          flex: "none",
+          cursor: "pointer",
+          padding: 0,
+        }}
+      >
+        <span
+          style={{
+            position: "absolute",
+            top: 2,
+            left: 2,
+            width: 16,
+            height: 16,
+            borderRadius: "50%",
+            background: on ? "var(--accent)" : "var(--ink-mute)",
+            transition: "transform 0.16s ease",
+            transform: on ? "translateX(16px)" : "translateX(0)",
+          }}
         />
-      ) : locationCall.status === "loading" ? (
-        <StatusDot status="pending" label="Loading location…" />
-      ) : locationCall.status === "error" ? (
-        <StatusDot status="error" label={locationCall.error?.message ?? "Failed to load"} />
-      ) : (
-        <>
-          <div
-            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3, 12px)" }}
-          >
-            <Field label="Latitude" hint="-90 to 90">
-              <NumberInput
-                value={lat ?? ""}
-                onChange={(e) => setLat(e.target.value === "" ? null : Number(e.target.value))}
-                min={-90}
-                max={90}
-                step={0.0001}
-              />
-            </Field>
-            <Field label="Longitude" hint="-180 to 180">
-              <NumberInput
-                value={lng ?? ""}
-                onChange={(e) => setLng(e.target.value === "" ? null : Number(e.target.value))}
-                min={-180}
-                max={180}
-                step={0.0001}
-              />
-            </Field>
-          </div>
-          <div style={{ display: "flex", gap: "var(--space-2, 8px)", flexWrap: "wrap" }}>
-            <Button variant="primary" onClick={() => void save()} loading={saving}>
-              Save
-            </Button>
-            <Button
-              variant="quiet"
-              onClick={() => {
-                setLat(51.4769);
-                setLng(0);
-              }}
-            >
-              Greenwich
-            </Button>
-            <Button
-              variant="quiet"
-              onClick={() => {
-                setLat(40.7128);
-                setLng(-74.006);
-              }}
-            >
-              New York
-            </Button>
-            <Button
-              variant="quiet"
-              onClick={() => {
-                setLat(35.6762);
-                setLng(139.6503);
-              }}
-            >
-              Tokyo
-            </Button>
-          </div>
-        </>
-      )}
-    </Section>
+      </button>
+    </div>
   );
 }
 
-function StatsSection() {
+function FontRoleRow({
+  role,
+  family,
+  fontFamily,
+  isLast,
+}: {
+  role: string;
+  family: string;
+  fontFamily: string;
+  isLast: boolean;
+}) {
   return (
-    <Section title="Stack" description="Live status of the substrate behind this surface.">
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "13px 16px",
+        borderBottom: isLast ? "none" : "1px solid var(--line)",
+        background: "var(--bg-2)",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: "var(--font-ui)",
+          fontSize: 13.5,
+          color: "var(--ink-soft)",
+          flex: 1,
+        }}
+      >
+        {role}
+      </span>
+      <span
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "6px 12px",
+          border: "1px solid var(--line-2)",
+          borderRadius: "var(--r-md, 8px)",
+          fontFamily,
+          fontSize: 14,
+          color: "var(--ink)",
+        }}
+      >
+        {family}
+        <svg
+          width="11"
+          height="11"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--ink-mute)"
+          strokeWidth="2"
+          aria-hidden="true"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </span>
+    </div>
+  );
+}
+
+function EncryptionRow({
+  color,
+  label,
+  zeroKnowledge,
+  isLast,
+}: {
+  color: string;
+  label: string;
+  zeroKnowledge: boolean;
+  isLast: boolean;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "13px 16px",
+        borderBottom: isLast ? "none" : "1px solid var(--line)",
+        background: "var(--bg-2)",
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 9,
+          height: 9,
+          borderRadius: "50%",
+          background: color,
+          marginRight: 11,
+        }}
+      />
+      <span
+        style={{
+          fontFamily: "var(--font-ui)",
+          fontSize: 13.5,
+          color: "var(--ink)",
+          flex: 1,
+        }}
+      >
+        {label}
+      </span>
+      {zeroKnowledge ? (
+        <span
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontFamily: "var(--font-ui)",
+            fontSize: 12.5,
+            color: "var(--accent)",
+            padding: "5px 11px",
+            border: "1px solid var(--accent)",
+            borderRadius: "var(--r-md, 8px)",
+          }}
+        >
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.9"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <rect x="5" y="11" width="14" height="9" rx="1.5" />
+            <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+          </svg>
+          Zero-knowledge
+        </span>
+      ) : (
+        <span
+          style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 12.5,
+            color: "var(--ink-mute)",
+            padding: "5px 11px",
+            border: "1px solid var(--line-2)",
+            borderRadius: "var(--r-md, 8px)",
+          }}
+        >
+          Standard
+        </span>
+      )}
+    </div>
+  );
+}
+
+function AppearanceSection() {
+  const [themeState, setLocal] = useState(() => readThemeState());
+
+  useEffect(() => {
+    function onStorage(): void {
+      setLocal(readThemeState());
+    }
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
+  function setTheme(theme: Theme): void {
+    const next = { ...themeState, theme };
+    applyThemeState(next);
+    setLocal(next);
+  }
+  function setMode(mode: Mode): void {
+    const next = { ...themeState, mode };
+    applyThemeState(next);
+    setLocal(next);
+  }
+
+  const [hc, setHc] = useState(false);
+  const [rm, setRm] = useState(false);
+  const [lt, setLt] = useState(false);
+
+  return (
+    <div style={{ maxWidth: 680 }}>
+      <h2
+        style={{
+          fontFamily: "var(--font-display, var(--font-serif))",
+          fontSize: 24,
+          margin: "0 0 4px",
+        }}
+      >
+        Appearance
+      </h2>
+      <p
+        style={{
+          fontFamily: "var(--font-ui)",
+          fontSize: 13.5,
+          color: "var(--ink-mute)",
+          margin: "0 0 22px",
+        }}
+      >
+        Everything is a token. Pick a theme, or tune individual roles — the whole vault re-skins
+        live.
+      </p>
+
+      <div
+        style={{
+          fontFamily: "var(--font-ui)",
+          fontSize: 11,
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          color: "var(--ink-mute)",
+          marginBottom: 12,
+        }}
+      >
+        Theme
+      </div>
       <div
         style={{
           display: "grid",
-          gap: "var(--space-3, 12px)",
-          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 12,
+          marginBottom: 28,
         }}
       >
-        <Stat label="Frontend" value="Vite + React 19" />
-        <Stat label="Backend" value="FastAPI + Postgres" />
-        <Stat label="API" value="v1" />
+        <ThemeCard
+          theme="base"
+          label="Base"
+          family="Cardo · neutral"
+          swatches={["#15120D", "#C7A24C", "#ECE5D6"]}
+          selected={themeState.theme === "base"}
+          onClick={() => setTheme("base")}
+        />
+        <ThemeCard
+          theme="hellenic"
+          label="Hellenic"
+          family="GFS Didot · bronze"
+          swatches={["#0F1311", "#BFA15B", "#5E9BA6"]}
+          selected={themeState.theme === "hellenic"}
+          onClick={() => setTheme("hellenic")}
+        />
+        <ThemeCard
+          theme="thelemic"
+          label="Thelemic"
+          family="Cinzel · gold/scarlet"
+          swatches={["#100B09", "#CDA53E", "#C5392B"]}
+          selected={themeState.theme === "thelemic"}
+          onClick={() => setTheme("thelemic")}
+        />
       </div>
-    </Section>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          marginBottom: 26,
+          flexWrap: "wrap",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 13.5,
+            color: "var(--ink-soft)",
+            width: 130,
+          }}
+        >
+          Mode
+        </div>
+        <div
+          style={{
+            display: "flex",
+            border: "1px solid var(--line-2)",
+            borderRadius: "var(--r-md, 8px)",
+            overflow: "hidden",
+            fontFamily: "var(--font-ui)",
+            fontSize: 13,
+          }}
+        >
+          {(["dark", "light"] as Mode[]).map((m, i) => {
+            const selected = themeState.mode === m;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMode(m)}
+                aria-pressed={selected}
+                style={{
+                  padding: "8px 16px",
+                  fontFamily: "inherit",
+                  color: selected ? "var(--ink)" : "var(--ink-soft)",
+                  background: selected ? "var(--accent-soft)" : "transparent",
+                  borderLeft: i === 0 ? "none" : "1px solid var(--line)",
+                  cursor: "pointer",
+                  border: "none",
+                }}
+              >
+                {m === "dark" ? "Dark" : "Light"}
+              </button>
+            );
+          })}
+          <button
+            type="button"
+            disabled
+            style={{
+              padding: "8px 16px",
+              borderLeft: "1px solid var(--line)",
+              color: "var(--ink-mute)",
+              background: "transparent",
+              border: "none",
+              cursor: "not-allowed",
+              fontFamily: "inherit",
+            }}
+            title="System auto-detection ships with prefers-color-scheme wiring."
+          >
+            Auto
+          </button>
+        </div>
+        <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--ink-mute)" }}>
+          Dark is the working default.
+        </span>
+      </div>
+
+      <div
+        style={{
+          fontFamily: "var(--font-ui)",
+          fontSize: 11,
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          color: "var(--ink-mute)",
+          marginBottom: 12,
+        }}
+      >
+        Font roles
+      </div>
+      <div
+        style={{
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-lg, 14px)",
+          overflow: "hidden",
+          marginBottom: 28,
+        }}
+      >
+        <FontRoleRow
+          role="Display"
+          family="Cardo"
+          fontFamily="var(--font-display, var(--font-serif))"
+          isLast={false}
+        />
+        <FontRoleRow
+          role="Body / serif"
+          family="Cardo"
+          fontFamily="var(--font-serif)"
+          isLast={false}
+        />
+        <FontRoleRow
+          role="Interface"
+          family="Inria Sans"
+          fontFamily="var(--font-ui)"
+          isLast={false}
+        />
+        <FontRoleRow
+          role="Monospace"
+          family="JetBrains Mono"
+          fontFamily="var(--font-mono)"
+          isLast={false}
+        />
+        <FontRoleRow
+          role="Hebrew · per-script"
+          family="Frank Ruhl Libre"
+          fontFamily="var(--font-hebrew, var(--font-serif))"
+          isLast={true}
+        />
+      </div>
+
+      <h3
+        style={{
+          fontFamily: "var(--font-display, var(--font-serif))",
+          fontSize: 19,
+          margin: "0 0 16px",
+          paddingTop: 6,
+          borderTop: "1px solid var(--line)",
+        }}
+      >
+        Language
+      </h3>
+      <p
+        style={{
+          fontFamily: "var(--font-serif)",
+          fontSize: 14,
+          lineHeight: 1.6,
+          color: "var(--ink-soft)",
+          margin: "0 0 16px",
+        }}
+      >
+        Set the interface language. The catalog ships English, Modern Greek (Ελληνικά), and
+        Hebrew (עברית); right-to-left scripts flip the layout automatically.
+      </p>
+      <div style={{ marginBottom: 28 }}>
+        <LanguagePicker label="Interface language" />
+      </div>
+
+      <h3
+        style={{
+          fontFamily: "var(--font-display, var(--font-serif))",
+          fontSize: 19,
+          margin: "0 0 16px",
+          paddingTop: 6,
+          borderTop: "1px solid var(--line)",
+        }}
+      >
+        Accessibility
+      </h3>
+      <div style={{ display: "flex", flexDirection: "column", marginBottom: 14 }}>
+        <AccessibilitySwitch
+          label="High contrast"
+          desc="Boosts text contrast beyond WCAG AAA."
+          on={hc}
+          onChange={setHc}
+          topBorder={false}
+        />
+        <AccessibilitySwitch
+          label="Reduced motion"
+          desc="Stops the astrolabe, breathing timer, draw-ins."
+          on={rm}
+          onChange={setRm}
+          topBorder={true}
+        />
+        <AccessibilitySwitch
+          label="Larger text"
+          desc="Scales the type ramp to 120%."
+          on={lt}
+          onChange={setLt}
+          topBorder={true}
+        />
+      </div>
+
+      <h3
+        style={{
+          fontFamily: "var(--font-display, var(--font-serif))",
+          fontSize: 19,
+          margin: "26px 0 6px",
+          paddingTop: 18,
+          borderTop: "1px solid var(--line)",
+        }}
+      >
+        Encryption per content type
+      </h3>
+      <p
+        style={{
+          fontFamily: "var(--font-ui)",
+          fontSize: 13,
+          color: "var(--ink-mute)",
+          margin: "0 0 16px",
+        }}
+      >
+        Choose what stays on the server in plaintext and what is sealed end-to-end.
+      </p>
+      <div
+        style={{
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-lg, 14px)",
+          overflow: "hidden",
+          marginBottom: 16,
+        }}
+      >
+        <EncryptionRow
+          color="var(--c-journal)"
+          label="Journal"
+          zeroKnowledge={false}
+          isLast={false}
+        />
+        <EncryptionRow
+          color="var(--c-working)"
+          label="Workings"
+          zeroKnowledge={true}
+          isLast={false}
+        />
+        <EncryptionRow
+          color="var(--c-divination)"
+          label="Divination"
+          zeroKnowledge={false}
+          isLast={false}
+        />
+        <EncryptionRow
+          color="var(--c-working)"
+          label="Sigils"
+          zeroKnowledge={true}
+          isLast={true}
+        />
+      </div>
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          padding: "14px 16px",
+          border: "1px solid var(--line-2)",
+          background: "var(--bg-2)",
+          borderRadius: "var(--r-md, 8px)",
+        }}
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--danger, #c2554a)"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{ flex: "none", marginTop: 1 }}
+          aria-hidden="true"
+        >
+          <path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+        </svg>
+        <div
+          style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 13,
+            lineHeight: 1.55,
+            color: "var(--ink-soft)",
+          }}
+        >
+          <strong style={{ color: "var(--ink)" }}>
+            Zero-knowledge content cannot be recovered if you lose your key.
+          </strong>{" "}
+          Theourgia never sees it, cannot reset it, and cannot help you read it. Keep your
+          recovery phrase somewhere only you can reach.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StubSection({ section }: { section: SectionKey }) {
+  const label = SECTIONS.find((s) => s.key === section)?.label ?? "Section";
+  return (
+    <div style={{ maxWidth: 680 }}>
+      <h2
+        style={{
+          fontFamily: "var(--font-display, var(--font-serif))",
+          fontSize: 24,
+          margin: "0 0 4px",
+        }}
+      >
+        {label}
+      </h2>
+      <p
+        style={{
+          fontFamily: "var(--font-ui)",
+          fontSize: 13.5,
+          color: "var(--ink-mute)",
+          margin: "0 0 22px",
+        }}
+      >
+        This section ships with its dedicated backend wiring.
+      </p>
+      <div
+        style={{
+          padding: 24,
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-lg, 14px)",
+          background: "var(--bg-2)",
+          fontFamily: "var(--font-serif)",
+          fontSize: 14.5,
+          lineHeight: 1.55,
+          color: "var(--ink-mute)",
+          textAlign: "center",
+        }}
+      >
+        {label} controls will appear here once the underlying systems land.
+      </div>
+    </div>
   );
 }
 
 export function Settings() {
-  return (
-    <div
-      style={{
-        maxWidth: 720,
-        margin: "0 auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: "var(--space-5, 24px)",
-      }}
-    >
-      <header style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--type-caption, 11px)",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "var(--ink-mute)",
-          }}
-        >
-          Account · preferences
-        </span>
-        <h1
-          style={{
-            margin: 0,
-            fontFamily: "var(--font-serif)",
-            fontSize: "var(--type-h1, 32px)",
-            color: "var(--ink)",
-          }}
-        >
-          Settings
-        </h1>
-      </header>
+  const [section, setSection] = useState<SectionKey>("appearance");
+  useTopbar(
+    () => ({
+      title: "Settings",
+      subtitle: "Appearance, security, networks & plugins",
+    }),
+    [],
+  );
 
-      <IdentitySection />
-      <ThemeSection />
-      <LocationSection />
-      <StatsSection />
+  return (
+    <div style={{ margin: "0 -28px", display: "flex", minHeight: 0 }}>
+      <Subnav active={section} onChange={setSection} />
+      <main
+        className="scroll"
+        style={{
+          flex: 1,
+          minWidth: 0,
+          overflowY: "auto",
+          overflowX: "hidden",
+          minHeight: 0,
+          padding: "30px 34px",
+        }}
+      >
+        {section === "appearance" ? <AppearanceSection /> : <StubSection section={section} />}
+      </main>
     </div>
   );
 }

@@ -88,6 +88,22 @@ def build_celery_app() -> Celery:
             "kwargs": {"incremental": True},
             "options": {"queue": "backups"},
         },
+        "theourgia.scheduler.promote_scheduled_entries": {
+            "task": "theourgia.core.tasks.scheduler.run_promote_scheduled_entries",
+            # Every minute — scheduled releases land within 60s of their
+            # nominal time. Missed runs catch up via the SQL `<= now()`
+            # predicate so we tolerate worker pauses gracefully.
+            "schedule": crontab(minute="*"),
+            "options": {"queue": "default"},
+        },
+        "theourgia.phase05.reminders": {
+            "task": "theourgia.core.tasks.phase05.run_phase05_reminders",
+            # Every 15 minutes — oaths / contracts / servitors /
+            # recurring offerings don't need minute-level resolution;
+            # the user reads them as part of the daily / weekly review.
+            "schedule": crontab(minute="*/15"),
+            "options": {"queue": "default"},
+        },
     }
 
     return app

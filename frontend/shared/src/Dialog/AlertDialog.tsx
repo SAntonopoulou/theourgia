@@ -67,46 +67,39 @@ export function AlertDialog({
       ariaLabelledby={titleId}
       ariaDescribedby={body ? bodyId : undefined}
     >
-      <div
-        style={{
-          padding: "var(--space-5, 24px)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-4, 16px)",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3, 12px)" }}>
-          <span style={{ color: TONE_COLOR[tone] }}>
-            <Glyph name={glyph ?? TONE_GLYPH[tone]} size={24} />
+      <div style={{ padding: 22 }}>
+        <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
+          <span style={{ color: TONE_COLOR[tone], flex: "none" }}>
+            <Glyph name={glyph ?? TONE_GLYPH[tone]} size={22} />
           </span>
           <h2
             id={titleId}
             style={{
               margin: 0,
-              fontFamily: "var(--font-serif)",
-              fontSize: "var(--type-h2, 22px)",
+              fontFamily: "var(--font-display, var(--font-serif))",
+              fontSize: 20,
               color: "var(--ink)",
+              lineHeight: 1.2,
             }}
           >
             {title}
           </h2>
         </div>
         {body ? (
-          <div
+          <p
             id={bodyId}
             style={{
+              margin: "0 0 18px",
               fontFamily: "var(--font-ui)",
-              fontSize: "var(--type-body-sm, 14px)",
+              fontSize: 13,
               color: "var(--ink-soft)",
-              lineHeight: 1.5,
+              lineHeight: 1.55,
             }}
           >
             {body}
-          </div>
+          </p>
         ) : null}
-        <div
-          style={{ display: "flex", justifyContent: "flex-end", marginTop: "var(--space-2, 8px)" }}
-        >
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
           <Button variant={tone === "danger" ? "danger" : "primary"} onClick={onAcknowledge}>
             {acknowledgeLabel}
           </Button>

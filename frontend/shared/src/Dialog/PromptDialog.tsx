@@ -56,43 +56,38 @@ export function PromptDialog({
 
   return (
     <Overlay open={open} onClose={handleCancel} ariaLabelledby={titleId}>
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          padding: "var(--space-5, 24px)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-4, 16px)",
-        }}
-      >
+      <form onSubmit={handleSubmit} style={{ padding: 22 }}>
         <h2
           id={titleId}
           style={{
-            margin: 0,
-            fontFamily: "var(--font-serif)",
-            fontSize: "var(--type-h2, 22px)",
+            margin: "0 0 6px",
+            fontFamily: "var(--font-display, var(--font-serif))",
+            fontSize: 21,
             color: "var(--ink)",
+            lineHeight: 1.2,
           }}
         >
           {title}
         </h2>
-        <Field label={label} error={error ?? undefined}>
-          <TextInput
-            value={value}
-            placeholder={placeholder}
-            onChange={(e) => setValue(e.target.value)}
-            autoFocus
-          />
-        </Field>
+        <div style={{ marginBottom: 16 }}>
+          <Field label={label} error={error ?? undefined}>
+            <TextInput
+              value={value}
+              placeholder={placeholder}
+              onChange={(e) => setValue(e.target.value)}
+              autoFocus
+              style={{ fontFamily: "var(--font-serif)", fontSize: 16 }}
+            />
+          </Field>
+        </div>
         <div
           style={{
             display: "flex",
             justifyContent: "flex-end",
-            gap: "var(--space-2, 8px)",
-            marginTop: "var(--space-2, 8px)",
+            gap: 10,
           }}
         >
-          <Button type="button" variant="quiet" onClick={handleCancel}>
+          <Button type="button" variant="secondary" onClick={handleCancel}>
             {cancelLabel}
           </Button>
           <Button type="submit" variant="primary" disabled={Boolean(error)}>

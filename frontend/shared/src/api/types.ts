@@ -87,6 +87,34 @@ export interface UserLocation {
   lng: number;
 }
 
+/** Backend ``EntityKind`` (the broad taxonomy on the SQL model). The
+ *  Entities surface UI presents a narrower class palette and maps each
+ *  UI chip to one or more of these. */
+export type EntityKind = "deity" | "spirit" | "principle" | "place" | "object" | "other";
+
+/** Single entity — wire format from ``GET /api/v1/entities``. */
+export interface EntityRecord {
+  id: string;
+  name: string;
+  kind: EntityKind;
+  aliases: string[];
+  glyph: string;
+  description: string | null;
+  tradition: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Input for ``POST /api/v1/entities``. */
+export interface CreateEntityInput {
+  name: string;
+  kind?: EntityKind;
+  aliases?: string[];
+  glyph?: string;
+  description?: string | null;
+  tradition?: string;
+}
+
 /** Single book — wire format from ``GET /api/v1/books``. */
 export interface BookRecord {
   id: string;

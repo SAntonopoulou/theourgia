@@ -24,7 +24,7 @@ export interface IconButtonProps
   type?: "button" | "submit" | "reset";
 }
 
-const SIZE_PX: Record<ButtonSize, number> = { sm: 32, md: 40, lg: 48 };
+const SIZE_PX: Record<ButtonSize, number> = { sm: 30, md: 38, lg: 46 };
 const GLYPH_PX: Record<ButtonSize, number> = { sm: 16, md: 18, lg: 20 };
 
 function variantStyle(variant: ButtonVariant): CSSProperties {

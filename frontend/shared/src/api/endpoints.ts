@@ -11,7 +11,10 @@ import type { ApiClient } from "./client.js";
 import type {
   BookRecord,
   CreateBookInput,
+  CreateEntityInput,
   CreateEntryInput,
+  EntityKind,
+  EntityRecord,
   EntryRecord,
   EntryStats,
   EntryType,
@@ -135,6 +138,47 @@ export function api(client: ApiClient) {
 
     archiveBook(id: string): Promise<void> {
       return client.request<void>(`/api/v1/books/${id}`, { method: "DELETE" });
+    },
+
+    // ─── Entities ────────────────────────────────────────────────────
+
+    listEntities(opts?: {
+      signal?: AbortSignal;
+      kind?: EntityKind;
+      tradition?: string;
+    }): Promise<EntityRecord[]> {
+      const params = new URLSearchParams();
+      if (opts?.kind) params.set("kind", opts.kind);
+      if (opts?.tradition) params.set("tradition", opts.tradition);
+      const qs = params.toString();
+      return client.request<EntityRecord[]>(
+        `/api/v1/entities${qs ? `?${qs}` : ""}`,
+        { signal: opts?.signal },
+      );
+    },
+
+    getEntity(id: string, opts?: { signal?: AbortSignal }): Promise<EntityRecord> {
+      return client.request<EntityRecord>(`/api/v1/entities/${id}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    createEntity(input: CreateEntityInput): Promise<EntityRecord> {
+      return client.request<EntityRecord>("/api/v1/entities", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    updateEntity(id: string, patch: Partial<CreateEntityInput>): Promise<EntityRecord> {
+      return client.request<EntityRecord>(`/api/v1/entities/${id}`, {
+        method: "PATCH",
+        json: patch,
+      });
+    },
+
+    archiveEntity(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/entities/${id}`, { method: "DELETE" });
     },
   };
 }

@@ -1,136 +1,142 @@
 /**
- * AppShell — the top-level responsive application chrome.
+ * AppShell — the admin app shell.
  *
- * Desktop (≥ 768px): header above; horizontal grid of [VaultNav | main]
- *                    when the user is authenticated; just [main] otherwise.
- * Mobile (< 768px): single column; header has a hamburger that opens
- *                   VaultNav inside a focus-trapped Drawer.
+ * Faithful re-implementation of the ``om-shell`` grid layout used by every
+ * app-shell .dc.html surface in the design system:
  *
- * AppShell is a pure layout primitive — it doesn't know the route, the
- * nav items, or the auth state. The consumer passes the chrome, nav,
- * and content as slots so the same shell works on top of any router.
+ *     <div class="om-shell" data-nav-open="…"
+ *          style="height:100vh; display:grid;
+ *                 grid-template-columns: var(--shell-nav-w) 1fr;
+ *                 grid-template-rows: minmax(0,1fr);
+ *                 overflow:hidden">
+ *       [VaultNav .om-aside]
+ *       [.om-scrim — drawer backdrop, ≤1024]
+ *       <div style="display:grid; grid-template-rows: auto 1fr; min-width:0">
+ *         [topbar — auto row]
+ *         <main class="scroll" style="overflow-y:auto; min-height:0">…</main>
+ *       </div>
+ *     </div>
+ *
+ * Below 1024px the .om-aside slides off-canvas; the hamburger in the topbar
+ * toggles ``data-nav-open`` on the .om-shell root (the responsive rules
+ * live in ``theourgia.shared.css``). Scroll convention from
+ * agent_onboarding §8 is honored: ``minmax(0,1fr)`` row + ``min-height:0``
+ * + ``overflow-y:auto`` on the inner scroller.
  */
 
-import { type ReactNode, useState } from "react";
-
-import { Button } from "../Button/index.js";
-import { Drawer } from "../Drawer/index.js";
-import { useMediaQuery } from "../hooks/index.js";
+import { type ReactNode, useEffect, useState } from "react";
 
 export interface AppShellProps {
-  /** The persistent top chrome (PublicChrome-like). */
-  header: ReactNode;
-  /** The sidebar nav (VaultNav). Omit to render without a sidebar. */
+  /** The route-aware topbar (typically ``<VaultTopbar />``). */
+  topbar: ReactNode;
+  /** The sidebar nav (typically ``<VaultNav />``). Pass null for public surfaces. */
   nav?: ReactNode;
-  /** The active route's content. */
+  /** Route content. */
   children: ReactNode;
-  /**
-   * Override the breakpoint at which the sidebar collapses into a drawer.
-   * CSS media-query syntax. Default ``(min-width: 768px)``.
-   */
-  desktopQuery?: string;
-  /** Optional fixed sidebar width on desktop. Default 240px. */
-  sidebarWidth?: number;
 }
 
-export function AppShell({
-  header,
-  nav,
-  children,
-  desktopQuery = "(min-width: 768px)",
-  sidebarWidth = 240,
-}: AppShellProps) {
-  const isDesktop = useMediaQuery(desktopQuery);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+export function AppShell({ topbar, nav, children }: AppShellProps) {
+  const [navOpen, setNavOpen] = useState(false);
 
-  const hasSidebar = nav !== undefined;
-  const showInlineSidebar = hasSidebar && isDesktop;
-  const showHamburger = hasSidebar && !isDesktop;
+  // ESC closes the off-canvas drawer (mirrors the delegated script in the
+  // design's .dc.html files).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent): void {
+      if (e.key === "Escape" && navOpen) setNavOpen(false);
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [navOpen]);
 
   return (
     <div
+      className="om-shell"
+      data-nav-open={navOpen ? "true" : "false"}
       style={{
-        display: "flex",
-        flexDirection: "column",
-        minHeight: "100vh",
-        backgroundColor: "var(--bg)",
+        height: "100vh",
+        display: "grid",
+        gridTemplateColumns: nav ? "var(--shell-nav-w) 1fr" : "1fr",
+        gridTemplateRows: "minmax(0, 1fr)",
+        background: "var(--bg)",
         color: "var(--ink)",
+        fontFamily: "var(--font-serif)",
+        overflow: "hidden",
       }}
     >
-      <div style={{ display: "flex", alignItems: "stretch" }}>
-        {showHamburger ? (
-          <Button
-            size="sm"
-            variant="quiet"
-            aria-label="Open navigation"
-            onClick={() => setDrawerOpen(true)}
-            style={{
-              alignSelf: "center",
-              margin: "0 var(--space-2, 8px)",
-            }}
-          >
-            ☰
-          </Button>
-        ) : null}
-        <div style={{ flex: 1 }}>{header}</div>
-      </div>
+      {nav}
+
+      {nav ? (
+        <div
+          className="om-scrim"
+          aria-hidden="true"
+          onClick={() => setNavOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") setNavOpen(false);
+          }}
+        />
+      ) : null}
 
       <div
         style={{
-          display: "flex",
-          flex: 1,
-          minHeight: 0,
+          display: "grid",
+          gridTemplateRows: "auto 1fr",
+          minWidth: 0,
         }}
       >
-        {showInlineSidebar ? (
-          <aside
-            style={{
-              width: sidebarWidth,
-              flexShrink: 0,
-              borderRight: "1px solid var(--line)",
-              overflow: "auto",
-              maxHeight: "calc(100vh - 56px)",
-              position: "sticky",
-              top: 56,
-            }}
-          >
-            {nav}
-          </aside>
-        ) : null}
+        {/* Topbar — wired with the menu toggle so the hamburger can open
+            the off-canvas drawer below 1024. */}
+        {wrapTopbarWithToggle(topbar, () => setNavOpen((open) => !open), navOpen)}
+
         <main
+          className="scroll"
           style={{
-            flex: 1,
-            minWidth: 0,
-            padding: "var(--space-5, 24px)",
-            overflow: "auto",
+            overflowY: "auto",
+            overflowX: "hidden",
+            minHeight: 0,
+            padding: "var(--shell-pad, 28px)",
           }}
         >
           {children}
         </main>
       </div>
-
-      {showHamburger ? (
-        <Drawer
-          open={drawerOpen}
-          side="left"
-          title="Navigation"
-          width={Math.min(sidebarWidth + 40, 320)}
-          onClose={() => setDrawerOpen(false)}
-        >
-          {/* Wrap the nav so any NavLink click can close the drawer. */}
-          <div
-            onClickCapture={(event) => {
-              // If the click landed on an anchor / element marked as a nav link,
-              // close the drawer. Imperfect heuristic; consumer can also pass
-              // onNavigate to the inner VaultNav.
-              const target = event.target as HTMLElement;
-              if (target.closest("a, [role=link]")) setDrawerOpen(false);
-            }}
-          >
-            {nav}
-          </div>
-        </Drawer>
-      ) : null}
     </div>
   );
+}
+
+/**
+ * Clone the topbar element with the menu-toggle props injected so the
+ * hamburger drives the drawer state. Only injects when the topbar is a
+ * proper component element (not a host element like ``<div>``) so we
+ * don't put unknown attributes onto a DOM node.
+ */
+function wrapTopbarWithToggle(
+  topbar: ReactNode,
+  onMenuToggle: () => void,
+  navOpen: boolean,
+): ReactNode {
+  if (
+    topbar &&
+    typeof topbar === "object" &&
+    "type" in (topbar as { type?: unknown }) &&
+    "props" in (topbar as { props?: unknown })
+  ) {
+    const el = topbar as React.ReactElement<{
+      onMenuToggle?: () => void;
+      navOpen?: boolean;
+    }>;
+    // Skip host elements (strings like "div"). Component types are
+    // functions (function components) or objects (memo/forwardRef wrappers).
+    if (typeof el.type === "string") return topbar;
+    // Don't clobber consumer-supplied handlers.
+    const existing = el.props ?? {};
+    return {
+      ...el,
+      props: {
+        ...existing,
+        onMenuToggle: existing.onMenuToggle ?? onMenuToggle,
+        navOpen: existing.navOpen ?? navOpen,
+      },
+    } as ReactNode;
+  }
+  return topbar;
 }

@@ -39,16 +39,19 @@ export interface ChipProps {
 }
 
 function chipStyle(selected: boolean, disabled: boolean): CSSProperties {
+  // Matches the design's `[data-chip][aria-pressed="true"]` rule in
+  // theourgia.shared.css: idle = line/ink-soft on transparent; selected =
+  // accent-soft + line-2 + ink.
   return {
     display: "inline-flex",
     alignItems: "center",
-    gap: "var(--space-1, 4px)",
-    padding: "var(--space-1, 4px) var(--space-3, 12px)",
+    gap: 7,
+    padding: "6px 12px",
     fontFamily: "var(--font-ui, system-ui, sans-serif)",
-    fontSize: "var(--type-ui, 13px)",
-    color: selected ? "var(--accent-ink)" : "var(--ink)",
-    background: selected ? "var(--accent)" : "var(--bg-2)",
-    border: `1px solid ${selected ? "var(--accent)" : "var(--line)"}`,
+    fontSize: 12.5,
+    color: selected ? "var(--ink)" : "var(--ink-soft)",
+    background: selected ? "var(--accent-soft)" : "transparent",
+    border: `1px solid ${selected ? "var(--line-2)" : "var(--line)"}`,
     borderRadius: "var(--r-pill, 999px)",
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.6 : 1,
@@ -81,8 +84,8 @@ export function Chip({
         <span
           aria-hidden="true"
           style={{
-            marginLeft: "var(--space-1, 4px)",
-            color: selected ? "var(--accent-ink)" : "var(--ink-mute)",
+            marginLeft: 4,
+            color: "var(--ink-mute)",
             fontWeight: 600,
           }}
         >
@@ -94,7 +97,7 @@ export function Chip({
 
   if (!interactive) {
     return (
-      <span className={className} style={composedStyle}>
+      <span className={className} style={composedStyle} data-chip>
         {content}
       </span>
     );
@@ -115,6 +118,7 @@ export function Chip({
   return (
     <button
       type="button"
+      data-chip
       role={removable ? "button" : "switch"}
       aria-pressed={!removable ? selected : undefined}
       aria-checked={!removable ? selected : undefined}

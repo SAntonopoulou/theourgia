@@ -24,12 +24,17 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "test:e2e": "playwright test",
+    "test:visual": "playwright test --config=playwright.visual.config.ts",
+    "test:visual:update": "playwright test --config=playwright.visual.config.ts --update-snapshots",
+    "test:a11y": "playwright test --config=playwright.a11y.config.ts",
     "build": "pnpm --filter @theourgia/admin --filter @theourgia/public-site build",
+    "build:storybook": "pnpm --filter @theourgia/shared build-storybook",
     "deploy:dev": "bash scripts/deploy-dev.sh",
     "docs:dev": "pnpm --filter @theourgia/docs dev",
     "docs:build": "pnpm --filter @theourgia/docs build"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.0",
     "@biomejs/biome": "^1.9.4",
     "@playwright/test": "^1.49.0",
     "@types/node": "^22.10.0",

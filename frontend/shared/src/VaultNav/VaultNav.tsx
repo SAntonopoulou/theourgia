@@ -1,33 +1,203 @@
 /**
- * VaultNav — authenticated sidebar navigation.
+ * VaultNav — the admin sidebar.
  *
- * Renders a vertical list of route links with active-state highlighting.
- * The actual link rendering is delegated to a ``LinkComponent`` prop so
- * the shared package doesn't depend on a router — admin wires
- * react-router's NavLink; other consumers could use plain <a>.
+ * Faithful re-implementation of `VaultNav.dc.html` from the design system
+ * (`/home/sophia/design-handoffs/theourgia/2026-06-21-design-system/`).
  *
- *   <VaultNav
- *     items={NAV}
- *     LinkComponent={({ to, children, className, ...rest }) =>
- *       <NavLink to={to} className={className} {...rest}>{children}</NavLink>
- *     }
- *     isActive={(to) => location.pathname === to}
- *   />
+ * Structure top-to-bottom:
+ *
+ *   Brand link  · Theta-ring SVG + "Theourgia" wordmark
+ *   Quick capture · primary-styled button with ⌘K shortcut
+ *   Sections    · Practice / Reference / Workbench / Study / Network
+ *   Footer      · identity (Σ avatar + name + role) + settings cog
+ *
+ * Component contract follows ``agent_data_and_components.md §Shell``:
+ * ``VaultNav({ active, identity })``. Item routes/order are partly
+ * feature-gated (per §8 of agent_onboarding), but the default tree shipped
+ * here mirrors the .dc.html exactly.
+ *
+ * The link element is delegated via ``LinkComponent`` so the shared
+ * package never imports a router; admin wires react-router's NavLink.
  */
 
-import type { CSSProperties, ComponentType, MouseEvent, ReactNode } from "react";
+import {
+  type CSSProperties,
+  type ComponentType,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 
-import { Badge } from "../Badge/index.js";
-import { Glyph, type GlyphName } from "../Glyph/index.js";
+import { _ } from "../i18n/index.js";
+
+// ─── Item icons (engraving style — stroke 1.5, currentColor, 18×18) ────────
+
+const ICON_PROPS = {
+  width: 18,
+  height: 18,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.5,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+};
+
+const NAV_ICONS = {
+  today: (
+    <svg {...ICON_PROPS}>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.2 5.2l1.8 1.8M17 17l1.8 1.8M18.8 5.2L17 7M7 17l-1.8 1.8" />
+    </svg>
+  ),
+  journal: (
+    <svg {...ICON_PROPS}>
+      <path d="M12 6c-2-1.3-4.6-1.5-7-.9v12.4c2.4-.6 5-.4 7 .9 2-1.3 4.6-1.5 7-.9V5.1c-2.4-.6-5-.4-7 .9z" />
+      <path d="M12 6v12.4" />
+    </svg>
+  ),
+  synchronicities: (
+    <svg {...ICON_PROPS}>
+      <path d="M12 3v6M12 15v6M3 12h6M15 12h6M6.5 6.5l3.2 3.2M14.3 14.3l3.2 3.2M17.5 6.5l-3.2 3.2M9.7 14.3l-3.2 3.2" />
+    </svg>
+  ),
+  entities: (
+    <svg {...ICON_PROPS}>
+      <path d="M6 6.5h12M7 9.5h10M9 9.5v8M15 9.5v8M5 20.5h14" />
+      <circle cx="12" cy="4" r="1.5" />
+    </svg>
+  ),
+  library: (
+    <svg {...ICON_PROPS}>
+      <rect x="4" y="4.5" width="5" height="15" rx="1" />
+      <rect x="10" y="4.5" width="5" height="15" rx="1" />
+      <path d="M15.6 6l3.4 1 2.4 13.5-3.4-1z" />
+    </svg>
+  ),
+  calendar: (
+    <svg {...ICON_PROPS}>
+      <rect x="3.5" y="5" width="17" height="15" rx="2" />
+      <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+    </svg>
+  ),
+  divination: (
+    <svg {...ICON_PROPS}>
+      <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" />
+      <circle cx="12" cy="12" r="2.5" />
+    </svg>
+  ),
+  sigil: (
+    <svg {...ICON_PROPS}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 4.5l6.5 11.3H5.5z" />
+    </svg>
+  ),
+  circle: (
+    <svg {...ICON_PROPS}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="4.5" />
+      <circle cx="12" cy="12" r="1" />
+    </svg>
+  ),
+  talismans: (
+    <svg {...ICON_PROPS}>
+      <path d="M12 2.5l3 5 5.5 1-4 4 1 5.5-5.5-3-5.5 3 1-5.5-4-4 5.5-1z" />
+    </svg>
+  ),
+  analytics: (
+    <svg {...ICON_PROPS}>
+      <path d="M4 4v16h16" />
+      <path d="M8 16v-3M12 16v-7M16 16v-5M20 16v-9" />
+    </svg>
+  ),
+  feed: (
+    <svg {...ICON_PROPS}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
+    </svg>
+  ),
+  hubs: (
+    <svg {...ICON_PROPS}>
+      <circle cx="12" cy="7" r="3" />
+      <circle cx="5.5" cy="17" r="2.5" />
+      <circle cx="18.5" cy="17" r="2.5" />
+      <path d="M12 10v3M10 14l-3 2M14 14l3 2" />
+    </svg>
+  ),
+} as const;
+
+export type NavKey = keyof typeof NAV_ICONS;
+
+// ─── Section structure (mirrors VaultNav.dc.html exactly) ──────────────────
 
 export interface VaultNavItem {
+  key: NavKey;
   to: string;
   label: string;
-  glyph: GlyphName;
-  badge?: string | number;
-  /** Mark as a dev-only / pre-launch route in the visual treatment. */
-  dev?: boolean;
 }
+
+export interface VaultNavSection {
+  heading: string;
+  items: VaultNavItem[];
+}
+
+/**
+ * Default item tree. Sections + order match the .dc.html. Consumers may
+ * override via the ``sections`` prop when feature-gating drives a
+ * different shape (e.g. observers see fewer; agents/federation hide if
+ * disabled — per agent_onboarding §8).
+ */
+export const DEFAULT_VAULT_NAV: VaultNavSection[] = [
+  {
+    heading: "Practice",
+    items: [
+      { key: "today", to: "/", label: "Today" },
+      { key: "journal", to: "/journal", label: "Journal" },
+      { key: "synchronicities", to: "/synchronicities", label: "Synchronicities" },
+    ],
+  },
+  {
+    heading: "Reference",
+    items: [
+      { key: "entities", to: "/entities", label: "Entities" },
+      { key: "library", to: "/library", label: "Library" },
+      { key: "calendar", to: "/calendar", label: "Calendar" },
+    ],
+  },
+  {
+    heading: "Workbench",
+    items: [
+      { key: "divination", to: "/divination", label: "Divination" },
+      { key: "sigil", to: "/sigil", label: "Sigil Studio" },
+      { key: "circle", to: "/circle", label: "Circle Builder" },
+      { key: "talismans", to: "/talismans", label: "Talismans" },
+    ],
+  },
+  {
+    heading: "Study",
+    items: [{ key: "analytics", to: "/analytics", label: "Analytics" }],
+  },
+  {
+    heading: "Network",
+    items: [
+      { key: "feed", to: "/feed", label: "Ritual feed" },
+      { key: "hubs", to: "/hubs", label: "Hubs" },
+    ],
+  },
+];
+
+// ─── Identity footer ───────────────────────────────────────────────────────
+
+export interface VaultIdentity {
+  /** Display name, e.g. "Aspasia". */
+  name: string;
+  /** Role / grade line, e.g. "Adeptus Minor". Optional. */
+  role?: string;
+  /** Single character used inside the round avatar — defaults to first
+   *  letter of ``name``. */
+  avatarChar?: string;
+}
+
+// ─── Props ─────────────────────────────────────────────────────────────────
 
 export interface VaultNavLinkProps {
   to: string;
@@ -38,19 +208,25 @@ export interface VaultNavLinkProps {
 }
 
 export interface VaultNavProps {
-  items: readonly VaultNavItem[];
-  /** Custom link renderer (e.g. react-router's NavLink). Defaults to a plain <a>. */
+  /** Current active nav key (drives the inset-bar highlight). */
+  active?: NavKey;
+  /** Optional override of the section tree (defaults to ``DEFAULT_VAULT_NAV``). */
+  sections?: readonly VaultNavSection[];
+  /** Custom link renderer (e.g. react-router NavLink). Defaults to ``<a>``. */
   LinkComponent?: ComponentType<VaultNavLinkProps>;
-  /** Returns true when the supplied ``to`` matches the active route. */
-  isActive?: (to: string) => boolean;
-  /** Called when the user picks an item (e.g. for closing the mobile drawer). */
+  /** Fired when any link is picked (e.g. close mobile drawer). */
   onNavigate?: () => void;
-  /** Container className passthrough. */
+  /** Fired when the Quick capture button is pressed. */
+  onQuickCapture?: () => void;
+  /** Fired when the settings cog in the footer is pressed. */
+  onSettings?: () => void;
+  /** Identity rendered in the footer. */
+  identity?: VaultIdentity;
   className?: string;
   style?: CSSProperties;
-  /** Optional heading rendered above the list. */
-  heading?: ReactNode;
 }
+
+// ─── Component ─────────────────────────────────────────────────────────────
 
 function DefaultLink({ to, children, className, style, onClick }: VaultNavLinkProps) {
   return (
@@ -60,101 +236,272 @@ function DefaultLink({ to, children, className, style, onClick }: VaultNavLinkPr
   );
 }
 
+const ITEM_BASE: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 11,
+  padding: "9px 11px",
+  borderRadius: 8,
+  color: "var(--ink-soft)",
+  fontFamily: "var(--font-ui)",
+  fontSize: 14,
+  marginBottom: 2,
+  textDecoration: "none",
+};
+
+const ITEM_ACTIVE: CSSProperties = {
+  ...ITEM_BASE,
+  color: "var(--ink)",
+  background: "var(--accent-soft)",
+  boxShadow: "inset 2px 0 0 var(--accent)",
+};
+
+const SECTION_HEADING_BASE: CSSProperties = {
+  fontFamily: "var(--font-ui)",
+  fontSize: 10.5,
+  letterSpacing: "0.16em",
+  textTransform: "uppercase",
+  color: "var(--ink-mute)",
+};
+
 export function VaultNav({
-  items,
+  active,
+  sections = DEFAULT_VAULT_NAV,
   LinkComponent = DefaultLink,
-  isActive,
   onNavigate,
+  onQuickCapture,
+  onSettings,
+  // Magickal-name rule: shared package never uses the user's legal name as
+  // a default. Consumer apps inject the actual logged-in identity; this
+  // placeholder uses one of the demo personae.
+  identity = { name: "Aspasia", role: "Adeptus Minor" },
   className,
   style,
-  heading,
 }: VaultNavProps) {
-  function itemStyle(active: boolean, dev: boolean): CSSProperties {
-    return {
-      display: "flex",
-      alignItems: "center",
-      gap: "var(--space-3, 12px)",
-      padding: "var(--space-2, 8px) var(--space-3, 12px)",
-      borderRadius: "var(--r-md, 6px)",
-      color: active ? "var(--accent)" : dev ? "var(--ink-mute)" : "var(--ink-soft)",
-      backgroundColor: active ? "var(--accent-soft, var(--bg-3, var(--bg-2)))" : "transparent",
-      fontFamily: "var(--font-ui, system-ui, sans-serif)",
-      fontSize: "var(--type-body-sm, 14px)",
-      fontWeight: active ? 600 : 500,
-      textDecoration: "none",
-      letterSpacing: "0.01em",
-      transition: "background-color 150ms ease, color 150ms ease",
-      cursor: "pointer",
-    };
-  }
+  const avatarChar =
+    identity.avatarChar ?? identity.name.slice(0, 1).toUpperCase();
 
   return (
-    <nav
+    <aside
       aria-label="Vault navigation"
-      className={className}
+      className={`scroll om-aside${className ? ` ${className}` : ""}`}
       style={{
+        height: "100%",
+        background: "var(--bg-sunk)",
+        borderRight: "1px solid var(--line)",
+        overflowY: "auto",
+        overflowX: "hidden",
         display: "flex",
         flexDirection: "column",
-        gap: "var(--space-2, 8px)",
-        padding: "var(--space-4, 16px)",
+        padding: "18px 14px 16px",
+        fontFamily: "var(--font-serif)",
         ...style,
       }}
     >
-      {heading ? (
-        <div
-          style={{
-            fontFamily: "var(--font-mono, monospace)",
-            fontSize: "var(--type-caption, 11px)",
-            letterSpacing: "0.1em",
-            textTransform: "uppercase",
-            color: "var(--ink-mute)",
-            padding: "var(--space-2, 8px) var(--space-3, 12px)",
-          }}
-        >
-          {heading}
-        </div>
-      ) : null}
-      <ul
+      {/* Brand */}
+      <LinkComponent
+        to="/"
+        onClick={() => onNavigate?.()}
         style={{
           display: "flex",
-          flexDirection: "column",
-          gap: 2,
-          margin: 0,
-          padding: 0,
-          listStyle: "none",
+          alignItems: "center",
+          gap: 11,
+          padding: "6px 8px 18px",
+          textDecoration: "none",
+          color: "var(--ink)",
         }}
       >
-        {items.map((item) => {
-          const active = isActive?.(item.to) ?? false;
-          return (
-            <li key={item.to}>
+        <svg width="30" height="30" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+          <circle cx="20" cy="20" r="17.5" stroke="var(--accent)" strokeWidth="1.4" />
+          <circle
+            cx="20"
+            cy="20"
+            r="12"
+            stroke="var(--accent)"
+            strokeWidth="1"
+            opacity="0.55"
+          />
+          <line
+            x1="9.5"
+            y1="20"
+            x2="30.5"
+            y2="20"
+            stroke="var(--accent)"
+            strokeWidth="1.4"
+          />
+        </svg>
+        <span
+          style={{
+            fontFamily: "var(--font-display, var(--font-serif))",
+            fontSize: 21,
+            letterSpacing: "0.04em",
+          }}
+        >
+          Theourgia
+        </span>
+      </LinkComponent>
+
+      {/* Quick capture */}
+      <button
+        type="button"
+        onClick={() => onQuickCapture?.()}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          width: "100%",
+          padding: "10px 12px",
+          marginBottom: 18,
+          border: "1px solid var(--line-2)",
+          borderRadius: "var(--r-md, 8px)",
+          background: "var(--accent-soft)",
+          color: "var(--ink)",
+          fontFamily: "var(--font-ui)",
+          fontSize: 13.5,
+          fontWeight: 700,
+          textAlign: "left",
+          cursor: "pointer",
+        }}
+      >
+        <svg
+          width="17"
+          height="17"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          aria-hidden="true"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        Quick capture
+        <span
+          style={{
+            marginLeft: "auto",
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "var(--ink-mute)",
+          }}
+          aria-hidden="true"
+        >
+          ⌘K
+        </span>
+      </button>
+
+      {/* Sections. Section headings + item labels are gettext source
+          strings — registered in `frontend/shared/src/i18n/catalogs/`.
+          Consumers passing custom labels that aren't in any catalog
+          still render verbatim (gettext fallback). */}
+      {sections.map((section, sectionIndex) => (
+        <div key={section.heading}>
+          <div
+            style={{
+              ...SECTION_HEADING_BASE,
+              padding: sectionIndex === 0 ? "0 10px 8px" : "16px 10px 8px",
+            }}
+          >
+            {_(section.heading)}
+          </div>
+          {section.items.map((item) => {
+            const isActive = item.key === active;
+            return (
               <LinkComponent
+                key={item.key}
                 to={item.to}
                 onClick={() => onNavigate?.()}
-                style={itemStyle(active, item.dev ?? false)}
+                style={isActive ? ITEM_ACTIVE : ITEM_BASE}
               >
-                <Glyph name={item.glyph} size={16} />
-                <span style={{ flex: 1 }}>{item.label}</span>
-                {item.badge !== undefined ? <Badge tone="info">{item.badge}</Badge> : null}
-                {item.dev ? (
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 9,
-                      letterSpacing: "0.08em",
-                      color: "var(--ink-mute)",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    dev
-                  </span>
-                ) : null}
+                {NAV_ICONS[item.key]}
+                <span>{_(item.label)}</span>
               </LinkComponent>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
+            );
+          })}
+        </div>
+      ))}
+
+      {/* Identity footer */}
+      <div
+        style={{
+          marginTop: "auto",
+          paddingTop: 16,
+          borderTop: "1px solid var(--line)",
+          display: "flex",
+          alignItems: "center",
+          gap: 11,
+        }}
+      >
+        <span
+          aria-hidden="true"
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            background: "var(--accent-soft)",
+            border: "1px solid var(--line-2)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "var(--font-display, var(--font-serif))",
+            color: "var(--accent)",
+            fontSize: 15,
+          }}
+        >
+          {avatarChar}
+        </span>
+        <div style={{ lineHeight: 1.2 }}>
+          <div
+            style={{
+              fontFamily: "var(--font-ui)",
+              fontSize: 13,
+              color: "var(--ink)",
+            }}
+          >
+            {identity.name}
+          </div>
+          {identity.role ? (
+            <div
+              style={{
+                fontFamily: "var(--font-ui)",
+                fontSize: 11,
+                color: "var(--ink-mute)",
+              }}
+            >
+              {identity.role}
+            </div>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          aria-label="Settings"
+          onClick={() => onSettings?.()}
+          style={{
+            marginLeft: "auto",
+            background: "transparent",
+            border: "none",
+            color: "var(--ink-mute)",
+            cursor: "pointer",
+            padding: 0,
+            display: "inline-flex",
+            alignItems: "center",
+          }}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2.5v2.5M12 19v2.5M21.5 12H19M5 12H2.5M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4L5.6 5.6" />
+          </svg>
+        </button>
+      </div>
+    </aside>
   );
 }

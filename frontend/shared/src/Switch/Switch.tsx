@@ -61,27 +61,32 @@ export function Switch({
     ...style,
   };
 
+  // Matches the Foundations §06 Controls demo: 46×26 track, 20×20 thumb,
+  // filled accent when on. Settings overrides to a thinner inline-with-text
+  // size via its own inline styles.
   const trackStyle: CSSProperties = {
-    width: 36,
-    height: 20,
-    borderRadius: "var(--r-pill, 999px)",
-    background: checked ? "var(--accent)" : "var(--bg-3, var(--bg-2))",
-    border: `1px solid ${checked ? "var(--accent)" : "var(--line)"}`,
+    width: 46,
+    height: 26,
+    borderRadius: 999,
+    background: checked ? "var(--accent)" : "var(--bg-3)",
+    border: `1px solid ${checked ? "var(--accent)" : "var(--line-2)"}`,
     position: "relative",
     transition: "background-color 150ms ease, border-color 150ms ease",
     padding: 0,
+    flex: "none",
+    cursor: disabled ? "not-allowed" : "pointer",
   };
 
   const thumbStyle: CSSProperties = {
-    width: 14,
-    height: 14,
+    width: 20,
+    height: 20,
     borderRadius: "50%",
-    background: checked ? "var(--accent-ink)" : "var(--ink-soft, var(--ink))",
+    background: checked ? "var(--accent-ink)" : "var(--ink-mute)",
     position: "absolute",
-    top: "50%",
-    left: checked ? 18 : 2,
-    transform: "translateY(-50%)",
-    transition: "left 150ms ease",
+    top: 2,
+    left: checked ? 22 : 2,
+    display: "block",
+    transition: "left 150ms ease, background-color 150ms ease",
   };
 
   const labelEl = <span style={{ userSelect: "none" }}>{label}</span>;

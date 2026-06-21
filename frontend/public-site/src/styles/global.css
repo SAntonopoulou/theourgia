@@ -3,11 +3,12 @@
  *
  * Order matters:
  *   1. Token layer from @theourgia/shared (CSS custom properties + a11y axes)
- *   2. Tailwind layers (the preset wires custom-property names to theme keys)
+ *   2. Tailwind layers (the shared preset wires token names to theme keys)
  *   3. Site resets
  */
 
 @import "@theourgia/shared/tokens/theourgia.tokens.css";
+@import "@theourgia/shared/tokens/theourgia.shared.css";
 
 @tailwind base;
 @tailwind components;

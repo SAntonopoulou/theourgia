@@ -1,0 +1,97 @@
+---
+/**
+ * TraditionSelect — Base / Hel / Thel segmented cycler for the docs header.
+ *
+ * Faithful port of the cycler in ``Theourgia Docs.dc.html`` lines 57–61.
+ * Writes ``data-tradition`` to ``<html>`` (separate from Starlight's own
+ * ``data-theme`` which controls dark/light) and persists to
+ * ``localStorage.theourgia.theme`` so the public-site + admin + docs all
+ * read the same key.
+ */
+---
+
+<div role="group" aria-label="Tradition" class="theo-tradition-select">
+  <button data-tradition-btn="base" aria-pressed="true">Base</button>
+  <button data-tradition-btn="hellenic" aria-pressed="false">Hel</button>
+  <button data-tradition-btn="thelemic" aria-pressed="false">Thel</button>
+</div>
+
+<style>
+  .theo-tradition-select {
+    display: flex;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg-2);
+  }
+  .theo-tradition-select button {
+    padding: 5px 11px;
+    font-family: var(--font-ui);
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    color: var(--ink-mute);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .theo-tradition-select button:hover {
+    color: var(--ink);
+  }
+  .theo-tradition-select button[aria-pressed="true"] {
+    color: var(--ink);
+    background: var(--accent-soft);
+    border-color: var(--line-2);
+  }
+  @media (max-width: 50rem) {
+    .theo-tradition-select {
+      display: none;
+    }
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    var STORAGE_KEY = "theourgia.theme";
+    var ALLOWED = ["base", "hellenic", "thelemic"];
+
+    function read() {
+      try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        return ALLOWED.indexOf(raw) >= 0 ? raw : "base";
+      } catch (_) {
+        return "base";
+      }
+    }
+
+    function write(v) {
+      try {
+        localStorage.setItem(STORAGE_KEY, v);
+      } catch (_) {
+        // best-effort
+      }
+    }
+
+    function apply(t) {
+      document.documentElement.setAttribute("data-tradition", t);
+      document.querySelectorAll(".theo-tradition-select button[data-tradition-btn]").forEach(function (btn) {
+        btn.setAttribute("aria-pressed", btn.getAttribute("data-tradition-btn") === t ? "true" : "false");
+      });
+    }
+
+    // First-paint sync — runs on every page hydrate, idempotent.
+    apply(read());
+
+    document.addEventListener("click", function (e) {
+      var t = e.target;
+      var btn = t && t.closest ? t.closest("button[data-tradition-btn]") : null;
+      if (!btn) return;
+      var next = btn.getAttribute("data-tradition-btn");
+      if (ALLOWED.indexOf(next) < 0) return;
+      apply(next);
+      write(next);
+    });
+  })();
+</script>

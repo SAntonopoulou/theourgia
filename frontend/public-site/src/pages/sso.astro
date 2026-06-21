@@ -1,0 +1,489 @@
+---
+/**
+ * SSO — "Sign in with Theourgia" consent screen.
+ *
+ * Faithful port of ``Theourgia SSO.dc.html``. Per
+ * ``agent_onboarding.md`` § Theourgia SSO.dc.html:
+ *   · OAuth-style consent — the scopes shown must equal what's actually
+ *     granted (no theater). Picking identity A vs. B is the
+ *     unlinkability-sensitive choice; show exactly what each reveals.
+ *   · Live "will see / never shared" scope preview updates with the
+ *     chosen identity + scope toggles.
+ *   · The Sophia (private-name) identity carries a caution: connecting
+ *     it ties the hub to the user's real work and undoes the separation
+ *     the pseudonyms give them.
+ *   · Connected-networks rail = SSO history + 1 pending access request.
+ *   · Themed Confirm dialog for revoke (no native confirm — per
+ *     `feedback_ui_modals_only`).
+ *
+ * Demo vault owner + private-name identity swapped from the designer's
+ * placeholder ("Sophia") to "Aspasia". Same reason as Memorial / Lineage:
+ * the vault owner's legal name overlaps with the designer's demo content,
+ * and the magickal-name rule keeps her name off public surfaces.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const MAXW = "1000px";
+
+interface Identity {
+  id: "theo" | "frater" | "nullp" | "private";
+  glyph: string;
+  glyphFont: "display" | "glyph" | "mono"; // controls font-family + bg treatment
+  name: string;
+  byline: string;
+  bylineColor: "mute" | "warning";
+  warn: boolean;
+  shares: string[];
+  hidden: string[];
+  presentName: string; // what the Authorize button labels
+}
+
+const PRIVATE_NEVER = [
+  "Your legal identity and contact details",
+  "Your private journal and workings",
+  "Your other identities",
+  "Anything sealed or encrypted",
+];
+
+const IDENTITIES: Identity[] = [
+  {
+    id: "theo",
+    glyph: "Θ",
+    glyphFont: "glyph",
+    name: "Theophrastos",
+    byline: "Public theurgist",
+    bylineColor: "mute",
+    warn: false,
+    shares: [
+      "Your public profile — Theophrastos, theurgist",
+      "Your lineage attestations (3 verified)",
+      "Ritual RSVPs you choose to share",
+      "Your public writings",
+    ],
+    hidden: PRIVATE_NEVER,
+    presentName: "Theophrastos",
+  },
+  {
+    id: "frater",
+    glyph: "✠",
+    glyphFont: "glyph",
+    name: "Frater Sub Rosā",
+    byline: "O.T.O. · V°",
+    bylineColor: "mute",
+    warn: false,
+    shares: [
+      "Your order identity — Frater Sub Rosā V°",
+      "Your O.T.O. degree attestations",
+      "Lodge ritual RSVPs",
+    ],
+    hidden: PRIVATE_NEVER,
+    presentName: "Frater Sub Rosā",
+  },
+  {
+    id: "nullp",
+    glyph: "∅",
+    glyphFont: "glyph",
+    name: "null.priest",
+    byline: "Anonymous",
+    bylineColor: "mute",
+    warn: false,
+    shares: [
+      "An anonymous handle — null.priest",
+      "Nothing that can be traced to you",
+    ],
+    hidden: [
+      "Any verifiable identity",
+      "Any lineage or attestation",
+      "Any link to your other faces",
+      "Your private journal and workings",
+    ],
+    presentName: "null.priest",
+  },
+  {
+    id: "private",
+    glyph: "Α",
+    glyphFont: "display",
+    name: "Aspasia",
+    byline: "Private — caution",
+    bylineColor: "warning",
+    warn: true,
+    shares: [
+      "Aspasia — your private practising name",
+      "Your journal and working counts",
+      "Your real lineage and teachers",
+    ],
+    hidden: [
+      "Still never: sealed and encrypted content",
+      "Still never: your account credentials",
+    ],
+    presentName: "Aspasia",
+  },
+];
+
+const CONNECTED_NETWORKS = [
+  { id: "ordo", glyph: "Ω", glyphFont: "display", name: "Ordo Theurgica", presented: "Theophrastos", used: "used today" },
+  { id: "isis", glyph: "✠", glyphFont: "glyph", name: "Isis-Urania Temple", presented: "Frater Sub Rosā", used: "3 days ago" },
+  { id: "black", glyph: "∅", glyphFont: "glyph", name: "The Black Lodge", presented: "null.priest", used: "2 weeks ago", muted: true },
+] as const;
+
+const REQUESTING_HUB = {
+  glyph: "⚸",
+  name: "Collegium Hermeticum",
+  members: 312,
+  body: "A network of 312 practitioners. You're signing in with Theourgia — no password leaves your vault, and you decide exactly which face the Collegium sees.",
+};
+---
+
+<BaseLayout title="Authorize — Theourgia">
+  <div class="scroll" style="height:100vh;overflow-y:auto;overflow-x:hidden;background:var(--bg);color:var(--ink);font-family:var(--font-serif)">
+
+    <!-- SECURE CHROME -->
+    <header style="border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0;z-index:10">
+      <div style={`max-width:${MAXW};margin:0 auto;padding:15px 28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap`}>
+        <div style="display:flex;align-items:center;gap:11px">
+          <svg width="26" height="26" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+            <circle cx="20" cy="20" r="17.5" stroke="var(--accent)" stroke-width="1.4"></circle>
+            <circle cx="20" cy="20" r="12" stroke="var(--accent)" stroke-width="1" opacity=".55"></circle>
+            <line x1="9.5" y1="20" x2="30.5" y2="20" stroke="var(--accent)" stroke-width="1.4"></line>
+          </svg>
+          <span style="font-family:var(--font-display);font-size:19px;letter-spacing:.04em">Theourgia</span>
+          <span style="display:flex;align-items:center;gap:6px;font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);border-left:1px solid var(--line);padding-left:12px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="1.5"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+            Secure authorization
+          </span>
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
+          <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-ui);font-size:12.5px;color:var(--ink-soft);padding:5px 11px;border:1px solid var(--line);border-radius:999px">
+            <span style="width:22px;height:22px;border-radius:50%;background:var(--accent-soft);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:var(--accent);font-size:12px">Α</span>
+            Aspasia's vault
+          </div>
+          <div role="group" aria-label="Theme" class="theme-cycler" style="display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2)">
+            <button type="button" data-theme-pick="base" class="seg-btn" style="padding:5px 11px;font-family:var(--font-ui);font-size:12px;letter-spacing:.03em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Base</button>
+            <button type="button" data-theme-pick="hellenic" class="seg-btn" style="padding:5px 11px;font-family:var(--font-ui);font-size:12px;letter-spacing:.03em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Hel</button>
+            <button type="button" data-theme-pick="thelemic" class="seg-btn" style="padding:5px 11px;font-family:var(--font-ui);font-size:12px;letter-spacing:.03em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Thel</button>
+          </div>
+          <button type="button" data-mode-toggle aria-label="Toggle light and dark" class="mode-toggle" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);color:var(--ink-soft);cursor:pointer">
+            <span data-mode-icon aria-hidden="true" style="display:inline-flex"></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div id="sso-root" data-who="theo" style={`max-width:${MAXW};margin:0 auto;padding:34px 28px 70px;display:flex;gap:34px;align-items:flex-start;flex-wrap:wrap`}>
+
+      <!-- CONSENT CARD -->
+      <div style="flex:2 1 480px;min-width:0">
+
+        <div style="display:flex;align-items:center;gap:18px;margin-bottom:8px">
+          <span style="width:52px;height:52px;border-radius:var(--r-md);background:var(--bg-2);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:var(--accent);font-size:24px;flex:none">{REQUESTING_HUB.glyph}</span>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--ink-mute)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+          <span style="width:52px;height:52px;border-radius:50%;background:var(--accent-soft);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center;flex:none">
+            <svg width="24" height="24" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="16" stroke="var(--accent)" stroke-width="1.4"></circle><line x1="11" y1="20" x2="29" y2="20" stroke="var(--accent)" stroke-width="1.4"></line></svg>
+          </span>
+        </div>
+
+        <h1 style="font-family:var(--font-display);font-weight:700;font-size:clamp(27px,3.6vw,36px);line-height:1.12;margin:14px 0 8px;letter-spacing:-.01em">{REQUESTING_HUB.name} wants to connect to your vault</h1>
+        <p style="font-size:16px;line-height:1.6;color:var(--ink-soft);max-width:58ch;margin:0 0 26px">{REQUESTING_HUB.body}</p>
+
+        <!-- IDENTITY PICKER -->
+        <div style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:11px">Present yourself as</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:9px;margin-bottom:8px">
+          {IDENTITIES.map((id) => (
+            <button
+              type="button"
+              data-pid
+              data-pick={id.id}
+              aria-pressed={id.id === "theo" ? "true" : "false"}
+              class="id-pick"
+              style="display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--bg-2);text-align:left;cursor:pointer;font-family:inherit;color:inherit"
+            >
+              <span style={`width:30px;height:30px;border-radius:50%;background:${id.id === "nullp" ? "var(--bg-3)" : "var(--accent-soft)"};border:1px ${id.id === "nullp" ? "dashed" : "solid"} var(--line-2);display:flex;align-items:center;justify-content:center;font-family:var(--font-${id.glyphFont});color:${id.id === "nullp" ? "var(--ink-mute)" : "var(--accent)"};font-size:${id.id === "theo" ? "14" : "13"}px;flex:none`}>{id.glyph}</span>
+              <span style="min-width:0">
+                <span style={`display:block;font-family:var(--font-${id.id === "nullp" ? "mono" : "display"});font-size:${id.id === "nullp" ? "13" : "15"}px;line-height:1.1`}>{id.name}</span>
+                <span style={`display:block;font-family:var(--font-ui);font-size:10.5px;color:${id.bylineColor === "warning" ? "var(--warning)" : "var(--ink-mute)"}`}>{id.byline}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <!-- caution banner for private identity -->
+        <div id="warn-banner" role="status" style="display:none;gap:11px;padding:12px 15px;border:1px solid var(--warning);border-radius:var(--r-md);background:color-mix(in srgb, var(--warning) 12%, transparent);margin:10px 0 0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path><path d="M12 9v4M12 17h.01"></path></svg>
+          <span style="font-family:var(--font-ui);font-size:13px;line-height:1.5;color:var(--ink)">Aspasia is your private practising name. Connecting it ties this hub to your real work and undoes the separation your other identities give you.</span>
+        </div>
+
+        <!-- SCOPES -->
+        <div style="margin-top:26px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg-2);overflow:hidden">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--line)">
+            <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-ui);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--success);margin-bottom:13px">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M8.5 12.5l2.5 2.5 4.5-5"></path></svg>
+              {REQUESTING_HUB.name} will see
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px" data-scope-shares>
+              <!-- populated by client script -->
+            </div>
+          </div>
+          <div style="padding:16px 20px;background:var(--bg-sunk)">
+            <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-ui);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:13px">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M8 12h8"></path></svg>
+              Never shared — not even if asked
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px" data-scope-hidden>
+              <!-- populated by client script -->
+            </div>
+          </div>
+        </div>
+
+        <!-- optional permissions -->
+        <div style="margin-top:18px;display:flex;flex-direction:column;gap:2px">
+          <button type="button" data-toggle="invites" class="opt-toggle" style="display:flex;align-items:center;gap:13px;padding:13px 4px;border:none;border-bottom:1px solid var(--line);text-align:left;background:transparent;cursor:pointer;color:inherit;font-family:inherit">
+            <span aria-hidden="true" class="switch-track" data-on="true" style="position:relative;width:42px;height:24px;border-radius:999px;flex:none;background:var(--accent);border:1px solid var(--accent);transition:all .16s ease;display:block">
+              <span class="switch-knob" style="position:absolute;top:2px;left:20px;width:18px;height:18px;border-radius:50%;background:var(--accent-ink);transition:all .16s ease;display:block"></span>
+            </span>
+            <span style="flex:1;min-width:0">
+              <span style="display:block;font-family:var(--font-serif);font-size:15.5px;color:var(--ink)">Let the Collegium invite me to rituals</span>
+              <span style="display:block;font-family:var(--font-ui);font-size:12px;color:var(--ink-mute)">Invitations appear in your ritual feed. You still RSVP yourself.</span>
+            </span>
+          </button>
+          <button type="button" data-toggle="dms" class="opt-toggle" style="display:flex;align-items:center;gap:13px;padding:13px 4px;border:none;text-align:left;background:transparent;cursor:pointer;color:inherit;font-family:inherit">
+            <span aria-hidden="true" class="switch-track" data-on="false" style="position:relative;width:42px;height:24px;border-radius:999px;flex:none;background:var(--bg-3);border:1px solid var(--line-2);transition:all .16s ease;display:block">
+              <span class="switch-knob" style="position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--ink-mute);transition:all .16s ease;display:block"></span>
+            </span>
+            <span style="flex:1;min-width:0">
+              <span style="display:block;font-family:var(--font-serif);font-size:15.5px;color:var(--ink)">Allow direct messages from members</span>
+              <span style="display:block;font-family:var(--font-ui);font-size:12px;color:var(--ink-mute)">Officers and members of the Collegium may write to this identity.</span>
+            </span>
+          </button>
+        </div>
+
+        <!-- actions -->
+        <div style="display:flex;align-items:center;gap:12px;margin-top:26px;flex-wrap:wrap">
+          <button type="button" class="authorize-btn" style="display:flex;align-items:center;gap:9px;padding:13px 26px;border-radius:var(--r-md);background:var(--accent);color:var(--accent-ink);font-family:var(--font-ui);font-weight:700;font-size:14.5px;border:none;cursor:pointer">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="1.5"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+            Authorize as <span data-authorize-name>Theophrastos</span>
+          </button>
+          <button type="button" class="not-now-btn" style="padding:13px 22px;border-radius:var(--r-md);border:1px solid var(--line-2);font-family:var(--font-ui);font-size:14px;color:var(--ink-soft);background:transparent;cursor:pointer">Not now</button>
+          <span style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);margin-left:auto">Revocable anytime in Connected networks.</span>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: connected networks (SSO history) -->
+      <aside style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:18px">
+        <div style="background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden">
+          <div style="padding:16px 20px;border-bottom:1px solid var(--line)">
+            <div style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-mute)">Connected networks</div>
+            <div style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);margin-top:3px">3 active · 1 pending</div>
+          </div>
+
+          {CONNECTED_NETWORKS.map((n) => (
+            <div style="display:flex;gap:12px;padding:15px 20px;border-bottom:1px solid var(--line)">
+              <span style={`width:34px;height:34px;border-radius:var(--r-sm);background:${n.id === "black" ? "var(--bg-3)" : "var(--accent-soft)"};border:1px ${n.id === "black" ? "dashed" : "solid"} var(--line-2);display:flex;align-items:center;justify-content:center;font-family:var(--font-${n.glyphFont});color:${n.id === "black" ? "var(--ink-mute)" : "var(--accent)"};font-size:${n.id === "ordo" ? "15" : "14"}px;flex:none`}>{n.glyph}</span>
+              <div style="flex:1;min-width:0">
+                <div style="font-family:var(--font-serif);font-size:15.5px;line-height:1.2">{n.name}</div>
+                <div style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);margin-top:2px">as {n.presented} · {n.used}</div>
+              </div>
+              <button type="button" data-revoke={n.name} class="revoke-btn" style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);align-self:center;flex:none;background:transparent;border:none;cursor:pointer">Revoke</button>
+            </div>
+          ))}
+
+          <!-- pending access request -->
+          <div style="display:flex;gap:12px;padding:15px 20px;background:color-mix(in srgb, var(--warning) 7%, transparent)">
+            <span style="width:34px;height:34px;border-radius:var(--r-sm);background:var(--bg-3);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:var(--ink-soft);font-size:15px;flex:none">H</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-family:var(--font-serif);font-size:15.5px;line-height:1.2">Hermetic Library Network</div>
+              <div style="display:flex;align-items:center;gap:6px;font-family:var(--font-ui);font-size:11.5px;color:var(--warning);margin-top:3px">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+                Awaiting hub approval
+              </div>
+            </div>
+            <button type="button" class="revoke-btn" style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);align-self:center;flex:none;background:transparent;border:none;cursor:pointer">Cancel</button>
+          </div>
+        </div>
+
+        <div style="background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px 20px">
+          <div style="display:flex;gap:10px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"></path><path d="M9 12l2 2 4-4"></path></svg>
+            <p style="font-family:var(--font-serif);font-size:14px;line-height:1.55;color:var(--ink-soft);margin:0">Each hub sees only the identity you chose for it — and never learns the others. Theourgia is the only place they all meet.</p>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+
+    <!-- REVOKE CONFIRM (themed; non-native per modal rule) -->
+    <div id="revoke-overlay" role="presentation" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);align-items:center;justify-content:center;padding:24px;z-index:60">
+      <div role="alertdialog" aria-modal="true" aria-labelledby="rev-title" style="width:min(380px,100%);background:var(--bg-2);border:1px solid var(--line-2);border-radius:var(--r-lg);box-shadow:0 24px 50px rgba(0,0,0,.55);padding:24px;animation:ssopop .15s ease">
+        <h3 id="rev-title" style="font-family:var(--font-display);font-size:21px;margin:0 0 9px">Revoke <span data-revoke-target>—</span>?</h3>
+        <p style="font-family:var(--font-ui);font-size:13.5px;line-height:1.6;color:var(--ink-soft);margin:0 0 22px">This network will lose access immediately and can no longer see the identity you presented. You can reconnect any time by signing in again.</p>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button type="button" data-revoke-keep class="rev-keep" style="font-family:var(--font-ui);font-size:13px;color:var(--ink);padding:9px 16px;border:1px solid var(--line-2);border-radius:var(--r-md);background:transparent;cursor:pointer">Keep connected</button>
+          <button type="button" data-revoke-do class="rev-do" style="font-family:var(--font-ui);font-size:13px;font-weight:700;color:#fff;background:var(--danger);padding:9px 16px;border-radius:var(--r-md);border:none;cursor:pointer">Revoke access</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</BaseLayout>
+
+<style>
+  /* Identity-pick selected state — same pattern as Profile preview pills. */
+  [data-pid][aria-pressed="true"] {
+    border-color: var(--accent) !important;
+    background: var(--accent-soft) !important;
+  }
+
+  .seg-btn[data-selected="true"] {
+    color: var(--ink) !important;
+    background: var(--accent-soft) !important;
+    border-color: var(--line-2) !important;
+  }
+
+  .id-pick { transition: border-color 0.15s ease; }
+  .id-pick:hover { border-color: var(--line-2); }
+  .authorize-btn:hover { opacity: 0.9; }
+  .not-now-btn:hover { background: var(--bg-2); color: var(--ink); }
+  .revoke-btn { transition: color 0.15s ease; }
+  .revoke-btn:hover { color: var(--danger); }
+  .rev-keep:hover { background: var(--bg-3); }
+  .rev-do:hover { opacity: 0.9; }
+  .mode-toggle:hover { color: var(--ink); }
+
+  /* Custom scrollbar (matches .scroll rule in the design). */
+  .scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+  .scroll::-webkit-scrollbar-thumb {
+    background: var(--line-2);
+    border-radius: 10px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+
+  @keyframes ssopop {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+
+<script is:inline define:vars={{ IDENTITIES }}>
+  // ============================================================================
+  // SSO interactivity
+  //   · Identity picker → updates scope lists + Authorize button label
+  //   · Caution banner shows only when the private identity is picked
+  //   · Optional permission switches
+  //   · Themed revoke confirm dialog
+  //   · Theme + mode cycling (same wiring as PublicChrome)
+  // ============================================================================
+  const sharesNode = document.querySelector("[data-scope-shares]");
+  const hiddenNode = document.querySelector("[data-scope-hidden]");
+  const warnBanner = document.getElementById("warn-banner");
+  const authorizeName = document.querySelector("[data-authorize-name]");
+
+  function renderList(node, items, tone) {
+    if (!node) return;
+    node.innerHTML = items.map((item) => `
+      <div style="display:flex;gap:11px;align-items:flex-start">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${tone === "success" ? "var(--success)" : "var(--ink-mute)"}" stroke-width="${tone === "success" ? "1.8" : "1.6"}" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:2px">
+          ${tone === "success" ? '<path d="M5 12.5l4.5 4.5L19 6.5"></path>' : '<path d="M6 6l12 12M18 6 6 18"></path>'}
+        </svg>
+        <span style="font-family:var(--font-serif);font-size:15px;line-height:1.4;color:${tone === "success" ? "var(--ink)" : "var(--ink-soft)"}">${item}</span>
+      </div>
+    `).join("");
+  }
+
+  function pick(id) {
+    const persona = IDENTITIES.find((p) => p.id === id);
+    if (!persona) return;
+    document.querySelectorAll("[data-pid]").forEach((btn) => {
+      btn.setAttribute("aria-pressed", btn.getAttribute("data-pick") === id ? "true" : "false");
+    });
+    renderList(sharesNode, persona.shares, "success");
+    renderList(hiddenNode, persona.hidden, "mute");
+    if (authorizeName) authorizeName.textContent = persona.presentName;
+    if (warnBanner) warnBanner.style.display = persona.warn ? "flex" : "none";
+  }
+
+  document.querySelectorAll("[data-pid]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-pick");
+      if (id) pick(id);
+    });
+  });
+  pick("theo");
+
+  // ---- toggles ----
+  document.querySelectorAll(".opt-toggle").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const track = btn.querySelector(".switch-track");
+      const knob = btn.querySelector(".switch-knob");
+      if (!track || !knob) return;
+      const on = track.getAttribute("data-on") === "true";
+      const next = !on;
+      track.setAttribute("data-on", next ? "true" : "false");
+      track.style.background = next ? "var(--accent)" : "var(--bg-3)";
+      track.style.borderColor = next ? "var(--accent)" : "var(--line-2)";
+      knob.style.left = next ? "20px" : "2px";
+      knob.style.background = next ? "var(--accent-ink)" : "var(--ink-mute)";
+    });
+  });
+
+  // ---- revoke modal ----
+  const overlay = document.getElementById("revoke-overlay");
+  const target = document.querySelector("[data-revoke-target]");
+  document.querySelectorAll(".revoke-btn[data-revoke]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (target) target.textContent = btn.getAttribute("data-revoke") || "";
+      if (overlay) overlay.style.display = "flex";
+    });
+  });
+  const closeRevoke = () => { if (overlay) overlay.style.display = "none"; };
+  document.querySelectorAll("[data-revoke-keep], [data-revoke-do]").forEach((b) => b.addEventListener("click", closeRevoke));
+  overlay?.addEventListener("click", (e) => { if (e.target === overlay) closeRevoke(); });
+
+  // ---- theme / mode (same pattern as PublicChrome) ----
+  const MOON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg>`;
+  const SUN = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"></path></svg>`;
+
+  const getTheme = () => {
+    const v = document.documentElement.getAttribute("data-theme");
+    return v === "hellenic" || v === "thelemic" ? v : "base";
+  };
+  const getMode = () =>
+    document.documentElement.getAttribute("data-mode") === "light" ? "light" : "dark";
+
+  const sync = () => {
+    const theme = getTheme();
+    const mode = getMode();
+    document.querySelectorAll("[data-theme-pick]").forEach((el) => {
+      const matches = el.getAttribute("data-theme-pick") === theme;
+      el.setAttribute("data-selected", matches ? "true" : "false");
+      el.setAttribute("aria-pressed", matches ? "true" : "false");
+    });
+    document.querySelectorAll("[data-mode-icon]").forEach((el) => {
+      el.innerHTML = mode === "dark" ? MOON : SUN;
+    });
+  };
+
+  document.addEventListener("click", (e) => {
+    const t = e.target;
+    if (!t) return;
+    const pickEl = t.closest("[data-theme-pick]");
+    if (pickEl) {
+      const v = pickEl.getAttribute("data-theme-pick");
+      if (v === "base" || v === "hellenic" || v === "thelemic") {
+        document.documentElement.setAttribute("data-theme", v);
+        try { localStorage.setItem("theourgia.theme", v); } catch (_) {}
+        sync();
+      }
+      return;
+    }
+    const mode = t.closest("[data-mode-toggle]");
+    if (mode) {
+      const next = getMode() === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-mode", next);
+      try { localStorage.setItem("theourgia.mode", next); } catch (_) {}
+      sync();
+    }
+  });
+
+  sync();
+</script>

@@ -20,6 +20,6 @@ from __future__ import annotations
 from theourgia.core.tasks.app import celery_app
 
 # Import side-effects: register tasks with the app
-from theourgia.core.tasks import backup, email  # noqa: F401
+from theourgia.core.tasks import backup, email, scheduler  # noqa: F401
 
-__all__ = ["celery_app", "backup", "email"]
+__all__ = ["celery_app", "backup", "email", "scheduler"]

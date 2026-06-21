@@ -44,9 +44,9 @@ describe("PromptDialog", () => {
     const onSubmit = vi.fn();
     render(<PromptDialog open title="X" label="N" onSubmit={onSubmit} onCancel={vi.fn()} />);
     const user = userEvent.setup();
-    await user.type(screen.getByRole("textbox"), "Sophia");
+    await user.type(screen.getByRole("textbox"), "Aspasia");
     await user.click(screen.getByRole("button", { name: "OK" }));
-    expect(onSubmit).toHaveBeenCalledWith("Sophia");
+    expect(onSubmit).toHaveBeenCalledWith("Aspasia");
   });
 
   it("validate returning a string blocks submit + shows the error", async () => {
@@ -84,10 +84,10 @@ describe("PromptDialog", () => {
       />,
     );
     const user = userEvent.setup();
-    await user.type(screen.getByRole("textbox"), "Sophia");
+    await user.type(screen.getByRole("textbox"), "Aspasia");
     expect(screen.getByRole("button", { name: "OK" })).toBeEnabled();
     await user.click(screen.getByRole("button", { name: "OK" }));
-    expect(onSubmit).toHaveBeenCalledWith("Sophia");
+    expect(onSubmit).toHaveBeenCalledWith("Aspasia");
   });
 
   it("cancel resets to defaultValue + fires onCancel", async () => {

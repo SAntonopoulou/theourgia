@@ -1,0 +1,301 @@
+---
+/**
+ * Newsletter — public archive (The Theurgist's Almanac).
+ *
+ * Faithful port of ``Theourgia Newsletter.dc.html``. Per
+ * ``agent_onboarding.md`` § Theourgia Newsletter.dc.html:
+ *   · Public archive: hero + subscribe with cadence/reader stats,
+ *     featured latest issue (№ + topic chips → Essay), year-grouped
+ *     archive list, RSS + view-in-browser footer.
+ *   · Pairs with the **Newsletter Composer** (admin) and **Scheduler** —
+ *     an issue here is the published output of that pipeline.
+ *   · "Timed to the new moon" cadence is fine as static framing; the
+ *     **next send date** (if ever rendered) is derived from §10.7
+ *     ephemeris.
+ *   · Keep the email-address placeholder from being mangled by any
+ *     email-obfuscator (real bug previously). Use a stable placeholder
+ *     and don't seed value="" with an example address.
+ *
+ * Identity is Theophrastos (consistent with Profile / Lineage demos).
+ * Subscribe endpoint is stubbed locally — POST target will land with the
+ * newsletter pipeline.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const MAXW = "920px";
+const IDENTITY_NAME = "Theophrastos";
+
+interface ArchiveIssue {
+  num: string;
+  title: string;
+  blurb: string;
+  date: string;
+}
+interface ArchiveYear {
+  year: string;
+  count: string;
+  issues: ArchiveIssue[];
+}
+
+const featured = {
+  num: "18",
+  date: "21 June 2026 · the Solstice",
+  title: "The Solstice Letter — on keeping the longest day",
+  blurb:
+    "The Sun at its height, a word on solar work without sun-worship, the discipline of the record at midsummer, and one reading from Proclus to carry into the dark half of the year.",
+  chips: ["Solar practice", "A reading from Proclus", "From the record"],
+};
+
+const ARCHIVE: ArchiveYear[] = [
+  {
+    year: "2026",
+    count: "6 issues",
+    issues: [
+      { num: "17", title: "On the planetary hours, and electing a time", blurb: "A pragmatic case for ritual timing as attention, not astral mechanics.", date: "May" },
+      { num: "16", title: "The threshold of spring — beginnings, and how to keep them", blurb: "On vows made at the equinox, and the discipline of small starts.", date: "Apr" },
+      { num: "15", title: "Reading the first Chaldean fragment", blurb: "A close reading of the flower of mind, with notes for practice.", date: "Mar" },
+      { num: "14", title: "The dark of the year, and sitting with it", blurb: "Against the urge to fix every fallow season; a word on patience.", date: "Feb" },
+      { num: "13", title: "A calendar for the working year", blurb: "How I plan a year of practice against the solar and lunar wheels.", date: "Jan" },
+    ],
+  },
+  {
+    year: "2025",
+    count: "12 issues",
+    issues: [
+      { num: "12", title: "The Bornless Working, before the book", blurb: "Notes that became the practical edition — the invocation set plainly.", date: "Dec" },
+      { num: "11", title: "On lineage, and what attestation is for", blurb: "Why a chain of names matters, and where it stops mattering.", date: "Nov" },
+      { num: "10", title: "Hekate at the crossroads of three traditions", blurb: "Reconciling the PGM, Orphic, and Chaldean Hekate without flattening them.", date: "Oct" },
+      { num: "09", title: "Suffumigation — the practical chemistry of incense", blurb: "What actually burns well on coal, and why the recipe matters less than the attention.", date: "Sep" },
+    ],
+  },
+];
+---
+
+<BaseLayout title="The Theurgist's Almanac — Theourgia">
+  <div style="min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--font-serif)">
+
+    <!-- HEADER (identity-scoped) -->
+    <header style="border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:0;z-index:20">
+      <div style={`max-width:${MAXW};margin:0 auto;padding:15px 28px;display:flex;align-items:center;gap:20px`}>
+        <a href="/profile" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit">
+          <svg width="24" height="24" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+            <circle cx="20" cy="20" r="17.5" stroke="var(--accent)" stroke-width="1.4"></circle>
+            <line x1="9.5" y1="20" x2="30.5" y2="20" stroke="var(--accent)" stroke-width="1.4"></line>
+          </svg>
+          <span style="font-family:var(--font-display);font-size:18px">{IDENTITY_NAME}</span>
+        </a>
+        <nav class="om-pubnav" style="display:flex;gap:18px;margin-left:4px;font-family:var(--font-ui);font-size:13px;color:var(--ink-soft)">
+          <a href="/blog" class="pub-nav-link" style="text-decoration:none;color:inherit">Writings</a>
+          <a href="/newsletter" aria-current="page" style="color:var(--ink);text-decoration:none">The Almanac</a>
+        </nav>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:11px">
+          <div role="group" aria-label="Theme" class="om-pubseg theme-cycler" style="display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2)">
+            <button type="button" data-theme-pick="base" class="seg-btn" style="padding:5px 11px;font-family:var(--font-ui);font-size:12px;letter-spacing:.03em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Base</button>
+            <button type="button" data-theme-pick="hellenic" class="seg-btn" style="padding:5px 11px;font-family:var(--font-ui);font-size:12px;letter-spacing:.03em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Hel</button>
+            <button type="button" data-theme-pick="thelemic" class="seg-btn" style="padding:5px 11px;font-family:var(--font-ui);font-size:12px;letter-spacing:.03em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Thel</button>
+          </div>
+          <button type="button" data-mode-toggle aria-label="Toggle light and dark" class="mode-toggle" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);color:var(--ink-soft);cursor:pointer">
+            <span data-mode-icon aria-hidden="true" style="display:inline-flex"></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- HERO -->
+    <section style="border-bottom:1px solid var(--line);background:var(--bg-2)">
+      <div style={`max-width:${MAXW};margin:0 auto;padding:52px 28px 44px;text-align:center`}>
+        <div style="font-family:var(--font-glyph);color:var(--accent);font-size:26px;margin-bottom:14px">☾ ☉ ☽</div>
+        <h1 style="font-family:var(--font-display);font-weight:700;font-size:clamp(34px,5vw,50px);line-height:1.06;margin:0 0 12px;letter-spacing:-.01em">The Theurgist's Almanac</h1>
+        <p style="font-size:17.5px;line-height:1.6;color:var(--ink-soft);max-width:54ch;margin:0 auto 24px">A letter once a month, timed to the turning of the year — what to read, what to practise, and one honest note from the record. Written by {IDENTITY_NAME}.</p>
+
+        <form data-subscribe id="almanac-subscribe" style="display:flex;gap:9px;max-width:420px;margin:0 auto 14px" novalidate>
+          <input
+            type="email"
+            name="email"
+            required
+            aria-label="Email address"
+            placeholder="Your email address"
+            style="flex:1;padding:11px 14px;border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--bg);font-family:var(--font-ui);font-size:13.5px;color:var(--ink);outline:none"
+          />
+          <button type="submit" style="padding:11px 22px;border-radius:var(--r-md);background:var(--accent);color:var(--accent-ink);font-family:var(--font-ui);font-weight:700;font-size:13.5px;white-space:nowrap;border:none;cursor:pointer">Subscribe</button>
+        </form>
+
+        <div style="display:flex;align-items:center;justify-content:center;gap:18px;font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);flex-wrap:wrap">
+          <span>Monthly · at the new moon</span><span>·</span>
+          <span>1,240 readers</span><span>·</span>
+          <span>No tracking · unsubscribe anytime</span>
+        </div>
+        <div data-subscribe-feedback role="status" aria-live="polite" style="font-family:var(--font-ui);font-size:12.5px;color:var(--ink-mute);margin-top:12px;min-height:1em"></div>
+      </div>
+    </section>
+
+    <!-- BODY -->
+    <section>
+      <div style={`max-width:${MAXW};margin:0 auto;padding:40px 28px 72px`}>
+
+        <!-- FEATURE: latest issue -->
+        <div style="font-family:var(--font-ui);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:14px">Latest issue</div>
+        <a href="/essay" class="latest-issue" style="display:block;border:1px solid var(--line-2);border-radius:var(--r-lg);background:var(--bg-2);padding:28px 30px;margin-bottom:40px;text-decoration:none;color:inherit">
+          <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+            <div style="flex:none;width:84px;text-align:center;border-right:1px solid var(--line);padding-right:22px">
+              <div style="font-family:var(--font-ui);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute)">Issue</div>
+              <div style="font-family:var(--font-display);font-size:42px;line-height:1;color:var(--accent)">{featured.num}</div>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);margin-bottom:7px">{featured.date}</div>
+              <h2 style="font-family:var(--font-display);font-size:27px;line-height:1.15;margin:0 0 10px">{featured.title}</h2>
+              <p style="font-size:15px;line-height:1.6;color:var(--ink-soft);margin:0 0 16px;max-width:60ch">{featured.blurb}</p>
+              <div style="display:flex;flex-wrap:wrap;gap:8px">
+                {featured.chips.map((chip) => (
+                  <span style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-soft);padding:3px 11px;border:1px solid var(--line);border-radius:999px">{chip}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </a>
+
+        <!-- ARCHIVE -->
+        {ARCHIVE.map((yr) => (
+          <div style="margin-bottom:34px">
+            <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--line)">
+              <h3 style="font-family:var(--font-display);font-size:23px;margin:0">{yr.year}</h3>
+              <span style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute)">{yr.count}</span>
+            </div>
+            <div style="display:flex;flex-direction:column">
+              {yr.issues.map((it, i) => (
+                <a
+                  href="/essay"
+                  class="archive-row"
+                  style={`display:flex;gap:18px;align-items:baseline;padding:14px 6px${i < yr.issues.length - 1 ? ";border-bottom:1px solid var(--line)" : ""};text-decoration:none;color:inherit`}
+                >
+                  <span style="font-family:var(--font-mono);font-size:13px;color:var(--ink-mute);width:34px;flex:none">№{it.num}</span>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-family:var(--font-display);font-size:18px;line-height:1.25;color:var(--ink)">{it.title}</div>
+                    <div style="font-family:var(--font-serif);font-size:13.5px;line-height:1.45;color:var(--ink-mute);margin-top:2px">{it.blurb}</div>
+                  </div>
+                  <span style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);flex:none;white-space:nowrap">{it.date}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        ))}
+
+      </div>
+    </section>
+
+    <footer style="border-top:1px solid var(--line);background:var(--bg-2)">
+      <div style={`max-width:${MAXW};margin:0 auto;padding:32px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px`}>
+        <div style="font-family:var(--font-display);font-style:italic;font-size:16px;color:var(--ink-soft)">Sent at each new moon, and never otherwise.</div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <a href="/rss.xml" class="footer-link" style="display:flex;align-items:center;gap:6px;font-family:var(--font-ui);font-size:12.5px;color:var(--ink-mute);text-decoration:none">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="6.2" cy="17.8" r="1.6" fill="currentColor" stroke="none"></circle><path d="M5 12a7 7 0 0 1 7 7M5 6a13 13 0 0 1 13 13" stroke-linecap="round"></path></svg>
+            RSS
+          </a>
+          <a href="/essay" class="footer-link" style="font-family:var(--font-ui);font-size:12.5px;color:var(--ink-mute);text-decoration:none">View in browser</a>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+</BaseLayout>
+
+<style>
+  .pub-nav-link { transition: color 0.15s ease; }
+  .pub-nav-link:hover { color: var(--ink); }
+  .mode-toggle:hover { color: var(--ink); }
+  .latest-issue { transition: border-color 0.15s ease; }
+  .latest-issue:hover { border-color: var(--accent); }
+  .archive-row { transition: background-color 0.15s ease; }
+  .archive-row:hover { background: var(--bg-2); }
+  .footer-link { transition: color 0.15s ease; }
+  .footer-link:hover { color: var(--accent); }
+
+  .seg-btn[data-selected="true"] {
+    color: var(--ink) !important;
+    background: var(--accent-soft) !important;
+    border-color: var(--line-2) !important;
+  }
+
+  @media (max-width: 860px) { .om-pubnav { display: none !important; } }
+  @media (max-width: 600px) { .om-pubseg { display: none !important; } }
+</style>
+
+<script>
+  // Theme + mode wiring.
+  type Theme = "base" | "hellenic" | "thelemic";
+  type Mode = "dark" | "light";
+
+  const MOON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg>`;
+  const SUN = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"></path></svg>`;
+
+  const getTheme = (): Theme => {
+    const v = document.documentElement.getAttribute("data-theme");
+    return v === "hellenic" || v === "thelemic" ? v : "base";
+  };
+  const getMode = (): Mode =>
+    document.documentElement.getAttribute("data-mode") === "light" ? "light" : "dark";
+
+  const sync = () => {
+    const theme = getTheme();
+    const mode = getMode();
+    document.querySelectorAll<HTMLElement>("[data-theme-pick]").forEach((el) => {
+      const matches = el.getAttribute("data-theme-pick") === theme;
+      el.setAttribute("data-selected", matches ? "true" : "false");
+      el.setAttribute("aria-pressed", matches ? "true" : "false");
+    });
+    document.querySelectorAll<HTMLElement>("[data-mode-icon]").forEach((el) => {
+      el.innerHTML = mode === "dark" ? MOON : SUN;
+    });
+  };
+
+  document.addEventListener("click", (e) => {
+    const t = e.target as HTMLElement | null;
+    if (!t) return;
+    const pick = t.closest<HTMLElement>("[data-theme-pick]");
+    if (pick) {
+      const v = pick.getAttribute("data-theme-pick");
+      if (v === "base" || v === "hellenic" || v === "thelemic") {
+        document.documentElement.setAttribute("data-theme", v);
+        try { localStorage.setItem("theourgia.theme", v); } catch (_) {}
+        sync();
+      }
+      return;
+    }
+    const mode = t.closest<HTMLElement>("[data-mode-toggle]");
+    if (mode) {
+      const next = getMode() === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-mode", next);
+      try { localStorage.setItem("theourgia.mode", next); } catch (_) {}
+      sync();
+    }
+  });
+
+  sync();
+
+  // Subscribe form — humane validation, no native browser modal.
+  // Real POST endpoint lands with the newsletter pipeline; for now we
+  // store the address in localStorage and acknowledge.
+  const form = document.getElementById("almanac-subscribe") as HTMLFormElement | null;
+  const feedback = document.querySelector<HTMLElement>("[data-subscribe-feedback]");
+  form?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!feedback) return;
+    const email = (form.elements.namedItem("email") as HTMLInputElement | null)?.value?.trim() ?? "";
+    if (!email) {
+      feedback.textContent = "An address is needed before we can subscribe you.";
+      feedback.style.color = "var(--warning)";
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      feedback.textContent = "That address looks off — try checking the @ and the dot.";
+      feedback.style.color = "var(--warning)";
+      return;
+    }
+    try {
+      localStorage.setItem("theourgia.almanac.pending", email);
+    } catch (_) { /* noop */ }
+    feedback.textContent = "Thank you. We'll write next at the new moon.";
+    feedback.style.color = "var(--success)";
+    form.reset();
+  });
+</script>

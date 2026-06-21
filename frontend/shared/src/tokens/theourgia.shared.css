@@ -1,0 +1,223 @@
+/* ============================================================================
+   THEOURGIA — Shared CSS rules from the design system
+   ----------------------------------------------------------------------------
+   Pulled from the <helmet><style> block that is identical (or nearly so) on
+   every .dc.html surface in /home/sophia/design-handoffs/theourgia/.
+   Importing this file once means surfaces don't re-declare the same rules.
+
+   Pair with `theourgia.tokens.css` (the custom-property layer). Element
+   styling beyond what's covered here stays inline per surface, per the
+   design-system rule ("Element styling is inline only, always var(--token).
+   Don't invent a stylesheet.").
+
+   What lives here:
+     · global resets (box-sizing, body antialiasing, button reset)
+     · focus-visible ring + selection color
+     · .scroll class (custom-styled webkit scrollbar)
+     · per-component aria-pressed selectors used inline as data-* hooks
+     · .nowdot pulse animation + reduced-motion guard
+     · .om-* responsive block (off-canvas nav drawer below 1024)
+     · Sophia 2026-06-21: explicit override hiding the sidebar's scrollbar
+   ============================================================================ */
+
+/* ── Universal resets ────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* ── Focus + selection ───────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+/* ── Scroll class (custom-styled webkit scrollbar) ───────────────────────── */
+.scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+}
+.scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* ── data-chip / data-vis (Quick capture chips, visibility selector) ─────── */
+[data-chip][aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: var(--line-2);
+  color: var(--ink);
+}
+[data-vis][aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+/* ── Now-dot pulse (planetary-hour live indicator on Today) ──────────────── */
+@keyframes pulsehour {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.nowdot {
+  animation: pulsehour 2.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nowdot {
+    animation: none;
+  }
+}
+
+/* ── App-shell layout tokens + off-canvas nav drawer (≤1024) ─────────────── */
+:root {
+  --shell-nav-w: 248px;
+  --shell-pad: 28px;
+}
+.om-menu {
+  display: none;
+}
+.om-scrim {
+  display: none;
+}
+@media (max-width: 1280px) {
+  :root {
+    --shell-nav-w: 224px;
+  }
+}
+@media (max-width: 1024px) {
+  .om-shell {
+    grid-template-columns: 1fr !important;
+  }
+  .om-aside {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 284px;
+    z-index: 60;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .om-shell[data-nav-open="true"] .om-aside {
+    transform: none;
+    box-shadow: 2px 0 26px rgba(0, 0, 0, 0.42);
+  }
+  .om-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.28s ease;
+  }
+  .om-shell[data-nav-open="true"] .om-scrim {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .om-menu {
+    display: inline-flex !important;
+  }
+  .om-aside a,
+  .om-aside button {
+    min-height: 44px;
+  }
+}
+@media (max-width: 640px) {
+  :root {
+    --shell-pad: 16px;
+  }
+  .om-topbar {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+    gap: 10px !important;
+  }
+  .om-search {
+    min-width: 0 !important;
+    flex: 1 1 auto;
+  }
+  .om-search-label,
+  .om-search-kbd {
+    display: none !important;
+  }
+  .om-theme-seg {
+    display: none !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .om-aside,
+  .om-scrim {
+    transition: none !important;
+  }
+}
+
+/* ── Sidebar (om-aside) — hide scrollbar entirely ────────────────────────────
+ * Sophia 2026-06-21: the sidebar nav must not show any scrollbar even when
+ * the content overflows. Mouse-wheel + keyboard navigation still scroll. */
+.om-aside {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.om-aside::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* ── Recent-entry row hover (Today, Journal) ────────────────────────────────
+ * Inline styles can't express hover; surfaces add this class to mirror the
+ * design's ``style-hover="background:var(--bg-3)"`` declaration. */
+.entry-row:hover {
+  background: var(--bg-3);
+}
+
+/* ── Sigil draw-in animation (Sigil Studio) ─────────────────────────────── */
+@keyframes sigil-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.sigil-line {
+  stroke-dasharray: 900;
+  stroke-dashoffset: 900;
+  animation: sigil-draw 3.2s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sigil-line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

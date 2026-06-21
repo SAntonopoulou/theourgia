@@ -1,0 +1,301 @@
+---
+/**
+ * Style Guide — voice, ornament, accessibility, hard rules.
+ *
+ * Faithful port of ``Theourgia Style Guide.dc.html``. Per
+ * ``agent_onboarding.md`` § Theourgia Style Guide.dc.html:
+ *   · Canonical copy & conduct reference. Voice DO/DON'T columns,
+ *     ornament-&-restraint rule pairs, color/motion/density principles,
+ *     WCAG 2.2 AA checklist, "the lines we never cross."
+ *   · Static document; no data. Read before writing any UI copy, empty
+ *     state, or error.
+ *
+ * Two state-color tokens local to this surface (--good / --bad) per the
+ * design — the rest comes from the shared layer.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const MAXW = "880px";
+
+const VOICE_DO = [
+  '"The record holds the failures beside the successes."',
+  '"Solve et coagula." — used once, where it earns its place.',
+  '"That working failed to save. Your text is kept — try again when ready."',
+];
+
+const VOICE_DONT = [
+  '"Manifest your dreams! ✨ Unlock your magickal potential!"',
+  '"Solve et coagula" peppered through every heading.',
+  '"Oops! Something went wrong 😅 You broke it!"',
+];
+
+interface OrnamentPair { good: string; bad: string }
+const ORNAMENT_PAIRS: OrnamentPair[] = [
+  { good: "Engraving icons, uniform 1.4 stroke, currentColor", bad: "Lucide/Heroicons or filled glyphs dropped in" },
+  { good: "A single hairline rule or a small ❖ to divide", bad: "Drop-shadows, glows, and gradient cards stacked up" },
+  { good: "Real imagery or honest placeholders", bad: 'SVG-drawn "mystical" art and AI-occult collages' },
+  { good: "Polytonic Greek & pointed Hebrew set properly", bad: "Decorative pseudo-script used as texture" },
+  { good: "Purposeful negative space", bad: "Every gap filled with a stat, badge, or icon" },
+];
+
+interface PrincipleCard { title: string; body: string }
+const PRINCIPLES: PrincipleCard[] = [
+  {
+    title: "One accent, three intensities",
+    body: "Gold is the only bright color: solid for action, soft for tints, a hairline for accent. Category hues label, never decorate.",
+  },
+  {
+    title: "Motion is a whisper",
+    body: "150–250ms, no bounce, no parallax. Reduced-motion is honored. A check-in never animates to demand attention.",
+  },
+  {
+    title: "Earn every element",
+    body: "No filler stats, no decorative numbers, no slop. If a section feels empty, solve it with composition — not invented data.",
+  },
+];
+
+const A11Y_CHECKS = [
+  "Contrast meets WCAG 2.2 AA — body, captions, and accent text all pass against their surface.",
+  "Visible focus ring (2px accent, 2px offset) on every interactive element. Never remove outlines.",
+  'Color is never the only cue — pair it with an icon, label, or shape (see [data-cvd="safe"]).',
+  "Full keyboard path; dialogs focus-trap and dismiss on ESC; menus are arrow-navigable.",
+  "Honors prefers-reduced-motion, 200% zoom, and right-to-left scripts.",
+  'High-contrast layer ([data-contrast="high"]) available for every theme and mode.',
+];
+
+const NEVER = [
+  "No native alert() / confirm() / prompt() — every dialog is a themed, focus-trapped component.",
+  "No emoji as decoration, no spinner-as-feature, no SaaS-cheery patterns.",
+  "No purple gradients, occult kitsch, or AI-mystic art.",
+  "No filler content — never pad a surface with dummy data to fill space. Ask before adding material.",
+];
+---
+
+<BaseLayout title="Style guide — Theourgia">
+  <div class="style-guide-root" style="min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--font-serif)">
+
+    <header style="position:sticky;top:0;z-index:20;border-bottom:1px solid var(--line);background:color-mix(in srgb, var(--bg) 90%, transparent);backdrop-filter:blur(8px)">
+      <div style={`max-width:${MAXW};margin:0 auto;padding:14px 28px;display:flex;align-items:center;gap:16px`}>
+        <div style="display:flex;align-items:center;gap:10px">
+          <svg width="24" height="24" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+            <circle cx="20" cy="20" r="17.5" stroke="var(--accent)" stroke-width="1.4"></circle>
+            <line x1="9.5" y1="20" x2="30.5" y2="20" stroke="var(--accent)" stroke-width="1.4"></line>
+          </svg>
+          <span style="font-family:var(--font-display);font-size:17px">Theourgia</span>
+          <span style="font-family:var(--font-ui);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);border-left:1px solid var(--line);padding-left:10px">Style guide</span>
+        </div>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:11px">
+          <div role="group" aria-label="Theme" class="theme-cycler" style="display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2)">
+            <button type="button" data-theme-pick="base" class="seg-btn" style="padding:5px 11px;font-family:var(--font-ui);font-size:12px;letter-spacing:.03em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Base</button>
+            <button type="button" data-theme-pick="hellenic" class="seg-btn" style="padding:5px 11px;font-family:var(--font-ui);font-size:12px;letter-spacing:.03em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Hel</button>
+            <button type="button" data-theme-pick="thelemic" class="seg-btn" style="padding:5px 11px;font-family:var(--font-ui);font-size:12px;letter-spacing:.03em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Thel</button>
+          </div>
+          <button type="button" data-mode-toggle aria-label="Toggle light and dark" class="mode-toggle" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);color:var(--ink-soft);cursor:pointer">
+            <span data-mode-icon aria-hidden="true" style="display:inline-flex"></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main style={`max-width:${MAXW};margin:0 auto;padding:52px 28px 80px`}>
+
+      <div style="font-family:var(--font-ui);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:16px">The standard</div>
+      <h1 style="font-family:var(--font-display);font-weight:700;font-size:clamp(34px,5vw,50px);line-height:1.06;margin:0 0 16px;letter-spacing:-.01em">How Theourgia speaks and looks</h1>
+      <p style="font-size:18px;line-height:1.62;color:var(--ink-soft);max-width:62ch;margin:0 0 8px">Antiquarian-library gravity with the typographic care of a grimoire, held to the discipline of modern software. This is the bar every surface meets — and the few lines it never crosses.</p>
+
+      <!-- VOICE -->
+      <section style="margin-top:48px">
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px">
+          <span style="font-family:var(--font-mono);font-size:13px;color:var(--accent)">01</span>
+          <h2 style="font-family:var(--font-display);font-size:27px;margin:0">Voice</h2>
+        </div>
+        <p style="font-family:var(--font-serif);font-size:16px;line-height:1.65;color:var(--ink-soft);margin:0 0 22px">Confident, quiet, exact. Direct without being cold. Latin and Greek as ornament, used sparingly. Error copy is humane and never blames the reader. We write to a serious practitioner, not a seeker to be dazzled.</p>
+        <div class="voice-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div style="border:1px solid var(--line);border-top:2px solid var(--good);border-radius:var(--r-md);background:var(--bg-2);padding:18px 20px">
+            <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-ui);font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--good);margin-bottom:14px">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 6.5"></path></svg>
+              DO
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              {VOICE_DO.map((line) => (
+                <p style="font-family:var(--font-display);font-size:16px;line-height:1.5;color:var(--ink);margin:0">{line}</p>
+              ))}
+            </div>
+          </div>
+          <div style="border:1px solid var(--line);border-top:2px solid var(--bad);border-radius:var(--r-md);background:var(--bg-2);padding:18px 20px">
+            <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-ui);font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--bad);margin-bottom:14px">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+              DON'T
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              {VOICE_DONT.map((line) => (
+                <p style="font-family:var(--font-display);font-size:16px;line-height:1.5;color:var(--ink-mute);margin:0">{line}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ORNAMENT / VISUAL -->
+      <section style="margin-top:48px">
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px">
+          <span style="font-family:var(--font-mono);font-size:13px;color:var(--accent)">02</span>
+          <h2 style="font-family:var(--font-display);font-size:27px;margin:0">Ornament &amp; restraint</h2>
+        </div>
+        <p style="font-family:var(--font-serif);font-size:16px;line-height:1.65;color:var(--ink-soft);margin:0 0 22px">Richer than a SaaS dashboard, more disciplined than an occult shop. The flower is the only soft thing; the rest stays sober.</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          {ORNAMENT_PAIRS.map((pair) => (
+            <div class="ornament-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div style="display:flex;gap:10px;align-items:flex-start;padding:13px 16px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--bg-2)">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--good)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:2px"><path d="M5 12.5l4.5 4.5L19 6.5"></path></svg>
+                <span style="font-family:var(--font-serif);font-size:14.5px;line-height:1.45;color:var(--ink-soft)">{pair.good}</span>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start;padding:13px 16px;border:1px solid var(--line);border-radius:var(--r-md);background:transparent">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--bad)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:2px"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+                <span style="font-family:var(--font-serif);font-size:14.5px;line-height:1.45;color:var(--ink-mute)">{pair.bad}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- COLOR / MOTION -->
+      <section style="margin-top:48px">
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px">
+          <span style="font-family:var(--font-mono);font-size:13px;color:var(--accent)">03</span>
+          <h2 style="font-family:var(--font-display);font-size:27px;margin:0">Color, motion, density</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:14px">
+          {PRINCIPLES.map((p) => (
+            <div style="border:1px solid var(--line);border-radius:var(--r-md);background:var(--bg-2);padding:18px 20px">
+              <div style="font-family:var(--font-display);font-size:17px;margin-bottom:7px">{p.title}</div>
+              <p style="font-family:var(--font-ui);font-size:13px;line-height:1.55;color:var(--ink-mute);margin:0">{p.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- ACCESSIBILITY -->
+      <section style="margin-top:48px">
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px">
+          <span style="font-family:var(--font-mono);font-size:13px;color:var(--accent)">04</span>
+          <h2 style="font-family:var(--font-display);font-size:27px;margin:0">Accessibility — non-negotiable</h2>
+        </div>
+        <p style="font-family:var(--font-serif);font-size:16px;line-height:1.65;color:var(--ink-soft);margin:0 0 18px">WCAG 2.2 AA is the floor, not the goal. Every surface ships meeting this checklist.</p>
+        <div style="border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg-2);overflow:hidden">
+          {A11Y_CHECKS.map((c, i) => (
+            <div style={`display:flex;gap:13px;align-items:flex-start;padding:13px 20px${i < A11Y_CHECKS.length - 1 ? ";border-bottom:1px solid var(--line)" : ""}`}>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--good)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px"><path d="M5 12.5l4.5 4.5L19 6.5"></path></svg>
+              <span style="font-family:var(--font-serif);font-size:15.5px;line-height:1.5;color:var(--ink-soft)">{c}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- HARD RULES -->
+      <section style="margin-top:48px">
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px">
+          <span style="font-family:var(--font-mono);font-size:13px;color:var(--accent)">05</span>
+          <h2 style="font-family:var(--font-display);font-size:27px;margin:0">The lines we never cross</h2>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
+          {NEVER.map((n) => (
+            <div style="display:flex;gap:13px;align-items:flex-start;padding:14px 18px;border:1px solid var(--line);border-left:3px solid var(--bad);border-radius:var(--r-md);background:var(--bg-2)">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--bad)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px"><circle cx="12" cy="12" r="9"></circle><path d="M8 12h8"></path></svg>
+              <span style="font-family:var(--font-serif);font-size:15.5px;line-height:1.5;color:var(--ink)">{n}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <footer style="margin-top:56px;padding-top:24px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div style="font-family:var(--font-display);font-style:italic;font-size:16px;color:var(--ink-soft)">Confident, quiet, exact.</div>
+        <a href="/foundations" class="foundations-link" style="font-family:var(--font-ui);font-size:12.5px;color:var(--accent);text-decoration:none">See the Foundations →</a>
+      </footer>
+
+    </main>
+  </div>
+</BaseLayout>
+
+<style>
+  /* Style Guide carries two semantic state colors (good/bad) local to this
+     surface — restraint match for the design palette without polluting the
+     base layer. */
+  .style-guide-root {
+    --good: #6ba892;
+    --bad: #c8554a;
+  }
+  [data-theme="hellenic"] .style-guide-root { --good: #5e9ba6; }
+  [data-theme="thelemic"] .style-guide-root { --good: #9a8f4e; }
+  [data-mode="light"] .style-guide-root {
+    --good: #3f7a63;
+    --bad: #a23a2c;
+  }
+
+  .seg-btn[data-selected="true"] {
+    color: var(--ink) !important;
+    background: var(--accent-soft) !important;
+    border-color: var(--line-2) !important;
+  }
+  .mode-toggle:hover { color: var(--ink); }
+  .foundations-link:hover { opacity: 0.8; }
+
+  /* Two-column grids collapse on narrow viewports. */
+  @media (max-width: 720px) {
+    .voice-grid, .ornament-row {
+      grid-template-columns: 1fr !important;
+    }
+  }
+</style>
+
+<script>
+  type Theme = "base" | "hellenic" | "thelemic";
+  type Mode = "dark" | "light";
+
+  const MOON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></svg>`;
+  const SUN = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"></path></svg>`;
+
+  const getTheme = (): Theme => {
+    const v = document.documentElement.getAttribute("data-theme");
+    return v === "hellenic" || v === "thelemic" ? v : "base";
+  };
+  const getMode = (): Mode =>
+    document.documentElement.getAttribute("data-mode") === "light" ? "light" : "dark";
+
+  const sync = () => {
+    const theme = getTheme();
+    const mode = getMode();
+    document.querySelectorAll<HTMLElement>("[data-theme-pick]").forEach((el) => {
+      const matches = el.getAttribute("data-theme-pick") === theme;
+      el.setAttribute("data-selected", matches ? "true" : "false");
+      el.setAttribute("aria-pressed", matches ? "true" : "false");
+    });
+    document.querySelectorAll<HTMLElement>("[data-mode-icon]").forEach((el) => {
+      el.innerHTML = mode === "dark" ? MOON : SUN;
+    });
+  };
+
+  document.addEventListener("click", (e) => {
+    const t = e.target as HTMLElement | null;
+    if (!t) return;
+    const pick = t.closest<HTMLElement>("[data-theme-pick]");
+    if (pick) {
+      const v = pick.getAttribute("data-theme-pick");
+      if (v === "base" || v === "hellenic" || v === "thelemic") {
+        document.documentElement.setAttribute("data-theme", v);
+        try { localStorage.setItem("theourgia.theme", v); } catch (_) {}
+        sync();
+      }
+      return;
+    }
+    const mode = t.closest<HTMLElement>("[data-mode-toggle]");
+    if (mode) {
+      const next = getMode() === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-mode", next);
+      try { localStorage.setItem("theourgia.mode", next); } catch (_) {}
+      sync();
+    }
+  });
+
+  sync();
+</script>

@@ -17,6 +17,7 @@
       "import": "./src/tokens/index.ts"
     },
     "./tokens/theourgia.tokens.css": "./src/tokens/theourgia.tokens.css",
+    "./tokens/theourgia.shared.css": "./src/tokens/theourgia.shared.css",
     "./tokens/theourgia-icons.svg": "./src/tokens/theourgia-icons.svg",
     "./tokens/first-paint.js": "./src/tokens/first-paint.js",
     "./tokens/tailwind-preset": {
@@ -33,7 +34,9 @@
     "lint": "biome check src",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "storybook": "storybook dev -p 6006 --no-open",
+    "build-storybook": "storybook build"
   },
   "peerDependencies": {
     "react": "^19.0.0",
@@ -43,6 +46,13 @@
     "suncalc": "^1.9.0"
   },
   "devDependencies": {
+    "@storybook/addon-a11y": "^8.6.0",
+    "@storybook/addon-essentials": "^8.6.0",
+    "@storybook/addon-interactions": "^8.6.0",
+    "@storybook/blocks": "^8.6.0",
+    "@storybook/react": "^8.6.0",
+    "@storybook/react-vite": "^8.6.0",
+    "@storybook/test": "8.6.18",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.1.0",
     "@testing-library/user-event": "^14.5.2",
@@ -52,7 +62,9 @@
     "happy-dom": "^15.11.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "storybook": "^8.6.0",
     "typescript": "^5.7.2",
+    "vite": "^5.4.0",
     "vitest": "^2.1.8"
   }
 }

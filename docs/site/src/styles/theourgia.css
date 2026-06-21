@@ -1,0 +1,330 @@
+/* ============================================================================
+   THEOURGIA — Starlight token bridge
+   ----------------------------------------------------------------------------
+   Wires Theourgia's design tokens onto Starlight's CSS custom-property API.
+   Starlight reads its own --sl-color-* variables; we override them so the
+   docs surface matches Theourgia Docs.dc.html visual treatment without
+   touching content (content stays in MDX).
+
+   Conflicts handled:
+     · Starlight uses [data-theme="light|dark"] for mode. Our admin/public
+       sites use data-mode="light|dark" + data-theme for tradition. In the
+       docs site we let Starlight own data-theme (mode), and route tradition
+       through a parallel [data-tradition="base|hellenic|thelemic"]
+       attribute managed by ``src/components/TraditionSelect.astro`` +
+       a first-paint script wired in ``astro.config.mjs`` head[].
+
+   Source: Theourgia Docs.dc.html lines 15-43, plus token values from
+   frontend/shared/src/tokens/theourgia.tokens.css.
+   ============================================================================ */
+
+@import url("https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@500;600;700&family=GFS+Didot&family=Inria+Sans:wght@300;400;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+Symbols:wght@400&display=swap");
+
+:root {
+  /* — Theourgia type roles (constants across themes) ——————————————— */
+  --font-display: "Cardo", Georgia, serif;
+  --font-serif: "Cardo", Georgia, serif;
+  --font-ui: "Inria Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-glyph: "Noto Sans Symbols", "Cardo", serif;
+
+  /* — Theourgia radii ——————————————————————————————————————————————— */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 14px;
+
+  /* — Map Theourgia surface system onto Starlight tokens ——————————— */
+  --sl-font: var(--font-serif);
+  --sl-font-system: var(--font-ui);
+  --sl-font-system-mono: var(--font-mono);
+  --sl-text-code: 14px;
+  --sl-content-width: 56rem;
+  --sl-content-pad-x: 1.5rem;
+  --sl-sidebar-width: 17rem;
+  --sl-nav-height: 3.75rem;
+  --sl-color-text-accent: var(--accent);
+}
+
+/* ============================================================================
+   DARK mode (Starlight default) — Theourgia base palette
+   ============================================================================ */
+:root,
+[data-theme="dark"] {
+  /* Theourgia palette (dark) */
+  --bg: #15120d;
+  --bg-2: #1c1812;
+  --bg-3: #231e16;
+  --bg-sunk: #100d09;
+  --line: rgba(236, 229, 214, 0.10);
+  --line-2: rgba(236, 229, 214, 0.20);
+  --ink: #ece5d6;
+  --ink-soft: #bcb29d;
+  --ink-mute: #897f6b;
+  --accent: #c7a24c;
+  --accent-ink: #15120d;
+  --accent-soft: rgba(199, 162, 76, 0.14);
+  --info: #7e91ce;
+  --success: #6ba892;
+  --warning: #c9a24c;
+  --danger: #c8554a;
+
+  /* — Starlight color tokens (dark) ————————————————————————————————— */
+  --sl-color-accent-low: rgba(199, 162, 76, 0.14);
+  --sl-color-accent: var(--accent);
+  --sl-color-accent-high: #e0b56a;
+  --sl-color-white: var(--ink);
+  --sl-color-gray-1: var(--ink-soft);
+  --sl-color-gray-2: var(--ink-soft);
+  --sl-color-gray-3: var(--ink-mute);
+  --sl-color-gray-4: var(--ink-mute);
+  --sl-color-gray-5: var(--bg-3);
+  --sl-color-gray-6: var(--bg-2);
+  --sl-color-gray-7: var(--bg-sunk);
+  --sl-color-black: var(--bg);
+  --sl-color-text: var(--ink);
+  --sl-color-text-accent: var(--accent);
+  --sl-color-text-invert: var(--accent-ink);
+  --sl-color-bg: var(--bg);
+  --sl-color-bg-nav: color-mix(in srgb, var(--bg) 90%, transparent);
+  --sl-color-bg-sidebar: var(--bg);
+  --sl-color-bg-inline-code: var(--bg-sunk);
+  --sl-color-bg-accent: var(--accent);
+  --sl-color-hairline-light: var(--line);
+  --sl-color-hairline: var(--line);
+  --sl-color-hairline-shade: var(--line-2);
+
+  /* Admonition tones (NOTE / TIP / CAUTION / DANGER) */
+  --sl-color-asides-text-accent: var(--accent);
+  --sl-color-asides-border: var(--accent);
+  --sl-color-blue: var(--info);
+  --sl-color-green: var(--success);
+  --sl-color-orange: var(--warning);
+  --sl-color-red: var(--danger);
+}
+
+/* ============================================================================
+   LIGHT mode — Theourgia parchment
+   ============================================================================ */
+[data-theme="light"] {
+  --bg: #efe7d4;
+  --bg-2: #f6f0e1;
+  --bg-3: #fbf7ec;
+  --bg-sunk: #e6dcc6;
+  --line: rgba(40, 32, 22, 0.14);
+  --line-2: rgba(40, 32, 22, 0.26);
+  --ink: #2a2316;
+  --ink-soft: #5a5040;
+  --ink-mute: #867b66;
+  --accent: #9a6e22;
+  --accent-ink: #fbf7ec;
+  --accent-soft: rgba(154, 110, 34, 0.14);
+
+  --sl-color-accent-low: rgba(154, 110, 34, 0.14);
+  --sl-color-accent: var(--accent);
+  --sl-color-accent-high: #b88533;
+  --sl-color-white: var(--ink);
+  --sl-color-gray-1: var(--ink-soft);
+  --sl-color-gray-2: var(--ink-soft);
+  --sl-color-gray-3: var(--ink-mute);
+  --sl-color-gray-4: var(--ink-mute);
+  --sl-color-gray-5: var(--bg-3);
+  --sl-color-gray-6: var(--bg-2);
+  --sl-color-gray-7: var(--bg-sunk);
+  --sl-color-black: var(--bg);
+  --sl-color-text: var(--ink);
+  --sl-color-text-accent: var(--accent);
+  --sl-color-text-invert: var(--accent-ink);
+  --sl-color-bg: var(--bg);
+  --sl-color-bg-nav: color-mix(in srgb, var(--bg) 90%, transparent);
+  --sl-color-bg-sidebar: var(--bg);
+  --sl-color-bg-inline-code: var(--bg-sunk);
+  --sl-color-bg-accent: var(--accent);
+  --sl-color-hairline-light: var(--line);
+  --sl-color-hairline: var(--line);
+  --sl-color-hairline-shade: var(--line-2);
+}
+
+/* ============================================================================
+   Editorial typography — match Theourgia Docs.dc.html article styling
+   ============================================================================ */
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4,
+.sl-markdown-content h5,
+.sl-markdown-content h6 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.sl-markdown-content h1 {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.sl-markdown-content h2 {
+  font-size: 26px;
+  font-weight: 700;
+  scroll-margin-top: 72px;
+}
+.sl-markdown-content h3 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.sl-markdown-content p,
+.sl-markdown-content li {
+  font-family: var(--font-serif);
+  color: var(--ink-soft);
+  line-height: 1.65;
+}
+
+.sl-markdown-content :where(p, li) > code {
+  font-family: var(--font-mono);
+  background: var(--bg-sunk);
+  color: var(--ink);
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+  font-size: 0.85em;
+}
+
+/* Terminal-style code blocks — match the design's bg-sunk treatment. */
+.sl-markdown-content pre {
+  background: var(--bg-sunk) !important;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+}
+
+/* Hairline under article title, like the .dc.html meta row. */
+.sl-markdown-content h1 + p,
+.sl-markdown-content > header > p {
+  color: var(--ink-soft);
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+/* Sidebar — uppercase eyebrow section headings, accent-soft current item. */
+starlight-sidebar [data-current],
+.sidebar [data-current-parent="true"] > a {
+  background: var(--accent-soft) !important;
+  color: var(--ink) !important;
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* Header / search affordance — restrained version of the .dc.html search field. */
+header.header {
+  backdrop-filter: blur(8px);
+}
+
+/* TOC ("on this page") — accent active item per the design. */
+starlight-toc a[aria-current="true"] {
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+/* Selection highlight — match the global rule. */
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+/* Focus ring — match design system. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ============================================================================
+   TRADITION — Hellenic  (display → GFS Didot; cooler greens & sea-blues)
+   ----------------------------------------------------------------------------
+   Per ``Theourgia Docs.dc.html`` line 26. Tradition lives on a separate
+   ``data-tradition`` attribute because Starlight owns ``data-theme`` for
+   dark/light. Palette overrides cascade on top of the active Starlight
+   mode; bg/ink shifts come from this block in dark mode, while
+   ``[data-theme="light"]`` keeps parchment surfaces with the Hellenic
+   accent tint.
+   ============================================================================ */
+:root[data-tradition="hellenic"] {
+  --font-display: "GFS Didot", serif;
+  --accent: #bfa15b;
+  --accent-ink: #0f1311;
+  --accent-soft: rgba(191, 161, 91, 0.14);
+  --info: #5e9ba6;
+  --success: #5e9ba6;
+  --warning: #bfa15b;
+  --danger: #b5573f;
+  --sl-color-accent-low: rgba(191, 161, 91, 0.14);
+  --sl-color-accent: var(--accent);
+  --sl-color-accent-high: #d9bd6a;
+  --sl-color-text-accent: var(--accent);
+}
+:root[data-tradition="hellenic"]:not([data-theme="light"]) {
+  --bg: #0f1311;
+  --bg-2: #161b18;
+  --bg-3: #1d2420;
+  --bg-sunk: #0b0f0d;
+  --line: rgba(226, 231, 222, 0.10);
+  --line-2: rgba(226, 231, 222, 0.20);
+  --ink: #e9eade;
+  --ink-soft: #aeb6a4;
+  --ink-mute: #7c8474;
+  --sl-color-bg: var(--bg);
+  --sl-color-bg-nav: color-mix(in srgb, var(--bg) 90%, transparent);
+  --sl-color-bg-sidebar: var(--bg);
+  --sl-color-bg-inline-code: var(--bg-sunk);
+  --sl-color-text: var(--ink);
+  --sl-color-hairline: var(--line);
+  --sl-color-hairline-light: var(--line);
+  --sl-color-hairline-shade: var(--line-2);
+}
+
+/* ============================================================================
+   TRADITION — Thelemic  (display → Cinzel; warmer, redder, higher contrast)
+   ----------------------------------------------------------------------------
+   Per ``Theourgia Docs.dc.html`` line 27.
+   ============================================================================ */
+:root[data-tradition="thelemic"] {
+  --font-display: "Cinzel", serif;
+  --accent: #cda53e;
+  --accent-ink: #100b09;
+  --accent-soft: rgba(205, 165, 62, 0.15);
+  --info: #b58a3c;
+  --success: #9a8f4e;
+  --warning: #cda53e;
+  --danger: #c5392b;
+  --sl-color-accent-low: rgba(205, 165, 62, 0.15);
+  --sl-color-accent: var(--accent);
+  --sl-color-accent-high: #e6c45c;
+  --sl-color-text-accent: var(--accent);
+}
+:root[data-tradition="thelemic"]:not([data-theme="light"]) {
+  --bg: #100b09;
+  --bg-2: #191210;
+  --bg-3: #201714;
+  --bg-sunk: #0a0706;
+  --line: rgba(239, 227, 203, 0.12);
+  --line-2: rgba(239, 227, 203, 0.22);
+  --ink: #efe3cb;
+  --ink-soft: #c5b493;
+  --ink-mute: #8c7b5e;
+  --sl-color-bg: var(--bg);
+  --sl-color-bg-nav: color-mix(in srgb, var(--bg) 90%, transparent);
+  --sl-color-bg-sidebar: var(--bg);
+  --sl-color-bg-inline-code: var(--bg-sunk);
+  --sl-color-text: var(--ink);
+  --sl-color-hairline: var(--line);
+  --sl-color-hairline-light: var(--line);
+  --sl-color-hairline-shade: var(--line-2);
+}
+
+/* Reduced motion — never use bouncy animations. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.001ms !important;
+    animation-duration: 0.001ms !important;
+  }
+}

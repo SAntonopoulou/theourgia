@@ -9,9 +9,13 @@ export default defineConfig({
       title: "Theourgia",
       description:
         "A magickal journal CMS and full practitioner toolkit. Open source, federated, self-hostable. AGPL-3.0.",
-      social: {
-        github: "https://github.com/SAntonopoulou/theourgia",
-      },
+      social: [
+        {
+          icon: "github",
+          label: "GitHub",
+          href: "https://github.com/SAntonopoulou/theourgia",
+        },
+      ],
       editLink: {
         baseUrl: "https://github.com/SAntonopoulou/theourgia/edit/main/docs/site/",
       },
@@ -33,17 +37,17 @@ export default defineConfig({
         {
           label: "User Guide",
           collapsed: false,
-          autogenerate: { directory: "user" },
+          items: [{ autogenerate: { directory: "user" } }],
         },
         {
           label: "Admin Guide (self-hosting)",
           collapsed: false,
-          autogenerate: { directory: "admin" },
+          items: [{ autogenerate: { directory: "admin" } }],
         },
         {
           label: "Developer Guide",
           collapsed: false,
-          autogenerate: { directory: "developer" },
+          items: [{ autogenerate: { directory: "developer" } }],
         },
         {
           label: "Concepts",
@@ -56,13 +60,28 @@ export default defineConfig({
       ],
       head: [
         // No analytics. No tracking. No third-party scripts.
-        // The empty array is the point.
+        //
+        // First-paint tradition apply — runs before any framework hydrates
+        // so the persisted `theourgia.theme` lands on `<html data-tradition>`
+        // before the first paint, preventing a Base → Hel/Thel flash.
+        // Mirrors `frontend/shared/src/tokens/first-paint.js` for the
+        // tradition attribute only; Starlight owns its own `data-theme`
+        // (dark/light).
+        {
+          tag: "script",
+          content:
+            '(function(){if(typeof document==="undefined"||typeof localStorage==="undefined")return;try{var v=localStorage.getItem("theourgia.theme");if(["base","hellenic","thelemic"].indexOf(v)<0)v="base";document.documentElement.setAttribute("data-tradition",v);}catch(_){document.documentElement.setAttribute("data-tradition","base");}})();',
+        },
       ],
       customCss: [
-        // Design system tokens will land here when the design system ships.
+        // Theourgia design system → Starlight token bridge.
+        // See Theourgia Docs.dc.html for the visual target.
+        "./src/styles/theourgia.css",
       ],
       components: {
-        // Overrides will be added as the design system matures.
+        // Tradition cycler (Base / Hel / Thel) sits beside Starlight's
+        // stock theme select. The wrapper composes both.
+        ThemeSelect: "./src/components/ThemeSelect.astro",
       },
     }),
   ],

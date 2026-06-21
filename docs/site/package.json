@@ -15,9 +15,10 @@
     "typecheck": "astro check"
   },
   "dependencies": {
-    "astro": "^4.16.18",
-    "@astrojs/starlight": "^0.30.6",
-    "@astrojs/check": "^0.9.4",
+    "astro": "^6.4.0",
+    "@astrojs/starlight": "^0.40.0",
+    "@astrojs/check": "^0.9.9",
+    "@astrojs/mdx": "^6.0.0",
     "sharp": "^0.33.5",
     "typescript": "^5.7.0"
   }

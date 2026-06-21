@@ -149,15 +149,14 @@ function ToastItem({ record, onDismiss }: { record: ToastRecord; onDismiss: () =
   const itemStyle: CSSProperties = {
     display: "flex",
     alignItems: "flex-start",
-    gap: "var(--space-3, 12px)",
-    padding: "var(--space-3, 12px) var(--space-4, 16px)",
+    gap: 11,
+    padding: "12px 14px",
     backgroundColor: "var(--bg-2)",
     color: "var(--ink)",
-    borderStyle: "solid",
-    borderWidth: "1px",
-    borderColor: TONE_COLOR[record.tone],
-    borderRadius: "var(--r-md, 6px)",
-    boxShadow: "var(--shadow-md, 0 4px 14px rgba(0, 0, 0, 0.18))",
+    border: "1px solid var(--line-2)",
+    borderLeft: `3px solid ${TONE_COLOR[record.tone]}`,
+    borderRadius: "var(--r-md, 8px)",
+    boxShadow: "0 10px 26px rgba(0, 0, 0, 0.4)",
     minWidth: 240,
     maxWidth: 360,
     fontFamily: "var(--font-ui)",
@@ -170,23 +169,20 @@ function ToastItem({ record, onDismiss }: { record: ToastRecord; onDismiss: () =
       data-tone={record.tone}
       style={itemStyle}
     >
-      <span style={{ color: TONE_COLOR[record.tone], flexShrink: 0, marginTop: 2 }}>
-        <Glyph name={TONE_GLYPH[record.tone]} size={16} />
+      <span style={{ color: TONE_COLOR[record.tone], flexShrink: 0, marginTop: 1 }}>
+        <Glyph name={TONE_GLYPH[record.tone]} size={17} />
       </span>
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
         <span
           style={{
-            fontWeight: 600,
-            fontSize: "var(--type-body-sm, 14px)",
+            fontSize: 13.5,
             color: "var(--ink)",
           }}
         >
           {record.title}
         </span>
         {record.body ? (
-          <span style={{ fontSize: "var(--type-ui, 12px)", color: "var(--ink-soft)" }}>
-            {record.body}
-          </span>
+          <span style={{ fontSize: 12, color: "var(--ink-mute)" }}>{record.body}</span>
         ) : null}
       </div>
       {record.action ? (

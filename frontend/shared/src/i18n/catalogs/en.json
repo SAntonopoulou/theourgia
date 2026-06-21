@@ -1,0 +1,8 @@
+{
+  "$meta": {
+    "locale": "en",
+    "name": "English",
+    "dir": "ltr",
+    "pluralCategories": ["one", "other"]
+  }
+}

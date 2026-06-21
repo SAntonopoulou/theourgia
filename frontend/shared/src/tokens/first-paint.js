@@ -37,4 +37,28 @@
   root.setAttribute("data-mode", pick("mode", ["dark", "light"], "dark"));
   root.setAttribute("data-contrast", pick("contrast", ["normal", "high"], "normal"));
   root.setAttribute("data-cvd", pick("cvd", ["normal", "safe"], "normal"));
+
+  // Locale + direction. Reads `theourgia.locale` first, otherwise
+  // negotiates `navigator.languages` against the locales shipped in
+  // the shared `i18n/catalogs/` set (mirror the registry list here so
+  // first-paint stays inline and dependency-free).
+  var REGISTERED = ["en", "el", "he"];
+  var RTL = { he: true, ar: true, fa: true };
+  function pickLocale() {
+    try {
+      var stored = localStorage.getItem("theourgia.locale");
+      if (REGISTERED.indexOf(stored) >= 0) return stored;
+    } catch (_e) {}
+    var langs = (typeof navigator !== "undefined" && navigator.languages) || [];
+    for (var i = 0; i < langs.length; i++) {
+      var l = langs[i];
+      if (REGISTERED.indexOf(l) >= 0) return l;
+      var primary = String(l).split("-")[0];
+      if (REGISTERED.indexOf(primary) >= 0) return primary;
+    }
+    return "en";
+  }
+  var locale = pickLocale();
+  root.setAttribute("lang", locale);
+  root.setAttribute("dir", RTL[locale] ? "rtl" : "ltr");
 })();

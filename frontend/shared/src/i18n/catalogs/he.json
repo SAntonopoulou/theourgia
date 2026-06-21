@@ -1,0 +1,28 @@
+{
+  "$meta": {
+    "locale": "he",
+    "name": "עברית",
+    "dir": "rtl",
+    "pluralCategories": ["one", "two", "many", "other"]
+  },
+  "Welcome": "ברוך בואך",
+  "Hello, {name}!": "שלום, {name}!",
+  "Practice": "תרגול",
+  "Reference": "מקור",
+  "Workbench": "סדנה",
+  "Study": "לימוד",
+  "Network": "רשת",
+  "Today": "היום",
+  "Journal": "יומן",
+  "Synchronicities": "סינכרוניות",
+  "Entities": "ישויות",
+  "Library": "ספרייה",
+  "Calendar": "לוח שנה",
+  "Divination": "ניחוש",
+  "Settings": "הגדרות",
+  "Save": "שמירה",
+  "Cancel": "ביטול",
+  "Edit": "עריכה",
+  "{n} entry": "כניסה אחת",
+  "{n} entries": "{n} כניסות"
+}

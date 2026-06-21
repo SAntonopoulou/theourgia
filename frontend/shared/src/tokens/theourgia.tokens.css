@@ -41,6 +41,7 @@
   --font-glyph: "Noto Sans Symbols", "Cardo", serif; /* planetary / alchemical glyphs */
 
   /* Per-script faces (constant across themes) */
+  --font-greek: "Cardo", serif;
   --font-hebrew: "Frank Ruhl Libre", serif;
   --font-arabic: "Noto Naskh Arabic", serif;
   --font-deva: "Noto Serif Devanagari", serif;
@@ -69,6 +70,13 @@
   --bg-2: #1c1812; /* card / panel surface   */
   --bg-3: #231e16; /* raised / hover surface */
   --bg-sunk: #100d09; /* wells, insets, code    */
+  --felt: #1a2a22; /* divination "table" felt */
+
+  /* Elemental palette (Circle Builder, Talismans) */
+  --air: #c7b36a;
+  --fire: #c2554a;
+  --water: #5e8fa8;
+  --earth: #6e8e63;
 
   --line: rgba(236, 229, 214, 0.1); /* hairline divider / border       */
   --line-2: rgba(236, 229, 214, 0.2); /* stronger border / input outline */
@@ -146,6 +154,11 @@
   --bg-2: #161b18;
   --bg-3: #1d2420;
   --bg-sunk: #0b0f0d;
+  --felt: #15201c;
+  --air: #bfa15b;
+  --fire: #b5573f;
+  --water: #5e9ba6;
+  --earth: #6e8e63;
   --line: rgba(226, 231, 222, 0.1);
   --line-2: rgba(226, 231, 222, 0.2);
   --ink: #e9eade;
@@ -188,6 +201,11 @@
   --bg-2: #191210;
   --bg-3: #201714;
   --bg-sunk: #0a0706;
+  --felt: #1c1410;
+  --air: #cda53e;
+  --fire: #c5392b;
+  --water: #4f87a0;
+  --earth: #7a8a52;
   --line: rgba(239, 227, 203, 0.12);
   --line-2: rgba(239, 227, 203, 0.22);
   --ink: #efe3cb;
@@ -228,6 +246,7 @@
   --bg-2: #f6f0e1;
   --bg-3: #fbf7ec;
   --bg-sunk: #e6dcc6;
+  --felt: #d9cdb0;
   --line: rgba(40, 32, 22, 0.14);
   --line-2: rgba(40, 32, 22, 0.26);
   --ink: #2a2316;

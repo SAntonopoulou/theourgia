@@ -40,26 +40,28 @@ const TONE_GLYPH: Record<BannerTone, GlyphName> = {
   danger: "lock",
 };
 
+// Banner backgrounds use color-mix to tint bg-2 with the tone hue — matches
+// the design's sandbox banner in Overlays.dc.html. Border uses line-2.
 const TONE_COLOR: Record<BannerTone, { fg: string; bg: string; border: string }> = {
   info: {
     fg: "var(--info)",
-    bg: "var(--info-soft, var(--bg-2))",
-    border: "var(--info)",
+    bg: "color-mix(in srgb, var(--info) 16%, var(--bg-2))",
+    border: "var(--line-2)",
   },
   success: {
     fg: "var(--success)",
-    bg: "var(--success-soft, var(--bg-2))",
-    border: "var(--success)",
+    bg: "color-mix(in srgb, var(--success) 14%, var(--bg-2))",
+    border: "var(--line-2)",
   },
   warning: {
     fg: "var(--warning)",
-    bg: "var(--warning-soft, var(--bg-2))",
-    border: "var(--warning)",
+    bg: "color-mix(in srgb, var(--warning) 16%, var(--bg-2))",
+    border: "var(--line-2)",
   },
   danger: {
     fg: "var(--danger)",
-    bg: "var(--danger-soft, var(--bg-2))",
-    border: "var(--danger)",
+    bg: "color-mix(in srgb, var(--danger) 16%, var(--bg-2))",
+    border: "var(--line-2)",
   },
 };
 
@@ -78,14 +80,14 @@ export function Banner({
   const containerStyle: CSSProperties = {
     display: "flex",
     alignItems: body ? "flex-start" : "center",
-    gap: "var(--space-3, 12px)",
-    padding: "var(--space-3, 12px) var(--space-4, 16px)",
+    gap: 12,
+    padding: "13px 16px",
     backgroundColor: palette.bg,
     color: "var(--ink)",
     borderStyle: "solid",
     borderWidth: "1px",
     borderColor: palette.border,
-    borderRadius: "var(--r-md, 6px)",
+    borderRadius: "var(--r-md, 8px)",
     fontFamily: "var(--font-ui)",
     ...style,
   };
@@ -103,15 +105,14 @@ export function Banner({
       <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
         <span
           style={{
-            fontWeight: 600,
-            fontSize: "var(--type-body-sm, 14px)",
+            fontSize: 13,
             color: "var(--ink)",
           }}
         >
           {title}
         </span>
         {body ? (
-          <span style={{ fontSize: "var(--type-ui, 13px)", color: "var(--ink-soft)" }}>{body}</span>
+          <span style={{ fontSize: 12, color: "var(--ink-soft)" }}>{body}</span>
         ) : null}
       </div>
       {action ? (

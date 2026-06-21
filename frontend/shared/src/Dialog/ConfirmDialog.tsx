@@ -52,48 +52,41 @@ export function ConfirmDialog({
       ariaLabelledby={titleId}
       ariaDescribedby={body ? bodyId : undefined}
     >
-      <div
-        style={{
-          padding: "var(--space-5, 24px)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-4, 16px)",
-        }}
-      >
+      <div style={{ padding: 22 }}>
         <h2
           id={titleId}
           style={{
-            margin: 0,
-            fontFamily: "var(--font-serif)",
-            fontSize: "var(--type-h2, 22px)",
+            margin: "0 0 8px",
+            fontFamily: "var(--font-display, var(--font-serif))",
+            fontSize: 21,
             color: "var(--ink)",
-            letterSpacing: "-0.005em",
+            lineHeight: 1.2,
           }}
         >
           {title}
         </h2>
         {body ? (
-          <div
+          <p
             id={bodyId}
             style={{
+              margin: "0 0 20px",
               fontFamily: "var(--font-ui)",
-              fontSize: "var(--type-body-sm, 14px)",
+              fontSize: 13.5,
               color: "var(--ink-soft)",
-              lineHeight: 1.5,
+              lineHeight: 1.55,
             }}
           >
             {body}
-          </div>
+          </p>
         ) : null}
         <div
           style={{
             display: "flex",
             justifyContent: "flex-end",
-            gap: "var(--space-2, 8px)",
-            marginTop: "var(--space-2, 8px)",
+            gap: 10,
           }}
         >
-          <Button variant="quiet" onClick={onCancel}>
+          <Button variant="secondary" onClick={onCancel}>
             {cancelLabel}
           </Button>
           <Button variant={confirmVariant} onClick={onConfirm}>

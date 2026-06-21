@@ -1,0 +1,320 @@
+---
+/**
+ * Essay — single long-form reading page.
+ *
+ * Faithful port of ``Theourgia Essay.dc.html``. Per ``agent_onboarding.md``
+ * § Essay:
+ *   · Scroll-progress bar (③ derived client-side).
+ *   · Reading time + Signed badge (③ derived — Signed is from a real
+ *     signature check; for v1 we render the verified state statically and
+ *     wire the crypto check when the Identity signature pipeline ships).
+ *   · Editorial blocks (eyebrow / title / deck / byline / drop cap /
+ *     subheads / pull quote / Greek epigraph / gematria aside / footnotes)
+ *     must round-trip from the Editor — they are the same block types as
+ *     defined in Theourgia Editor.dc.html.
+ *   · Author card · prev/next · subscribe footer.
+ *   · Reading vs. quotation typography is distinct (§5) — preserved here.
+ *
+ * Content is hard-coded for v1 (the demo essay). When the MDX/identity
+ * pipeline lands, this becomes a dynamic ``[slug].astro`` page.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const MEASURE = "720px";
+const MAXW = "1080px";
+---
+
+<BaseLayout title="On the discipline of the magical record — Theophrastos">
+  <div style="min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--font-serif)">
+
+    <!-- reading progress -->
+    <div aria-hidden="true" data-essay-progress style="position:fixed;top:0;left:0;height:2px;width:0%;background:var(--accent);z-index:50;transition:width .08s linear"></div>
+
+    <!-- HEADER (essay variant — author brand + back-link) -->
+    <header style="position:sticky;top:0;z-index:40;border-bottom:1px solid var(--line);background:color-mix(in srgb, var(--bg) 90%, transparent);backdrop-filter:blur(8px)">
+      <div style={`max-width:${MAXW};margin:0 auto;padding:14px clamp(16px,5vw,28px);display:flex;align-items:center;gap:20px`}>
+        <a href="/blog" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit">
+          <svg width="24" height="24" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+            <circle cx="20" cy="20" r="17.5" stroke="var(--accent)" stroke-width="1.4"></circle>
+            <line x1="9.5" y1="20" x2="30.5" y2="20" stroke="var(--accent)" stroke-width="1.4"></line>
+          </svg>
+          <span style="font-family:var(--font-display);font-size:18px">Theophrastos</span>
+        </a>
+        <a href="/blog" class="pub-nav-link" style="font-family:var(--font-ui);font-size:13px;color:var(--ink-mute);display:flex;align-items:center;gap:6px;text-decoration:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"></path></svg>
+          All writings
+        </a>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:11px">
+          <div role="group" aria-label="Theme" class="om-pubseg" style="display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2)">
+            <button type="button" data-theme-pick="base" class="seg-btn" style="padding:5px 11px;font-family:var(--font-ui);font-size:12px;letter-spacing:.03em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Base</button>
+            <button type="button" data-theme-pick="hellenic" class="seg-btn" style="padding:5px 11px;font-family:var(--font-ui);font-size:12px;letter-spacing:.03em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Hel</button>
+            <button type="button" data-theme-pick="thelemic" class="seg-btn" style="padding:5px 11px;font-family:var(--font-ui);font-size:12px;letter-spacing:.03em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Thel</button>
+          </div>
+          <button type="button" data-mode-toggle aria-label="Toggle light and dark" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);color:var(--ink-soft);cursor:pointer">
+            <span data-mode-icon aria-hidden="true" style="display:inline-flex"></span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <article style={`max-width:${MEASURE};margin:0 auto;padding:56px clamp(16px,5vw,28px) 40px`}>
+
+      <!-- header block -->
+      <div style="font-family:var(--font-ui);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:18px">Essay · Practice</div>
+      <h1 style="font-family:var(--font-display);font-weight:700;font-size:clamp(34px,5vw,52px);line-height:1.08;margin:0 0 20px;letter-spacing:-.01em">On the discipline of the magical record</h1>
+      <p style="font-family:var(--font-display);font-style:italic;font-size:21px;line-height:1.5;color:var(--ink-soft);margin:0 0 28px">Why the notebook outlasts the working — and what dated entries teach about one's own credulity.</p>
+
+      <div style="display:flex;align-items:center;gap:13px;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+        <span style="width:42px;height:42px;border-radius:50%;background:var(--accent-soft);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:var(--accent);font-size:19px;flex:none">Θ</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:var(--font-display);font-size:16px;line-height:1.1">Theophrastos</div>
+          <div style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);margin-top:2px">18 June 2026 · 12 min read</div>
+        </div>
+        <span title="Signature verified" style="display:flex;align-items:center;gap:6px;font-family:var(--font-ui);font-size:11.5px;color:var(--success);padding:4px 10px;border:1px solid var(--line);border-radius:999px;flex:none">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"></path><path d="M9 12l2 2 4-4"></path></svg>
+          Signed
+        </span>
+      </div>
+
+      <!-- body -->
+      <div class="essay-prose">
+        <p><span class="dropcap">T</span>he first thing an order asks of an initiate is not belief. It is a notebook. Before any rite is taught, before a single name is given to vibrate, the student is told to write — the date, the hour, the weather of the mind, and afterward, plainly, what happened and what did not.</p>
+        <p>This strikes the newcomer as bureaucracy, and they resist it. They came for the invisible and are handed a ledger. But the magical record is not paperwork. It is the one discipline that separates practice from reverie, and the practitioner from the dreamer who merely wishes.</p>
+
+        <h2>Against the flattering memory</h2>
+        <p>Memory is a courtier. It tells us what we wish to hear. Ask a man a year later whether his working succeeded and he will remember the one evening the sign came and forget the thirty on which nothing did. The record does not flatter. It holds the failures beside the successes, undated grief beside dated grace, and forces an honest reckoning of the rate.</p>
+
+        <blockquote class="essay-pullquote"><p>A working you did not write down is a working you cannot learn from. It was an experience, not an experiment.</p></blockquote>
+
+        <p>The Hermetic schools understood this. So did the early modern naturalists who emerged from the same milieu — the line from the alchemist's diary to the laboratory notebook is shorter than either party likes to admit.<a href="#fn1" class="fn">1</a> What the scientist calls reproducibility, the theurgist calls the record: the claim that what was done can be stated clearly enough that it might be done again.</p>
+
+        <!-- Greek epigraph -->
+        <aside class="essay-epigraph">
+          <div lang="el" style="font-family:var(--font-greek);font-size:24px;line-height:1.4;color:var(--ink);margin-bottom:8px">Γνῶθι σαυτόν</div>
+          <div style="font-family:var(--font-ui);font-size:12.5px;color:var(--ink-mute)">Know thyself — inscribed at Delphi, and the truest use of the record</div>
+        </aside>
+
+        <p>For the record's deepest service is not to the work but to the worker. Read your own entries from three years past and you meet a stranger: more credulous than you remember, quicker to call coincidence a sign, slower to admit a rite did nothing. <span style="border-bottom:1px dotted var(--ink-mute)" title="Gematria of the phrase">The discipline is a mirror</span>, and the face in it is your own at an earlier, more foolish hour.</p>
+
+        <h2>How to keep it</h2>
+        <p>Keep it plainly. Date everything. Record the intent before the result, so that you cannot later revise the target around the arrow. Note the planetary hour if you elect by it, the moon, the state of the body. Write the failures in the same hand as the successes — especially the failures.<a href="#fn2" class="fn">2</a> And seal nothing from yourself: the record is the one document in the vault that is permitted to be unkind to its author.</p>
+        <p>Do this for a year and you will have something no teacher can give you: evidence. Not of the gods, necessarily — that question the record leaves open, as it should. But evidence of your own practice, honestly kept, from which you can at last begin to learn.</p>
+
+        <!-- footnotes -->
+        <div style="margin-top:40px;padding-top:22px;border-top:1px solid var(--line)">
+          <div style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:14px">Notes</div>
+          <div id="fn1" style="display:flex;gap:11px;margin-bottom:12px">
+            <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent);flex:none">1.</span>
+            <p style="font-family:var(--font-serif);font-size:14.5px;line-height:1.55;color:var(--ink-soft);margin:0">On the alchemical roots of the experimental notebook, see Principe, <span style="font-style:italic">The Secrets of Alchemy</span>, ch. 5. The continuity is institutional as much as intellectual.</p>
+          </div>
+          <div id="fn2" style="display:flex;gap:11px">
+            <span style="font-family:var(--font-mono);font-size:12px;color:var(--accent);flex:none">2.</span>
+            <p style="font-family:var(--font-serif);font-size:14.5px;line-height:1.55;color:var(--ink-soft);margin:0">The temptation to record only what worked is the single most common corruption of the practice. Guard against it deliberately.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- author card -->
+      <div style="margin-top:40px;display:flex;gap:16px;align-items:flex-start;padding:22px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg-2)">
+        <span style="width:54px;height:54px;border-radius:50%;background:var(--accent-soft);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:var(--accent);font-size:26px;flex:none">Θ</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:var(--font-display);font-size:19px;line-height:1.1">Theophrastos</div>
+          <div style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);margin:2px 0 9px">Theurgist · Neoplatonist · Ordo Theurgica</div>
+          <p style="font-family:var(--font-serif);font-size:14.5px;line-height:1.55;color:var(--ink-soft);margin:0 0 11px">A public notebook on theurgic practice in the Hellenic current. Method over mystery; the record over the rumour.</p>
+          <div style="display:flex;gap:10px">
+            <a href="/profile" style="font-family:var(--font-ui);font-size:12.5px;color:var(--accent);text-decoration:none">Profile →</a>
+            <a href="/blog" style="font-family:var(--font-ui);font-size:12.5px;color:var(--accent);text-decoration:none">All writings →</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- prev / next -->
+      <div style="display:flex;gap:14px;margin-top:24px;flex-wrap:wrap">
+        <a href="/essay" class="essay-prevnext" style="flex:1 1 240px;border:1px solid var(--line);border-radius:var(--r-md);padding:16px 18px;background:var(--bg-2);text-decoration:none;color:inherit">
+          <div style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);margin-bottom:4px">← Earlier</div>
+          <div style="font-family:var(--font-display);font-size:17px;line-height:1.2">Planetary hours for people who don't believe in them</div>
+        </a>
+        <a href="/essay" class="essay-prevnext" style="flex:1 1 240px;border:1px solid var(--line);border-radius:var(--r-md);padding:16px 18px;background:var(--bg-2);text-decoration:none;color:inherit;text-align:right">
+          <div style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);margin-bottom:4px">Later →</div>
+          <div style="font-family:var(--font-display);font-size:17px;line-height:1.2">Hekate at the crossroads of three traditions</div>
+        </a>
+      </div>
+    </article>
+
+    <!-- subscribe footer -->
+    <footer style="border-top:1px solid var(--line);background:var(--bg-2)">
+      <div style={`max-width:${MEASURE};margin:0 auto;padding:38px clamp(16px,5vw,28px);text-align:center`}>
+        <div style="font-family:var(--font-display);font-size:22px;margin-bottom:6px">Follow the notebook</div>
+        <p style="font-family:var(--font-ui);font-size:13px;color:var(--ink-mute);margin:0 auto 18px;max-width:42ch">New essays by email or RSS. No tracking, no list-selling — the record kept in the open.</p>
+        <form data-subscribe style="display:flex;gap:9px;max-width:380px;margin:0 auto">
+          <input
+            type="email"
+            name="email"
+            required
+            placeholder="Your email address"
+            aria-label="Email address"
+            style="flex:1;padding:10px 14px;border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--bg);font-family:var(--font-ui);font-size:13px;color:var(--ink);outline:none"
+          />
+          <button type="submit" style="padding:10px 18px;border-radius:var(--r-md);background:var(--accent);color:var(--accent-ink);font-family:var(--font-ui);font-weight:700;font-size:13px;white-space:nowrap;border:none;cursor:pointer">Subscribe</button>
+          <a href="/rss.xml" aria-label="RSS feed" style="display:flex;align-items:center;justify-content:center;width:42px;border:1px solid var(--line-2);border-radius:var(--r-md);color:var(--ink-soft);text-decoration:none">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="6.2" cy="17.8" r="1.6" fill="currentColor" stroke="none"></circle><path d="M5 12a7 7 0 0 1 7 7M5 6a13 13 0 0 1 13 13" stroke-linecap="round"></path></svg>
+          </a>
+        </form>
+        <div data-subscribe-feedback role="status" aria-live="polite" style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);margin-top:12px;min-height:1em"></div>
+      </div>
+    </footer>
+
+  </div>
+</BaseLayout>
+
+<style>
+  /* Editorial typography — distinct from quotation/reference. */
+  .essay-prose {
+    margin-top: 34px;
+  }
+  .essay-prose p {
+    font-family: var(--font-serif);
+    font-size: 18px;
+    line-height: 1.72;
+    color: var(--ink);
+    margin: 0 0 22px;
+    text-wrap: pretty;
+  }
+  .essay-prose h2 {
+    font-family: var(--font-display);
+    font-size: 28px;
+    line-height: 1.2;
+    margin: 36px 0 16px;
+    color: var(--ink);
+  }
+  .essay-prose .dropcap {
+    float: left;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 74px;
+    line-height: 0.72;
+    padding: 8px 12px 0 0;
+    color: var(--accent);
+  }
+  .essay-pullquote {
+    margin: 30px 0;
+    padding: 6px 0 6px 24px;
+    border-left: 2px solid var(--accent);
+  }
+  .essay-pullquote p {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 24px;
+    line-height: 1.45;
+    color: var(--ink);
+    margin: 0;
+  }
+  .essay-epigraph {
+    margin: 30px 0;
+    padding: 24px 26px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--bg-2);
+    text-align: center;
+  }
+  .fn {
+    color: var(--accent);
+    font-size: 11px;
+    vertical-align: super;
+    text-decoration: none;
+    padding: 0 1px;
+  }
+  .essay-prevnext:hover { border-color: var(--line-2) !important; }
+  .pub-nav-link:hover { color: var(--ink) !important; }
+  .seg-btn[data-selected="true"] {
+    color: var(--ink) !important;
+    background: var(--accent-soft) !important;
+    border-color: var(--line-2) !important;
+  }
+</style>
+
+<script>
+  // Reading progress + theme cycler + newsletter form (humane validation).
+  type Theme = "base" | "hellenic" | "thelemic";
+  type Mode = "dark" | "light";
+
+  // ── Progress bar ─────────────────────────────────────────────────────
+  const progressBar = document.querySelector<HTMLElement>("[data-essay-progress]");
+  function updateProgress(): void {
+    if (!progressBar) return;
+    const se = document.scrollingElement || document.documentElement;
+    const max = se.scrollHeight - se.clientHeight;
+    const pct = max > 0 ? Math.min(100, Math.max(0, (se.scrollTop / max) * 100)) : 0;
+    progressBar.style.width = `${pct}%`;
+  }
+  window.addEventListener("scroll", updateProgress, { passive: true });
+  updateProgress();
+
+  // ── Theme + mode (same as PublicChrome — Essay has its own inline
+  //    header so it wires the cycler locally). ──────────────────────
+  const MOON_PATH = "M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z";
+  const SUN_GROUP = `<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"></path>`;
+
+  const getTheme = (): Theme => {
+    const v = document.documentElement.getAttribute("data-theme");
+    return v === "hellenic" || v === "thelemic" ? v : "base";
+  };
+  const getMode = (): Mode =>
+    document.documentElement.getAttribute("data-mode") === "light" ? "light" : "dark";
+  const setTheme = (theme: Theme) => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem("theourgia.theme", theme); } catch (_) { /* noop */ }
+    sync();
+  };
+  const setMode = (mode: Mode) => {
+    document.documentElement.setAttribute("data-mode", mode);
+    try { localStorage.setItem("theourgia.mode", mode); } catch (_) { /* noop */ }
+    sync();
+  };
+  const svgFor = (mode: Mode) =>
+    mode === "dark"
+      ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="${MOON_PATH}"></path></svg>`
+      : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${SUN_GROUP}</svg>`;
+  const sync = () => {
+    const theme = getTheme();
+    const mode = getMode();
+    document.querySelectorAll<HTMLElement>("[data-theme-pick]").forEach((el) => {
+      el.setAttribute("data-selected", el.getAttribute("data-theme-pick") === theme ? "true" : "false");
+      el.setAttribute("aria-pressed", el.getAttribute("data-theme-pick") === theme ? "true" : "false");
+    });
+    const icon = document.querySelector<HTMLElement>("[data-mode-icon]");
+    if (icon) icon.innerHTML = svgFor(mode);
+  };
+  document.querySelectorAll<HTMLButtonElement>("[data-theme-pick]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const t = btn.getAttribute("data-theme-pick") as Theme | null;
+      if (t === "base" || t === "hellenic" || t === "thelemic") setTheme(t);
+    });
+  });
+  document.querySelector<HTMLButtonElement>("[data-mode-toggle]")?.addEventListener("click", () => {
+    setMode(getMode() === "dark" ? "light" : "dark");
+  });
+  sync();
+
+  // ── Newsletter (humane validation; real endpoint pending) ─────────
+  const form = document.querySelector<HTMLFormElement>("[data-subscribe]");
+  const feedback = document.querySelector<HTMLElement>("[data-subscribe-feedback]");
+  form?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    if (!feedback) return;
+    const email = (form.querySelector<HTMLInputElement>("input[name=email]")?.value ?? "").trim();
+    if (email.length === 0) {
+      feedback.style.color = "var(--ink-mute)";
+      feedback.textContent = "An email, please — for the newsletter to reach you.";
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      feedback.style.color = "var(--ink-mute)";
+      feedback.textContent = "That doesn't look like an email address. Try again?";
+      return;
+    }
+    feedback.style.color = "var(--success)";
+    feedback.textContent = "Noted — the subscribe endpoint lights up when the newsletter pipeline ships.";
+    form.reset();
+  });
+</script>

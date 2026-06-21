@@ -3,41 +3,22 @@
  *
  * Order matters:
  *   1. Token layer from @theourgia/shared (CSS custom properties + a11y axes)
- *   2. App resets (minimal — primitives carry their own styling)
+ *   2. Shared design-system CSS (resets, .scroll, om-* responsive block, …)
+ *   3. App-specific html/body bedding
  */
 
 @import "@theourgia/shared/tokens/theourgia.tokens.css";
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+@import "@theourgia/shared/tokens/theourgia.shared.css";
 
 html,
 body {
-  margin: 0;
-  padding: 0;
   background-color: var(--bg);
   color: var(--ink);
   font-family: var(--font-ui, system-ui, -apple-system, sans-serif);
   font-size: 16px;
   line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
   min-height: 100vh;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
 }

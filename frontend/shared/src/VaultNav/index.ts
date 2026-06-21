@@ -1,2 +1,9 @@
-export { VaultNav } from "./VaultNav.js";
-export type { VaultNavItem, VaultNavLinkProps, VaultNavProps } from "./VaultNav.js";
+export { DEFAULT_VAULT_NAV, VaultNav } from "./VaultNav.js";
+export type {
+  NavKey,
+  VaultIdentity,
+  VaultNavItem,
+  VaultNavLinkProps,
+  VaultNavProps,
+  VaultNavSection,
+} from "./VaultNav.js";

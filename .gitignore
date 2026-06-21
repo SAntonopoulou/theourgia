@@ -117,3 +117,12 @@ docker-compose.override.yml
 
 # Design-system zip handoffs (extracted to /home/sophia/design-handoffs/...)
 *.zip
+
+# Storybook build output (visual-regression baselines live under
+# tests/visual/storybook.spec.ts-snapshots/ and ARE committed).
+frontend/shared/storybook-static/
+
+# Playwright test artifacts
+playwright-report/
+test-results/
+.last-run.json

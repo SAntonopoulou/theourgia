@@ -144,8 +144,8 @@ export function Overlay({
       color: "var(--ink)",
       borderStyle: "solid",
       borderWidth: "1px",
-      borderColor: "var(--line)",
-      boxShadow: "var(--shadow-overlay, 0 24px 64px rgba(0, 0, 0, 0.32))",
+      borderColor: "var(--line-2)",
+      boxShadow: "0 24px 50px rgba(0, 0, 0, 0.55)",
       maxHeight: "calc(100vh - var(--space-6, 32px))",
       overflow: "auto",
       outline: "none",
@@ -154,8 +154,8 @@ export function Overlay({
     if (variant === "centered") {
       return {
         ...base,
-        width: "min(560px, 100%)",
-        borderRadius: "var(--r-lg, 12px)",
+        width: "min(360px, 100%)",
+        borderRadius: "var(--r-lg, 14px)",
       };
     }
     const w = drawerWidth ?? (variant === "drawer-right" ? 360 : 280);

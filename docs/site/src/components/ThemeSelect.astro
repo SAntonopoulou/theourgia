@@ -1,0 +1,25 @@
+---
+/**
+ * ThemeSelect override — renders the Theourgia tradition cycler beside
+ * Starlight's stock dark/light theme select. Wired via
+ * ``components.ThemeSelect`` in ``astro.config.mjs``.
+ *
+ * Starlight 0.40+: components read context via ``Astro.locals.starlightRoute``;
+ * no props need to flow through the override.
+ */
+import Default from "@astrojs/starlight/components/ThemeSelect.astro";
+import TraditionSelect from "./TraditionSelect.astro";
+---
+
+<div class="theo-theme-row">
+  <TraditionSelect />
+  <Default />
+</div>
+
+<style>
+  .theo-theme-row {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+  }
+</style>

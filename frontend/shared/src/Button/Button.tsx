@@ -42,48 +42,63 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
 }
 
 const SIZE_PADDING: Record<ButtonSize, string> = {
-  sm: "var(--space-1, 4px) var(--space-3, 12px)",
-  md: "var(--space-2, 8px) var(--space-4, 16px)",
-  lg: "var(--space-3, 12px) var(--space-5, 24px)",
+  sm: "6px 12px",
+  md: "9px 18px",
+  lg: "11px 22px",
 };
-const SIZE_HEIGHT: Record<ButtonSize, number> = { sm: 32, md: 40, lg: 48 };
+const SIZE_HEIGHT: Record<ButtonSize, number> = { sm: 30, md: 38, lg: 46 };
 const SIZE_FONT: Record<ButtonSize, string> = {
-  sm: "var(--type-ui, 13px)",
-  md: "var(--type-body-sm, 14px)",
-  lg: "var(--type-body, 16px)",
+  sm: "12px",
+  md: "13.5px",
+  lg: "15px",
 };
 
-function variantStyle(variant: ButtonVariant): CSSProperties {
+interface VariantStyle {
+  bg: string;
+  color: string;
+  border: string;
+  fontWeight: number;
+}
+
+function variantStyle(variant: ButtonVariant): VariantStyle {
   switch (variant) {
     case "primary":
       return {
-        backgroundColor: "var(--accent)",
-        color: "var(--accent-ink)",
-        borderColor: "var(--accent)",
+        bg: "var(--accent)",
+        color: "var(--accent-ink, white)",
+        border: "var(--accent)",
+        fontWeight: 700,
       };
     case "secondary":
       return {
-        backgroundColor: "var(--bg-2)",
-        color: "var(--ink)",
-        borderColor: "var(--line)",
+        bg: "transparent",
+        color: "var(--ink-soft)",
+        border: "var(--line-2)",
+        fontWeight: 500,
       };
     case "ghost":
       return {
-        backgroundColor: "transparent",
-        color: "var(--ink)",
-        borderColor: "transparent",
+        bg: "transparent",
+        color: "var(--ink-mute)",
+        border: "transparent",
+        fontWeight: 500,
       };
     case "danger":
+      // Solid form — matches the destructive primary buttons inside the
+      // overlay dialogs (Confirm / Alert). For an outline-only "danger"
+      // affordance (the Foundations §06 example), apply the style inline.
       return {
-        backgroundColor: "var(--danger)",
+        bg: "var(--danger)",
         color: "var(--bg)",
-        borderColor: "var(--danger)",
+        border: "var(--danger)",
+        fontWeight: 700,
       };
     case "quiet":
       return {
-        backgroundColor: "transparent",
+        bg: "transparent",
         color: "var(--ink-mute)",
-        borderColor: "transparent",
+        border: "transparent",
+        fontWeight: 500,
       };
   }
 }
@@ -102,22 +117,25 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+  const v = variantStyle(variant);
   const composedStyle: CSSProperties = {
-    ...variantStyle(variant),
+    backgroundColor: v.bg,
+    color: v.color,
+    borderColor: v.border,
     minHeight: SIZE_HEIGHT[size],
     padding: SIZE_PADDING[size],
     fontFamily: "var(--font-ui, system-ui, sans-serif)",
     fontSize: SIZE_FONT[size],
-    fontWeight: 500,
+    fontWeight: v.fontWeight,
     lineHeight: 1.2,
     letterSpacing: "0.01em",
-    borderRadius: "var(--r-md, 6px)",
+    borderRadius: "var(--r-md, 8px)",
     borderStyle: "solid",
     borderWidth: "1px",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: "var(--space-2, 8px)",
+    gap: 8,
     cursor: isDisabled ? "not-allowed" : "pointer",
     opacity: loading ? 0.7 : 1,
     transition:

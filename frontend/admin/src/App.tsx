@@ -1,29 +1,77 @@
 /**
- * Theourgia admin shell. Phase 02 Batch 5 introduces routing + AppShell.
+ * Theourgia admin shell.
  *
- * Each Phase 02 surface gets a placeholder route; real content arrives in
- * Phase 03+ batches. ToastProvider mounts at the app root so any
- * descendant can call ``Toast.push(...)``.
+ * Composes the design's chrome: VaultNav on the left, route content on the
+ * right. The per-route topbar (route title/subtitle, search, theme cycler,
+ * mode toggle) lands in a follow-up batch. Until then, PublicChrome holds
+ * the spot. Each surface route renders its body content; the AppShell
+ * primitive owns scroll convention.
+ *
+ * Route → NavKey mapping is derived from ``location.pathname`` and fed to
+ * ``<VaultNav active=…>`` so the design's inset-accent highlight follows.
  */
 
 import {
+  ACTING_AS_DEFAULT_ID,
+  ActingAsProvider,
+  ActingAsSwitcher,
   AppShell,
   AuthProvider,
-  PublicChrome,
+  DEMO_IDENTITIES,
+  I18nProvider,
+  type NavKey,
   ToastProvider,
+  TopbarProvider,
   VaultNav,
   type VaultNavLinkProps,
+  VaultTopbar,
 } from "@theourgia/shared";
-import { BrowserRouter, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  NavLink,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import { apiMethods } from "./data/api.js";
-import { ADMIN_NAV } from "./nav.js";
+import { Analytics } from "./routes/Analytics.js";
+import { CircleBuilder } from "./routes/CircleBuilder.js";
 import { Connection } from "./routes/Connection.js";
+import { Divination } from "./routes/Divination.js";
+import { Entities } from "./routes/Entities.js";
 import { Foundations } from "./routes/Foundations.js";
+import { Hubs } from "./routes/Hubs.js";
+import { Account } from "./routes/Account.js";
+import { Agents } from "./routes/Agents.js";
+import { BookPreview } from "./routes/BookPreview.js";
+import { BundleInstall } from "./routes/BundleInstall.js";
+import { Bundles } from "./routes/Bundles.js";
+import { Capture } from "./routes/Capture.js";
+import { Editor } from "./routes/Editor.js";
+import { Federation } from "./routes/Federation.js";
+import { Health } from "./routes/Health.js";
+import { Identities } from "./routes/Identities.js";
+import { LineageAdmin } from "./routes/LineageAdmin.js";
+import { Membership } from "./routes/Membership.js";
+import { NewsletterComposer } from "./routes/NewsletterComposer.js";
+import { Oracle } from "./routes/Oracle.js";
+import { Permissions } from "./routes/Permissions.js";
+import { Sandbox } from "./routes/Sandbox.js";
+import { Scheduler } from "./routes/Scheduler.js";
+import { Templates } from "./routes/Templates.js";
+import { Transliterate } from "./routes/Transliterate.js";
+import { Wellbeing } from "./routes/Wellbeing.js";
+import { Workshop } from "./routes/Workshop.js";
 import { Journal } from "./routes/Journal.js";
 import { Library } from "./routes/Library.js";
 import { Placeholder } from "./routes/Placeholder.js";
+import { RitualFeed } from "./routes/RitualFeed.js";
 import { Settings } from "./routes/Settings.js";
+import { SigilStudio } from "./routes/SigilStudio.js";
+import { Talismans } from "./routes/Talismans.js";
+import { Synchronicities } from "./routes/Synchronicities.js";
 import { Today } from "./routes/Today.js";
 
 // Vite's BASE_URL: "/" in dev, "/admin/" in prod. BrowserRouter
@@ -38,19 +86,45 @@ function NavLinkAdapter({ to, children, className, style, onClick }: VaultNavLin
   );
 }
 
+/** Map the current ``location.pathname`` to the active VaultNav key. */
+function navKeyForPath(pathname: string): NavKey | undefined {
+  if (pathname === "/" || pathname === "") return "today";
+  if (pathname.startsWith("/journal")) return "journal";
+  if (pathname.startsWith("/synchronicities")) return "synchronicities";
+  if (pathname.startsWith("/entities")) return "entities";
+  if (pathname.startsWith("/library")) return "library";
+  if (pathname.startsWith("/calendar")) return "calendar";
+  if (pathname.startsWith("/divination")) return "divination";
+  if (pathname.startsWith("/sigil")) return "sigil";
+  if (pathname.startsWith("/circle")) return "circle";
+  if (pathname.startsWith("/talisman")) return "talismans";
+  if (pathname.startsWith("/analytics")) return "analytics";
+  if (pathname.startsWith("/feed")) return "feed";
+  if (pathname.startsWith("/hubs")) return "hubs";
+  return undefined;
+}
+
 function Shell({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+  const navigate = useNavigate();
+  const active = navKeyForPath(location.pathname);
   return (
     <AppShell
-      header={<PublicChrome />}
+      topbar={
+        <VaultTopbar
+          actingAs={
+            <ActingAsSwitcher
+              identities={DEMO_IDENTITIES}
+              onManage={() => navigate("/identities")}
+            />
+          }
+        />
+      }
       nav={
         <VaultNav
-          items={ADMIN_NAV}
-          heading="Vault"
+          active={active}
           LinkComponent={NavLinkAdapter}
-          isActive={(to) =>
-            location.pathname === to || (to !== "/" && location.pathname.startsWith(to))
-          }
+          onSettings={() => navigate("/settings")}
         />
       }
     >
@@ -59,92 +133,94 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Inside-the-shell routes: every surface that renders within VaultNav +
+ * VaultTopbar. The quick-capture route lives outside this (and outside
+ * `<Shell>`) so the PWA start_url opens straight into a full-viewport
+ * compose field without the chrome.
+ */
+function ShellRoutes() {
+  return (
+    <Shell>
+      <Routes>
+        <Route path="/" element={<Today />} />
+        <Route path="/connection" element={<Connection />} />
+        <Route path="/journal" element={<Journal />} />
+        <Route path="/library" element={<Library />} />
+        <Route path="/synchronicities" element={<Synchronicities />} />
+        <Route path="/entities" element={<Entities />} />
+        <Route
+          path="/calendar"
+          element={
+            <Placeholder
+              glyph="moon"
+              title="Calendar"
+              body="Multi-tradition calendar — feasts, planetary days, lunation arc. The dedicated .dc.html for this surface hasn't shipped from the design hand-off yet; Scheduler covers content publishing, not the magickal calendar."
+            />
+          }
+        />
+        <Route path="/divination" element={<Divination />} />
+        <Route path="/sigil" element={<SigilStudio />} />
+        <Route path="/circle" element={<CircleBuilder />} />
+        <Route path="/talismans" element={<Talismans />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/feed" element={<RitualFeed />} />
+        <Route path="/hubs" element={<Hubs />} />
+        <Route path="/identities" element={<Identities />} />
+        <Route path="/lineage" element={<LineageAdmin />} />
+        <Route path="/membership" element={<Membership />} />
+        <Route path="/permissions" element={<Permissions />} />
+        <Route path="/account" element={<Account />} />
+        <Route path="/wellbeing" element={<Wellbeing />} />
+        <Route path="/agents" element={<Agents />} />
+        <Route path="/bundles" element={<Bundles />} />
+        <Route path="/bundles/install" element={<BundleInstall />} />
+        <Route path="/editor" element={<Editor />} />
+        <Route path="/book/preview" element={<BookPreview />} />
+        <Route path="/newsletter/compose" element={<NewsletterComposer />} />
+        <Route path="/scheduler" element={<Scheduler />} />
+        <Route path="/templates" element={<Templates />} />
+        <Route path="/federation" element={<Federation />} />
+        <Route path="/health" element={<Health />} />
+        <Route path="/workshop" element={<Workshop />} />
+        <Route path="/sandbox" element={<Sandbox />} />
+        <Route path="/oracle" element={<Oracle />} />
+        <Route path="/transliterate" element={<Transliterate />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/foundations" element={<Foundations />} />
+        <Route
+          path="*"
+          element={
+            <Placeholder
+              glyph="compass"
+              title="Lost"
+              body="This route does not exist yet. Use the navigation to find your way back."
+            />
+          }
+        />
+      </Routes>
+    </Shell>
+  );
+}
+
 export function App() {
   return (
-    <AuthProvider api={apiMethods}>
-      <ToastProvider />
-      <BrowserRouter basename={ROUTER_BASENAME}>
-        <Shell>
-          <Routes>
-            <Route path="/" element={<Today />} />
-            <Route path="/connection" element={<Connection />} />
-            <Route path="/journal" element={<Journal />} />
-            <Route path="/library" element={<Library />} />
-            <Route
-              path="/entities"
-              element={
-                <Placeholder
-                  glyph="entity"
-                  title="Entities"
-                  body="The alias-graph entity ledger. Lands when the entities surface ships."
-                />
-              }
-            />
-            <Route
-              path="/divination"
-              element={
-                <Placeholder
-                  glyph="divination"
-                  title="Divination"
-                  body="Workbench for tarot, runes, geomancy, astrology. Lands when the divination surface ships."
-                />
-              }
-            />
-            <Route
-              path="/sigil"
-              element={
-                <Placeholder
-                  glyph="sigil"
-                  title="Sigil studio"
-                  body="Glyph + ring + script composer. Lands when the studio ships."
-                />
-              }
-            />
-            <Route
-              path="/circle"
-              element={
-                <Placeholder
-                  glyph="pentacle"
-                  title="Magical circle"
-                  body="Composable ritual circle builder with the engraving sprite. Lands when the surface ships."
-                />
-              }
-            />
-            <Route
-              path="/talisman"
-              element={
-                <Placeholder
-                  glyph="shield"
-                  title="Talismans"
-                  body="Designer with planetary correspondences + print layout. Lands when the surface ships."
-                />
-              }
-            />
-            <Route
-              path="/analytics"
-              element={
-                <Placeholder
-                  glyph="compass"
-                  title="Analytics"
-                  body="Scientific illuminism — patterns across entries, entities, and rites. Lands when the surface ships."
-                />
-              }
-            />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/foundations" element={<Foundations />} />
-            <Route
-              path="*"
-              element={
-                <Placeholder
-                  glyph="compass"
-                  title="Lost"
-                  body="This route does not exist yet. Use the navigation to find your way back."
-                />
-              }
-            />
-          </Routes>
-        </Shell>
-      </BrowserRouter>
-    </AuthProvider>
+    <I18nProvider>
+      <AuthProvider api={apiMethods}>
+        <ActingAsProvider initial={ACTING_AS_DEFAULT_ID}>
+          <ToastProvider />
+          <BrowserRouter basename={ROUTER_BASENAME}>
+            <TopbarProvider>
+              <Routes>
+                {/* Full-viewport routes — no chrome. */}
+                <Route path="/capture" element={<Capture />} />
+                {/* Everything else renders inside the AppShell. */}
+                <Route path="*" element={<ShellRoutes />} />
+              </Routes>
+            </TopbarProvider>
+          </BrowserRouter>
+        </ActingAsProvider>
+      </AuthProvider>
+    </I18nProvider>
   );
 }
