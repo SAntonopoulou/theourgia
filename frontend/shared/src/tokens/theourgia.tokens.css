@@ -278,6 +278,13 @@
    * the calling code. */
   --fail: var(--danger);
 
+  /* Template Designer — three categories of block kinds. Used as the
+   * category accent for palette headers, the kind-label colour above
+   * each canvas row, and the icon tint inside the block emblem. */
+  --magick: #c9a24c;
+  --format: #7e91ce;
+  --mark: #6ba892;
+
   /* Search hit highlight */
   --hit: #e7c766;
   --hit-bg: rgba(199, 162, 76, 0.22);
