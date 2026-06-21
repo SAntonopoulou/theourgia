@@ -17,6 +17,7 @@
 import {
   type CelestialState,
   type EntryRecord,
+  LunarPhaseWidget,
   type Planet,
   PromptDialog,
   Skeleton,
@@ -25,7 +26,6 @@ import {
   useCelestial,
   useSession,
   useTopbar,
-  ZODIAC_GLYPH,
 } from "@theourgia/shared";
 import { useEffect, useMemo, useState } from "react";
 
@@ -177,42 +177,6 @@ function ordinal(n: number): string {
   return `${n}${suffix}`;
 }
 
-// ─── Lunar SVG ──────────────────────────────────────────────────────────────
-
-/**
- * Render a phase-correct moon disc. ``phase`` is a 0..1 fraction —
- * 0=new, 0.25=first quarter, 0.5=full, 0.75=last quarter.
- * The terminator is rendered as the union of the lit hemisphere and a
- * scaled-ellipse subtraction.
- */
-function MoonDisc({ phase, size = 48 }: { phase: number; size?: number }) {
-  const r = 19;
-  const cx = 21;
-  const cy = 21;
-  // Terminator ellipse radius (along x) ranges from r at new/full to 0 at quarter.
-  const k = Math.cos(phase * 2 * Math.PI);
-  const ex = Math.abs(k) * r;
-  const litLeft = phase < 0.5; // waxing → lit on right; waning → lit on left
-  const sweepLit = litLeft ? 0 : 1;
-  const litPath = `M ${cx} ${cy - r} A ${r} ${r} 0 1 ${sweepLit} ${cx} ${cy + r} A ${ex} ${r} 0 1 ${k > 0 ? 1 : 0} ${cx} ${cy - r} Z`;
-
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 42 42"
-      style={{ flex: "none" }}
-      role="img"
-      aria-labelledby="moonDiscTitle"
-    >
-      <title id="moonDiscTitle">Moon phase</title>
-      <circle cx={cx} cy={cy} r={r + 0.5} fill="none" stroke="var(--line-2)" strokeWidth="1" />
-      <circle cx={cx} cy={cy} r={r} fill="var(--ink)" opacity="0.12" />
-      <path d={litPath} fill="var(--ink)" opacity="0.92" />
-    </svg>
-  );
-}
-
 // ─── Card sub-components ───────────────────────────────────────────────────
 
 const cardStyle = (extra?: React.CSSProperties): React.CSSProperties => ({
@@ -316,61 +280,6 @@ function PlanetaryHourCard({ c }: { c: CelestialState }) {
           </span>{" "}
           {PLANET_LABEL[c.nextRuler]}
         </span>
-      </div>
-    </article>
-  );
-}
-
-function LunarPhaseCard({ c }: { c: CelestialState }) {
-  return (
-    <article style={cardStyle()}>
-      <div style={{ ...sectionLabel, marginBottom: 14 }}>Lunar phase</div>
-      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        <MoonDisc phase={c.lunarPhase} />
-        <div style={{ minWidth: 0 }}>
-          <div
-            style={{
-              fontFamily: "var(--font-display, var(--font-serif))",
-              fontSize: 20,
-              lineHeight: 1.1,
-            }}
-          >
-            {c.lunarPhaseLabel}
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--font-ui)",
-              fontSize: 12,
-              color: "var(--ink-mute)",
-              marginTop: 3,
-            }}
-          >
-            {Math.round(c.lunarFraction * 100)}% illuminated
-          </div>
-          <div
-            style={{
-              fontFamily: "var(--font-ui)",
-              fontSize: 12,
-              color: "var(--ink-soft)",
-              marginTop: 2,
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{ fontFamily: "var(--font-glyph, var(--font-serif))" }}
-            >
-              ☽
-            </span>{" "}
-            in{" "}
-            <span
-              aria-hidden="true"
-              style={{ fontFamily: "var(--font-glyph, var(--font-serif))" }}
-            >
-              {ZODIAC_GLYPH[c.lunarSign]}
-            </span>{" "}
-            {c.lunarSign}
-          </div>
-        </div>
       </div>
     </article>
   );
@@ -942,7 +851,7 @@ export function Today() {
               gap: 22,
             }}
           >
-            {/* Celestial row */}
+            {/* Celestial row — small cards for the planetary hour + transits */}
             <div
               style={{
                 display: "grid",
@@ -951,9 +860,16 @@ export function Today() {
               }}
             >
               <PlanetaryHourCard c={celestial} />
-              <LunarPhaseCard c={celestial} />
               <TransitsCard c={celestial} />
             </div>
+
+            {/* The bigger lunar embed — designer-specified per the H01-H03
+                Today Widgets handoff. Hemisphere follows the practitioner's
+                latitude (lat > 0 → northern; equatorial defaults to north). */}
+            <LunarPhaseWidget
+              daysSinceNewMoon={celestial.lunarPhase * 29.53059}
+              hemisphere={location.lat >= 0 ? "north" : "south"}
+            />
 
             {/* Quick capture */}
             <QuickCapture onCapture={(input) => setPending(input)} />
