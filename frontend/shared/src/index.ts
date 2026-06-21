@@ -41,6 +41,7 @@ export * from "./PublicChrome/index.js";
 export * from "./ReceptionSelector/index.js";
 export * from "./SealUnlock/index.js";
 export * from "./SegmentedControl/index.js";
+export * from "./Signing/index.js";
 export * from "./Skeleton/index.js";
 export * from "./Stat/index.js";
 export * from "./StatusDot/index.js";
