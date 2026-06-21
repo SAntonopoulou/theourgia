@@ -4,10 +4,8 @@
  */
 import type { Meta, StoryObj } from "@storybook/react";
 
-import {
-  type EntityRelationshipStatus,
-  RelationshipStatusPill,
-} from "./RelationshipStatusPill.js";
+import type { EntityRelationshipStatus } from "../api/types.js";
+import { RelationshipStatusPill } from "./RelationshipStatusPill.js";
 
 const meta = {
   title: "RelationshipStatusPill",

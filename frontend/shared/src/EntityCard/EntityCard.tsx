@@ -13,20 +13,17 @@
 
 import { type CSSProperties, type ReactNode } from "react";
 
+import type { EntityKind, EntityRelationshipStatus } from "../api/types.js";
 import {
   type EntityFunctionGroup,
-  type EntityKindUI,
   FUNCTION_GROUPS,
 } from "../KindFunctionFilter/KindFunctionFilter.js";
-import {
-  type EntityRelationshipStatus,
-  RelationshipStatusPill,
-} from "../RelationshipStatusPill/RelationshipStatusPill.js";
+import { RelationshipStatusPill } from "../RelationshipStatusPill/RelationshipStatusPill.js";
 
 export interface EntitySummary {
   id: string;
   name: string;
-  kind: EntityKindUI;
+  kind: EntityKind;
   tradition: string;
   status: EntityRelationshipStatus;
   summary?: string;
@@ -52,7 +49,7 @@ export interface EntityCardProps {
   style?: CSSProperties;
 }
 
-function groupFor(kind: EntityKindUI):
+function groupFor(kind: EntityKind):
   | { key: EntityFunctionGroup; label: string; color: string }
   | undefined {
   const found = (
@@ -63,7 +60,7 @@ function groupFor(kind: EntityKindUI):
   return { key: found, label: meta.label, color: meta.color };
 }
 
-const KIND_LABEL: Record<EntityKindUI, string> = {
+const KIND_LABEL: Record<EntityKind, string> = {
   deity: "Deity",
   god: "God",
   goddess: "Goddess",

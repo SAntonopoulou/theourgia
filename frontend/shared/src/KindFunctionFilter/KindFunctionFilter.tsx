@@ -14,36 +14,11 @@
 
 import { type CSSProperties, useMemo } from "react";
 
-import {
-  RELATIONSHIP_STATUS_META,
-  type EntityRelationshipStatus,
-} from "../RelationshipStatusPill/RelationshipStatusPill.js";
-
-/**
- * UI-side practitioner taxonomy of 17 distinct entity kinds (the
- * granular distinctions the catalog asks for). Backend `EntityKind`
- * (in api/types.ts) is the narrower 6-kind SQL enum; both will be
- * reconciled in a follow-up backend gap-fill — until then, persist
- * UI kind separately from the broad backend kind.
- */
-export type EntityKindUI =
-  | "deity"
-  | "god"
-  | "goddess"
-  | "saint"
-  | "angel"
-  | "daemon"
-  | "demon"
-  | "spirit"
-  | "ancestor"
-  | "beloved_dead"
-  | "familiar"
-  | "servitor"
-  | "egregore"
-  | "place"
-  | "object"
-  | "principle"
-  | "other";
+import type {
+  EntityKind,
+  EntityRelationshipStatus,
+} from "../api/types.js";
+import { RELATIONSHIP_STATUS_META } from "../RelationshipStatusPill/RelationshipStatusPill.js";
 
 export type EntityFunctionGroup =
   | "venerated"
@@ -55,7 +30,7 @@ export type EntityFunctionGroup =
 interface GroupMeta {
   label: string;
   color: string;
-  kinds: EntityKindUI[];
+  kinds: EntityKind[];
 }
 
 export const FUNCTION_GROUPS: Record<EntityFunctionGroup, GroupMeta> = {
@@ -94,7 +69,7 @@ export const FUNCTION_GROUP_ORDER: EntityFunctionGroup[] = [
   "other",
 ];
 
-export const KIND_LABEL: Record<EntityKindUI, string> = {
+export const KIND_LABEL: Record<EntityKind, string> = {
   deity: "Deity",
   god: "God",
   goddess: "Goddess",
@@ -116,14 +91,14 @@ export const KIND_LABEL: Record<EntityKindUI, string> = {
 
 export interface KindFunctionFilterValue {
   /** "all" or a function-group key or a specific kind. */
-  kind: "all" | EntityFunctionGroup | EntityKindUI;
+  kind: "all" | EntityFunctionGroup | EntityKind;
   status: "all" | EntityRelationshipStatus;
   tradition: string | "all";
 }
 
 export interface KindFunctionFilterCounts {
   total: number;
-  perKind: Partial<Record<EntityKindUI, number>>;
+  perKind: Partial<Record<EntityKind, number>>;
   perTradition: Record<string, number>;
 }
 
@@ -142,7 +117,7 @@ export interface KindFunctionFilterProps {
 
 function groupCount(
   group: GroupMeta,
-  perKind: Partial<Record<EntityKindUI, number>>,
+  perKind: Partial<Record<EntityKind, number>>,
 ): number {
   return group.kinds.reduce((sum, k) => sum + (perKind[k] ?? 0), 0);
 }

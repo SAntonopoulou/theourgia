@@ -87,16 +87,64 @@ export interface UserLocation {
   lng: number;
 }
 
-/** Backend ``EntityKind`` (the broad taxonomy on the SQL model). The
- *  Entities surface UI presents a narrower class palette and maps each
- *  UI chip to one or more of these. */
-export type EntityKind = "deity" | "spirit" | "principle" | "place" | "object" | "other";
+/** Backend ``EntityKind`` enum (theourgia/models/entities.py). Phase
+ *  02 legacy values (DEITY..OTHER) plus the Phase 05 expansions per
+ *  `plan/05-magical-beings.md` §1 — 17 kinds total. The Entities
+ *  surface UI groups these into the five function groups
+ *  (Venerated · Approached · Intimate · Constructed · Other) — see
+ *  `FUNCTION_GROUPS` in shared/KindFunctionFilter. */
+export type EntityKind =
+  // Phase 02 legacy
+  | "deity"
+  | "spirit"
+  | "principle"
+  | "place"
+  | "object"
+  | "other"
+  // Phase 05 expansions
+  | "god"
+  | "goddess"
+  | "daemon"
+  | "angel"
+  | "demon"
+  | "saint"
+  | "ancestor"
+  | "beloved_dead"
+  | "familiar"
+  | "servitor"
+  | "egregore";
+
+/** Backend ``EntityRelationshipStatus`` (theourgia/models/entities.py).
+ *  How the practitioner stands with this entity right now. Severed
+ *  uses the care palette, not red. */
+export type EntityRelationshipStatus =
+  | "open"
+  | "active"
+  | "dormant"
+  | "severed"
+  | "contracted"
+  | "observing";
+
+/** Backend ``EntityVisibility`` (theourgia/models/entities.py). */
+export type EntityVisibility = "personal" | "viewer" | "hub" | "public";
+
+/** Backend ``EntityAliasKind`` (theourgia/models/entities.py). Five
+ *  directed edge kinds; symmetric kinds (`same-as`, `syncretic-with`)
+ *  are treated as bidirectional at query time. */
+export type EntityAliasKind =
+  | "same-as"
+  | "aspect-of"
+  | "aspect-includes"
+  | "syncretic-with"
+  | "epithet-of";
 
 /** Single entity — wire format from ``GET /api/v1/entities``. */
 export interface EntityRecord {
   id: string;
   name: string;
   kind: EntityKind;
+  relationship_status?: EntityRelationshipStatus;
+  visibility?: EntityVisibility;
   aliases: string[];
   glyph: string;
   description: string | null;
@@ -109,6 +157,8 @@ export interface EntityRecord {
 export interface CreateEntityInput {
   name: string;
   kind?: EntityKind;
+  relationship_status?: EntityRelationshipStatus;
+  visibility?: EntityVisibility;
   aliases?: string[];
   glyph?: string;
   description?: string | null;

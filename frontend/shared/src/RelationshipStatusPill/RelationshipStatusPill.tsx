@@ -10,13 +10,7 @@
 
 import type { CSSProperties } from "react";
 
-export type EntityRelationshipStatus =
-  | "active"
-  | "open"
-  | "contracted"
-  | "observing"
-  | "dormant"
-  | "severed";
+import type { EntityRelationshipStatus } from "../api/types.js";
 
 interface StatusMeta {
   label: string;

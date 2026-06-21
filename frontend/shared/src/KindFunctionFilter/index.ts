@@ -6,7 +6,6 @@ export {
 } from "./KindFunctionFilter.js";
 export type {
   EntityFunctionGroup,
-  EntityKindUI,
   KindFunctionFilterCounts,
   KindFunctionFilterProps,
   KindFunctionFilterValue,
