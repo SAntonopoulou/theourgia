@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-23 (B98 + B99a · Editor polish · chart + divination nodes)
+
+**B98 — Block-kind dropdown.** Replaces the static "Paragraph" chip with a real `BlockKindMenu` (Paragraph · Heading 1/2/3 · Quotation · Code). `detectBlockKind` + `applyBlockKind` exported. Active row marked with `--accent`; closes on outside click + Escape.
+
+**B99a — Chart + Divination Tiptap nodes.** Per the design decisions confirmed for B99 (parametric over reference · static result attrs · modal pickers later · auto-save + Publish):
+
+- **`chart` Tiptap node** — stores `{ title, description, snapshot: { placements, houses, aspects } | null }`. When the snapshot is present, renders via the existing shared `<Chart>` component (Phase 03). When `null`, renders a friendly placeholder explaining that the picker arrives in B99b. Title + description are inline-editable.
+- **`divination` Tiptap node** — stores `{ kind, seed, question, spread?, cards?, lines? }`. The reading is **immutable history**: the result is generated once at insert time, stored as static attrs, and never re-derived. Tarot body renders the drawn cards as a position-labeled row; I Ching body renders the cast hexagram as SVG lines (solid for yang, broken for yin) plus the King-Wen number + English name + Chinese name + pinyin.
+- **3 new slash commands**: `/chart` (inserts empty) · `/tarot` (3-card spread with random deterministic seed) · `/iching` (six-line cast with random deterministic seed). The two divination commands compute the snapshot inline at insert time so the inserted block is already populated.
+- **`pickTarotSnapshot(spread, seed)`** + **`pickIchingSnapshot(seed)`** — exported helpers (used by the slash commands today; the future pickers in B99b will use the same surface).
+- Tests: 5 new vitest cases (tarot determinism · tarot variance across seeds · iching range + count · iching determinism · chart snapshot round-trip).
+
+**Tests** at B99a close: 1714 / 1714 shared vitest · 552 / 552 visual + a11y baselines · admin tsc clean. Pre-existing typed-test errors in `ReceptionSelector.stories.tsx`, `SealUnlock.stories.tsx`, `Signing.test.tsx` predate this batch.
+
+**Design decisions locked for B99b** (next batch):
+- **Wire format**: `EntryDetailRecord` returned by `GET /api/v1/entries/{id}`. Lean `EntryRecord` stays on list endpoints.
+- **Picker UX**: modal (matches `ElectionPickerModal` family from B93).
+- **Node depth**: static result attrs (already in place for divination; chart picker will compute snapshot once + store).
+- **Persistence cadence**: debounced auto-save (~1 s) + explicit Publish CTA for state transitions.
+
 ### Added — 2026-06-23 (B97 · Tiptap live integration · Batch 35 wave 1)
 
 The Editor surface (`Theourgia Editor.dc.html`) lifts from a design-fidelity static port to a **live Tiptap 3 editor** with six custom block nodes wired end-to-end. Custom blocks shipped: `ritualLog` · `quoteCitation` · `gematria` · `sensation` · `entityRef` · `sigil`. Chart + Divination nodes + Library/Entities pickers + `/api/v1/entries` persistence are queued for B98/B99.

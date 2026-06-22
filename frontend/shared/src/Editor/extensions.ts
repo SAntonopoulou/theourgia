@@ -19,6 +19,8 @@ import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 
 import { LANG_FONT, type LangScript } from "./lang.js";
+import { ChartNode } from "./nodes/ChartNode.js";
+import { DivinationNode } from "./nodes/DivinationNode.js";
 import { RitualLogNode } from "./nodes/RitualLogNode.js";
 import { QuoteCitationNode } from "./nodes/QuoteCitationNode.js";
 import { GematriaNode } from "./nodes/GematriaNode.js";
@@ -117,5 +119,7 @@ export function buildExtensions(opts: BuildExtensionsOptions = {}) {
     SensationNode,
     EntityRefNode,
     SigilNode,
+    ChartNode,
+    DivinationNode,
   ];
 }

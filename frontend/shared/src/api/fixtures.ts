@@ -11,6 +11,7 @@ import type {
   BookRecord,
   CreateBookInput,
   CreateEntryInput,
+  EntryDetailRecord,
   EntryRecord,
   EntryStats,
   EntryType,
@@ -20,6 +21,32 @@ import type {
   Session,
   TodayLedger,
 } from "./types.js";
+
+/**
+ * Body store for `getEntryDetail` / `updateEntryBody` fixtures. Keyed
+ * by entry id. Empty default means "empty draft" — the editor mounts
+ * `EMPTY_DOC` and an auto-save round-trips.
+ */
+const ENTRY_BODIES: Map<string, string> = new Map();
+
+/**
+ * Compose an `EntryDetailRecord` from a lean entry + the body store.
+ * Used by the GET `/entries/{id}` + PATCH `/entries/{id}/body` +
+ * POST `/entries/{id}/publish` fixture handlers.
+ */
+function entryDetail(
+  e: EntryRecord,
+  over: Partial<EntryDetailRecord> = {},
+): EntryDetailRecord {
+  return {
+    ...e,
+    body: ENTRY_BODIES.get(e.id) ?? "",
+    visibility: "personal",
+    sealed: false,
+    published_at: null,
+    ...over,
+  };
+}
 
 const NOW_ISO = new Date().toISOString();
 const FIVE_MIN_AGO = new Date(Date.now() - 5 * 60 * 1000).toISOString();
@@ -392,6 +419,34 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     return BOOKS[idx];
   }
 
+  // /api/v1/entries/{id}/publish — sets published_at, returns detail.
+  const publishMatch = /^\/api\/v1\/entries\/(.+)\/publish$/.exec(bare ?? "");
+  if (publishMatch && method === "POST") {
+    const [, id] = publishMatch;
+    const idx = ENTRIES.findIndex((e) => e.id === id);
+    if (idx < 0) {
+      return new NotFoundError(problem(404, "Not Found", `Entry ${id} not found`));
+    }
+    const now = new Date().toISOString();
+    ENTRIES[idx] = { ...ENTRIES[idx]!, updated_at: now };
+    return entryDetail(ENTRIES[idx]!, { published_at: now });
+  }
+
+  // /api/v1/entries/{id}/body — auto-save target.
+  const bodyMatch = /^\/api\/v1\/entries\/(.+)\/body$/.exec(bare ?? "");
+  if (bodyMatch && method === "PATCH") {
+    const [, id] = bodyMatch;
+    const idx = ENTRIES.findIndex((e) => e.id === id);
+    if (idx < 0) {
+      return new NotFoundError(problem(404, "Not Found", `Entry ${id} not found`));
+    }
+    const next = (body ?? {}) as { body?: string };
+    if (typeof next.body === "string") ENTRY_BODIES.set(id!, next.body);
+    const now = new Date().toISOString();
+    ENTRIES[idx] = { ...ENTRIES[idx]!, updated_at: now };
+    return entryDetail(ENTRIES[idx]!);
+  }
+
   const entryMatch = /^\/api\/v1\/entries\/(.+)$/.exec(bare ?? "");
   if (entryMatch) {
     const [, id] = entryMatch;
@@ -401,6 +456,7 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     }
     if (method === "DELETE") {
       ENTRIES.splice(idx, 1);
+      ENTRY_BODIES.delete(id!);
       return null;
     }
     if (method === "PATCH") {
@@ -416,7 +472,10 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
       ENTRIES[idx] = updated;
       return updated;
     }
-    return ENTRIES[idx];
+    // GET — returns the detail record (superset of the lean record).
+    // The lean `EntryRecord` shape is what older callers read; new
+    // `getEntryDetail` callers read body / visibility / sealed / published_at.
+    return entryDetail(ENTRIES[idx]!);
   }
 
   return new NotFoundError(problem(404, "Not Found", `No fixture for ${method} ${path}`));

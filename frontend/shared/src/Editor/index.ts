@@ -26,3 +26,10 @@ export {
 export { SensationNode, type SensationPoint } from "./nodes/SensationNode.js";
 export { EntityRefNode, type EntityRefKind } from "./nodes/EntityRefNode.js";
 export { SigilNode } from "./nodes/SigilNode.js";
+export { ChartNode, type ChartSnapshot } from "./nodes/ChartNode.js";
+export {
+  DivinationNode,
+  type DivinationKind,
+  pickTarotSnapshot,
+  pickIchingSnapshot,
+} from "./nodes/DivinationNode.js";

@@ -15,6 +15,10 @@ import { applyBlockKind, detectBlockKind } from "./BlockKindMenu.js";
 import { filterSlashCommands, SLASH_COMMANDS } from "./slashCommands.js";
 import { buildExtensions } from "./extensions.js";
 import { gematriaBreakdown, gematriaSum } from "./nodes/GematriaNode.js";
+import {
+  pickIchingSnapshot,
+  pickTarotSnapshot,
+} from "./nodes/DivinationNode.js";
 
 function mountHeadless(content: unknown = { type: "doc", content: [{ type: "paragraph" }] }): CoreEditor {
   return new CoreEditor({
@@ -24,11 +28,21 @@ function mountHeadless(content: unknown = { type: "doc", content: [{ type: "para
 }
 
 describe("Editor — slash command catalog", () => {
-  it("ships 6 commands in B97", () => {
-    expect(SLASH_COMMANDS).toHaveLength(6);
+  it("ships 9 commands at B99a (six + chart + tarot + iching)", () => {
+    expect(SLASH_COMMANDS).toHaveLength(9);
     const keys = SLASH_COMMANDS.map((c) => c.key);
     expect(keys).toEqual(
-      expect.arrayContaining(["sigil", "quote", "gematria", "sensation", "entity", "ritual-log"]),
+      expect.arrayContaining([
+        "sigil",
+        "quote",
+        "gematria",
+        "sensation",
+        "entity",
+        "ritual-log",
+        "chart",
+        "tarot",
+        "iching",
+      ]),
     );
   });
 
@@ -39,12 +53,12 @@ describe("Editor — slash command catalog", () => {
   });
 
   it("returns the full list when query is empty", () => {
-    expect(filterSlashCommands("")).toHaveLength(6);
+    expect(filterSlashCommands("")).toHaveLength(9);
   });
 });
 
 describe("Editor — extensions wiring", () => {
-  it("registers the 6 custom block nodes in the schema", () => {
+  it("registers the 8 custom block nodes in the schema (6 B97 + chart + divination)", () => {
     const editor = mountHeadless();
     const schema = editor.schema;
     expect(schema.nodes.ritualLog).toBeDefined();
@@ -53,6 +67,8 @@ describe("Editor — extensions wiring", () => {
     expect(schema.nodes.sensation).toBeDefined();
     expect(schema.nodes.entityRef).toBeDefined();
     expect(schema.nodes.sigil).toBeDefined();
+    expect(schema.nodes.chart).toBeDefined();
+    expect(schema.nodes.divination).toBeDefined();
     editor.destroy();
   });
 
@@ -80,18 +96,24 @@ describe("Editor — slash command insertion", () => {
   });
 
   it("inserts every command kind without throwing", () => {
+    const COMMAND_TO_NODE_TYPE: Record<string, string> = {
+      sigil: "sigil",
+      quote: "quoteCitation",
+      gematria: "gematria",
+      sensation: "sensation",
+      entity: "paragraph", // inline node inserted inside the paragraph
+      "ritual-log": "ritualLog",
+      chart: "chart",
+      tarot: "divination",
+      iching: "divination",
+    };
     for (const cmd of SLASH_COMMANDS) {
       const editor = mountHeadless();
       const from = 1;
       const to = editor.state.selection.to;
       expect(() => cmd.run(editor, { from, to })).not.toThrow();
       const types = (editor.getJSON().content ?? []).map((b: { type: string }) => b.type);
-      // entity inserts an inline node inside the paragraph
-      if (cmd.key === "entity") {
-        expect(types).toContain("paragraph");
-      } else {
-        expect(types).toContain(cmd.key === "ritual-log" ? "ritualLog" : cmd.key === "quote" ? "quoteCitation" : cmd.key);
-      }
+      expect(types).toContain(COMMAND_TO_NODE_TYPE[cmd.key]);
       editor.destroy();
     }
   });
@@ -157,6 +179,72 @@ describe("Editor — block kind detection + application", () => {
     const first = (out.content ?? [])[0] as { type: string; attrs?: { level?: number } };
     expect(first.type).toBe("heading");
     expect(first.attrs?.level).toBe(2);
+    editor.destroy();
+  });
+});
+
+describe("Editor — divination engines (deterministic snapshots)", () => {
+  it("tarot snapshot is deterministic for the same seed", () => {
+    const a = pickTarotSnapshot("three", 12345);
+    const b = pickTarotSnapshot("three", 12345);
+    expect(a).toEqual(b);
+    expect(a).toHaveLength(3);
+  });
+
+  it("tarot snapshot differs across seeds", () => {
+    const a = pickTarotSnapshot("three", 1);
+    const b = pickTarotSnapshot("three", 2);
+    // Strong but probabilistic: at least one position should differ.
+    const sameNames = a.every((card, i) => card.card.name === b[i]?.card.name);
+    expect(sameNames).toBe(false);
+  });
+
+  it("iching snapshot returns six lines in 6-9 range", () => {
+    const lines = pickIchingSnapshot(99);
+    expect(lines).toHaveLength(6);
+    for (const v of lines) expect([6, 7, 8, 9]).toContain(v);
+  });
+
+  it("iching snapshot is deterministic for the same seed", () => {
+    expect(pickIchingSnapshot(7)).toEqual(pickIchingSnapshot(7));
+  });
+});
+
+describe("Editor — chart node round-trip", () => {
+  it("preserves the snapshot through getJSON/setContent", () => {
+    const snapshot = {
+      placements: [
+        {
+          body_id: "sun",
+          body_name: "Sun",
+          glyph: "☉",
+          tropical_longitude: 12.5,
+          tropical_sign: "Aries",
+          house: 1,
+          is_retrograde: false,
+        },
+      ],
+      houses: {
+        cusps: [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330],
+        ascendant: 0,
+        midheaven: 270,
+      },
+      aspects: [],
+    };
+    const seed = {
+      type: "doc",
+      content: [
+        {
+          type: "chart",
+          attrs: { title: "Natal", description: "—", snapshot },
+        },
+      ],
+    };
+    const editor = mountHeadless(seed);
+    const out = editor.getJSON();
+    const node = (out.content ?? [])[0] as { type: string; attrs: { snapshot: typeof snapshot } };
+    expect(node.type).toBe("chart");
+    expect(node.attrs.snapshot.placements[0]?.body_name).toBe("Sun");
     editor.destroy();
   });
 });

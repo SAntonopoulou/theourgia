@@ -77,6 +77,33 @@ export interface EntryRecord {
   updated_at: string; // ISO 8601
 }
 
+/**
+ * Entry detail — wire format from ``GET /api/v1/entries/{id}``.
+ *
+ * Extends `EntryRecord` with the full Tiptap-JSON body and the
+ * visibility / publish state. List endpoints keep the lean
+ * `EntryRecord` shape; the detail endpoint pays for the body bytes.
+ *
+ * Per the B99 design decision (extend with a separate detail record
+ * rather than fattening `EntryRecord` everywhere).
+ */
+export interface EntryDetailRecord extends EntryRecord {
+  /** Tiptap doc serialised as JSON. Empty string for an empty draft. */
+  body: string;
+  /** "personal" | "friends" | "public"; matches Visibility enum. */
+  visibility: "personal" | "friends" | "public";
+  /** True if the body is sealed (client-side encrypted). */
+  sealed: boolean;
+  /** Set when the entry was published (null for drafts). */
+  published_at: string | null;
+}
+
+/** Input for ``PATCH /api/v1/entries/{id}/body``. */
+export interface UpdateEntryBodyInput {
+  /** Tiptap doc serialised as JSON. */
+  body: string;
+}
+
 /** Input for ``POST /api/v1/entries``. */
 export interface CreateEntryInput {
   title: string;

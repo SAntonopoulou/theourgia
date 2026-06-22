@@ -215,6 +215,72 @@ export const Editor_HeadingFocused: Story = {
   },
 };
 
+import { pickIchingSnapshot, pickTarotSnapshot } from "./nodes/DivinationNode.js";
+
+export const Editor_WithChartAndReadings: Story = {
+  name: "Editor · chart + tarot + iching nodes (B99a)",
+  render: () => {
+    const tarotCards = pickTarotSnapshot("three", 4242);
+    const ichingLines = pickIchingSnapshot(4242);
+    const CHART_DOC = {
+      type: "doc",
+      content: [
+        {
+          type: "heading",
+          attrs: { level: 1 },
+          content: [{ type: "text", text: "Reading log — 2026-06-23" }],
+        },
+        {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text:
+                "Opening the day with a three-card spread and a hexagram cast against the same question.",
+            },
+          ],
+        },
+        {
+          type: "divination",
+          attrs: {
+            kind: "tarot",
+            seed: 4242,
+            question: "What does today's body need from this practice?",
+            spread: "three",
+            cards: tarotCards,
+            lines: [],
+          },
+        },
+        {
+          type: "divination",
+          attrs: {
+            kind: "iching",
+            seed: 4242,
+            question: "And from the spirit's side?",
+            spread: "three",
+            cards: [],
+            lines: ichingLines,
+          },
+        },
+        {
+          type: "chart",
+          attrs: {
+            title: "Daybreak natal — 2026-06-23, 05:18",
+            description: "Tropical · Placidus · sunrise chart for the question",
+            snapshot: null,
+          },
+        },
+      ],
+    };
+    return (
+      <Frame>
+        <style>{editorStyles}</style>
+        <TiptapEditor initialDoc={CHART_DOC} />
+      </Frame>
+    );
+  },
+};
+
 export const Slash_Menu_Filtered: Story = {
   name: "SlashMenu · filtered query (\"s\")",
   render: () => {

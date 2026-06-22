@@ -8,6 +8,11 @@
 
 import type { Editor } from "@tiptap/core";
 
+import {
+  pickIchingSnapshot,
+  pickTarotSnapshot,
+} from "./nodes/DivinationNode.js";
+
 export interface SlashCommand {
   key: string;
   /** Verbatim slash form (e.g. "/sigil") — shown on the right of the row. */
@@ -122,6 +127,67 @@ export const SLASH_COMMANDS: SlashCommand[] = [
         .focus()
         .deleteRange(range)
         .insertContent({ type: "ritualLog", attrs: { entries: [] } })
+        .run();
+    },
+  },
+  {
+    key: "chart",
+    command: "/chart",
+    title: "Chart",
+    description: "Natal, horary or election chart",
+    iconColor: "var(--c-divination)",
+    iconPath: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 3v18M3 12h18",
+    run: (editor, range) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent({
+          type: "chart",
+          attrs: { title: "", description: "", snapshot: null },
+        })
+        .run();
+    },
+  },
+  {
+    key: "tarot",
+    command: "/tarot",
+    title: "Tarot reading",
+    description: "Three-card spread (deterministic seed)",
+    iconColor: "var(--c-divination)",
+    iconPath: "M4 4h6v16H4z M14 4h6v16h-6z",
+    run: (editor, range) => {
+      const seed = Math.floor(Math.random() * 2 ** 31);
+      const cards = pickTarotSnapshot("three", seed);
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent({
+          type: "divination",
+          attrs: { kind: "tarot", seed, question: "", spread: "three", cards, lines: [] },
+        })
+        .run();
+    },
+  },
+  {
+    key: "iching",
+    command: "/iching",
+    title: "I Ching cast",
+    description: "Six-line cast (deterministic seed)",
+    iconColor: "var(--c-divination)",
+    iconPath: "M3 5h18M3 9h7M14 9h7M3 13h18M3 17h7M14 17h7",
+    run: (editor, range) => {
+      const seed = Math.floor(Math.random() * 2 ** 31);
+      const lines = pickIchingSnapshot(seed);
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent({
+          type: "divination",
+          attrs: { kind: "iching", seed, question: "", spread: "three", cards: [], lines },
+        })
         .run();
     },
   },

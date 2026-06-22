@@ -69,6 +69,41 @@ describe("endpoints — mock mode", () => {
     expect(stats.this_week.total).toBeGreaterThanOrEqual(0);
     expect(stats.last_week.total).toBeGreaterThanOrEqual(0);
   });
+
+  it("getEntryDetail returns the body + visibility + sealed + published_at fields", async () => {
+    const m = buildMock();
+    const list = await m.listEntries();
+    const first = list[0]!;
+    const detail = await m.getEntryDetail(first.id);
+    expect(detail.id).toBe(first.id);
+    expect(typeof detail.body).toBe("string");
+    expect(["personal", "friends", "public"]).toContain(detail.visibility);
+    expect(typeof detail.sealed).toBe("boolean");
+    expect(detail.published_at === null || typeof detail.published_at === "string").toBe(true);
+  });
+
+  it("updateEntryBody persists the body for getEntryDetail to read back", async () => {
+    const m = buildMock();
+    const list = await m.listEntries();
+    const first = list[0]!;
+    const docJson = JSON.stringify({ type: "doc", content: [{ type: "paragraph" }] });
+    await m.updateEntryBody(first.id, { body: docJson });
+    const detail = await m.getEntryDetail(first.id);
+    expect(detail.body).toBe(docJson);
+  });
+
+  it("publishEntry sets published_at on the entry", async () => {
+    const m = buildMock();
+    const list = await m.listEntries();
+    const first = list[0]!;
+    const result = await m.publishEntry(first.id);
+    expect(result.published_at).toBeTruthy();
+    expect(typeof result.published_at).toBe("string");
+  });
+
+  it("getEntryDetail by unknown id throws NotFoundError", async () => {
+    await expect(buildMock().getEntryDetail("does-not-exist")).rejects.toThrow(/not found/i);
+  });
 });
 
 describe("endpoints — live mode", () => {

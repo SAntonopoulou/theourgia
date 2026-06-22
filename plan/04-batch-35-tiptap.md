@@ -1,12 +1,25 @@
 # Batch 35 — Tiptap live integration + custom blocks
 
-**Status:** B97 shipped (2026-06-23, Tiptap base wiring + 6 custom block nodes). B98/B99 follow.
+**Status:** B97 + B98 + B99a shipped 2026-06-23. B99b (pickers + persistence + visibility/publish) follows.
 
 The H02 Template Designer (B61) already ships the 20-block catalog and the
 backend already stores entry bodies as Tiptap JSON (Batch 30). Batch 35 makes
 the Editor surface itself **live** — replacing the design-fidelity static port
 in `frontend/admin/src/routes/Editor.tsx` with a real Tiptap 3 editor instance
 whose 6 custom node types round-trip via the existing API shape.
+
+## What B99a shipped (chart + divination Tiptap nodes)
+
+Per the design decisions confirmed for B99 (parametric over reference · modal pickers · auto-save + Publish · static result attrs):
+
+- **`chart` node** — atom · React NodeView. Stores `{ title, description, snapshot: { placements, houses, aspects } | null }`. When `snapshot` is present, renders via the existing shared `<Chart>` component at 240 px. When `null`, renders a friendly placeholder explaining that the picker arrives in B99b. Title + description are inline-editable.
+- **`divination` node** — atom · React NodeView. Stores `{ kind, seed, question, spread?, cards?, lines? }`. The reading is **immutable history** per the design decision: the picker (B99b) draws the cards / casts the lines, copies the result into the node, and never re-derives.
+  - **Tarot body** renders the drawn cards as a flex row of position + name labels.
+  - **I Ching body** renders the cast hexagram (SVG lines: solid for yang, broken for yin) plus the King-Wen number + English name + Chinese name + pinyin from the existing engine's `hexagramName(num)`.
+- **3 new slash commands**: `/chart` (inserts empty), `/tarot` (3-card spread with random deterministic seed), `/iching` (six-line cast with random deterministic seed). The two divination commands compute their snapshot inline at insert time so the inserted block is already populated.
+- **`pickTarotSnapshot(spread, seed)`** and **`pickIchingSnapshot(seed)`** — exported helpers for the future pickers (and used by the slash commands today).
+- **Tests** — 5 new vitest cases (tarot determinism · tarot variance across seeds · iching range + count · iching determinism · chart snapshot round-trip). Total 23 in Editor.test.tsx (+5 from B98).
+- **Stories** — `Editor · chart + tarot + iching nodes (B99a)` story showing a full reading-log document with all three new blocks populated.
 
 ## What B97 shipped
 
@@ -32,15 +45,23 @@ whose 6 custom node types round-trip via the existing API shape.
 - The "Paragraph" chip in the toolbar becomes a real block-kind dropdown (Heading 1/2/3 · Paragraph · Quote · Code).
 - Inline keyboard helper to insert the lang-marked span at the caret without armed-toggle state.
 
-## What B99 will add
+## What B99b will add (next batch)
 
-- `chart` Tiptap node (composes the existing CelestialBand chart engine for natal/horary).
-- `divinationResult` Tiptap node (composes the Tarot / I Ching / Geomancy engines from Phase 06).
-- Entity picker: `entityRef` opens a picker on insert that lists entities + unified views.
-- Library picker: `quoteCitation` opens a picker on insert that lists library entries.
-- `/api/v1/entries` persistence: load entry body via `GET /entries/{id}` → `setContent(JSON.parse(body))`; save via debounced `PATCH /entries/{id}` with `body = JSON.stringify(editor.getJSON())`.
-- Visibility chip becomes interactive (rung-up modal when Personal → Public; SealUnlock when Sealed).
-- Publish CTA — fires `POST /entries/{id}/publish`.
+Confirmed design decisions:
+- **Wire format**: add `EntryDetailRecord` returned by `GET /api/v1/entries/{id}`; lean `EntryRecord` stays on list endpoints.
+- **Picker UX**: modal (matches `ElectionPickerModal` family from B93).
+- **Node depth**: static result attrs (already in place from B99a for divination; chart picker will compute snapshot once + store it).
+- **Persistence cadence**: debounced auto-save (~1s) + explicit Publish CTA for state transitions.
+
+Scope:
+- Entity picker modal: opens when `entityRef` is inserted with empty attrs; lists entities + unified views; on select, fills `entityId` + `displayName` + `kind`.
+- Library picker modal: opens when `quoteCitation` is inserted with empty `citation` field; lists library entries; on select, copies the citation string.
+- Chart picker modal: lets user pick kind / datetime / location / system; fetches `/api/v1/astro/chart`; copies the response into the node's `snapshot` attr.
+- Divination picker: pre-existing tarot/iching commands already populate at insert; this batch adds spread / question UI inside the existing `DivinationNode` NodeView (or surfaces it via the divination commands' suggestion popovers).
+- `EntryDetailRecord` type + `client.entries.detail(id)` + `client.entries.patchBody(id, body)` endpoints.
+- TiptapEditor accepts `entryId?: string`; mounts with `setContent(JSON.parse(body))` from `entries.detail(id)`; debounced PATCH on `editor.onUpdate`. Topbar "Saved · just now" badge tracks save state.
+- Visibility chip becomes interactive: click → popover with 3 options (Personal · Friends · Public); raising to Public opens `RungUpModal` for confirmation; setting Sealed opens `SealUnlock` to encrypt body client-side.
+- Publish CTA: fires `POST /api/v1/entries/{id}/publish`; Toast on success.
 
 ## Round-trip contract
 

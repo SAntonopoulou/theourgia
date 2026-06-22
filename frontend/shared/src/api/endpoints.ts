@@ -21,9 +21,11 @@ import type {
   CreatePracticeInput,
   EntityKind,
   EntityRecord,
+  EntryDetailRecord,
   EntryRecord,
   EntryStats,
   EntryType,
+  UpdateEntryBodyInput,
   HealthStatus,
   Meta,
   PracticeRecord,
@@ -88,6 +90,45 @@ export function api(client: ApiClient) {
 
     getEntry(id: string, opts?: { signal?: AbortSignal }): Promise<EntryRecord> {
       return client.request<EntryRecord>(`/api/v1/entries/${id}`, { signal: opts?.signal });
+    },
+
+    /**
+     * Returns the full entry with its Tiptap body + visibility +
+     * publish state. Used by the Editor surface. Backend must answer
+     * the same `/entries/{id}` route with the expanded shape — list
+     * endpoints keep the lean `EntryRecord` shape per the B99 design
+     * decision.
+     */
+    getEntryDetail(id: string, opts?: { signal?: AbortSignal }): Promise<EntryDetailRecord> {
+      return client.request<EntryDetailRecord>(`/api/v1/entries/${id}`, {
+        signal: opts?.signal,
+        headers: { Accept: "application/vnd.theourgia.entry-detail+json" },
+      });
+    },
+
+    /**
+     * Debounced auto-save target for the Editor. Sends only the body
+     * field; the entry's other metadata (title, visibility, sealed
+     * state) is patched through `updateEntry`.
+     */
+    updateEntryBody(
+      id: string,
+      input: UpdateEntryBodyInput,
+      opts?: { signal?: AbortSignal },
+    ): Promise<EntryDetailRecord> {
+      return client.request<EntryDetailRecord>(`/api/v1/entries/${id}/body`, {
+        method: "PATCH",
+        json: input,
+        signal: opts?.signal,
+      });
+    },
+
+    /** Transition a draft to `published_at = now`. */
+    publishEntry(id: string, opts?: { signal?: AbortSignal }): Promise<EntryDetailRecord> {
+      return client.request<EntryDetailRecord>(`/api/v1/entries/${id}/publish`, {
+        method: "POST",
+        signal: opts?.signal,
+      });
     },
 
     createEntry(input: CreateEntryInput): Promise<EntryRecord> {
