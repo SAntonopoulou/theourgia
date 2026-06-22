@@ -1,11 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 import {
   ALIAS_EDGE_KINDS,
   AliasGraph,
   type EntityAggregate,
 } from "./AliasGraph.js";
+import {
+  EDGE_KIND_ORDER_DEFAULT,
+  EdgeKindLegend,
+} from "./EdgeKindLegend.js";
 
 const hekateAggregate: EntityAggregate = {
   focusId: "hekate",
@@ -124,5 +128,57 @@ describe("AliasGraph", () => {
     const svg = container.firstElementChild as SVGElement;
     expect(svg.getAttribute("role")).toBe("img");
     expect(svg.getAttribute("aria-label")).toContain("Hekate");
+  });
+});
+
+// ─── EdgeKindLegend ───────────────────────────────────────────────
+
+describe("EdgeKindLegend", () => {
+  it("renders one row per default edge kind", () => {
+    const { container } = render(<EdgeKindLegend />);
+    expect(container.querySelectorAll("[data-edge-kind]")).toHaveLength(
+      EDGE_KIND_ORDER_DEFAULT.length,
+    );
+  });
+
+  it("labels every kind from ALIAS_EDGE_KINDS metadata", () => {
+    render(<EdgeKindLegend />);
+    EDGE_KIND_ORDER_DEFAULT.forEach((kind) => {
+      expect(
+        screen.getByText(ALIAS_EDGE_KINDS[kind].label),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it("uses → for asymmetric kinds and ↔ for symmetric kinds", () => {
+    const { container } = render(<EdgeKindLegend />);
+    const sameAs = container.querySelector('[data-edge-kind="same-as"]');
+    const aspectOf = container.querySelector('[data-edge-kind="aspect-of"]');
+    expect(sameAs?.querySelector("[data-edge-arrow]")?.textContent).toBe("↔");
+    expect(aspectOf?.querySelector("[data-edge-arrow]")?.textContent).toBe("→");
+  });
+
+  it("respects a custom subset + order via the kinds prop", () => {
+    const { container } = render(
+      <EdgeKindLegend kinds={["syncretic-with", "epithet-of"]} />,
+    );
+    const rows = container.querySelectorAll("[data-edge-kind]");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]?.getAttribute("data-edge-kind")).toBe("syncretic-with");
+    expect(rows[1]?.getAttribute("data-edge-kind")).toBe("epithet-of");
+  });
+
+  it("renders the description verbatim from metadata", () => {
+    render(<EdgeKindLegend kinds={["same-as"]} />);
+    expect(
+      screen.getByText(ALIAS_EDGE_KINDS["same-as"].description),
+    ).toBeInTheDocument();
+  });
+
+  it("attaches data-component for downstream tooling", () => {
+    const { container } = render(<EdgeKindLegend />);
+    expect(
+      container.firstElementChild?.getAttribute("data-component"),
+    ).toBe("edge-kind-legend");
   });
 });

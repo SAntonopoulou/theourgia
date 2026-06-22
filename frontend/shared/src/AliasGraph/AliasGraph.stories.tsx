@@ -5,6 +5,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
 import { AliasGraph, type EntityAggregate } from "./AliasGraph.js";
+import { EdgeKindLegend } from "./EdgeKindLegend.js";
 
 const meta = {
   title: "AliasGraph",
@@ -131,5 +132,50 @@ export const MixedKinds: Story = {
     <Frame>
       <AliasGraph aggregate={mixed} onRemoveEdge={() => {}} />
     </Frame>
+  ),
+};
+
+// ─── EdgeKindLegend ───────────────────────────────────────────────
+
+const RailFrame = ({ children }: { children: React.ReactNode }) => (
+  <div
+    style={{
+      padding: 22,
+      maxWidth: 320,
+      background: "var(--bg-2)",
+      borderLeft: "1px solid var(--line)",
+      fontFamily: "var(--font-ui)",
+    }}
+  >
+    <div
+      style={{
+        fontSize: 10.5,
+        letterSpacing: ".1em",
+        textTransform: "uppercase",
+        color: "var(--ink-mute)",
+        marginBottom: 9,
+      }}
+    >
+      Edge kinds
+    </div>
+    {children}
+  </div>
+);
+
+export const Legend_AllFive: Story = {
+  name: "EdgeKindLegend · all five kinds (rail)",
+  render: () => (
+    <RailFrame>
+      <EdgeKindLegend />
+    </RailFrame>
+  ),
+};
+
+export const Legend_Subset: Story = {
+  name: "EdgeKindLegend · symmetric subset only",
+  render: () => (
+    <RailFrame>
+      <EdgeKindLegend kinds={["same-as", "syncretic-with"]} />
+    </RailFrame>
   ),
 };
