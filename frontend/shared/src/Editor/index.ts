@@ -1,4 +1,10 @@
 export * from "./TiptapEditor.js";
+export {
+  BlockKindMenu,
+  detectBlockKind,
+  applyBlockKind,
+  type BlockKind as EditorBlockKind,
+} from "./BlockKindMenu.js";
 export * from "./Toolbar.js";
 export * from "./SlashMenu.js";
 export * from "./slashCommands.js";

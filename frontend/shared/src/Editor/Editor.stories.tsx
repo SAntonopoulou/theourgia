@@ -189,6 +189,32 @@ export const Slash_Menu: Story = {
   },
 };
 
+export const Editor_HeadingFocused: Story = {
+  name: "Editor · heading focus (Block-kind menu reads H1)",
+  render: () => {
+    const HEADING_FIRST_DOC = {
+      type: "doc",
+      content: [
+        {
+          type: "heading",
+          attrs: { level: 1 },
+          content: [{ type: "text", text: "Lesser Banishing Ritual" }],
+        },
+        {
+          type: "paragraph",
+          content: [{ type: "text", text: "Caret at the start of the heading." }],
+        },
+      ],
+    };
+    return (
+      <Frame>
+        <style>{editorStyles}</style>
+        <TiptapEditor initialDoc={HEADING_FIRST_DOC} />
+      </Frame>
+    );
+  },
+};
+
 export const Slash_Menu_Filtered: Story = {
   name: "SlashMenu · filtered query (\"s\")",
   render: () => {

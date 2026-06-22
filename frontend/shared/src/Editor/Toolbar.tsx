@@ -9,6 +9,7 @@
 import type { Editor } from "@tiptap/core";
 import { type CSSProperties, type ReactElement } from "react";
 
+import { BlockKindMenu } from "./BlockKindMenu.js";
 import type { LangScript } from "./extensions.js";
 
 const LINE = "var(--line)";
@@ -143,29 +144,7 @@ export function Toolbar({ editor, lang, onLangChange, onInsertBlockClick }: Tool
         flexWrap: "wrap",
       }}
     >
-      <button
-        type="button"
-        aria-label="Block kind"
-        onMouseDown={(e) => e.preventDefault()}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          padding: "6px 11px",
-          border: `1px solid ${LINE}`,
-          borderRadius: "var(--r-md)",
-          fontFamily: "var(--font-ui)",
-          fontSize: 12.5,
-          color: "var(--ink-soft)",
-          background: "transparent",
-          cursor: "pointer",
-        }}
-      >
-        Paragraph
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-          <path d="M6 9l6 6 6-6" />
-        </svg>
-      </button>
+      <BlockKindMenu editor={editor} />
       <span style={{ width: 1, height: 22, background: LINE, margin: "0 3px" }} />
       <ToolbarButton
         label="B"

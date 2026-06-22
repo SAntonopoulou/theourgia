@@ -11,6 +11,7 @@ import "@testing-library/jest-dom";
 import { Editor as CoreEditor } from "@tiptap/core";
 import { describe, expect, it } from "vitest";
 
+import { applyBlockKind, detectBlockKind } from "./BlockKindMenu.js";
 import { filterSlashCommands, SLASH_COMMANDS } from "./slashCommands.js";
 import { buildExtensions } from "./extensions.js";
 import { gematriaBreakdown, gematriaSum } from "./nodes/GematriaNode.js";
@@ -114,6 +115,49 @@ describe("Editor — gematria utility", () => {
 
   it("skips characters not in the script's value table", () => {
     expect(gematriaBreakdown("α!β", "greek")).toHaveLength(2);
+  });
+});
+
+describe("Editor — block kind detection + application", () => {
+  it("reads paragraph as the default kind", () => {
+    const editor = mountHeadless();
+    expect(detectBlockKind(editor)).toBe("paragraph");
+    editor.destroy();
+  });
+
+  it("reads heading-1 from a seeded heading doc", () => {
+    const seed = {
+      type: "doc",
+      content: [
+        { type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "Title" }] },
+      ],
+    };
+    const editor = mountHeadless(seed);
+    // Place caret inside the heading.
+    editor.commands.setTextSelection(2);
+    expect(detectBlockKind(editor)).toBe("heading-1");
+    editor.destroy();
+  });
+
+  it("reads code blocks from a seeded code doc", () => {
+    const seed = {
+      type: "doc",
+      content: [{ type: "codeBlock", content: [{ type: "text", text: "echo" }] }],
+    };
+    const editor = mountHeadless(seed);
+    editor.commands.setTextSelection(2);
+    expect(detectBlockKind(editor)).toBe("code");
+    editor.destroy();
+  });
+
+  it("applyBlockKind flips an empty paragraph to heading-2 (round-trips via JSON)", () => {
+    const editor = mountHeadless();
+    applyBlockKind(editor, "heading-2");
+    const out = editor.getJSON();
+    const first = (out.content ?? [])[0] as { type: string; attrs?: { level?: number } };
+    expect(first.type).toBe("heading");
+    expect(first.attrs?.level).toBe(2);
+    editor.destroy();
   });
 });
 
