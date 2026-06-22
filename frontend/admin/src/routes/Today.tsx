@@ -22,13 +22,17 @@ import {
   PromptDialog,
   Skeleton,
   Toast,
+  type TodayLedger,
+  TodayLedgerCards,
   TopbarSearch,
+  useApiCall,
   useCelestial,
   useSession,
   useTopbar,
 } from "@theourgia/shared";
 import { useEffect, useMemo, useState } from "react";
 
+import { apiMethods } from "../data/api.js";
 import { createEntry, useRecentEntries } from "../data/useEntries.js";
 import { useMyLocation } from "../data/useLocation.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
@@ -144,6 +148,22 @@ function relativeTime(at: string | Date): string {
   if (days === 1) return "yesterday";
   if (days < 7) return `${days} days ago`;
   return new Date(at).toLocaleDateString();
+}
+
+/** "in 4h" / "2h ago" / "in 3d" — bidirectional relative formatter for
+ *  the Today ledger cards. The negative-direction text reuses the
+ *  same wording as the rest of the surface ("4h ago") for consistency. */
+function relativeTimeBidirectional(iso: string): string {
+  const target = new Date(iso).getTime();
+  const delta = target - Date.now();
+  const absMin = Math.round(Math.abs(delta) / 60_000);
+  const sign = delta >= 0 ? "in " : "";
+  const suffix = delta >= 0 ? "" : " ago";
+  if (absMin < 60) return `${sign}${absMin}m${suffix}`;
+  const hours = Math.round(absMin / 60);
+  if (hours < 24) return `${sign}${hours}h${suffix}`;
+  const days = Math.round(hours / 24);
+  return `${sign}${days}d${suffix}`;
 }
 
 function clockLabel(d: Date): string {
@@ -798,6 +818,13 @@ export function Today() {
   // Cap to four most-recent entries, matching the design's frame.
   const recent = useMemo(() => (entries.data ?? []).slice(0, 4), [entries.data]);
 
+  // Phase-05 Today ledger — four cards in the right rail (active practices,
+  // obligations, servitor feeding, attestation activity). Loads after auth.
+  const ledger = useApiCall<TodayLedger>(
+    (signal) => apiMethods.getTodayLedger({ signal }),
+    { skip: session === null },
+  );
+
   useEffect(() => {
     if (entries.status === "error") {
       Toast.push({
@@ -949,6 +976,12 @@ export function Today() {
             }}
           >
             <HoursOfDayCard c={celestial} />
+            {ledger.status === "ok" && ledger.data ? (
+              <TodayLedgerCards
+                ledger={ledger.data}
+                formatRelative={relativeTimeBidirectional}
+              />
+            ) : null}
             <OnThisDayCard />
             <MottoCard />
           </aside>

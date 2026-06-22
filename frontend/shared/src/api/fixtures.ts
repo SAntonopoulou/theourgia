@@ -18,6 +18,7 @@ import type {
   Meta,
   Problem,
   Session,
+  TodayLedger,
 } from "./types.js";
 
 const NOW_ISO = new Date().toISOString();
@@ -44,6 +45,85 @@ const SESSION: Session = {
 };
 
 const MOCK_LOCATION = { lat: 51.4769, lng: 0 };
+
+const IN_4_HOURS = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
+const IN_18_HOURS = new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString();
+const TWO_DAYS_AGO = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+const SIX_DAYS_AGO = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString();
+
+function todayLedger(): TodayLedger {
+  return {
+    active_practices: {
+      practices: [
+        {
+          recurring_offering_id: "ro1",
+          entity_id: "e-hekate",
+          label: "Crossroads candle for Hekate",
+          cadence: "Every dark moon",
+          next_due_at: IN_4_HOURS,
+          hours_until_due: 4,
+        },
+        {
+          recurring_offering_id: "ro2",
+          entity_id: "e-brigid",
+          label: "Imbolc milk-pour for Brigid",
+          cadence: "Weekly · Sundays",
+          next_due_at: IN_18_HOURS,
+          hours_until_due: 18,
+        },
+      ],
+      total_due_in_24h: 2,
+    },
+    obligations: {
+      contract_obligations: [
+        {
+          contract_id: "c1",
+          contract_title: "Beltane Pact with Brigid, 2026",
+          side: "ours",
+          obligation_id: "ob1",
+          description: "Pour milk at sunset before the equinox.",
+          due_at: IN_4_HOURS,
+          status: "open",
+        },
+      ],
+      oath_checkpoints: [
+        {
+          oath_id: "o1",
+          oath_kind: "discipline",
+          recipient: null,
+          due_at: IN_18_HOURS,
+          sealed: false,
+          prompt: "Three pages of Liber Resh memorisation due.",
+        },
+      ],
+      sealed_checkpoint_count: 2,
+    },
+    servitor_feeding: {
+      feedings_due: [
+        {
+          servitor_id: "s1",
+          name: "The Threshold Guardian",
+          kind: "Servitor",
+          feeding_cadence: "Every 7 days",
+          last_fed_at: SIX_DAYS_AGO,
+        },
+      ],
+    },
+    attestation_activity: {
+      activity: [
+        {
+          attestation_id: "a1",
+          description:
+            "Initiation as Minerval in the Lyceum tradition.",
+          signer_label: "Frater Lykourgos",
+          role: "witness",
+          signed_at: TWO_DAYS_AGO,
+        },
+      ],
+    },
+    generated_at: NOW_ISO,
+  };
+}
 
 const BOOKS: BookRecord[] = [
   {
@@ -188,6 +268,7 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
   if (path === "/healthz") return HEALTH;
   if (path === "/readyz") return READYZ;
   if (path === "/api/v1/meta") return META;
+  if (path === "/api/v1/today/ledger") return todayLedger();
 
   if (path === "/api/v1/auth/session") {
     if (method === "GET") return SESSION;

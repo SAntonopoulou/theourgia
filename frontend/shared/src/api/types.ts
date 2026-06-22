@@ -187,3 +187,81 @@ export interface CreateBookInput {
   tradition?: string;
   notes?: string | null;
 }
+
+/** ``GET /api/v1/today/ledger`` — the four Phase-05 Today rail cards.
+ *
+ * Mirrors ``theourgia.api.routers.v1.today_ledger.TodayLedger``. Sealed
+ * oath checkpoints render count-only; ``prompt`` is null on those.
+ */
+export interface TodayActivePractice {
+  recurring_offering_id: string;
+  entity_id: string;
+  label: string;
+  cadence: string;
+  next_due_at: string | null;
+  hours_until_due: number | null;
+}
+
+export interface TodayActivePracticesCard {
+  practices: TodayActivePractice[];
+  total_due_in_24h: number;
+}
+
+export type TodayObligationSide = "ours" | "theirs";
+
+export interface TodayContractObligationDue {
+  contract_id: string;
+  contract_title: string;
+  side: TodayObligationSide;
+  obligation_id: string;
+  description: string;
+  due_at: string | null;
+  status: string;
+}
+
+export interface TodayOathCheckpointDue {
+  oath_id: string;
+  oath_kind: string;
+  recipient: string | null;
+  due_at: string;
+  sealed: boolean;
+  prompt: string | null;
+}
+
+export interface TodayObligationsCard {
+  contract_obligations: TodayContractObligationDue[];
+  oath_checkpoints: TodayOathCheckpointDue[];
+  sealed_checkpoint_count: number;
+}
+
+export interface TodayServitorFeedingDue {
+  servitor_id: string;
+  name: string;
+  kind: string;
+  feeding_cadence: string | null;
+  last_fed_at: string | null;
+}
+
+export interface TodayServitorFeedingCard {
+  feedings_due: TodayServitorFeedingDue[];
+}
+
+export interface TodayAttestationActivity {
+  attestation_id: string;
+  description: string;
+  signer_label: string;
+  role: string;
+  signed_at: string;
+}
+
+export interface TodayAttestationActivityCard {
+  activity: TodayAttestationActivity[];
+}
+
+export interface TodayLedger {
+  active_practices: TodayActivePracticesCard;
+  obligations: TodayObligationsCard;
+  servitor_feeding: TodayServitorFeedingCard;
+  attestation_activity: TodayAttestationActivityCard;
+  generated_at: string;
+}

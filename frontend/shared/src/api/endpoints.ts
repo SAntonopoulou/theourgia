@@ -21,6 +21,7 @@ import type {
   HealthStatus,
   Meta,
   Session,
+  TodayLedger,
   UserLocation,
 } from "./types.js";
 
@@ -179,6 +180,14 @@ export function api(client: ApiClient) {
 
     archiveEntity(id: string): Promise<void> {
       return client.request<void>(`/api/v1/entities/${id}`, { method: "DELETE" });
+    },
+
+    // ─── Today ledger (Phase 05 rail aggregator) ─────────────────────
+
+    getTodayLedger(opts?: { signal?: AbortSignal }): Promise<TodayLedger> {
+      return client.request<TodayLedger>("/api/v1/today/ledger", {
+        signal: opts?.signal,
+      });
     },
   };
 }
