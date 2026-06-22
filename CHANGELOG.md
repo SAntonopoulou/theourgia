@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-23 (B97 · Tiptap live integration · Batch 35 wave 1)
+
+The Editor surface (`Theourgia Editor.dc.html`) lifts from a design-fidelity static port to a **live Tiptap 3 editor** with six custom block nodes wired end-to-end. Custom blocks shipped: `ritualLog` · `quoteCitation` · `gematria` · `sensation` · `entityRef` · `sigil`. Chart + Divination nodes + Library/Entities pickers + `/api/v1/entries` persistence are queued for B98/B99.
+
+- **`frontend/shared/src/Editor/`** new shared module:
+  - `TiptapEditor.tsx` — composes Toolbar + EditorContent + SlashMenu; surfaces `initialDoc` + `onChange` for round-trip via Tiptap JSON.
+  - `Toolbar.tsx` — Paragraph/Heading chip · Bold · Italic · Small-caps · Link · inline language chip (EN · ΕΛ · עב) · Insert-block CTA. Marks fire live against `editor.chain()`.
+  - `SlashMenu.tsx` — popover positioned at the typed `/`, arrow-key + Enter + click navigation, query filter against title + key.
+  - `slashCommands.ts` — six commands (`/sigil` · `/quote` · `/gematria` · `/sensation` · `/entity` · `/ritual`). Each `run()` deletes the slash range and inserts the corresponding node with default attrs.
+  - `extensions.ts` — `buildExtensions({ placeholder })`: StarterKit (with link config) + Placeholder + LangMark + SmallCapsMark + the 6 custom block nodes.
+  - `lang.ts` — `LangScript` + `LANG_FONT` token map (extracted to keep the dependency graph one-way).
+  - `nodes/` — six React-NodeView Tiptap nodes (ritualLog · quoteCitation · gematria · sensation · entityRef · sigil). Each has `parseHTML` + `renderHTML` for round-trip, an `addNodeView` returning a `ReactNodeViewRenderer` view, and inline editing UI when `editor.isEditable`.
+  - `Editor.test.tsx` — 14 tests covering catalog shape · filter behaviour · schema registration · slash-command insertion of every kind · gematria Greek + Hebrew sums · JSON round-trip preservation (ritualLog entries · gematria word + script · `lang` mark).
+  - `Editor.stories.tsx` — 5 visual baselines (seeded doc · empty placeholder · read-only · slash menu open · slash menu filtered).
+
+- **`frontend/shared/src/index.ts`** — barrel exports the new `Editor/` module.
+
+- **`frontend/admin/src/routes/Editor.tsx`** — replaces the static design-fidelity port with `TiptapEditor` composed against the same `Invocation of the Agathos Daimon` seed document so the surface still reads like the designer's example, but every block is now live and editable. CSS lives inline to scope the ProseMirror typography to `.theourgia-editor`.
+
+- **Gematria computation utility** — `gematriaBreakdown(word, script)` + `gematriaSum(word, script)` exported. Greek isopsephy + Hebrew gematria value tables; final-form letters normalised (ך → 20, ם → 40, etc.); diacritics stripped before lookup; characters not in the table are skipped.
+
+- **Round-trip story** — every Tiptap JSON document containing the 6 custom blocks survives `getJSON()` → `setContent()` with attrs intact. Inline `lang` marks on text spans round-trip with the script attribute preserved.
+
+- **Dependencies added**: `@tiptap/react@3` · `@tiptap/core@3` · `@tiptap/pm@3` · `@tiptap/starter-kit@3` · `@tiptap/extension-placeholder@3` · `@tiptap/suggestion@3`. `@tiptap/extension-link` was added then dropped in favour of StarterKit's bundled link extension to avoid the duplicate-extension warning.
+
+**Tests**: 1705 / 1705 shared vitest passing (+14). Visual + a11y baselines for the 5 new Editor stories ship with the commit.
+
+**Follow-ups**:
+- B98 (next) — wire the slash menu's `/` trigger to live keyboard input (currently the catalog exists + insertion works; the "/" trigger logic in TiptapEditor still needs polishing for nested-block scenarios).
+- B99 — Chart + Divination nodes; entity / library pickers; persistence to `/api/v1/entries`; live Publish CTA.
+- The 14 Template-Designer block kinds beyond the editor's 8 (`calendar-stamp` · `vox-magicae` · `voice-recording` · `correspondence` · `heading` / `paragraph` / `list` / `quote` / `code` already handled by StarterKit · script chips for greek / hebrew / latin / sanskrit handled by the LangMark) are queued as the Template Designer surfaces them, not the Editor's own slash menu.
+
 ### Added — 2026-06-22 (H05 sprint COMPLETE · Phase 07 Workshop frontend · Tier 3 closed)
 
 The H05 frontend sprint closed today. Eight batches (B89-B96) against the H05 designer handoff at `/home/sophia/design-handoffs/theourgia/2026-06-22-H05/handoff_H05/` ported the six Phase-07 Workshop surfaces. Phase 07 was designer-first by design: the `.dc.html` files inform the schema; backend (Alembic + `/api/v1/sigils|magic-squares|talismans|circles|tools|altars|voces`) lands in a follow-up sprint.

@@ -36,7 +36,7 @@ This is the **section-level rollup**; per-checkbox detail still lives below. For
 | 16 | [AI Agent Integration](plan/16-ai-agent-integration.md) | ⏳ planned | Daskalos-pattern daemon + MCP, BYO keys |
 
 **Backend tests: 1473 passing · Alembic chain at 0032.**
-**Frontend shared tests: 1691 passing · Visual regression: 545/545 · axe-core WCAG 2.2 A+AA: 545/545.**
+**Frontend shared tests: 1705 passing · Visual regression: 550/550 · axe-core WCAG 2.2 A+AA: 550/550.**
 **H01-H03 sprint: 71 primitives across 22 modules. H04 sprint: 7 designed surfaces + Daily Practice Tracker · 7 headless divination engines · 6 new design tokens. H05 sprint: 6 Workshop surfaces + 6 SVG engines (sigil generators · magic-square constructors · sandboxed evalFormula · nameRingPath · centreSymbol · printTiles).**
 
 ### H01-H03 sprint — complete (2026-06-22)
@@ -80,9 +80,9 @@ Implementation phase: **[04 — Journaling](plan/04-journaling.md)** (with blog 
 - [ ] **Magical Record (Crowley structured)** as a first-class built-in template
 
 ### Editor (Tiptap)
-- [ ] **Custom magical blocks**: `<chart>`, `<sensation>`, `<gematria>`, `<quote>`, `<correspondence>`, `<calendar-stamp>`, `<voice-recording>`, `<sigil>`, `<entity-ref>` (with specific-vs-unified-view selector), `<divination-result>`, `<ritual-step>`, `<vox-magicae>`
-- [ ] **Inline foreign-script marks**: `<greek>`, `<hebrew>`, `<latin>`, `<sanskrit>`, `<arabic>`, `<coptic>` for proper typography
-- [ ] **Slash commands**: `/sigil`, `/chart`, `/quote`, `/gematria`, `/entity`, `/sensation`, `/divination`, `/voce`
+- [~] **Custom magical blocks**: `ritualLog` · `quoteCitation` · `gematria` · `sensation` · `entityRef` · `sigil` shipped live (B97); `chart` · `divinationResult` · `correspondence` · `calendarStamp` · `voiceRecording` · `voxMagicae` queued (B98/B99 + later substrate batches)
+- [~] **Inline foreign-script marks**: `lang` mark with `el` · `he` · `en` scripts shipped (LangMark · B97); `latin` · `sanskrit` · `arabic` · `coptic` are font-token aliases of the same mark
+- [~] **Slash commands**: `/sigil` · `/quote` · `/gematria` · `/entity` · `/sensation` · `/ritual` shipped (B97); `/chart` · `/divination` · `/voce` queued
 - [ ] **Multi-language input methods** — software keyboard for polytonic Greek, Hebrew with niqud, IAST Sanskrit; romanization-to-script autocompletion
 
 ### Templates
