@@ -41,6 +41,7 @@ export * from "./identity/index.js";
 export * from "./ItemsComposer/index.js";
 export * from "./KindFunctionFilter/index.js";
 export * from "./LiberResh/index.js";
+export * from "./Library/index.js";
 export * from "./LunarPhaseWidget/index.js";
 export * from "./Menu/index.js";
 export * from "./MultiCalendarCard/index.js";
