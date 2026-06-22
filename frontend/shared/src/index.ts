@@ -64,6 +64,7 @@ export * from "./PlanetaryHourDetail/index.js";
 export * from "./PlanetaryHourStrip/index.js";
 export * from "./practice/index.js";
 export * from "./PracticeLogs/index.js";
+export * from "./workshop/index.js";
 export * from "./Popover/index.js";
 export * from "./Progress/index.js";
 export * from "./PublicChrome/index.js";
