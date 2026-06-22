@@ -60,6 +60,18 @@ const NAV_ICONS = {
       <path d="M12 3v6M12 15v6M3 12h6M15 12h6M6.5 6.5l3.2 3.2M14.3 14.3l3.2 3.2M17.5 6.5l-3.2 3.2M9.7 14.3l-3.2 3.2" />
     </svg>
   ),
+  dailypractice: (
+    <svg {...ICON_PROPS}>
+      <path d="M5 15h14M3.5 19h17M12 3v5M9 6l3-3 3 3" />
+      <path d="M5 15a7 7 0 0 1 14 0" />
+    </svg>
+  ),
+  practicelogs: (
+    <svg {...ICON_PROPS}>
+      <path d="M6 4h9l3 3v13H6z" />
+      <path d="M9 9h6M9 12.5h6M9 16h4" />
+    </svg>
+  ),
   entities: (
     <svg {...ICON_PROPS}>
       <path d="M6 6.5h12M7 9.5h10M9 9.5v8M15 9.5v8M5 20.5h14" />
@@ -153,6 +165,8 @@ export const DEFAULT_VAULT_NAV: VaultNavSection[] = [
       { key: "today", to: "/", label: "Today" },
       { key: "journal", to: "/journal", label: "Journal" },
       { key: "synchronicities", to: "/synchronicities", label: "Synchronicities" },
+      { key: "dailypractice", to: "/daily-practice", label: "Daily practice" },
+      { key: "practicelogs", to: "/practice-logs", label: "Practice log" },
     ],
   },
   {
@@ -166,7 +180,7 @@ export const DEFAULT_VAULT_NAV: VaultNavSection[] = [
   {
     heading: "Workbench",
     items: [
-      { key: "divination", to: "/divination", label: "Divination" },
+      { key: "divination", to: "/divination/tarot", label: "Divination" },
       { key: "sigil", to: "/sigil", label: "Sigil Studio" },
       { key: "circle", to: "/circle", label: "Circle Builder" },
       { key: "talismans", to: "/talismans", label: "Talismans" },

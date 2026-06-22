@@ -91,6 +91,8 @@ function navKeyForPath(pathname: string): NavKey | undefined {
   if (pathname === "/" || pathname === "") return "today";
   if (pathname.startsWith("/journal")) return "journal";
   if (pathname.startsWith("/synchronicities")) return "synchronicities";
+  if (pathname.startsWith("/daily-practice")) return "dailypractice";
+  if (pathname.startsWith("/practice-logs")) return "practicelogs";
   if (pathname.startsWith("/entities")) return "entities";
   if (pathname.startsWith("/library")) return "library";
   if (pathname.startsWith("/calendar")) return "calendar";

@@ -42,6 +42,55 @@ describe("VaultNav", () => {
     expect(today.style.background).toBe("");
   });
 
+  // ─── H04 Practice section additions ─────────────────────────────
+
+  it("renders the H04 'Daily practice' entry under Practice", () => {
+    const { container } = render(<VaultNav />);
+    const link = container.querySelector('a[href="/daily-practice"]');
+    expect(link).not.toBeNull();
+    expect(link?.textContent).toContain("Daily practice");
+  });
+
+  it("renders the H04 'Practice log' entry under Practice", () => {
+    const { container } = render(<VaultNav />);
+    const link = container.querySelector('a[href="/practice-logs"]');
+    expect(link).not.toBeNull();
+    expect(link?.textContent).toContain("Practice log");
+  });
+
+  it("Divination entry repointed to /divination/tarot (H04 canonical)", () => {
+    const { container } = render(<VaultNav />);
+    const link = container.querySelector('a[href="/divination/tarot"]');
+    expect(link).not.toBeNull();
+    expect(link?.textContent).toContain("Divination");
+  });
+
+  it("active=dailypractice highlights the Daily practice entry", () => {
+    render(<VaultNav active="dailypractice" />);
+    const daily = screen.getByText("Daily practice").closest("a") as HTMLElement;
+    expect(daily.style.background).toBe("var(--accent-soft)");
+    expect(daily.style.boxShadow).toBe("inset 2px 0 0 var(--accent)");
+  });
+
+  it("active=practicelogs highlights the Practice log entry", () => {
+    render(<VaultNav active="practicelogs" />);
+    const logs = screen.getByText("Practice log").closest("a") as HTMLElement;
+    expect(logs.style.background).toBe("var(--accent-soft)");
+    expect(logs.style.boxShadow).toBe("inset 2px 0 0 var(--accent)");
+  });
+
+  it("DEFAULT_VAULT_NAV Practice section has all 5 H04 entries in order", () => {
+    const practice = DEFAULT_VAULT_NAV.find((s) => s.heading === "Practice");
+    expect(practice).toBeDefined();
+    expect(practice?.items.map((i) => i.key)).toEqual([
+      "today",
+      "journal",
+      "synchronicities",
+      "dailypractice",
+      "practicelogs",
+    ]);
+  });
+
   it("Quick capture button fires onQuickCapture", async () => {
     const onQuickCapture = vi.fn();
     render(<VaultNav onQuickCapture={onQuickCapture} />);
