@@ -41,6 +41,7 @@ export * from "./EntityCard/index.js";
 export * from "./Export/index.js";
 export * from "./ExportPreview/index.js";
 export * from "./Field/index.js";
+export * from "./Geomancy/index.js";
 export * from "./Glyph/index.js";
 export * from "./hooks/index.js";
 export * from "./i18n/index.js";
