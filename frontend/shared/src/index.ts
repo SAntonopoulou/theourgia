@@ -67,3 +67,4 @@ export * from "./Tooltip/index.js";
 export * from "./tokens/index.js";
 export * from "./VaultNav/index.js";
 export * from "./VaultTopbar/index.js";
+export * from "./Visibility/index.js";
