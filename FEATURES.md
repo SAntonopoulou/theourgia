@@ -11,7 +11,7 @@
 
 ## Phase Status Snapshot (2026-06-22)
 
-> **🎨 Next sprint is design-blocked.** The H01-H03 sprint closed; further frontend progress on Phases 06-09 requires designer handoff. See [`docs/design-requests/2026-06-22-post-h01-h03-pipeline.md`](docs/design-requests/2026-06-22-post-h01-h03-pipeline.md) for the full prioritised request (Daily Practice Tracker · 6 Phase-06 surfaces · 6 Phase-07 Workshop surfaces · Phase-08 Linguistic · Phase-09 Analytics).
+> **🎨 Next sprint is design-blocked.** The H04 sprint closed today — Daily Practice Tracker (Tier 1) + Phase-06 frontend (Tier 2) are end-to-end shipped. Further frontend progress on Phases 07-09 still requires designer handoff (Workshop · Linguistic · Analytics). See [`docs/design-requests/2026-06-22-post-h01-h03-pipeline.md`](docs/design-requests/2026-06-22-post-h01-h03-pipeline.md) — Tier 3+ remain queued.
 
 This is the **section-level rollup**; per-checkbox detail still lives below. For granular per-batch status, read the `plan/0X-batch-*.md` files (each batch has its own plan doc with tests + DoD).
 
@@ -23,7 +23,7 @@ This is the **section-level rollup**; per-checkbox detail still lives below. For
 | 03 | [Time & Cosmos](plan/03-time-and-cosmos.md) | ✅ backend + H01 primitive coverage | Swiss Ephemeris attribution shipped, multi-calendar engine (Hebrew Reingold/Dershowitz, Hijri, Mayan, Julian via Meeus, Thelemic, Coptic, Hellenic), planetary hours, Liber Resh substrate + API, festivals, election finder. B56-B60 primitive coverage complete — see Phase 03 primitives table below. |
 | 04 | [Journaling](plan/04-journaling.md) | ✅ backend + H02 primitive coverage | Entry expansion (17 kinds + revisions + visibility + encryption), Postgres FTS + sealed-excluded honesty, templates (12 built-ins), library catalog (BibTeX/RIS), multi-identity + blog + scheduled publication, body/audio substrate. B61-B66 primitive coverage complete · Batch 36 (Print + bulk export) folded in via B66 — see Phase 04 primitives table below. |
 | 05 | [Magical Beings](plan/05-magical-beings.md) | ✅ backend + H03 primitive coverage | Entity expansion + alias-graph, offerings + recurring, contracts + obligations, oaths (default sealed), initiations (sealed-only), servitors + tasks, lineage attestations + Ed25519 counter-sign, API CRUD + scheduler. **B67-B75 primitive coverage complete** — BulkActionBar · OfferingTimelineCard · ActivePracticeCard · ContractListItem · ContractStatusPill · OathCard · OathStatusPill · InitiationListItem · InitiationStatusPill · SealedContentsBlock · ServitorListItem · ServitorStatusPill · ServitorTaskCard · EdgeKindLegend · AttestationKindBadge · AttestationListItem · TodayLedgerCards. |
-| 06 | [Divination & Practice](plan/06-divination-and-practice.md) | 🎨 backend done · **frontend design-blocked** ([request](docs/design-requests/2026-06-22-post-h01-h03-pipeline.md#tier-2--phase-06-divination--practice-backend-complete-in-b44-b49-all-frontend-blocked)) | Tarot (PD Rider-Waite-Smith + 5 spreads), I Ching (64 King-Wen + coin/yarrow + transformation), Geomancy (16 figures + cascade + 12-house chart), Runes (Elder Futhark + symmetric handling), Pendulum/Bibliomancy/Horary/Scrying, body practice + banishing logs + Tree of Life paths |
+| 06 | [Divination & Practice](plan/06-divination-and-practice.md) | ✅ backend + H04 frontend coverage | Tarot (PD Rider-Waite-Smith + 5 spreads), I Ching (64 King-Wen + coin/yarrow + transformation), Geomancy (16 figures + cascade + 12-house chart), Runes (Elder Futhark + symmetric handling), Pendulum/Bibliomancy/Horary/Scrying, body practice + banishing logs + Tree of Life paths. **B76-B86 H04 sprint complete**: 5 Phase-06 surfaces + Daily Practice Tracker (Tier 1) + Practice Logs cross-cutting surface. OracleTabs nav · new tokens (`--skip*`, `--trance`, `--font-cjk`, `--font-rune`, `--ot-*` family). |
 | 07 | [Workshop](plan/07-workshop.md) | 🎨 **design-blocked** ([request](docs/design-requests/2026-06-22-post-h01-h03-pipeline.md#tier-3--phase-07-workshop-backend-not-yet-started-design-can-land-first-build-will-follow)) | Sigil generator, talismans, magic circles, tool registry — designer-heavy; design lands first, backend will follow |
 | 08 | [Linguistic Tools](plan/08-linguistic-tools.md) | 🎨 planned · design queued ([request](docs/design-requests/2026-06-22-post-h01-h03-pipeline.md#tier-4--phases-08--09-backend-not-yet-started-design-lands-when-capacity-allows)) | Gematria (multi-cipher), transliteration, voces magicae |
 | 09 | [Synchronicity & Analytics](plan/09-synchronicity-and-analytics.md) | 🎨 planned · design queued ([request](docs/design-requests/2026-06-22-post-h01-h03-pipeline.md#tier-4--phases-08--09-backend-not-yet-started-design-lands-when-capacity-allows)) | Tagged capture, query builder, viz; needs 00-06 |
@@ -36,8 +36,8 @@ This is the **section-level rollup**; per-checkbox detail still lives below. For
 | 16 | [AI Agent Integration](plan/16-ai-agent-integration.md) | ⏳ planned | Daskalos-pattern daemon + MCP, BYO keys |
 
 **Backend tests: 1452 passing · Alembic chain at 0031.**
-**Frontend shared tests: 960 passing · Visual regression: 360/360 · axe-core WCAG 2.2 A+AA: 360/360.**
-**Shared primitives shipped this sprint: 71 across 22 modules.**
+**Frontend shared tests: 1389 passing · Visual regression: 460/460 · axe-core WCAG 2.2 A+AA: 460/460.**
+**H01-H03 sprint: 71 primitives across 22 modules. H04 sprint: 7 designed surfaces + Daily Practice Tracker · 7 headless divination engines · 6 new design tokens.**
 
 ### H01-H03 sprint — complete (2026-06-22)
 

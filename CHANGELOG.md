@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-22 (H04 sprint COMPLETE · Phase 06 frontend + Daily Practice Tracker · Tier 1 + Tier 2 closed)
+
+The H04 frontend wiring sprint closed today. Every Phase-06 backend engine shipped in B44-B49 now has its designed surface, and the cross-cutting Daily Practice Tracker (Tier 1) ships in the same arc. Eleven batches (B76-B86) against the 24-file H04 designer handoff at `/home/sophia/design-handoffs/theourgia/2026-06-22-H04/handoff_H04/`.
+
+**Foundations — B76-B77** (commits `13189ee`, `58592da`):
+
+- **B76 — Tokens + OracleTabs**: New tokens added to `tokens/theourgia.tokens.css` — `--skip` / `--skip-soft` (care palette for the Daily Practice "skip is information" channel) · `--trance` (with `hellenic`/`thelemic`/`light` overrides for the Scrying trance link) · `--font-cjk` (I Ching · Wilhelm/Baynes hexagram names) · `--font-rune` (rune labels) · `--ot-*` family for OracleTabs (tarot · iching · geomancy · runes · more). New `OracleTabs` primitive (5 horizontal tabs; `LinkComponent` prop adapted via `NavLinkAdapter` per the existing BeingsTabs pattern) lives at `frontend/shared/src/OracleTabs/`. 16 tests, 7 stories.
+- **B77 — VaultNav extension**: Added `dailypractice` + `practicelogs` NavKeys + SVG glyphs (verbatim from `.dc.html` lines 26-27 of each surface). Practice section is now `today · journal · synchronicities · dailypractice · practicelogs`. Divination route repointed: `/divination` → `/divination/tarot` (the surface picks an oracle by default rather than landing on a hub). 6 new regression tests.
+
+**Headless engines — B78-B79** (commits `dea3e36`, `932e2e0`, `abc182b`, `93439d8`, `6db2ebb`):
+
+- **B78a — Geomancy engine**: `GEO_FIGURES` (16 keys), `GEO_MEANINGS`, `GEO_ATTRIBUTIONS`, `figureName()`, `combine()`, `deriveShield()`, `generateMothers()`. 22 tests. The worked-example discipline ("only Mothers are state; daughters/nieces/witnesses/judge are derivations") is enforced by tests; deriving on every render avoids the cascade-drift bug from §E of the H04 supplement.
+- **B78b — Runes engine**: `ELDER_FUTHARK` (24 staves), `SYMMETRIC_RUNES` (9 — Gebo · Hagalaz · Isa · Jera · Eihwaz · Sowilo · **Mannaz** · Ingwaz · Dagaz; the design supplement enumerates 8 but the mockup dataset marks Mannaz as the 9th rotationally symmetric stave; **data wins** per the "port the accurate mockups; don't re-derive" rule), `drawRunes()`, `layoutForSize()` (1/3/5/9 spreads). 20 tests, including the H04 §S3.5 honesty test (merkstave forced false for every symmetric stave; symmetric callout always rendered).
+- **B78c — I Ching engine**: `TRIGRAMS`, King Wen 8×8 matrix, `HEX_NAMES_CN` / `HEX_NAMES_PINYIN` / `HEX_NAMES_EN`, `hexagramNumber()`, `transformation()` (changing lines → second hexagram), `castLine()` with distinct coin/yarrow odds (yarrow's 5/16 · 7/16 · 3/16 · 1/16 vs coin's flat 4ths). 33 tests.
+- **B78d — Tarot engine**: 78-card Rider-Waite-Smith deck (Pamela Colman Smith 1909, PD), 5 built-in spreads (single · three-card · Celtic Cross · Tree of Life · Year Ahead), `drawSpread()`. 21 tests.
+- **B79 — Misc + Practice helpers**: `divination/pendulum` (calibration interface + 4-state PendulumAnswer), `divination/bibliomancy` (`BIBLIOMANCY_METHODS` + `bibliomancyOpen()`), `divination/horary` (`HoraryChart` + `HORARY_STEP_ORDER` string union: sect · querent · quesited · perfection · reception), `practice/treeOfLife.ts` (22 paths verbatim + 10 sephiroth layout), `practice/streak.ts` (`streak(history, todayStatus)` + `countKept()` — pending counts toward the prior streak, never resets it). 51 new tests.
+
+**Tier 1 — Daily Practice Tracker** (commit `5ec138a`):
+
+- **B80 — Daily Practice Tracker**: 7 components under `frontend/shared/src/DailyPractice/` — `StreakGrid35` · `Last7DaysDots` · `PracticeStatusIcon` · `TodayStatusChip` · `PracticeCard` · `DefinePracticeDrawer` · `DailyPracticeTracker`. The load-bearing wellbeing copy ships verbatim: `PRACTICE_STATUS_SUB.skipped = "A skip is information, not a failure. The record holds it plainly."` Admin route wired at `/daily-practice` via `DailyPracticeRoute.tsx` with deterministic 35-day mock history until the API endpoints land. 34 tests.
+
+**Tier 2 — Phase 06 Divination surfaces — B81-B85**:
+
+- **B81 — Tarot surface** (commit `26a9317`): `TarotCardFace` · `SpreadBoard` · `DeckPicker` · `SpreadPicker` · `QuestionBanner` · `CardReadingRail` · `TarotHistoryRow` · `TarotSurface`. Reading-rail pattern shared across Tarot · I Ching · Runes (two states: drawn vs ready/empty). Reversed cards use the gentle ⟲ glyph, **never red**. 40 tests, 17 stories.
+- **B82 — I Ching surface** (commit `3177d8d`): `HexagramColumn` (yang solid bar / yin split / changing dot) · `MethodPicker` (coin vs yarrow) · `HexagramHeading` · `ChangingLinesPanel` · `IChingSurface`. Subtitle "易經 · the Book of Changes — cast six lines, read what moves" via `--font-cjk`. Wilhelm/Baynes 1923 citation surfaces via the ‡ badge from B54's Signing primitives (cross-cutting citation chrome pattern). 34 tests.
+- **B83 — Geomancy surface** (commit `66e63e4`): `GeoFigureView` · `MotherCell` · `GeoShield` · `GeoHouseChart` · `GeoVerdict` · `GeomancySurface`. The H04 §E worked example: only the four Mothers are state; `deriveShield()` runs on every render — daughters · nieces · witnesses · judge · reconciler · 12-house chart are all derivations. **Carcer · Rubeus · Cauda Draconis render NEUTRAL** — the difficulty lives in the meaning text, never in the chrome. 30 tests.
+- **B84 — Runes surface** (commit `ed289aa`): `RuneTile` · `RuneBoard` · `RuneSizePicker` · `RuneReadingRail` · `RunesSurface`. The symmetric-stave honesty callout — `"A symmetric stave — it reads the same upright or turned. It has no merkstave; none is shown."` — ships verbatim. **Nauthiz/Hagalaz render NEUTRAL** (difficulty in the meaning, not the chrome). Old English + Norwegian rune poems cited via ‡ badge. 33 tests.
+- **B85 — Divination Misc** (commit `44853e5`): The four lighter methods (`pendulum` · `bibliomancy` · `horary` · `scrying`) clustered under the OracleTabs "More" entry via an in-page `role="tablist"` (§S7.2 design decision). `MethodTablist` · `PendulumDial` (SVG rotated per answer: Yes 22° · No -22° · Maybe 6° · Unclear 0°) · `HoraryWheel` (12-house whole-sign chart; "Hellenistic horary · whole-sign houses" caption) · `Speculum` (180×180 scrying disc with per-medium radial gradient) · 4 sub-panels + surface. Pendulum calibration note + horary's 5-step provisional verdict + scrying's "Don't interpret yet" placeholder all verbatim. 44 tests.
+
+**Tier 2 — Practice Logs cross-cutting surface — B86** (commit `984c3ff`):
+
+- **B86 — Practice Logs**: Four practice logs clustered under the Practice nav section (NOT under OracleTabs — these are not divinations). In-page `role="tablist"` switches between Dream · Pathworking · Āsana & breath · Banishing. `DreamPanel` (textarea + symbol/figure chips + Felt sense + Lucid switch + recent rail) · `PathworkingPanel` (10-sephiroth + 22-path Tree of Life SVG with click-to-select edges; Hebrew letter · Tarot trump · attribution · route; composes B79's `TREE_OF_LIFE_PATHS`) · `AsanaPanel` (āsana + breath ratio + 46px monospace timer with `useEffect` interval ticker; quiet stats "41.5 hours · 88 sessions kept" never gamified) · `BanishingPanel` (rite select + time + **Seal toggle** + note + recent log; the Seal toggle is the cross-cutting client-side-signing UX from H01-H03). The two help-text copies are load-bearing:
+  - **OFF**: "Banishing entries are stored as plain text by default. Turn on Seal for any you want kept encrypted."
+  - **ON**: "This entry will be encrypted on this device. The server stores only ciphertext — it cannot read the rite or the note."
+  Care palette throughout (`--seal*`); **zero `--danger` uses** on this surface — opting into encryption is a positive affordance, not a danger. Admin route wired at `/practice-logs`. 45 tests.
+
+**Cross-cutting H04 rules honored across all surfaces**:
+
+1. **Divination tone** — Tower · Hexagrams 23/36 · Carcer/Rubeus/Cauda · Nauthiz/Hagalaz all render neutral; difficulty lives in the meaning text only. Verified by explicit per-surface tests.
+2. **Ritual-draw moment** — no "click to flip" mechanics; the spread / cast / draw produces a single committed moment.
+3. **Citation chrome** — Wilhelm/Baynes (I Ching) · Waite 1911 (Tarot) · Old English & Norwegian rune poems (Runes) all surface as ‡-badged PD citations.
+4. **Quiet streaks** — practice tracking shows cumulative numbers but never compares to peers, never grades, never gamifies.
+5. **Symmetric-rune honesty** (§S3.5) — engine forces merkstave false for the 9 rotationally symmetric staves; surface always renders the callout.
+6. **Client-side signing UX** — surfaced via the Banishing Seal toggle; ciphertext-only promise copy verbatim.
+
+**Sprint totals**: 11 batches (B76-B86). 1389 vitest tests (960 → 1389; **+429** over the sprint). 460 visual + 460 a11y baselines (360 → 460; **+100**) — all green. Six new tokens. 7 headless engines + Tree of Life + streak helpers. 7 designed surfaces. Backend unchanged at 1452.
+
+**Next**: docs + memory alignment (this commit). Then either Batch 35 Tiptap (still pending) or the next designer handoff queue (H05 — Phase 07 Workshop, Phase 08 Linguistic, Phase 09 Analytics) when capacity allows.
+
 ### Documentation — 2026-06-22 (design handoff request opened)
 
 With the H01-H03 sprint closed, the next sprint is design-blocked. Opened a single comprehensive design request enumerating every surface that needs designer pickup before further frontend work can land:

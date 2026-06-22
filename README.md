@@ -19,9 +19,9 @@ Open source, self-hostable, federated. For working magicians.
 
 ## Status
 
-**Pre-alpha — design-blocked for next sprint.** Foundations through Phase 06 backend are shipped. The H01-H03 frontend wiring sprint (B50-B75) is **complete** — Phases 03 / 04 / 05 frontend coverage is end-to-end against the existing backend. As of 2026-06-22: **71 shared primitives shipped**, **960 vitest tests**, **360 visual + 360 a11y baselines** all green.
+**Pre-alpha — Phases 00-06 frontend complete.** Foundations through Phase 06 are shipped end-to-end (backend + frontend). The **H04 sprint** (B76-B86) closed on 2026-06-22, ending today: it ported the 24-file H04 designer handoff into the **Daily Practice Tracker** (Tier 1) and the **Phase 06 Divination & Practice cluster** (Tier 2 — Tarot · I Ching · Geomancy · Runes · Pendulum/Bibliomancy/Horary/Scrying · Practice Logs). Backed by the H01-H03 sprint (B50-B75) that closed earlier the same day: Phases 03 / 04 / 05 frontend coverage end-to-end against existing backend. As of 2026-06-22: **1389 vitest tests · 460 visual + 460 a11y baselines · all green**.
 
-The next sprint is blocked on a designer pass for the **Daily Practice Tracker** (Tier 1) and the **Phase 06 Divination & Practice** cluster (Tier 2 — 6 surfaces covering 9 backend engines already shipped in B44-B49). The full design request lives at [docs/design-requests/2026-06-22-post-h01-h03-pipeline.md](docs/design-requests/2026-06-22-post-h01-h03-pipeline.md) and includes priority tiers for Workshop (Phase 07), Linguistic Tools (Phase 08), and Analytics (Phase 09).
+The next sprint is blocked on a designer pass for **Workshop** (Phase 07), **Linguistic Tools** (Phase 08), and **Analytics** (Phase 09). The full design request lives at [docs/design-requests/2026-06-22-post-h01-h03-pipeline.md](docs/design-requests/2026-06-22-post-h01-h03-pipeline.md) — Tier 3+ remain queued.
 
 For the canonical feature catalog, see **[FEATURES.md](FEATURES.md)** — the "Phase Status Snapshot" table at the top tracks sprint progress per-batch. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
@@ -65,7 +65,7 @@ Theourgia is built in 17 phases. Each phase is architecturally dependent on prio
 | 03 | Time & Cosmos (calendars, astrology, planetary hours, election finder) | `[x]` (Swiss Ephemeris + Hebrew/Hijri/Mayan/Egyptian/Julian + Liber Resh; H01 frontend primitives B56-B60) | [plan/03-time-and-cosmos.md](plan/03-time-and-cosmos.md) |
 | 04 | Journaling (entries, blog, library, body diagrams, quotes) | `[x]` (H02 frontend primitives B61-B66; Batch 36 folded in; B35 Tiptap unblocked) | [plan/04-journaling.md](plan/04-journaling.md) |
 | 05 | Magical Beings (entities, offerings, oaths, lineage attestation) | `[x]` (backend ✓; **H03 frontend primitives + Today ledger complete B67-B75**) | [plan/05-magical-beings.md](plan/05-magical-beings.md) |
-| 06 | Divination & Practice (tarot, I Ching, geomancy, scrying, rituals) | `[~]` backend ✓ · frontend **🎨 design-blocked** ([request](docs/design-requests/2026-06-22-post-h01-h03-pipeline.md#tier-2--phase-06-divination--practice-backend-complete-in-b44-b49-all-frontend-blocked)) | [plan/06-divination-and-practice.md](plan/06-divination-and-practice.md) |
+| 06 | Divination & Practice (tarot, I Ching, geomancy, scrying, rituals) | `[x]` (backend ✓; **H04 frontend complete B76-B86** — 5 oracle surfaces · Daily Practice Tracker · Practice Logs · OracleTabs nav) | [plan/06-divination-and-practice.md](plan/06-divination-and-practice.md) |
 | 07 | Workshop (sigils, talismans, magical circles, tool registry) | `[ ]` 🎨 design-blocked ([request](docs/design-requests/2026-06-22-post-h01-h03-pipeline.md#tier-3--phase-07-workshop-backend-not-yet-started-design-can-land-first-build-will-follow)) | [plan/07-workshop.md](plan/07-workshop.md) |
 | 08 | Linguistic Tools (gematria, transliteration, voces magicae) | `[ ]` | [plan/08-linguistic-tools.md](plan/08-linguistic-tools.md) |
 | 09 | Synchronicity & Analytics (scientific illuminism dashboards) | `[ ]` | [plan/09-synchronicity-and-analytics.md](plan/09-synchronicity-and-analytics.md) |
