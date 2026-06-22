@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-22 (H01-H03 sprint COMPLETE · Phase 05 primitive coverage closes the sprint)
+
+The H01-H03 frontend wiring sprint closed today. Phases 03 / 04 / 05 frontend coverage is end-to-end against the existing backend. 71 shared primitives across 22 modules; 960 vitest tests; 360/360 visual regression + 360/360 axe-core WCAG 2.2 A+AA — all green.
+
+**Phase 05 cluster — B67-B75** (commits `54cdcbe`, `1f39983`, `0c5d590`, `ab9e84f`, `7023c34`, `75e8eff`, `d7753bf`, `78bbd43`, `389057e`):
+
+- **B67 Entities REBUILT** — `BulkActionBar` (sticky pill bar with `role="region"`, aria-live count; reusable on Library + Visibility + Aliases surfaces).
+- **B68 Offerings** — `OfferingTimelineCard` (time + entity + reception pill + item chips + intention + AutoStamp; activates as `role="button"` when `onOpen` provided), `ActivePracticeCard` (label + cadence + due chip + pause switch + Record), `OFFERING_ITEM_META` (14 kinds in liquid / solid / body / time), `RECEPTION_META` (5 levels), `offeringCategoryColor()`.
+- **B69 Contracts** — `ContractListItem` (with bindingGlyph slot + status dot + optional nextDue footer), `ContractStatusPill` (6 states; **breached uses `--cs-breached`, NOT `--danger`**).
+- **B70 Oaths** — `OathCard` (sealed-by-default with `onRequestUnlock` + `unlockedForSession` props; SealedCTA when locked, italic vow text when unlocked; optional checkpoint footer), `OathStatusPill` (5 statuses; broken + renounced use care palette).
+- **B71 Initiations** — `InitiationListItem` (sparse sidebar with lock glyph + tradition + Sealed sublabel + status chip + optional Disclosed footer), `InitiationStatusPill` (4 statuses), `SealedContentsBlock` (full-bleed CTA with verbatim default editorial body: "The grade, the date received, the place, who gave and witnessed it, and your notes are encrypted with a key only your client holds. The server cannot read or recover them.").
+- **B72 Servitors** — `ServitorListItem` (caller-supplied sigil slot + name + kind label + status chip + optional feed-elapsed footer with `--warn` clock when overdue), `ServitorStatusPill` (4 statuses; decommissioned in muted lavender, NEVER red), `ServitorTaskCard` (4 task statuses; abandoned uses `--ts-abandoned`).
+- **B73 Aliases** — `EdgeKindLegend` (rail legend for the five `AliasEdgeKind` variants; uses metadata-driven label + description + directional glyph; supports `kinds` subset prop). `AliasGraph` was already shipped in B55.
+- **B74 Attestations** — `AttestationKindBadge` (24×24 small / 40×40 large; colour drawn from `--at-*` token mixed 15% into transparent), `AttestationListItem` (sidebar row with kind badge + uppercased kind label + Revoked pill + subject + description + footer with sig-count + visibility + granted-at). Seven new tokens: `--at-initiation` · `--at-grade-granted` · `--at-membership` · `--at-teacher-student` · `--at-ordination` · `--at-authorship` · `--at-other`. Revoked uses `--revoke`, NEVER `--danger`.
+- **B75 Today ledger** — `TodayLedgerCards` (composes the four Phase-05 Today rail cards from a `TodayLedger` payload: active practices · obligations · servitor feeding · attestation activity). Sealed-checkpoint count surfaces as `--seal-soft` callout with zero plaintext leak. Empty states are calm prose. **Wired into admin Today.tsx via `useApiCall(getTodayLedger)`.** Also: `TodayLedger` + 10 supporting types added to `api/types.ts`; `getTodayLedger()` method on `endpoints.ts`; realistic fixture in `defaultFixtures` (Hekate + Brigid practices, one contract obligation + sealed checkpoints, overdue servitor feed, recent counter-sign).
+
+**Cross-cutting rule reinforced**: `--danger` is reserved formally at code level for Visibility → Public (B63). Every other "negative" state in Phases 04 + 05 uses care-palette tokens: severed, broken, dissolved, abandoned, lent-out, decommissioned, breached, revoked — all NEVER red.
+
+**Sprint totals**: 71 primitives shipped across 22 modules. 960 vitest tests (339 → 960; +621 over the sprint). 360 visual + 360 a11y baselines, all green. Backend unchanged at 1452.
+
+**Next**: Daily Practice Tracker (awaits designer handoff), Phase 06 frontend surfaces (engines already shipped in B44-B49), Batch 35 Tiptap (unblocked by B61).
+
 ### Added — 2026-06-22 (H01-H03 sprint · Phase 04 primitive coverage complete)
 
 Phase 04 primitive coverage closed today with B66 Export — folds in the long-pending **Batch 36 (Print + bulk export)**, which the new ExportFormatPicker + SealedExportNotice + ExportPreview trio now supplies the load-bearing atoms for.

@@ -18,11 +18,11 @@ This is the **section-level rollup**; per-checkbox detail still lives below. For
 | 00 | [Foundations](plan/00-foundations.md) | ✅ done | Monorepo, CI scaffolding (pared down until v1), dev env, docs site shell |
 | 01 | [Core Architecture](plan/01-core-architecture.md) | ✅ done | DB substrate, auth (sessions + TOTP + WebAuthn), encryption (Mode A + Mode B), backups (Restic + R2), API skeleton, RLS, observability |
 | 02 | [Frontend Foundations](plan/02-frontend-foundations.md) | ✅ done | Total design-fidelity rewrite (admin SPA · public site · shared design system · Starlight docs), Storybook + visual regression + axe-core WCAG 2.2 AA gate, PWA (manifest + offline + /capture) |
-| 03 | [Time & Cosmos](plan/03-time-and-cosmos.md) | ✅ backend + H01 primitive coverage | Swiss Ephemeris attribution shipped, multi-calendar engine (Hebrew Reingold/Dershowitz, Hijri, Mayan, Julian via Meeus, Thelemic, Coptic, Hellenic), planetary hours, Liber Resh substrate + API, festivals, election finder. **B56-B60 primitive coverage complete** — see Phase 03 primitives table below. |
-| 04 | [Journaling](plan/04-journaling.md) | ✅ backend + H02 primitive coverage | Entry expansion (17 kinds + revisions + visibility + encryption), Postgres FTS + sealed-excluded honesty, templates (12 built-ins), library catalog (BibTeX/RIS), multi-identity + blog + scheduled publication, body/audio substrate. **B61-B66 primitive coverage complete · Batch 36 (Print + bulk export) folded in via B66** — see Phase 04 primitives table below. |
-| 05 | [Magical Beings](plan/05-magical-beings.md) | 🟡 backend done; H03 primitives partial; surfaces queued B67-B75 | Entity expansion + alias-graph, offerings + recurring, contracts + obligations, oaths (default sealed), initiations (sealed-only), servitors + tasks, lineage attestations + Ed25519 counter-sign, API CRUD + scheduler. Foundation primitives shipped in B52-B55; surface composition (Entities REBUILT, Offerings, Contracts, Oaths, Initiations, Servitors, Aliases, Attestations + Today ledger) is the current sprint focus. |
+| 03 | [Time & Cosmos](plan/03-time-and-cosmos.md) | ✅ backend + H01 primitive coverage | Swiss Ephemeris attribution shipped, multi-calendar engine (Hebrew Reingold/Dershowitz, Hijri, Mayan, Julian via Meeus, Thelemic, Coptic, Hellenic), planetary hours, Liber Resh substrate + API, festivals, election finder. B56-B60 primitive coverage complete — see Phase 03 primitives table below. |
+| 04 | [Journaling](plan/04-journaling.md) | ✅ backend + H02 primitive coverage | Entry expansion (17 kinds + revisions + visibility + encryption), Postgres FTS + sealed-excluded honesty, templates (12 built-ins), library catalog (BibTeX/RIS), multi-identity + blog + scheduled publication, body/audio substrate. B61-B66 primitive coverage complete · Batch 36 (Print + bulk export) folded in via B66 — see Phase 04 primitives table below. |
+| 05 | [Magical Beings](plan/05-magical-beings.md) | ✅ backend + H03 primitive coverage | Entity expansion + alias-graph, offerings + recurring, contracts + obligations, oaths (default sealed), initiations (sealed-only), servitors + tasks, lineage attestations + Ed25519 counter-sign, API CRUD + scheduler. **B67-B75 primitive coverage complete** — BulkActionBar · OfferingTimelineCard · ActivePracticeCard · ContractListItem · ContractStatusPill · OathCard · OathStatusPill · InitiationListItem · InitiationStatusPill · SealedContentsBlock · ServitorListItem · ServitorStatusPill · ServitorTaskCard · EdgeKindLegend · AttestationKindBadge · AttestationListItem · TodayLedgerCards. |
 | 06 | [Divination & Practice](plan/06-divination-and-practice.md) | 🟡 backend done; frontend wiring blocked on per-tool .dc.html | Tarot (PD Rider-Waite-Smith + 5 spreads), I Ching (64 King-Wen + coin/yarrow + transformation), Geomancy (16 figures + cascade + 12-house chart), Runes (Elder Futhark + symmetric handling), Pendulum/Bibliomancy/Horary/Scrying, body practice + banishing logs + Tree of Life paths |
-| 07 | [Workshop](plan/07-workshop.md) | ⏳ deferred until H01-H03 frontend lands | Sigil generator, talismans, magic circles, tool registry — designer-heavy; queue after the current sprint |
+| 07 | [Workshop](plan/07-workshop.md) | ⏳ deferred — designer handoff pending | Sigil generator, talismans, magic circles, tool registry — designer-heavy; queue after Daily Practice Tracker + Phase 06 frontend |
 | 08 | [Linguistic Tools](plan/08-linguistic-tools.md) | ⏳ planned | Gematria (multi-cipher), transliteration, voces magicae |
 | 09 | [Synchronicity & Analytics](plan/09-synchronicity-and-analytics.md) | ⏳ planned | Tagged capture, query builder, viz; needs 00-06 |
 | 10 | [Publishing & Monetization](plan/10-publishing-and-monetization.md) | ⏳ planned | Stripe Connect, subscriptions, print-quality typography |
@@ -34,19 +34,19 @@ This is the **section-level rollup**; per-checkbox detail still lives below. For
 | 16 | [AI Agent Integration](plan/16-ai-agent-integration.md) | ⏳ planned | Daskalos-pattern daemon + MCP, BYO keys |
 
 **Backend tests: 1452 passing · Alembic chain at 0031.**
-**Frontend shared tests: 808 passing · Visual regression: 310/310 · axe-core WCAG 2.2 A+AA: 310/310.**
-**Shared primitives shipped this sprint: 53 across 17 modules.**
+**Frontend shared tests: 960 passing · Visual regression: 360/360 · axe-core WCAG 2.2 A+AA: 360/360.**
+**Shared primitives shipped this sprint: 71 across 22 modules.**
 
-### H01-H03 sprint progress
+### H01-H03 sprint — complete (2026-06-22)
 
-The active sprint is the **H01-H03 frontend wiring** — closes Phases 03/04/05 by shipping the 21 designer surfaces against the existing backend. Phases 03 + 04 primitive coverage is **complete** as of 2026-06-22; Phase 05 cluster (B67-B75) is the remaining work.
+The H01-H03 frontend wiring sprint closes Phases 03/04/05 by shipping the 21 designer surfaces against the existing backend. All four waves landed; the sprint is **closed**.
 
 | Wave | Range | Status | Primitives delivered |
 |---|---|---|---|
 | Foundation | B50-B55 | ✅ done | BeingsTabs · SealUnlock family · ItemsComposer · ReceptionSelector · AutoStampChip · ObligationTable · BindingKindIcon · Signing family (PublicKeyShort · CanonicalBytes · SignatureRoster · SignDialog · RevokeDialog) · RelationshipStatusPill · KindFunctionFilter · EntityCard · AliasGraph · BodySilhouette · SensationConfig · ExportPreview |
 | Phase 03 surfaces | B56-B60 | ✅ done | MultiCalendarCard · LunarPhaseWidget · PlanetaryHourStrip · PlanetaryHourDetail · MonthGrid · FestivalDetail · CitationKindBadge · FestivalTraditionChip · ReshStationCard · ReshStreakGrid · ReshNextAdoration · SunArcDiagram · ProductScoringCallout · ElectionResultCard · ElectionRecipeCard |
 | Phase 04 surfaces | B61-B66 | ✅ done | BlockGlyph · TemplateBlockCard · TemplateBlockPalette · TemplateTokenChip (+ 20-kind catalog) · HighlightedText · SearchHitCard · SealedExcludedCallout · VisibilityControl · VisibilityDowngradeDialog · SealEntryDialog · BookRow · BookStatusBadge · QuoteCard · ReadingListCard · SensationTypeGrid · BodyMarkerLegend · ExportFormatPicker · SealedExportNotice |
-| Phase 05 cluster | B67-B75 | ⏳ next | Entities REBUILT · Offerings · Contracts · Oaths · Initiations · Servitors · Aliases · Attestations · Today ledger wiring |
+| Phase 05 cluster | B67-B75 | ✅ done | BulkActionBar · OfferingTimelineCard · ActivePracticeCard · ContractListItem · ContractStatusPill · OathCard · OathStatusPill · InitiationListItem · InitiationStatusPill · SealedContentsBlock · ServitorListItem · ServitorStatusPill · ServitorTaskCard · EdgeKindLegend · AttestationKindBadge · AttestationListItem · TodayLedgerCards (+ TodayLedger types + getTodayLedger endpoint + admin Today.tsx wiring) |
 
 ---
 
