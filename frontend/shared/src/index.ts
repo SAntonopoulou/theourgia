@@ -58,6 +58,7 @@ export * from "./Offerings/index.js";
 export * from "./OracleTabs/index.js";
 export * from "./PlanetaryHourDetail/index.js";
 export * from "./PlanetaryHourStrip/index.js";
+export * from "./practice/index.js";
 export * from "./Popover/index.js";
 export * from "./Progress/index.js";
 export * from "./PublicChrome/index.js";
