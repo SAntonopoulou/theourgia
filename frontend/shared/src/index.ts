@@ -31,6 +31,7 @@ export * from "./CelestialBand/index.js";
 export * from "./Chart/index.js";
 export * from "./Chip/index.js";
 export * from "./Contracts/index.js";
+export * from "./DailyPractice/index.js";
 export * from "./Dialog/index.js";
 export * from "./divination/index.js";
 export * from "./Drawer/index.js";

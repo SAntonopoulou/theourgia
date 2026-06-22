@@ -39,6 +39,7 @@ import { apiMethods } from "./data/api.js";
 import { Analytics } from "./routes/Analytics.js";
 import { CircleBuilder } from "./routes/CircleBuilder.js";
 import { Connection } from "./routes/Connection.js";
+import { DailyPracticeRoute } from "./routes/DailyPracticeRoute.js";
 import { Divination } from "./routes/Divination.js";
 import { Entities } from "./routes/Entities.js";
 import { Foundations } from "./routes/Foundations.js";
@@ -150,6 +151,7 @@ function ShellRoutes() {
         <Route path="/journal" element={<Journal />} />
         <Route path="/library" element={<Library />} />
         <Route path="/synchronicities" element={<Synchronicities />} />
+        <Route path="/daily-practice" element={<DailyPracticeRoute />} />
         <Route path="/entities" element={<Entities />} />
         <Route
           path="/calendar"
