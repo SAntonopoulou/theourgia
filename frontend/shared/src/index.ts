@@ -22,6 +22,7 @@ export * from "./BeingsTabs/index.js";
 export * from "./BindingKindIcon/index.js";
 export * from "./BodySensation/index.js";
 export * from "./BodySilhouette/index.js";
+export * from "./BulkActionBar/index.js";
 export * from "./Button/index.js";
 export * from "./Calendar/index.js";
 export * from "./Card/index.js";
