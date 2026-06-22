@@ -72,6 +72,7 @@ import { Wellbeing } from "./routes/Wellbeing.js";
 import { Workshop } from "./routes/Workshop.js";
 import { Journal } from "./routes/Journal.js";
 import { Library } from "./routes/Library.js";
+import { MagicalCircleRoute } from "./routes/MagicalCircleRoute.js";
 import { MagicSquaresRoute } from "./routes/MagicSquaresRoute.js";
 import { TalismanDesignerRoute } from "./routes/TalismanDesignerRoute.js";
 import { Placeholder } from "./routes/Placeholder.js";
@@ -188,16 +189,7 @@ function ShellRoutes() {
         <Route path="/sigils" element={<SigilGeneratorRoute />} />
         <Route path="/magic-squares" element={<MagicSquaresRoute />} />
         <Route path="/circle" element={<CircleBuilder />} />
-        <Route
-          path="/circles"
-          element={
-            <Placeholder
-              glyph="compass"
-              title="Magical Circle"
-              body="Concentric rings, compass points, centre element, print-tile mode. Lands in B91+ of the H05 sprint."
-            />
-          }
-        />
+        <Route path="/circles" element={<MagicalCircleRoute />} />
         <Route path="/talismans" element={<TalismanDesignerRoute />} />
         <Route path="/talismans/legacy" element={<Talismans />} />
         <Route
