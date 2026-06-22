@@ -73,6 +73,7 @@ import { Workshop } from "./routes/Workshop.js";
 import { Journal } from "./routes/Journal.js";
 import { Library } from "./routes/Library.js";
 import { Placeholder } from "./routes/Placeholder.js";
+import { PracticeLogsRoute } from "./routes/PracticeLogsRoute.js";
 import { RitualFeed } from "./routes/RitualFeed.js";
 import { Settings } from "./routes/Settings.js";
 import { SigilStudio } from "./routes/SigilStudio.js";
@@ -157,6 +158,7 @@ function ShellRoutes() {
         <Route path="/library" element={<Library />} />
         <Route path="/synchronicities" element={<Synchronicities />} />
         <Route path="/daily-practice" element={<DailyPracticeRoute />} />
+        <Route path="/practice-logs" element={<PracticeLogsRoute />} />
         <Route path="/entities" element={<Entities />} />
         <Route
           path="/calendar"
