@@ -91,6 +91,87 @@ describe("VaultNav", () => {
     ]);
   });
 
+  // ─── H05 — Workshop section extension ───────────────────────────
+
+  it("DEFAULT_VAULT_NAV Workbench section has all 7 H05 entries in order", () => {
+    const workbench = DEFAULT_VAULT_NAV.find((s) => s.heading === "Workbench");
+    expect(workbench).toBeDefined();
+    expect(workbench?.items.map((i) => i.key)).toEqual([
+      "divination",
+      "sigils",
+      "magicsquares",
+      "talismans",
+      "circles",
+      "tools",
+      "voces",
+    ]);
+  });
+
+  it("H05 Sigil Generator route is /sigils (renamed from /sigil)", () => {
+    const { container } = render(<VaultNav />);
+    const link = container.querySelector('a[href="/sigils"]');
+    expect(link).not.toBeNull();
+    expect(link?.textContent).toContain("Sigil Generator");
+  });
+
+  it("H05 Magic Squares route is /magic-squares (new entry)", () => {
+    const { container } = render(<VaultNav />);
+    const link = container.querySelector('a[href="/magic-squares"]');
+    expect(link).not.toBeNull();
+    expect(link?.textContent).toContain("Magic Squares");
+  });
+
+  it("H05 Magical Circle route is /circles (renamed from /circle)", () => {
+    const { container } = render(<VaultNav />);
+    const link = container.querySelector('a[href="/circles"]');
+    expect(link).not.toBeNull();
+    expect(link?.textContent).toContain("Magical Circle");
+  });
+
+  it("H05 Talisman Designer label updated (was 'Talismans')", () => {
+    const { container } = render(<VaultNav />);
+    const link = container.querySelector('a[href="/talismans"]');
+    expect(link).not.toBeNull();
+    expect(link?.textContent).toContain("Talisman Designer");
+  });
+
+  it("H05 Tool Registry route is /tools (new entry)", () => {
+    const { container } = render(<VaultNav />);
+    const link = container.querySelector('a[href="/tools"]');
+    expect(link).not.toBeNull();
+    expect(link?.textContent).toContain("Tool Registry");
+  });
+
+  it("H05 Voces Magicae route is /voces (new entry)", () => {
+    const { container } = render(<VaultNav />);
+    const link = container.querySelector('a[href="/voces"]');
+    expect(link).not.toBeNull();
+    expect(link?.textContent).toContain("Voces Magicae");
+  });
+
+  it.each([
+    "sigils",
+    "magicsquares",
+    "talismans",
+    "circles",
+    "tools",
+    "voces",
+  ] as const)("active=%s highlights its Workbench entry", (key) => {
+    render(<VaultNav active={key} />);
+    // Each Workshop entry's label maps 1:1 to a known text node.
+    const labelByKey: Record<typeof key, string> = {
+      sigils: "Sigil Generator",
+      magicsquares: "Magic Squares",
+      talismans: "Talisman Designer",
+      circles: "Magical Circle",
+      tools: "Tool Registry",
+      voces: "Voces Magicae",
+    };
+    const link = screen.getByText(labelByKey[key]).closest("a") as HTMLElement;
+    expect(link.style.background).toBe("var(--accent-soft)");
+    expect(link.style.boxShadow).toBe("inset 2px 0 0 var(--accent)");
+  });
+
   it("Quick capture button fires onQuickCapture", async () => {
     const onQuickCapture = vi.fn();
     render(<VaultNav onQuickCapture={onQuickCapture} />);

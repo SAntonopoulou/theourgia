@@ -97,22 +97,40 @@ const NAV_ICONS = {
       <circle cx="12" cy="12" r="2.5" />
     </svg>
   ),
-  sigil: (
+  sigils: (
     <svg {...ICON_PROPS}>
       <circle cx="12" cy="12" r="9" />
       <path d="M12 4.5l6.5 11.3H5.5z" />
     </svg>
   ),
-  circle: (
+  magicsquares: (
+    <svg {...ICON_PROPS}>
+      <rect x="4" y="4" width="16" height="16" rx="1.5" />
+      <path d="M9.3 4v16M14.6 4v16M4 9.3h16M4 14.6h16" />
+    </svg>
+  ),
+  talismans: (
+    <svg {...ICON_PROPS}>
+      <path d="M12 2.5l3 5 5.5 1-4 4 1 5.5-5.5-3-5.5 3 1-5.5-4-4 5.5-1z" />
+    </svg>
+  ),
+  circles: (
     <svg {...ICON_PROPS}>
       <circle cx="12" cy="12" r="9" />
       <circle cx="12" cy="12" r="4.5" />
       <circle cx="12" cy="12" r="1" />
     </svg>
   ),
-  talismans: (
+  tools: (
     <svg {...ICON_PROPS}>
-      <path d="M12 2.5l3 5 5.5 1-4 4 1 5.5-5.5-3-5.5 3 1-5.5-4-4 5.5-1z" />
+      <path d="M14.5 4.5l5 5-9.5 9.5-5-5z" />
+      <path d="M9 10l-4.5 4.5M16.5 2.5l1.6 1.6" />
+      <circle cx="6" cy="18" r="1" />
+    </svg>
+  ),
+  voces: (
+    <svg {...ICON_PROPS}>
+      <path d="M4 10v4M8 7v10M12 4.5v15M16 8v8M20 10.5v3" />
     </svg>
   ),
   analytics: (
@@ -181,9 +199,12 @@ export const DEFAULT_VAULT_NAV: VaultNavSection[] = [
     heading: "Workbench",
     items: [
       { key: "divination", to: "/divination/tarot", label: "Divination" },
-      { key: "sigil", to: "/sigil", label: "Sigil Studio" },
-      { key: "circle", to: "/circle", label: "Circle Builder" },
-      { key: "talismans", to: "/talismans", label: "Talismans" },
+      { key: "sigils", to: "/sigils", label: "Sigil Generator" },
+      { key: "magicsquares", to: "/magic-squares", label: "Magic Squares" },
+      { key: "talismans", to: "/talismans", label: "Talisman Designer" },
+      { key: "circles", to: "/circles", label: "Magical Circle" },
+      { key: "tools", to: "/tools", label: "Tool Registry" },
+      { key: "voces", to: "/voces", label: "Voces Magicae" },
     ],
   },
   {

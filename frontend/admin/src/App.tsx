@@ -104,9 +104,14 @@ function navKeyForPath(pathname: string): NavKey | undefined {
   if (pathname.startsWith("/library")) return "library";
   if (pathname.startsWith("/calendar")) return "calendar";
   if (pathname.startsWith("/divination")) return "divination";
-  if (pathname.startsWith("/sigil")) return "sigil";
-  if (pathname.startsWith("/circle")) return "circle";
+  if (pathname.startsWith("/sigils") || pathname.startsWith("/sigil"))
+    return "sigils";
+  if (pathname.startsWith("/magic-squares")) return "magicsquares";
+  if (pathname.startsWith("/circles") || pathname.startsWith("/circle"))
+    return "circles";
   if (pathname.startsWith("/talisman")) return "talismans";
+  if (pathname.startsWith("/tools")) return "tools";
+  if (pathname.startsWith("/voces")) return "voces";
   if (pathname.startsWith("/analytics")) return "analytics";
   if (pathname.startsWith("/feed")) return "feed";
   if (pathname.startsWith("/hubs")) return "hubs";
@@ -177,8 +182,58 @@ function ShellRoutes() {
         <Route path="/divination/runes" element={<RunesRoute />} />
         <Route path="/divination/more" element={<DivinationMiscRoute />} />
         <Route path="/sigil" element={<SigilStudio />} />
+        <Route
+          path="/sigils"
+          element={
+            <Placeholder
+              glyph="compass"
+              title="Sigil Generator"
+              body="The H05 Sigil Generator surface lands in the next batch. Until then this is a placeholder."
+            />
+          }
+        />
+        <Route
+          path="/magic-squares"
+          element={
+            <Placeholder
+              glyph="compass"
+              title="Magic Squares"
+              body="The seven planetary kamea + custom builder lands in B91+ of the H05 sprint."
+            />
+          }
+        />
         <Route path="/circle" element={<CircleBuilder />} />
+        <Route
+          path="/circles"
+          element={
+            <Placeholder
+              glyph="compass"
+              title="Magical Circle"
+              body="Concentric rings, compass points, centre element, print-tile mode. Lands in B91+ of the H05 sprint."
+            />
+          }
+        />
         <Route path="/talismans" element={<Talismans />} />
+        <Route
+          path="/tools"
+          element={
+            <Placeholder
+              glyph="compass"
+              title="Tool Registry"
+              body="Ritual tools (14 kinds) + altars. Lands in B91+ of the H05 sprint."
+            />
+          }
+        />
+        <Route
+          path="/voces"
+          element={
+            <Placeholder
+              glyph="compass"
+              title="Voces Magicae"
+              body="The names of power — source text, transliteration, IPA, citation, audio recordings. Lands in B91+ of the H05 sprint."
+            />
+          }
+        />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/feed" element={<RitualFeed />} />
         <Route path="/hubs" element={<Hubs />} />

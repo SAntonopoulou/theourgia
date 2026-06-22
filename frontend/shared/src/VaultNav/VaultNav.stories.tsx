@@ -22,13 +22,18 @@ const meta = {
         "today",
         "journal",
         "synchronicities",
+        "dailypractice",
+        "practicelogs",
         "entities",
         "library",
         "calendar",
         "divination",
-        "sigil",
-        "circle",
+        "sigils",
+        "magicsquares",
         "talismans",
+        "circles",
+        "tools",
+        "voces",
         "analytics",
         "feed",
         "hubs",
@@ -60,6 +65,68 @@ export const Journal: Story = {
 
 export const Divination: Story = {
   args: { active: "divination" },
+  render: (args) => (
+    <div style={{ width: 248, height: "100vh", background: "var(--bg)" }}>
+      <VaultNav {...args} />
+    </div>
+  ),
+};
+
+// ─── H05 Workbench active states ──────────────────────────────
+
+export const SigilGenerator: Story = {
+  name: "Workbench · Sigil Generator active",
+  args: { active: "sigils" },
+  render: (args) => (
+    <div style={{ width: 248, height: "100vh", background: "var(--bg)" }}>
+      <VaultNav {...args} />
+    </div>
+  ),
+};
+
+export const MagicSquares: Story = {
+  name: "Workbench · Magic Squares active",
+  args: { active: "magicsquares" },
+  render: (args) => (
+    <div style={{ width: 248, height: "100vh", background: "var(--bg)" }}>
+      <VaultNav {...args} />
+    </div>
+  ),
+};
+
+export const TalismanDesigner: Story = {
+  name: "Workbench · Talisman Designer active",
+  args: { active: "talismans" },
+  render: (args) => (
+    <div style={{ width: 248, height: "100vh", background: "var(--bg)" }}>
+      <VaultNav {...args} />
+    </div>
+  ),
+};
+
+export const MagicalCircle: Story = {
+  name: "Workbench · Magical Circle active",
+  args: { active: "circles" },
+  render: (args) => (
+    <div style={{ width: 248, height: "100vh", background: "var(--bg)" }}>
+      <VaultNav {...args} />
+    </div>
+  ),
+};
+
+export const ToolRegistry: Story = {
+  name: "Workbench · Tool Registry active",
+  args: { active: "tools" },
+  render: (args) => (
+    <div style={{ width: 248, height: "100vh", background: "var(--bg)" }}>
+      <VaultNav {...args} />
+    </div>
+  ),
+};
+
+export const VocesMagicae: Story = {
+  name: "Workbench · Voces Magicae active",
+  args: { active: "voces" },
   render: (args) => (
     <div style={{ width: 248, height: "100vh", background: "var(--bg)" }}>
       <VaultNav {...args} />
