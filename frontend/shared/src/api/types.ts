@@ -45,7 +45,26 @@ export interface Session {
   expires_at: string; // ISO 8601
 }
 
-export type EntryType = "observation" | "ritual" | "divination" | "synchronicity" | "capture";
+export type EntryType =
+  // Phase 02 legacy
+  | "observation"
+  | "ritual"
+  | "divination"
+  | "synchronicity"
+  | "capture"
+  // Phase 04 expansions (mirrors backend theourgia.models.entries.EntryType)
+  | "note"
+  | "ritual_log"
+  | "dream"
+  | "working"
+  | "magical_record"
+  | "pathworking"
+  | "scrying"
+  | "body_practice"
+  | "meeting_note"
+  | "study_note"
+  | "liber_resh"
+  | "blog_post";
 
 /** Single entry — wire format from ``GET /api/v1/entries``. */
 export interface EntryRecord {
@@ -338,4 +357,74 @@ export interface CompletionInput {
   note?: string | null;
   linked_entry_id?: string | null;
   civil_date?: string | null;
+}
+
+// ─── Practice Logs (B88 wire-up: composes existing endpoints) ──────
+
+export type BodyPracticeKindWire = "asana" | "pranayama" | "other";
+
+export interface BodyPracticeRecord {
+  id: string;
+  kind: BodyPracticeKindWire;
+  posture_or_pattern: string;
+  started_at: string;
+  duration_seconds: number;
+  breaks_count: number;
+  observation_notes: string | null;
+  body_snapshot_id: string | null;
+  entry_id: string | null;
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateBodyPracticeInput {
+  kind?: BodyPracticeKindWire;
+  posture_or_pattern: string;
+  started_at?: string | null;
+  duration_seconds: number;
+  breaks_count?: number;
+  observation_notes?: string | null;
+  body_snapshot_id?: string | null;
+  entry_id?: string | null;
+}
+
+export type BanishingMethodWire =
+  | "lbrp"
+  | "star_ruby"
+  | "simple_ground"
+  | "breath"
+  | "water"
+  | "salt"
+  | "bell"
+  | "incense"
+  | "khephra"
+  | "other";
+
+export interface BanishingLogRecord {
+  id: string;
+  method: BanishingMethodWire;
+  method_label: string | null;
+  performed_at: string;
+  duration_seconds: number | null;
+  state_before: string | null;
+  state_after: string | null;
+  notes: string | null;
+  correspondences: Record<string, unknown>;
+  entry_id: string | null;
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateBanishingLogInput {
+  method: BanishingMethodWire;
+  method_label?: string | null;
+  performed_at?: string | null;
+  duration_seconds?: number | null;
+  state_before?: string | null;
+  state_after?: string | null;
+  notes?: string | null;
+  correspondences?: Record<string, unknown> | null;
+  entry_id?: string | null;
 }

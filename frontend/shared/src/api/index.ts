@@ -11,9 +11,15 @@ export { api, NotImplementedError } from "./endpoints.js";
 export type { Api } from "./endpoints.js";
 export { defaultFixtures } from "./fixtures.js";
 export type {
+  BanishingLogRecord,
+  BanishingMethodWire,
+  BodyPracticeKindWire,
+  BodyPracticeRecord,
   BookRecord,
   CompletionInput,
   CompletionStatusWire,
+  CreateBanishingLogInput,
+  CreateBodyPracticeInput,
   CreateBookInput,
   CreateEntityInput,
   CreateEntryInput,

@@ -202,6 +202,18 @@ function emptyByType(): Record<EntryType, number> {
     divination: 0,
     synchronicity: 0,
     capture: 0,
+    note: 0,
+    ritual_log: 0,
+    dream: 0,
+    working: 0,
+    magical_record: 0,
+    pathworking: 0,
+    scrying: 0,
+    body_practice: 0,
+    meeting_note: 0,
+    study_note: 0,
+    liber_resh: 0,
+    blog_post: 0,
   };
 }
 

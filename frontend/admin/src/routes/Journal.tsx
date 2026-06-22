@@ -44,6 +44,18 @@ const TYPE_LABEL: Record<EntryType, string> = {
   divination: "Divination",
   synchronicity: "Synchronicity",
   capture: "Capture",
+  note: "Note",
+  ritual_log: "Ritual log",
+  dream: "Dream",
+  working: "Working",
+  magical_record: "Magical record",
+  pathworking: "Pathworking",
+  scrying: "Scrying",
+  body_practice: "Body practice",
+  meeting_note: "Meeting note",
+  study_note: "Study note",
+  liber_resh: "Liber Resh",
+  blog_post: "Blog post",
 };
 
 const TYPE_COLOR: Record<EntryType, string> = {
@@ -52,6 +64,18 @@ const TYPE_COLOR: Record<EntryType, string> = {
   divination: "var(--c-divination)",
   synchronicity: "var(--c-synchronicity)",
   capture: "var(--c-entity)",
+  note: "var(--c-journal)",
+  ritual_log: "var(--c-working)",
+  dream: "var(--c-journal)",
+  working: "var(--c-working)",
+  magical_record: "var(--c-working)",
+  pathworking: "var(--c-journal)",
+  scrying: "var(--c-divination)",
+  body_practice: "var(--c-journal)",
+  meeting_note: "var(--c-journal)",
+  study_note: "var(--c-journal)",
+  liber_resh: "var(--c-journal)",
+  blog_post: "var(--c-journal)",
 };
 
 type ChipFilter = "working" | "divination" | "synchronicity" | "journal";
@@ -449,6 +473,18 @@ function ContentTypesFacet({ entries }: { entries: EntryRecord[] }) {
       divination: 0,
       synchronicity: 0,
       capture: 0,
+      note: 0,
+      ritual_log: 0,
+      dream: 0,
+      working: 0,
+      magical_record: 0,
+      pathworking: 0,
+      scrying: 0,
+      body_practice: 0,
+      meeting_note: 0,
+      study_note: 0,
+      liber_resh: 0,
+      blog_post: 0,
     };
     for (const e of entries) c[e.type] = (c[e.type] ?? 0) + 1;
     return c;

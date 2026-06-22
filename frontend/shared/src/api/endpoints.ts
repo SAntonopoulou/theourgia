@@ -9,8 +9,12 @@
 
 import type { ApiClient } from "./client.js";
 import type {
+  BanishingLogRecord,
+  BodyPracticeRecord,
   BookRecord,
   CompletionInput,
+  CreateBanishingLogInput,
+  CreateBodyPracticeInput,
   CreateBookInput,
   CreateEntityInput,
   CreateEntryInput,
@@ -293,6 +297,56 @@ export function api(client: ApiClient) {
       return client.request<void>(`/api/v1/practices/${id}/today${qs}`, {
         method: "DELETE",
       });
+    },
+
+    // ─── Practice Logs — body + banishing (B88) ──────────────────────
+
+    createBodyPracticeSession(
+      input: CreateBodyPracticeInput,
+    ): Promise<BodyPracticeRecord> {
+      return client.request<BodyPracticeRecord>("/api/v1/practice/body", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    listBodyPracticeSessions(opts?: {
+      signal?: AbortSignal;
+      kind?: "asana" | "pranayama" | "other";
+      limit?: number;
+    }): Promise<BodyPracticeRecord[]> {
+      const params = new URLSearchParams();
+      if (opts?.kind) params.set("kind", opts.kind);
+      if (opts?.limit) params.set("limit", String(opts.limit));
+      const qs = params.toString();
+      return client.request<BodyPracticeRecord[]>(
+        `/api/v1/practice/body${qs ? `?${qs}` : ""}`,
+        { signal: opts?.signal },
+      );
+    },
+
+    createBanishingLog(
+      input: CreateBanishingLogInput,
+    ): Promise<BanishingLogRecord> {
+      return client.request<BanishingLogRecord>(
+        "/api/v1/practice/banishing",
+        { method: "POST", json: input },
+      );
+    },
+
+    listBanishingLogs(opts?: {
+      signal?: AbortSignal;
+      method?: string;
+      limit?: number;
+    }): Promise<BanishingLogRecord[]> {
+      const params = new URLSearchParams();
+      if (opts?.method) params.set("method", opts.method);
+      if (opts?.limit) params.set("limit", String(opts.limit));
+      const qs = params.toString();
+      return client.request<BanishingLogRecord[]>(
+        `/api/v1/practice/banishing${qs ? `?${qs}` : ""}`,
+        { signal: opts?.signal },
+      );
     },
   };
 }
