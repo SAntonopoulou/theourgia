@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-22 (H01-H03 sprint · Phase 04 primitive coverage complete)
+
+Phase 04 primitive coverage closed today with B66 Export — folds in the long-pending **Batch 36 (Print + bulk export)**, which the new ExportFormatPicker + SealedExportNotice + ExportPreview trio now supplies the load-bearing atoms for.
+
+**Phase 04 surfaces — B61-B66** (commits `47f5a3a`, `aaf8147`, `c937494`, `8897d2b`, `073c8f9`, `4de41cb`):
+
+- **B61 Template Designer** — `BlockGlyph`, `TemplateBlockCard`, `TemplateBlockPalette`, `TemplateTokenChip` + the 20-kind block catalog (magick / format / mark, with `--magick` / `--format` / `--mark` token families added). Unblocks the long-deferred **Batch 35 (Tiptap live integration)** which can now wire against a finalised block taxonomy instead of moving targets.
+- **B62 Search** — `HighlightedText`, `SearchHitCard`, `SealedExcludedCallout` + `highlightSegments()` helper. The sealed-excluded callout is the canonical UI for "sealed entries weren't searched — the server can't read their contents."
+- **B63 Visibility** — `VisibilityControl` (4-pill segmented control with `onChange` for raising privacy + `onRequestDowngrade` for lowering), `VisibilityDowngradeDialog` (severity escalates by target — viewer = constructive, hub = warn, public = danger), `SealEntryDialog` (type-to-confirm zero-knowledge sealing). This batch formalises the cross-cutting rule: **`--danger` is reserved for the Visibility → Public step.** No other negative state in Phase 04 / 05 uses red.
+- **B64 Library REBUILT** — `BookRow`, `BookStatusBadge`, `QuoteCard`, `ReadingListCard` + the editorial constants (`BOOK_STATUS_META` / `traditionSpineColor` / `readingListProgress`). Replaces the original B31 catalog work per the H03 supplement.
+- **B65 Body Sensation surface** — `SensationTypeGrid` (the 12-cell picker extracted as its own atom; surfaces compose it in both the marker-config panel and the no-selection "Place a sensation" prompt) and `BodyMarkerLegend` (right-rail legend list with view chip + intensity + truncated note).
+- **B66 Export** — `ExportFormatPicker` (2×2 radiogroup of PDF / Markdown / HTML / EPUB with editorial captions; supports `EXPORT_BOUND_FORMATS` subset for bound-volume mode) and `SealedExportNotice` ("Sealed entries are never exported" — distinct phrasing from B62's "may also match" because Export omits them, intentionally).
+
+**Phase 03 surfaces — B56-B60** (commits `587a6e5`, `c347181`, `8fc9663`, `99e9f74`, `11325e5`, `beb60eb`):
+
+- **B56 Today Widgets** — `MultiCalendarCard` (family-grouped collapsible widget with normal / loading / empty / error states) and `LunarPhaseWidget` (parametric SVG moon with terminator-ellipse math in `moonPath.ts`, 8-cell phase cycle rail, hemisphere toggle). Today.tsx wiring landed in `c347181` — replaces the simpler `LunarPhaseCard` with the bigger embed.
+- **B57 Planetary Hours** — `PlanetaryHourStrip` (proportional 24-cell strip where each cell's flex-grow is its true length in minutes) and `PlanetaryHourDetail` (selected-hour card with color strip + ordinal + favours chips + verbatim rulership notes). The strip's NOW marker positions at the sunrise-anchored fractional time; polar fallback uses even 60-minute hours from midnight.
+- **B58 Calendar** — `MonthGrid` (pure 5×7 layout with today highlight + single-day festival chips + multi-day bar overlays in a reserved lane), `FestivalDetail` (selected-festival card with tradition-color strip + citation chain), `CitationKindBadge` (‡ / ❖ / ✦ for primary / scholarly / community sources), `FestivalTraditionChip` (filter pill with `soon` state for Hindu / Egyptian).
+- **B59 Liber Resh** — `ReshStationCard`, `ReshStreakGrid` (heatmap-style record, never red), `ReshNextAdoration` (hero card), `SunArcDiagram` + the canonical Liber CC adorations data (`resh.ts` — verbatim Crowley 1911 PD).
+- **B60 Election Finder** — `ProductScoringCallout` (the "every constraint is decisive — one fail → zero" explainer, verbatim copy), `ElectionResultCard` (collapsible result with rank chip + score bar + per-constraint breakdown), `ElectionRecipeCard` (recipe gallery tile). New `--fail` token (aliases `--danger`, distinct semantic name for "this election failed the constraint").
+
+**EntityKind type consolidation** (commit `60d941f`): backend already had all 17 entity kinds since B37; frontend `api/types.ts` was stale at the 6-kind Phase 02 snapshot. Widened the canonical type to match the backend, and added `EntityRelationshipStatus` / `EntityAliasKind` / `EntityVisibility` as string-literal unions matching the backend enums. B55's temporary `EntityKindUI` alias is collapsed.
+
+**B54 visual baselines committed** (`aa5906e`): 11 Storybook stories for the Signing UX family that shipped without gates in the prior session.
+
+**Tokens added this sprint** (cumulative): `--moon-light` / `--moon-dark` (B56) · `--arc-day` / `--arc-night` already existed · `--sun-warm` / `--sky` (B59) · `--fail` (B60, aliases `--danger`) · `--magick` / `--format` / `--mark` (B61). The full B50 sweep (`--st-*`, `--g-*`, `--fest-*`, `--paper-*`, `--skin-*`, `--edge-*`, `--c-entity`, `--hit-*`, `--vis-*`) was already in place.
+
+**Test counts**: backend unchanged at 1452. Frontend shared: 808 (+433 vs. session open). Visual regression + a11y: 310/310 on both gates. Admin tsc clean.
+
+**Remaining sprint queue**: B67 (Entities REBUILT) → B68 Offerings → B69 Contracts → B70 Oaths → B71 Initiations → B72 Servitors → B73 Aliases → B74 Attestations → B75 Today ledger wiring. Most Phase 05 primitives already shipped in B52-B55 (BeingsTabs, SealUnlock family, ItemsComposer, ReceptionSelector, AutoStampChip, ObligationTable, BindingKindIcon, Signing family, EntityCard, RelationshipStatusPill, KindFunctionFilter, AliasGraph) — the surface batches will be lighter than Phases 03-04.
+
 ### Added — 2026-06-21 (H01-H03 designer handoffs returned · frontend wiring sprint opens)
 
 Designer agent returned the 33-file bundle responding to designer
