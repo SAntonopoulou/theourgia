@@ -74,6 +74,7 @@ import { Journal } from "./routes/Journal.js";
 import { Library } from "./routes/Library.js";
 import { Placeholder } from "./routes/Placeholder.js";
 import { PracticeLogsRoute } from "./routes/PracticeLogsRoute.js";
+import { SigilGeneratorRoute } from "./routes/SigilGeneratorRoute.js";
 import { RitualFeed } from "./routes/RitualFeed.js";
 import { Settings } from "./routes/Settings.js";
 import { SigilStudio } from "./routes/SigilStudio.js";
@@ -182,16 +183,7 @@ function ShellRoutes() {
         <Route path="/divination/runes" element={<RunesRoute />} />
         <Route path="/divination/more" element={<DivinationMiscRoute />} />
         <Route path="/sigil" element={<SigilStudio />} />
-        <Route
-          path="/sigils"
-          element={
-            <Placeholder
-              glyph="compass"
-              title="Sigil Generator"
-              body="The H05 Sigil Generator surface lands in the next batch. Until then this is a placeholder."
-            />
-          }
-        />
+        <Route path="/sigils" element={<SigilGeneratorRoute />} />
         <Route
           path="/magic-squares"
           element={

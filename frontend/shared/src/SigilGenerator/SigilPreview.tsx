@@ -1,0 +1,357 @@
+/**
+ * SigilPreview — the centre-of-gravity SVG. Renders the active mode's
+ * procedural output inside a 280×280 viewBox + ring decoration.
+ *
+ * Composes the workshop engines (B90): `sigilCurve`, `sigilGlyph`,
+ * `sigilKamea`, `mulberry32`. The operations (rotate / scale /
+ * mirror / recolor) ride as a transform on the inner `<g>` so they
+ * do not mutate the source parameters (per H05 §S2.1: the make is
+ * committed, not silently mutated).
+ */
+
+import * as React from "react";
+import { type CSSProperties, useMemo } from "react";
+
+import {
+  PLANETARY_SQUARES,
+  type CurveFamily,
+  type PlanetKey,
+  mulberry32,
+  sigilCurve,
+  sigilGlyph,
+  sigilKamea,
+} from "../workshop/index.js";
+
+import type { SigilMode } from "./copy.js";
+
+/** Operations a caller can layer over the source SVG without
+ *  changing the source parameters. Per the H05 supplement — these
+ *  are read at render and never persisted to the sigil row. */
+export interface SigilOperations {
+  color?: string;
+  rotateDeg?: number;
+  /** Scale in 100..800 — divided by 320 to get a viewBox multiplier. */
+  scalePercent?: number;
+  mirror?: boolean;
+}
+
+export interface SigilPreviewProps {
+  mode: SigilMode;
+  /** Intention text — feeds the deterministic seed. */
+  intention: string;
+  /** Active planetary square (kamea mode). */
+  square?: PlanetKey;
+  /** Active curve family (hashed mode). */
+  family?: CurveFamily;
+  operations?: SigilOperations;
+  className?: string;
+  style?: CSSProperties;
+}
+
+const VIEWBOX = 280;
+const CENTRE = 140;
+
+/** Tiny deterministic hash matching the mockup's `hash()` so the
+ *  same intention + mode + square produce the same seed across
+ *  renders and across the library thumbnail vs. main preview. */
+function hashIntention(s: string): number {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h;
+}
+
+function ringDecoration(color: string) {
+  return (
+    <g opacity={0.22} aria-hidden="true">
+      <circle
+        cx={CENTRE}
+        cy={CENTRE}
+        r={128}
+        fill="none"
+        stroke={color}
+        strokeWidth={1}
+      />
+      <circle
+        cx={CENTRE}
+        cy={CENTRE}
+        r={118}
+        fill="none"
+        stroke={color}
+        strokeWidth={0.6}
+      />
+    </g>
+  );
+}
+
+function kameaPlanet(mode: SigilMode, square: PlanetKey): PlanetKey {
+  return mode === "kamea" ? square : "saturn";
+}
+
+function pickSquareCells(planet: PlanetKey) {
+  const found = PLANETARY_SQUARES.find((p) => p.planet === planet);
+  return found?.cells ?? PLANETARY_SQUARES[0]!.cells;
+}
+
+function familyForMode(mode: SigilMode, family: CurveFamily): CurveFamily {
+  if (mode === "harmonograph") return "harmonograph";
+  if (mode === "rosette") return "rose";
+  if (mode === "formula") return "polar";
+  return family;
+}
+
+/** Render the active mode into a centred SVG inner-group. */
+function ModeBody({
+  mode,
+  intention,
+  square,
+  family,
+  color,
+}: {
+  mode: SigilMode;
+  intention: string;
+  square: PlanetKey;
+  family: CurveFamily;
+  color: string;
+}) {
+  const seed = useMemo(
+    () => hashIntention(`${intention}${mode}${square}`),
+    [intention, mode, square],
+  );
+
+  if (mode === "kamea") {
+    const cells = pickSquareCells(square);
+    const rng = mulberry32(seed);
+    // Sample a few cell values pseudo-randomly to trace.
+    const n = cells.length;
+    const sequence: number[] = [];
+    const taken = new Set<number>();
+    for (let k = 0; k < Math.min(8, n * n); k++) {
+      let v = Math.floor(rng() * n * n) + 1;
+      let attempts = 0;
+      while (taken.has(v) && attempts < n * n) {
+        v = (v % (n * n)) + 1;
+        attempts++;
+      }
+      taken.add(v);
+      sequence.push(v);
+    }
+    const cellSize = 200 / n;
+    const off = 40;
+    const traced = sigilKamea(cells, sequence, 200);
+    // The engine returns coords centred at 0 — shift into the
+    // viewBox by offsetting cell origin to (off, off).
+    // Build the grid lines directly.
+    const gridLines: React.ReactElement[] = [];
+    for (let i = 1; i < n; i++) {
+      const p = off + i * cellSize;
+      gridLines.push(
+        <line
+          key={`v-${i}`}
+          x1={p}
+          y1={off}
+          x2={p}
+          y2={off + 200}
+          stroke="var(--line-2)"
+          strokeWidth={1}
+        />,
+      );
+      gridLines.push(
+        <line
+          key={`h-${i}`}
+          x1={off}
+          y1={p}
+          x2={off + 200}
+          y2={p}
+          stroke="var(--line-2)"
+          strokeWidth={1}
+        />,
+      );
+    }
+    // Translate the engine's centred path into viewBox coords.
+    // engine path uses (-100..100) coords; we need (off..off+200).
+    const d = traced.d.replace(
+      /(-?\d+\.\d+)/g,
+      (raw, _idx) => (Number(raw) + 100 + off).toFixed(2),
+    );
+    // Re-extract start/end points for the bookend rings.
+    const first = traced.sequence[0];
+    const last = traced.sequence[traced.sequence.length - 1];
+    return (
+      <g>
+        <g opacity={0.5}>{gridLines}</g>
+        <rect
+          x={off}
+          y={off}
+          width={200}
+          height={200}
+          fill="none"
+          stroke="var(--line-2)"
+          strokeWidth={1}
+        />
+        <path
+          d={d}
+          fill="none"
+          stroke={color}
+          strokeWidth={2.6}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {first ? (
+          <circle
+            cx={off + first[1] * cellSize + cellSize / 2}
+            cy={off + first[0] * cellSize + cellSize / 2}
+            r={6}
+            fill="none"
+            stroke={color}
+            strokeWidth={2.6}
+          />
+        ) : null}
+        {last ? (
+          <circle
+            cx={off + last[1] * cellSize + cellSize / 2}
+            cy={off + last[0] * cellSize + cellSize / 2}
+            r={3.5}
+            fill={color}
+          />
+        ) : null}
+      </g>
+    );
+  }
+
+  if (mode === "image") {
+    return (
+      <g>
+        <rect
+          x={64}
+          y={64}
+          width={152}
+          height={152}
+          rx={8}
+          fill="var(--bg-3)"
+          stroke="var(--line)"
+          opacity={0.5}
+        />
+        <text
+          x={CENTRE}
+          y={120}
+          textAnchor="middle"
+          fontSize={10}
+          fill="var(--ink-mute)"
+          fontFamily="var(--font-ui)"
+        >
+          uploaded image · 50%
+        </text>
+        <path
+          d={sigilCurve({ family: "polar", seed, points: 300, size: 104 })}
+          transform={`translate(${CENTRE} ${CENTRE})`}
+          fill="none"
+          stroke={color}
+          strokeWidth={2.6}
+          opacity={0.95}
+        />
+      </g>
+    );
+  }
+
+  // Glyph-based modes (spare / hebrew / greek / rose / freeform).
+  const isGlyphMode =
+    mode === "spare" ||
+    mode === "hebrew" ||
+    mode === "greek" ||
+    mode === "rose" ||
+    mode === "freeform";
+
+  if (isGlyphMode) {
+    const g = sigilGlyph(intention, 104);
+    const first = g.points[0];
+    const last = g.points[g.points.length - 1];
+    return (
+      <g>
+        {mode === "freeform" ? null : ringDecoration(color)}
+        <g transform={`translate(${CENTRE} ${CENTRE})`}>
+          <path
+            d={g.d}
+            fill="none"
+            stroke={color}
+            strokeWidth={mode === "freeform" ? 3.6 : 3.2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          {first && mode !== "freeform" ? (
+            <circle
+              cx={first.x}
+              cy={first.y}
+              r={5}
+              fill="none"
+              stroke={color}
+              strokeWidth={2.6}
+            />
+          ) : null}
+          {last && mode !== "freeform" ? (
+            <circle cx={last.x} cy={last.y} r={3.4} fill={color} />
+          ) : null}
+        </g>
+      </g>
+    );
+  }
+
+  // Curve-family modes (hashed / harmonograph / formula / rosette).
+  const fam = familyForMode(mode, family);
+  const d = sigilCurve({ family: fam, seed, points: 520, size: 104 });
+  return (
+    <g>
+      {ringDecoration(color)}
+      <path
+        d={d}
+        transform={`translate(${CENTRE} ${CENTRE})`}
+        fill="none"
+        stroke={color}
+        strokeWidth={2.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </g>
+  );
+}
+
+export function SigilPreview({
+  mode,
+  intention,
+  square = "saturn",
+  family = "rose",
+  operations,
+  className,
+  style,
+}: SigilPreviewProps) {
+  const color = operations?.color ?? "var(--accent)";
+  const scale = (operations?.scalePercent ?? 320) / 320;
+  const rotate = operations?.rotateDeg ?? 0;
+  const sx = operations?.mirror ? -scale : scale;
+  const transform = `translate(${CENTRE} ${CENTRE}) scale(${sx} ${scale}) rotate(${rotate}) translate(${-CENTRE} ${-CENTRE})`;
+
+  return (
+    <svg
+      viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
+      width="100%"
+      role="img"
+      aria-label="Sigil preview"
+      data-component="sigil-preview"
+      data-mode={mode}
+      className={className}
+      style={{ maxWidth: 440, aspectRatio: "1", ...style }}
+    >
+      <g transform={transform}>
+        <ModeBody
+          mode={mode}
+          intention={intention}
+          square={kameaPlanet(mode, square)}
+          family={family}
+          color={color}
+        />
+      </g>
+    </svg>
+  );
+}
