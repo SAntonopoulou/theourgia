@@ -13,6 +13,7 @@
 export * from "./AliasGraph/index.js";
 export * from "./api/index.js";
 export * from "./AppShell/index.js";
+export * from "./Attestations/index.js";
 export * from "./auth/index.js";
 export * from "./AutoStampChip/index.js";
 export * from "./Avatar/index.js";

@@ -216,6 +216,15 @@
   --ts-completed: #7fb069;
   --ts-abandoned: #8a8275;
 
+  /* Attestation kinds (Theourgia Attestations.dc.html) */
+  --at-initiation: #a98ac0;
+  --at-grade-granted: #c9a24c;
+  --at-membership: #7fb069;
+  --at-teacher-student: #7e91ce;
+  --at-ordination: #c58a6a;
+  --at-authorship: #6ba892;
+  --at-other: #bcb29d;
+
   /* Sealed (calm violet, NOT alarm) — Mode B encryption indicators */
   --seal: #9a86b8;
   --seal-soft: rgba(154, 134, 184, 0.14);
