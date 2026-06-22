@@ -10,3 +10,4 @@
 export * from "./geomancy/index.js";
 export * from "./iching/index.js";
 export * from "./runes/index.js";
+export * from "./tarot/index.js";
