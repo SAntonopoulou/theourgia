@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-22 (H05 sprint COMPLETE · Phase 07 Workshop frontend · Tier 3 closed)
+
+The H05 frontend sprint closed today. Eight batches (B89-B96) against the H05 designer handoff at `/home/sophia/design-handoffs/theourgia/2026-06-22-H05/handoff_H05/` ported the six Phase-07 Workshop surfaces. Phase 07 was designer-first by design: the `.dc.html` files inform the schema; backend (Alembic + `/api/v1/sigils|magic-squares|talismans|circles|tools|altars|voces`) lands in a follow-up sprint.
+
+**Foundations — B89-B90** (`757b7e9`, `c193875`):
+
+- **B89 — VaultNav extension + scaffolding**: Renamed `sigil` → `sigils`, `circle` → `circles`; relabelled `talismans` → "Talisman Designer"; added 3 new nav keys (`magicsquares` · `tools` · `voces`) with verbatim H05 SVG glyphs. Admin route placeholders for the new keys. 13 new VaultNav tests + 6 new storybook stories.
+- **B90 — Workshop SVG engines**: 6 pure-TS modules under `frontend/shared/src/workshop/`:
+  - `magicSquares.ts` — 7 Agrippa 1531 planetary fixtures in sacred Saturn→Moon order + Siamese (odd) + doubly-even (n%4=0) constructors + `magicConstant(n) = n(n²+1)/2` + `isValidMagicSquare`.
+  - `hebrew.ts` — `hebNum(n)` with the traditional scribal substitutions for 15 (טו, not יה) and 16 (טז, not יו).
+  - `evalFormula.ts` — sandboxed expression evaluator for the Sigil Generator's parametric mode. **No eval, no Function, no property reads, no subscripts.** Tiny tokenizer + recursive-descent parser. Whitelist: sin · cos · tan · sqrt · pow · log · abs · exp · floor · ceil · round · min · max · π · e · g · θ · t. Returns `{ ok, value } | { ok: false, error }` — never throws. Verified rejects: window · alert · Math.PI · arr[0] · eval · Function · setTimeout · require.
+  - `sigil.ts` — `hashSeed(text, salt)` (SHA-256 via SubtleCrypto with deterministic fallback) · `mulberry32` PRNG · `sigilCurve({ family, seed, points })` for 4 parametric families (rose · lissajous · harmonograph · polar) · `spareLetters(intention)` (Austin Osman Spare vowel-strip + dedup) · `sigilGlyph(intention)` (polyline through letter centroids) · `sigilKamea(cells, valueSequence)` (polyline through magic-square cell centres).
+  - `geometry.ts` — `nameRingPath(radius)` returns `d` + `circumference = 2π·r` (the textLength gotcha solved) · `centreSymbol(kind, cx, cy, r)` for pentagram · hexagram · unicursal hexagram · solomonic seal · blank · `printTiles(widthMm, heightMm)` decomposes into A4 portrait tiles with 5mm bleed + 10cm calibration flag.
+  - `workshop.test.ts` — 71 tests covering fixture verification + sandbox safety + curve determinism + Hebrew substitutions + geometry helpers.
+
+**Surfaces — B91-B96**:
+
+- **B91 — Sigil Generator** (`c58ffee`): Three-pane composition (240px mode rail · centre with config + 480 preview + operations toolbar · 300px "What this sigil carries" rail). 11 modes in fixed order. ChargeSaveDialog · SigilLibraryPanel · OwnedDeckOverlay (verbatim `--warn` "never shareable, never exportable; cleared on reload" copy). Citation chrome (`‡`) per mode for PD sources (Spare 1913 · Agrippa 1531 · Golden Dawn · Mispar Hechrachi · Greek isopsephy). 51 tests · 20 storybook stories.
+- **B92 — Magic Squares** (`b611852`): Two-pane (260px planetary + custom rail · main with View/Trace/Build toolbar + square SVG + Agrippa citation card). The seven planetary squares are **immutable fixtures**; Build mode disabled when active. Trace mode's "Save as sigil" forks to B91 Kamea mode (never mutates source). Composes B90 `PLANETARY_SQUARES` + `magicSquare(n)` + `hebNum`. 28 tests · 11 stories.
+- **B93 — Talisman Designer** (`42053c9`) — **the H05 §E worked example**: Four-zone (topbar with Front/Back tablist · 280px layer rail · 600 canvas with snap guides + grid · 340px metadata rail). 6 layer kinds. ElectionPickerModal (composes B60 saved windows) + SealedSaveDialog with `--seal` switch (B54 client-side encryption discipline; defaults on when Initiation working is linked). Composes B92 Jupiter kamea + B90 nameRingPath via `<textPath textLength={2π·r} lengthAdjust="spacing">` for even Hebrew name-ring distribution. 40 tests · 18 stories.
+- **B94 — Magical Circle** (`06cced3`): Three-zone (rings/compass rail · live circle SVG · ring-config + centre + footer rail). 1-6 rings × 5 ring kinds (Inscription · Glyph row · Single image · Blank · Multi-glyph). **Single-tradition compass** (Archangels · Greek winds · Watchtowers · Vedic dikpalas · Custom) — Watchtowers colour cardinals via `--earth/--air/--fire/--water`; other traditions render `--ink`. 7 centre elements via B90 `centreSymbol`. Print-tile mode overlays A4 crop marks + 10cm calibration. PD preset library (LBRP · Heptameron · Goetic · Picatrix · Greek defixiones) loads as mutable copies with no back-link. 39 tests · 14 stories.
+- **B95 — Tool Registry**: List-and-detail composition mirroring B65 Library. 14 fixed tool kinds (`ToolKindIcon` component — fold-into-sprite tagged for follow-up). Tools card grid + Altars list view toggle. ToolDetailDrawer (560px) with 7 sections (Photos · Identity · Materials & dimensions · Provenance · Consecration · Use history · Current location). Consecration pill uses `--care*` palette only. Load-bearing honesty copy verbatim: *"Status follows the record — a tool is consecrated by linking the working where it happened, never by a switch."* No decoupled "Mark consecrated" toggle. 29 tests · 9 stories.
+- **B96 — Voces Magicae Recorder**: Vertical list (not card grid). Tradition filter (8 options). VoceDetailDrawer with hero text + transliteration + IPA + ‡ citation + Associations + Recordings + Used-in-workings sections. Verbatim wellbeing copy when no recording: *"No recording yet — sound it when you are ready, in your own voice."* NewVoceModal with 8-step form. **Save disabled until citation is non-empty** (honesty rule); citation-empty chrome uses `--accent` border (NEVER `--danger`); verbatim footer note: *"A voce cannot be saved without its source citation."* 6 PGM-era demo voces (ΙΑΩ · ΑΒΛΑΝΑΘΑΝΑΛΒΑ · ΒΡΙΜΩ · ΑΣΚΕΙ ΚΑΤΑΣΚΕΙ · ΣΕΜΕΣΕΙΛΑΜ · ΦΩΡ ΦΩΡΒΑ). 31 tests · 8 stories.
+
+**Cross-cutting H05 rules honoured across all six surfaces**:
+
+1. **Everything renders SVG.** PNG/PDF/DXF/audio are export formats only.
+2. **Committed-make + read-only-on-reopen.** Charge & save dialog on Sigil + Talisman; "Edit a new version" forks a new row (preserved via parentSigilId / parentTalismanId).
+3. **Derived-not-stored geometry.** The talisman is a composition of references (squareId + sigilId[]) — never a flattened bitmap. The name-ring textPath uses textLength to distribute Hebrew names evenly (the recurring gotcha solved at the engine layer in B90).
+4. **Citation chrome on traditional artefacts.** ‡ badge on Spare 1913 · Agrippa 1531 · Golden Dawn · PGM · Heptameron 1496 · Picatrix · Apollonius Argonautica III. Custom artefacts carry none.
+5. **Honesty rules** (Workshop equivalent of H04's symmetric-rune rule):
+   - Tool consecration set ONLY by linking a working — no decoupled toggle.
+   - Seven planetary squares immutable — Build disabled; "Save as sigil" forks.
+   - Voce Save gated on non-empty citation — required note rendered verbatim.
+   - PD presets load as mutable copies with NO back-link.
+6. **Quiet stats.** "Used in N workings" everywhere is muted `--ink-mute`; no celebration, no badges.
+7. **`--danger` audit clean.** Zero uses across the entire H05 sprint. Required-citation chrome uses `--accent` border; consecration pills use `--care*` care palette; sealed talismans use `--seal*`; the formula evaluator's invalid-formula error uses `--warn` (already promoted from H02 inline use).
+
+**Sprint totals**: 8 batches (B89-B96). 1691 vitest tests (1389 → 1691; **+302** over the sprint). Storybook visual + a11y baselines grow ~+90 (final count locks at sprint close). Backend unchanged at 1473.
+
+**Follow-ups noted in commits**:
+- Fold the 14 Tool Registry kind icons into `tokens/theourgia-icons.svg` as `<symbol>`s (designer's §S6 note #2).
+- Add a true "bezier" curve generator to `sigilCurve()` — B91 currently maps the design's "Bézier" picker chip to `polar` at render.
+- Phase 07 backend (Alembic models + REST routes + Mode B encryption for sealed talismans). Surface chrome promises ciphertext-only; the storage layer needs authoring.
+- Cross-surface state for the B92 → B91 "Save as sigil" handoff (currently navigates; should also pre-fill the Kamea mode with squareId + cellSequence).
+
+**Next**: docs alignment (this commit), then either Batch 35 (Tiptap live integration — unblocked) or the next designer handoff queue (H06 — Tier 4 Linguistic + Analytics).
+
 ### Added — 2026-06-22 (H04 sprint COMPLETE · Phase 06 frontend + Daily Practice Tracker · Tier 1 + Tier 2 closed)
 
 The H04 frontend wiring sprint closed today. Every Phase-06 backend engine shipped in B44-B49 now has its designed surface, and the cross-cutting Daily Practice Tracker (Tier 1) ships in the same arc. Eleven batches (B76-B86) against the 24-file H04 designer handoff at `/home/sophia/design-handoffs/theourgia/2026-06-22-H04/handoff_H04/`.

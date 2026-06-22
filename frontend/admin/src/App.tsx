@@ -75,6 +75,8 @@ import { Library } from "./routes/Library.js";
 import { MagicalCircleRoute } from "./routes/MagicalCircleRoute.js";
 import { MagicSquaresRoute } from "./routes/MagicSquaresRoute.js";
 import { TalismanDesignerRoute } from "./routes/TalismanDesignerRoute.js";
+import { ToolRegistryRoute } from "./routes/ToolRegistryRoute.js";
+import { VocesMagicaeRoute } from "./routes/VocesMagicaeRoute.js";
 import { Placeholder } from "./routes/Placeholder.js";
 import { PracticeLogsRoute } from "./routes/PracticeLogsRoute.js";
 import { SigilGeneratorRoute } from "./routes/SigilGeneratorRoute.js";
@@ -192,26 +194,8 @@ function ShellRoutes() {
         <Route path="/circles" element={<MagicalCircleRoute />} />
         <Route path="/talismans" element={<TalismanDesignerRoute />} />
         <Route path="/talismans/legacy" element={<Talismans />} />
-        <Route
-          path="/tools"
-          element={
-            <Placeholder
-              glyph="compass"
-              title="Tool Registry"
-              body="Ritual tools (14 kinds) + altars. Lands in B91+ of the H05 sprint."
-            />
-          }
-        />
-        <Route
-          path="/voces"
-          element={
-            <Placeholder
-              glyph="compass"
-              title="Voces Magicae"
-              body="The names of power — source text, transliteration, IPA, citation, audio recordings. Lands in B91+ of the H05 sprint."
-            />
-          }
-        />
+        <Route path="/tools" element={<ToolRegistryRoute />} />
+        <Route path="/voces" element={<VocesMagicaeRoute />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/feed" element={<RitualFeed />} />
         <Route path="/hubs" element={<Hubs />} />
