@@ -60,6 +60,8 @@
   --font-arabic: "Noto Naskh Arabic", serif;
   --font-deva: "Noto Serif Devanagari", serif;
   --font-coptic: "Noto Sans Coptic", serif;
+  --font-cjk: "Noto Serif SC", serif; /* I Ching hexagram names (乾, 明夷, …) */
+  --font-rune: "Noto Sans Runic", "Noto Sans Symbols", serif; /* Elder Futhark (ᚠ ᚢ ᚦ …) */
 
   /* — Type scale (px / line-height) ——————————————————————————————— */
   --type-hero: clamp(40px, 6vw, 68px);
@@ -114,6 +116,13 @@
   --care: #c9a86a; /* wellbeing/check-in — calm, never red */
   --care-soft: rgba(201, 168, 106, 0.12);
   --care-line: rgba(201, 168, 106, 0.4);
+
+  /* Daily Practice — a skipped day is neutral information, never failure. */
+  --skip: var(--ink-mute);
+  --skip-soft: color-mix(in srgb, var(--ink-mute) 16%, transparent);
+
+  /* Scrying trance-mode accent (Divination Misc) */
+  --trance: #6b7fb0;
 
   /* Warn (Visibility downgrade gradient — amber, not red) */
   --warn: #c0975a;
@@ -335,6 +344,13 @@
   --bt-servitors: #6ba892;
   --bt-attestations: #c58a6a;
   --bt-aliases: #bcb29d;
+
+  /* OracleTabs — Phase 06 divination cluster nav (analogue of --bt-*) */
+  --ot-tarot: #c9a24c;
+  --ot-iching: #7e91ce;
+  --ot-geomancy: #9c8459;
+  --ot-runes: #8fa4b8;
+  --ot-more: #a98ac0;
 }
 
 /* ============================================================================
@@ -383,6 +399,9 @@
   --arc-day: rgba(191, 161, 91, 0.07);
   --moon-light: #e4e7da;
   --moon-dark: #23291f;
+
+  /* H04 per-theme override */
+  --trance: #5e8fa6;
 }
 
 /* ============================================================================
@@ -431,6 +450,9 @@
   --arc-day: rgba(205, 165, 62, 0.08);
   --moon-light: #efe6cf;
   --moon-dark: #241a14;
+
+  /* H04 per-theme override */
+  --trance: #8a7fb0;
 }
 
 /* ============================================================================
@@ -486,6 +508,9 @@
   --fest-roman: #92622f;
   --fest-hekatean: #6e5786;
   --fest-thelemic: #9a6e22;
+
+  /* H04 light-mode override */
+  --trance: #52659e;
 }
 
 /* Theme × mode combinations (moon glyph needs both axes for the lit-side hue) */

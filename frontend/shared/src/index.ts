@@ -54,6 +54,7 @@ export * from "./MultiCalendarCard/index.js";
 export * from "./Oaths/index.js";
 export * from "./ObligationTable/index.js";
 export * from "./Offerings/index.js";
+export * from "./OracleTabs/index.js";
 export * from "./PlanetaryHourDetail/index.js";
 export * from "./PlanetaryHourStrip/index.js";
 export * from "./Popover/index.js";
