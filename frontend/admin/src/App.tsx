@@ -72,6 +72,7 @@ import { Wellbeing } from "./routes/Wellbeing.js";
 import { Workshop } from "./routes/Workshop.js";
 import { Journal } from "./routes/Journal.js";
 import { Library } from "./routes/Library.js";
+import { MagicSquaresRoute } from "./routes/MagicSquaresRoute.js";
 import { Placeholder } from "./routes/Placeholder.js";
 import { PracticeLogsRoute } from "./routes/PracticeLogsRoute.js";
 import { SigilGeneratorRoute } from "./routes/SigilGeneratorRoute.js";
@@ -184,16 +185,7 @@ function ShellRoutes() {
         <Route path="/divination/more" element={<DivinationMiscRoute />} />
         <Route path="/sigil" element={<SigilStudio />} />
         <Route path="/sigils" element={<SigilGeneratorRoute />} />
-        <Route
-          path="/magic-squares"
-          element={
-            <Placeholder
-              glyph="compass"
-              title="Magic Squares"
-              body="The seven planetary kamea + custom builder lands in B91+ of the H05 sprint."
-            />
-          }
-        />
+        <Route path="/magic-squares" element={<MagicSquaresRoute />} />
         <Route path="/circle" element={<CircleBuilder />} />
         <Route
           path="/circles"
