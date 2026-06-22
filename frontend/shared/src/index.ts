@@ -20,6 +20,7 @@ export * from "./Badge/index.js";
 export * from "./Banner/index.js";
 export * from "./BeingsTabs/index.js";
 export * from "./BindingKindIcon/index.js";
+export * from "./BodySensation/index.js";
 export * from "./BodySilhouette/index.js";
 export * from "./Button/index.js";
 export * from "./Calendar/index.js";
