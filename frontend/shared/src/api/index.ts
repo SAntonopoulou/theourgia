@@ -12,9 +12,12 @@ export type { Api } from "./endpoints.js";
 export { defaultFixtures } from "./fixtures.js";
 export type {
   BookRecord,
+  CompletionInput,
+  CompletionStatusWire,
   CreateBookInput,
   CreateEntityInput,
   CreateEntryInput,
+  CreatePracticeInput,
   EntityKind,
   EntityRecord,
   EntryRecord,
@@ -23,6 +26,11 @@ export type {
   EntryWindowCounts,
   HealthStatus,
   Meta,
+  PracticeCadenceWire,
+  PracticeEntityBinding,
+  PracticeRecord,
+  PracticeTodayView,
+  PracticesToday,
   Problem,
   Session,
   TodayActivePractice,
@@ -36,5 +44,7 @@ export type {
   TodayObligationsCard,
   TodayServitorFeedingCard,
   TodayServitorFeedingDue,
+  TodayStatusWire,
+  UpdatePracticeInput,
   UserLocation,
 } from "./types.js";

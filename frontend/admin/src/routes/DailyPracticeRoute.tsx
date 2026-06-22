@@ -1,10 +1,13 @@
 /**
  * Daily Practice — admin route wrapping the shared DailyPracticeTracker.
  *
- * Holds the in-memory practice list + today statuses while the backend
- * `/api/v1/practices` endpoints are wired. The shared surface is
- * presentation-only; this route persists user actions and (eventually)
- * round-trips through the API.
+ * Composes the shared surface against ``GET /api/v1/practices/today``
+ * (B87 backend). Defines a practice via ``POST /api/v1/practices``,
+ * marks today done/skipped via the dedicated POST endpoints.
+ *
+ * Optimistic UI: today-status flips locally before the server confirms
+ * so the surface stays snappy; the next refresh reconciles streak +
+ * history. A failed write rolls back and surfaces a toast.
  */
 
 import {
@@ -12,71 +15,15 @@ import {
   type DailyPractice,
   DailyPracticeTracker,
   type DefinePracticeDraft,
+  type PracticeTodayView,
   type TodayStatus,
   Toast,
-  countKept as _countKept,
-  streak as streakOf,
+  useApiCall,
   useTopbar,
 } from "@theourgia/shared";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
-// Deterministic 35-day history matching the mockup's hist(seed, density)
-// generator. Provides realistic fixture data until the backend wires up.
-function mockHistory(seed: number, density: number): CompletionStatus[] {
-  const out: CompletionStatus[] = [];
-  for (let d = 0; d < 35; d++) {
-    const r = ((d * 13 + seed * 7 + 3) % 17) / 17;
-    if (r < density) out.push("done");
-    else if (r < density + 0.12) out.push("skip");
-    else out.push("miss");
-  }
-  return out;
-}
-
-interface PracticeDef {
-  id: string;
-  name: string;
-  cadenceHuman: string;
-  intention: string | null;
-  entity: { name: string; glyph: string } | null;
-  seed: number;
-  density: number;
-  streakLabel: string;
-}
-
-const DEFAULT_PRACTICES: readonly PracticeDef[] = [
-  {
-    id: "grounding",
-    name: "Morning grounding",
-    cadenceHuman: "Daily at dawn",
-    intention:
-      "Begin the day on my own ground before anything is asked of me.",
-    entity: null,
-    seed: 2,
-    density: 0.74,
-    streakLabel: "day streak",
-  },
-  {
-    id: "hekate",
-    name: "Devotion to Hekate",
-    cadenceHuman: "Every dark moon",
-    intention: "Tend the crossroads; keep the lamp lit.",
-    entity: { name: "Hekate", glyph: "☽" },
-    seed: 5,
-    density: 0.92,
-    streakLabel: "kept in a row",
-  },
-  {
-    id: "lbrp",
-    name: "Banishing before sleep",
-    cadenceHuman: "Daily before sleep",
-    intention: null,
-    entity: { name: "The Threshold Guardian", glyph: "⛧" },
-    seed: 9,
-    density: 0.6,
-    streakLabel: "day streak",
-  },
-];
+import { apiMethods } from "../data/api.js";
 
 const TODAY_LONG_FORMAT = new Intl.DateTimeFormat(undefined, {
   weekday: "long",
@@ -85,14 +32,36 @@ const TODAY_LONG_FORMAT = new Intl.DateTimeFormat(undefined, {
   year: "numeric",
 });
 
-export function DailyPracticeRoute() {
-  // Per-practice today status. Defaults mirror the mockup demo state.
-  const [todayMap, setTodayMap] = useState<Record<string, TodayStatus>>({
-    grounding: "pending",
-    hekate: "done",
-    lbrp: "done",
-  });
+function mapStatus(s: PracticeTodayView["status"]): TodayStatus {
+  return s;
+}
 
+function mapHistory(
+  history: PracticeTodayView["history"],
+): CompletionStatus[] {
+  return history.map((c: PracticeTodayView["history"][number]) => c as CompletionStatus);
+}
+
+function toCardModel(view: PracticeTodayView): DailyPractice {
+  return {
+    id: view.id,
+    name: view.name,
+    cadenceHuman: view.cadence_human,
+    intention: view.intention,
+    entity: view.entity
+      ? {
+          name: view.entity.name,
+          glyph: view.entity.glyph ?? "✦",
+        }
+      : null,
+    status: mapStatus(view.status),
+    streak: view.streak,
+    streakLabel: view.streak_label,
+    history: mapHistory(view.history),
+  };
+}
+
+export function DailyPracticeRoute() {
   useTopbar(
     () => ({
       title: "Daily practice",
@@ -104,54 +73,166 @@ export function DailyPracticeRoute() {
 
   const todayLong = useMemo(() => TODAY_LONG_FORMAT.format(new Date()), []);
 
-  const practices: DailyPractice[] = useMemo(
-    () =>
-      DEFAULT_PRACTICES.map((d) => {
-        const status: TodayStatus = todayMap[d.id] ?? "pending";
-        const history = mockHistory(d.seed, d.density);
-        // Today (last slot) reflects the live status.
-        history[34] =
-          status === "done"
-            ? "done"
-            : status === "skipped"
-              ? "skip"
-              : "miss";
-        return {
-          id: d.id,
-          name: d.name,
-          cadenceHuman: d.cadenceHuman,
-          intention: d.intention,
-          entity: d.entity,
-          status,
-          streak: streakOf(history, status),
-          streakLabel: d.streakLabel,
-          history,
-        };
-      }),
-    [todayMap],
+  const { data, status, refresh } = useApiCall((signal) =>
+    apiMethods.practicesToday({ signal }),
   );
 
-  const update = (id: string, status: TodayStatus) =>
-    setTodayMap((m) => ({ ...m, [id]: status }));
+  // Local optimistic overlay: practice id → today status. Cleared on
+  // refresh.
+  const [optimistic, setOptimistic] = useState<Record<string, TodayStatus>>({});
 
-  const handleDefine = (draft: DefinePracticeDraft) => {
-    // TODO: POST /api/v1/practices once the backend lands. For now
-    // surface a toast acknowledging the draft.
-    Toast.push({
-      tone: "success",
-      title: "Practice noted",
-      body: `"${draft.name}" — ${draft.cadence}. Backend wiring lands with the practices API.`,
+  const beings = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of data?.practices ?? []) {
+      if (p.entity?.name) set.add(p.entity.name);
+    }
+    return Array.from(set).sort();
+  }, [data?.practices]);
+
+  const practices: DailyPractice[] = useMemo(() => {
+    if (!data) return [];
+    return data.practices.map((view) => {
+      const card = toCardModel(view);
+      const overlaid = optimistic[view.id];
+      if (overlaid !== undefined) {
+        card.status = overlaid;
+        // Reflect today's status in the trailing history cell.
+        const next = [...card.history];
+        const last = next.length - 1;
+        if (last >= 0) {
+          next[last] =
+            overlaid === "done"
+              ? "done"
+              : overlaid === "skipped"
+                ? "skip"
+                : "miss";
+        }
+        card.history = next;
+      }
+      return card;
     });
-  };
+  }, [data, optimistic]);
+
+  const applyOptimistic = useCallback(
+    (id: string, status: TodayStatus) =>
+      setOptimistic((m) => ({ ...m, [id]: status })),
+    [],
+  );
+
+  const clearOptimistic = useCallback((id: string) => {
+    setOptimistic((m) => {
+      const next = { ...m };
+      delete next[id];
+      return next;
+    });
+  }, []);
+
+  const handleComplete = useCallback(
+    async (id: string) => {
+      applyOptimistic(id, "done");
+      try {
+        await apiMethods.completePractice(id);
+        clearOptimistic(id);
+        await refresh();
+      } catch (e) {
+        clearOptimistic(id);
+        Toast.push({
+          tone: "warning",
+          title: "Could not record",
+          body:
+            e instanceof Error ? e.message : "Try again — the record was not saved.",
+        });
+      }
+    },
+    [applyOptimistic, clearOptimistic, refresh],
+  );
+
+  const handleSkip = useCallback(
+    async (id: string) => {
+      applyOptimistic(id, "skipped");
+      try {
+        await apiMethods.skipPractice(id);
+        clearOptimistic(id);
+        await refresh();
+      } catch (e) {
+        clearOptimistic(id);
+        Toast.push({
+          tone: "warning",
+          title: "Could not record",
+          body:
+            e instanceof Error ? e.message : "Try again — the record was not saved.",
+        });
+      }
+    },
+    [applyOptimistic, clearOptimistic, refresh],
+  );
+
+  const handleReset = useCallback(
+    async (id: string) => {
+      applyOptimistic(id, "pending");
+      try {
+        await apiMethods.undoPracticeToday(id);
+        clearOptimistic(id);
+        await refresh();
+      } catch (e) {
+        clearOptimistic(id);
+        Toast.push({
+          tone: "warning",
+          title: "Could not undo",
+          body:
+            e instanceof Error ? e.message : "Try again — the change was not saved.",
+        });
+      }
+    },
+    [applyOptimistic, clearOptimistic, refresh],
+  );
+
+  const handleDefine = useCallback(
+    async (draft: DefinePracticeDraft) => {
+      try {
+        await apiMethods.createPractice({
+          name: draft.name,
+          cadence: draft.cadence,
+          // The drawer ships the cadence chip key; "custom" needs the
+          // freeform label, which the H04 drawer doesn't carry yet —
+          // pass the chip label until the drawer grows a custom field.
+          cadence_custom:
+            draft.cadence === "custom" ? "Custom cadence" : null,
+          intention: draft.intention || null,
+          linked_entity_id: null, // entity-name → id lookup is a follow-up
+        });
+        Toast.push({
+          tone: "success",
+          title: "Practice added",
+          body: `“${draft.name}” will show up here from now on.`,
+        });
+        await refresh();
+      } catch (e) {
+        Toast.push({
+          tone: "warning",
+          title: "Could not save practice",
+          body:
+            e instanceof Error
+              ? e.message
+              : "Try again — the practice was not saved.",
+        });
+      }
+    },
+    [refresh],
+  );
+
+  // While the API call is in flight on first mount, render the surface
+  // with no practices — the surface's empty state takes over.
+  const renderPractices = status === "ok" ? practices : [];
 
   return (
     <DailyPracticeTracker
-      practices={practices}
+      practices={renderPractices}
       todayLong={todayLong}
-      beings={["Hekate", "Hermes", "The Threshold Guardian"]}
-      onComplete={(id) => update(id, "done")}
-      onSkip={(id) => update(id, "skipped")}
-      onReset={(id) => update(id, "pending")}
+      beings={beings}
+      onComplete={handleComplete}
+      onSkip={handleSkip}
+      onReset={handleReset}
       onDefine={handleDefine}
       liberReshHref="/"
     />

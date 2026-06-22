@@ -32,6 +32,7 @@ from theourgia.api.routers.v1 import oaths as v1_oaths
 from theourgia.api.routers.v1 import offerings as v1_offerings
 from theourgia.api.routers.v1 import pendulum as v1_pendulum
 from theourgia.api.routers.v1 import practice_logs as v1_practice
+from theourgia.api.routers.v1 import practices as v1_practices
 from theourgia.api.routers.v1 import resh as v1_resh
 from theourgia.api.routers.v1 import runes as v1_runes
 from theourgia.api.routers.v1 import schedule as v1_schedule
@@ -87,6 +88,7 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_horary.router, tags=["horary"])
     v1.include_router(v1_scrying.router, tags=["scrying"])
     v1.include_router(v1_practice.router, tags=["practice"])
+    v1.include_router(v1_practices.router, tags=["practices"])
     # H01-H03 backend gap-fills
     v1.include_router(v1_resh.router, tags=["resh"])
     v1.include_router(v1_today_ledger.router, tags=["today"])

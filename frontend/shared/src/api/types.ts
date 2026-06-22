@@ -265,3 +265,77 @@ export interface TodayLedger {
   attestation_activity: TodayAttestationActivityCard;
   generated_at: string;
 }
+
+// ─── Daily Practice Tracker (B87) ─────────────────────────────────
+
+export type PracticeCadenceWire =
+  | "daily"
+  | "weekly"
+  | "morning"
+  | "before-sleep"
+  | "dark-moon"
+  | "custom";
+
+export type CompletionStatusWire = "done" | "skip" | "miss";
+export type TodayStatusWire = "done" | "skipped" | "pending";
+
+export interface PracticeEntityBinding {
+  id: string;
+  name: string;
+  glyph: string | null;
+}
+
+/** Mirrors `theourgia.api.routers.v1.practices.PracticeRead`. */
+export interface PracticeRecord {
+  id: string;
+  name: string;
+  cadence: PracticeCadenceWire;
+  cadence_custom: string | null;
+  cadence_human: string;
+  intention: string | null;
+  glyph: string | null;
+  entity: PracticeEntityBinding | null;
+  preferred_anchor: string | null;
+  streak_label: string;
+  archived_at: string | null;
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Mirrors `theourgia.api.routers.v1.practices.PracticeTodayView`. */
+export interface PracticeTodayView {
+  id: string;
+  name: string;
+  cadence_human: string;
+  intention: string | null;
+  entity: PracticeEntityBinding | null;
+  status: TodayStatusWire;
+  streak: number;
+  streak_label: string;
+  history: CompletionStatusWire[];
+}
+
+export interface PracticesToday {
+  civil_date: string;
+  practices: PracticeTodayView[];
+}
+
+export interface CreatePracticeInput {
+  name: string;
+  cadence: PracticeCadenceWire;
+  cadence_custom?: string | null;
+  intention?: string | null;
+  glyph?: string | null;
+  linked_entity_id?: string | null;
+  preferred_anchor?: string | null;
+  streak_label?: string;
+}
+
+export type UpdatePracticeInput = Partial<CreatePracticeInput>;
+
+export interface CompletionInput {
+  note?: string | null;
+  linked_entry_id?: string | null;
+  civil_date?: string | null;
+}

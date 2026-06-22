@@ -10,9 +10,11 @@
 import type { ApiClient } from "./client.js";
 import type {
   BookRecord,
+  CompletionInput,
   CreateBookInput,
   CreateEntityInput,
   CreateEntryInput,
+  CreatePracticeInput,
   EntityKind,
   EntityRecord,
   EntryRecord,
@@ -20,8 +22,11 @@ import type {
   EntryType,
   HealthStatus,
   Meta,
+  PracticeRecord,
+  PracticesToday,
   Session,
   TodayLedger,
+  UpdatePracticeInput,
   UserLocation,
 } from "./types.js";
 
@@ -187,6 +192,106 @@ export function api(client: ApiClient) {
     getTodayLedger(opts?: { signal?: AbortSignal }): Promise<TodayLedger> {
       return client.request<TodayLedger>("/api/v1/today/ledger", {
         signal: opts?.signal,
+      });
+    },
+
+    // ─── Daily Practice Tracker (B87) ────────────────────────────────
+
+    listPractices(opts?: {
+      signal?: AbortSignal;
+      archived?: boolean;
+    }): Promise<PracticeRecord[]> {
+      const qs = opts?.archived ? "?archived=true" : "";
+      return client.request<PracticeRecord[]>(`/api/v1/practices${qs}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    practicesToday(opts?: {
+      signal?: AbortSignal;
+      tz?: string;
+    }): Promise<PracticesToday> {
+      const tz = opts?.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const qs = `?tz=${encodeURIComponent(tz)}`;
+      return client.request<PracticesToday>(`/api/v1/practices/today${qs}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    getPractice(id: string, opts?: { signal?: AbortSignal }): Promise<PracticeRecord> {
+      return client.request<PracticeRecord>(`/api/v1/practices/${id}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    createPractice(input: CreatePracticeInput): Promise<PracticeRecord> {
+      return client.request<PracticeRecord>("/api/v1/practices", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    updatePractice(id: string, patch: UpdatePracticeInput): Promise<PracticeRecord> {
+      return client.request<PracticeRecord>(`/api/v1/practices/${id}`, {
+        method: "PATCH",
+        json: patch,
+      });
+    },
+
+    archivePractice(id: string): Promise<PracticeRecord> {
+      return client.request<PracticeRecord>(
+        `/api/v1/practices/${id}/archive`,
+        { method: "POST" },
+      );
+    },
+
+    unarchivePractice(id: string): Promise<PracticeRecord> {
+      return client.request<PracticeRecord>(
+        `/api/v1/practices/${id}/unarchive`,
+        { method: "POST" },
+      );
+    },
+
+    deletePractice(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/practices/${id}`, {
+        method: "DELETE",
+      });
+    },
+
+    completePractice(
+      id: string,
+      payload?: CompletionInput,
+      opts?: { tz?: string },
+    ): Promise<void> {
+      const tz = opts?.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const qs = `?tz=${encodeURIComponent(tz)}`;
+      return client.request<void>(`/api/v1/practices/${id}/complete${qs}`, {
+        method: "POST",
+        json: payload ?? {},
+      });
+    },
+
+    skipPractice(
+      id: string,
+      payload?: CompletionInput,
+      opts?: { tz?: string },
+    ): Promise<void> {
+      const tz = opts?.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const qs = `?tz=${encodeURIComponent(tz)}`;
+      return client.request<void>(`/api/v1/practices/${id}/skip${qs}`, {
+        method: "POST",
+        json: payload ?? {},
+      });
+    },
+
+    undoPracticeToday(
+      id: string,
+      opts?: { tz?: string },
+    ): Promise<void> {
+      const tz = opts?.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const qs = `?tz=${encodeURIComponent(tz)}`;
+      return client.request<void>(`/api/v1/practices/${id}/today${qs}`, {
+        method: "DELETE",
       });
     },
   };
