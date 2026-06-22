@@ -41,6 +41,7 @@ import { CircleBuilder } from "./routes/CircleBuilder.js";
 import { Connection } from "./routes/Connection.js";
 import { DailyPracticeRoute } from "./routes/DailyPracticeRoute.js";
 import { Divination } from "./routes/Divination.js";
+import { DivinationMiscRoute } from "./routes/DivinationMiscRoute.js";
 import { GeomancyRoute } from "./routes/GeomancyRoute.js";
 import { IChingRoute } from "./routes/IChingRoute.js";
 import { RunesRoute } from "./routes/RunesRoute.js";
@@ -172,6 +173,7 @@ function ShellRoutes() {
         <Route path="/divination/iching" element={<IChingRoute />} />
         <Route path="/divination/geomancy" element={<GeomancyRoute />} />
         <Route path="/divination/runes" element={<RunesRoute />} />
+        <Route path="/divination/more" element={<DivinationMiscRoute />} />
         <Route path="/sigil" element={<SigilStudio />} />
         <Route path="/circle" element={<CircleBuilder />} />
         <Route path="/talismans" element={<Talismans />} />

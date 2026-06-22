@@ -34,6 +34,7 @@ export * from "./Contracts/index.js";
 export * from "./DailyPractice/index.js";
 export * from "./Dialog/index.js";
 export * from "./divination/index.js";
+export * from "./DivinationMisc/index.js";
 export * from "./Drawer/index.js";
 export * from "./Election/index.js";
 export * from "./EmptyState/index.js";
