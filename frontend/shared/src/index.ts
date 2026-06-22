@@ -49,6 +49,7 @@ export * from "./LunarPhaseWidget/index.js";
 export * from "./Menu/index.js";
 export * from "./MultiCalendarCard/index.js";
 export * from "./ObligationTable/index.js";
+export * from "./Offerings/index.js";
 export * from "./PlanetaryHourDetail/index.js";
 export * from "./PlanetaryHourStrip/index.js";
 export * from "./Popover/index.js";
