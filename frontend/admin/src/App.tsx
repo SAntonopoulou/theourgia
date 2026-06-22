@@ -41,6 +41,7 @@ import { CircleBuilder } from "./routes/CircleBuilder.js";
 import { Connection } from "./routes/Connection.js";
 import { DailyPracticeRoute } from "./routes/DailyPracticeRoute.js";
 import { Divination } from "./routes/Divination.js";
+import { TarotRoute } from "./routes/TarotRoute.js";
 import { Entities } from "./routes/Entities.js";
 import { Foundations } from "./routes/Foundations.js";
 import { Hubs } from "./routes/Hubs.js";
@@ -164,6 +165,7 @@ function ShellRoutes() {
           }
         />
         <Route path="/divination" element={<Divination />} />
+        <Route path="/divination/tarot" element={<TarotRoute />} />
         <Route path="/sigil" element={<SigilStudio />} />
         <Route path="/circle" element={<CircleBuilder />} />
         <Route path="/talismans" element={<Talismans />} />

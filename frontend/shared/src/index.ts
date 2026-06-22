@@ -75,6 +75,7 @@ export * from "./Skeleton/index.js";
 export * from "./Stat/index.js";
 export * from "./StatusDot/index.js";
 export * from "./Switch/index.js";
+export * from "./Tarot/index.js";
 export * from "./TemplateDesigner/index.js";
 export * from "./Toast/index.js";
 export * from "./TodayLedger/index.js";
