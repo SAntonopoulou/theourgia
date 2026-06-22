@@ -44,6 +44,7 @@ export * from "./Field/index.js";
 export * from "./Glyph/index.js";
 export * from "./hooks/index.js";
 export * from "./i18n/index.js";
+export * from "./IChing/index.js";
 export * from "./identity/index.js";
 export * from "./Initiations/index.js";
 export * from "./ItemsComposer/index.js";
