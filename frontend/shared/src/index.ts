@@ -64,6 +64,7 @@ export * from "./Search/index.js";
 export * from "./SealUnlock/index.js";
 export * from "./SegmentedControl/index.js";
 export * from "./SensationConfig/index.js";
+export * from "./Servitors/index.js";
 export * from "./Signing/index.js";
 export * from "./Skeleton/index.js";
 export * from "./Stat/index.js";
