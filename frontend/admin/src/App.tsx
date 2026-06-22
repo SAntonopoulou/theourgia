@@ -209,6 +209,7 @@ function ShellRoutes() {
         <Route path="/bundles" element={<Bundles />} />
         <Route path="/bundles/install" element={<BundleInstall />} />
         <Route path="/editor" element={<Editor />} />
+        <Route path="/editor/:id" element={<Editor />} />
         <Route path="/book/preview" element={<BookPreview />} />
         <Route path="/newsletter/compose" element={<NewsletterComposer />} />
         <Route path="/scheduler" element={<Scheduler />} />

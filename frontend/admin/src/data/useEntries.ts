@@ -7,7 +7,12 @@
  * doesn't know which one is wired.
  */
 
-import { type EntryRecord, useApiCall } from "@theourgia/shared";
+import {
+  type EntryDetailRecord,
+  type EntryRecord,
+  type UpdateEntryBodyInput,
+  useApiCall,
+} from "@theourgia/shared";
 
 import { apiMethods } from "./api.js";
 
@@ -17,4 +22,24 @@ export function useRecentEntries() {
 
 export function createEntry(input: Parameters<typeof apiMethods.createEntry>[0]) {
   return apiMethods.createEntry(input);
+}
+
+/**
+ * Fetch an entry's full detail (including the Tiptap-JSON body) for
+ * the live Editor surface. `skip: true` defers the call — useful for
+ * the demo route where there is no real entry to load.
+ */
+export function useEntryDetail(id: string | null) {
+  return useApiCall<EntryDetailRecord>(
+    (signal) => apiMethods.getEntryDetail(id ?? "", { signal }),
+    { skip: id === null },
+  );
+}
+
+export function updateEntryBody(id: string, input: UpdateEntryBodyInput) {
+  return apiMethods.updateEntryBody(id, input);
+}
+
+export function publishEntry(id: string) {
+  return apiMethods.publishEntry(id);
 }

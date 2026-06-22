@@ -1,22 +1,47 @@
 /**
- * Editor admin — entry composer (Tiptap-based).
+ * Editor admin — entry composer (Tiptap-based · live).
  *
- * Live Tiptap editor + 6 custom block nodes per
- * ``Theourgia Editor.dc.html`` from the base 50-bundle. Composes the
- * shared `TiptapEditor` — the format toolbar, slash menu, and the
- * 6 custom node implementations all live in the shared module.
+ * Two modes:
  *
- * Custom blocks shipping in B97 (Batch 35 wave 1):
- *   · ritualLog · quoteCitation · gematria · sensation · entityRef ·
- *     sigil
+ *   · `/editor` (no id) — demo mode. Mounts a static seed document
+ *     ("Invocation of the Agathos Daimon"). No API calls. Save status
+ *     shown as "Demo · not saved".
  *
- * Chart + Divination blocks + Library / Entities pickers + the
- * /api/v1/entries persistence pipeline land in B99.
+ *   · `/editor/:id` — live mode. Fetches the entry's detail record
+ *     via `getEntryDetail`; mounts `TiptapEditor` with the parsed
+ *     body; debounces `updateEntryBody` calls on every editor change
+ *     (~1 s). Topbar status indicator reads `Saving…` while the
+ *     PATCH is in flight, `Saved · just now` after, or
+ *     `Save failed · retry` on error.
+ *
+ * Pickers (entity / library / chart) and visibility / publish wiring
+ * land in B99c.
  */
 
-import { TiptapEditor, useTopbar } from "@theourgia/shared";
+import {
+  TiptapEditor,
+  useTopbar,
+  type EntryDetailRecord,
+} from "@theourgia/shared";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
+
+import {
+  publishEntry,
+  updateEntryBody,
+  useEntryDetail,
+} from "../data/useEntries.js";
 
 const LINE = "var(--line)";
+const AUTOSAVE_DEBOUNCE_MS = 1000;
+
+type SaveStatus =
+  | { state: "idle" }
+  | { state: "dirty" }
+  | { state: "saving" }
+  | { state: "saved"; at: Date }
+  | { state: "error"; message: string }
+  | { state: "demo" };
 
 function VisibilityChip() {
   return (
@@ -54,7 +79,7 @@ function VisibilityChip() {
   );
 }
 
-const SEED_DOC = {
+const DEMO_DOC = {
   type: "doc",
   content: [
     {
@@ -124,7 +149,154 @@ const SEED_DOC = {
   ],
 };
 
+function SaveStatusIndicator({ status }: { status: SaveStatus }) {
+  const text =
+    status.state === "demo"
+      ? "Demo · not saved"
+      : status.state === "saving"
+        ? "Saving…"
+        : status.state === "saved"
+          ? "Saved · just now"
+          : status.state === "error"
+            ? `Save failed · ${status.message}`
+            : status.state === "dirty"
+              ? "Unsaved"
+              : "—";
+  const color =
+    status.state === "error"
+      ? "var(--warn)"
+      : status.state === "saving"
+        ? "var(--ink-mute)"
+        : status.state === "demo"
+          ? "var(--ink-mute)"
+          : status.state === "saved"
+            ? "var(--c-synchronicity)"
+            : "var(--ink-mute)";
+  return (
+    <span
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        marginLeft: 8,
+        fontSize: 11.5,
+        color,
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{ width: 6, height: 6, borderRadius: "50%", background: color }}
+      />
+      {text}
+    </span>
+  );
+}
+
+interface PublishCtaProps {
+  entryId: string | null;
+  publishedAt: string | null;
+  onPublished: (next: EntryDetailRecord) => void;
+}
+
+function PublishCta({ entryId, publishedAt, onPublished }: PublishCtaProps) {
+  const [busy, setBusy] = useState(false);
+  const disabled = entryId === null || busy || publishedAt !== null;
+
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        if (entryId === null) return;
+        setBusy(true);
+        try {
+          const next = await publishEntry(entryId);
+          onPublished(next);
+        } catch {
+          // Toast is the responsibility of a future Toast hook
+          // wired in the same batch — for B99b the error path is
+          // visible via the save-status indicator if a later edit
+          // fires.
+        } finally {
+          setBusy(false);
+        }
+      }}
+      disabled={disabled}
+      style={{
+        padding: "8px 16px",
+        borderRadius: "var(--r-md)",
+        background: disabled ? "var(--bg-3)" : "var(--accent)",
+        color: disabled ? "var(--ink-mute)" : "var(--accent-ink)",
+        fontFamily: "var(--font-ui)",
+        fontWeight: 700,
+        fontSize: 13,
+        border: "none",
+        cursor: disabled ? "not-allowed" : "pointer",
+      }}
+    >
+      {publishedAt ? "Published" : "Publish"}
+    </button>
+  );
+}
+
 export function Editor() {
+  const params = useParams<{ id?: string }>();
+  const entryId = params.id ?? null;
+  const detail = useEntryDetail(entryId);
+
+  const [doc, setDoc] = useState<unknown | null>(null);
+  const [status, setStatus] = useState<SaveStatus>(
+    entryId === null ? { state: "demo" } : { state: "idle" },
+  );
+  const [publishedAt, setPublishedAt] = useState<string | null>(null);
+
+  // Hydrate from detail on first successful fetch.
+  useEffect(() => {
+    if (entryId === null) {
+      setDoc(DEMO_DOC);
+      return;
+    }
+    if (detail.status === "ok" && detail.data) {
+      const body = detail.data.body;
+      try {
+        const parsed = body && body.length > 0 ? JSON.parse(body) : null;
+        setDoc(parsed ?? { type: "doc", content: [{ type: "paragraph" }] });
+      } catch {
+        setDoc({ type: "doc", content: [{ type: "paragraph" }] });
+      }
+      setPublishedAt(detail.data.published_at);
+    }
+  }, [detail.status, detail.data, entryId]);
+
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingDocRef = useRef<unknown>(null);
+
+  const onChange = useMemo(
+    () => (next: unknown) => {
+      pendingDocRef.current = next;
+      if (entryId === null) return; // demo mode — no save.
+      setStatus({ state: "dirty" });
+      if (debounceTimer.current !== null) clearTimeout(debounceTimer.current);
+      debounceTimer.current = setTimeout(async () => {
+        const payload = JSON.stringify(pendingDocRef.current);
+        setStatus({ state: "saving" });
+        try {
+          await updateEntryBody(entryId, { body: payload });
+          setStatus({ state: "saved", at: new Date() });
+        } catch (cause) {
+          const message = cause instanceof Error ? cause.message : "unknown";
+          setStatus({ state: "error", message });
+        }
+      }, AUTOSAVE_DEBOUNCE_MS);
+    },
+    [entryId],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current !== null) clearTimeout(debounceTimer.current);
+    };
+  }, []);
+
   useTopbar(
     () => ({
       title: (
@@ -142,48 +314,61 @@ export function Editor() {
           <span style={{ opacity: 0.5 }}>/</span>
           <span style={{ color: "var(--ink-soft)" }}>Workings</span>
           <span style={{ opacity: 0.5 }}>/</span>
-          <span style={{ color: "var(--ink)" }}>Untitled draft</span>
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              marginLeft: 8,
-              fontSize: 11.5,
-              color: "var(--c-synchronicity)",
-            }}
-          >
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--c-synchronicity)" }} />
-            Saved · just now
+          <span style={{ color: "var(--ink)" }}>
+            {entryId === null
+              ? "Untitled draft"
+              : detail.data?.title ?? "Loading…"}
           </span>
+          <SaveStatusIndicator status={status} />
         </div>
       ),
       before: <VisibilityChip />,
       after: (
-        <button
-          type="button"
-          style={{
-            padding: "8px 16px",
-            borderRadius: "var(--r-md)",
-            background: "var(--accent)",
-            color: "var(--accent-ink)",
-            fontFamily: "var(--font-ui)",
-            fontWeight: 700,
-            fontSize: 13,
-            border: "none",
-            cursor: "pointer",
-          }}
-        >
-          Publish
-        </button>
+        <PublishCta
+          entryId={entryId}
+          publishedAt={publishedAt}
+          onPublished={(next) => setPublishedAt(next.published_at)}
+        />
       ),
     }),
-    [],
+    [entryId, detail.data?.title, status, publishedAt],
   );
+
+  if (entryId !== null && detail.status === "loading") {
+    return (
+      <div
+        style={{
+          padding: 48,
+          textAlign: "center",
+          fontFamily: "var(--font-ui)",
+          color: "var(--ink-mute)",
+        }}
+      >
+        Loading entry…
+      </div>
+    );
+  }
+
+  if (entryId !== null && detail.status === "error") {
+    return (
+      <div
+        style={{
+          padding: 48,
+          textAlign: "center",
+          fontFamily: "var(--font-ui)",
+          color: "var(--warn)",
+        }}
+      >
+        Failed to load entry: {detail.error?.message ?? "unknown error"}.
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, margin: "0 -28px" }}>
-      <TiptapEditor initialDoc={SEED_DOC} placeholder="Begin writing…" />
+      {doc !== null ? (
+        <TiptapEditor initialDoc={doc} onChange={onChange} placeholder="Begin writing…" />
+      ) : null}
       <style>{`
         .theourgia-editor {
           overflow-y: auto;

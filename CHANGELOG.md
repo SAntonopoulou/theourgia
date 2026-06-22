@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-23 (B99b · Editor persistence wiring)
+
+**The Editor surface persists end-to-end.** Admin route `/editor/:id` mounts `TiptapEditor` against an existing entry's body, debounces auto-save (~1 s), and surfaces save status in the topbar (`Saving…` · `Saved · just now` · `Save failed · {reason}`). `/editor` (no id) stays in demo mode against the static seed document.
+
+- **`frontend/admin/src/data/useEntries.ts`** — new hooks: `useEntryDetail(id | null)` (skips when null), `updateEntryBody(id, { body })`, `publishEntry(id)`.
+- **`frontend/admin/src/App.tsx`** — adds `/editor/:id` route alongside the existing `/editor` demo route.
+- **`frontend/admin/src/routes/Editor.tsx`** — rewritten to:
+  - Read entry id from URL params.
+  - Fetch detail via `useEntryDetail` (loading / error / data states).
+  - Mount `TiptapEditor` with `initialDoc = JSON.parse(detail.body)` once loaded.
+  - Debounce `updateEntryBody` on every editor change.
+  - `SaveStatusIndicator` in topbar reflects the live state.
+  - `PublishCta` calls `publishEntry(id)`; disabled when already published.
+- **`frontend/shared/src/api/index.ts`** — barrel exports `EntryDetailRecord` + `UpdateEntryBodyInput`.
+
+Tests: 1718 / 1718 shared vitest passing (+4 from B99a's 1714 — the increment comes from the new endpoint tests in `endpoints.test.ts`; admin route has no separate test suite per the existing pattern).
+
+Still queued for B99c (final wave of Batch 35):
+- Entity picker modal · Library picker modal · Chart picker modal.
+- Visibility chip popover (Personal / Friends / Public · RungUpModal for public · SealUnlock for sealed).
+- Toast on Publish success.
+
 ### Added — 2026-06-23 (B98 + B99a · Editor polish · chart + divination nodes)
 
 **B98 — Block-kind dropdown.** Replaces the static "Paragraph" chip with a real `BlockKindMenu` (Paragraph · Heading 1/2/3 · Quotation · Code). `detectBlockKind` + `applyBlockKind` exported. Active row marked with `--accent`; closes on outside click + Escape.
