@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation — 2026-06-22 (design handoff request opened)
+
+With the H01-H03 sprint closed, the next sprint is design-blocked. Opened a single comprehensive design request enumerating every surface that needs designer pickup before further frontend work can land:
+
+- **Tier 1 — Daily Practice Tracker** — self-designed ritual companion to Liber Resh. Composes existing B59 primitives (ReshStreakGrid, ReshStationCard, ReshNextAdoration, SunArcDiagram).
+- **Tier 2 — Phase 06 Divination & Practice** — 6 `.dc.html` surfaces covering 9 backend engines already shipped in B44-B49 (Tarot · I Ching · Geomancy · Runes · Pendulum/Bibliomancy/Horary/Scrying cluster · Practice logs cluster).
+- **Tier 3 — Phase 07 Workshop** — 6 surfaces (Sigil generator · Magic squares · Talisman designer · Magical circle builder · Tool registry · Voces magicae recorder). Backend not yet started — design lands first, build follows.
+- **Tier 4 — Phases 08 + 09** — 5 + 5 surfaces (Linguistic Tools · Synchronicity & Analytics). Design queued when capacity allows.
+- **Tier 5 — Phases 10-16** — long arc, scoped for awareness.
+
+Full request: [`docs/design-requests/2026-06-22-post-h01-h03-pipeline.md`](docs/design-requests/2026-06-22-post-h01-h03-pipeline.md). Cross-cutting standing rules carried forward (token-first, `--danger` reserved for Visibility → Public only, tradition-neutrality, sealed-content discipline, wellbeing tone). Open questions for the designer captured in §"Open questions" of that doc.
+
+README + FEATURES updated to mark Phases 06-09 as 🎨 design-blocked with links into the relevant tier of the request.
+
 ### Added — 2026-06-22 (H01-H03 sprint COMPLETE · Phase 05 primitive coverage closes the sprint)
 
 The H01-H03 frontend wiring sprint closed today. Phases 03 / 04 / 05 frontend coverage is end-to-end against the existing backend. 71 shared primitives across 22 modules; 960 vitest tests; 360/360 visual regression + 360/360 axe-core WCAG 2.2 A+AA — all green.
