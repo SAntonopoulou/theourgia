@@ -8,3 +8,4 @@
  * citations + reference notes.
  */
 export * from "./geomancy/index.js";
+export * from "./runes/index.js";
