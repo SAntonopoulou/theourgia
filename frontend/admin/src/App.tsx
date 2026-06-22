@@ -73,6 +73,7 @@ import { Workshop } from "./routes/Workshop.js";
 import { Journal } from "./routes/Journal.js";
 import { Library } from "./routes/Library.js";
 import { MagicSquaresRoute } from "./routes/MagicSquaresRoute.js";
+import { TalismanDesignerRoute } from "./routes/TalismanDesignerRoute.js";
 import { Placeholder } from "./routes/Placeholder.js";
 import { PracticeLogsRoute } from "./routes/PracticeLogsRoute.js";
 import { SigilGeneratorRoute } from "./routes/SigilGeneratorRoute.js";
@@ -197,7 +198,8 @@ function ShellRoutes() {
             />
           }
         />
-        <Route path="/talismans" element={<Talismans />} />
+        <Route path="/talismans" element={<TalismanDesignerRoute />} />
+        <Route path="/talismans/legacy" element={<Talismans />} />
         <Route
           path="/tools"
           element={
