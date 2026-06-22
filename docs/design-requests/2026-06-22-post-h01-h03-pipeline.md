@@ -218,4 +218,9 @@ Things the designer should keep in mind across all these surfaces:
 
 The build side will read this file on each new session and check whether any Tier 1 / Tier 2 surfaces have arrived in `/home/sophia/design-handoffs/theourgia/`. When a tier completes, the build side opens the next sprint and updates this document in place.
 
-**Last build-side update:** 2026-06-22 — H01-H03 sprint closed; this request opened.
+**Last build-side update:** 2026-06-22 — Tier 1 + Tier 2 SHIPPED.
+
+- **Tier 1 (Daily Practice Tracker) — shipped in B80** (`5ec138a`). Surface lives at `/daily-practice`.
+- **Tier 2 (Phase 06 Divination & Practice) — shipped in B81-B86** (`26a9317`, `3177d8d`, `66e63e4`, `ed289aa`, `44853e5`, `984c3ff`). Six surfaces under OracleTabs.
+- **Tier 3 (Phase 07 Workshop) — open as H05.** See [`2026-06-22-h05-workshop.md`](2026-06-22-h05-workshop.md) for the explicit per-surface request. Six surfaces: Sigil Generator · Magic Squares · Talisman Designer · Magical Circle · Tool Registry · Voces Magicae Recorder. The H05 request locks every product decision; the designer fills the structure with voice and visual rigor.
+- **Tier 4 + Tier 5 — still queued.** A separate H06 request will open once H05 is in flight.
