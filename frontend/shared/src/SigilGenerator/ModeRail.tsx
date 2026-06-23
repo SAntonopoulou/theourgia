@@ -83,7 +83,7 @@ export function ModeRail({
       style={{ ...RAIL_STYLE, ...style }}
     >
       <div style={EYEBROW_STYLE}>{MODE_RAIL_EYEBROW}</div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <div role="tablist" aria-label={MODE_RAIL_EYEBROW} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
         {SIGIL_MODES.map((mode) => {
           const on = value === mode.key;
           return (
@@ -91,7 +91,7 @@ export function ModeRail({
               key={mode.key}
               type="button"
               role="tab"
-              aria-pressed={on}
+              aria-selected={on}
               data-mode={mode.key}
               onClick={() => onChange(mode.key)}
               style={on ? BUTTON_ON : BUTTON_BASE}
