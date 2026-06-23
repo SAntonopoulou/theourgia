@@ -228,6 +228,7 @@ export function TalismanDesignerSurface({
                 type="button"
                 role="switch"
                 aria-checked={snapGrid}
+                aria-label="Snap to grid"
                 data-snap-grid-switch
                 onClick={() => setSnapGrid((v) => !v)}
                 style={{

@@ -150,13 +150,13 @@ export function SlashMenu({
                   style={{
                     fontFamily: "var(--font-ui)",
                     fontSize: 11.5,
-                    color: "var(--ink-mute)",
+                    color: "var(--ink-soft)",
                   }}
                 >
                   {item.description}
                 </div>
               </div>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-mute)" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--ink-soft)" }}>
                 {item.command}
               </span>
             </button>

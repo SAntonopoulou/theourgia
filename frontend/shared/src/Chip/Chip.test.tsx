@@ -17,11 +17,11 @@ describe("Chip", () => {
     expect(screen.getByRole("switch", { name: "Hellenic" })).toBeInTheDocument();
   });
 
-  it("aria-checked + aria-pressed mirror the selected state", () => {
+  it("aria-checked mirrors the selected state (role=switch requires aria-checked, prohibits aria-pressed)", () => {
     render(<Chip label="X" selected onToggle={vi.fn()} />);
     const chip = screen.getByRole("switch");
     expect(chip).toHaveAttribute("aria-checked", "true");
-    expect(chip).toHaveAttribute("aria-pressed", "true");
+    expect(chip).not.toHaveAttribute("aria-pressed");
   });
 
   it("toggling fires onToggle(next)", async () => {

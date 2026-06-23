@@ -73,7 +73,7 @@ export function SquareView({
         <g
           key={idx}
           data-cell-index={idx}
-          onClick={onClick}
+          {...(onClick ? { onClick } : {})}
           style={{ cursor: onClick ? "pointer" : "default" }}
         >
           <rect

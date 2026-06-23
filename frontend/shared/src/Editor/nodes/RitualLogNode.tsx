@@ -166,6 +166,8 @@ function RitualLogView({ node, updateAttributes, editor }: NodeViewProps) {
                     color: "var(--ink-mute)",
                     cursor: "pointer",
                     padding: 4,
+                    minWidth: 24,
+                    minHeight: 24,
                   }}
                 >
                   ×

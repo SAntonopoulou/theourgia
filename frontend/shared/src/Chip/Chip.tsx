@@ -120,7 +120,6 @@ export function Chip({
       type="button"
       data-chip
       role={removable ? "button" : "switch"}
-      aria-pressed={!removable ? selected : undefined}
       aria-checked={!removable ? selected : undefined}
       aria-label={removable ? `Remove ${label}` : undefined}
       disabled={disabled}

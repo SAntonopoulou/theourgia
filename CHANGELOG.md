@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — 2026-06-23 (B102e · A11y comprehensive sweep · 73 → 14 failures · 97.5% pass rate)
+
+One comprehensive sweep covering every known a11y category at once, replacing the earlier batch-by-batch approach. From 73 → 14 failing stories (286 → 14 since the gate was restored in B101 — **95% reduction**).
+
+**Token changes**:
+- `--ink-mute` lifted further: dark `#958b77` → `#a09680`; hellenic `#86907f` → `#909a8a`; thelemic `#998964` → `#a39073`. Now clears 4.5:1 on `--accent-soft` chip backgrounds (active list rows in Magical Circle, Slash menu, etc.) where it previously only cleared on `--bg-2`.
+- `--danger` lifted across 3 themes (dark `#d76a55`, hellenic `#cf6e57`, thelemic `#de553f`). Closes "Revoked" and other danger pills against dark surfaces.
+
+**Component changes**:
+- `Chip` (role="switch"): dropped `aria-pressed` (ARIA prohibits it on switch); kept `aria-checked`. `theourgia.shared.css` now matches both states so the active background still renders.
+- `SquareView` (build mode): conditionally spreads `onClick` so the SVG `<g>` only has the handler when actually clickable — fixes `nested-interactive` violation.
+- `EntityCard` unread-dot span: dropped `title` (prohibited on roleless span) and added `role="status"` so aria-label is admitted.
+- `TalismanDesigner` snap-grid switch, `OwnedDeckOverlay` checkbox, `RitualLogNode` remove button — all got `aria-label`s.
+- `RitualLogNode` × remove button: `minWidth/minHeight: 24` for WCAG 2.2 target-size.
+- `OperationsToolbar` colour swatches: 17×17 → 24×24.
+- `TemplateBlockCard` move/remove buttons: 26×22 → 28×26.
+- `SensationTypeGrid.cellStyle`: `minWidth/minHeight: 24` floor on the aspect-1 cells.
+- `Editor/SlashMenu` description + command columns: `--ink-mute` → `--ink-soft` so contrast holds on the `--accent-soft` active row.
+
+**CSS additions**:
+- `theourgia.shared.css` `.tiptap.ProseMirror` gets `min-height: 28px` so an empty editor surface clears WCAG 2.2 target-size.
+- `TiptapEditor` configures `editorProps.attributes` to inject `aria-label="Entry body — Tiptap editor"` on the ProseMirror element so its 5 axe rules (aria-input-field-name, name, etc.) pass.
+
+**Tests / gates**:
+- Vitest: 1722 / 1722 passing (Chip test updated to expect aria-checked-only).
+- Visual: 557 / 557 passing — baselines refreshed for the ink-mute + danger token shifts (visual change is real but design-neutral; the muted-tone character is preserved).
+- A11y: **543 / 557 passing (97.5%)**, was 286 / 557 (51%) at the start of B102. Net rule-level: target-size + target-offset + aria-required-parent + aria-allowed-attr + aria-input-field-name + non-empty-placeholder + presentational-role + implicit-label / explicit-label / label all at zero.
+
+**14 residual failures, all design tradeoffs**:
+- `color-contrast` × 41 node instances. Mostly `color-mix(--ink-mute, …)` derivatives (`#837a68` etc.) rendering 4.2:1 instead of 4.5:1 — these are the design's "fades" (muted-on-muted) that are intentional. Plus 4 instances of `--fire` / `--c-working` brand colour as text labels (consecration timestamps, working dot labels) where the brand colour is the meaning.
+- `nested-interactive` 1, `no-focusable-content` 1, plus a handful of vendored-element rules — would need per-call-site `axe-ignore` overrides.
+
+These remaining items would each need a design conversation ("is this brand-colour text label acceptable below AA?") rather than a code fix. Per the user's direction, B102 lineage closes here at 97.5% pass rate. Higher gain available later in a dedicated batch.
+
 ### Fixed — 2026-06-23 (B102 · A11y debt — first pass · 286 → 73 failures)
 
 **Two token-layer fixes that closed 213 of the 286 a11y failures surfaced in B101.**

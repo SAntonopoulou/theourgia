@@ -164,6 +164,7 @@ export function OwnedDeckOverlay({
           <span
             role="checkbox"
             aria-checked={owned}
+            aria-label="I own this deck"
             tabIndex={0}
             onClick={() => setOwned((v) => !v)}
             onKeyDown={(e) => {

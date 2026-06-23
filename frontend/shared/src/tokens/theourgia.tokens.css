@@ -99,7 +99,7 @@
 
   --ink: #ece5d6; /* high-emphasis text  */
   --ink-soft: #bcb29d; /* body text           */
-  --ink-mute: #958b77; /* captions, metadata — 5.25:1 on bg-2 (WCAG AA) */
+  --ink-mute: #a09680; /* captions, metadata — 6.0:1 on bg-2, 4.76:1 on accent-soft chip rows (WCAG AA across all dark surfaces) */
 
   /* — Accent (overridden per theme) ——————————————————————————————— */
   --accent: #c7a24c; /* the single brand gold        */
@@ -110,7 +110,7 @@
   --info: #7e91ce;
   --success: #6ba892;
   --warning: #c9a24c;
-  --danger: #c8554a;
+  --danger: #d76a55; /* 5.1:1 on bg-2, 5.4:1 on bg — WCAG AA */
   --danger-bg: rgba(200, 85, 74, 0.12);
   --danger-border: rgba(200, 85, 74, 0.45);
   --care: #c9a86a; /* wellbeing/check-in — calm, never red */
@@ -372,7 +372,7 @@
   --line-2: rgba(226, 231, 222, 0.2);
   --ink: #e9eade;
   --ink-soft: #aeb6a4;
-  --ink-mute: #86907f;
+  --ink-mute: #909a8a;
 
   --accent: #bfa15b;
   --accent-ink: #0f1311;
@@ -381,7 +381,7 @@
   --info: #5e9ba6;
   --success: #5e9ba6;
   --warning: #bfa15b;
-  --danger: #b5573f;
+  --danger: #cf6e57;
   --danger-border: rgba(181, 87, 63, 0.45);
   --care: #9fb89a;
   --care-soft: rgba(159, 184, 154, 0.12);
@@ -423,7 +423,7 @@
   --line-2: rgba(239, 227, 203, 0.22);
   --ink: #efe3cb;
   --ink-soft: #c5b493;
-  --ink-mute: #998964;
+  --ink-mute: #a39073;
 
   --accent: #cda53e;
   --accent-ink: #100b09;
@@ -432,7 +432,7 @@
   --info: #b58a3c;
   --success: #9a8f4e;
   --warning: #cda53e;
-  --danger: #c5392b;
+  --danger: #de553f;
   --danger-border: rgba(197, 57, 43, 0.5);
   --care: #cba75a;
   --care-soft: rgba(203, 167, 90, 0.12);

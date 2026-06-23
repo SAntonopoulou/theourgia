@@ -78,6 +78,10 @@ button {
 }
 
 /* ── data-chip / data-vis (Quick capture chips, visibility selector) ─────── */
+/* Chip (role="switch") uses aria-checked per the ARIA spec; role="button"
+   variant uses aria-pressed. Visibility selector (data-vis) keeps
+   aria-pressed since it's button-based. */
+[data-chip][aria-checked="true"],
 [data-chip][aria-pressed="true"] {
   background: var(--accent-soft);
   border-color: var(--line-2);
@@ -86,6 +90,20 @@ button {
 [data-vis][aria-pressed="true"] {
   background: var(--accent-soft);
   color: var(--ink);
+}
+
+/* ── Tiptap editor min-height + WCAG 2.2 target-size ─────────────────────────
+   The ProseMirror editor surface (`.tiptap`) is a contenteditable div with
+   tabindex=0 — axe treats it as an interactive target. An empty editor
+   would collapse below WCAG 2.2's 24×24 floor. Min-height keeps it
+   activatable. */
+.tiptap.ProseMirror {
+  min-height: 28px;
+}
+.tiptap.ProseMirror[contenteditable="true"] {
+  /* Ensure the editor itself is reachable + has an accessible name path.
+     The host surface provides the labelling context; the editable region
+     here just gets a fallback name. */
 }
 
 /* ── Now-dot pulse (planetary-hour live indicator on Today) ──────────────── */

@@ -93,6 +93,11 @@ export function TiptapEditor({
     extensions,
     content: (initialDoc as object | undefined) ?? EMPTY_DOC,
     editable,
+    editorProps: {
+      attributes: {
+        "aria-label": "Entry body — Tiptap editor",
+      },
+    },
     onUpdate({ editor: ed }) {
       onChange?.(ed.getJSON());
       const next = computeSlashState(ed, slashRef.current);

@@ -296,7 +296,7 @@ export function EntityCard({
             </span>
             {entity.unread ? (
               <span
-                title="New federated update"
+                role="status"
                 aria-label="New federated update"
                 style={{
                   width: 7,

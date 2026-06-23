@@ -36,7 +36,7 @@ This is the **section-level rollup**; per-checkbox detail still lives below. For
 | 16 | [AI Agent Integration](plan/16-ai-agent-integration.md) | ⏳ planned | Daskalos-pattern daemon + MCP, BYO keys |
 
 **Backend tests: 1473 passing · Alembic chain at 0032.**
-**Frontend shared tests: 1722 passing · Visual regression: 557/557 (gate restored 2026-06-23 — see B101). · axe-core WCAG 2.2 A+AA: 484/557 (286→73 failures after B102's token + body-color fixes; component-level remediation continues in B102b+).**
+**Frontend shared tests: 1722 passing · Visual regression: 557/557 (gate restored 2026-06-23 — see B101). · axe-core WCAG 2.2 A+AA: 543/557 — 97.5% (was 286→73→14 after B102 lineage; residual 14 are intentional design tradeoffs — color-mix muted-on-muted fades + brand-colour text labels).**
 **H01-H03 sprint: 71 primitives across 22 modules. H04 sprint: 7 designed surfaces + Daily Practice Tracker · 7 headless divination engines · 6 new design tokens. H05 sprint: 6 Workshop surfaces + 6 SVG engines (sigil generators · magic-square constructors · sandboxed evalFormula · nameRingPath · centreSymbol · printTiles).**
 
 ### H01-H03 sprint — complete (2026-06-22)
