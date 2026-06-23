@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — 2026-06-23 (B101 · Tool icons in sprite · TEST INFRA FIX — visual + a11y gates were broken)
+
+**Critical infrastructure finding while refactoring tool icons.** While folding the 14 Tool Registry icons into the engraving sprite, I discovered every story screenshot in `tests/visual/storybook.spec.ts-snapshots/` was a render of Storybook's "No Preview · Sorry, but you either have no stories or none are selected somehow…" placeholder. The visual + a11y suites have been **non-functional for an unknown number of commits**: both passed because every story rendered the same blank stub.
+
+**Root cause**: `npx serve`, used in both `playwright.visual.config.ts` and `playwright.a11y.config.ts`, performs a clean-URL redirect that strips `.html` AND the query string. So Playwright's request to `/iframe.html?id=X&viewMode=story` got `301 → /iframe`, and Storybook then rendered "No Preview" because no story id was selected.
+
+**Fix**: swapped `serve` → `http-server` (doesn't redirect / rewrite). Added sprite injection to `.storybook/preview.tsx` so `<use href="#theo-*">` references resolve inside the Storybook iframe (the host applications inline the sprite via Vite + Astro plugins; Storybook had no equivalent).
+
+**Now the gates are real**:
+- **Visual**: 557 / 557 stories pass. Baselines for every story have been regenerated to reflect actual rendered content. Editor / Tarot / Chart / pickers / tool icons / hex stones all render correctly now.
+- **A11y**: **286 / 557 stories fail axe-core.** This is real accessibility debt that was masked by the broken gate. Dominant rule violations:
+  - `color-contrast` — ~1122 node instances. Many trace to `--ink-mute` (`#897f6b`) on `--bg-2` (`#21201e`), measuring 4.11:1 vs. WCAG AA's 4.5:1 floor. A token tweak likely closes most of these.
+  - `non-empty-title` / `aria-label` / `aria-labelledby` — ~37 each. Mostly icon buttons + svg without accessible names.
+  - `presentational-role` / `non-empty-placeholder` / `implicit-label` / `explicit-label` — ~28 each. Form fields without explicit `<label>` association.
+  - `target-size` — ~20. Click targets <24×24 px.
+  - `aria-allowed-attr` — 11. ARIA attributes on roles that don't permit them.
+
+**Per the user's direction**, this commit ships the infra fix + the B101 tool-icon refactor; remediating the 286 a11y failures is its own batch lineage (B102+). The a11y suite is **expected red** going forward until B102+ closes it.
+
+**B101 — Tool Registry icons folded into sprite**:
+- 14 new `<symbol id="theo-tool-{kind}">` entries added to `tokens/theourgia-icons.svg`.
+- `ToolKindIcon.tsx` rewritten from 14 inline switch arms (153 lines) to a single `<svg><use href="#theo-tool-{kind}" /></svg>` shell (50 lines). Stroke-width 1.3 + currentColor preserved on the outer SVG so the icons inherit caller styling consistently.
+- The Glyph component (existing) follows the same pattern; tool icons are now first-class sprite citizens that any future surface can reuse.
+
 ### Added — 2026-06-23 (B100 · Cross-surface state for "Save as sigil")
 
 **The B92 → B91 handoff carries the user's exact trace.** Clicking "Save as sigil" from the Magic Squares Trace mode now navigates to `/sigils?from=square&square=X&cells=N,N,N…`; the SigilGeneratorRoute reads the URL params and opens the surface directly in Kamea mode with the cell sequence honoured. The Toast copy adjusts to confirm the trace landed.

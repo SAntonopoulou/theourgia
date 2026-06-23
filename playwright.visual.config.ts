@@ -64,8 +64,14 @@ export default defineConfig({
     // Serve the prebuilt Storybook static directory. The build step is
     // a prerequisite — run `pnpm build:storybook` before `pnpm test:visual`,
     // or rely on CI's ordered job dependencies.
+    //
+    // **http-server, not serve**: `serve` performs a clean-URL redirect
+    // that strips `.html` extensions AND the query string, so
+    // `/iframe.html?id=X` → `/iframe` and Storybook shows "No Preview"
+    // instead of the requested story. `http-server` serves files
+    // verbatim. (This was the root cause of months of broken baselines.)
     command:
-      "npx --yes serve -p 6007 -L --no-clipboard frontend/shared/storybook-static",
+      "npx --yes http-server frontend/shared/storybook-static -p 6007 -s --cors",
     url: "http://127.0.0.1:6007/index.html",
     reuseExistingServer: !process.env["CI"],
     timeout: 60_000,

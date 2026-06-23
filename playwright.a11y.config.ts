@@ -37,8 +37,11 @@ export default defineConfig({
   ],
 
   webServer: {
+    // See playwright.visual.config.ts for why http-server (not serve).
+    // `serve` strips .html + query strings via a clean-URL redirect,
+    // which made the iframe URL serve a "No Preview" Storybook stub.
     command:
-      "npx --yes serve -p 6007 -L --no-clipboard frontend/shared/storybook-static",
+      "npx --yes http-server frontend/shared/storybook-static -p 6007 -s --cors",
     url: "http://127.0.0.1:6007/index.html",
     reuseExistingServer: !process.env["CI"],
     timeout: 60_000,
