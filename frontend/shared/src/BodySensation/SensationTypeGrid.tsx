@@ -47,6 +47,8 @@ function DefaultGlyph({ color }: { color: string }) {
 function cellStyle(active: boolean, color: string): CSSProperties {
   return {
     aspectRatio: "1",
+    minWidth: 24,
+    minHeight: 24,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",

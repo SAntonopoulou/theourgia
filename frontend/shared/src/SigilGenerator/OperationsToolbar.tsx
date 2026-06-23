@@ -156,8 +156,8 @@ export function OperationsToolbar({
             data-swatch-index={i}
             onClick={() => onColor(c)}
             style={{
-              width: 17,
-              height: 17,
+              width: 24,
+              height: 24,
               borderRadius: "50%",
               background: c,
               borderWidth: color === c ? 2 : 1,

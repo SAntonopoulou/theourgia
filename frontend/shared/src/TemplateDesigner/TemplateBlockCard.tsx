@@ -274,8 +274,8 @@ export function TemplateBlockCard({
           disabled={isFirst}
           aria-label="Move up"
           style={{
-            width: 26,
-            height: 22,
+            width: 28,
+            height: 26,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -293,8 +293,8 @@ export function TemplateBlockCard({
           disabled={isLast}
           aria-label="Move down"
           style={{
-            width: 26,
-            height: 22,
+            width: 28,
+            height: 26,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -312,8 +312,8 @@ export function TemplateBlockCard({
             onClick={onRemove}
             aria-label="Remove block"
             style={{
-              width: 26,
-              height: 22,
+              width: 28,
+              height: 26,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
