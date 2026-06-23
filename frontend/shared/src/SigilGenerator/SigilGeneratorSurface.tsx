@@ -90,6 +90,13 @@ export interface SigilGeneratorSurfaceProps {
   initialSquare?: PlanetKey;
   initialFamily?: CurveFamilyUI;
   initialColor?: string;
+  /**
+   * Kamea trace handed across from another surface (typically the
+   * B92 Magic Squares "Save as sigil" CTA). When set, the SigilPreview
+   * draws this exact cell-value path instead of deriving one from the
+   * intention. Cleared the moment the user changes mode or intention.
+   */
+  initialCellSequence?: readonly number[];
   library?: readonly SigilLibraryEntry[];
   onSave?: (payload: {
     title: string;
@@ -108,16 +115,31 @@ export function SigilGeneratorSurface({
   initialSquare = "saturn",
   initialFamily = "rose",
   initialColor = "var(--accent)",
+  initialCellSequence,
   library,
   onSave,
   onOpenSigil,
   className,
   style,
 }: SigilGeneratorSurfaceProps) {
-  const [mode, setMode] = useState<SigilMode>(initialMode);
-  const [intention, setIntention] = useState(initialIntention);
+  const [mode, setModeState] = useState<SigilMode>(initialMode);
+  const [intention, setIntentionState] = useState(initialIntention);
   const [square, setSquare] = useState<PlanetKey>(initialSquare);
   const [family, setFamily] = useState<CurveFamilyUI>(initialFamily);
+  // Kamea trace override is cleared the moment the user touches mode
+  // or intention — at that point the deterministic random sequence
+  // takes back over (the trace was a starting hint, not a lock).
+  const [cellSequenceOverride, setCellSequenceOverride] = useState<
+    readonly number[] | undefined
+  >(initialCellSequence);
+  const setMode = (next: SigilMode) => {
+    setModeState(next);
+    setCellSequenceOverride(undefined);
+  };
+  const setIntention = (next: string) => {
+    setIntentionState(next);
+    setCellSequenceOverride(undefined);
+  };
 
   // Engine-level family: "bezier" UI choice maps to "polar" at render
   // (engine doesn't expose a bezier family — the polar curve carries
@@ -303,6 +325,7 @@ export function SigilGeneratorSurface({
                 intention={intention}
                 square={square}
                 family={engineFamily}
+                cellSequenceOverride={cellSequenceOverride}
                 operations={{
                   color,
                   rotateDeg: rotate,

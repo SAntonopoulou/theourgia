@@ -280,6 +280,21 @@ export const Surface_Kamea: Story = {
   ),
 };
 
+export const Surface_KameaFromSquare: Story = {
+  name: "SigilGeneratorSurface · kamea arrived from Magic Squares (cell sequence honoured)",
+  render: () => (
+    <Frame width={1440}>
+      <div style={{ height: 820 }}>
+        <SigilGeneratorSurface
+          initialMode="kamea"
+          initialSquare="jupiter"
+          initialCellSequence={[3, 16, 9, 6, 13, 4, 15, 2, 11]}
+        />
+      </div>
+    </Frame>
+  ),
+};
+
 export const Surface_Formula: Story = {
   name: "SigilGeneratorSurface · formula (sandboxed whitelist help)",
   render: () => (

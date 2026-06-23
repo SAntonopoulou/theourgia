@@ -43,6 +43,14 @@ export interface SigilPreviewProps {
   square?: PlanetKey;
   /** Active curve family (hashed mode). */
   family?: CurveFamily;
+  /**
+   * Optional kamea trace override. When supplied, the kamea mode
+   * uses this exact cell-value sequence instead of deriving one
+   * from the intention. Used by the B92 → B91 "Save as sigil"
+   * cross-surface handoff: a user's trace in the Magic Squares
+   * surface is carried over as the sigil's path.
+   */
+  cellSequenceOverride?: readonly number[];
   operations?: SigilOperations;
   className?: string;
   style?: CSSProperties;
@@ -109,12 +117,14 @@ function ModeBody({
   square,
   family,
   color,
+  cellSequenceOverride,
 }: {
   mode: SigilMode;
   intention: string;
   square: PlanetKey;
   family: CurveFamily;
   color: string;
+  cellSequenceOverride?: readonly number[];
 }) {
   const seed = useMemo(
     () => hashIntention(`${intention}${mode}${square}`),
@@ -123,20 +133,27 @@ function ModeBody({
 
   if (mode === "kamea") {
     const cells = pickSquareCells(square);
-    const rng = mulberry32(seed);
-    // Sample a few cell values pseudo-randomly to trace.
     const n = cells.length;
-    const sequence: number[] = [];
-    const taken = new Set<number>();
-    for (let k = 0; k < Math.min(8, n * n); k++) {
-      let v = Math.floor(rng() * n * n) + 1;
-      let attempts = 0;
-      while (taken.has(v) && attempts < n * n) {
-        v = (v % (n * n)) + 1;
-        attempts++;
+    let sequence: number[];
+    if (cellSequenceOverride && cellSequenceOverride.length > 0) {
+      // Cross-surface handoff: the caller (e.g. B92 Magic Squares
+      // trace) supplied the exact cell-value path. Use it verbatim.
+      sequence = [...cellSequenceOverride];
+    } else {
+      const rng = mulberry32(seed);
+      // Sample a few cell values pseudo-randomly to trace.
+      sequence = [];
+      const taken = new Set<number>();
+      for (let k = 0; k < Math.min(8, n * n); k++) {
+        let v = Math.floor(rng() * n * n) + 1;
+        let attempts = 0;
+        while (taken.has(v) && attempts < n * n) {
+          v = (v % (n * n)) + 1;
+          attempts++;
+        }
+        taken.add(v);
+        sequence.push(v);
       }
-      taken.add(v);
-      sequence.push(v);
     }
     const cellSize = 200 / n;
     const off = 40;
@@ -322,6 +339,7 @@ export function SigilPreview({
   intention,
   square = "saturn",
   family = "rose",
+  cellSequenceOverride,
   operations,
   className,
   style,
@@ -350,6 +368,7 @@ export function SigilPreview({
           square={kameaPlanet(mode, square)}
           family={family}
           color={color}
+          cellSequenceOverride={cellSequenceOverride}
         />
       </g>
     </svg>

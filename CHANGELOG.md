@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-23 (B100 · Cross-surface state for "Save as sigil")
+
+**The B92 → B91 handoff carries the user's exact trace.** Clicking "Save as sigil" from the Magic Squares Trace mode now navigates to `/sigils?from=square&square=X&cells=N,N,N…`; the SigilGeneratorRoute reads the URL params and opens the surface directly in Kamea mode with the cell sequence honoured. The Toast copy adjusts to confirm the trace landed.
+
+- `SigilPreview` gains an `cellSequenceOverride?: readonly number[]` prop. When supplied, Kamea mode draws this exact path instead of deriving one from the intention seed.
+- `SigilGeneratorSurface` accepts `initialCellSequence?`. The override is cleared the moment the user touches the mode or intention — the trace is a starting hint, not a lock.
+- `MagicSquaresRoute` builds the URL params on the way out. Custom squares show a `--warn` Toast and stay on the page (Kamea mode only accepts the 7 planetary squares; custom-kamea support is a follow-up).
+- `SigilGeneratorRoute` reads + validates `from` / `square` / `cells` params via `useSearchParams`.
+- New visual baseline: `SigilGeneratorSurface · kamea arrived from Magic Squares (cell sequence honoured)`.
+
+Tests: 1722 / 1722 shared vitest passing (unchanged — no new test, behaviour covered by the existing kamea preview + new visual baseline). 557 / 557 visual + a11y baselines (+1).
+
 ### Added — 2026-06-23 (B99c3 · Interactive visibility chip + Sealed toggle · Live ChartPicker · CLOSES BATCH 35)
 
 **Live `getChart` client method + admin wiring**: the ChartPicker now actually computes. `apiMethods.getChart({ when, latitude, longitude, house_system? })` hits `GET /api/v1/astro/chart` and returns the placements + houses + aspects + attribution. The admin Editor route provides a `fetchChart` to TiptapEditor that adapts the response into the `ChartSnapshot` shape stored on the chart node. Backend endpoint exists (live since Phase 03). The fixture returns a deterministic 7-body sample chart so dev/mock mode also draws a real wheel.
