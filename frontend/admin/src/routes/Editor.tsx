@@ -20,6 +20,7 @@
 
 import {
   TiptapEditor,
+  Toast,
   useTopbar,
   type EntryDetailRecord,
 } from "@theourgia/shared";
@@ -29,6 +30,8 @@ import { useParams } from "react-router-dom";
 import {
   publishEntry,
   updateEntryBody,
+  useBooks,
+  useEntities,
   useEntryDetail,
 } from "../data/useEntries.js";
 
@@ -211,11 +214,13 @@ function PublishCta({ entryId, publishedAt, onPublished }: PublishCtaProps) {
         try {
           const next = await publishEntry(entryId);
           onPublished(next);
-        } catch {
-          // Toast is the responsibility of a future Toast hook
-          // wired in the same batch — for B99b the error path is
-          // visible via the save-status indicator if a later edit
-          // fires.
+          Toast.push({ tone: "success", title: "Published", body: "The entry is now visible at its public URL." });
+        } catch (cause) {
+          Toast.push({
+            tone: "error",
+            title: "Publish failed",
+            body: cause instanceof Error ? cause.message : "Unknown error",
+          });
         } finally {
           setBusy(false);
         }
@@ -242,6 +247,8 @@ export function Editor() {
   const params = useParams<{ id?: string }>();
   const entryId = params.id ?? null;
   const detail = useEntryDetail(entryId);
+  const entities = useEntities();
+  const books = useBooks();
 
   const [doc, setDoc] = useState<unknown | null>(null);
   const [status, setStatus] = useState<SaveStatus>(
@@ -367,7 +374,13 @@ export function Editor() {
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, margin: "0 -28px" }}>
       {doc !== null ? (
-        <TiptapEditor initialDoc={doc} onChange={onChange} placeholder="Begin writing…" />
+        <TiptapEditor
+          initialDoc={doc}
+          onChange={onChange}
+          placeholder="Begin writing…"
+          entities={entities.data ?? undefined}
+          books={books.data ?? undefined}
+        />
       ) : null}
       <style>{`
         .theourgia-editor {

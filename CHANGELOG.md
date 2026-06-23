@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-23 (B99c · Entity + Library + Chart pickers · Publish toast)
+
+**Three picker modals + Publish success/error toasts.** The Tiptap custom block NodeViews now summon their own pickers; data flows via the new `EditorDataProvider` context (admin populates `entities[]` + `books[]` + `fetchChart` from the API client).
+
+- **`frontend/shared/src/Editor/EditorContext.tsx`** — `EditorDataProvider` + `useEditorData()` hook. Surfaces `entities` (for the EntityPicker), `books` (for the LibraryPicker), and `fetchChart(req): Promise<ChartSnapshot>` (for the ChartPicker). The TiptapEditor takes these as props and wraps its children in the provider.
+- **`EntityPicker.tsx`** — modal opened from the EntityRefNode's "Pick entity…" / "Change entity" button. Search by name or alias; filter chips per kind; click row to populate `entityId / displayName / kind`. Empty-state copy when no entities are loaded yet.
+- **`LibraryPicker.tsx`** — modal opened from the QuoteCitationNode's "Pick from library" button. Search by title / author / ISBN; filter chips per tradition. On select, formats `Author, *Title*, (Year)` and writes the citation into the node.
+- **`ChartPicker.tsx`** — modal opened from the ChartNode placeholder. Form: kind (natal / horary / election) · datetime (UTC) · latitude · longitude · house system (placidus / whole-sign / equal). On Compute, calls `useEditorData().fetchChart(req)`; the returned `ChartSnapshot` is written into the chart node's `snapshot` attr. When `fetchChart` is undefined, the modal renders a `--warn` note + disabled Compute CTA so the form still mounts in tests / dev with no live wiring.
+- **`useEntries.ts`** — admin gains `useEntities()` + `useBooks()` hooks that wrap the existing `listEntities` + `listBooks` API client methods.
+- **Admin Editor route** — passes `entities = useEntities().data` + `books = useBooks().data` to TiptapEditor. ChartPicker's `fetchChart` is unset for now (live astro endpoint client method arrives in a later batch); the picker still mounts and shows its warn note.
+- **Publish toast** — `Toast.push({tone:"success"})` on a successful publish; `tone:"error"` with the underlying message on failure. Replaces the earlier silent error path.
+
+Tests / gates (all green):
+- 1720 / 1720 shared vitest passing (+2 from `formatCitation` cases).
+- admin tsc --noEmit clean.
+- 556 / 556 visual baselines (+4: EntityPicker_Open · EntityPicker_Empty · LibraryPicker_Open · ChartPicker_Open).
+- 556 / 556 a11y baselines (axe-core WCAG 2.2 A + AA).
+
+Still queued for B99c-final (visibility chip):
+- VisibilityChip becomes an interactive popover with `RungUpModal` (raise to Public) + `SealUnlock` (seal entry). The entry's `visibility` + `sealed` fields update via `updateEntry`. Currently the chip is static "Personal · Sealed".
+
 ### Added — 2026-06-23 (B99b · Editor persistence wiring)
 
 **The Editor surface persists end-to-end.** Admin route `/editor/:id` mounts `TiptapEditor` against an existing entry's body, debounces auto-save (~1 s), and surfaces save status in the topbar (`Saving…` · `Saved · just now` · `Save failed · {reason}`). `/editor` (no id) stays in demo mode against the static seed document.

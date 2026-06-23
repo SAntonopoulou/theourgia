@@ -14,6 +14,7 @@
 
 import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
+import { useState } from "react";
 
 import {
   Chart,
@@ -21,6 +22,7 @@ import {
   type ChartHouses,
   type ChartPlacement,
 } from "../../Chart/index.js";
+import { ChartPicker } from "../ChartPicker.js";
 
 const LINE = "var(--line)";
 
@@ -35,6 +37,7 @@ function ChartView({ node, updateAttributes, editor }: NodeViewProps) {
   const description: string = node.attrs.description ?? "";
   const snapshot: ChartSnapshot | null = node.attrs.snapshot ?? null;
   const editable = editor.isEditable;
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   return (
     <NodeViewWrapper
@@ -92,27 +95,39 @@ function ChartView({ node, updateAttributes, editor }: NodeViewProps) {
             size={240}
           />
         ) : (
-          <div
+          <button
+            type="button"
+            onClick={editable ? () => setPickerOpen(true) : undefined}
+            disabled={!editable}
             style={{
               width: 240,
               height: 240,
               border: `1px dashed ${LINE}`,
               borderRadius: "var(--r-md)",
               display: "flex",
+              flexDirection: "column",
+              gap: 4,
               alignItems: "center",
               justifyContent: "center",
-              color: "var(--ink-mute)",
+              color: editable ? "var(--accent)" : "var(--ink-mute)",
               fontFamily: "var(--font-ui)",
               fontSize: 12.5,
               textAlign: "center",
               padding: 12,
               flex: "none",
+              background: "transparent",
+              cursor: editable ? "pointer" : "not-allowed",
             }}
           >
-            No chart snapshot yet —
-            <br />
-            picker arrives in B99b.
-          </div>
+            <span style={{ fontStyle: "italic" }}>
+              {editable ? "Compose chart…" : "No chart snapshot"}
+            </span>
+            {editable && (
+              <span style={{ fontSize: 11, color: "var(--ink-mute)" }}>
+                Picks parameters and computes the chart.
+              </span>
+            )}
+          </button>
         )}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
           {editable ? (
@@ -170,6 +185,13 @@ function ChartView({ node, updateAttributes, editor }: NodeViewProps) {
           )}
         </div>
       </div>
+      {editable && (
+        <ChartPicker
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          onPick={(nextSnapshot) => updateAttributes({ snapshot: nextSnapshot })}
+        />
+      )}
     </NodeViewWrapper>
   );
 }

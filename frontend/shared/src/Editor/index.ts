@@ -1,5 +1,19 @@
 export * from "./TiptapEditor.js";
 export {
+  EditorDataProvider,
+  useEditorData,
+  type EditorData,
+  type ChartFetchFn,
+  type ChartFetchRequest,
+} from "./EditorContext.js";
+export { EntityPicker, type EntityPickerProps } from "./EntityPicker.js";
+export {
+  LibraryPicker,
+  type LibraryPickerProps,
+  formatCitation,
+} from "./LibraryPicker.js";
+export { ChartPicker, type ChartPickerProps } from "./ChartPicker.js";
+export {
   BlockKindMenu,
   detectBlockKind,
   applyBlockKind,

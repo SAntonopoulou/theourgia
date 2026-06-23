@@ -8,6 +8,8 @@
  */
 
 import {
+  type BookRecord,
+  type EntityRecord,
   type EntryDetailRecord,
   type EntryRecord,
   type UpdateEntryBodyInput,
@@ -18,6 +20,14 @@ import { apiMethods } from "./api.js";
 
 export function useRecentEntries() {
   return useApiCall<EntryRecord[]>((signal) => apiMethods.listEntries({ signal }));
+}
+
+export function useEntities() {
+  return useApiCall<EntityRecord[]>((signal) => apiMethods.listEntities({ signal }));
+}
+
+export function useBooks() {
+  return useApiCall<BookRecord[]>((signal) => apiMethods.listBooks({ signal }));
 }
 
 export function createEntry(input: Parameters<typeof apiMethods.createEntry>[0]) {

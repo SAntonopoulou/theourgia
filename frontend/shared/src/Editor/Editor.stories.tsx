@@ -215,7 +215,87 @@ export const Editor_HeadingFocused: Story = {
   },
 };
 
+import type { BookRecord, EntityRecord } from "../api/types.js";
+
+import { EditorDataProvider } from "./EditorContext.js";
+import { EntityPicker } from "./EntityPicker.js";
+import { LibraryPicker } from "./LibraryPicker.js";
+import { ChartPicker } from "./ChartPicker.js";
 import { pickIchingSnapshot, pickTarotSnapshot } from "./nodes/DivinationNode.js";
+
+const DEMO_ENTITIES: EntityRecord[] = [
+  {
+    id: "e-hekate",
+    name: "Hekate",
+    kind: "goddess",
+    aliases: ["Ἑκάτη", "Trivia", "Brimo", "Soteira"],
+    glyph: "torch",
+    description: "Triple goddess of the crossroads, keys, and witchcraft.",
+    tradition: "hellenic",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: "e-hermes",
+    name: "Hermes",
+    kind: "god",
+    aliases: ["Ἑρμῆς", "Mercury", "Psychopomp"],
+    glyph: "caduceus",
+    description: "Messenger of the gods.",
+    tradition: "hellenic",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: "e-bornless",
+    name: "The Headless One",
+    kind: "daemon",
+    aliases: ["Bornless One", "Ἀκέφαλος"],
+    glyph: "void",
+    description: "PGM V. 96–172.",
+    tradition: "pgm",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: "e-michael",
+    name: "Michael",
+    kind: "angel",
+    aliases: ["מיכאל"],
+    glyph: "sword",
+    description: "Archangel of the south.",
+    tradition: "judeo-christian",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+];
+
+const DEMO_BOOKS: BookRecord[] = [
+  {
+    id: "b-pgm",
+    title: "Papyri Graecae Magicae",
+    author: "ed. Karl Preisendanz",
+    year: 1928,
+    isbn: "",
+    tradition: "pgm",
+  } as BookRecord,
+  {
+    id: "b-liber-al",
+    title: "Liber AL vel Legis",
+    author: "Aleister Crowley",
+    year: 1904,
+    isbn: "",
+    tradition: "thelemic",
+  } as BookRecord,
+  {
+    id: "b-picatrix",
+    title: "Picatrix (Ghāyat al-Ḥakīm)",
+    author: "ed. David Pingree",
+    year: 1986,
+    isbn: "",
+    tradition: "arabic",
+  } as BookRecord,
+];
 
 export const Editor_WithChartAndReadings: Story = {
   name: "Editor · chart + tarot + iching nodes (B99a)",
@@ -279,6 +359,58 @@ export const Editor_WithChartAndReadings: Story = {
       </Frame>
     );
   },
+};
+
+export const EntityPicker_Open: Story = {
+  name: "EntityPicker · open (4 demo entities · all kinds)",
+  render: () => (
+    <Frame width={640} height={680}>
+      <EditorDataProvider entities={DEMO_ENTITIES}>
+        <div style={{ flex: 1, position: "relative" }}>
+          <EntityPicker open onClose={() => {}} onPick={() => {}} />
+        </div>
+      </EditorDataProvider>
+    </Frame>
+  ),
+};
+
+export const EntityPicker_Empty: Story = {
+  name: "EntityPicker · no entities loaded (empty state)",
+  render: () => (
+    <Frame width={640} height={520}>
+      <EditorDataProvider entities={[]}>
+        <div style={{ flex: 1, position: "relative" }}>
+          <EntityPicker open onClose={() => {}} onPick={() => {}} />
+        </div>
+      </EditorDataProvider>
+    </Frame>
+  ),
+};
+
+export const ChartPicker_Open: Story = {
+  name: "ChartPicker · open (no live fetchChart — warn note visible)",
+  render: () => (
+    <Frame width={640} height={620}>
+      <EditorDataProvider>
+        <div style={{ flex: 1, position: "relative" }}>
+          <ChartPicker open onClose={() => {}} onPick={() => {}} />
+        </div>
+      </EditorDataProvider>
+    </Frame>
+  ),
+};
+
+export const LibraryPicker_Open: Story = {
+  name: "LibraryPicker · open (3 demo books)",
+  render: () => (
+    <Frame width={640} height={620}>
+      <EditorDataProvider books={DEMO_BOOKS}>
+        <div style={{ flex: 1, position: "relative" }}>
+          <LibraryPicker open onClose={() => {}} onPick={() => {}} />
+        </div>
+      </EditorDataProvider>
+    </Frame>
+  ),
 };
 
 export const Slash_Menu_Filtered: Story = {

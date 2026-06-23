@@ -19,6 +19,7 @@ import {
   pickIchingSnapshot,
   pickTarotSnapshot,
 } from "./nodes/DivinationNode.js";
+import { formatCitation } from "./LibraryPicker.js";
 
 function mountHeadless(content: unknown = { type: "doc", content: [{ type: "paragraph" }] }): CoreEditor {
   return new CoreEditor({
@@ -246,6 +247,34 @@ describe("Editor — chart node round-trip", () => {
     expect(node.type).toBe("chart");
     expect(node.attrs.snapshot.placements[0]?.body_name).toBe("Sun");
     editor.destroy();
+  });
+});
+
+describe("Editor — LibraryPicker citation formatter", () => {
+  it("formats Author, Title, (Year)", () => {
+    expect(
+      formatCitation({
+        id: "b1",
+        title: "Liber AL vel Legis",
+        author: "Aleister Crowley",
+        year: 1904,
+        isbn: "",
+        tradition: "thelemic",
+      } as Parameters<typeof formatCitation>[0]),
+    ).toBe("Aleister Crowley, *Liber AL vel Legis*, (1904)");
+  });
+
+  it("omits the year segment when year is null", () => {
+    expect(
+      formatCitation({
+        id: "b1",
+        title: "Untitled",
+        author: "Anon",
+        year: null,
+        isbn: "",
+        tradition: "",
+      } as Parameters<typeof formatCitation>[0]),
+    ).toBe("Anon, *Untitled*");
   });
 });
 

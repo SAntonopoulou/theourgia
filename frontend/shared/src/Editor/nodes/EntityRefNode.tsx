@@ -10,7 +10,9 @@
 
 import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
-import { type CSSProperties } from "react";
+import { type CSSProperties, useState } from "react";
+
+import { EntityPicker } from "../EntityPicker.js";
 
 export type EntityRefKind = "god" | "daemon" | "angel" | "ancestor" | "unified";
 
@@ -27,6 +29,7 @@ function EntityRefView({ node, updateAttributes, editor }: NodeViewProps) {
   const displayName: string = node.attrs.displayName ?? "";
   const kind: EntityRefKind = (node.attrs.kind as EntityRefKind) ?? "god";
   const editable = editor.isEditable;
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const wrap: CSSProperties = {
     display: "inline-flex",
@@ -54,13 +57,30 @@ function EntityRefView({ node, updateAttributes, editor }: NodeViewProps) {
         aria-hidden="true"
         style={{ width: 7, height: 7, borderRadius: "50%", background: KIND_COLOR[kind] }}
       />
-      {editable ? (
-        <input
-          type="text"
-          value={displayName}
-          onChange={(e) => updateAttributes({ displayName: e.target.value })}
-          placeholder="Entity name"
-          aria-label="Entity display name"
+      {editable && entityId === "" ? (
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          aria-label="Pick entity"
+          style={{
+            background: "transparent",
+            border: "none",
+            outline: "none",
+            color: "var(--accent)",
+            fontFamily: "inherit",
+            fontSize: "inherit",
+            fontStyle: "italic",
+            cursor: "pointer",
+            padding: 0,
+          }}
+        >
+          Pick entity…
+        </button>
+      ) : editable ? (
+        <button
+          type="button"
+          onClick={() => setPickerOpen(true)}
+          aria-label="Change entity"
           style={{
             background: "transparent",
             border: "none",
@@ -69,12 +89,33 @@ function EntityRefView({ node, updateAttributes, editor }: NodeViewProps) {
             fontFamily: "inherit",
             fontSize: "inherit",
             padding: 0,
-            minWidth: 40,
-            width: `${Math.max(displayName.length, 8)}ch`,
+            cursor: "pointer",
           }}
-        />
+        >
+          {displayName || "—"}
+        </button>
       ) : (
         <span>{displayName || "—"}</span>
+      )}
+      {editable && (
+        <EntityPicker
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          onPick={(entity) => {
+            const mappedKind: EntityRefKind =
+              entity.kind === "god" ||
+              entity.kind === "daemon" ||
+              entity.kind === "angel" ||
+              entity.kind === "ancestor"
+                ? entity.kind
+                : "unified";
+            updateAttributes({
+              entityId: entity.id,
+              displayName: entity.name,
+              kind: mappedKind,
+            });
+          }}
+        />
       )}
     </NodeViewWrapper>
   );

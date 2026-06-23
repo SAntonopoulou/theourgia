@@ -27,6 +27,9 @@ import {
   useState,
 } from "react";
 
+import type { BookRecord, EntityRecord } from "../api/types.js";
+
+import { EditorDataProvider, type ChartFetchFn } from "./EditorContext.js";
 import { buildExtensions, type LangScript } from "./extensions.js";
 import { SlashMenu } from "./SlashMenu.js";
 import { filterSlashCommands, type SlashCommand } from "./slashCommands.js";
@@ -41,6 +44,12 @@ export interface TiptapEditorProps {
   placeholder?: string;
   /** If false, the editor renders read-only (no toolbar, no slash). */
   editable?: boolean;
+  /** Entities surfaced to the EntityPicker. Optional — picker shows an empty state when unset. */
+  entities?: readonly EntityRecord[];
+  /** Library books surfaced to the LibraryPicker. */
+  books?: readonly BookRecord[];
+  /** Async fetcher for the ChartPicker. Optional. */
+  fetchChart?: ChartFetchFn;
 }
 
 const EMPTY_DOC = { type: "doc", content: [{ type: "paragraph" }] };
@@ -69,6 +78,9 @@ export function TiptapEditor({
   onChange,
   placeholder,
   editable = true,
+  entities,
+  books,
+  fetchChart,
 }: TiptapEditorProps): React.ReactElement {
   const [lang, setLang] = useState<LangScript>("en");
   const [slash, setSlash] = useState<SlashState>(INITIAL_SLASH);
@@ -158,31 +170,33 @@ export function TiptapEditor({
   }
 
   return (
-    <div
-      data-editor-root
-      onKeyDown={onKeyDown}
-      style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}
-    >
-      {editable && (
-        <Toolbar
-          editor={editor}
-          lang={lang}
-          onLangChange={setLang}
-          onInsertBlockClick={onInsertBlockClick}
-        />
-      )}
-      <div style={{ position: "relative", flex: 1 }}>
-        <EditorContent editor={editor} className="theourgia-editor" />
-        <SlashMenu
-          open={slash.open}
-          query={slash.query}
-          activeIndex={slash.active}
-          onActiveIndexChange={(i) => setSlash((s) => ({ ...s, active: i }))}
-          onSelect={execCommand}
-          position={slash.coords ?? undefined}
-        />
+    <EditorDataProvider entities={entities} books={books} fetchChart={fetchChart}>
+      <div
+        data-editor-root
+        onKeyDown={onKeyDown}
+        style={{ position: "relative", display: "flex", flexDirection: "column", flex: 1 }}
+      >
+        {editable && (
+          <Toolbar
+            editor={editor}
+            lang={lang}
+            onLangChange={setLang}
+            onInsertBlockClick={onInsertBlockClick}
+          />
+        )}
+        <div style={{ position: "relative", flex: 1 }}>
+          <EditorContent editor={editor} className="theourgia-editor" />
+          <SlashMenu
+            open={slash.open}
+            query={slash.query}
+            activeIndex={slash.active}
+            onActiveIndexChange={(i) => setSlash((s) => ({ ...s, active: i }))}
+            onSelect={execCommand}
+            position={slash.coords ?? undefined}
+          />
+        </div>
       </div>
-    </div>
+    </EditorDataProvider>
   );
 }
 

@@ -8,8 +8,9 @@
 
 import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
-import { type CSSProperties } from "react";
+import { type CSSProperties, useState } from "react";
 
+import { LibraryPicker } from "../LibraryPicker.js";
 import type { LangScript } from "../lang.js";
 import { LANG_FONT } from "../lang.js";
 
@@ -30,6 +31,7 @@ const DEFAULT_ATTRS: QuoteCitationAttrs = {
 function QuoteCitationView({ node, updateAttributes, editor }: NodeViewProps) {
   const attrs = { ...DEFAULT_ATTRS, ...(node.attrs as Partial<QuoteCitationAttrs>) };
   const editable = editor.isEditable;
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const sourceFont = LANG_FONT[attrs.sourceScript] ?? LANG_FONT.en;
 
@@ -85,21 +87,46 @@ function QuoteCitationView({ node, updateAttributes, editor }: NodeViewProps) {
               marginTop: 6,
             }}
           />
-          <input
-            type="text"
-            value={attrs.citation}
-            onChange={(e) => updateAttributes({ citation: e.target.value })}
-            placeholder="Source citation (e.g. PGM V. 96–172)"
-            aria-label="Quote citation"
-            style={{
-              ...inputBase,
-              fontFamily: "var(--font-ui)",
-              fontSize: 11.5,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: "var(--ink-mute)",
-              marginTop: 10,
-            }}
+          <div style={{ display: "flex", gap: 8, marginTop: 10, alignItems: "center" }}>
+            <input
+              type="text"
+              value={attrs.citation}
+              onChange={(e) => updateAttributes({ citation: e.target.value })}
+              placeholder="Source citation (e.g. PGM V. 96–172)"
+              aria-label="Quote citation"
+              style={{
+                ...inputBase,
+                fontFamily: "var(--font-ui)",
+                fontSize: 11.5,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "var(--ink-mute)",
+                flex: 1,
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              aria-label="Pick from library"
+              style={{
+                padding: "4px 10px",
+                border: "1px solid var(--line)",
+                borderRadius: "var(--r-sm)",
+                background: "transparent",
+                color: "var(--ink-soft)",
+                fontFamily: "var(--font-ui)",
+                fontSize: 11,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Pick from library
+            </button>
+          </div>
+          <LibraryPicker
+            open={pickerOpen}
+            onClose={() => setPickerOpen(false)}
+            onPick={(_book, formatted) => updateAttributes({ citation: formatted })}
           />
         </>
       ) : (
