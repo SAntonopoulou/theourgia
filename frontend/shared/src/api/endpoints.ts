@@ -19,6 +19,8 @@ import type {
   CreateEntityInput,
   CreateEntryInput,
   CreatePracticeInput,
+  ChartRequestInput,
+  ChartResponse,
   EntityKind,
   EntityRecord,
   EntryDetailRecord,
@@ -119,6 +121,24 @@ export function api(client: ApiClient) {
       return client.request<EntryDetailRecord>(`/api/v1/entries/${id}/body`, {
         method: "PATCH",
         json: input,
+        signal: opts?.signal,
+      });
+    },
+
+    /**
+     * Compute a chart for the supplied instant + location. Used by
+     * the Editor's ChartPicker to populate the snapshot on the
+     * `chart` Tiptap node.
+     */
+    getChart(input: ChartRequestInput, opts?: { signal?: AbortSignal }): Promise<ChartResponse> {
+      const qs = new URLSearchParams({
+        when: input.when,
+        latitude: String(input.latitude),
+        longitude: String(input.longitude),
+        zodiac: input.zodiac ?? "tropical",
+        house_system: input.house_system ?? "placidus",
+      });
+      return client.request<ChartResponse>(`/api/v1/astro/chart?${qs.toString()}`, {
         signal: opts?.signal,
       });
     },

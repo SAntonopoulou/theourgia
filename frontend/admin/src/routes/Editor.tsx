@@ -19,14 +19,20 @@
  */
 
 import {
+  SealEntryDialog,
   TiptapEditor,
   Toast,
+  VisibilityControl,
+  VisibilityDowngradeDialog,
   useTopbar,
+  type ChartFetchFn,
+  type EntityVisibility,
   type EntryDetailRecord,
 } from "@theourgia/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 
+import { apiMethods } from "../data/api.js";
 import {
   publishEntry,
   updateEntryBody,
@@ -46,38 +52,184 @@ type SaveStatus =
   | { state: "error"; message: string }
   | { state: "demo" };
 
-function VisibilityChip() {
+interface VisibilityChipProps {
+  entryId: string | null;
+  visibility: EntityVisibility;
+  sealed: boolean;
+  onChange: (next: { visibility?: EntityVisibility; sealed?: boolean }) => void;
+}
+
+function VisibilityChip({ entryId, visibility, sealed, onChange }: VisibilityChipProps) {
+  const [open, setOpen] = useState(false);
+  const [downgradeTarget, setDowngradeTarget] = useState<EntityVisibility | null>(null);
+  const [sealDialogOpen, setSealDialogOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const isDemo = entryId === null;
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (!wrapRef.current) return;
+      if (!wrapRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
+
+  const VIS_LABEL: Record<EntityVisibility, string> = {
+    personal: "Personal",
+    viewer: "Viewer",
+    hub: "Hub",
+    public: "Public",
+  };
+
   return (
-    <div
-      role="status"
-      aria-label="Visibility · Sealed"
-      style={{
-        display: "flex",
-        border: `1px solid ${LINE}`,
-        borderRadius: "var(--r-md)",
-        overflow: "hidden",
-        fontFamily: "var(--font-ui)",
-        fontSize: 12,
-      }}
-    >
-      <span style={{ padding: "6px 11px", color: "var(--ink-soft)" }}>Personal</span>
-      <span
+    <div ref={wrapRef} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={isDemo ? undefined : () => setOpen((s) => !s)}
+        disabled={isDemo}
+        aria-haspopup="menu"
+        aria-expanded={open ? "true" : "false"}
+        aria-label={`Visibility · ${VIS_LABEL[visibility]}${sealed ? " · Sealed" : ""}`}
         style={{
-          padding: "6px 11px",
-          borderLeft: `1px solid ${LINE}`,
-          background: "var(--accent-soft)",
-          color: "var(--ink)",
           display: "flex",
-          alignItems: "center",
-          gap: 5,
+          border: `1px solid ${LINE}`,
+          borderRadius: "var(--r-md)",
+          overflow: "hidden",
+          fontFamily: "var(--font-ui)",
+          fontSize: 12,
+          background: open ? "var(--bg-3)" : "transparent",
+          color: "inherit",
+          cursor: isDemo ? "not-allowed" : "pointer",
+          padding: 0,
         }}
       >
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
-          <rect x="5" y="11" width="14" height="9" rx="1.5" />
-          <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-        </svg>
-        Sealed
-      </span>
+        <span style={{ padding: "6px 11px", color: "var(--ink-soft)" }}>
+          {VIS_LABEL[visibility]}
+        </span>
+        {sealed && (
+          <span
+            style={{
+              padding: "6px 11px",
+              borderLeft: `1px solid ${LINE}`,
+              background: "var(--accent-soft)",
+              color: "var(--ink)",
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+              <rect x="5" y="11" width="14" height="9" rx="1.5" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
+            Sealed
+          </span>
+        )}
+      </button>
+      {open && (
+        <div
+          role="menu"
+          aria-label="Visibility and seal"
+          style={{
+            position: "absolute",
+            top: "calc(100% + 6px)",
+            right: 0,
+            width: 280,
+            background: "var(--bg-2)",
+            border: "1px solid var(--line-2)",
+            borderRadius: "var(--r-md)",
+            boxShadow: "0 12px 28px rgba(0,0,0,.4)",
+            padding: 14,
+            zIndex: 30,
+            display: "flex",
+            flexDirection: "column",
+            gap: 14,
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontFamily: "var(--font-ui)",
+                fontSize: 10.5,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "var(--ink-mute)",
+                marginBottom: 8,
+              }}
+            >
+              Visibility
+            </div>
+            <VisibilityControl
+              value={visibility}
+              onChange={(next) => onChange({ visibility: next })}
+              onRequestDowngrade={(target) => setDowngradeTarget(target)}
+            />
+          </div>
+          <div>
+            <div
+              style={{
+                fontFamily: "var(--font-ui)",
+                fontSize: 10.5,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "var(--ink-mute)",
+                marginBottom: 8,
+              }}
+            >
+              Body
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (sealed) {
+                  onChange({ sealed: false });
+                } else {
+                  setSealDialogOpen(true);
+                }
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                width: "100%",
+                padding: "8px 10px",
+                border: "1px solid var(--line)",
+                borderRadius: "var(--r-sm)",
+                background: sealed ? "var(--accent-soft)" : "transparent",
+                color: "var(--ink)",
+                fontFamily: "var(--font-ui)",
+                fontSize: 12.5,
+                cursor: "pointer",
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+                <rect x="5" y="11" width="14" height="9" rx="1.5" />
+                <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+              </svg>
+              {sealed ? "Sealed — click to unseal" : "Seal this entry"}
+            </button>
+          </div>
+        </div>
+      )}
+      <VisibilityDowngradeDialog
+        open={downgradeTarget !== null}
+        target={(downgradeTarget ?? "viewer") as Exclude<EntityVisibility, "personal">}
+        onConfirm={() => {
+          if (downgradeTarget !== null) onChange({ visibility: downgradeTarget });
+          setDowngradeTarget(null);
+        }}
+        onCancel={() => setDowngradeTarget(null)}
+      />
+      <SealEntryDialog
+        open={sealDialogOpen}
+        onConfirm={() => {
+          onChange({ sealed: true });
+          setSealDialogOpen(false);
+        }}
+        onCancel={() => setSealDialogOpen(false)}
+      />
     </div>
   );
 }
@@ -255,6 +407,8 @@ export function Editor() {
     entryId === null ? { state: "demo" } : { state: "idle" },
   );
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
+  const [visibility, setVisibility] = useState<EntityVisibility>("personal");
+  const [sealed, setSealed] = useState<boolean>(false);
 
   // Hydrate from detail on first successful fetch.
   useEffect(() => {
@@ -271,8 +425,48 @@ export function Editor() {
         setDoc({ type: "doc", content: [{ type: "paragraph" }] });
       }
       setPublishedAt(detail.data.published_at);
+      setVisibility(detail.data.visibility);
+      setSealed(detail.data.sealed);
     }
   }, [detail.status, detail.data, entryId]);
+
+  const fetchChart: ChartFetchFn = useMemo(
+    () =>
+      async (req) => {
+        const response = await apiMethods.getChart({
+          when: req.datetime,
+          latitude: req.latitude,
+          longitude: req.longitude,
+          house_system: req.system,
+        });
+        return {
+          placements: response.placements,
+          houses: response.houses,
+          aspects: response.aspects,
+        };
+      },
+    [],
+  );
+
+  const onVisibilityChange = useMemo(
+    () => async (patch: { visibility?: EntityVisibility; sealed?: boolean }) => {
+      if (entryId === null) return;
+      // Optimistic update — local state moves immediately so the chip
+      // feels responsive; PATCH catches up in the background.
+      if (patch.visibility !== undefined) setVisibility(patch.visibility);
+      if (patch.sealed !== undefined) setSealed(patch.sealed);
+      try {
+        await apiMethods.updateEntry(entryId, patch);
+      } catch (cause) {
+        Toast.push({
+          tone: "error",
+          title: "Couldn't update visibility",
+          body: cause instanceof Error ? cause.message : "Unknown error",
+        });
+      }
+    },
+    [entryId],
+  );
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingDocRef = useRef<unknown>(null);
@@ -329,7 +523,14 @@ export function Editor() {
           <SaveStatusIndicator status={status} />
         </div>
       ),
-      before: <VisibilityChip />,
+      before: (
+        <VisibilityChip
+          entryId={entryId}
+          visibility={visibility}
+          sealed={sealed}
+          onChange={onVisibilityChange}
+        />
+      ),
       after: (
         <PublishCta
           entryId={entryId}
@@ -338,7 +539,7 @@ export function Editor() {
         />
       ),
     }),
-    [entryId, detail.data?.title, status, publishedAt],
+    [entryId, detail.data?.title, status, publishedAt, visibility, sealed, onVisibilityChange],
   );
 
   if (entryId !== null && detail.status === "loading") {
@@ -380,6 +581,7 @@ export function Editor() {
           placeholder="Begin writing…"
           entities={entities.data ?? undefined}
           books={books.data ?? undefined}
+          fetchChart={fetchChart}
         />
       ) : null}
       <style>{`

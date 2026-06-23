@@ -26,6 +26,7 @@ export type {
   CreatePracticeInput,
   EntityKind,
   EntityRecord,
+  EntityVisibility,
   EntryDetailRecord,
   EntryRecord,
   EntryStats,

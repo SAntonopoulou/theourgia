@@ -23,7 +23,7 @@ export interface ChartFetchRequest {
   datetime: string; // ISO 8601
   latitude: number;
   longitude: number;
-  system: "placidus" | "whole-sign" | "equal";
+  system: "placidus" | "whole-sign";
 }
 
 export type ChartFetchFn = (req: ChartFetchRequest) => Promise<ChartSnapshot>;

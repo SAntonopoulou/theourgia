@@ -77,7 +77,7 @@ describe("endpoints — mock mode", () => {
     const detail = await m.getEntryDetail(first.id);
     expect(detail.id).toBe(first.id);
     expect(typeof detail.body).toBe("string");
-    expect(["personal", "friends", "public"]).toContain(detail.visibility);
+    expect(["personal", "viewer", "hub", "public"]).toContain(detail.visibility);
     expect(typeof detail.sealed).toBe("boolean");
     expect(detail.published_at === null || typeof detail.published_at === "string").toBe(true);
   });
@@ -103,6 +103,29 @@ describe("endpoints — mock mode", () => {
 
   it("getEntryDetail by unknown id throws NotFoundError", async () => {
     await expect(buildMock().getEntryDetail("does-not-exist")).rejects.toThrow(/not found/i);
+  });
+
+  it("updateEntry persists visibility + sealed back into getEntryDetail", async () => {
+    const m = buildMock();
+    const list = await m.listEntries();
+    const first = list[0]!;
+    await m.updateEntry(first.id, { visibility: "viewer", sealed: true });
+    const detail = await m.getEntryDetail(first.id);
+    expect(detail.visibility).toBe("viewer");
+    expect(detail.sealed).toBe(true);
+  });
+
+  it("getChart returns placements + houses + aspects + attribution", async () => {
+    const m = buildMock();
+    const chart = await m.getChart({
+      when: new Date().toISOString(),
+      latitude: 51.5074,
+      longitude: -0.1278,
+    });
+    expect(chart.placements.length).toBeGreaterThan(0);
+    expect(chart.houses.cusps).toHaveLength(12);
+    expect(chart.aspects.length).toBeGreaterThanOrEqual(0);
+    expect(typeof chart.attribution).toBe("string");
   });
 });
 

@@ -85,13 +85,15 @@ export interface EntryRecord {
  * `EntryRecord` shape; the detail endpoint pays for the body bytes.
  *
  * Per the B99 design decision (extend with a separate detail record
- * rather than fattening `EntryRecord` everywhere).
+ * rather than fattening `EntryRecord` everywhere). Visibility uses
+ * the same `EntityVisibility` enum the rest of the surface uses
+ * (Personal · Viewer · Hub · Public).
  */
 export interface EntryDetailRecord extends EntryRecord {
   /** Tiptap doc serialised as JSON. Empty string for an empty draft. */
   body: string;
-  /** "personal" | "friends" | "public"; matches Visibility enum. */
-  visibility: "personal" | "friends" | "public";
+  /** Personal · Viewer · Hub · Public. */
+  visibility: EntityVisibility;
   /** True if the body is sealed (client-side encrypted). */
   sealed: boolean;
   /** Set when the entry was published (null for drafts). */
@@ -104,6 +106,56 @@ export interface UpdateEntryBodyInput {
   body: string;
 }
 
+/** Query for ``GET /api/v1/astro/chart``. */
+export interface ChartRequestInput {
+  /** Instant (ISO 8601). The backend treats naive datetimes as UTC. */
+  when: string;
+  latitude: number;
+  longitude: number;
+  zodiac?: "tropical" | "sidereal";
+  house_system?: "placidus" | "whole-sign";
+}
+
+/** Single placement in a chart response. */
+export interface ChartPlacementRead {
+  body_id: string;
+  body_name: string;
+  glyph: string;
+  tropical_longitude: number;
+  tropical_sign: string;
+  house: number;
+  is_retrograde: boolean;
+}
+
+/** Houses block in a chart response. */
+export interface ChartHousesRead {
+  cusps: number[];
+  ascendant: number;
+  midheaven: number;
+}
+
+/** Aspect line in a chart response. */
+export interface ChartAspectRead {
+  body_a: string;
+  body_b: string;
+  kind: "conjunction" | "sextile" | "square" | "trine" | "opposition";
+  orb: number;
+}
+
+/** Response from ``GET /api/v1/astro/chart``. */
+export interface ChartResponse {
+  instant: string;
+  julian_day: number;
+  latitude: number;
+  longitude: number;
+  zodiac: string;
+  house_system: string;
+  placements: ChartPlacementRead[];
+  houses: ChartHousesRead;
+  aspects: ChartAspectRead[];
+  attribution: string;
+}
+
 /** Input for ``POST /api/v1/entries``. */
 export interface CreateEntryInput {
   title: string;
@@ -111,6 +163,10 @@ export interface CreateEntryInput {
   excerpt: string;
   glyph: string;
   body?: string;
+  /** Personal · Viewer · Hub · Public. Defaults to "personal" server-side. */
+  visibility?: EntityVisibility;
+  /** Client-side-encrypted body. Defaults false. */
+  sealed?: boolean;
 }
 
 /** Counts within a single time window. */

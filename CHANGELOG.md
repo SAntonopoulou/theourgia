@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-23 (B99c3 · Interactive visibility chip + Sealed toggle · Live ChartPicker · CLOSES BATCH 35)
+
+**Live `getChart` client method + admin wiring**: the ChartPicker now actually computes. `apiMethods.getChart({ when, latitude, longitude, house_system? })` hits `GET /api/v1/astro/chart` and returns the placements + houses + aspects + attribution. The admin Editor route provides a `fetchChart` to TiptapEditor that adapts the response into the `ChartSnapshot` shape stored on the chart node. Backend endpoint exists (live since Phase 03). The fixture returns a deterministic 7-body sample chart so dev/mock mode also draws a real wheel.
+
+System options aligned: ChartPicker drops `"equal"` (backend supports `placidus | whole-sign` only). New endpoint test verifies the chart fixture returns the expected shape.
+
+
+
+**The Visibility chip in the Editor topbar is now interactive end-to-end.** Click opens a popover containing the existing `VisibilityControl` (Personal · Viewer · Hub · Public) plus a Sealed toggle. Visibility changes optimistically update local state and PATCH `/entries/{id}` in the background. Raising to a more-public level opens `VisibilityDowngradeDialog` for confirmation; sealing opens `SealEntryDialog`.
+
+- **Wire format alignment**: `EntryDetailRecord.visibility` now uses the shared `EntityVisibility` enum (`personal | viewer | hub | public`) — was previously a bespoke 3-value tuple. `CreateEntryInput` gains optional `visibility?` + `sealed?` so PATCH `/entries/{id}` accepts them. Fixture handler persists both into a per-entry meta store so subsequent detail reads see the new values; `publishEntry` likewise persists `published_at` so the chip stays consistent after publish.
+- **`frontend/shared/src/api/index.ts`** — barrel exports `EntityVisibility`.
+- **`frontend/admin/src/routes/Editor.tsx`** — replaces the static `VisibilityChip` with a live one composed of:
+  - `<VisibilityControl>` (existing shared primitive)
+  - `<VisibilityDowngradeDialog>` (existing shared primitive)
+  - `<SealEntryDialog>` (existing shared primitive)
+  - The dropdown is keyboard-accessible (`role="menu"` · closes on outside click)
+  - Demo mode (no `:id`) disables the chip + cursor
+- New endpoint test confirming `updateEntry({ visibility, sealed })` round-trips through `getEntryDetail`.
+
+Tests / gates (all green):
+- 1721 / 1721 shared vitest passing (+1 from new endpoint test).
+- admin tsc --noEmit clean.
+- 556 / 556 visual baselines (unchanged — no new stories).
+- 556 / 556 a11y baselines.
+
+**Batch 35 — Tiptap live integration — is now CLOSED.** Seven commits, B97 → B99c3. The Editor surface lives, persists, has 8 custom block nodes, 9 slash commands, 3 picker modals, an interactive visibility chip, sealed toggle, and Publish CTA with toast — all wired against the existing entries API.
+
 ### Added — 2026-06-23 (B99c · Entity + Library + Chart pickers · Publish toast)
 
 **Three picker modals + Publish success/error toasts.** The Tiptap custom block NodeViews now summon their own pickers; data flows via the new `EditorDataProvider` context (admin populates `entities[]` + `books[]` + `fetchChart` from the API client).

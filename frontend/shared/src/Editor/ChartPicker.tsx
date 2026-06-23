@@ -54,7 +54,7 @@ export interface ChartPickerProps {
 }
 
 const KIND_OPTIONS: ChartFetchRequest["kind"][] = ["natal", "horary", "election"];
-const SYSTEM_OPTIONS: ChartFetchRequest["system"][] = ["placidus", "whole-sign", "equal"];
+const SYSTEM_OPTIONS: ChartFetchRequest["system"][] = ["placidus", "whole-sign"];
 
 function defaultRequest(): ChartFetchRequest {
   // Default to noon today in London — a sensible neutral starting point.

@@ -30,6 +30,19 @@ import type {
 const ENTRY_BODIES: Map<string, string> = new Map();
 
 /**
+ * Per-entry visibility + sealed + published_at state for the
+ * detail/PATCH fixtures. Defaults: personal · not-sealed · not-published.
+ */
+type EntryMeta = Pick<EntryDetailRecord, "visibility" | "sealed" | "published_at">;
+const ENTRY_META: Map<string, EntryMeta> = new Map();
+
+function entryMeta(id: string): EntryMeta {
+  return (
+    ENTRY_META.get(id) ?? { visibility: "personal", sealed: false, published_at: null }
+  );
+}
+
+/**
  * Compose an `EntryDetailRecord` from a lean entry + the body store.
  * Used by the GET `/entries/{id}` + PATCH `/entries/{id}/body` +
  * POST `/entries/{id}/publish` fixture handlers.
@@ -41,9 +54,7 @@ function entryDetail(
   return {
     ...e,
     body: ENTRY_BODIES.get(e.id) ?? "",
-    visibility: "personal",
-    sealed: false,
-    published_at: null,
+    ...entryMeta(e.id),
     ...over,
   };
 }
@@ -419,6 +430,37 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     return BOOKS[idx];
   }
 
+  // /api/v1/astro/chart — returns a deterministic mock snapshot.
+  if (bare === "/api/v1/astro/chart" && method === "GET") {
+    return {
+      instant: new Date().toISOString(),
+      julian_day: 2460000,
+      latitude: 51.5074,
+      longitude: -0.1278,
+      zodiac: "tropical",
+      house_system: "placidus",
+      placements: [
+        { body_id: "sun", body_name: "Sun", glyph: "☉", tropical_longitude: 12.5, tropical_sign: "Aries", house: 1, is_retrograde: false },
+        { body_id: "moon", body_name: "Moon", glyph: "☽", tropical_longitude: 92.0, tropical_sign: "Cancer", house: 4, is_retrograde: false },
+        { body_id: "mercury", body_name: "Mercury", glyph: "☿", tropical_longitude: 18.0, tropical_sign: "Aries", house: 1, is_retrograde: false },
+        { body_id: "venus", body_name: "Venus", glyph: "♀", tropical_longitude: 38.0, tropical_sign: "Taurus", house: 2, is_retrograde: false },
+        { body_id: "mars", body_name: "Mars", glyph: "♂", tropical_longitude: 145.0, tropical_sign: "Leo", house: 5, is_retrograde: false },
+        { body_id: "jupiter", body_name: "Jupiter", glyph: "♃", tropical_longitude: 195.0, tropical_sign: "Libra", house: 7, is_retrograde: false },
+        { body_id: "saturn", body_name: "Saturn", glyph: "♄", tropical_longitude: 285.0, tropical_sign: "Capricorn", house: 10, is_retrograde: true },
+      ],
+      houses: {
+        cusps: [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330],
+        ascendant: 0,
+        midheaven: 270,
+      },
+      aspects: [
+        { body_a: "sun", body_b: "moon", kind: "square", orb: 0.5 },
+        { body_a: "venus", body_b: "jupiter", kind: "trine", orb: 1.2 },
+      ],
+      attribution: "Swiss Ephemeris (mock fixture)",
+    };
+  }
+
   // /api/v1/entries/{id}/publish — sets published_at, returns detail.
   const publishMatch = /^\/api\/v1\/entries\/(.+)\/publish$/.exec(bare ?? "");
   if (publishMatch && method === "POST") {
@@ -429,7 +471,8 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     }
     const now = new Date().toISOString();
     ENTRIES[idx] = { ...ENTRIES[idx]!, updated_at: now };
-    return entryDetail(ENTRIES[idx]!, { published_at: now });
+    ENTRY_META.set(id!, { ...entryMeta(id!), published_at: now });
+    return entryDetail(ENTRIES[idx]!);
   }
 
   // /api/v1/entries/{id}/body — auto-save target.
@@ -460,7 +503,10 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
       return null;
     }
     if (method === "PATCH") {
-      const patch = (body ?? {}) as Partial<EntryRecord>;
+      const patch = (body ?? {}) as Partial<EntryRecord> & {
+        visibility?: EntryMeta["visibility"];
+        sealed?: boolean;
+      };
       const current = ENTRIES[idx] as EntryRecord;
       const updated: EntryRecord = {
         ...current,
@@ -470,6 +516,16 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
         updated_at: new Date().toISOString(),
       };
       ENTRIES[idx] = updated;
+      // Persist visibility / sealed into the meta store so subsequent
+      // detail reads see the new values.
+      if (patch.visibility !== undefined || patch.sealed !== undefined) {
+        const existing = entryMeta(id!);
+        ENTRY_META.set(id!, {
+          ...existing,
+          ...(patch.visibility !== undefined ? { visibility: patch.visibility } : {}),
+          ...(patch.sealed !== undefined ? { sealed: patch.sealed } : {}),
+        });
+      }
       return updated;
     }
     // GET — returns the detail record (superset of the lean record).
