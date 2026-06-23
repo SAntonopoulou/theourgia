@@ -218,9 +218,10 @@ Things the designer should keep in mind across all these surfaces:
 
 The build side will read this file on each new session and check whether any Tier 1 / Tier 2 surfaces have arrived in `/home/sophia/design-handoffs/theourgia/`. When a tier completes, the build side opens the next sprint and updates this document in place.
 
-**Last build-side update:** 2026-06-22 — Tier 1 + Tier 2 SHIPPED.
+**Last build-side update:** 2026-06-23 — Tier 1 + Tier 2 + Tier 3 SHIPPED; Tier 4 H06 OPEN.
 
 - **Tier 1 (Daily Practice Tracker) — shipped in B80** (`5ec138a`). Surface lives at `/daily-practice`.
 - **Tier 2 (Phase 06 Divination & Practice) — shipped in B81-B86** (`26a9317`, `3177d8d`, `66e63e4`, `ed289aa`, `44853e5`, `984c3ff`). Six surfaces under OracleTabs.
-- **Tier 3 (Phase 07 Workshop) — open as H05.** See [`2026-06-22-h05-workshop.md`](2026-06-22-h05-workshop.md) for the explicit per-surface request. Six surfaces: Sigil Generator · Magic Squares · Talisman Designer · Magical Circle · Tool Registry · Voces Magicae Recorder. The H05 request locks every product decision; the designer fills the structure with voice and visual rigor.
-- **Tier 4 + Tier 5 — still queued.** A separate H06 request will open once H05 is in flight.
+- **Tier 3 (Phase 07 Workshop) — shipped in B89-B96 (H05 sprint).** Six surfaces (Sigil Generator · Magic Squares · Talisman Designer · Magical Circle · Tool Registry · Voces Magicae Recorder) + 6 SVG engines (`workshop/`). Phase 07 backend authoring queued for the build-side sprint parallel to H06.
+- **Tier 4 (Phases 08 + 09 — Linguistic + Synchronicity & Analytics) — open as H06.** See [`2026-06-23-h06-linguistic-analytics.md`](2026-06-23-h06-linguistic-analytics.md) for the 10-surface request. The H06 request locks every product decision; the designer fills the structure with voice and visual rigor. The Scientific Illuminism stance is the defining feature — the designer must hold the line tightly against gamification, oracle, or breathlessness.
+- **Tier 5 — still queued.** A separate H07+ request will open once H06 is in flight.
