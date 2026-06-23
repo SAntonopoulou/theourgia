@@ -139,6 +139,7 @@ export function ChargeSaveDialog({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           data-save-title
+          aria-label={SAVE_TITLE_LABEL}
           style={{
             width: "100%",
             padding: "11px 13px",

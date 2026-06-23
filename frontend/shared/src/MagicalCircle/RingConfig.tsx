@@ -125,6 +125,7 @@ function renderConfig(kind: RingKind): React.ReactElement {
             type="text"
             defaultValue={INSCRIPTION_DEFAULT}
             dir="rtl"
+            aria-label={INSCRIPTION_TEXT_LABEL}
             style={{
               width: "100%",
               padding: "9px 12px",

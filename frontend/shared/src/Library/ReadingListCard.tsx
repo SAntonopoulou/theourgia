@@ -121,6 +121,7 @@ export function ReadingListCard({
       </span>
       <span
         role="progressbar"
+        aria-label="Reading progress"
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={pct}

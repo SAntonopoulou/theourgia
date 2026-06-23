@@ -337,6 +337,7 @@ export function TalismanDesignerSurface({
             value={name}
             onChange={(e) => setName(e.target.value)}
             data-meta-name
+            aria-label={NAME_LABEL}
             style={{
               ...INPUT_STYLE,
               fontFamily: "var(--font-display)",
@@ -351,6 +352,7 @@ export function TalismanDesignerSurface({
             value={purpose}
             onChange={(e) => setPurpose(e.target.value)}
             data-meta-purpose
+            aria-label={PURPOSE_LABEL}
             style={{
               ...INPUT_STYLE,
               fontFamily: "var(--font-serif)",

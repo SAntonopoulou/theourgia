@@ -106,12 +106,12 @@ describe("ModeRail", () => {
     expect(buttons[10]!.textContent).toContain("Image + vectorize");
   });
 
-  it("highlights the active mode (aria-pressed=true + accent border)", () => {
+  it("highlights the active mode (aria-selected=true + accent border)", () => {
     render(<ModeRail value="kamea" onChange={() => {}} />);
     const kamea = screen.getByText("Kamea pathing").closest("button");
-    expect(kamea).toHaveAttribute("aria-pressed", "true");
+    expect(kamea).toHaveAttribute("aria-selected", "true");
     const spare = screen.getByText("Letter elimination").closest("button");
-    expect(spare).toHaveAttribute("aria-pressed", "false");
+    expect(spare).toHaveAttribute("aria-selected", "false");
   });
 
   it("fires onChange with the picked mode key", () => {

@@ -96,6 +96,7 @@ export function SquareView({
                 type="text"
                 defaultValue=""
                 data-build-cell-index={idx}
+                aria-label={`Cell ${idx + 1}`}
                 onChange={(e) => onEditCell?.(idx, e.target.value)}
                 style={{
                   width: "100%",

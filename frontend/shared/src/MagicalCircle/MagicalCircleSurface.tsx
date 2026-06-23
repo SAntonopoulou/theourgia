@@ -280,6 +280,7 @@ export function MagicalCircleSurface({
               type="button"
               role="switch"
               aria-checked={printTile}
+              aria-label="Print-tile preview"
               data-action="toggle-print-tile"
               onClick={() => setPrintTile((v) => !v)}
               style={{

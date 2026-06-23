@@ -392,6 +392,7 @@ function renderConfig(p: {
               type="text"
               defaultValue={FORMULA_DEFAULT}
               data-formula-input
+              aria-label={CONFIG_LABELS.parametric_formula}
               style={{ ...TEXT_INPUT, flex: 1 }}
             />
             <button

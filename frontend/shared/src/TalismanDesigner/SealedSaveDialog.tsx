@@ -123,6 +123,7 @@ export function SealedSaveDialog({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           data-save-title
+          aria-label={TL_SAVE_TITLE_LABEL}
           style={{
             width: "100%",
             padding: "11px 13px",
@@ -160,6 +161,7 @@ export function SealedSaveDialog({
             type="button"
             role="switch"
             aria-checked={sealed}
+            aria-label="Seal this talisman"
             data-seal-switch
             onClick={() => setSealed((v) => !v)}
             style={{

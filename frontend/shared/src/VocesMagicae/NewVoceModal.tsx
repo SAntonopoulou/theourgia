@@ -189,6 +189,7 @@ export function NewVoceModal({
           value={text}
           onChange={(e) => setText(e.target.value)}
           data-voce-text
+          aria-label={VM_VOCE_TEXT_LABEL}
           dir={script === "hebrew" ? "rtl" : "ltr"}
           style={{
             width: "100%",
@@ -213,6 +214,7 @@ export function NewVoceModal({
               value={translit}
               onChange={(e) => setTranslit(e.target.value)}
               data-voce-translit
+              aria-label={VM_TRANSLITERATION_LABEL}
               style={{
                 width: "100%",
                 padding: "10px 12px",

@@ -197,6 +197,7 @@ function renderConfig(layer: TalismanLayerKind): React.ReactElement {
               type="text"
               defaultValue={BORDER_INSCRIPTION_DEFAULT}
               dir="rtl"
+              aria-label="Inscription"
               style={{
                 width: "100%",
                 padding: "9px 12px",

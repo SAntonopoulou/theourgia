@@ -397,6 +397,7 @@ export function DefinePracticeDrawer({
           <span
             role="switch"
             aria-checked={alsoSchedule}
+            aria-label="Also schedule"
             onClick={() => setAlsoSchedule((v) => !v)}
             style={SWITCH_TRACK}
             data-also-schedule={alsoSchedule}

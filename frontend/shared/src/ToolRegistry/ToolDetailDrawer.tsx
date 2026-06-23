@@ -540,6 +540,7 @@ export function ToolDetailDrawer({
               type="text"
               defaultValue={tool.location}
               data-location-input
+              aria-label={TR_CURRENT_LOCATION_EYEBROW}
               style={{
                 width: "100%",
                 padding: "10px 12px",
