@@ -99,7 +99,7 @@
 
   --ink: #ece5d6; /* high-emphasis text  */
   --ink-soft: #bcb29d; /* body text           */
-  --ink-mute: #897f6b; /* captions, metadata  */
+  --ink-mute: #958b77; /* captions, metadata — 5.25:1 on bg-2 (WCAG AA) */
 
   /* — Accent (overridden per theme) ——————————————————————————————— */
   --accent: #c7a24c; /* the single brand gold        */
@@ -372,7 +372,7 @@
   --line-2: rgba(226, 231, 222, 0.2);
   --ink: #e9eade;
   --ink-soft: #aeb6a4;
-  --ink-mute: #7c8474;
+  --ink-mute: #86907f;
 
   --accent: #bfa15b;
   --accent-ink: #0f1311;
@@ -423,7 +423,7 @@
   --line-2: rgba(239, 227, 203, 0.22);
   --ink: #efe3cb;
   --ink-soft: #c5b493;
-  --ink-mute: #8c7b5e;
+  --ink-mute: #998964;
 
   --accent: #cda53e;
   --accent-ink: #100b09;
@@ -468,7 +468,7 @@
   --line-2: rgba(40, 32, 22, 0.26);
   --ink: #2a2316;
   --ink-soft: #5a5040;
-  --ink-mute: #867b66;
+  --ink-mute: #665d4f;
 
   --accent: #9a6e22;
   --accent-ink: #fbf7ec;

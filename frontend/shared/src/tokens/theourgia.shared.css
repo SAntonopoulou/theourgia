@@ -28,6 +28,13 @@
 }
 body {
   margin: 0;
+  /* Establish text + surface colour at the document root so any
+     descendant that doesn't explicitly set `color` inherits from the
+     active theme tokens. Without this, elements like festival-detail
+     and resh-station-card render in black on dark backgrounds because
+     the cascade never set a colour and browsers default to #000000. */
+  color: var(--ink);
+  background: var(--bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;

@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — 2026-06-23 (B102 · A11y debt — first pass · 286 → 73 failures)
+
+**Two token-layer fixes that closed 213 of the 286 a11y failures surfaced in B101.**
+
+- **`--ink-mute` lifted to `#958b77`** (was `#897f6b`) across dark + hellenic + thelemic + light themes. The previous value measured 4.11:1 against `--bg-2 #1c1812`, just under WCAG AA's 4.5:1 floor. New values:
+  - Dark base: `#897f6b` → `#958b77` (4.47 → 5.25 on `--bg-2`)
+  - Hellenic: `#7c8474` → `#86907f` (4.49 → 5.24)
+  - Thelemic: `#8c7b5e` → `#998964` (4.50 → 5.39)
+  - Light: `#867b66` → `#665d4f` (3.67 → 5.69 — light mode was the worst offender)
+
+- **Body `color` + `background` added to `theourgia.shared.css`**. The body rule had no `color` declaration, so any element that didn't explicitly inherit from a parent `color: var(--ink)` fell back to the browser default (`#000000`). This is how `festival-detail` and `resh-station-card` rendered with black headings on dark backgrounds (42 violations alone). Now the body establishes `color: var(--ink)` + `background: var(--bg)` so the cascade always has theme colours to inherit.
+
+**Visual baselines re-captured** to reflect the new ink-mute (334 of 557 baselines materially regenerated; the rest had subtle anti-aliasing changes).
+
+**Residual a11y failures (73 stories, B102b queue):**
+- `color-contrast` — 98 remaining instances. Hardest cases: ink-mute on deeper chip backgrounds (`--bg-3` overlays computing to ~4.14), the `--fire` brand colour as text (4.08-4.33), and color-mix-derived greys (3.71-3.92).
+- `aria-allowed-attr` — 83 (ARIA attributes on wrong roles).
+- `target-size` — 74 (click targets < 24×24 px).
+- `aria-required-parent` — 72 (`listitem` outside `list`).
+- `target-offset` — 63.
+- `non-empty-title` / `aria-label` / `aria-labelledby` — 54 each (icon buttons without accessible names).
+- `presentational-role` / `non-empty-placeholder` / `implicit-label` / `explicit-label` — 43 each (form fields without explicit `<label>`).
+- `label` — 15. `aria-input-field-name` — 5. `has-visible-text` — 3.
+
+These are component-level fixes — each needs touching individual stories/components, not just tokens. Tracked as B102b+.
+
 ### Fixed — 2026-06-23 (B101 · Tool icons in sprite · TEST INFRA FIX — visual + a11y gates were broken)
 
 **Critical infrastructure finding while refactoring tool icons.** While folding the 14 Tool Registry icons into the engraving sprite, I discovered every story screenshot in `tests/visual/storybook.spec.ts-snapshots/` was a render of Storybook's "No Preview · Sorry, but you either have no stories or none are selected somehow…" placeholder. The visual + a11y suites have been **non-functional for an unknown number of commits**: both passed because every story rendered the same blank stub.
