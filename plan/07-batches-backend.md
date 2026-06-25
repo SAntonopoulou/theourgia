@@ -15,10 +15,10 @@ These are pinned before B103 starts:
 ### 1. Model conventions
 
 - All workshop tables use **`IDMixin + TimestampMixin + SoftDeleteMixin`** (`backend/theourgia/models/base.py`). UUIDv7 PKs · `created_at` / `updated_at` · `deleted_at` for soft-delete.
-- All workshop tables carry **`vault_id: UUID`** (FK to `vault.id`) so RLS scopes by owner. Existing pattern from `Oath`, `Initiation`.
+- All workshop tables carry **`owner_id: Optional[UUID]`** (FK to `user.id`, nullable for legacy anonymous-write per the `Entry` precedent) — **NOT** `vault_id`. The codebase does not have a separate `vault` table; the user is the vault. Indexed via `Index("ix_<table>_owner", "owner_id")`. Matches `Oath`, `Initiation`, `Entry`.
 - All workshop tables that include user-authored long text use **`Text`** (not `String`).
 - All JSONB columns use `sa_column=Column(JSONB, nullable=False, server_default='{}')` or `'[]'` depending on shape — the model-level default lets the API skip null-handling.
-- **No new vault-scoping decorator** — reuse `theourgia.api.deps.current_vault` per existing routers.
+- **No new owner-scoping decorator** — use the `OptionalCookieUser` dep already imported by every router (e.g. `Depends(get_optional_user_from_cookie)`). Scope queries to `owner_id == current_user.id`.
 
 ### 2. Encryption (Mode B) for sealed talismans
 
@@ -37,19 +37,22 @@ The flow mirrors `Oath` exactly. Same Mode B discipline.
 
 ### 4. Federation prep (Phase 12 readiness)
 
-Every workshop row carries `canonical_id: UUID` + `instance_id: UUID` (the `vault.instance_id`) so the future federation can address a row uniquely across instances without a re-issue. Default `canonical_id = id` on first save; preserved on fork (parent's canonical_id propagates to child's `parent_canonical_id`). The `Entry` model already follows this; copy the pattern verbatim.
+**Deferred.** No existing model carries `canonical_id` / `instance_id` today — including `Entry`. Adding those columns to Workshop tables would prematurely commit to a federation schema that the rest of the codebase doesn't yet share. When Phase 12 opens, a dedicated cross-cutting batch will add federation-id columns to every table that needs them, with a single Alembic migration covering all tables. Workshop tables in B103-B107 follow the existing two-id pattern (`id` PK + `owner_id` FK) only.
+
+The `parent_<domain>_id` versioning column **does** ship per B103-B107 since that's domain-specific lineage, not federation lineage.
 
 ### 5. Versioning ("Edit a new version" pattern)
 
-Per the H05 "committed-make + read-only-on-reopen" rule. Every workshop domain that supports versioning (Sigil, Talisman, Circle — NOT Tool/Altar/Voce — those are evolving registries, not snapshotted artefacts) has a nullable `parent_<domain>_id: UUID | None`. Fork endpoints (`POST /<domain>s/{id}/fork`) create a new row with `parent_<domain>_id = source.id` + `parent_canonical_id = source.canonical_id`. The fork does **not** soft-delete the parent.
+Per the H05 "committed-make + read-only-on-reopen" rule. Every workshop domain that supports versioning (Sigil, Talisman, Circle — NOT Tool/Altar/Voce — those are evolving registries, not snapshotted artefacts) has a nullable `parent_<domain>_id: UUID | None`. Fork endpoints (`POST /<domain>s/{id}/fork`) create a new row with `parent_<domain>_id = source.id`. The fork does **not** soft-delete the parent.
 
 ### 6. API conventions
 
 - All routes mount under `/api/v1/` per existing pattern.
-- Authentication via the `current_user` + `current_vault` deps (no new auth code).
-- Pagination on list endpoints: `?limit=25&offset=0`; max `limit=100`. Existing `Page[T]` envelope from `theourgia.api.schemas.pagination`.
+- Authentication via the `OptionalCookieUser` dep (existing pattern from `oaths.py`, `initiations.py`).
+- **Pydantic schemas defined inline in the router file** — `<Domain>Read`, `<Domain>Create`, `<Domain>Update` classes alongside the FastAPI handlers. No separate `api/schemas/<domain>.py` files. Matches the existing convention used by every v1 router today.
+- Pagination on list endpoints: simple `limit: int = 100` query param, clamped to `min(limit, 500)`. List endpoints return `list[Read]` directly (no envelope) — matches `oaths.py`. If a future endpoint needs offset pagination, add it then.
 - Filtering: each domain documents its filter params; tools support `?kind=athame`, voces `?tradition=pgm`, sigils `?mode=spare`, etc.
-- All POST/PATCH responses return the full updated row. Same shape as `EntryDetailRecord`.
+- All POST/PATCH responses return the full updated row.
 - All routes write to the audit log on mutation.
 
 ### 7. Bundled fixtures (cross-vault, immutable)
@@ -63,11 +66,10 @@ Per the H05 "committed-make + read-only-on-reopen" rule. Every workshop domain t
 Each domain's test file (`backend/tests/test_<domain>.py`) covers:
 
 - **CRUD happy path** — create, read, list, update, soft-delete.
-- **vault_id scoping** — User A's GET /sigils does not see User B's sigil.
+- **owner_id scoping** — User A's GET /sigils does not see User B's sigil.
 - **Soft-delete behaviour** — deleted rows excluded from list by default; admin can include them.
 - **Fork** (for versioned domains) — fork creates new row with parent_*_id set; parent unaffected.
 - **Honesty rules** — domain-specific (e.g., Tool consecration cannot be set without working link; Voce cannot save without citation; Talisman sealed cannot have plaintext columns populated).
-- **Federation fields** — canonical_id + instance_id populated correctly on create + fork.
 
 Target: ≥ 15 tests per domain. Phase 07 backend tests should add ~120 tests total (1473 → ~1600).
 
@@ -75,7 +77,7 @@ Target: ≥ 15 tests per domain. Phase 07 backend tests should add ~120 tests to
 
 When the backend lands:
 
-- `frontend/shared/src/api/types.ts` gains `SigilRecord`, `MagicSquareRecord`, `TalismanRecord`, `CircleRecord`, `ToolRecord`, `AltarRecord`, `VoceMagicaeRecord`, `VoceRecordingRecord`, `BundledVoceRecord` types.
+- `frontend/shared/src/api/types.ts` gains `SigilRecord`, `MagicSquareRecord`, `TalismanRecord`, `CircleRecord`, `ToolRecord`, `AltarRecord`, `VoceMagicaeRecord`, `VoceRecordingRecord`, `BundledVoceRecord` types (frontend convention is `<Domain>Record`; backend convention is `<Domain>Read` — they describe the same wire shape on each side).
 - `frontend/shared/src/api/endpoints.ts` gains CRUD methods per domain.
 - `frontend/shared/src/api/fixtures.ts` gains in-memory fixture handlers per route.
 - Each Workshop admin route replaces its Toast-on-save with a real POST. The shared surface components stay pure (they accept onSave callbacks; no surface change beyond fixture removal).
@@ -97,8 +99,6 @@ The order respects the dependency graph: foundation → composites → independe
 - `backend/alembic/versions/0033_workshop_sigils_magic_squares.py`
 - `backend/theourgia/api/routers/v1/sigils.py`
 - `backend/theourgia/api/routers/v1/magic_squares.py`
-- `backend/theourgia/api/schemas/sigils.py`
-- `backend/theourgia/api/schemas/magic_squares.py`
 - `backend/theourgia/core/workshop/__init__.py`
 - `backend/theourgia/core/workshop/planetary_squares.py` (7 constants)
 - `backend/tests/test_sigils.py`
@@ -128,9 +128,7 @@ class SigilPurpose(str, enum.Enum):
 
 class Sigil(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     __tablename__ = "sigil"
-    vault_id: UUID = Field(foreign_key="vault.id", index=True, nullable=False)
-    canonical_id: UUID = Field(default_factory=uuid7, nullable=False)
-    instance_id: UUID = Field(nullable=False)  # vault.instance_id snapshot
+    owner_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
 
     title: str = Field(max_length=240, nullable=False)
     intention: str = Field(sa_column=Column(Text, nullable=False))
@@ -146,13 +144,11 @@ class Sigil(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     linked_working_entry_id: Optional[UUID] = Field(default=None, foreign_key="entry.id", nullable=True)
 
     parent_sigil_id: Optional[UUID] = Field(default=None, foreign_key="sigil.id", nullable=True)
-    parent_canonical_id: Optional[UUID] = Field(default=None, nullable=True)
 
     __table_args__ = (
-        Index("ix_sigil_vault_id", "vault_id"),
+        Index("ix_sigil_owner", "owner_id"),
         Index("ix_sigil_mode", "mode"),
         Index("ix_sigil_parent", "parent_sigil_id"),
-        Index("ix_sigil_canonical", "canonical_id"),
     )
 ```
 
@@ -161,9 +157,7 @@ class Sigil(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 ```python
 class MagicSquare(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     __tablename__ = "magic_square"
-    vault_id: UUID = Field(foreign_key="vault.id", index=True, nullable=False)
-    canonical_id: UUID = Field(default_factory=uuid7, nullable=False)
-    instance_id: UUID = Field(nullable=False)
+    owner_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
 
     name: str = Field(max_length=240, nullable=False)
     order: int = Field(ge=3, le=12, nullable=False)
@@ -172,27 +166,27 @@ class MagicSquare(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     is_magic: bool = Field(default=False, nullable=False)  # computed at save — does it sum correctly?
 
     __table_args__ = (
-        Index("ix_magic_square_vault_id", "vault_id"),
+        Index("ix_magic_square_owner", "owner_id"),
         Index("ix_magic_square_order", "order"),
     )
 ```
 
 **API — Sigils:**
 
-- `GET /api/v1/sigils?mode=<...>&purpose=<...>&linked_entity_id=<...>&limit=25&offset=0` → `Page[SigilRecord]`
-- `GET /api/v1/sigils/{id}` → `SigilDetail` (includes svg + parameters)
-- `POST /api/v1/sigils` body `{ title, intention, mode, parameters, svg, seed?, purpose, citation?, notes?, linked_entity_id?, linked_working_entry_id? }` → `SigilDetail`
-- `PATCH /api/v1/sigils/{id}` body `{ title?, notes?, purpose?, linked_entity_id?, linked_working_entry_id? }` (immutable: intention, mode, parameters, svg, seed) → `SigilDetail`
+- `GET /api/v1/sigils?mode=<...>&purpose=<...>&linked_entity_id=<...>&limit=25&offset=0` → `list[SigilRead]`
+- `GET /api/v1/sigils/{id}` → `SigilRead` (includes svg + parameters)
+- `POST /api/v1/sigils` body `{ title, intention, mode, parameters, svg, seed?, purpose, citation?, notes?, linked_entity_id?, linked_working_entry_id? }` → `SigilRead`
+- `PATCH /api/v1/sigils/{id}` body `{ title?, notes?, purpose?, linked_entity_id?, linked_working_entry_id? }` (immutable: intention, mode, parameters, svg, seed) → `SigilRead`
 - `DELETE /api/v1/sigils/{id}` → 204 (soft)
-- `POST /api/v1/sigils/{id}/fork` body `{ title? }` → new `SigilDetail` with `parent_sigil_id` set
+- `POST /api/v1/sigils/{id}/fork` body `{ title? }` → new `SigilRead` with `parent_sigil_id` set
 
 **API — Magic Squares:**
 
 - `GET /api/v1/magic-squares/planetary` → `PlanetarySquaresResponse` (the 7 constants, no auth scoping). Public endpoint.
-- `GET /api/v1/magic-squares?limit=25&offset=0` → `Page[MagicSquareRecord]` (custom only)
-- `GET /api/v1/magic-squares/{id}` → `MagicSquareDetail`
-- `POST /api/v1/magic-squares` body `{ name, order, cells, attribution? }` → `MagicSquareDetail` (server validates cells is `order × order` matrix; sets `is_magic`)
-- `PATCH /api/v1/magic-squares/{id}` body `{ name?, cells?, attribution? }` → `MagicSquareDetail`
+- `GET /api/v1/magic-squares?limit=25&offset=0` → `list[MagicSquareRead]` (custom only)
+- `GET /api/v1/magic-squares/{id}` → `MagicSquareRead`
+- `POST /api/v1/magic-squares` body `{ name, order, cells, attribution? }` → `MagicSquareRead` (server validates cells is `order × order` matrix; sets `is_magic`)
+- `PATCH /api/v1/magic-squares/{id}` body `{ name?, cells?, attribution? }` → `MagicSquareRead`
 - `DELETE /api/v1/magic-squares/{id}` → 204 (soft)
 
 **Tests — `test_sigils.py` (≥ 18 tests):**
@@ -208,12 +202,12 @@ class MagicSquare(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 9. PATCH can change title + notes + purpose + linked_entity_id.
 10. DELETE soft-deletes; GET still returns the row only with `?include_deleted=true`.
 11. Fork creates a new row with `parent_sigil_id = source.id`.
-12. Fork preserves `parent_canonical_id`.
+12. Fork creates correct lineage chain (parent → child).
 13. Fork does NOT soft-delete the parent.
 14. User A's vault cannot see User B's sigils.
-15. vault_id is auto-populated from current_user; cannot be spoofed in body.
-16. canonical_id auto-populates on create.
-17. instance_id matches the vault's instance_id.
+15. owner_id is auto-populated from current_user; cannot be spoofed in body.
+16. owner_id properly set from auth context.
+17. N/A — see plan §4 federation deferral.
 18. Audit log records create + update + delete + fork events.
 
 **Tests — `test_magic_squares.py` (≥ 14 tests):**
@@ -227,8 +221,7 @@ class MagicSquare(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 7. PATCH cannot edit order (would break the matrix).
 8. DELETE soft-deletes.
 9. List excludes soft-deleted.
-10. vault_id scoping (cross-vault isolation).
-11. canonical_id + instance_id populated correctly.
+10. owner_id scoping (cross-user isolation).
 12. Audit log records mutations.
 13. `is_magic = True` for the seeded Lo Shu (3×3 valid square).
 14. `is_magic = False` for an invalid square.
@@ -250,7 +243,6 @@ class MagicSquare(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 - `backend/theourgia/models/talismans.py`
 - `backend/alembic/versions/0034_workshop_talismans.py`
 - `backend/theourgia/api/routers/v1/talismans.py`
-- `backend/theourgia/api/schemas/talismans.py`
 - `backend/tests/test_talismans.py`
 
 **Talisman model fields:**
@@ -258,9 +250,7 @@ class MagicSquare(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 ```python
 class Talisman(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     __tablename__ = "talisman"
-    vault_id: UUID = Field(foreign_key="vault.id", index=True, nullable=False)
-    canonical_id: UUID = Field(default_factory=uuid7, nullable=False)
-    instance_id: UUID = Field(nullable=False)
+    owner_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
 
     name: str = Field(max_length=240, nullable=False)
     purpose: str = Field(sa_column=Column(Text, nullable=False))
@@ -288,23 +278,21 @@ class Talisman(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 
     # Versioning
     parent_talisman_id: Optional[UUID] = Field(default=None, foreign_key="talisman.id")
-    parent_canonical_id: Optional[UUID] = Field(default=None)
 
     __table_args__ = (
-        Index("ix_talisman_vault_id", "vault_id"),
-        Index("ix_talisman_canonical", "canonical_id"),
+        Index("ix_talisman_owner", "owner_id"),
         Index("ix_talisman_parent", "parent_talisman_id"),
     )
 ```
 
 **API:**
 
-- `GET /api/v1/talismans?sealed=<bool>&limit=25&offset=0` → `Page[TalismanRecord]` (sealed rows surface count only when listed; metadata visible: name, purpose, sealed flag)
-- `GET /api/v1/talismans/{id}` → `TalismanDetail` — when sealed, returns `{ encrypted_payload, encryption_iv, encryption_mode }`; when plaintext, returns the SVGs + components
-- `POST /api/v1/talismans` body `{ name, purpose, front_svg, back_svg, components, materials_notes?, linked_election?, linked_consecration_working_id? }` → `TalismanDetail`
-- `PATCH /api/v1/talismans/{id}` (only meta: name, materials_notes, linked_consecration_working_id, linked_election) → `TalismanDetail`
+- `GET /api/v1/talismans?sealed=<bool>&limit=25&offset=0` → `list[TalismanRead]` (sealed rows surface count only when listed; metadata visible: name, purpose, sealed flag)
+- `GET /api/v1/talismans/{id}` → `TalismanRead` — when sealed, returns `{ encrypted_payload, encryption_iv, encryption_mode }`; when plaintext, returns the SVGs + components
+- `POST /api/v1/talismans` body `{ name, purpose, front_svg, back_svg, components, materials_notes?, linked_election?, linked_consecration_working_id? }` → `TalismanRead`
+- `PATCH /api/v1/talismans/{id}` (only meta: name, materials_notes, linked_consecration_working_id, linked_election) → `TalismanRead`
 - `DELETE /api/v1/talismans/{id}` → 204 (soft)
-- `POST /api/v1/talismans/{id}/seal` body `{ ciphertext: base64, iv: base64 }` → `TalismanDetail` — sets `encryption_mode=SEALED`, stores ciphertext + iv, **nulls out** front_svg/back_svg/components
+- `POST /api/v1/talismans/{id}/seal` body `{ ciphertext: base64, iv: base64 }` → `TalismanRead` — sets `encryption_mode=SEALED`, stores ciphertext + iv, **nulls out** front_svg/back_svg/components
 - `POST /api/v1/talismans/{id}/unseal` → returns ciphertext + iv (the client decrypts; server never sees the key)
 - `POST /api/v1/talismans/{id}/fork` body `{ name? }` → forks. If parent is sealed, fork is initially sealed too with a placeholder ciphertext that the client must re-encrypt.
 
@@ -325,9 +313,8 @@ class Talisman(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 13. Linked election JSON validates shape (datetime, lat, lng required).
 14. Linked election with past datetime + no consecration working sets a flag (`election_passed: true` derived field in response).
 15. DELETE soft-deletes; list excludes by default.
-16. vault_id scoping.
-17. canonical_id + instance_id populated correctly.
-18. parent_canonical_id propagates on fork.
+16. owner_id scoping.
+18. parent_<domain>_id chain validates correctly.
 19. Audit log records seal + unseal + fork events.
 20. Cannot POST with both plaintext AND encrypted_payload — 400.
 
@@ -346,7 +333,6 @@ class Talisman(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 - `backend/theourgia/models/circles.py`
 - `backend/alembic/versions/0035_workshop_circles.py`
 - `backend/theourgia/api/routers/v1/circles.py`
-- `backend/theourgia/api/schemas/circles.py`
 - `backend/theourgia/core/workshop/preset_circles.py` (LBRP, Heptameron, Goetic, Picatrix × 7 planets, Greek defixiones)
 - `backend/tests/test_circles.py`
 
@@ -362,9 +348,7 @@ class CompassTradition(str, enum.Enum):
 
 class Circle(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     __tablename__ = "circle"
-    vault_id: UUID = Field(foreign_key="vault.id", index=True, nullable=False)
-    canonical_id: UUID = Field(default_factory=uuid7, nullable=False)
-    instance_id: UUID = Field(nullable=False)
+    owner_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
 
     name: str = Field(max_length=240, nullable=False)
     purpose: str = Field(sa_column=Column(Text, nullable=False))
@@ -379,21 +363,19 @@ class Circle(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     citation: Optional[str] = Field(default=None, max_length=480)  # for forked presets
 
     parent_circle_id: Optional[UUID] = Field(default=None, foreign_key="circle.id")
-    parent_canonical_id: Optional[UUID] = Field(default=None)
 
     __table_args__ = (
-        Index("ix_circle_vault_id", "vault_id"),
-        Index("ix_circle_canonical", "canonical_id"),
+        Index("ix_circle_owner", "owner_id"),
     )
 ```
 
 **API:**
 
 - `GET /api/v1/circles/presets` → `PresetCirclesResponse` (the constants from `core/workshop/preset_circles.py`, no auth)
-- `GET /api/v1/circles?limit=25&offset=0` → `Page[CircleRecord]`
-- `GET /api/v1/circles/{id}` → `CircleDetail`
-- `POST /api/v1/circles` body `{ name, purpose, diameter_m, rings, compass_tradition, compass_points, centre_element, citation? }` → `CircleDetail`
-- `PATCH /api/v1/circles/{id}` (any field except parent_circle_id) → `CircleDetail`
+- `GET /api/v1/circles?limit=25&offset=0` → `list[CircleRead]`
+- `GET /api/v1/circles/{id}` → `CircleRead`
+- `POST /api/v1/circles` body `{ name, purpose, diameter_m, rings, compass_tradition, compass_points, centre_element, citation? }` → `CircleRead`
+- `PATCH /api/v1/circles/{id}` (any field except parent_circle_id) → `CircleRead`
 - `DELETE /api/v1/circles/{id}` → 204 (soft)
 - `POST /api/v1/circles/{id}/fork` body `{ name? }` → forks
 
@@ -408,9 +390,8 @@ class Circle(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 7. Fork creates a new row with parent_circle_id set.
 8. Loading a preset (POST with the preset's body) creates a row WITHOUT parent_circle_id (presets are templates, not parents).
 9. DELETE soft-deletes.
-10. vault_id scoping.
-11. canonical_id + instance_id populated.
-12. parent_canonical_id propagates on fork.
+10. owner_id scoping.
+12. parent_<domain>_id chain validates correctly.
 13. Custom-tradition compass_points accepts free text in cardinal fields.
 14. Audit log records mutations.
 15. Centre element with sigil_id validates the sigil is in the vault.
@@ -432,8 +413,6 @@ class Circle(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 - `backend/alembic/versions/0036_workshop_tools_altars.py`
 - `backend/theourgia/api/routers/v1/tools.py`
 - `backend/theourgia/api/routers/v1/altars.py`
-- `backend/theourgia/api/schemas/tools.py`
-- `backend/theourgia/api/schemas/altars.py`
 - `backend/tests/test_tools.py`
 - `backend/tests/test_altars.py`
 
@@ -458,9 +437,7 @@ class ToolKind(str, enum.Enum):
 
 class Tool(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     __tablename__ = "tool"
-    vault_id: UUID = Field(foreign_key="vault.id", index=True, nullable=False)
-    canonical_id: UUID = Field(default_factory=uuid7, nullable=False)
-    instance_id: UUID = Field(nullable=False)
+    owner_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
 
     name: str = Field(max_length=240, nullable=False)
     kind: ToolKind = Field(...)
@@ -476,7 +453,7 @@ class Tool(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     current_location: Optional[str] = Field(default=None, max_length=480)
 
     __table_args__ = (
-        Index("ix_tool_vault_id", "vault_id"),
+        Index("ix_tool_owner", "owner_id"),
         Index("ix_tool_kind", "kind"),
     )
 ```
@@ -486,9 +463,7 @@ class Tool(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 ```python
 class Altar(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     __tablename__ = "altar"
-    vault_id: UUID = Field(foreign_key="vault.id", index=True, nullable=False)
-    canonical_id: UUID = Field(default_factory=uuid7, nullable=False)
-    instance_id: UUID = Field(nullable=False)
+    owner_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
 
     name: str = Field(max_length=240, nullable=False)
     description: Optional[str] = Field(default=None, sa_column=Column(Text))
@@ -499,29 +474,29 @@ class Altar(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     linked_working_entry_ids: list[UUID] = Field(sa_column=Column(JSONB, nullable=False, server_default="[]"))
 
     __table_args__ = (
-        Index("ix_altar_vault_id", "vault_id"),
+        Index("ix_altar_owner", "owner_id"),
     )
 ```
 
 **API — Tools:**
 
-- `GET /api/v1/tools?kind=<...>&consecrated=<bool>&limit=25&offset=0` → `Page[ToolRecord]`
-- `GET /api/v1/tools/{id}` → `ToolDetail` (includes `use_history` — a computed list of entry rows that link the tool; not stored)
-- `POST /api/v1/tools` body `{ name, kind, description?, materials, dimensions?, provenance?, acquisition_date?, current_location? }` → `ToolDetail`
-- `PATCH /api/v1/tools/{id}` body (any field except consecration — sub-resource) → `ToolDetail`
+- `GET /api/v1/tools?kind=<...>&consecrated=<bool>&limit=25&offset=0` → `list[ToolRead]`
+- `GET /api/v1/tools/{id}` → `ToolRead` (includes `use_history` — a computed list of entry rows that link the tool; not stored)
+- `POST /api/v1/tools` body `{ name, kind, description?, materials, dimensions?, provenance?, acquisition_date?, current_location? }` → `ToolRead`
+- `PATCH /api/v1/tools/{id}` body (any field except consecration — sub-resource) → `ToolRead`
 - `DELETE /api/v1/tools/{id}` → 204 (soft)
-- `POST /api/v1/tools/{id}/consecrate` body `{ consecration_working_entry_id, consecration_date }` → `ToolDetail` (the only way to set consecration; explicit working link required — honesty rule)
-- `POST /api/v1/tools/{id}/photos` body `{ attachment_id }` → `ToolDetail` (appends)
+- `POST /api/v1/tools/{id}/consecrate` body `{ consecration_working_entry_id, consecration_date }` → `ToolRead` (the only way to set consecration; explicit working link required — honesty rule)
+- `POST /api/v1/tools/{id}/photos` body `{ attachment_id }` → `ToolRead` (appends)
 - `DELETE /api/v1/tools/{id}/photos/{attachment_id}` → 204
 
 **API — Altars:**
 
-- `GET /api/v1/altars?is_permanent=<bool>&limit=25&offset=0` → `Page[AltarRecord]`
-- `GET /api/v1/altars/{id}` → `AltarDetail`
-- `POST /api/v1/altars` body `{ name, description?, tool_ids, arrangement_diagram_svg?, is_permanent }` → `AltarDetail`
-- `PATCH /api/v1/altars/{id}` → `AltarDetail`
+- `GET /api/v1/altars?is_permanent=<bool>&limit=25&offset=0` → `list[AltarRead]`
+- `GET /api/v1/altars/{id}` → `AltarRead`
+- `POST /api/v1/altars` body `{ name, description?, tool_ids, arrangement_diagram_svg?, is_permanent }` → `AltarRead`
+- `PATCH /api/v1/altars/{id}` → `AltarRead`
 - `DELETE /api/v1/altars/{id}` → 204 (soft)
-- `POST /api/v1/altars/{id}/photos` body `{ attachment_id }` → `AltarDetail`
+- `POST /api/v1/altars/{id}/photos` body `{ attachment_id }` → `AltarRead`
 
 **Tests — `test_tools.py` (≥ 18):**
 
@@ -536,8 +511,7 @@ class Altar(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 9. Photos can be added + removed.
 10. Photos attachment ownership validated (same vault).
 11. DELETE soft-deletes.
-12. vault_id scoping.
-13. canonical_id + instance_id populated.
+12. owner_id scoping.
 14. Audit log records mutations + consecration event.
 15. "Other" kind accepts a free-text `name` for the kind label.
 16. Cannot consecrate a tool that's already consecrated without first explicitly un-consecrating.
@@ -553,8 +527,7 @@ class Altar(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 5. AltarDetail returns the resolved tool rows (joined query, not just ids).
 6. Photos add/remove.
 7. DELETE soft-deletes.
-8. vault_id scoping.
-9. canonical_id + instance_id populated.
+8. owner_id scoping.
 10. Audit log records mutations.
 11. arrangement_diagram_svg accepts SVG text (no validation beyond size limit).
 12. linked_working_entry_ids validate the entries are in the same vault.
@@ -573,7 +546,6 @@ class Altar(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 - `backend/theourgia/models/voces.py` (VoceMagicae + VoceRecording — bundled live as constants)
 - `backend/alembic/versions/0037_workshop_voces.py`
 - `backend/theourgia/api/routers/v1/voces.py`
-- `backend/theourgia/api/schemas/voces.py`
 - `backend/theourgia/core/workshop/bundled_voces.py` (PGM IV.2785 Hekate hymn + ~30 fixtures)
 - `backend/tests/test_voces.py`
 
@@ -591,9 +563,7 @@ class SourceScript(str, enum.Enum):
 
 class VoceMagicae(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     __tablename__ = "voce_magicae"
-    vault_id: UUID = Field(foreign_key="vault.id", index=True, nullable=False)
-    canonical_id: UUID = Field(default_factory=uuid7, nullable=False)
-    instance_id: UUID = Field(nullable=False)
+    owner_id: Optional[UUID] = Field(default=None, foreign_key="user.id", index=True)
 
     name: str = Field(max_length=240, nullable=False)
     source_text: str = Field(sa_column=Column(Text, nullable=False))
@@ -609,7 +579,7 @@ class VoceMagicae(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     forked_from_bundled_id: Optional[str] = Field(default=None, max_length=120)
 
     __table_args__ = (
-        Index("ix_voce_vault_id", "vault_id"),
+        Index("ix_voce_owner", "owner_id"),
         Index("ix_voce_source_script", "source_script"),
     )
 ```
@@ -628,13 +598,13 @@ class VoceRecording(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 **API:**
 
 - `GET /api/v1/voces/bundled?tradition=<...>` → returns the bundled fixtures (no auth scoping; public read).
-- `GET /api/v1/voces?source_script=<...>&limit=25&offset=0` → `Page[VoceMagicaeRecord]` (per-vault)
-- `GET /api/v1/voces/{id}` → `VoceMagicaeDetail` (with recordings list)
-- `POST /api/v1/voces` body `{ name, source_text, source_script, transliteration?, ipa?, source_citation, planetary_associations, elemental_associations, linked_entity_ids }` → `VoceMagicaeDetail` (REJECTS if source_citation is empty)
-- `PATCH /api/v1/voces/{id}` → `VoceMagicaeDetail` (source_citation still required to be non-empty)
+- `GET /api/v1/voces?source_script=<...>&limit=25&offset=0` → `list[VoceMagicaeRead]` (per-vault)
+- `GET /api/v1/voces/{id}` → `VoceMagicaeRead` (with recordings list)
+- `POST /api/v1/voces` body `{ name, source_text, source_script, transliteration?, ipa?, source_citation, planetary_associations, elemental_associations, linked_entity_ids }` → `VoceMagicaeRead` (REJECTS if source_citation is empty)
+- `PATCH /api/v1/voces/{id}` → `VoceMagicaeRead` (source_citation still required to be non-empty)
 - `DELETE /api/v1/voces/{id}` → 204 (soft)
 - `POST /api/v1/voces/fork-bundled` body `{ bundled_id }` → creates a per-vault row with `forked_from_bundled_id = bundled_id`, copying the bundled fields
-- `POST /api/v1/voces/{id}/recordings` body `{ audio_attachment_id, duration_seconds, notes? }` → `VoceRecordingRecord`
+- `POST /api/v1/voces/{id}/recordings` body `{ audio_attachment_id, duration_seconds, notes? }` → `VoceRecordingRead`
 - `DELETE /api/v1/voces/{id}/recordings/{recording_id}` → 204 (soft-delete the recording)
 
 **Tests (≥ 18):**
@@ -642,7 +612,7 @@ class VoceRecording(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 1. `GET /bundled` returns ≥ 25 voces, no auth.
 2. POST without source_citation returns 422 (or 400 with a clear message).
 3. POST with empty source_citation returns 422.
-4. POST creates voce; vault_id scoped.
+4. POST creates voce; owner_id scoped.
 5. PATCH cannot clear source_citation.
 6. List filters by source_script.
 7. List excludes soft-deleted.
@@ -652,8 +622,7 @@ class VoceRecording(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 11. Recording POST validates duration_seconds is non-negative.
 12. Recording soft-delete works.
 13. DELETE soft-deletes the voce.
-14. vault_id scoping.
-15. canonical_id + instance_id populated.
+14. owner_id scoping.
 16. Linked entities validated to be in the same vault.
 17. Used-in-workings computed correctly (entries that reference this voce id).
 18. Audit log records mutations.
@@ -753,7 +722,7 @@ After B109: **Phase 07 closes end-to-end.** Backend tests jump 1473 → ~1629. F
 ## What's NOT in this plan (deferred / queued)
 
 - **Sealed-content encryption for voces**: per the H05 design, voces are NOT sealed by default (their value is community sharing). Sealed-voce flow is queued for a later batch if/when the requirement surfaces.
-- **Federation export of workshop artefacts**: the `canonical_id` + `instance_id` columns prepare for it but the actual federation endpoint authoring is Phase 12.
+- **Federation export of workshop artefacts**: federation endpoint authoring + canonical_id/instance_id columns ship together in a Phase 12 cross-cutting batch.
 - **Community contribution flow** (suggest correction on bundled voces, contribute custom cipher): explicitly Phase 14 territory; H06's surfaces stub the affordances.
 - **Custom-square kamea sigil** (B100 follow-up): the Kamea sigil generator currently accepts only the 7 planetary squares. Extending to custom squares is a frontend-only change once B103 ships.
 - **B102 a11y residual** (14 design tradeoffs at 97.5%): would need design conversation; not blocking.
