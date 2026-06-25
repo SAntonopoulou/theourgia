@@ -9,16 +9,28 @@
 
 import type { ApiClient } from "./client.js";
 import type {
+  AltarRecord,
   BanishingLogRecord,
   BodyPracticeRecord,
   BookRecord,
+  BundledVoce,
+  CircleRecord,
   CompletionInput,
+  ConsecrateToolPayload,
+  CreateAltarInput,
   CreateBanishingLogInput,
   CreateBodyPracticeInput,
   CreateBookInput,
+  CreateCircleInput,
   CreateEntityInput,
   CreateEntryInput,
+  CreateMagicSquareInput,
   CreatePracticeInput,
+  CreateSigilInput,
+  CreateTalismanInput,
+  CreateToolInput,
+  CreateVoceInput,
+  CreateVoceRecordingInput,
   ChartRequestInput,
   ChartResponse,
   EntityKind,
@@ -27,7 +39,26 @@ import type {
   EntryRecord,
   EntryStats,
   EntryType,
+  MagicSquareRecord,
+  PlanetarySquare,
+  PresetCircle,
+  SigilRecord,
+  SourceScriptWire,
+  TalismanRecord,
+  TalismanSealPayload,
+  TalismanUnsealResponse,
+  ToolKindWire,
+  ToolRecord,
+  UpdateAltarInput,
+  UpdateCircleInput,
   UpdateEntryBodyInput,
+  UpdateMagicSquareInput,
+  UpdateSigilInput,
+  UpdateTalismanInput,
+  UpdateToolInput,
+  UpdateVoceInput,
+  VoceRecord,
+  VoceRecordingRecord,
   HealthStatus,
   Meta,
   PracticeRecord,
@@ -407,6 +438,427 @@ export function api(client: ApiClient) {
       return client.request<BanishingLogRecord[]>(
         `/api/v1/practice/banishing${qs ? `?${qs}` : ""}`,
         { signal: opts?.signal },
+      );
+    },
+
+    // ─── Phase 07 Workshop — Sigils (B103) ──────────────────────────
+
+    listSigils(opts?: {
+      signal?: AbortSignal;
+      limit?: number;
+    }): Promise<SigilRecord[]> {
+      const qs = opts?.limit ? `?limit=${opts.limit}` : "";
+      return client.request<SigilRecord[]>(`/api/v1/sigils${qs}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    getSigil(id: string, opts?: { signal?: AbortSignal }): Promise<SigilRecord> {
+      return client.request<SigilRecord>(`/api/v1/sigils/${id}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    createSigil(input: CreateSigilInput): Promise<SigilRecord> {
+      return client.request<SigilRecord>("/api/v1/sigils", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    updateSigil(id: string, input: UpdateSigilInput): Promise<SigilRecord> {
+      return client.request<SigilRecord>(`/api/v1/sigils/${id}`, {
+        method: "PATCH",
+        json: input,
+      });
+    },
+
+    deleteSigil(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/sigils/${id}`, { method: "DELETE" });
+    },
+
+    forkSigil(id: string, input?: { title?: string }): Promise<SigilRecord> {
+      return client.request<SigilRecord>(`/api/v1/sigils/${id}/fork`, {
+        method: "POST",
+        json: input ?? {},
+      });
+    },
+
+    // ─── Phase 07 Workshop — Magic Squares (B103) ───────────────────
+
+    listPlanetarySquares(opts?: {
+      signal?: AbortSignal;
+    }): Promise<PlanetarySquare[]> {
+      return client.request<PlanetarySquare[]>(
+        "/api/v1/magic-squares/planetary",
+        { signal: opts?.signal },
+      );
+    },
+
+    listMagicSquares(opts?: {
+      signal?: AbortSignal;
+      limit?: number;
+    }): Promise<MagicSquareRecord[]> {
+      const qs = opts?.limit ? `?limit=${opts.limit}` : "";
+      return client.request<MagicSquareRecord[]>(`/api/v1/magic-squares${qs}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    getMagicSquare(
+      id: string,
+      opts?: { signal?: AbortSignal },
+    ): Promise<MagicSquareRecord> {
+      return client.request<MagicSquareRecord>(`/api/v1/magic-squares/${id}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    createMagicSquare(
+      input: CreateMagicSquareInput,
+    ): Promise<MagicSquareRecord> {
+      return client.request<MagicSquareRecord>("/api/v1/magic-squares", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    updateMagicSquare(
+      id: string,
+      input: UpdateMagicSquareInput,
+    ): Promise<MagicSquareRecord> {
+      return client.request<MagicSquareRecord>(`/api/v1/magic-squares/${id}`, {
+        method: "PATCH",
+        json: input,
+      });
+    },
+
+    deleteMagicSquare(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/magic-squares/${id}`, {
+        method: "DELETE",
+      });
+    },
+
+    // ─── Phase 07 Workshop — Talismans (B104) ───────────────────────
+
+    listTalismans(opts?: {
+      signal?: AbortSignal;
+      sealed?: boolean;
+      limit?: number;
+    }): Promise<TalismanRecord[]> {
+      const params = new URLSearchParams();
+      if (opts?.sealed !== undefined) params.set("sealed", String(opts.sealed));
+      if (opts?.limit) params.set("limit", String(opts.limit));
+      const qs = params.toString();
+      return client.request<TalismanRecord[]>(
+        `/api/v1/talismans${qs ? `?${qs}` : ""}`,
+        { signal: opts?.signal },
+      );
+    },
+
+    getTalisman(
+      id: string,
+      opts?: { signal?: AbortSignal },
+    ): Promise<TalismanRecord> {
+      return client.request<TalismanRecord>(`/api/v1/talismans/${id}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    createTalisman(input: CreateTalismanInput): Promise<TalismanRecord> {
+      return client.request<TalismanRecord>("/api/v1/talismans", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    updateTalisman(
+      id: string,
+      input: UpdateTalismanInput,
+    ): Promise<TalismanRecord> {
+      return client.request<TalismanRecord>(`/api/v1/talismans/${id}`, {
+        method: "PATCH",
+        json: input,
+      });
+    },
+
+    deleteTalisman(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/talismans/${id}`, {
+        method: "DELETE",
+      });
+    },
+
+    sealTalisman(
+      id: string,
+      payload: TalismanSealPayload,
+    ): Promise<TalismanRecord> {
+      return client.request<TalismanRecord>(`/api/v1/talismans/${id}/seal`, {
+        method: "POST",
+        json: payload,
+      });
+    },
+
+    unsealTalisman(id: string): Promise<TalismanUnsealResponse> {
+      return client.request<TalismanUnsealResponse>(
+        `/api/v1/talismans/${id}/unseal`,
+        { method: "POST" },
+      );
+    },
+
+    forkTalisman(id: string, input?: { name?: string }): Promise<TalismanRecord> {
+      return client.request<TalismanRecord>(`/api/v1/talismans/${id}/fork`, {
+        method: "POST",
+        json: input ?? {},
+      });
+    },
+
+    // ─── Phase 07 Workshop — Circles (B105) ─────────────────────────
+
+    listPresetCircles(opts?: {
+      signal?: AbortSignal;
+    }): Promise<PresetCircle[]> {
+      return client.request<PresetCircle[]>("/api/v1/circles/presets", {
+        signal: opts?.signal,
+      });
+    },
+
+    listCircles(opts?: {
+      signal?: AbortSignal;
+      limit?: number;
+    }): Promise<CircleRecord[]> {
+      const qs = opts?.limit ? `?limit=${opts.limit}` : "";
+      return client.request<CircleRecord[]>(`/api/v1/circles${qs}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    getCircle(
+      id: string,
+      opts?: { signal?: AbortSignal },
+    ): Promise<CircleRecord> {
+      return client.request<CircleRecord>(`/api/v1/circles/${id}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    createCircle(input: CreateCircleInput): Promise<CircleRecord> {
+      return client.request<CircleRecord>("/api/v1/circles", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    updateCircle(id: string, input: UpdateCircleInput): Promise<CircleRecord> {
+      return client.request<CircleRecord>(`/api/v1/circles/${id}`, {
+        method: "PATCH",
+        json: input,
+      });
+    },
+
+    deleteCircle(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/circles/${id}`, { method: "DELETE" });
+    },
+
+    forkCircle(id: string, input?: { name?: string }): Promise<CircleRecord> {
+      return client.request<CircleRecord>(`/api/v1/circles/${id}/fork`, {
+        method: "POST",
+        json: input ?? {},
+      });
+    },
+
+    // ─── Phase 07 Workshop — Tools (B106) ───────────────────────────
+
+    listTools(opts?: {
+      signal?: AbortSignal;
+      kind?: ToolKindWire;
+      consecrated?: boolean;
+      limit?: number;
+    }): Promise<ToolRecord[]> {
+      const params = new URLSearchParams();
+      if (opts?.kind) params.set("kind", opts.kind);
+      if (opts?.consecrated !== undefined)
+        params.set("consecrated", String(opts.consecrated));
+      if (opts?.limit) params.set("limit", String(opts.limit));
+      const qs = params.toString();
+      return client.request<ToolRecord[]>(
+        `/api/v1/tools${qs ? `?${qs}` : ""}`,
+        { signal: opts?.signal },
+      );
+    },
+
+    getTool(id: string, opts?: { signal?: AbortSignal }): Promise<ToolRecord> {
+      return client.request<ToolRecord>(`/api/v1/tools/${id}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    createTool(input: CreateToolInput): Promise<ToolRecord> {
+      return client.request<ToolRecord>("/api/v1/tools", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    updateTool(id: string, input: UpdateToolInput): Promise<ToolRecord> {
+      return client.request<ToolRecord>(`/api/v1/tools/${id}`, {
+        method: "PATCH",
+        json: input,
+      });
+    },
+
+    deleteTool(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/tools/${id}`, { method: "DELETE" });
+    },
+
+    consecrateTool(
+      id: string,
+      payload: ConsecrateToolPayload,
+    ): Promise<ToolRecord> {
+      return client.request<ToolRecord>(`/api/v1/tools/${id}/consecrate`, {
+        method: "POST",
+        json: payload,
+      });
+    },
+
+    unconsecrateTool(id: string): Promise<ToolRecord> {
+      return client.request<ToolRecord>(`/api/v1/tools/${id}/unconsecrate`, {
+        method: "POST",
+      });
+    },
+
+    addToolPhoto(toolId: string, uploadId: string): Promise<ToolRecord> {
+      return client.request<ToolRecord>(`/api/v1/tools/${toolId}/photos`, {
+        method: "POST",
+        json: { upload_id: uploadId },
+      });
+    },
+
+    removeToolPhoto(toolId: string, uploadId: string): Promise<void> {
+      return client.request<void>(
+        `/api/v1/tools/${toolId}/photos/${uploadId}`,
+        { method: "DELETE" },
+      );
+    },
+
+    // ─── Phase 07 Workshop — Altars (B106) ──────────────────────────
+
+    listAltars(opts?: {
+      signal?: AbortSignal;
+      is_permanent?: boolean;
+      limit?: number;
+    }): Promise<AltarRecord[]> {
+      const params = new URLSearchParams();
+      if (opts?.is_permanent !== undefined)
+        params.set("is_permanent", String(opts.is_permanent));
+      if (opts?.limit) params.set("limit", String(opts.limit));
+      const qs = params.toString();
+      return client.request<AltarRecord[]>(
+        `/api/v1/altars${qs ? `?${qs}` : ""}`,
+        { signal: opts?.signal },
+      );
+    },
+
+    getAltar(id: string, opts?: { signal?: AbortSignal }): Promise<AltarRecord> {
+      return client.request<AltarRecord>(`/api/v1/altars/${id}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    createAltar(input: CreateAltarInput): Promise<AltarRecord> {
+      return client.request<AltarRecord>("/api/v1/altars", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    updateAltar(id: string, input: UpdateAltarInput): Promise<AltarRecord> {
+      return client.request<AltarRecord>(`/api/v1/altars/${id}`, {
+        method: "PATCH",
+        json: input,
+      });
+    },
+
+    deleteAltar(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/altars/${id}`, { method: "DELETE" });
+    },
+
+    addAltarPhoto(altarId: string, uploadId: string): Promise<AltarRecord> {
+      return client.request<AltarRecord>(`/api/v1/altars/${altarId}/photos`, {
+        method: "POST",
+        json: { upload_id: uploadId },
+      });
+    },
+
+    // ─── Phase 07 Workshop — Voces Magicae (B107) ───────────────────
+
+    listBundledVoces(opts?: {
+      signal?: AbortSignal;
+    }): Promise<BundledVoce[]> {
+      return client.request<BundledVoce[]>("/api/v1/voces/bundled", {
+        signal: opts?.signal,
+      });
+    },
+
+    listVoces(opts?: {
+      signal?: AbortSignal;
+      source_script?: SourceScriptWire;
+      limit?: number;
+    }): Promise<VoceRecord[]> {
+      const params = new URLSearchParams();
+      if (opts?.source_script) params.set("source_script", opts.source_script);
+      if (opts?.limit) params.set("limit", String(opts.limit));
+      const qs = params.toString();
+      return client.request<VoceRecord[]>(
+        `/api/v1/voces${qs ? `?${qs}` : ""}`,
+        { signal: opts?.signal },
+      );
+    },
+
+    getVoce(id: string, opts?: { signal?: AbortSignal }): Promise<VoceRecord> {
+      return client.request<VoceRecord>(`/api/v1/voces/${id}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    createVoce(input: CreateVoceInput): Promise<VoceRecord> {
+      return client.request<VoceRecord>("/api/v1/voces", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    updateVoce(id: string, input: UpdateVoceInput): Promise<VoceRecord> {
+      return client.request<VoceRecord>(`/api/v1/voces/${id}`, {
+        method: "PATCH",
+        json: input,
+      });
+    },
+
+    deleteVoce(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/voces/${id}`, { method: "DELETE" });
+    },
+
+    forkBundledVoce(bundledId: string): Promise<VoceRecord> {
+      return client.request<VoceRecord>("/api/v1/voces/fork-bundled", {
+        method: "POST",
+        json: { bundled_id: bundledId },
+      });
+    },
+
+    addVoceRecording(
+      voceId: string,
+      input: CreateVoceRecordingInput,
+    ): Promise<VoceRecordingRecord> {
+      return client.request<VoceRecordingRecord>(
+        `/api/v1/voces/${voceId}/recordings`,
+        { method: "POST", json: input },
+      );
+    },
+
+    removeVoceRecording(voceId: string, recordingId: string): Promise<void> {
+      return client.request<void>(
+        `/api/v1/voces/${voceId}/recordings/${recordingId}`,
+        { method: "DELETE" },
       );
     },
   };

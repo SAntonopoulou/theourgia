@@ -511,3 +511,381 @@ export interface CreateBanishingLogInput {
   correspondences?: Record<string, unknown> | null;
   entry_id?: string | null;
 }
+
+// ── Phase 07 Workshop (B103-B107) ────────────────────────────────────
+
+export type SigilModeWire =
+  | "spare"
+  | "kamea"
+  | "rose_cross"
+  | "pythagorean"
+  | "hebrew"
+  | "greek"
+  | "hashed"
+  | "harmonograph"
+  | "formula"
+  | "freeform"
+  | "image";
+
+export type SigilPurposeWire =
+  | "workshop_draft"
+  | "consecrated"
+  | "gift"
+  | "personal_study";
+
+export interface SigilRecord {
+  id: string;
+  owner_id: string | null;
+  title: string;
+  intention: string;
+  mode: SigilModeWire;
+  parameters: Record<string, unknown>;
+  svg: string;
+  seed: string | null;
+  purpose: SigilPurposeWire;
+  citation: string | null;
+  notes: string | null;
+  linked_entity_id: string | null;
+  linked_working_entry_id: string | null;
+  parent_sigil_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateSigilInput {
+  title: string;
+  intention: string;
+  mode: SigilModeWire;
+  parameters?: Record<string, unknown>;
+  svg: string;
+  seed?: string | null;
+  purpose?: SigilPurposeWire;
+  citation?: string | null;
+  notes?: string | null;
+  linked_entity_id?: string | null;
+  linked_working_entry_id?: string | null;
+}
+
+export interface UpdateSigilInput {
+  title?: string;
+  purpose?: SigilPurposeWire;
+  citation?: string | null;
+  notes?: string | null;
+  linked_entity_id?: string | null;
+  linked_working_entry_id?: string | null;
+}
+
+export interface PlanetarySquare {
+  planet: "saturn" | "jupiter" | "mars" | "sun" | "venus" | "mercury" | "moon";
+  name: string;
+  order: number;
+  magic_constant: number;
+  cells: number[][];
+  citation: string;
+}
+
+export interface MagicSquareRecord {
+  id: string;
+  owner_id: string | null;
+  name: string;
+  order: number;
+  cells: number[][];
+  attribution: string | null;
+  is_magic: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateMagicSquareInput {
+  name: string;
+  order: number;
+  cells: number[][];
+  attribution?: string | null;
+}
+
+export interface UpdateMagicSquareInput {
+  name?: string;
+  cells?: number[][];
+  attribution?: string | null;
+}
+
+export type EncryptionModeWire = "none" | "sealed";
+
+export interface TalismanRecord {
+  id: string;
+  owner_id: string | null;
+  name: string;
+  purpose: string;
+  front_svg: string | null;
+  back_svg: string | null;
+  components: Record<string, unknown> | null;
+  materials_notes: string | null;
+  linked_election: Record<string, unknown> | null;
+  linked_consecration_working_id: string | null;
+  encryption_mode: EncryptionModeWire;
+  sealed: boolean;
+  encrypted_payload_b64: string | null;
+  encryption_iv_b64: string | null;
+  parent_talisman_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateTalismanInput {
+  name: string;
+  purpose: string;
+  front_svg: string;
+  back_svg: string;
+  components?: Record<string, unknown>;
+  materials_notes?: string | null;
+  linked_election?: Record<string, unknown> | null;
+  linked_consecration_working_id?: string | null;
+}
+
+export interface UpdateTalismanInput {
+  name?: string;
+  purpose?: string;
+  materials_notes?: string | null;
+  linked_election?: Record<string, unknown> | null;
+  linked_consecration_working_id?: string | null;
+}
+
+export interface TalismanSealPayload {
+  encrypted_payload_b64: string;
+  encryption_iv_b64: string;
+}
+
+export interface TalismanUnsealResponse {
+  encrypted_payload_b64: string;
+  encryption_iv_b64: string;
+}
+
+export type CompassTraditionWire =
+  | "archangels"
+  | "greek_winds"
+  | "watchtowers"
+  | "vedic_dikpalas"
+  | "custom";
+
+export interface CircleRecord {
+  id: string;
+  owner_id: string | null;
+  name: string;
+  purpose: string;
+  diameter_m: number;
+  rings: Array<Record<string, unknown>>;
+  compass_tradition: CompassTraditionWire;
+  compass_points: Record<string, unknown>;
+  centre_element: Record<string, unknown>;
+  citation: string | null;
+  parent_circle_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCircleInput {
+  name: string;
+  purpose: string;
+  diameter_m?: number;
+  rings: Array<Record<string, unknown>>;
+  compass_tradition: CompassTraditionWire;
+  compass_points: Record<string, unknown>;
+  centre_element: Record<string, unknown>;
+  citation?: string | null;
+}
+
+export interface UpdateCircleInput {
+  name?: string;
+  purpose?: string;
+  diameter_m?: number;
+  rings?: Array<Record<string, unknown>>;
+  compass_tradition?: CompassTraditionWire;
+  compass_points?: Record<string, unknown>;
+  centre_element?: Record<string, unknown>;
+  citation?: string | null;
+}
+
+export interface PresetCircle {
+  slug: string;
+  name: string;
+  purpose: string;
+  diameter_m: number;
+  rings: Array<Record<string, unknown>>;
+  compass_tradition: CompassTraditionWire;
+  compass_points: Record<string, string>;
+  centre_element: Record<string, unknown>;
+  citation: string;
+}
+
+export type ToolKindWire =
+  | "athame"
+  | "wand"
+  | "chalice"
+  | "pentacle"
+  | "censer"
+  | "bell"
+  | "sword"
+  | "lamp"
+  | "mirror"
+  | "bowl"
+  | "statue"
+  | "robe"
+  | "cingulum"
+  | "other";
+
+export interface ToolRecord {
+  id: string;
+  owner_id: string | null;
+  name: string;
+  kind: ToolKindWire;
+  description: string | null;
+  materials: string[];
+  dimensions: Record<string, unknown>;
+  photo_upload_ids: string[];
+  provenance: string | null;
+  acquisition_date: string | null;
+  consecration_date: string | null;
+  consecration_working_entry_id: string | null;
+  current_location: string | null;
+  is_consecrated: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateToolInput {
+  name: string;
+  kind: ToolKindWire;
+  description?: string | null;
+  materials?: string[];
+  dimensions?: Record<string, unknown>;
+  provenance?: string | null;
+  acquisition_date?: string | null;
+  current_location?: string | null;
+}
+
+export interface UpdateToolInput {
+  name?: string;
+  kind?: ToolKindWire;
+  description?: string | null;
+  materials?: string[];
+  dimensions?: Record<string, unknown>;
+  provenance?: string | null;
+  acquisition_date?: string | null;
+  current_location?: string | null;
+}
+
+export interface ConsecrateToolPayload {
+  consecration_working_entry_id: string;
+  consecration_date: string;
+}
+
+export interface AltarRecord {
+  id: string;
+  owner_id: string | null;
+  name: string;
+  description: string | null;
+  tool_ids: string[];
+  arrangement_diagram_svg: string | null;
+  photo_upload_ids: string[];
+  is_permanent: boolean;
+  linked_working_entry_ids: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateAltarInput {
+  name: string;
+  description?: string | null;
+  tool_ids?: string[];
+  arrangement_diagram_svg?: string | null;
+  is_permanent?: boolean;
+  linked_working_entry_ids?: string[];
+}
+
+export interface UpdateAltarInput {
+  name?: string;
+  description?: string | null;
+  tool_ids?: string[];
+  arrangement_diagram_svg?: string | null;
+  is_permanent?: boolean;
+  linked_working_entry_ids?: string[];
+}
+
+export type SourceScriptWire =
+  | "greek"
+  | "hebrew"
+  | "latin"
+  | "coptic"
+  | "arabic"
+  | "sanskrit"
+  | "custom";
+
+export interface VoceRecordingRecord {
+  id: string;
+  voce_id: string;
+  audio_attachment_id: string;
+  duration_seconds: number;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VoceRecord {
+  id: string;
+  owner_id: string | null;
+  name: string;
+  source_text: string;
+  source_script: SourceScriptWire;
+  transliteration: string | null;
+  ipa: string | null;
+  source_citation: string;
+  planetary_associations: string[];
+  elemental_associations: string[];
+  linked_entity_ids: string[];
+  forked_from_bundled_id: string | null;
+  recordings: VoceRecordingRecord[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateVoceInput {
+  name: string;
+  source_text: string;
+  source_script: SourceScriptWire;
+  transliteration?: string | null;
+  ipa?: string | null;
+  source_citation: string;
+  planetary_associations?: string[];
+  elemental_associations?: string[];
+  linked_entity_ids?: string[];
+}
+
+export interface UpdateVoceInput {
+  name?: string;
+  source_text?: string;
+  source_script?: SourceScriptWire;
+  transliteration?: string | null;
+  ipa?: string | null;
+  source_citation?: string;
+  planetary_associations?: string[];
+  elemental_associations?: string[];
+  linked_entity_ids?: string[];
+}
+
+export interface BundledVoce {
+  id: string;
+  name: string;
+  source_text: string;
+  source_script: SourceScriptWire;
+  transliteration: string | null;
+  ipa: string | null;
+  source_citation: string;
+  planetary_associations: string[];
+  elemental_associations: string[];
+}
+
+export interface CreateVoceRecordingInput {
+  audio_attachment_id: string;
+  duration_seconds: number;
+  notes?: string | null;
+}
