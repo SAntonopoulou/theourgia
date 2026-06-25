@@ -17,6 +17,7 @@ from theourgia.api.routers.v1 import attestations as v1_attestations
 from theourgia.api.routers.v1 import auth as v1_auth
 from theourgia.api.routers.v1 import bibliomancy as v1_bibliomancy
 from theourgia.api.routers.v1 import blog as v1_blog
+from theourgia.api.routers.v1 import circles as v1_circles
 from theourgia.api.routers.v1 import contracts as v1_contracts
 from theourgia.api.routers.v1 import entities as v1_entities
 from theourgia.api.routers.v1 import entity_aliases as v1_entity_aliases
@@ -98,4 +99,6 @@ def register_routers(app: FastAPI) -> None:
     # Phase 07 Workshop (B103+)
     v1.include_router(v1_sigils.router, tags=["sigils"])
     v1.include_router(v1_magic_squares.router, tags=["magic-squares"])
+    v1.include_router(v1_talismans.router, tags=["talismans"])
+    v1.include_router(v1_circles.router, tags=["circles"])
     app.include_router(v1)
