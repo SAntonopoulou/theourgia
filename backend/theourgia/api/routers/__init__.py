@@ -12,6 +12,7 @@ from __future__ import annotations
 from fastapi import APIRouter, FastAPI
 
 from theourgia.api.routers import health, metrics, well_known
+from theourgia.api.routers.v1 import altars as v1_altars
 from theourgia.api.routers.v1 import astro as v1_astro
 from theourgia.api.routers.v1 import attestations as v1_attestations
 from theourgia.api.routers.v1 import auth as v1_auth
@@ -46,6 +47,7 @@ from theourgia.api.routers.v1 import talismans as v1_talismans
 from theourgia.api.routers.v1 import tarot as v1_tarot
 from theourgia.api.routers.v1 import templates as v1_templates
 from theourgia.api.routers.v1 import today_ledger as v1_today_ledger
+from theourgia.api.routers.v1 import tools as v1_tools
 from theourgia.api.routers.v1 import user_settings as v1_user_settings
 
 __all__ = ["register_routers"]
@@ -101,4 +103,6 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_magic_squares.router, tags=["magic-squares"])
     v1.include_router(v1_talismans.router, tags=["talismans"])
     v1.include_router(v1_circles.router, tags=["circles"])
+    v1.include_router(v1_tools.router, tags=["tools"])
+    v1.include_router(v1_altars.router, tags=["altars"])
     app.include_router(v1)
