@@ -9,7 +9,7 @@
 
 import type { ApiClient } from "./client.js";
 import type {
-  AltarRecord,
+  AltarRecordWire,
   BanishingLogRecord,
   BodyPracticeRecord,
   BookRecord,
@@ -40,7 +40,7 @@ import type {
   EntryStats,
   EntryType,
   MagicSquareRecord,
-  PlanetarySquare,
+  PlanetarySquareWire,
   PresetCircle,
   SigilRecord,
   SourceScriptWire,
@@ -48,7 +48,7 @@ import type {
   TalismanSealPayload,
   TalismanUnsealResponse,
   ToolKindWire,
-  ToolRecord,
+  ToolRecordWire,
   UpdateAltarInput,
   UpdateCircleInput,
   UpdateEntryBodyInput,
@@ -57,7 +57,7 @@ import type {
   UpdateTalismanInput,
   UpdateToolInput,
   UpdateVoceInput,
-  VoceRecord,
+  VoceRecordWire,
   VoceRecordingRecord,
   HealthStatus,
   Meta,
@@ -488,8 +488,8 @@ export function api(client: ApiClient) {
 
     listPlanetarySquares(opts?: {
       signal?: AbortSignal;
-    }): Promise<PlanetarySquare[]> {
-      return client.request<PlanetarySquare[]>(
+    }): Promise<PlanetarySquareWire[]> {
+      return client.request<PlanetarySquareWire[]>(
         "/api/v1/magic-squares/planetary",
         { signal: opts?.signal },
       );
@@ -673,34 +673,34 @@ export function api(client: ApiClient) {
       kind?: ToolKindWire;
       consecrated?: boolean;
       limit?: number;
-    }): Promise<ToolRecord[]> {
+    }): Promise<ToolRecordWire[]> {
       const params = new URLSearchParams();
       if (opts?.kind) params.set("kind", opts.kind);
       if (opts?.consecrated !== undefined)
         params.set("consecrated", String(opts.consecrated));
       if (opts?.limit) params.set("limit", String(opts.limit));
       const qs = params.toString();
-      return client.request<ToolRecord[]>(
+      return client.request<ToolRecordWire[]>(
         `/api/v1/tools${qs ? `?${qs}` : ""}`,
         { signal: opts?.signal },
       );
     },
 
-    getTool(id: string, opts?: { signal?: AbortSignal }): Promise<ToolRecord> {
-      return client.request<ToolRecord>(`/api/v1/tools/${id}`, {
+    getTool(id: string, opts?: { signal?: AbortSignal }): Promise<ToolRecordWire> {
+      return client.request<ToolRecordWire>(`/api/v1/tools/${id}`, {
         signal: opts?.signal,
       });
     },
 
-    createTool(input: CreateToolInput): Promise<ToolRecord> {
-      return client.request<ToolRecord>("/api/v1/tools", {
+    createTool(input: CreateToolInput): Promise<ToolRecordWire> {
+      return client.request<ToolRecordWire>("/api/v1/tools", {
         method: "POST",
         json: input,
       });
     },
 
-    updateTool(id: string, input: UpdateToolInput): Promise<ToolRecord> {
-      return client.request<ToolRecord>(`/api/v1/tools/${id}`, {
+    updateTool(id: string, input: UpdateToolInput): Promise<ToolRecordWire> {
+      return client.request<ToolRecordWire>(`/api/v1/tools/${id}`, {
         method: "PATCH",
         json: input,
       });
@@ -713,21 +713,21 @@ export function api(client: ApiClient) {
     consecrateTool(
       id: string,
       payload: ConsecrateToolPayload,
-    ): Promise<ToolRecord> {
-      return client.request<ToolRecord>(`/api/v1/tools/${id}/consecrate`, {
+    ): Promise<ToolRecordWire> {
+      return client.request<ToolRecordWire>(`/api/v1/tools/${id}/consecrate`, {
         method: "POST",
         json: payload,
       });
     },
 
-    unconsecrateTool(id: string): Promise<ToolRecord> {
-      return client.request<ToolRecord>(`/api/v1/tools/${id}/unconsecrate`, {
+    unconsecrateTool(id: string): Promise<ToolRecordWire> {
+      return client.request<ToolRecordWire>(`/api/v1/tools/${id}/unconsecrate`, {
         method: "POST",
       });
     },
 
-    addToolPhoto(toolId: string, uploadId: string): Promise<ToolRecord> {
-      return client.request<ToolRecord>(`/api/v1/tools/${toolId}/photos`, {
+    addToolPhoto(toolId: string, uploadId: string): Promise<ToolRecordWire> {
+      return client.request<ToolRecordWire>(`/api/v1/tools/${toolId}/photos`, {
         method: "POST",
         json: { upload_id: uploadId },
       });
@@ -746,33 +746,33 @@ export function api(client: ApiClient) {
       signal?: AbortSignal;
       is_permanent?: boolean;
       limit?: number;
-    }): Promise<AltarRecord[]> {
+    }): Promise<AltarRecordWire[]> {
       const params = new URLSearchParams();
       if (opts?.is_permanent !== undefined)
         params.set("is_permanent", String(opts.is_permanent));
       if (opts?.limit) params.set("limit", String(opts.limit));
       const qs = params.toString();
-      return client.request<AltarRecord[]>(
+      return client.request<AltarRecordWire[]>(
         `/api/v1/altars${qs ? `?${qs}` : ""}`,
         { signal: opts?.signal },
       );
     },
 
-    getAltar(id: string, opts?: { signal?: AbortSignal }): Promise<AltarRecord> {
-      return client.request<AltarRecord>(`/api/v1/altars/${id}`, {
+    getAltar(id: string, opts?: { signal?: AbortSignal }): Promise<AltarRecordWire> {
+      return client.request<AltarRecordWire>(`/api/v1/altars/${id}`, {
         signal: opts?.signal,
       });
     },
 
-    createAltar(input: CreateAltarInput): Promise<AltarRecord> {
-      return client.request<AltarRecord>("/api/v1/altars", {
+    createAltar(input: CreateAltarInput): Promise<AltarRecordWire> {
+      return client.request<AltarRecordWire>("/api/v1/altars", {
         method: "POST",
         json: input,
       });
     },
 
-    updateAltar(id: string, input: UpdateAltarInput): Promise<AltarRecord> {
-      return client.request<AltarRecord>(`/api/v1/altars/${id}`, {
+    updateAltar(id: string, input: UpdateAltarInput): Promise<AltarRecordWire> {
+      return client.request<AltarRecordWire>(`/api/v1/altars/${id}`, {
         method: "PATCH",
         json: input,
       });
@@ -782,8 +782,8 @@ export function api(client: ApiClient) {
       return client.request<void>(`/api/v1/altars/${id}`, { method: "DELETE" });
     },
 
-    addAltarPhoto(altarId: string, uploadId: string): Promise<AltarRecord> {
-      return client.request<AltarRecord>(`/api/v1/altars/${altarId}/photos`, {
+    addAltarPhoto(altarId: string, uploadId: string): Promise<AltarRecordWire> {
+      return client.request<AltarRecordWire>(`/api/v1/altars/${altarId}/photos`, {
         method: "POST",
         json: { upload_id: uploadId },
       });
@@ -803,32 +803,32 @@ export function api(client: ApiClient) {
       signal?: AbortSignal;
       source_script?: SourceScriptWire;
       limit?: number;
-    }): Promise<VoceRecord[]> {
+    }): Promise<VoceRecordWire[]> {
       const params = new URLSearchParams();
       if (opts?.source_script) params.set("source_script", opts.source_script);
       if (opts?.limit) params.set("limit", String(opts.limit));
       const qs = params.toString();
-      return client.request<VoceRecord[]>(
+      return client.request<VoceRecordWire[]>(
         `/api/v1/voces${qs ? `?${qs}` : ""}`,
         { signal: opts?.signal },
       );
     },
 
-    getVoce(id: string, opts?: { signal?: AbortSignal }): Promise<VoceRecord> {
-      return client.request<VoceRecord>(`/api/v1/voces/${id}`, {
+    getVoce(id: string, opts?: { signal?: AbortSignal }): Promise<VoceRecordWire> {
+      return client.request<VoceRecordWire>(`/api/v1/voces/${id}`, {
         signal: opts?.signal,
       });
     },
 
-    createVoce(input: CreateVoceInput): Promise<VoceRecord> {
-      return client.request<VoceRecord>("/api/v1/voces", {
+    createVoce(input: CreateVoceInput): Promise<VoceRecordWire> {
+      return client.request<VoceRecordWire>("/api/v1/voces", {
         method: "POST",
         json: input,
       });
     },
 
-    updateVoce(id: string, input: UpdateVoceInput): Promise<VoceRecord> {
-      return client.request<VoceRecord>(`/api/v1/voces/${id}`, {
+    updateVoce(id: string, input: UpdateVoceInput): Promise<VoceRecordWire> {
+      return client.request<VoceRecordWire>(`/api/v1/voces/${id}`, {
         method: "PATCH",
         json: input,
       });
@@ -838,8 +838,8 @@ export function api(client: ApiClient) {
       return client.request<void>(`/api/v1/voces/${id}`, { method: "DELETE" });
     },
 
-    forkBundledVoce(bundledId: string): Promise<VoceRecord> {
-      return client.request<VoceRecord>("/api/v1/voces/fork-bundled", {
+    forkBundledVoce(bundledId: string): Promise<VoceRecordWire> {
+      return client.request<VoceRecordWire>("/api/v1/voces/fork-bundled", {
         method: "POST",
         json: { bundled_id: bundledId },
       });

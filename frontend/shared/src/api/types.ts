@@ -575,7 +575,7 @@ export interface UpdateSigilInput {
   linked_working_entry_id?: string | null;
 }
 
-export interface PlanetarySquare {
+export interface PlanetarySquareWire {
   planet: "saturn" | "jupiter" | "mars" | "sun" | "venus" | "mercury" | "moon";
   name: string;
   order: number;
@@ -733,7 +733,7 @@ export type ToolKindWire =
   | "cingulum"
   | "other";
 
-export interface ToolRecord {
+export interface ToolRecordWire {
   id: string;
   owner_id: string | null;
   name: string;
@@ -779,7 +779,7 @@ export interface ConsecrateToolPayload {
   consecration_date: string;
 }
 
-export interface AltarRecord {
+export interface AltarRecordWire {
   id: string;
   owner_id: string | null;
   name: string;
@@ -830,7 +830,7 @@ export interface VoceRecordingRecord {
   updated_at: string;
 }
 
-export interface VoceRecord {
+export interface VoceRecordWire {
   id: string;
   owner_id: string | null;
   name: string;

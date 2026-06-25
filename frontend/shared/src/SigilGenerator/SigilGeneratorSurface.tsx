@@ -10,7 +10,7 @@
  * `../workshop/`; this file is pure composition + state plumbing.
  */
 
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
 
 import { type CurveFamily, type PlanetKey } from "../workshop/index.js";
 
@@ -98,11 +98,23 @@ export interface SigilGeneratorSurfaceProps {
    */
   initialCellSequence?: readonly number[];
   library?: readonly SigilLibraryEntry[];
+  /**
+   * Save callback. Carries the full payload needed by
+   * `POST /api/v1/sigils` — title + purpose + mode + intention,
+   * plus the serialised SVG of the current preview, plus
+   * mode-specific parameters (kamea: ``{square}``;
+   * harmonograph/formula: ``{family}``; etc.). The serialised
+   * SVG is best-effort — when the preview hasn't mounted
+   * (jsdom in unit tests), ``svg`` is the empty string.
+   */
   onSave?: (payload: {
     title: string;
     purpose: SigilPurpose;
     mode: SigilMode;
     intention: string;
+    svg: string;
+    parameters: Record<string, unknown>;
+    seed: string | null;
   }) => void;
   onOpenSigil?: (id: string) => void;
   className?: string;
@@ -156,11 +168,54 @@ export function SigilGeneratorSurface({
   const [deckOpen, setDeckOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
 
+  const previewRef = useRef<SVGSVGElement | null>(null);
+
   const handleSaveCommit = (payload: {
     title: string;
     purpose: SigilPurpose;
   }) => {
-    onSave?.({ ...payload, mode, intention });
+    // Serialise the live preview SVG. In jsdom / SSR the element
+    // may not be mounted; degrade to "" so callers can still
+    // observe the rest of the payload.
+    let svg = "";
+    const node = previewRef.current;
+    if (node && typeof XMLSerializer !== "undefined") {
+      try {
+        svg = new XMLSerializer().serializeToString(node);
+      } catch {
+        svg = "";
+      }
+    }
+    // Mode-specific parameters per the H05 spec.
+    const parameters: Record<string, unknown> = (() => {
+      switch (mode) {
+        case "kamea":
+          return {
+            square,
+            ...(cellSequenceOverride
+              ? { cell_sequence: [...cellSequenceOverride] }
+              : {}),
+          };
+        case "harmonograph":
+        case "formula":
+        case "hashed":
+          return { family };
+        default:
+          return {};
+      }
+    })();
+    // Deterministic engine modes derive a seed from the intention.
+    const seed = ["hashed", "harmonograph", "formula"].includes(mode)
+      ? intention
+      : null;
+    onSave?.({
+      ...payload,
+      mode,
+      intention,
+      svg,
+      parameters,
+      seed,
+    });
   };
 
   return (
@@ -321,6 +376,7 @@ export function SigilGeneratorSurface({
                 />
               </div>
               <SigilPreview
+                ref={previewRef}
                 mode={mode}
                 intention={intention}
                 square={square}

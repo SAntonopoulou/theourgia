@@ -1,8 +1,8 @@
 /**
  * Sigil Generator — admin route wrapping the shared
- * SigilGeneratorSurface. Phase 07 backend is unbuilt by design; the
- * Save handler surfaces a Toast acknowledging the in-memory commit
- * until /api/v1/sigils lands.
+ * SigilGeneratorSurface. Save commits to `POST /api/v1/sigils`
+ * (B108-2). When the API client runs in mock mode, the request
+ * is resolved by the in-memory fixture handler.
  *
  * Cross-surface arrivals: when navigated from the Magic Squares
  * surface via "Save as sigil", the URL carries the source square +
@@ -14,12 +14,16 @@ import {
   SigilGeneratorSurface,
   type PlanetKey,
   type SigilMode,
+  type SigilModeWire,
   type SigilPurpose,
+  type SigilPurposeWire,
   Toast,
   useTopbar,
 } from "@theourgia/shared";
 import { useCallback, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
+
+import { apiMethods } from "../data/api.js";
 
 const PLANET_KEYS: PlanetKey[] = [
   "saturn",
@@ -67,17 +71,40 @@ export function SigilGeneratorRoute() {
   }, [params]);
 
   const handleSave = useCallback(
-    (payload: {
+    async (payload: {
       title: string;
       purpose: SigilPurpose;
       mode: SigilMode;
       intention: string;
+      svg: string;
+      parameters: Record<string, unknown>;
+      seed: string | null;
     }) => {
-      Toast.push({
-        tone: "success",
-        title: "Charged & committed",
-        body: `“${payload.title}” saved. Backend wiring (POST /api/v1/sigils) lands in a follow-up batch.`,
-      });
+      try {
+        const sigil = await apiMethods.createSigil({
+          title: payload.title,
+          intention: payload.intention,
+          mode: payload.mode as SigilModeWire,
+          parameters: payload.parameters,
+          svg: payload.svg,
+          seed: payload.seed,
+          purpose: payload.purpose as SigilPurposeWire,
+        });
+        Toast.push({
+          tone: "success",
+          title: "Charged & committed",
+          body: `“${sigil.title}” saved to your vault.`,
+        });
+      } catch (err) {
+        Toast.push({
+          tone: "error",
+          title: "Could not save",
+          body:
+            err instanceof Error
+              ? err.message
+              : "An unexpected error occurred.",
+        });
+      }
     },
     [],
   );

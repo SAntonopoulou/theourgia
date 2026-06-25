@@ -334,16 +334,22 @@ function ModeBody({
   );
 }
 
-export function SigilPreview({
-  mode,
-  intention,
-  square = "saturn",
-  family = "rose",
-  cellSequenceOverride,
-  operations,
-  className,
-  style,
-}: SigilPreviewProps) {
+export const SigilPreview = React.forwardRef<
+  SVGSVGElement,
+  SigilPreviewProps
+>(function SigilPreview(
+  {
+    mode,
+    intention,
+    square = "saturn",
+    family = "rose",
+    cellSequenceOverride,
+    operations,
+    className,
+    style,
+  },
+  svgRef,
+) {
   const color = operations?.color ?? "var(--accent)";
   const scale = (operations?.scalePercent ?? 320) / 320;
   const rotate = operations?.rotateDeg ?? 0;
@@ -352,6 +358,7 @@ export function SigilPreview({
 
   return (
     <svg
+      ref={svgRef}
       viewBox={`0 0 ${VIEWBOX} ${VIEWBOX}`}
       width="100%"
       role="img"
@@ -373,4 +380,4 @@ export function SigilPreview({
       </g>
     </svg>
   );
-}
+});

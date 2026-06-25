@@ -8,17 +8,34 @@
 
 import { NotFoundError } from "./errors.js";
 import type {
+  AltarRecordWire,
   BookRecord,
+  BundledVoce,
+  CircleRecord,
+  CreateAltarInput,
   CreateBookInput,
+  CreateCircleInput,
   CreateEntryInput,
+  CreateMagicSquareInput,
+  CreateSigilInput,
+  CreateTalismanInput,
+  CreateToolInput,
+  CreateVoceInput,
   EntryDetailRecord,
   EntryRecord,
   EntryStats,
   EntryType,
   HealthStatus,
+  MagicSquareRecord,
   Meta,
+  PlanetarySquareWire,
+  PresetCircle,
   Problem,
   Session,
+  SigilRecord,
+  TalismanRecord,
+  ToolRecordWire,
+  VoceRecordWire,
   TodayLedger,
 } from "./types.js";
 
@@ -534,5 +551,679 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     return entryDetail(ENTRIES[idx]!);
   }
 
+  // ── Phase 07 Workshop fixtures (B108-2) ──────────────────────────
+
+  if (bare !== undefined) {
+    const workshop = workshopFixture(method, bare, qs, body);
+    if (workshop !== undefined) return workshop;
+  }
+
   return new NotFoundError(problem(404, "Not Found", `No fixture for ${method} ${path}`));
+}
+
+// ── Phase 07 Workshop fixture state + handler ───────────────────────
+
+const SIGILS: SigilRecord[] = [];
+const MAGIC_SQUARES: MagicSquareRecord[] = [];
+const TALISMANS: TalismanRecord[] = [];
+const CIRCLES: CircleRecord[] = [];
+const TOOLS: ToolRecordWire[] = [];
+const ALTARS: AltarRecordWire[] = [];
+const VOCES: VoceRecordWire[] = [];
+
+let workshopIdCounter = 1;
+function workshopId(): string {
+  // ULID-like sortable id (timestamp + counter). Real backend uses
+  // UUIDv7; the shape is opaque to fixture consumers.
+  const ts = Date.now().toString(36);
+  const n = (workshopIdCounter++).toString(36).padStart(3, "0");
+  return `wks-${ts}-${n}`;
+}
+
+function nowIso(): string {
+  return new Date().toISOString();
+}
+
+// Mirrors the seven Agrippa planetary squares from the backend
+// (`theourgia.core.workshop.planetary_squares`). Cells are the
+// authoritative published values; magic constants verified.
+const PLANETARY_SQUARES_FIXTURE: PlanetarySquareWire[] = [
+  {
+    planet: "saturn",
+    name: "Saturn — order 3",
+    order: 3,
+    magic_constant: 15,
+    cells: [
+      [4, 9, 2],
+      [3, 5, 7],
+      [8, 1, 6],
+    ],
+    citation: "Cornelius Agrippa, De occulta philosophia, 1531.",
+  },
+  {
+    planet: "jupiter",
+    name: "Jupiter — order 4",
+    order: 4,
+    magic_constant: 34,
+    cells: [
+      [4, 14, 15, 1],
+      [9, 7, 6, 12],
+      [5, 11, 10, 8],
+      [16, 2, 3, 13],
+    ],
+    citation: "Cornelius Agrippa, De occulta philosophia, 1531.",
+  },
+];
+
+const PRESET_CIRCLES_FIXTURE: PresetCircle[] = [
+  {
+    slug: "lbrp_classic",
+    name: "LBRP — Lesser Banishing Ritual of the Pentagram",
+    purpose:
+      "Daily banishing, clearing the sphere, and establishing the elemental quarters before further work.",
+    diameter_m: 2.5,
+    rings: [
+      {
+        kind: "inscription",
+        content: "ATEH MALKUTH VE-GEBURAH VE-GEDULAH LE-OLAHM AMEN",
+      },
+      { kind: "glyph_row", content: "pentagram" },
+    ],
+    compass_tradition: "archangels",
+    compass_points: {
+      E: "Raphael",
+      S: "Michael",
+      W: "Gabriel",
+      N: "Uriel",
+    },
+    centre_element: { kind: "hexagram" },
+    citation:
+      "Israel Regardie, The Golden Dawn (1937–40), PD per first-publication.",
+  },
+];
+
+const BUNDLED_VOCES_FIXTURE: BundledVoce[] = [
+  {
+    id: "pgm_iv_2785_hekate_hymn_opening",
+    name: "Hekate Hymn — opening invocation",
+    source_text: "ΕΛΘΕ ΜΟΙ ΩΦΡΟΥ ΚΕΡΑΑΥ ΚΡΕΟΥΣ ΑΣΗΡ",
+    source_script: "greek",
+    transliteration: "elthe moi, Phrou, Keraau, Kreous, Aser",
+    ipa: "ˈel.tʰe moi̯ pʰruː ke.ˈraː.au̯ ˈkre.us aˈseːr",
+    source_citation: "PGM IV.2785 (Preisendanz 1928 vol I, p. 168)",
+    planetary_associations: ["moon"],
+    elemental_associations: [],
+  },
+];
+
+function workshopFixture(
+  method: string,
+  bare: string,
+  _qs: string,
+  body: unknown,
+): unknown {
+  // ── Sigils ────────────────────────────────────────────────────
+  if (bare === "/api/v1/sigils") {
+    if (method === "GET") return [...SIGILS];
+    if (method === "POST") {
+      const input = body as CreateSigilInput;
+      const row: SigilRecord = {
+        id: workshopId(),
+        owner_id: null,
+        title: input.title,
+        intention: input.intention,
+        mode: input.mode,
+        parameters: input.parameters ?? {},
+        svg: input.svg,
+        seed: input.seed ?? null,
+        purpose: input.purpose ?? "workshop_draft",
+        citation: input.citation ?? null,
+        notes: input.notes ?? null,
+        linked_entity_id: input.linked_entity_id ?? null,
+        linked_working_entry_id: input.linked_working_entry_id ?? null,
+        parent_sigil_id: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      SIGILS.unshift(row);
+      return row;
+    }
+  }
+  if (bare.startsWith("/api/v1/sigils/")) {
+    const rest = bare.slice("/api/v1/sigils/".length);
+    const [idMaybe, sub] = rest.split("/");
+    if (!idMaybe) return undefined;
+    const id = idMaybe;
+    const idx = SIGILS.findIndex((s) => s.id === id);
+    if (idx < 0)
+      return new NotFoundError(
+        problem(404, "Not Found", `Sigil ${id} not found`),
+      );
+    if (sub === "fork" && method === "POST") {
+      const parent = SIGILS[idx]!;
+      const fork: SigilRecord = {
+        ...parent,
+        id: workshopId(),
+        title: ((body as { title?: string })?.title) ?? `${parent.title} — new version`,
+        purpose: "workshop_draft",
+        parent_sigil_id: parent.id,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      SIGILS.unshift(fork);
+      return fork;
+    }
+    if (sub === undefined) {
+      if (method === "GET") return SIGILS[idx];
+      if (method === "DELETE") {
+        SIGILS.splice(idx, 1);
+        return null;
+      }
+      if (method === "PATCH") {
+        const patch = body as Partial<SigilRecord>;
+        const next = { ...SIGILS[idx]!, ...patch, id, updated_at: nowIso() };
+        SIGILS[idx] = next;
+        return next;
+      }
+    }
+  }
+
+  // ── Magic Squares ─────────────────────────────────────────────
+  if (bare === "/api/v1/magic-squares/planetary" && method === "GET") {
+    return [...PLANETARY_SQUARES_FIXTURE];
+  }
+  if (bare === "/api/v1/magic-squares") {
+    if (method === "GET") return [...MAGIC_SQUARES];
+    if (method === "POST") {
+      const input = body as CreateMagicSquareInput;
+      // Sum check: classic n(n²+1)/2 across each row + col + diag.
+      const isMagic = isValidMagicSquareFixture(input.cells);
+      const row: MagicSquareRecord = {
+        id: workshopId(),
+        owner_id: null,
+        name: input.name,
+        order: input.order,
+        cells: input.cells,
+        attribution: input.attribution ?? null,
+        is_magic: isMagic,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      MAGIC_SQUARES.unshift(row);
+      return row;
+    }
+  }
+  if (bare.startsWith("/api/v1/magic-squares/")) {
+    const id = bare.slice("/api/v1/magic-squares/".length);
+    const idx = MAGIC_SQUARES.findIndex((m) => m.id === id);
+    if (idx < 0)
+      return new NotFoundError(
+        problem(404, "Not Found", `Magic square ${id} not found`),
+      );
+    if (method === "GET") return MAGIC_SQUARES[idx];
+    if (method === "DELETE") {
+      MAGIC_SQUARES.splice(idx, 1);
+      return null;
+    }
+    if (method === "PATCH") {
+      const patch = body as Partial<MagicSquareRecord>;
+      const next = {
+        ...MAGIC_SQUARES[idx]!,
+        ...patch,
+        id,
+        updated_at: nowIso(),
+      };
+      if (patch.cells) next.is_magic = isValidMagicSquareFixture(patch.cells);
+      MAGIC_SQUARES[idx] = next;
+      return next;
+    }
+  }
+
+  // ── Talismans ─────────────────────────────────────────────────
+  if (bare === "/api/v1/talismans") {
+    if (method === "GET") return [...TALISMANS];
+    if (method === "POST") {
+      const input = body as CreateTalismanInput;
+      const row: TalismanRecord = {
+        id: workshopId(),
+        owner_id: null,
+        name: input.name,
+        purpose: input.purpose,
+        front_svg: input.front_svg,
+        back_svg: input.back_svg,
+        components: input.components ?? {},
+        materials_notes: input.materials_notes ?? null,
+        linked_election: input.linked_election ?? null,
+        linked_consecration_working_id:
+          input.linked_consecration_working_id ?? null,
+        encryption_mode: "none",
+        sealed: false,
+        encrypted_payload_b64: null,
+        encryption_iv_b64: null,
+        parent_talisman_id: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      TALISMANS.unshift(row);
+      return row;
+    }
+  }
+  if (bare.startsWith("/api/v1/talismans/")) {
+    const rest = bare.slice("/api/v1/talismans/".length);
+    const [idMaybe, sub] = rest.split("/");
+    if (!idMaybe) return undefined;
+    const id = idMaybe;
+    const idx = TALISMANS.findIndex((t) => t.id === id);
+    if (idx < 0)
+      return new NotFoundError(
+        problem(404, "Not Found", `Talisman ${id} not found`),
+      );
+    const row = TALISMANS[idx]!;
+    if (sub === "seal" && method === "POST") {
+      const payload = body as {
+        encrypted_payload_b64: string;
+        encryption_iv_b64: string;
+      };
+      const next: TalismanRecord = {
+        ...row,
+        encryption_mode: "sealed",
+        sealed: true,
+        encrypted_payload_b64: payload.encrypted_payload_b64,
+        encryption_iv_b64: payload.encryption_iv_b64,
+        front_svg: null,
+        back_svg: null,
+        components: null,
+        updated_at: nowIso(),
+      };
+      TALISMANS[idx] = next;
+      return next;
+    }
+    if (sub === "unseal" && method === "POST") {
+      return {
+        encrypted_payload_b64: row.encrypted_payload_b64 ?? "",
+        encryption_iv_b64: row.encryption_iv_b64 ?? "",
+      };
+    }
+    if (sub === "fork" && method === "POST") {
+      const name =
+        ((body as { name?: string })?.name) ?? `${row.name} — new version`;
+      const fork: TalismanRecord = {
+        ...row,
+        id: workshopId(),
+        name,
+        parent_talisman_id: row.id,
+        linked_consecration_working_id: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      TALISMANS.unshift(fork);
+      return fork;
+    }
+    if (sub === undefined) {
+      if (method === "GET") return row;
+      if (method === "DELETE") {
+        TALISMANS.splice(idx, 1);
+        return null;
+      }
+      if (method === "PATCH") {
+        const patch = body as Partial<TalismanRecord>;
+        const next = { ...row, ...patch, id, updated_at: nowIso() };
+        TALISMANS[idx] = next;
+        return next;
+      }
+    }
+  }
+
+  // ── Circles ──────────────────────────────────────────────────
+  if (bare === "/api/v1/circles/presets" && method === "GET") {
+    return [...PRESET_CIRCLES_FIXTURE];
+  }
+  if (bare === "/api/v1/circles") {
+    if (method === "GET") return [...CIRCLES];
+    if (method === "POST") {
+      const input = body as CreateCircleInput;
+      const row: CircleRecord = {
+        id: workshopId(),
+        owner_id: null,
+        name: input.name,
+        purpose: input.purpose,
+        diameter_m: input.diameter_m ?? 2.0,
+        rings: input.rings,
+        compass_tradition: input.compass_tradition,
+        compass_points: input.compass_points,
+        centre_element: input.centre_element,
+        citation: input.citation ?? null,
+        parent_circle_id: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      CIRCLES.unshift(row);
+      return row;
+    }
+  }
+  if (bare.startsWith("/api/v1/circles/")) {
+    const rest = bare.slice("/api/v1/circles/".length);
+    const [idMaybe, sub] = rest.split("/");
+    if (!idMaybe) return undefined;
+    const id = idMaybe;
+    const idx = CIRCLES.findIndex((c) => c.id === id);
+    if (idx < 0)
+      return new NotFoundError(
+        problem(404, "Not Found", `Circle ${id} not found`),
+      );
+    const row = CIRCLES[idx]!;
+    if (sub === "fork" && method === "POST") {
+      const name =
+        ((body as { name?: string })?.name) ?? `${row.name} — new version`;
+      const fork: CircleRecord = {
+        ...row,
+        id: workshopId(),
+        name,
+        parent_circle_id: row.id,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      CIRCLES.unshift(fork);
+      return fork;
+    }
+    if (sub === undefined) {
+      if (method === "GET") return row;
+      if (method === "DELETE") {
+        CIRCLES.splice(idx, 1);
+        return null;
+      }
+      if (method === "PATCH") {
+        const patch = body as Partial<CircleRecord>;
+        const next = { ...row, ...patch, id, updated_at: nowIso() };
+        CIRCLES[idx] = next;
+        return next;
+      }
+    }
+  }
+
+  // ── Tools ────────────────────────────────────────────────────
+  if (bare === "/api/v1/tools") {
+    if (method === "GET") return [...TOOLS];
+    if (method === "POST") {
+      const input = body as CreateToolInput;
+      const row: ToolRecordWire = {
+        id: workshopId(),
+        owner_id: null,
+        name: input.name,
+        kind: input.kind,
+        description: input.description ?? null,
+        materials: input.materials ?? [],
+        dimensions: input.dimensions ?? {},
+        photo_upload_ids: [],
+        provenance: input.provenance ?? null,
+        acquisition_date: input.acquisition_date ?? null,
+        consecration_date: null,
+        consecration_working_entry_id: null,
+        current_location: input.current_location ?? null,
+        is_consecrated: false,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      TOOLS.unshift(row);
+      return row;
+    }
+  }
+  if (bare.startsWith("/api/v1/tools/")) {
+    const rest = bare.slice("/api/v1/tools/".length);
+    const [idMaybe, sub, subId] = rest.split("/");
+    if (!idMaybe) return undefined;
+    const id = idMaybe;
+    const idx = TOOLS.findIndex((t) => t.id === id);
+    if (idx < 0)
+      return new NotFoundError(
+        problem(404, "Not Found", `Tool ${id} not found`),
+      );
+    const row = TOOLS[idx]!;
+    if (sub === "consecrate" && method === "POST") {
+      const payload = body as {
+        consecration_working_entry_id: string;
+        consecration_date: string;
+      };
+      const next: ToolRecordWire = {
+        ...row,
+        consecration_working_entry_id: payload.consecration_working_entry_id,
+        consecration_date: payload.consecration_date,
+        is_consecrated: true,
+        updated_at: nowIso(),
+      };
+      TOOLS[idx] = next;
+      return next;
+    }
+    if (sub === "unconsecrate" && method === "POST") {
+      const next: ToolRecordWire = {
+        ...row,
+        consecration_working_entry_id: null,
+        consecration_date: null,
+        is_consecrated: false,
+        updated_at: nowIso(),
+      };
+      TOOLS[idx] = next;
+      return next;
+    }
+    if (sub === "photos") {
+      if (method === "POST") {
+        const payload = body as { upload_id: string };
+        if (!row.photo_upload_ids.includes(payload.upload_id)) {
+          row.photo_upload_ids.push(payload.upload_id);
+        }
+        row.updated_at = nowIso();
+        return row;
+      }
+      if (method === "DELETE" && subId) {
+        row.photo_upload_ids = row.photo_upload_ids.filter(
+          (p) => p !== subId,
+        );
+        row.updated_at = nowIso();
+        return null;
+      }
+    }
+    if (sub === undefined) {
+      if (method === "GET") return row;
+      if (method === "DELETE") {
+        TOOLS.splice(idx, 1);
+        return null;
+      }
+      if (method === "PATCH") {
+        const patch = body as Partial<ToolRecordWire>;
+        const next = { ...row, ...patch, id, updated_at: nowIso() };
+        TOOLS[idx] = next;
+        return next;
+      }
+    }
+  }
+
+  // ── Altars ──────────────────────────────────────────────────
+  if (bare === "/api/v1/altars") {
+    if (method === "GET") return [...ALTARS];
+    if (method === "POST") {
+      const input = body as CreateAltarInput;
+      const row: AltarRecordWire = {
+        id: workshopId(),
+        owner_id: null,
+        name: input.name,
+        description: input.description ?? null,
+        tool_ids: input.tool_ids ?? [],
+        arrangement_diagram_svg: input.arrangement_diagram_svg ?? null,
+        photo_upload_ids: [],
+        is_permanent: input.is_permanent ?? false,
+        linked_working_entry_ids: input.linked_working_entry_ids ?? [],
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      ALTARS.unshift(row);
+      return row;
+    }
+  }
+  if (bare.startsWith("/api/v1/altars/")) {
+    const rest = bare.slice("/api/v1/altars/".length);
+    const [idMaybe, sub] = rest.split("/");
+    if (!idMaybe) return undefined;
+    const id = idMaybe;
+    const idx = ALTARS.findIndex((a) => a.id === id);
+    if (idx < 0)
+      return new NotFoundError(
+        problem(404, "Not Found", `Altar ${id} not found`),
+      );
+    const row = ALTARS[idx]!;
+    if (sub === "photos" && method === "POST") {
+      const payload = body as { upload_id: string };
+      if (!row.photo_upload_ids.includes(payload.upload_id)) {
+        row.photo_upload_ids.push(payload.upload_id);
+      }
+      row.updated_at = nowIso();
+      return row;
+    }
+    if (sub === undefined) {
+      if (method === "GET") return row;
+      if (method === "DELETE") {
+        ALTARS.splice(idx, 1);
+        return null;
+      }
+      if (method === "PATCH") {
+        const patch = body as Partial<AltarRecordWire>;
+        const next = { ...row, ...patch, id, updated_at: nowIso() };
+        ALTARS[idx] = next;
+        return next;
+      }
+    }
+  }
+
+  // ── Voces ───────────────────────────────────────────────────
+  if (bare === "/api/v1/voces/bundled" && method === "GET") {
+    return [...BUNDLED_VOCES_FIXTURE];
+  }
+  if (bare === "/api/v1/voces/fork-bundled" && method === "POST") {
+    const payload = body as { bundled_id: string };
+    const src = BUNDLED_VOCES_FIXTURE.find((v) => v.id === payload.bundled_id);
+    if (!src)
+      return new NotFoundError(
+        problem(404, "Not Found", `Bundled voce ${payload.bundled_id} not found`),
+      );
+    const row: VoceRecordWire = {
+      id: workshopId(),
+      owner_id: null,
+      name: src.name,
+      source_text: src.source_text,
+      source_script: src.source_script,
+      transliteration: src.transliteration,
+      ipa: src.ipa,
+      source_citation: src.source_citation,
+      planetary_associations: [...src.planetary_associations],
+      elemental_associations: [...src.elemental_associations],
+      linked_entity_ids: [],
+      forked_from_bundled_id: src.id,
+      recordings: [],
+      created_at: nowIso(),
+      updated_at: nowIso(),
+    };
+    VOCES.unshift(row);
+    return row;
+  }
+  if (bare === "/api/v1/voces") {
+    if (method === "GET") return [...VOCES];
+    if (method === "POST") {
+      const input = body as CreateVoceInput;
+      const row: VoceRecordWire = {
+        id: workshopId(),
+        owner_id: null,
+        name: input.name,
+        source_text: input.source_text,
+        source_script: input.source_script,
+        transliteration: input.transliteration ?? null,
+        ipa: input.ipa ?? null,
+        source_citation: input.source_citation,
+        planetary_associations: input.planetary_associations ?? [],
+        elemental_associations: input.elemental_associations ?? [],
+        linked_entity_ids: input.linked_entity_ids ?? [],
+        forked_from_bundled_id: null,
+        recordings: [],
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      VOCES.unshift(row);
+      return row;
+    }
+  }
+  if (bare.startsWith("/api/v1/voces/")) {
+    const rest = bare.slice("/api/v1/voces/".length);
+    const [idMaybe, sub, subId] = rest.split("/");
+    if (!idMaybe) return undefined;
+    const id = idMaybe;
+    const idx = VOCES.findIndex((v) => v.id === id);
+    if (idx < 0)
+      return new NotFoundError(
+        problem(404, "Not Found", `Voce ${id} not found`),
+      );
+    const row = VOCES[idx]!;
+    if (sub === "recordings") {
+      if (method === "POST") {
+        const payload = body as {
+          audio_attachment_id: string;
+          duration_seconds: number;
+          notes?: string | null;
+        };
+        const rec = {
+          id: workshopId(),
+          voce_id: row.id,
+          audio_attachment_id: payload.audio_attachment_id,
+          duration_seconds: payload.duration_seconds,
+          notes: payload.notes ?? null,
+          created_at: nowIso(),
+          updated_at: nowIso(),
+        };
+        row.recordings.push(rec);
+        row.updated_at = nowIso();
+        return rec;
+      }
+      if (method === "DELETE" && subId) {
+        row.recordings = row.recordings.filter((r) => r.id !== subId);
+        row.updated_at = nowIso();
+        return null;
+      }
+    }
+    if (sub === undefined) {
+      if (method === "GET") return row;
+      if (method === "DELETE") {
+        VOCES.splice(idx, 1);
+        return null;
+      }
+      if (method === "PATCH") {
+        const patch = body as Partial<VoceRecordWire>;
+        const next = { ...row, ...patch, id, updated_at: nowIso() };
+        VOCES[idx] = next;
+        return next;
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function isValidMagicSquareFixture(cells: number[][]): boolean {
+  const n = cells.length;
+  if (n === 0) return false;
+  const expected = (n * (n * n + 1)) / 2;
+  // rows + cols
+  for (let i = 0; i < n; i++) {
+    let r = 0;
+    let c = 0;
+    for (let j = 0; j < n; j++) {
+      r += cells[i]?.[j] ?? 0;
+      c += cells[j]?.[i] ?? 0;
+    }
+    if (r !== expected || c !== expected) return false;
+  }
+  // diagonals
+  let d1 = 0;
+  let d2 = 0;
+  for (let i = 0; i < n; i++) {
+    d1 += cells[i]?.[i] ?? 0;
+    d2 += cells[i]?.[n - 1 - i] ?? 0;
+  }
+  return d1 === expected && d2 === expected;
 }
