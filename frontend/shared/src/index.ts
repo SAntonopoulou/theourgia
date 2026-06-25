@@ -82,6 +82,7 @@ export * from "./Reader/index.js";
 export * from "./PublicationEditor/index.js";
 export * from "./PublicationSettings/index.js";
 export * from "./Publications/index.js";
+export * from "./SubscriptionTiers/index.js";
 export * from "./ReceptionSelector/index.js";
 export * from "./RelationshipStatusPill/index.js";
 export * from "./Runes/index.js";

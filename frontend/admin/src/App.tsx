@@ -45,6 +45,7 @@ import { PricingDistributionRoute } from "./routes/PricingDistributionRoute.js";
 import { PublicationEditorRoute } from "./routes/PublicationEditorRoute.js";
 import { PublicationSettingsRoute } from "./routes/PublicationSettingsRoute.js";
 import { PublicationsRoute } from "./routes/PublicationsRoute.js";
+import { SubscriptionTiersRoute } from "./routes/SubscriptionTiersRoute.js";
 import { VocesLibraryRoute } from "./routes/VocesLibraryRoute.js";
 import { Divination } from "./routes/Divination.js";
 import { DivinationMiscRoute } from "./routes/DivinationMiscRoute.js";
@@ -225,6 +226,10 @@ function ShellRoutes() {
         <Route
           path="/pricing-distribution"
           element={<PricingDistributionRoute />}
+        />
+        <Route
+          path="/subscription-tiers"
+          element={<SubscriptionTiersRoute />}
         />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/feed" element={<RitualFeed />} />
