@@ -78,6 +78,7 @@ export * from "./Popover/index.js";
 export * from "./Progress/index.js";
 export * from "./PublicChrome/index.js";
 export * from "./PublicationEditor/index.js";
+export * from "./PublicationSettings/index.js";
 export * from "./Publications/index.js";
 export * from "./ReceptionSelector/index.js";
 export * from "./RelationshipStatusPill/index.js";

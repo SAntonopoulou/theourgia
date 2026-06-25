@@ -42,6 +42,7 @@ import { Connection } from "./routes/Connection.js";
 import { DailyPracticeRoute } from "./routes/DailyPracticeRoute.js";
 import { GematriaCalculatorRoute } from "./routes/GematriaCalculatorRoute.js";
 import { PublicationEditorRoute } from "./routes/PublicationEditorRoute.js";
+import { PublicationSettingsRoute } from "./routes/PublicationSettingsRoute.js";
 import { PublicationsRoute } from "./routes/PublicationsRoute.js";
 import { VocesLibraryRoute } from "./routes/VocesLibraryRoute.js";
 import { Divination } from "./routes/Divination.js";
@@ -208,6 +209,14 @@ function ShellRoutes() {
           element={<PublicationEditorRoute />}
         />
         <Route path="/publication-editor" element={<PublicationEditorRoute />} />
+        <Route
+          path="/publications/:id/settings"
+          element={<PublicationSettingsRoute />}
+        />
+        <Route
+          path="/publication-settings"
+          element={<PublicationSettingsRoute />}
+        />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/feed" element={<RitualFeed />} />
         <Route path="/hubs" element={<Hubs />} />
