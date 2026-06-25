@@ -151,6 +151,42 @@ const NAV_ICONS = {
       <path d="M9 4.5v15M12.5 9.5h3M12.5 13h3" />
     </svg>
   ),
+  publications: (
+    <svg {...ICON_PROPS}>
+      <path d="M5 4h9l3 3v13H5z" />
+      <path d="M5 7.5h9M9 4v16" />
+    </svg>
+  ),
+  subscribers: (
+    <svg {...ICON_PROPS}>
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 6a3 3 0 0 1 0 6M18 19a5.5 5.5 0 0 0-3-5" />
+    </svg>
+  ),
+  media: (
+    <svg {...ICON_PROPS}>
+      <rect x="4" y="5" width="16" height="14" rx="1.6" />
+      <path d="M4 15l4-4 3 3 4-5 5 6" />
+      <circle cx="9" cy="9" r="1.3" />
+    </svg>
+  ),
+  audio: (
+    <svg {...ICON_PROPS}>
+      <path d="M4 10v4M8 7v10M12 5v14M16 8v8M20 10v4" />
+    </svg>
+  ),
+  pilgrimage: (
+    <svg {...ICON_PROPS}>
+      <path d="M12 21s7-6.3 7-11.5A7 7 0 0 0 5 9.5C5 14.7 12 21 12 21z" />
+      <circle cx="12" cy="9.3" r="2.4" />
+    </svg>
+  ),
+  icalfeed: (
+    <svg {...ICON_PROPS}>
+      <rect x="4" y="5" width="16" height="16" rx="1.6" />
+      <path d="M4 9.5h16M8 3.5v3M16 3.5v3M9 14l2 2 4-4" />
+    </svg>
+  ),
   analytics: (
     <svg {...ICON_PROPS}>
       <path d="M4 4v16h16" />
@@ -241,6 +277,24 @@ export const DEFAULT_VAULT_NAV: VaultNavSection[] = [
     items: [
       { key: "synchronicities", to: "/synchronicities", label: "Synchronicities" },
       { key: "analytics", to: "/analytics", label: "Analytics" },
+    ],
+  },
+  // ── Phase 10 (H07) — Publishing ──────────────────────────────────────
+  {
+    heading: "Publishing",
+    items: [
+      { key: "publications", to: "/publications", label: "Publications" },
+      { key: "subscribers", to: "/subscribers", label: "Subscribers" },
+    ],
+  },
+  // ── Phase 11 (H07) — Media ───────────────────────────────────────────
+  {
+    heading: "Media",
+    items: [
+      { key: "media", to: "/media", label: "Media library" },
+      { key: "audio", to: "/audio-library", label: "Audio library" },
+      { key: "pilgrimage", to: "/pilgrimage", label: "Pilgrimage map" },
+      { key: "icalfeed", to: "/ical-feed", label: "Calendar feed" },
     ],
   },
   {

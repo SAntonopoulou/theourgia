@@ -136,6 +136,33 @@
   --chart-5: #c99a3c;
   --chart-6: #8fa4b8;
 
+  /* Money (H07 · sober transactional confirm).
+     Sage-green that reads "active / paid / connected" without the
+     "task complete" weight of `--success` or the "brand" loudness
+     of `--accent`. Rule 17 (real money is sober) lives in this
+     token — receipts, MRR readouts, the "Active" subscriber pill,
+     and the Stripe Connect "Active" card all use --money. Never
+     celebratory. */
+  --money: #6e9c72;
+  --money-soft: rgba(110, 156, 114, 0.14);
+  --money-line: rgba(110, 156, 114, 0.42);
+
+  /* Pilgrimage map markers (H07 · five site kinds).
+     Drawn from the existing category + elemental palette so markers
+     sit in the map, not on top of it. Sealed sites surface as a
+     count-only regional badge — not as individual markers. */
+  --map-sacred: #c9a24c;
+  --map-ancestral: #a98ac0;
+  --map-working: #c2554a;
+  --map-pilgrimage: #5e8fa8;
+  --map-other: #8fa4b8;
+  /* Map canvas helpers (the stylised land/water backdrop). The
+     pilgrimage map composes these into a flat OSS-tile stand-in;
+     real Leaflet + OSM tiles wire on the build side per the H07
+     onboarding S6.3. */
+  --map-land: #211c14;
+  --map-water: #161a20;
+
   /* Warn (Visibility downgrade gradient — amber, not red) */
   --warn: #c0975a;
   --warn-soft: rgba(192, 151, 90, 0.14);
@@ -414,6 +441,11 @@
 
   /* H04 per-theme override */
   --trance: #5e8fa6;
+
+  /* H07 per-theme overrides (money + map). */
+  --map-sacred: #bfa15b;
+  --map-land: #161c18;
+  --map-water: #10171c;
 }
 
 /* ============================================================================
@@ -465,6 +497,11 @@
 
   /* H04 per-theme override */
   --trance: #8a7fb0;
+
+  /* H07 per-theme overrides (money + map). */
+  --map-sacred: #cda53e;
+  --map-land: #1b1410;
+  --map-water: #14100c;
 }
 
 /* ============================================================================
@@ -523,6 +560,14 @@
 
   /* H04 light-mode override */
   --trance: #52659e;
+
+  /* H07 light-mode overrides (money + map land/water). */
+  --money: #3e7a5e;
+  --money-soft: rgba(62, 122, 94, 0.13);
+  --money-line: rgba(62, 122, 94, 0.4);
+  --map-sacred: #9a6e22;
+  --map-land: #e4d9bf;
+  --map-water: #cfdbe0;
 }
 
 /* Theme × mode combinations (moon glyph needs both axes for the lit-side hue) */

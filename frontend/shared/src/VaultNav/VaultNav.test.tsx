@@ -121,6 +121,34 @@ describe("VaultNav", () => {
     ).toBeUndefined();
   });
 
+  // ─── H07 — Publishing + Media sections ─────────────────────────────
+
+  it("DEFAULT_VAULT_NAV Publishing section has the two H07 entries", () => {
+    const pub = DEFAULT_VAULT_NAV.find((s) => s.heading === "Publishing");
+    expect(pub).toBeDefined();
+    expect(pub?.items.map((i) => i.key)).toEqual([
+      "publications",
+      "subscribers",
+    ]);
+  });
+
+  it("DEFAULT_VAULT_NAV Media section has all four H07 entries", () => {
+    const media = DEFAULT_VAULT_NAV.find((s) => s.heading === "Media");
+    expect(media).toBeDefined();
+    expect(media?.items.map((i) => i.key)).toEqual([
+      "media",
+      "audio",
+      "pilgrimage",
+      "icalfeed",
+    ]);
+  });
+
+  it("section order keeps Network last", () => {
+    const last =
+      DEFAULT_VAULT_NAV[DEFAULT_VAULT_NAV.length - 1]?.heading;
+    expect(last).toBe("Network");
+  });
+
   // ─── H05 — Workshop section extension ───────────────────────────
 
   it("DEFAULT_VAULT_NAV Workbench section has all 7 H05 entries in order", () => {
