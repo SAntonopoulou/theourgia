@@ -15,8 +15,10 @@ import {
   base64ToBytes,
   bytesToBase64,
   decryptVaultPayload,
+  decryptVaultPayloadWithSalt,
   deriveVaultKey,
   encryptVaultPayload,
+  encryptVaultPayloadWithSalt,
   generateVaultSalt,
 } from "./vaultCrypto.js";
 
@@ -102,5 +104,55 @@ describe("vaultCrypto", () => {
     expect(b.length).toBe(16);
     // Two random salts colliding is astronomically unlikely.
     expect(a).not.toEqual(b);
+  });
+
+  // ── Per-row envelope (B108-2d) ──────────────────────────────────
+
+  it("envelope round-trips with the correct passphrase", async () => {
+    const payload = {
+      front_svg: "<svg>F</svg>",
+      back_svg: "<svg>B</svg>",
+      components: { sigil_ids: ["s1"] },
+    };
+    const sealed = await encryptVaultPayloadWithSalt(
+      payload,
+      "correct horse battery staple",
+    );
+    const decrypted = await decryptVaultPayloadWithSalt(
+      sealed.encrypted_payload_b64,
+      sealed.encryption_iv_b64,
+      "correct horse battery staple",
+    );
+    expect(decrypted).toEqual(payload);
+  });
+
+  it("envelope rejects the wrong passphrase", async () => {
+    const sealed = await encryptVaultPayloadWithSalt(
+      { secret: 1 },
+      "the right one",
+    );
+    await expect(
+      decryptVaultPayloadWithSalt(
+        sealed.encrypted_payload_b64,
+        sealed.encryption_iv_b64,
+        "not the right one",
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("envelope uses a fresh salt every call", async () => {
+    const a = await encryptVaultPayloadWithSalt({ s: 1 }, "passphrase");
+    const b = await encryptVaultPayloadWithSalt({ s: 1 }, "passphrase");
+    // Same passphrase + same plaintext, but the embedded salts differ
+    // → ciphertexts differ.
+    expect(a.encrypted_payload_b64).not.toBe(b.encrypted_payload_b64);
+  });
+
+  it("envelope rejects malformed (too-short) ciphertext", async () => {
+    // Less than 16 bytes — can't contain a salt.
+    const tiny = bytesToBase64(new Uint8Array([1, 2, 3, 4]));
+    await expect(
+      decryptVaultPayloadWithSalt(tiny, "QQ==", "any passphrase"),
+    ).rejects.toThrow(/too short/i);
   });
 });

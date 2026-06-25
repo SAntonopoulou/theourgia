@@ -17,7 +17,9 @@
  * frame; never a stored bitmap.
  */
 
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
+
+import { encryptVaultPayloadWithSalt } from "../crypto/index.js";
 
 import {
   ELECTION_PREVIEW_DETAIL,
@@ -111,6 +113,34 @@ const INPUT_STYLE: CSSProperties = {
   color: "var(--ink)",
 };
 
+/** Payload emitted by ``onSave``. Plaintext talismans carry their
+ *  composition fields directly; sealed talismans carry the
+ *  ciphertext envelope (server stores only that). The route POSTs
+ *  to /api/v1/talismans, then — for sealed — to /seal. */
+export type TalismanSavePayload =
+  | {
+      title: string;
+      sealed: false;
+      purpose: string;
+      materials_notes: string;
+      front_svg: string;
+      back_svg: string;
+      components: Record<string, unknown>;
+      linked_election: Record<string, unknown> | null;
+    }
+  | {
+      title: string;
+      sealed: true;
+      purpose: string;
+      materials_notes: string;
+      linked_election: Record<string, unknown> | null;
+      /** Client-side ciphertext of
+       *  ``{front_svg, back_svg, components}``. The server never
+       *  sees the plaintext fields. */
+      encrypted_payload_b64: string;
+      encryption_iv_b64: string;
+    };
+
 export interface TalismanDesignerSurfaceProps {
   initialName?: string;
   initialFace?: TalismanFace;
@@ -118,7 +148,7 @@ export interface TalismanDesignerSurfaceProps {
   initialElection?: ElectionRow | null;
   /** When true, the Save dialog's --seal switch starts ON. */
   initiationLinked?: boolean;
-  onSave?: (payload: { title: string; sealed: boolean }) => void;
+  onSave?: (payload: TalismanSavePayload) => void | Promise<void>;
   className?: string;
   style?: CSSProperties;
 }
@@ -142,6 +172,74 @@ export function TalismanDesignerSurface({
   const [election] = useState<ElectionRow | null | undefined>(initialElection);
   const [electionOpen, setElectionOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
+
+  // Refs to the live + offscreen face SVGs. The visible canvas is
+  // whichever face is currently active; the offscreen canvas
+  // renders the inactive face at the moment of save so both
+  // front + back are captured in one pass.
+  const visibleCanvasRef = useRef<SVGSVGElement | null>(null);
+  const offscreenCanvasRef = useRef<SVGSVGElement | null>(null);
+
+  function serialise(svg: SVGSVGElement | null): string {
+    if (!svg || typeof XMLSerializer === "undefined") return "";
+    try {
+      return new XMLSerializer().serializeToString(svg);
+    } catch {
+      return "";
+    }
+  }
+
+  async function handleConfirm(payload: {
+    title: string;
+    sealed: boolean;
+    passphrase: string | null;
+  }): Promise<void> {
+    const visible = serialise(visibleCanvasRef.current);
+    const offscreen = serialise(offscreenCanvasRef.current);
+    const front_svg = face === "front" ? visible : offscreen;
+    const back_svg = face === "back" ? visible : offscreen;
+    // Components: the H05 worked-example payload. The Jupiter
+    // composition references a kamea + a sigil — those ids are
+    // placeholders until the layer model lands.
+    const components: Record<string, unknown> = {
+      sigil_ids: [],
+      square_ids: [],
+      face_active: face,
+    };
+    const linked_election: Record<string, unknown> | null = election
+      ? {
+          when: election.when,
+          detail: election.detail,
+          glyph: election.glyph,
+        }
+      : null;
+    if (payload.sealed && payload.passphrase) {
+      const sealed = await encryptVaultPayloadWithSalt(
+        { front_svg, back_svg, components },
+        payload.passphrase,
+      );
+      await onSave?.({
+        title: payload.title,
+        sealed: true,
+        purpose,
+        materials_notes: materials,
+        linked_election,
+        encrypted_payload_b64: sealed.encrypted_payload_b64,
+        encryption_iv_b64: sealed.encryption_iv_b64,
+      });
+    } else {
+      await onSave?.({
+        title: payload.title,
+        sealed: false,
+        purpose,
+        materials_notes: materials,
+        front_svg,
+        back_svg,
+        components,
+        linked_election,
+      });
+    }
+  }
 
   const layerDef = layerByKey(layer);
 
@@ -201,7 +299,32 @@ export function TalismanDesignerSurface({
               minHeight: 0,
             }}
           >
-            <TalismanCanvas face={face} snapGrid={snapGrid} />
+            <TalismanCanvas
+              ref={visibleCanvasRef}
+              face={face}
+              snapGrid={snapGrid}
+            />
+            {/* Offscreen render of the inactive face so the Save
+                handler can serialise both faces in one frame.
+                ``aria-hidden`` + zero-size keeps it out of the AT
+                tree and out of the layout. */}
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                width: 1,
+                height: 1,
+                overflow: "hidden",
+                clip: "rect(0 0 0 0)",
+                clipPath: "inset(50%)",
+              }}
+            >
+              <TalismanCanvas
+                ref={offscreenCanvasRef}
+                face={face === "front" ? "back" : "front"}
+                snapGrid={snapGrid}
+              />
+            </div>
           </div>
           <div
             data-canvas-footer
@@ -527,7 +650,7 @@ export function TalismanDesignerSurface({
       <SealedSaveDialog
         open={saveOpen}
         onClose={() => setSaveOpen(false)}
-        onConfirm={onSave}
+        onConfirm={handleConfirm}
         initialTitle={name}
         initiationLinked={initiationLinked}
       />

@@ -279,14 +279,16 @@ function BackPlanetaryCharacter() {
   );
 }
 
-export function TalismanCanvas({
-  face,
-  snapGrid = true,
-  className,
-  style,
-}: TalismanCanvasProps) {
+export const TalismanCanvas = React.forwardRef<
+  SVGSVGElement,
+  TalismanCanvasProps
+>(function TalismanCanvas(
+  { face, snapGrid = true, className, style },
+  ref,
+) {
   return (
     <svg
+      ref={ref}
       data-component="talisman-canvas"
       data-face={face}
       data-snap-grid={snapGrid}
@@ -315,4 +317,4 @@ export function TalismanCanvas({
       {face === "front" ? <JupiterKameaWithSigil /> : <BackPlanetaryCharacter />}
     </svg>
   );
-}
+});

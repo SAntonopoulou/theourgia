@@ -62,7 +62,15 @@ const FIELD_LABEL: CSSProperties = {
 export interface SealedSaveDialogProps {
   open: boolean;
   onClose: () => void;
-  onConfirm?: (payload: { title: string; sealed: boolean }) => void;
+  /** Confirmed save payload. ``passphrase`` is non-null only when
+   *  ``sealed`` is true — the consumer uses it to derive the Mode B
+   *  vault key. The passphrase string is never transmitted; the
+   *  consumer encrypts locally and POSTs the ciphertext. */
+  onConfirm?: (payload: {
+    title: string;
+    sealed: boolean;
+    passphrase: string | null;
+  }) => void;
   initialTitle?: string;
   /** Defaults `sealed` to true when an Initiation working is linked
    *  (per H05 §E + the surface). */
@@ -78,11 +86,22 @@ export function SealedSaveDialog({
 }: SealedSaveDialogProps) {
   const [title, setTitle] = useState(initialTitle);
   const [sealed, setSealed] = useState(initiationLinked);
+  const [passphrase, setPassphrase] = useState("");
 
   if (!open) return null;
 
+  const passphraseRequired = sealed && passphrase.length === 0;
+
   const handleSave = () => {
-    onConfirm?.({ title, sealed });
+    if (passphraseRequired) return;
+    onConfirm?.({
+      title,
+      sealed,
+      passphrase: sealed ? passphrase : null,
+    });
+    // Wipe the in-memory passphrase as soon as the consumer takes
+    // it — the dialog is not the right place to keep secrets.
+    setPassphrase("");
     onClose();
   };
 
@@ -216,6 +235,48 @@ export function SealedSaveDialog({
           </span>
         </label>
 
+        {sealed ? (
+          <div data-seal-passphrase-row style={{ marginBottom: 20 }}>
+            <label style={FIELD_LABEL} htmlFor="talisman-seal-passphrase">
+              Vault passphrase
+            </label>
+            <input
+              id="talisman-seal-passphrase"
+              type="password"
+              value={passphrase}
+              onChange={(e) => setPassphrase(e.target.value)}
+              autoComplete="new-password"
+              data-seal-passphrase
+              aria-label="Vault passphrase"
+              aria-describedby="talisman-seal-passphrase-help"
+              style={{
+                width: "100%",
+                padding: "11px 13px",
+                borderWidth: 1,
+                borderStyle: "solid",
+                borderColor: "var(--line-2)",
+                borderRadius: "var(--r-md)",
+                background: "var(--bg-2)",
+                color: "var(--ink)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 14,
+              }}
+            />
+            <p
+              id="talisman-seal-passphrase-help"
+              style={{
+                margin: "6px 0 0",
+                fontFamily: "var(--font-ui)",
+                fontSize: 11.5,
+                color: "var(--ink-mute)",
+              }}
+            >
+              Encrypts on this device only. The passphrase is never sent
+              to the server; you'll need it again to unseal this talisman.
+            </p>
+          </div>
+        ) : null}
+
         <div style={{ display: "flex", gap: 10 }}>
           <button
             type="button"
@@ -241,17 +302,23 @@ export function SealedSaveDialog({
             type="button"
             data-action="save"
             onClick={handleSave}
+            disabled={passphraseRequired}
+            aria-disabled={passphraseRequired}
             style={{
               flex: 1.4,
               padding: 12,
               borderRadius: "var(--r-md)",
-              background: "var(--accent)",
-              color: "var(--accent-ink)",
+              background: passphraseRequired
+                ? "var(--bg-3)"
+                : "var(--accent)",
+              color: passphraseRequired
+                ? "var(--ink-mute)"
+                : "var(--accent-ink)",
               fontFamily: "var(--font-ui)",
               fontWeight: 700,
               fontSize: 14,
               border: "none",
-              cursor: "pointer",
+              cursor: passphraseRequired ? "not-allowed" : "pointer",
             }}
           >
             {TL_SAVE_CONFIRM}

@@ -130,3 +130,65 @@ export async function decryptVaultPayload<T>(
 export function generateVaultSalt(): Uint8Array {
   return crypto.getRandomValues(new Uint8Array(16));
 }
+
+/** Salt length used by the per-row envelope format below. */
+const SALT_LENGTH = 16;
+
+/**
+ * Encrypt with an embedded per-row salt — convenient when there
+ * is no per-vault salt in the session yet (the B108-2d state).
+ *
+ * Envelope layout in ``encrypted_payload_b64``:
+ *   ``salt(16 bytes) || ciphertext(AES-GCM auth tag included)``
+ *
+ * The salt is NOT secret. Storing it in-band means each sealed
+ * row carries everything needed to decrypt it given the passphrase
+ * (no per-vault salt fetch from the server). Cost: one PBKDF2
+ * derivation per row read instead of one per session — same
+ * security against brute-force.
+ */
+export async function encryptVaultPayloadWithSalt(
+  value: unknown,
+  passphrase: string,
+): Promise<{ encrypted_payload_b64: string; encryption_iv_b64: string }> {
+  const salt = generateVaultSalt();
+  const key = await deriveVaultKey(passphrase, salt);
+  const inner = await encryptVaultPayload(value, key);
+  const innerCt = base64ToBytes(inner.encrypted_payload_b64);
+  const envelope = new Uint8Array(SALT_LENGTH + innerCt.length);
+  envelope.set(salt, 0);
+  envelope.set(innerCt, SALT_LENGTH);
+  return {
+    encrypted_payload_b64: bytesToBase64(envelope),
+    encryption_iv_b64: inner.encryption_iv_b64,
+  };
+}
+
+/**
+ * Decrypt the per-row envelope produced by
+ * :func:`encryptVaultPayloadWithSalt`. Extracts the salt from the
+ * first 16 bytes of the ciphertext, derives the key, and
+ * decrypts the remainder.
+ *
+ * Throws if the passphrase is wrong (AES-GCM auth tag rejects),
+ * if the ciphertext is shorter than the salt length, or if the
+ * base64 is malformed.
+ */
+export async function decryptVaultPayloadWithSalt<T>(
+  encrypted_payload_b64: string,
+  encryption_iv_b64: string,
+  passphrase: string,
+): Promise<T> {
+  const envelope = base64ToBytes(encrypted_payload_b64);
+  if (envelope.length <= SALT_LENGTH) {
+    throw new Error("Sealed envelope is too short to contain a salt.");
+  }
+  const salt = envelope.slice(0, SALT_LENGTH);
+  const innerCt = envelope.slice(SALT_LENGTH);
+  const key = await deriveVaultKey(passphrase, salt);
+  return decryptVaultPayload<T>(
+    bytesToBase64(innerCt),
+    encryption_iv_b64,
+    key,
+  );
+}

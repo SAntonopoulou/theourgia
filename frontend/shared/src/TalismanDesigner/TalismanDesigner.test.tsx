@@ -310,7 +310,7 @@ describe("SealedSaveDialog", () => {
     expect(screen.getByText(SEAL_HELP_ON)).toBeInTheDocument();
   });
 
-  it("Save fires onConfirm with sealed=true after the toggle", () => {
+  it("Save fires onConfirm with sealed=true after the toggle + passphrase", () => {
     const onConfirm = vi.fn();
     render(
       <SealedSaveDialog open onClose={() => {}} onConfirm={onConfirm} />,
@@ -318,11 +318,51 @@ describe("SealedSaveDialog", () => {
     fireEvent.click(
       document.querySelector("[data-seal-switch]") as Element,
     );
+    // The H05 Mode B contract: a sealed save requires a passphrase
+    // in-dialog. The Save button is disabled until one is supplied.
+    fireEvent.change(
+      document.querySelector("[data-seal-passphrase]") as Element,
+      { target: { value: "correct horse battery staple" } },
+    );
     fireEvent.click(
       document.querySelector("[data-action='save']") as Element,
     );
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onConfirm.mock.calls[0]![0].sealed).toBe(true);
+    expect(onConfirm.mock.calls[0]![0].passphrase).toBe(
+      "correct horse battery staple",
+    );
+  });
+
+  it("Save is disabled when sealed=true and no passphrase entered", () => {
+    const onConfirm = vi.fn();
+    render(
+      <SealedSaveDialog open onClose={() => {}} onConfirm={onConfirm} />,
+    );
+    fireEvent.click(
+      document.querySelector("[data-seal-switch]") as Element,
+    );
+    const saveBtn = document.querySelector(
+      "[data-action='save']",
+    ) as HTMLButtonElement;
+    expect(saveBtn.disabled).toBe(true);
+    expect(saveBtn.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(saveBtn);
+    expect(onConfirm).not.toHaveBeenCalled();
+  });
+
+  it("Save fires onConfirm with sealed=false + passphrase=null when unsealed", () => {
+    const onConfirm = vi.fn();
+    render(
+      <SealedSaveDialog open onClose={() => {}} onConfirm={onConfirm} />,
+    );
+    // Don't toggle the seal switch.
+    fireEvent.click(
+      document.querySelector("[data-action='save']") as Element,
+    );
+    expect(onConfirm).toHaveBeenCalledTimes(1);
+    expect(onConfirm.mock.calls[0]![0].sealed).toBe(false);
+    expect(onConfirm.mock.calls[0]![0].passphrase).toBeNull();
   });
 
   it("uses --seal* never --danger", () => {

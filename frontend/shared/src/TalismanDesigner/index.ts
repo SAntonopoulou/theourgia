@@ -91,4 +91,7 @@ export { TalismanCanvas } from "./TalismanCanvas.js";
 export type { TalismanCanvasProps } from "./TalismanCanvas.js";
 
 export { TalismanDesignerSurface } from "./TalismanDesignerSurface.js";
-export type { TalismanDesignerSurfaceProps } from "./TalismanDesignerSurface.js";
+export type {
+  TalismanDesignerSurfaceProps,
+  TalismanSavePayload,
+} from "./TalismanDesignerSurface.js";
