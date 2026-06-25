@@ -49,6 +49,7 @@ from theourgia.api.routers.v1 import templates as v1_templates
 from theourgia.api.routers.v1 import today_ledger as v1_today_ledger
 from theourgia.api.routers.v1 import tools as v1_tools
 from theourgia.api.routers.v1 import user_settings as v1_user_settings
+from theourgia.api.routers.v1 import voces as v1_voces
 
 __all__ = ["register_routers"]
 
@@ -105,4 +106,5 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_circles.router, tags=["circles"])
     v1.include_router(v1_tools.router, tags=["tools"])
     v1.include_router(v1_altars.router, tags=["altars"])
+    v1.include_router(v1_voces.router, tags=["voces"])
     app.include_router(v1)
