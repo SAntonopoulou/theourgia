@@ -27,6 +27,7 @@ from theourgia.api.routers.v1 import iching as v1_iching
 from theourgia.api.routers.v1 import identities as v1_identities
 from theourgia.api.routers.v1 import initiations as v1_initiations
 from theourgia.api.routers.v1 import library as v1_library
+from theourgia.api.routers.v1 import magic_squares as v1_magic_squares
 from theourgia.api.routers.v1 import meta as v1_meta
 from theourgia.api.routers.v1 import oaths as v1_oaths
 from theourgia.api.routers.v1 import offerings as v1_offerings
@@ -39,6 +40,7 @@ from theourgia.api.routers.v1 import schedule as v1_schedule
 from theourgia.api.routers.v1 import scrying as v1_scrying
 from theourgia.api.routers.v1 import search as v1_search
 from theourgia.api.routers.v1 import servitors as v1_servitors
+from theourgia.api.routers.v1 import sigils as v1_sigils
 from theourgia.api.routers.v1 import tarot as v1_tarot
 from theourgia.api.routers.v1 import templates as v1_templates
 from theourgia.api.routers.v1 import today_ledger as v1_today_ledger
@@ -92,4 +94,7 @@ def register_routers(app: FastAPI) -> None:
     # H01-H03 backend gap-fills
     v1.include_router(v1_resh.router, tags=["resh"])
     v1.include_router(v1_today_ledger.router, tags=["today"])
+    # Phase 07 Workshop (B103+)
+    v1.include_router(v1_sigils.router, tags=["sigils"])
+    v1.include_router(v1_magic_squares.router, tags=["magic-squares"])
     app.include_router(v1)
