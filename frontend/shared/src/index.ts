@@ -79,6 +79,7 @@ export * from "./Popover/index.js";
 export * from "./Progress/index.js";
 export * from "./PublicChrome/index.js";
 export * from "./PricingDistribution/index.js";
+export * from "./PrintPreview/index.js";
 export * from "./Reader/index.js";
 export * from "./PublicationEditor/index.js";
 export * from "./PublicationSettings/index.js";
