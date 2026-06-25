@@ -41,6 +41,7 @@ import { CircleBuilder } from "./routes/CircleBuilder.js";
 import { Connection } from "./routes/Connection.js";
 import { DailyPracticeRoute } from "./routes/DailyPracticeRoute.js";
 import { GematriaCalculatorRoute } from "./routes/GematriaCalculatorRoute.js";
+import { PublicationsRoute } from "./routes/PublicationsRoute.js";
 import { VocesLibraryRoute } from "./routes/VocesLibraryRoute.js";
 import { Divination } from "./routes/Divination.js";
 import { DivinationMiscRoute } from "./routes/DivinationMiscRoute.js";
@@ -200,6 +201,7 @@ function ShellRoutes() {
         <Route path="/voces" element={<VocesMagicaeRoute />} />
         <Route path="/gematria" element={<GematriaCalculatorRoute />} />
         <Route path="/voces-library" element={<VocesLibraryRoute />} />
+        <Route path="/publications" element={<PublicationsRoute />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/feed" element={<RitualFeed />} />
         <Route path="/hubs" element={<Hubs />} />
