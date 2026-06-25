@@ -1,9 +1,10 @@
 /**
  * Magic Squares — admin route wrapping the shared
- * MagicSquaresSurface. Phase 07 backend is unbuilt by design; the
- * "Save as sigil" handler navigates to the Sigil Generator with the
- * source square + trace cell-sequence carried via URL params so the
- * generator opens directly in Kamea mode with the user's exact trace.
+ * MagicSquaresSurface.
+ *
+ * Two save paths:
+ *   • Build mode → POST /api/v1/magic-squares (custom square row).
+ *   • Trace mode → fork to Sigil Generator's Kamea mode via URL.
  */
 
 import {
@@ -14,6 +15,8 @@ import {
 } from "@theourgia/shared";
 import { useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+
+import { apiMethods } from "../data/api.js";
 
 export function MagicSquaresRoute() {
   useTopbar(
@@ -55,5 +58,41 @@ export function MagicSquaresRoute() {
     [navigate],
   );
 
-  return <MagicSquaresSurface onSaveAsSigil={handleSaveAsSigil} />;
+  const handleSaveCustomSquare = useCallback(
+    async (payload: { order: number; cells: number[][] }) => {
+      try {
+        const row = await apiMethods.createMagicSquare({
+          name: `Custom order-${payload.order} square`,
+          order: payload.order,
+          cells: payload.cells,
+        });
+        Toast.push({
+          tone: "success",
+          title: "Square saved",
+          body: row.is_magic
+            ? `Order ${row.order} · magic constant ${
+                (row.order * (row.order * row.order + 1)) / 2
+              }.`
+            : `Saved, but the rows / columns / diagonals do not all sum to the magic constant. You can refine and re-save.`,
+        });
+      } catch (err) {
+        Toast.push({
+          tone: "error",
+          title: "Could not save",
+          body:
+            err instanceof Error
+              ? err.message
+              : "An unexpected error occurred.",
+        });
+      }
+    },
+    [],
+  );
+
+  return (
+    <MagicSquaresSurface
+      onSaveAsSigil={handleSaveAsSigil}
+      onSaveCustomSquare={handleSaveCustomSquare}
+    />
+  );
 }

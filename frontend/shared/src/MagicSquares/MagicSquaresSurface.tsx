@@ -123,6 +123,15 @@ export interface MagicSquaresSurfaceProps {
     squareId: SquareId;
     cellSequence: number[];
   }) => void;
+  /** Fired when the Build mode "Save" CTA is clicked. The current
+   *  generated square (rows × cols of numbers) and its order are
+   *  emitted; the admin route POSTs the row + supplies a default
+   *  name (the surface intentionally has no naming dialog —
+   *  designer scope). */
+  onSaveCustomSquare?: (payload: {
+    order: number;
+    cells: number[][];
+  }) => void;
   onCreateCustomSquare?: () => void;
   className?: string;
   style?: CSSProperties;
@@ -139,6 +148,7 @@ export function MagicSquaresSurface({
     },
   ],
   onSaveAsSigil,
+  onSaveCustomSquare,
   onCreateCustomSquare,
   className,
   style,
@@ -216,6 +226,14 @@ export function MagicSquaresSurface({
         return cells[Math.floor(idx / n)]![idx % n]!;
       }),
     });
+  };
+
+  const handleSaveCustomSquare = () => {
+    if (!cells) return;
+    // Deep-copy so callers can freely mutate the payload without
+    // affecting the surface's in-memory grid.
+    const snapshot = cells.map((row) => [...row]);
+    onSaveCustomSquare?.({ order, cells: snapshot });
   };
 
   return (
@@ -350,6 +368,7 @@ export function MagicSquaresSurface({
                     <button
                       type="button"
                       data-action="build-save"
+                      onClick={handleSaveCustomSquare}
                       style={{
                         padding: "8px 16px",
                         borderRadius: "var(--r-md)",
