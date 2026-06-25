@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-25 (Phase 07 Workshop backend COMPLETE · B103 → B108-2d)
+
+Phase 07 backend is now fully shipped. Five domains live across Alembic
+0033 → 0037 (sigil · magic_square · talisman · circle · tool · altar ·
+voce_magicae · voce_recording). 1625 backend tests passing; 1735 shared
+frontend tests passing. Workshop frontend persistence wired live for
+five of six surfaces; Tool Registry create form is the only remaining
+designer follow-up.
+
+- **B103 (Workshop foundation)** — Sigil + MagicSquare models · the 7
+  Agrippa planetary squares as immutable Python constants (Saturn 3×3
+  through Moon 9×9, all verified valid) · routers with 6 endpoints each
+  · 40 tests. Migration 0033.
+- **B104 (Talismans + Mode B encryption)** — Talisman model reusing the
+  `entry_encryption_mode` Postgres enum via `create_type=False` (same
+  pattern as Oath). 8 endpoints: list / create / get / patch / delete /
+  seal / unseal / fork. The seal endpoint atomically: stores ciphertext
+  + IV, switches mode to SEALED, nulls plaintext columns (defence in
+  depth: `_to_read` omits plaintext even if columns are populated). 23
+  tests. Migration 0034.
+- **B105 (Magical Circles + preset library)** — Circle model with
+  rings array (1-6 entries, kinds bounded) · compass tradition enum ·
+  centre element with restricted kinds. Five PD preset templates:
+  LBRP, Heptameron Solar, Goetic Solomonic, Picatrix Venus, Greek
+  defixio — every preset cites a verifiable PD source. 7 endpoints
+  (presets is public). 28 tests. Migration 0035. Also fixed the B104
+  router-registration omission (talismans was imported but not
+  included in `register_routers`).
+- **B106 (Tools + Altars)** — Tool + Altar models, two routers (15
+  endpoints between them). Consecration is a sub-resource:
+  `consecration_date` and `consecration_working_entry_id` are not in
+  ToolUpdate; only POST `/tools/{id}/consecrate` sets them (requires a
+  real working entry in the same vault). The unconsecrate sub-resource
+  is separate so the audit trail stays honest while permitting
+  correction. 32 tests. Migration 0036.
+- **B107 (Voces Magicae + bundled corpus)** — VoceMagicae +
+  VoceRecording models. 32-entry PD bundled corpus drawn from PGM
+  (Preisendanz 1928-31 / Betz 1986 line numbers), Sefer Yetzirah,
+  Lemegeton, Heptameron, and Vedic/Tantric Sanskrit bīja mantras.
+  Every entry cites a verifiable PD source — the corpus invariant
+  test fails CI if anyone tries to ship an improvised voce. 9
+  endpoints. 29 tests. Migration 0037.
+
+#### B108 — Frontend wiring
+
+- **B108-1** — Shared API contract: 378 lines of TypeScript types
+  mirroring every Phase-07 Pydantic schema · 452 lines of typed
+  endpoint methods · re-exported via the shared barrel. Four wire
+  types renamed to avoid collision with H05 surface demo types
+  (`PlanetarySquare → PlanetarySquareWire`, `ToolRecord →
+  ToolRecordWire`, `AltarRecord → AltarRecordWire`, `VoceRecord →
+  VoceRecordWire`).
+- **B108-2a** — Sigil end-to-end live save (`POST /api/v1/sigils`).
+  Surface contract extension: SigilPreview forwards a ref;
+  SigilGeneratorSurface serialises the live preview SVG and emits
+  mode-specific parameters + deterministic seed. Workshop fixtures
+  for all 8 endpoint groups so mock-mode dev keeps round-tripping.
+- **B108-2b** — Live save wired for Magic Squares, Voces, and
+  Magical Circle. Surface enums map to the backend's wire enums
+  (e.g. `glyphs → glyph_row`, `winds → greek_winds`,
+  `solomonic → solomonic_seal`). MagicSquaresSurface gained an
+  `onSaveCustomSquare` callback (the Build mode "Save" button was
+  previously unwired). Voces' name field is synthesised from the
+  first line of `source_text`; the H05 honesty rule (non-empty
+  `source_citation`) is enforced server-side.
+- **B108-2c** — Mode B vault crypto utility in shared (`crypto/`).
+  PBKDF2-SHA256 @ 600_000 iterations (OWASP 2023 baseline) +
+  AES-256-GCM with random 96-bit IV. 7 round-trip / tamper /
+  wrong-key tests.
+- **B108-2d** — Talisman live save end-to-end including the full
+  Mode B sealed flow. SealedSaveDialog gained an in-dialog
+  passphrase input (Save button disabled until supplied);
+  TalismanCanvas forwards a ref; the surface renders the inactive
+  face into a visually + AT-hidden block at zero size so both faces
+  are captured atomically. Envelope helpers
+  (`encryptVaultPayloadWithSalt`) embed a fresh per-row salt in the
+  first 16 bytes of the ciphertext — each sealed row carries
+  everything needed to decrypt it given the passphrase, no per-vault
+  salt fetch required.
+
+Backend: 1473 → 1625 tests (+152). Alembic head: 0032 → 0037.
+Shared frontend: 1722 → 1735 tests (+13 crypto + dialog tests).
+Admin tsc: clean throughout.
+
+**Queued (B108-2e):** Tool Registry create form. ToolRegistrySurface
+today emits only `onNew(view)` — an intent signal — with no
+in-surface fields for tool/altar field capture. Designer follow-up
+(form composition was not in scope of the H05 handoff).
+
 ### Fixed — 2026-06-23 (B102e · A11y comprehensive sweep · 73 → 14 failures · 97.5% pass rate)
 
 One comprehensive sweep covering every known a11y category at once, replacing the earlier batch-by-batch approach. From 73 → 14 failing stories (286 → 14 since the gate was restored in B101 — **95% reduction**).

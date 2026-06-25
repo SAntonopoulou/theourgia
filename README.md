@@ -8,7 +8,7 @@ A magickal journal CMS and full practitioner's toolkit.
 Open source, self-hostable, federated. For working magicians.
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
-[![Status: Active development](https://img.shields.io/badge/status-active_development_(Phase_07_frontend_shipped)-orange.svg)](#status)
+[![Status: Active development](https://img.shields.io/badge/status-active_development_(Phase_07_complete)-orange.svg)](#status)
 [![Telemetry: Zero](https://img.shields.io/badge/telemetry-zero-brightgreen.svg)](#privacy)
 [![Federated](https://img.shields.io/badge/federation-native_+_ActivityPub-purple.svg)](FEATURES.md#14-federation-networks--group-work)
 [![Plugins](https://img.shields.io/badge/plugins-from_day_one-orange.svg)](FEATURES.md#17-plugin-ecosystem)
@@ -19,15 +19,17 @@ Open source, self-hostable, federated. For working magicians.
 
 ## Status
 
-**Pre-alpha — Phases 00-07 frontend complete.** Foundations through Phase 07 are shipped end-to-end (backend complete through Phase 06; Phase 07 frontend ships ahead of its backend by design). Sprint trajectory:
+**Pre-alpha — Phases 00-07 end-to-end.** Backend and frontend ship together through Phase 07. Sprint trajectory:
 
 - **H01-H03 sprint** (B50-B75) — Phases 03 · 04 · 05 frontend coverage end-to-end against existing backend.
 - **H04 sprint** (B76-B86) — Daily Practice Tracker (Tier 1) + Phase 06 Divination & Practice cluster (Tier 2): Tarot · I Ching · Geomancy · Runes · Pendulum/Bibliomancy/Horary/Scrying · Practice Logs.
-- **H05 sprint** (B89-B96) — Phase 07 Workshop (Tier 3): Sigil Generator (11 modes, sandboxed parametric formula) · Magic Squares (7 Agrippa planetary kamea + custom builder) · Talisman Designer (composite name-rings + kamea embeds + sealed save) · Magical Circle (1-6 rings · single-tradition compass · print-tile mode) · Tool Registry (14 kinds + altars) · Voces Magicae Recorder (PD source citation required).
+- **H05 sprint** (B89-B96) — Phase 07 Workshop frontend (Tier 3): Sigil Generator · Magic Squares · Talisman Designer · Magical Circle · Tool Registry · Voces Magicae.
+- **Phase 07 backend** (B103-B107, 2026-06-25) — Five domain models · alembic 0033→0037 · seven routers · 152 new tests · 7 Agrippa planetary squares · 5 PD circle presets · 32 PD voces (PGM + Sefer Yetzirah + Lemegeton + Heptameron + Sanskrit). Honesty rules enforced server-side (consecrated talismans require fork to edit, voces require non-empty `source_citation`, planetary squares are immutable fixtures).
+- **B108 — Phase 07 frontend wiring** (in progress) — Workshop surfaces persist live via shared API client. Sealed talismans round-trip through PBKDF2 + AES-GCM client-side encryption (the practitioner's passphrase never reaches the server). Tool Registry create form is the remaining design gap.
 
-As of close: **1722 vitest tests · 557/557 visual · 543/557 a11y (97.5%) · 1473 backend tests** (a11y gate restored 2026-06-23 in B101; B102 lineage closed 95% of the 286 failures the restored gate revealed; remaining 14 are intentional design tradeoffs).
+As of latest commit: **1735 vitest tests · 557/557 visual · 543/557 a11y (97.5%) · 1625 backend tests** (a11y gate restored 2026-06-23 in B101; B102 lineage closed 95% of the 286 failures the restored gate revealed; remaining 14 are intentional design tradeoffs).
 
-Phase 07 frontend is complete; its backend (Alembic models + `/api/v1/sigils|magic-squares|talismans|circles|tools|altars|voces` + Mode B encryption for sealed talismans) is queued. **Batch 35 wave 1 (B97)** also landed alongside the H05 close: live Tiptap 3 editor + 6 custom block nodes (`ritualLog` · `quoteCitation` · `gematria` · `sensation` · `entityRef` · `sigil`) wired into `frontend/admin/src/routes/Editor.tsx` with full JSON round-trip. Chart + Divination nodes + pickers + persistence to `/api/v1/entries` are queued in B98/B99. The next sprint depends on a designer pass for **Linguistic Tools** (Phase 08) and **Analytics** (Phase 09). The H05 handoff request that just shipped lives at [docs/design-requests/2026-06-22-h05-workshop.md](docs/design-requests/2026-06-22-h05-workshop.md); the broader pipeline is at [docs/design-requests/2026-06-22-post-h01-h03-pipeline.md](docs/design-requests/2026-06-22-post-h01-h03-pipeline.md).
+**H06 designer bundle received 2026-06-25** — 10 surfaces for Phases 08 (Linguistic Tools: Gematria · Cross-Journal Search · Transliteration · Voces Library) and 09 (Synchronicity & Analytics: Quick-Capture modal · Log · Dashboard · Query Builder · Studies Index · Per-Study Page). Bundle at `/home/sophia/design-handoffs/theourgia/2026-06-25-H06/`. The defining rule: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts. Build order locked in the H06 onboarding doc; sprint blocked on B108-2e (Tool Registry form) completion.
 
 For the canonical feature catalog, see **[FEATURES.md](FEATURES.md)** — the "Phase Status Snapshot" table at the top tracks sprint progress per-batch. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
@@ -72,7 +74,7 @@ Theourgia is built in 17 phases. Each phase is architecturally dependent on prio
 | 04 | Journaling (entries, blog, library, body diagrams, quotes) | `[x]` (**Batch 35 CLOSED**: B97-B99c3 Tiptap live editor · 8 custom block nodes · 9 slash commands · 3 picker modals · auto-save · visibility chip + sealed toggle · Publish CTA) | [plan/04-journaling.md](plan/04-journaling.md) |
 | 05 | Magical Beings (entities, offerings, oaths, lineage attestation) | `[x]` (backend ✓; **H03 frontend primitives + Today ledger complete B67-B75**) | [plan/05-magical-beings.md](plan/05-magical-beings.md) |
 | 06 | Divination & Practice (tarot, I Ching, geomancy, scrying, rituals) | `[x]` (backend ✓; **H04 frontend complete B76-B86** — 5 oracle surfaces · Daily Practice Tracker · Practice Logs · OracleTabs nav) | [plan/06-divination-and-practice.md](plan/06-divination-and-practice.md) |
-| 07 | Workshop (sigils, talismans, magical circles, tool registry) | `[~]` 🎨 H05 frontend ✓ (B89-B96) · backend pending | [plan/07-workshop.md](plan/07-workshop.md) |
+| 07 | Workshop (sigils, talismans, magical circles, tool registry) | `[x]` ✅ backend done + frontend wired (B108-2e Tool Registry form pending) | [plan/07-workshop.md](plan/07-workshop.md) |
 | 08 | Linguistic Tools (gematria, transliteration, voces magicae) | `[ ]` | [plan/08-linguistic-tools.md](plan/08-linguistic-tools.md) |
 | 09 | Synchronicity & Analytics (scientific illuminism dashboards) | `[ ]` | [plan/09-synchronicity-and-analytics.md](plan/09-synchronicity-and-analytics.md) |
 | 10 | Publishing & Monetization (books, Stripe, newsletters, blog) | `[ ]` | [plan/10-publishing-and-monetization.md](plan/10-publishing-and-monetization.md) |
