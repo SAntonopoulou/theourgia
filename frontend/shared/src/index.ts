@@ -77,6 +77,7 @@ export * from "./workshop/index.js";
 export * from "./Popover/index.js";
 export * from "./Progress/index.js";
 export * from "./PublicChrome/index.js";
+export * from "./PricingDistribution/index.js";
 export * from "./PublicationEditor/index.js";
 export * from "./PublicationSettings/index.js";
 export * from "./Publications/index.js";

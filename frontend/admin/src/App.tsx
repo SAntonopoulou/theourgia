@@ -41,6 +41,7 @@ import { CircleBuilder } from "./routes/CircleBuilder.js";
 import { Connection } from "./routes/Connection.js";
 import { DailyPracticeRoute } from "./routes/DailyPracticeRoute.js";
 import { GematriaCalculatorRoute } from "./routes/GematriaCalculatorRoute.js";
+import { PricingDistributionRoute } from "./routes/PricingDistributionRoute.js";
 import { PublicationEditorRoute } from "./routes/PublicationEditorRoute.js";
 import { PublicationSettingsRoute } from "./routes/PublicationSettingsRoute.js";
 import { PublicationsRoute } from "./routes/PublicationsRoute.js";
@@ -216,6 +217,14 @@ function ShellRoutes() {
         <Route
           path="/publication-settings"
           element={<PublicationSettingsRoute />}
+        />
+        <Route
+          path="/publications/:id/pricing"
+          element={<PricingDistributionRoute />}
+        />
+        <Route
+          path="/pricing-distribution"
+          element={<PricingDistributionRoute />}
         />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/feed" element={<RitualFeed />} />
