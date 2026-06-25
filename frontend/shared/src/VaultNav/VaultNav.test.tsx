@@ -79,16 +79,46 @@ describe("VaultNav", () => {
     expect(logs.style.boxShadow).toBe("inset 2px 0 0 var(--accent)");
   });
 
-  it("DEFAULT_VAULT_NAV Practice section has all 5 H04 entries in order", () => {
+  it("DEFAULT_VAULT_NAV Practice section has all H04 entries in order (Synchronicities moved out per H06)", () => {
     const practice = DEFAULT_VAULT_NAV.find((s) => s.heading === "Practice");
     expect(practice).toBeDefined();
+    // H06 moved `synchronicities` out of Practice into the new
+    // "Synchronicity & study" section. Practice now holds 4 entries.
     expect(practice?.items.map((i) => i.key)).toEqual([
       "today",
       "journal",
-      "synchronicities",
       "dailypractice",
       "practicelogs",
     ]);
+  });
+
+  // ─── H06 — Linguistic + Synchronicity & study sections ─────────────
+
+  it("DEFAULT_VAULT_NAV Linguistic section has all 3 H06 entries in order", () => {
+    const ling = DEFAULT_VAULT_NAV.find((s) => s.heading === "Linguistic");
+    expect(ling).toBeDefined();
+    expect(ling?.items.map((i) => i.key)).toEqual([
+      "gematria",
+      "translit",
+      "voceslib",
+    ]);
+  });
+
+  it("DEFAULT_VAULT_NAV Synchronicity & study section folds in synchronicities + analytics", () => {
+    const sync = DEFAULT_VAULT_NAV.find(
+      (s) => s.heading === "Synchronicity & study",
+    );
+    expect(sync).toBeDefined();
+    expect(sync?.items.map((i) => i.key)).toEqual([
+      "synchronicities",
+      "analytics",
+    ]);
+  });
+
+  it("DEFAULT_VAULT_NAV no longer has a standalone Study section", () => {
+    expect(
+      DEFAULT_VAULT_NAV.find((s) => s.heading === "Study"),
+    ).toBeUndefined();
   });
 
   // ─── H05 — Workshop section extension ───────────────────────────

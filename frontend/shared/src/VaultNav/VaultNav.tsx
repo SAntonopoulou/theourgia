@@ -133,6 +133,24 @@ const NAV_ICONS = {
       <path d="M4 10v4M8 7v10M12 4.5v15M16 8v8M20 10.5v3" />
     </svg>
   ),
+  gematria: (
+    <svg {...ICON_PROPS}>
+      <rect x="5" y="3" width="14" height="18" rx="1.8" />
+      <path d="M8 7h8M8.5 11h0M12 11h0M15.5 11h0M8.5 14.5h0M12 14.5h0M15.5 14.5h0M8.5 18h4" />
+    </svg>
+  ),
+  translit: (
+    <svg {...ICON_PROPS}>
+      <path d="M4 7V5h7v2M7.5 5v12M5.5 17h4" />
+      <path d="M13 19l3.8-9 3.8 9M14.3 16h5" />
+    </svg>
+  ),
+  voceslib: (
+    <svg {...ICON_PROPS}>
+      <path d="M5 4.5h11l3 3v12H5z" />
+      <path d="M9 4.5v15M12.5 9.5h3M12.5 13h3" />
+    </svg>
+  ),
   analytics: (
     <svg {...ICON_PROPS}>
       <path d="M4 4v16h16" />
@@ -182,7 +200,6 @@ export const DEFAULT_VAULT_NAV: VaultNavSection[] = [
     items: [
       { key: "today", to: "/", label: "Today" },
       { key: "journal", to: "/journal", label: "Journal" },
-      { key: "synchronicities", to: "/synchronicities", label: "Synchronicities" },
       { key: "dailypractice", to: "/daily-practice", label: "Daily practice" },
       { key: "practicelogs", to: "/practice-logs", label: "Practice log" },
     ],
@@ -207,9 +224,24 @@ export const DEFAULT_VAULT_NAV: VaultNavSection[] = [
       { key: "voces", to: "/voces", label: "Voces Magicae" },
     ],
   },
+  // ── Phase 08 (H06) — Linguistic ──────────────────────────────────────
   {
-    heading: "Study",
-    items: [{ key: "analytics", to: "/analytics", label: "Analytics" }],
+    heading: "Linguistic",
+    items: [
+      { key: "gematria", to: "/gematria", label: "Gematria" },
+      { key: "translit", to: "/transliteration", label: "Transliteration" },
+      { key: "voceslib", to: "/voces-library", label: "Voces library" },
+    ],
+  },
+  // ── Phase 09 (H06) — Synchronicity & study ───────────────────────────
+  // Synchronicities moved here from "Practice" per H06 IA decision.
+  // Analytics moved here from its single-item "Study" section.
+  {
+    heading: "Synchronicity & study",
+    items: [
+      { key: "synchronicities", to: "/synchronicities", label: "Synchronicities" },
+      { key: "analytics", to: "/analytics", label: "Analytics" },
+    ],
   },
   {
     heading: "Network",

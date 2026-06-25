@@ -124,6 +124,18 @@
   /* Scrying trance-mode accent (Divination Misc) */
   --trance: #6b7fb0;
 
+  /* Analytics visualisation palette (H06).
+     Muted, no-red, theme-re-skinned per data series. The H06
+     Scientific Illuminism stance forbids red anywhere in charts;
+     these six hues are the only colours used for series. Heatmap
+     intensity reuses `--accent` opacity (not a new ramp). */
+  --chart-1: #c7a24c;
+  --chart-2: #7e91ce;
+  --chart-3: #6ba892;
+  --chart-4: #a98ac0;
+  --chart-5: #c99a3c;
+  --chart-6: #8fa4b8;
+
   /* Warn (Visibility downgrade gradient — amber, not red) */
   --warn: #c0975a;
   --warn-soft: rgba(192, 151, 90, 0.14);
