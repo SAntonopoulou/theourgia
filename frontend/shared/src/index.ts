@@ -31,6 +31,7 @@ export * from "./CelestialBand/index.js";
 export * from "./crypto/index.js";
 export * from "./gematria/index.js";
 export * from "./GematriaCalculator/index.js";
+export * from "./VocesLibrary/index.js";
 export * from "./Chart/index.js";
 export * from "./Chip/index.js";
 export * from "./Contracts/index.js";
