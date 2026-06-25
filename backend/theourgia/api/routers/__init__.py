@@ -41,6 +41,7 @@ from theourgia.api.routers.v1 import scrying as v1_scrying
 from theourgia.api.routers.v1 import search as v1_search
 from theourgia.api.routers.v1 import servitors as v1_servitors
 from theourgia.api.routers.v1 import sigils as v1_sigils
+from theourgia.api.routers.v1 import talismans as v1_talismans
 from theourgia.api.routers.v1 import tarot as v1_tarot
 from theourgia.api.routers.v1 import templates as v1_templates
 from theourgia.api.routers.v1 import today_ledger as v1_today_ledger
