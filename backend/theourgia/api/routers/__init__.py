@@ -54,6 +54,7 @@ from theourgia.api.routers.v1 import ciphers as v1_ciphers
 from theourgia.api.routers.v1 import gematria_search as v1_gematria_search
 from theourgia.api.routers.v1 import studies as v1_studies
 from theourgia.api.routers.v1 import transliteration as v1_transliteration
+from theourgia.api.routers.v1 import synchronicities as v1_synchronicities
 
 __all__ = ["register_routers"]
 
@@ -116,4 +117,8 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_gematria_search.router, tags=["gematria"])
     v1.include_router(v1_studies.router, tags=["studies"])
     v1.include_router(v1_transliteration.router, tags=["transliteration"])
+    # Phase 09 Synchronicity & Analytics (B120+)
+    v1.include_router(
+        v1_synchronicities.router, tags=["synchronicities"],
+    )
     app.include_router(v1)
