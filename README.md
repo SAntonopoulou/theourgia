@@ -149,10 +149,24 @@ Alembic head **0051**.
 backend (with Phase 09's network-aggregate path explicitly deferred
 to Phase 12+).
 
-**Next:** Phase 12 Federation backend authoring (or the deferred
-follow-ups: astro/calendar JSONB axes for the Phase 09 executor,
-weekly digest tier-2/3 pre-compute, Tool Registry kind-icon
-folding into the SVG sprite sheet, custom-square kamea sigil).
+**H08 design request opened** (2026-06-26 · `docs/design-requests/
+2026-06-26-h08-federation-activitypub.md` · 767 lines). 21
+surfaces across two clusters (15 Phase 12 Federation surfaces +
+6 Phase 13 ActivityPub surfaces). Anticipated to unblock 6-8
+weeks of frontend + backend work. 13 net-new honesty rules pinned
+(no engagement metrics on home surfaces · no recommendation
+algorithm · consent-first follows · network revocation never
+silent · group ritual once-final-then-frozen · cross-timezone
+three-pinned display · AP only sees Visibility=public · federation
+never auto-DMs · no central SSO server · federated comments mark
+source · per-network opt-in for everything · instance trust
+ledger is matter-of-fact · federation is NOT a walled garden).
+
+**Next:** Awaiting designer pickup on H08. Until then, the
+deferred follow-ups remain available: astro/calendar JSONB axes
+for the Phase 09 executor, weekly digest tier-2/3 pre-compute,
+Tool Registry kind-icon folding into the SVG sprite sheet,
+custom-square kamea sigil.
 
 For the canonical feature catalog, see **[FEATURES.md](FEATURES.md)** — the "Phase Status Snapshot" table at the top tracks sprint progress per-batch. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
