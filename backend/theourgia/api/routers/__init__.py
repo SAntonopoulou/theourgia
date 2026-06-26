@@ -75,6 +75,7 @@ from theourgia.api.routers.v1 import (
 from theourgia.api.routers.v1 import media as v1_media
 from theourgia.api.routers.v1 import media_uploads as v1_media_uploads
 from theourgia.api.routers.v1 import pilgrimage_sites as v1_pilgrimage_sites
+from theourgia.api.routers.v1 import ical_feed as v1_ical_feed
 from theourgia.api.routers import feeds as app_feeds
 
 __all__ = ["register_routers"]
@@ -166,4 +167,8 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_media.router, tags=["media"])
     v1.include_router(v1_media_uploads.router, tags=["media"])
     v1.include_router(v1_pilgrimage_sites.router, tags=["pilgrimage"])
+    v1.include_router(v1_ical_feed.router, tags=["ical"])
+    # Unversioned iCal feed delivery — calendar clients subscribe to a
+    # stable URL (RFC 5545). Lives at app level, not /api/v1.
+    app.include_router(v1_ical_feed.feed_router, tags=["ical"])
     app.include_router(v1)
