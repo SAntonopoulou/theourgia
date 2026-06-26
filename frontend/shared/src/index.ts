@@ -71,6 +71,7 @@ export * from "./Oaths/index.js";
 export * from "./ObligationTable/index.js";
 export * from "./Offerings/index.js";
 export * from "./AnalyticsTabs/index.js";
+export * from "./AudioLibrary/index.js";
 export * from "./LinguisticTabs/index.js";
 export * from "./OracleTabs/index.js";
 export * from "./PlanetaryHourDetail/index.js";

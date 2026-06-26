@@ -83,6 +83,7 @@ import { Journal } from "./routes/Journal.js";
 import { Library } from "./routes/Library.js";
 import { MagicalCircleRoute } from "./routes/MagicalCircleRoute.js";
 import { MagicSquaresRoute } from "./routes/MagicSquaresRoute.js";
+import { AudioLibraryRoute } from "./routes/AudioLibraryRoute.js";
 import { MediaDetailRoute } from "./routes/MediaDetailRoute.js";
 import { MediaLibraryRoute } from "./routes/MediaLibraryRoute.js";
 import { TalismanDesignerRoute } from "./routes/TalismanDesignerRoute.js";
@@ -129,6 +130,7 @@ function navKeyForPath(pathname: string): NavKey | undefined {
   if (pathname.startsWith("/talisman")) return "talismans";
   if (pathname.startsWith("/tools")) return "tools";
   if (pathname.startsWith("/voces")) return "voces";
+  if (pathname.startsWith("/audio")) return "audio";
   if (pathname.startsWith("/media")) return "media";
   if (pathname.startsWith("/analytics")) return "analytics";
   if (pathname.startsWith("/feed")) return "feed";
@@ -245,6 +247,7 @@ function ShellRoutes() {
           path="/newsletters/:id/edit"
           element={<NewsletterEditorRoute />}
         />
+        <Route path="/audio" element={<AudioLibraryRoute />} />
         <Route path="/media" element={<MediaLibraryRoute />} />
         <Route path="/media/:id" element={<MediaDetailRoute />} />
         <Route path="/analytics" element={<Analytics />} />
