@@ -36,7 +36,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import OptionalCookieUser, get_db_session
-from theourgia.core.calendar import build_vcalendar
+from theourgia.core.calendar import build_vcalendar, walk_feed_data
 from theourgia.models.ical_feed import ICalFeed
 
 __all__ = [
@@ -269,11 +269,13 @@ async def serve_feed(
                 "This feed is private; auth required.",
             )
 
-    # Minimal shell. The integration that walks live data lands in
-    # B136 once the call shape is locked.
+    # Walk live data per the enabled include_* toggles. The
+    # sealed-day collapse is enforced inside the walker — the
+    # serializer NEVER sees sealed Entry titles.
+    walk = await walk_feed_data(db, row)
     body = build_vcalendar(
-        events=[],
-        sealed_markers=[],
+        events=walk.events,
+        sealed_markers=walk.sealed_markers,
         feed_name=row.name,
     )
     return Response(

@@ -30,7 +30,7 @@ Open source, self-hostable, federated. For working magicians.
 - **H06 ports 2/3/5/6/7/8/9/10** (2026-06-26) — Cross-Journal Search · Per-Study Page · Studies Index · Transliteration Utility · Analytics Dashboard · Query Builder · Synchronicity Log · Synchronicity Quick-Capture.
 - **Phase 09 backend** (B120-B124, 2026-06-26) — Synchronicity table + auto-tag (location-precision floor enforced server-side) · QUERY_BUILDER study kind + saved-query DSL · executor (sealed exclusion via JOIN-layer guard + sealed_excluded_count indicator) · `/analytics/query` · timeseries / heatmap / correlation / today aggregates · weekly digest builder (banned-phrase regex blocks modal/oracular headlines; tier-2/3 gated by sample size). Alembic 0043→0047; +146 backend tests.
 
-As of latest commit: **2194 vitest tests · 2284 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
+As of latest commit: **2194 vitest tests · 2319 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
 
 **H06 sprint COMPLETE: 10/10 surfaces shipped + Phase 09 backend solo subset closed.** B120-B125 in. Network-aggregate / differential-privacy / cross-vault federation explicitly deferred to Phase 12+. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
@@ -152,6 +152,26 @@ to Phase 12+).
 **H08 design request opened** (2026-06-26 · `docs/design-requests/
 2026-06-26-h08-federation-activitypub.md` · 767 lines · 21 surfaces
 across two clusters · 13 net-new honesty rules pinned).
+
+**iCal feed live data walking shipped** (2026-06-26 · autonomous
+follow-up). B135 shipped `/ical/v1/{token}.ics` as a VCALENDAR
+shell — empty events list — pending the walker. The walker now
+lives at `core/calendar/feed_walker.py` (~270 lines) and wires
+`include_workings` and `include_pilgrimage_anniversaries` to live
+data. Walking window is 4 weeks past + 6 weeks future. The
+**sealed-day collapse is enforced at the walker boundary** —
+`_collect_workings` filters `encryption_mode != SEALED`;
+`_collect_sealed_markers` groups sealed entries by their
+`occurred_at` date and emits `SealedDayMarker` records only.
+The serializer never sees sealed entry titles. Sealed pilgrimage
+sites are EXCLUDED ENTIRELY (no count-only fallback) per the
+Phase 11 close memo. Feb-29 anniversaries fall back to March 1
+in non-leap years (matches calendar-client convention). The
+remaining four toggles (`include_resh`, `include_lunar_events`,
+`include_planetary_hours`, `include_custom`) emit no events
+today — each carries a TODO comment marking the Phase 03 /
+cron-evaluator substrate integration as a future batch. 35 new
+walker tests; backend total 2284 → **2319**.
 
 **Phase 09 executor extended — astro.* / calendar.* JSONB axes
 materialise on the synchronicity subject** (2026-06-26 ·
