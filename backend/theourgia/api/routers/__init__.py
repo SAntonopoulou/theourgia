@@ -72,6 +72,7 @@ from theourgia.api.routers.v1 import (
     public_reader as v1_public_reader,
     public_vault as v1_public_vault,
 )
+from theourgia.api.routers.v1 import media as v1_media
 from theourgia.api.routers import feeds as app_feeds
 
 __all__ = ["register_routers"]
@@ -159,4 +160,6 @@ def register_routers(app: FastAPI) -> None:
     )
     v1.include_router(v1_public_reader.router, tags=["public-reader"])
     v1.include_router(v1_public_vault.router, tags=["public-vault"])
+    # Phase 11 Media (B132+)
+    v1.include_router(v1_media.router, tags=["media"])
     app.include_router(v1)
