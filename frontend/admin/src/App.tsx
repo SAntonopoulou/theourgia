@@ -83,6 +83,7 @@ import { Journal } from "./routes/Journal.js";
 import { Library } from "./routes/Library.js";
 import { MagicalCircleRoute } from "./routes/MagicalCircleRoute.js";
 import { MagicSquaresRoute } from "./routes/MagicSquaresRoute.js";
+import { MediaDetailRoute } from "./routes/MediaDetailRoute.js";
 import { MediaLibraryRoute } from "./routes/MediaLibraryRoute.js";
 import { TalismanDesignerRoute } from "./routes/TalismanDesignerRoute.js";
 import { ToolRegistryRoute } from "./routes/ToolRegistryRoute.js";
@@ -245,6 +246,7 @@ function ShellRoutes() {
           element={<NewsletterEditorRoute />}
         />
         <Route path="/media" element={<MediaLibraryRoute />} />
+        <Route path="/media/:id" element={<MediaDetailRoute />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/feed" element={<RitualFeed />} />
         <Route path="/hubs" element={<Hubs />} />

@@ -14,6 +14,7 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 import { useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 
 const FIXTURE_ASSETS: MediaAsset[] = [
   {
@@ -85,6 +86,8 @@ const FIXTURE_ASSETS: MediaAsset[] = [
 ];
 
 export function MediaLibraryRoute() {
+  const navigate = useNavigate();
+
   useTopbar(
     () => ({
       title: "Media Library",
@@ -94,13 +97,12 @@ export function MediaLibraryRoute() {
     [],
   );
 
-  const handleSelect = useCallback((id: string) => {
-    Toast.push({
-      tone: "info",
-      title: "Open media",
-      body: `Media Detail surface ships next in Cluster C. Selected ${id}.`,
-    });
-  }, []);
+  const handleSelect = useCallback(
+    (id: string) => {
+      navigate(`/media/${id}`);
+    },
+    [navigate],
+  );
 
   const handleUpload = useCallback(() => {
     Toast.push({
