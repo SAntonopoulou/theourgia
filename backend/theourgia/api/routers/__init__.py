@@ -61,6 +61,10 @@ from theourgia.api.routers.v1 import publications as v1_publications
 from theourgia.api.routers.v1 import stripe_connect as v1_stripe_connect
 from theourgia.api.routers.v1 import checkout as v1_checkout
 from theourgia.api.routers.v1 import stripe_webhook as v1_stripe_webhook
+from theourgia.api.routers.v1 import (
+    subscribers as v1_subscribers,
+    subscription_tiers as v1_subscription_tiers,
+)
 
 __all__ = ["register_routers"]
 
@@ -134,4 +138,8 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_stripe_connect.router, tags=["stripe-connect"])
     v1.include_router(v1_checkout.router, tags=["publications"])
     v1.include_router(v1_stripe_webhook.router, tags=["stripe-webhook"])
+    v1.include_router(
+        v1_subscription_tiers.router, tags=["subscription-tiers"],
+    )
+    v1.include_router(v1_subscribers.router, tags=["subscribers"])
     app.include_router(v1)

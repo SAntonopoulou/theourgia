@@ -38,6 +38,7 @@ from theourgia.models.stripe_account import (
     OnboardingStatus,
     StripeConnectAccount,
 )
+from theourgia.models.subscriber import Subscriber, SubscriberStatus
 
 __all__ = [
     "WebhookOutcome",
@@ -45,6 +46,8 @@ __all__ = [
     "process_checkout_session_completed",
     "process_charge_refunded",
     "process_account_updated",
+    "process_invoice_payment_failed",
+    "process_customer_subscription_deleted",
 ]
 
 
@@ -75,6 +78,12 @@ async def process_event(
         return await process_charge_refunded(db=db, event=event)
     if event_type == "account.updated":
         return await process_account_updated(db=db, event=event)
+    if event_type == "invoice.payment_failed":
+        return await process_invoice_payment_failed(db=db, event=event)
+    if event_type == "customer.subscription.deleted":
+        return await process_customer_subscription_deleted(
+            db=db, event=event,
+        )
     return WebhookOutcome(handled=False, kind=event_type, side_effects=())
 
 
@@ -252,4 +261,95 @@ async def process_account_updated(
         handled=True,
         kind="account.updated",
         side_effects=("account-synced",),
+    )
+
+
+async def process_invoice_payment_failed(
+    *,
+    db: AsyncSession,
+    event: dict,
+) -> WebhookOutcome:
+    """A subscriber's recurring payment failed.
+
+    Honesty rule: flip status to FAILED_PAYMENT and record the
+    timestamp. The H07 Subscribers surface renders these rows in
+    ``--warn`` — NEVER ``--danger``. The publisher gets a quiet
+    signal; the subscriber's portal is the right place to fix it.
+    """
+    obj = event.get("data", {}).get("object", {}) or {}
+    sub_id = obj.get("subscription")
+    if not sub_id:
+        return WebhookOutcome(
+            handled=False,
+            kind="invoice.payment_failed",
+            side_effects=("missing-subscription-id",),
+        )
+    row = (
+        await db.execute(
+            select(Subscriber).where(
+                Subscriber.stripe_subscription_id == sub_id,
+            )
+        )
+    ).scalars().first()
+    if row is None:
+        return WebhookOutcome(
+            handled=False,
+            kind="invoice.payment_failed",
+            side_effects=("subscriber-not-found",),
+        )
+    row.status = SubscriberStatus.FAILED_PAYMENT
+    row.last_failed_payment_at = datetime.now(tz=timezone.utc)
+    await db.commit()
+    return WebhookOutcome(
+        handled=True,
+        kind="invoice.payment_failed",
+        side_effects=("subscriber-flagged-failed-payment",),
+    )
+
+
+async def process_customer_subscription_deleted(
+    *,
+    db: AsyncSession,
+    event: dict,
+) -> WebhookOutcome:
+    """Stripe subscription was cancelled (by buyer via portal, by
+    Stripe after payment retries exhausted, etc).
+
+    We flip the Subscriber to UNSUBSCRIBED — same sticky-state as
+    the public unsubscribe flow. The publisher's admin sees the
+    status change."""
+    obj = event.get("data", {}).get("object", {}) or {}
+    sub_id = obj.get("id")
+    if not sub_id:
+        return WebhookOutcome(
+            handled=False,
+            kind="customer.subscription.deleted",
+            side_effects=("missing-subscription-id",),
+        )
+    row = (
+        await db.execute(
+            select(Subscriber).where(
+                Subscriber.stripe_subscription_id == sub_id,
+            )
+        )
+    ).scalars().first()
+    if row is None:
+        return WebhookOutcome(
+            handled=False,
+            kind="customer.subscription.deleted",
+            side_effects=("subscriber-not-found",),
+        )
+    if row.status == SubscriberStatus.UNSUBSCRIBED:
+        return WebhookOutcome(
+            handled=True,
+            kind="customer.subscription.deleted",
+            side_effects=("noop-already-unsubscribed",),
+        )
+    row.status = SubscriberStatus.UNSUBSCRIBED
+    row.unsubscribed_at = datetime.now(tz=timezone.utc)
+    await db.commit()
+    return WebhookOutcome(
+        handled=True,
+        kind="customer.subscription.deleted",
+        side_effects=("subscriber-unsubscribed",),
     )
