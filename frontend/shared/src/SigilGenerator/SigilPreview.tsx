@@ -39,7 +39,11 @@ export interface SigilPreviewProps {
   mode: SigilMode;
   /** Intention text — feeds the deterministic seed. */
   intention: string;
-  /** Active planetary square (kamea mode). */
+  /**
+   * Active planetary square (kamea mode). Ignored when
+   * ``customSquareCells`` is supplied — that path bypasses the
+   * 7-fixture planetary lookup entirely.
+   */
   square?: PlanetKey;
   /** Active curve family (hashed mode). */
   family?: CurveFamily;
@@ -51,6 +55,19 @@ export interface SigilPreviewProps {
    * surface is carried over as the sigil's path.
    */
   cellSequenceOverride?: readonly number[];
+  /**
+   * Optional custom-square cells. When supplied AND ``mode ===
+   * "kamea"``, the cells are traced directly — the planetary
+   * lookup is bypassed entirely. Extends the B92 → B91 handoff
+   * to the H07 Custom Square Builder: any practitioner-authored
+   * n×n square (manuscript reconstruction, personal construction)
+   * becomes a sigil substrate without needing to be one of the
+   * 7 Agrippa planetary fixtures.
+   *
+   * Shape: ``number[][]`` (n rows, n cols of integer cell values).
+   * Empty or shape-invalid arrays fall back to the planet lookup.
+   */
+  customSquareCells?: readonly (readonly number[])[];
   operations?: SigilOperations;
   className?: string;
   style?: CSSProperties;
@@ -103,6 +120,22 @@ function pickSquareCells(planet: PlanetKey) {
   return found?.cells ?? PLANETARY_SQUARES[0]!.cells;
 }
 
+/**
+ * Validate a custom square: must be a non-empty array of equal-
+ * length rows. Returns the cells unchanged when valid; ``null``
+ * otherwise (so the caller falls back to the planet lookup).
+ */
+function validCustomCells(
+  cells: readonly (readonly number[])[] | undefined,
+): readonly (readonly number[])[] | null {
+  if (!cells || cells.length === 0) return null;
+  const n = cells.length;
+  for (const row of cells) {
+    if (!row || row.length !== n) return null;
+  }
+  return cells;
+}
+
 function familyForMode(mode: SigilMode, family: CurveFamily): CurveFamily {
   if (mode === "harmonograph") return "harmonograph";
   if (mode === "rosette") return "rose";
@@ -118,6 +151,7 @@ function ModeBody({
   family,
   color,
   cellSequenceOverride,
+  customSquareCells,
 }: {
   mode: SigilMode;
   intention: string;
@@ -125,14 +159,22 @@ function ModeBody({
   family: CurveFamily;
   color: string;
   cellSequenceOverride?: readonly number[];
+  customSquareCells?: readonly (readonly number[])[];
 }) {
+  const validCustom = validCustomCells(customSquareCells);
   const seed = useMemo(
-    () => hashIntention(`${intention}${mode}${square}`),
-    [intention, mode, square],
+    () => hashIntention(
+      `${intention}${mode}${validCustom ? "custom" : square}`,
+    ),
+    [intention, mode, square, validCustom],
   );
 
   if (mode === "kamea") {
-    const cells = pickSquareCells(square);
+    // Custom cells take precedence over the planet lookup. The
+    // H07 Custom Square Builder hands its output straight in via
+    // this prop — no need to register the custom square as a
+    // planet.
+    const cells = validCustom ?? pickSquareCells(square);
     const n = cells.length;
     let sequence: number[];
     if (cellSequenceOverride && cellSequenceOverride.length > 0) {
@@ -344,6 +386,7 @@ export const SigilPreview = React.forwardRef<
     square = "saturn",
     family = "rose",
     cellSequenceOverride,
+    customSquareCells,
     operations,
     className,
     style,
@@ -376,6 +419,7 @@ export const SigilPreview = React.forwardRef<
           family={family}
           color={color}
           cellSequenceOverride={cellSequenceOverride}
+          customSquareCells={customSquareCells}
         />
       </g>
     </svg>

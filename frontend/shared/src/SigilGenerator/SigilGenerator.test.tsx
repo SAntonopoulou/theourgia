@@ -150,6 +150,97 @@ describe("SigilPreview", () => {
     expect(lines.length).toBe(4);
   });
 
+  it("kamea custom-square cells override the planet lookup", () => {
+    // A 4×4 custom square — should produce 3+3=6 inner grid lines.
+    const customCells = [
+      [16, 3, 2, 13],
+      [5, 10, 11, 8],
+      [9, 6, 7, 12],
+      [4, 15, 14, 1],
+    ];
+    render(
+      <SigilPreview
+        mode="kamea"
+        intention="x"
+        square="saturn"
+        customSquareCells={customCells}
+      />,
+    );
+    const svg = document.querySelector("[data-component='sigil-preview']");
+    const lines = svg!.querySelectorAll("line");
+    expect(lines.length).toBe(6);
+  });
+
+  it("kamea empty custom-cells array falls back to planet lookup", () => {
+    render(
+      <SigilPreview
+        mode="kamea"
+        intention="x"
+        square="saturn"
+        customSquareCells={[]}
+      />,
+    );
+    const svg = document.querySelector("[data-component='sigil-preview']");
+    // Empty custom array → fall back to Saturn 3×3 → 4 inner lines.
+    const lines = svg!.querySelectorAll("line");
+    expect(lines.length).toBe(4);
+  });
+
+  it("kamea custom-cells with mismatched rows falls back to planet", () => {
+    // 3 rows of length 4 ≠ 3 → invalid shape → planet fallback.
+    const ragged = [
+      [1, 2, 3, 4],
+      [5, 6, 7, 8],
+      [9, 10, 11, 12],
+    ];
+    render(
+      <SigilPreview
+        mode="kamea"
+        intention="x"
+        square="saturn"
+        customSquareCells={ragged}
+      />,
+    );
+    const svg = document.querySelector("[data-component='sigil-preview']");
+    // 3×3 Saturn fallback → 4 inner lines.
+    const lines = svg!.querySelectorAll("line");
+    expect(lines.length).toBe(4);
+  });
+
+  it("kamea custom-cells produce a different sigil than the same planet seed", () => {
+    // Render with Saturn alone, then with Saturn but custom cells —
+    // the trace polyline `d` must differ.
+    const { container: before } = render(
+      <SigilPreview mode="kamea" intention="seed" square="saturn" />,
+    );
+    const beforePath =
+      before
+        .querySelector("[data-component='sigil-preview']")!
+        .querySelector("path[stroke-width='2.6']")!
+        .getAttribute("d") ?? "";
+    const customCells = [
+      [16, 3, 2, 13],
+      [5, 10, 11, 8],
+      [9, 6, 7, 12],
+      [4, 15, 14, 1],
+    ];
+    const { container: after } = render(
+      <SigilPreview
+        mode="kamea"
+        intention="seed"
+        square="saturn"
+        customSquareCells={customCells}
+      />,
+    );
+    const afterPath =
+      after
+        .querySelector("[data-component='sigil-preview']")!
+        .querySelector("path[stroke-width='2.6']")!
+        .getAttribute("d") ?? "";
+    expect(afterPath).not.toBe(beforePath);
+    expect(afterPath.length).toBeGreaterThan(0);
+  });
+
   it("operations transform the inner group without changing mode", () => {
     const { container } = render(
       <SigilPreview
