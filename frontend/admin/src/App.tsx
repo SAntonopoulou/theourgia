@@ -85,6 +85,7 @@ import { MagicalCircleRoute } from "./routes/MagicalCircleRoute.js";
 import { MagicSquaresRoute } from "./routes/MagicSquaresRoute.js";
 import { AudioLibraryRoute } from "./routes/AudioLibraryRoute.js";
 import { CrossJournalSearchRoute } from "./routes/CrossJournalSearchRoute.js";
+import { StudiesIndexRoute } from "./routes/StudiesIndexRoute.js";
 import { ICalFeedRoute } from "./routes/ICalFeedRoute.js";
 import { MediaDetailRoute } from "./routes/MediaDetailRoute.js";
 import { MediaLibraryRoute } from "./routes/MediaLibraryRoute.js";
@@ -220,6 +221,7 @@ function ShellRoutes() {
           path="/gematria/search"
           element={<CrossJournalSearchRoute />}
         />
+        <Route path="/studies" element={<StudiesIndexRoute />} />
         <Route path="/voces-library" element={<VocesLibraryRoute />} />
         <Route path="/publications" element={<PublicationsRoute />} />
         <Route

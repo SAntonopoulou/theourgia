@@ -109,6 +109,7 @@ export * from "./Signing/index.js";
 export * from "./Skeleton/index.js";
 export * from "./Stat/index.js";
 export * from "./StatusDot/index.js";
+export * from "./StudiesIndex/index.js";
 export * from "./TalismanDesigner/index.js";
 export * from "./Switch/index.js";
 export * from "./Tarot/index.js";
