@@ -55,6 +55,7 @@ from theourgia.api.routers.v1 import gematria_search as v1_gematria_search
 from theourgia.api.routers.v1 import studies as v1_studies
 from theourgia.api.routers.v1 import transliteration as v1_transliteration
 from theourgia.api.routers.v1 import synchronicities as v1_synchronicities
+from theourgia.api.routers.v1 import analytics as v1_analytics
 
 __all__ = ["register_routers"]
 
@@ -121,4 +122,5 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(
         v1_synchronicities.router, tags=["synchronicities"],
     )
+    v1.include_router(v1_analytics.router, tags=["analytics"])
     app.include_router(v1)

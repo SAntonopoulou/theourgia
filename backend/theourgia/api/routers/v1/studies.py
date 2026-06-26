@@ -296,35 +296,36 @@ async def run_study(
         response = await search_gematria(payload, db, current_user)
         results = response.model_dump()
     elif row.kind == StudyKind.QUERY_BUILDER:
-        # B121 stub. The actual executor lands in B122 (see
-        # ``theourgia.core.analytics.executor``). For now we parse +
-        # validate the stored query and snapshot a placeholder
-        # result so the round-trip still works end-to-end.
+        # B122 wired: parse + execute against the caller's vault.
+        # The snapshot's results mirror the QueryExecutionResult
+        # shape — the same one the live /analytics/query endpoint
+        # returns.
+        from theourgia.core.analytics.executor import (
+            ExecutionError,
+            execute_query,
+        )
         from theourgia.core.analytics.query_dsl import (
             DSLValidationError,
             parse as parse_query,
-            validate as validate_query,
         )
 
         try:
             parsed = parse_query(dict(row.query or {}))
-            validate_query(parsed)
         except DSLValidationError as exc:
             raise HTTPException(
                 status.HTTP_400_BAD_REQUEST,
                 f"Stored query is invalid: {exc}",
             )
-        results = {
-            "subject": parsed.subject,
-            "executor_pending": True,
-            "note": (
-                "Query DSL parsed and validated. "
-                "The executor that runs the filters ships in B122."
-            ),
-            "rows": [],
-            "total_rows": 0,
-            "sealed_excluded_count": 0,
-        }
+        try:
+            exec_result = await execute_query(
+                db=db, owner_id=current_user.id, parsed=parsed,
+            )
+        except (DSLValidationError, ExecutionError) as exc:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                str(exc),
+            )
+        results = exec_result.model_dump()
     elif row.kind == StudyKind.GEMATRIA_CALCULATION:
         # Stored as { input: str, cipher_ids: [uuid, ...] }. We
         # execute against the per-vault ciphers and produce a
