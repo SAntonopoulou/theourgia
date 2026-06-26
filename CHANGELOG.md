@@ -7,6 +7,108 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-26 (Phase 10 Publishing & Monetization backend COMPLETE · B126 → B131)
+
+Phase 10 backend is fully shipped. Four new tables across Alembic
+0048 → 0051 (publication · publication_chapter · stripe_connect_account
+· purchase · subscription_tier · subscriber · newsletter_issue).
+2073 backend tests passing.
+
+Explicitly OUT of scope (Phase 12-15 or 14):
+- Network-level (hub) newsletters
+- Author-managed comments on publications (Phase 14 plugin)
+- ActivityPub bridging (Phase 13)
+- Stripe Tax automation
+- EPUB generation
+- Subdomain per-vault config (Phase 15)
+
+What landed across the six execution batches:
+
+- **B126 (publication lifecycle)** — Publication + PublicationChapter
+  models. 4-state lifecycle (DRAFT/SCHEDULED/LIVE/WITHDRAWN) with
+  explicit `/publish` `/schedule` `/withdraw` `/republish` endpoints.
+  Withdrawn rows STAY (audit). Slug auto-derivation kebab-cases the
+  title; collision-safe via numeric suffix. Sealed entries CANNOT
+  be embedded — `/publish` and `/republish` walk the Tiptap body
+  and reject 400. Generic PATCH refuses `state`/`kind`/`owner_id`/
+  `published_at` at the Pydantic layer. 9-license picker (CC family
+  + ARR + CC0 + PD). Chapters book-only with two-step reorder.
+
+- **B127 (Stripe Connect substrate)** — Protocol-isolated
+  StripeClient with NullStripeClient fallback (production misconfigured
+  raises clearly) + RealStripeClient (lazy `stripe` SDK import; CI
+  never requires it). **0% application fee invariant** — hard-coded
+  literal in `create_checkout_session`; source-level test enforces
+  drift catches before merge. Refunds via Stripe Customer Portal
+  HAND-OFF ONLY — `/refund-link` returns the portal URL; **no
+  `/refund` POST endpoint exists in any router** (CI walks every
+  route and asserts). Single-use download tokens (32-byte url-safe,
+  HMAC-SHA256 signed, constant-time compare, 30-day TTL, 5-download
+  limit). Idempotent webhook processor with 4 event types
+  (checkout.session.completed, charge.refunded, account.updated,
+  + the B128 additions invoice.payment_failed, customer.subscription.deleted).
+
+- **B128 (subscription tiers + subscribers)** — Tier amount IMMUTABLE
+  (TierUpdate schema omits `monthly_amount_cents` / `currency` /
+  `stripe_price_id`; Stripe prices don't change in place). Mandatory
+  double-opt-in — Subscriber.status defaults PENDING_CONFIRMATION;
+  route never auto-confirms. Acknowledgment copy verbatim: "Check
+  your email to confirm — you're not subscribed until you click
+  the link." FAILED_PAYMENT is its own enum state (H07 surface
+  renders `--warn`, never `--danger`). Sticky unsubscribe — re-
+  subscribing rotates BOTH tokens. Per-publisher email uniqueness
+  via composite unique constraint. 1/min resend rate limit.
+
+- **B129 (newsletter issues + delivery)** — 5-state lifecycle
+  (DRAFT/SCHEDULED/SENDING/SENT/CANCELLED). Once SENT is frozen
+  forever (PATCH + DELETE refuse non-DRAFT). NewsletterIssueUpdate
+  schema rejects status/sent_at/recipient_count/delivered_count/
+  bounced_count — server-only fields. **SendNowResult always
+  carries `confirmation_required: true`** — surface contract for
+  the `--warn-soft` confirm modal; source-level test asserts the
+  hard-coded `True`. Cancel only from SCHEDULED. Tiptap → HTML
+  + plaintext renderer with `html.escape` on text content
+  (XSS-safe). Per-recipient unsubscribe URL in EVERY render
+  (HTML footer + plaintext footer). Empty `targeted_tier_ids` =
+  ALL active subscribers.
+
+- **B130 (public reader + per-vault page + feeds)** — Public reader
+  endpoint with structural paywall (`paywall_kind: "none" |
+  "purchase" | "subscribe"`). ReaderResponse schema actively
+  REJECTS countdown-timer / "limited time" / view_count / trending
+  / recommended-products fields — a defensive CI test enumerates
+  banned field names. Sealed publications NEVER public (defence
+  in depth — read-time walker checks every entry_id ref against
+  the publisher's SEALED entries). Withdrawn 404s. Per-vault
+  public page payload doesn't carry view_count / trending /
+  subscriber_count (anti-gamification). Unversioned RSS 2.0 /
+  Atom 1.0 / JSON Feed 1.1 serializers at `/vaults/{id}/feed.{rss,atom,json}`
+  — feeds mounted at app level (NOT /api/v1) so subscribers'
+  URLs stay stable. Every feed item carries the per-publication
+  license slug AND the AGPLv3 site-wide credit. XSS-safe
+  escaping in all three formats.
+
+- **B131 (close-out)** — This commit. Docs + memory updates.
+
+Honesty rules added or strengthened (vs Phase 09):
+
+- 0% application fee invariant on every Stripe checkout session.
+- Refunds via Stripe portal hand-off only; no `/refund` POST
+  endpoint anywhere in any router.
+- Sealed publications never reach public surfaces — defence in
+  depth at publish-time AND checkout-time AND read-time.
+- Paywall is STRUCTURAL — closed-Literal kind + URLs only; no
+  promotional escape hatches.
+- Failed-payment subscribers are `--warn` (never `--danger`).
+- Once-sent newsletter immutability.
+- Per-recipient unsubscribe URL in every newsletter render.
+- Feeds carry AGPLv3 credit + per-publication license.
+- Anti-gamification: no view-count / trending / subscriber-count
+  / popularity-rank fields on public surfaces.
+
+Backend test count: 1899 → 2073 (+174 across B126-B130).
+Alembic chain: 0047 → 0051 (head).
+
 ### Added — 2026-06-26 (Phase 09 Synchronicity & Analytics backend [solo subset] COMPLETE · B120 → B125)
 
 Phase 09's solo-magician analytics path is fully shipped. Five new

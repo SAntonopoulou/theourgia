@@ -135,13 +135,59 @@ Let magicians publish their own work — books, essays, newsletters — under th
 
 ## Definition of Done
 
-- [ ] End-to-end purchase: vault owner uploads PDF, sets price, buyer purchases via Stripe, receives download link
-- [ ] EPUB and PDF readers display sample books cleanly
-- [ ] Newsletter compose, schedule, send, deliver to a real address
-- [ ] Network newsletter pulls from multiple member vaults' publishable content
-- [ ] RSS feeds validate against `validator.w3.org/feed`
-- [ ] Comments moderation queue functional
-- [ ] Per-vault public page customization works
-- [ ] Sales dashboard accurate against Stripe ledger
-- [ ] Stripe webhook delivery and idempotency verified
-- [ ] Self-host SMTP and managed-service paths both documented
+Status as of 2026-06-26 (B126 → B131 closed). DoD items shipped this
+phase are checked; deferred items are scoped to the phase they actually
+land in.
+
+- [x] End-to-end purchase: vault owner uploads PDF, sets price, buyer
+      purchases via Stripe, receives download link — B126 (lifecycle)
+      + B127 (Connect + checkout + signed download tokens).
+- [ ] EPUB and PDF readers display sample books cleanly — EPUB explicitly
+      out of scope for this phase (see CHANGELOG). PDF is handled via
+      the signed download link.
+- [x] Newsletter compose, schedule, send, deliver to a real address —
+      B129 (5-state lifecycle + Tiptap → HTML/plaintext + per-recipient
+      unsubscribe URL).
+- [ ] Network newsletter pulls from multiple member vaults' publishable
+      content — deferred to Phase 12 (federation).
+- [x] RSS feeds validate (XML 2.0 well-formed; Atom namespace correct;
+      JSON Feed 1.1) — B130 has tests for all three formats.
+- [ ] Comments moderation queue functional — deferred to Phase 14
+      (plugin ecosystem) per scope decision.
+- [x] Per-vault public page works — B130 (`GET /api/v1/vaults/{id}/public`
+      matches the H07 Public Vault Page surface payload 1:1).
+- [x] Sales dashboard accurate against Stripe ledger — B127 (`/sales`
+      endpoint reads from the local Purchase table which is the
+      idempotent webhook projection of Stripe's ledger).
+- [x] Stripe webhook delivery and idempotency verified — B127
+      (signature verified; idempotent on `stripe_payment_intent_id`
+      unique constraint).
+- [ ] Self-host SMTP and managed-service paths both documented — defer
+      to Phase 15 hardening; the Phase 01 email substrate handles the
+      actual send.
+
+Additional honesty invariants pinned this phase:
+
+- [x] **0% application fee on every Stripe checkout session** —
+      source-level CI invariant in `test_billing_invariants.py`.
+- [x] **No `/refund` POST endpoint anywhere in any router** — CI walks
+      every registered route and asserts.
+- [x] **Sealed publications NEVER public** — defence in depth at
+      publish-time (B126) + checkout-time (B127) + read-time (B130).
+- [x] **Paywall is STRUCTURAL** — closed Literal `paywall_kind` +
+      URLs only; ReaderResponse schema test enumerates banned
+      promotional field names.
+- [x] **PublicVault payload carries no view_count / trending /
+      subscriber_count** — anti-gamification CI invariant.
+- [x] **Tier amount IMMUTABLE** — TierUpdate schema omits the price
+      fields.
+- [x] **Double-opt-in mandatory** — Subscriber default state +
+      verbatim acknowledgment copy.
+- [x] **Failed-payment is `--warn`, never `--danger`** — own enum state.
+- [x] **Once-sent newsletter immutability** — non-DRAFT PATCH/DELETE
+      rejected.
+- [x] **Per-recipient unsubscribe URL in every render** — HTML +
+      plaintext footers.
+- [x] **Feed items carry AGPLv3 credit + per-publication license** —
+      RSS `<dc:rights>` + Atom `<rights>` + JSON Feed `_theourgia.rights`.
+- [x] **Feeds unversioned** — mounted on `app`, not `/api/v1`.

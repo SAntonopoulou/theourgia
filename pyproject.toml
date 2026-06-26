@@ -158,11 +158,12 @@ markers = [
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning:pytest_asyncio",
-    # Starlette TestClient warns when used with httpx 0.28+; the
-    # ``httpx2`` replacement it suggests doesn't exist yet. The class
-    # is starlette.exceptions.StarletteDeprecationWarning (not the
-    # builtin DeprecationWarning). Ignore until Starlette updates.
-    "ignore::starlette.exceptions.StarletteDeprecationWarning",
+    # Starlette 1.0 emits this via lazy module __getattr__, which
+    # pytest cannot resolve at config-parse time (the class is only
+    # bound after starlette.testclient is imported). Filter by message
+    # text against the Warning parent so resolution is lazy. The
+    # `httpx2` replacement Starlette suggests doesn't exist yet.
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
     # asyncio.to_thread leaves internal pipe FDs that pytest attributes
     # to whatever test is finishing nearby. Not actionable — the
     # offending resources are inside CPython's asyncio scaffolding,
