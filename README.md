@@ -153,6 +153,29 @@ to Phase 12+).
 2026-06-26-h08-federation-activitypub.md` · 767 lines · 21 surfaces
 across two clusters · 13 net-new honesty rules pinned).
 
+**Federation protocol spec v0.1 authored** (2026-06-26 ·
+autonomous follow-up). `docs/developer/federation-protocol.md`
+ships at 778 lines covering the Phase 12 native protocol end-to-
+end: DID format (`did:theourgia:{host}:{slug}`) · Ed25519 key pair
+model + identity-document discovery · transport (HTTPS + RFC 9421
+HTTP Signatures) · uniform envelope · all 10 message types (Push
+· Pull · Mirror · Invite · Accept · Revoke · RitualSchedule ·
+RitualUpdate · Comment · Heartbeat) · capability tokens (JWT-like
+with EdDSA, no wildcards, per-resource scope) · receiver
+requirements (idempotency, ±300s clock skew, body validation,
+rate limits) · 18 documented error codes with HTTP status and
+spec-section anchors · versioning policy with first-contact
+Heartbeat negotiation · trust/abuse handling (per-instance block
+· opt-in community blocklist · reports) · security threat model
+(replay, envelope swap, key compromise, sealed-content leakage,
+ritual-frozen state) · conformance checklist · test-vector
+location · TypedDict reference types · worked Push example.
+**Implementable by an alternative client without reading the
+reference code.** CC0 dedication on the spec itself; AGPLv3
+remains for the reference implementation. Closes plan/12 § 1
+"Federation protocol specification" ahead of the Phase 12
+backend execution.
+
 **Custom-square kamea sigil — B92 substrate extension** (2026-06-26
 · autonomous follow-up). `SigilPreview` now accepts a
 `customSquareCells?: readonly (readonly number[])[]` prop that
