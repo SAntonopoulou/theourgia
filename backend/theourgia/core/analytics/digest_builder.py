@@ -34,6 +34,7 @@ __all__ = [
     "MIN_SAMPLE_PER_TIER_3",
     "AnalyticsSnapshot",
     "TIER1_HEADLINE_TEMPLATE",
+    "TIER2_CATEGORY_TEMPLATE",
     "TIER2_SATURN_HOUR_TEMPLATE",
     "TIER3_CORRELATION_TEMPLATE",
     "assert_clean_headline",
@@ -95,6 +96,9 @@ TIER1_HEADLINE_TEMPLATE = (
 TIER2_SATURN_HOUR_TEMPLATE = (
     "Saturn-hour workings: mean outcome {mean:.1f} · n={n}"
 )
+TIER2_CATEGORY_TEMPLATE = (
+    "{category} synchronicities led the week · n={n}"
+)
 TIER3_CORRELATION_TEMPLATE = (
     "{axis_a} and {axis_b} correlate at {r:+.2f} · n={n}"
 )
@@ -106,6 +110,7 @@ def headline_templates() -> list[str]:
     return [
         TIER1_HEADLINE_TEMPLATE,
         TIER2_SATURN_HOUR_TEMPLATE,
+        TIER2_CATEGORY_TEMPLATE,
         TIER3_CORRELATION_TEMPLATE,
     ]
 
@@ -129,6 +134,10 @@ class AnalyticsSnapshot:
     # Tier-2 candidates the route already pre-computed. The builder
     # filters out anything below MIN_SAMPLE_PER_TIER_2.
     saturn_hour_workings: list[dict] = field(default_factory=list)
+    # Synchronicity-category frequency dicts shaped { category, n }.
+    # Surfaced as the TIER2_CATEGORY_TEMPLATE — top three above
+    # threshold are emitted per period.
+    category_frequencies: list[dict] = field(default_factory=list)
     # Tier-3 correlation pairs, each shaped:
     #   { "axis_a": "...", "axis_b": "...", "r": float, "n": int }
     correlations: list[dict] = field(default_factory=list)
@@ -222,6 +231,34 @@ def build_digest(
                 confidence=candidate.get("confidence"),
             )
         )
+
+    # Tier 2 (category frequency): top three categories that clear
+    # the threshold. Pre-computed sources rank by ``n`` already; we
+    # take the top three to avoid digest bloat.
+    surfaced_categories = 0
+    for cand in snapshot.category_frequencies:
+        if surfaced_categories >= 3:
+            break
+        n = int(cand.get("n", 0))
+        if n < MIN_SAMPLE_PER_TIER_2:
+            continue
+        category = str(cand.get("category", "uncategorised"))
+        headline = TIER2_CATEGORY_TEMPLATE.format(category=category, n=n)
+        assert_clean_headline(headline)
+        drafts.append(
+            DigestItemDraft(
+                kind="tier2-category-frequency",
+                headline=headline,
+                body=(
+                    "Frequency observation only. "
+                    "What stood out this week may not next week."
+                ),
+                structured=dict(cand),
+                sample_size=n,
+                confidence=cand.get("confidence"),
+            )
+        )
+        surfaced_categories += 1
 
     # Tier 3: gated by MIN_SAMPLE_PER_TIER_3.
     for corr in snapshot.correlations:

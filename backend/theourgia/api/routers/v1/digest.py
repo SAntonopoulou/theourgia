@@ -34,6 +34,10 @@ from theourgia.core.analytics.digest_builder import (
     AnalyticsSnapshot,
     build_digest,
 )
+from theourgia.core.analytics.digest_precompute import (
+    precompute_category_frequencies,
+    precompute_intensity_weekday_correlation,
+)
 from theourgia.models.digest import Digest, DigestItem
 
 __all__ = ["router"]
@@ -146,16 +150,33 @@ async def _build_and_persist_digest(
     so /rebuild is idempotent."""
     today = await compute_today(db=db, owner_id=owner_id)
 
+    # Tier-2 / tier-3 candidate pre-compute. Each helper returns an
+    # empty list when there's no data; the builder's threshold gate
+    # silently drops anything below the minimum sample size, so
+    # surfacing zero tier-2/3 candidates is the safe default.
+    category_frequencies = await precompute_category_frequencies(
+        db=db,
+        owner_id=owner_id,
+        period_start=period_start,
+        period_end=period_end,
+    )
+    intensity_correlation = await precompute_intensity_weekday_correlation(
+        db=db,
+        owner_id=owner_id,
+        period_start=period_start,
+        period_end=period_end,
+    )
+
     snapshot = AnalyticsSnapshot(
         entries_count=today.entries_today,
         workings_count=today.workings_today,
         syncs_count=today.syncs_today,
-        # Tier-2 / tier-3 candidate pre-compute is deferred to a
-        # follow-up that pulls from the executor's group-by path.
-        # For now the digest ships with tier-1 counts only — still
-        # honest, just less.
+        # saturn_hour_workings stays empty — that example needs an
+        # outcome field on the working entry which the schema does
+        # not carry today. The other candidate sources are wired.
         saturn_hour_workings=[],
-        correlations=[],
+        category_frequencies=category_frequencies,
+        correlations=intensity_correlation,
     )
     summary, drafts = build_digest(
         period_start=period_start,

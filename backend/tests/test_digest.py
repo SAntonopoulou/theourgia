@@ -104,9 +104,14 @@ def test_every_shipped_template_passes_the_banned_regex() -> None:
     """Run the banned-phrase check against every shipped template
     with realistic placeholders. CI catches a future template that
     accidentally adds modal language."""
+    from theourgia.core.analytics.digest_builder import (
+        TIER2_CATEGORY_TEMPLATE,
+    )
+
     samples = {
         TIER1_HEADLINE_TEMPLATE: {"entries": 12, "workings": 3, "syncs": 5},
         TIER2_SATURN_HOUR_TEMPLATE: {"mean": 7.4, "n": 14},
+        TIER2_CATEGORY_TEMPLATE: {"category": "weather", "n": 15},
         TIER3_CORRELATION_TEMPLATE: {
             "axis_a": "Saturn hour",
             "axis_b": "outcome",
