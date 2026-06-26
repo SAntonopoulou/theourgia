@@ -35,7 +35,12 @@ from theourgia.core.workshop.bundled_voces import (
 )
 from theourgia.models.audio import AudioAttachment
 from theourgia.models.entities import Entity
-from theourgia.models.voces import SourceScript, VoceMagicae, VoceRecording
+from theourgia.models.voces import (
+    SourceScript,
+    VoceMagicae,
+    VocePerVaultState,
+    VoceRecording,
+)
 
 __all__ = ["router"]
 
@@ -136,6 +141,27 @@ class VoceRecordingCreate(BaseModel):
     audio_attachment_id: UUID
     duration_seconds: int = Field(ge=0)
     notes: str | None = None
+
+
+class VocePerVaultRead(BaseModel):
+    """Per-(voce, owner) state. Returned by GET ``/per-vault``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    voce_id: str
+    owner_id: str
+    private_note: str | None
+    hidden: bool
+
+
+class VocePerVaultUpsert(BaseModel):
+    """Body for PUT ``/per-vault``. Either field is optional; absent
+    keys are NOT touched on an existing row."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    private_note: str | None = None
+    hidden: bool | None = None
 
 
 # ── Helpers ──────────────────────────────────────────────────────────
@@ -249,6 +275,7 @@ async def list_voces(
     current_user: OptionalCookieUser,
     source_script: SourceScript | None = None,
     limit: int = 100,
+    include_hidden: bool = False,
 ) -> list[VoceMagicaeRead]:
     stmt = select(VoceMagicae).where(VoceMagicae.deleted_at.is_(None))
     if current_user is not None:
@@ -258,7 +285,21 @@ async def list_voces(
     stmt = stmt.order_by(VoceMagicae.created_at.desc()).limit(
         min(limit, 500)
     )
-    rows = (await db.execute(stmt)).scalars().all()
+    rows = list((await db.execute(stmt)).scalars().all())
+
+    # B114: filter out voces the caller has marked hidden in their
+    # per-vault state, unless explicitly opted in via include_hidden.
+    if not include_hidden and current_user is not None and rows:
+        hidden_stmt = (
+            select(VocePerVaultState.voce_id)
+            .where(VocePerVaultState.owner_id == current_user.id)
+            .where(VocePerVaultState.hidden.is_(True))
+        )
+        hidden_ids = {
+            v for v in (await db.execute(hidden_stmt)).scalars().all()
+        }
+        rows = [r for r in rows if r.id not in hidden_ids]
+
     # List view omits recordings (use detail for those).
     return [_to_voce_read(row, []) for row in rows]
 
@@ -483,3 +524,106 @@ async def remove_voce_recording(
     rec.deleted_at = datetime.now(tz=rec.created_at.tzinfo)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ── Per-vault state (B114) ──────────────────────────────────────────
+
+
+@router.get(
+    "/voces/{voce_id}/per-vault",
+    response_model=VocePerVaultRead,
+    tags=["voces"],
+)
+async def get_voce_per_vault_state(
+    voce_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: OptionalCookieUser,
+) -> VocePerVaultRead:
+    """Return the calling owner's per-vault state for this voce.
+
+    If no row exists yet, the default ``{ private_note: null,
+    hidden: false }`` is returned. Unauthenticated callers get a
+    401.
+    """
+    if current_user is None:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, "Auth required.",
+        )
+    voce = await db.get(VoceMagicae, voce_id)
+    if voce is None or voce.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Voce not found.")
+    _owner_check(voce, current_user.id)
+
+    stmt = (
+        select(VocePerVaultState)
+        .where(VocePerVaultState.voce_id == voce_id)
+        .where(VocePerVaultState.owner_id == current_user.id)
+    )
+    row = (await db.execute(stmt)).scalars().first()
+    if row is None:
+        return VocePerVaultRead(
+            voce_id=str(voce_id),
+            owner_id=str(current_user.id),
+            private_note=None,
+            hidden=False,
+        )
+    return VocePerVaultRead(
+        voce_id=str(row.voce_id),
+        owner_id=str(row.owner_id),
+        private_note=row.private_note,
+        hidden=row.hidden,
+    )
+
+
+@router.put(
+    "/voces/{voce_id}/per-vault",
+    response_model=VocePerVaultRead,
+    tags=["voces"],
+)
+async def upsert_voce_per_vault_state(
+    voce_id: UUID,
+    payload: VocePerVaultUpsert,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: OptionalCookieUser,
+) -> VocePerVaultRead:
+    """Upsert the calling owner's per-vault state.
+
+    Idempotent: PUT twice → one row, not two (uniqueness enforced
+    by ``uq_voce_per_vault``). Absent fields in the payload do NOT
+    overwrite existing values."""
+    if current_user is None:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, "Auth required.",
+        )
+    voce = await db.get(VoceMagicae, voce_id)
+    if voce is None or voce.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Voce not found.")
+    _owner_check(voce, current_user.id)
+
+    stmt = (
+        select(VocePerVaultState)
+        .where(VocePerVaultState.voce_id == voce_id)
+        .where(VocePerVaultState.owner_id == current_user.id)
+    )
+    row = (await db.execute(stmt)).scalars().first()
+    if row is None:
+        row = VocePerVaultState(
+            voce_id=voce_id,
+            owner_id=current_user.id,
+            private_note=payload.private_note,
+            hidden=payload.hidden if payload.hidden is not None else False,
+        )
+        db.add(row)
+    else:
+        if payload.private_note is not None:
+            row.private_note = payload.private_note
+        if payload.hidden is not None:
+            row.hidden = payload.hidden
+    await db.commit()
+    await db.refresh(row)
+    return VocePerVaultRead(
+        voce_id=str(row.voce_id),
+        owner_id=str(row.owner_id),
+        private_note=row.private_note,
+        hidden=row.hidden,
+    )

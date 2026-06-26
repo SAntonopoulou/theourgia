@@ -25,14 +25,19 @@ import enum
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import Column, ForeignKey, Index, Text
+from sqlalchemy import Column, ForeignKey, Index, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Enum as SQLEnum
 from sqlmodel import Field
 
 from theourgia.models.base import IDMixin, SoftDeleteMixin, TimestampMixin
 
-__all__ = ["VoceMagicae", "VoceRecording", "SourceScript"]
+__all__ = [
+    "VoceMagicae",
+    "VocePerVaultState",
+    "VoceRecording",
+    "SourceScript",
+]
 
 
 class SourceScript(str, enum.Enum):
@@ -99,6 +104,42 @@ class VoceMagicae(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     forked_from_bundled_id: Optional[str] = Field(
         default=None, max_length=120,
     )
+
+
+class VocePerVaultState(IDMixin, TimestampMixin, table=True):
+    """Per-(voce, owner) state — private notes + per-vault hide.
+
+    Added in B114 per ``plan/08-batches-backend.md`` § B114.
+
+    The bundled voce row stays canonical; this table lets a single
+    practitioner attach a private note ("Why I learned this voce")
+    AND hide individual entries from their own library without
+    affecting the canonical row or any other practitioner.
+    """
+
+    __tablename__ = "voce_per_vault_state"
+    __table_args__ = (
+        Index("ix_voce_pvs_owner", "owner_id"),
+        Index("ix_voce_pvs_voce", "voce_id"),
+        UniqueConstraint(
+            "voce_id", "owner_id", name="uq_voce_per_vault",
+        ),
+    )
+
+    voce_id: UUID = Field(
+        sa_column=Column(
+            ForeignKey("voce_magicae.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+    )
+    owner_id: UUID = Field(
+        sa_column=Column(
+            ForeignKey("user.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+    )
+    private_note: Optional[str] = Field(default=None, sa_column=Column(Text))
+    hidden: bool = Field(default=False, nullable=False)
 
 
 class VoceRecording(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):

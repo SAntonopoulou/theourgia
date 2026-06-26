@@ -300,9 +300,12 @@ def test_to_recording_read_round_trips() -> None:
 # ── Router registration smoke ────────────────────────────────────────
 
 
-def test_voces_router_registers_nine_routes() -> None:
+def test_voces_router_registers_eleven_routes() -> None:
     """bundled + list + create + get + patch + delete + fork + add-rec
-    + del-rec = 9 routes."""
+    + del-rec + per-vault-get + per-vault-put = 11 routes.
+
+    Originally 9 (B107); B114 added the 2 per-vault routes.
+    """
     methods_and_paths = sorted(
         (frozenset(r.methods), r.path)
         for r in voces_module.router.routes
@@ -318,7 +321,12 @@ def test_voces_router_registers_nine_routes() -> None:
             (frozenset({"DELETE"}), "/voces/{voce_id}"),
             (frozenset({"POST"}), "/voces/fork-bundled"),
             (frozenset({"POST"}), "/voces/{voce_id}/recordings"),
-            (frozenset({"DELETE"}), "/voces/{voce_id}/recordings/{recording_id}"),
+            (
+                frozenset({"DELETE"}),
+                "/voces/{voce_id}/recordings/{recording_id}",
+            ),
+            (frozenset({"GET"}), "/voces/{voce_id}/per-vault"),
+            (frozenset({"PUT"}), "/voces/{voce_id}/per-vault"),
         ]
     )
     assert methods_and_paths == expected
@@ -356,3 +364,121 @@ def test_every_bundled_voce_forks_through_the_schema() -> None:
             planetary_associations=list(v.planetary_associations),
             elemental_associations=list(v.elemental_associations),
         )
+
+
+# ── B114 — Per-vault state ──────────────────────────────────────
+
+
+def test_per_vault_read_schema_default_shape() -> None:
+    """The default per-vault state for an un-touched voce is
+    { private_note: null, hidden: false }."""
+    from theourgia.api.routers.v1.voces import VocePerVaultRead
+
+    p = VocePerVaultRead(
+        voce_id=str(uuid4()),
+        owner_id=str(uuid4()),
+        private_note=None,
+        hidden=False,
+    )
+    assert p.private_note is None
+    assert p.hidden is False
+
+
+def test_per_vault_upsert_schema_minimal() -> None:
+    from theourgia.api.routers.v1.voces import VocePerVaultUpsert
+
+    p = VocePerVaultUpsert()
+    assert p.private_note is None
+    assert p.hidden is None
+    assert p.model_dump(exclude_unset=True) == {}
+
+
+def test_per_vault_upsert_schema_full() -> None:
+    from theourgia.api.routers.v1.voces import VocePerVaultUpsert
+
+    p = VocePerVaultUpsert(
+        private_note="Learned at the dark moon",
+        hidden=True,
+    )
+    assert p.private_note == "Learned at the dark moon"
+    assert p.hidden is True
+
+
+def test_per_vault_upsert_rejects_extra_fields() -> None:
+    from theourgia.api.routers.v1.voces import VocePerVaultUpsert
+
+    with pytest.raises(ValidationError):
+        VocePerVaultUpsert(voce_id=uuid4())  # type: ignore[call-arg]
+
+
+def test_per_vault_read_rejects_extra_fields() -> None:
+    from theourgia.api.routers.v1.voces import VocePerVaultRead
+
+    with pytest.raises(ValidationError):
+        VocePerVaultRead(
+            voce_id=str(uuid4()),
+            owner_id=str(uuid4()),
+            private_note=None,
+            hidden=False,
+            extra=True,  # type: ignore[call-arg]
+        )
+
+
+def test_per_vault_upsert_allows_only_private_note() -> None:
+    """Partial updates: passing only private_note should not touch
+    hidden. The router applies this rule by checking `is not None`."""
+    from theourgia.api.routers.v1.voces import VocePerVaultUpsert
+
+    p = VocePerVaultUpsert(private_note="just notes")
+    data = p.model_dump(exclude_unset=True)
+    assert data == {"private_note": "just notes"}
+
+
+def test_per_vault_upsert_allows_only_hidden() -> None:
+    from theourgia.api.routers.v1.voces import VocePerVaultUpsert
+
+    p = VocePerVaultUpsert(hidden=True)
+    data = p.model_dump(exclude_unset=True)
+    assert data == {"hidden": True}
+
+
+def test_per_vault_model_has_unique_constraint() -> None:
+    """The (voce_id, owner_id) uniqueness ensures PUT twice → one
+    row, not two."""
+    from theourgia.models.voces import VocePerVaultState
+
+    constraints = {
+        c.name for c in VocePerVaultState.__table_args__
+        if hasattr(c, "name")
+    }
+    assert "uq_voce_per_vault" in constraints
+
+
+def test_per_vault_model_defaults_hidden_to_false() -> None:
+    """Critical invariant: hidden defaults to False (a brand-new
+    voce should not be hidden from its owner)."""
+    from theourgia.models.voces import VocePerVaultState
+
+    field = VocePerVaultState.model_fields["hidden"]
+    assert field.default is False
+
+
+def test_voces_router_now_registers_eleven_routes() -> None:
+    """B114 adds 2 routes: GET + PUT /per-vault. Total = 11."""
+    paths_methods = {
+        (r.path, m)
+        for r in voces_module.router.routes
+        for m in getattr(r, "methods", set()) - {"HEAD", "OPTIONS"}
+    }
+    assert ("/voces/{voce_id}/per-vault", "GET") in paths_methods
+    assert ("/voces/{voce_id}/per-vault", "PUT") in paths_methods
+
+
+def test_list_voces_signature_accepts_include_hidden() -> None:
+    """The list endpoint accepts ?include_hidden=true to opt out of
+    the hidden filter."""
+    import inspect
+
+    sig = inspect.signature(voces_module.list_voces)
+    assert "include_hidden" in sig.parameters
+    assert sig.parameters["include_hidden"].default is False
