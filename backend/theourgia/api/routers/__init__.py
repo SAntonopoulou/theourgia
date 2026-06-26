@@ -68,6 +68,11 @@ from theourgia.api.routers.v1 import (
 from theourgia.api.routers.v1 import (
     newsletter_issues as v1_newsletter_issues,
 )
+from theourgia.api.routers.v1 import (
+    public_reader as v1_public_reader,
+    public_vault as v1_public_vault,
+)
+from theourgia.api.routers import feeds as app_feeds
 
 __all__ = ["register_routers"]
 
@@ -80,6 +85,10 @@ def register_routers(app: FastAPI) -> None:
 
     # .well-known endpoints (federation discovery, etc.)
     app.include_router(well_known.router, tags=["federation"])
+
+    # Unversioned vault feed endpoints (RSS / Atom / JSON Feed).
+    # Feed readers subscribe to stable URLs; we don't version them.
+    app.include_router(app_feeds.router, tags=["feeds"])
 
     # Versioned API surface (v1)
     v1 = APIRouter(prefix="/api/v1")
@@ -148,4 +157,6 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(
         v1_newsletter_issues.router, tags=["newsletter-issues"],
     )
+    v1.include_router(v1_public_reader.router, tags=["public-reader"])
+    v1.include_router(v1_public_vault.router, tags=["public-vault"])
     app.include_router(v1)
