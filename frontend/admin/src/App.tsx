@@ -83,6 +83,7 @@ import { Journal } from "./routes/Journal.js";
 import { Library } from "./routes/Library.js";
 import { MagicalCircleRoute } from "./routes/MagicalCircleRoute.js";
 import { MagicSquaresRoute } from "./routes/MagicSquaresRoute.js";
+import { AnalyticsDashboardRoute } from "./routes/AnalyticsDashboardRoute.js";
 import { AudioLibraryRoute } from "./routes/AudioLibraryRoute.js";
 import { CrossJournalSearchRoute } from "./routes/CrossJournalSearchRoute.js";
 import { PerStudyPageRoute } from "./routes/PerStudyPageRoute.js";
@@ -270,7 +271,8 @@ function ShellRoutes() {
         <Route path="/pilgrimage" element={<PilgrimageMapRoute />} />
         <Route path="/media" element={<MediaLibraryRoute />} />
         <Route path="/media/:id" element={<MediaDetailRoute />} />
-        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/analytics" element={<AnalyticsDashboardRoute />} />
+        <Route path="/analytics/legacy" element={<Analytics />} />
         <Route path="/feed" element={<RitualFeed />} />
         <Route path="/hubs" element={<Hubs />} />
         <Route path="/identities" element={<Identities />} />

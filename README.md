@@ -19,17 +19,20 @@ Open source, self-hostable, federated. For working magicians.
 
 ## Status
 
-**Pre-alpha — Phases 00-07 end-to-end.** Backend and frontend ship together through Phase 07. Sprint trajectory:
+**Pre-alpha — Phases 00-11 end-to-end on the frontend; backend through Phase 08 + Phase 09 solo subset.** Sprint trajectory:
 
 - **H01-H03 sprint** (B50-B75) — Phases 03 · 04 · 05 frontend coverage end-to-end against existing backend.
 - **H04 sprint** (B76-B86) — Daily Practice Tracker (Tier 1) + Phase 06 Divination & Practice cluster (Tier 2): Tarot · I Ching · Geomancy · Runes · Pendulum/Bibliomancy/Horary/Scrying · Practice Logs.
 - **H05 sprint** (B89-B96) — Phase 07 Workshop frontend (Tier 3): Sigil Generator · Magic Squares · Talisman Designer · Magical Circle · Tool Registry · Voces Magicae.
-- **Phase 07 backend** (B103-B107, 2026-06-25) — Five domain models · alembic 0033→0037 · seven routers · 152 new tests · 7 Agrippa planetary squares · 5 PD circle presets · 32 PD voces (PGM + Sefer Yetzirah + Lemegeton + Heptameron + Sanskrit). Honesty rules enforced server-side (consecrated talismans require fork to edit, voces require non-empty `source_citation`, planetary squares are immutable fixtures).
-- **B108 — Phase 07 frontend wiring** (in progress) — Workshop surfaces persist live via shared API client. Sealed talismans round-trip through PBKDF2 + AES-GCM client-side encryption (the practitioner's passphrase never reaches the server). Tool Registry create form is the remaining design gap.
+- **Phase 07 backend** (B103-B107, 2026-06-25) — Five domain models · alembic 0033→0037 · seven routers · 152 new tests · 7 Agrippa planetary squares · 5 PD circle presets · 32 PD voces (PGM + Sefer Yetzirah + Lemegeton + Heptameron + Sanskrit).
+- **B108 wiring + H07 sprint** (2026-06-26) — Workshop surfaces persist live · Mode B vault crypto end-to-end · H07 Foundation + Cluster A (3 Workshop modals · closes B108-2e) + Cluster B (10 Publishing surfaces) + Cluster C (8 Media + Pilgrimage surfaces). Phases 10 + 11 frontend ✅ end-to-end.
+- **Phase 08 backend** (B110-B115, 2026-06-26) — Cipher catalog (13 PD bundled, byte-for-byte parity with H06-1 client) · gematria_index + cross-journal search (3 match modes · sealed entries never indexed) · studies + frozen snapshots · 8 PD transliteration schemes · voce per-vault state. Alembic 0038→0042; +128 backend tests.
+- **H06 ports 2/3/5/6/8/9/10** (2026-06-26) — Cross-Journal Search · Per-Study Page · Studies Index · Transliteration Utility · Query Builder · Synchronicity Log · Synchronicity Quick-Capture.
+- **Phase 09 backend** (B120-B123, 2026-06-26) — Synchronicity table + auto-tag (location-precision floor enforced server-side) · QUERY_BUILDER study kind + saved-query DSL · executor (sealed exclusion via JOIN-layer guard + sealed_excluded_count indicator) · `/analytics/query` · timeseries / heatmap / correlation / today aggregates (every response carries sample_size + small_sample flag). Alembic 0043→0044; +120 backend tests.
 
-As of latest commit: **1735 vitest tests · 557/557 visual · 543/557 a11y (97.5%) · 1625 backend tests** (a11y gate restored 2026-06-23 in B101; B102 lineage closed 95% of the 286 failures the restored gate revealed; remaining 14 are intentional design tradeoffs).
+As of latest commit: **2194 vitest tests · 1873 backend tests · alembic head 0044 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
 
-**H06 designer bundle received 2026-06-25** — 10 surfaces for Phases 08 (Linguistic Tools: Gematria · Cross-Journal Search · Transliteration · Voces Library) and 09 (Synchronicity & Analytics: Quick-Capture modal · Log · Dashboard · Query Builder · Studies Index · Per-Study Page). Bundle at `/home/sophia/design-handoffs/theourgia/2026-06-25-H06/`. The defining rule: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts. Build order locked in the H06 onboarding doc; sprint blocked on B108-2e (Tool Registry form) completion.
+**H06 progress: 9/10 surfaces shipped.** Only the Analytics Dashboard (7/10) remains — wires the just-shipped B123 aggregates and is queued for the next batch. **Phase 09 backend solo subset:** B120-B123 in; B124 (weekly digest) + B125 (close-out) queued. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
 For the canonical feature catalog, see **[FEATURES.md](FEATURES.md)** — the "Phase Status Snapshot" table at the top tracks sprint progress per-batch. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
@@ -207,7 +210,7 @@ theourgia/
 ├── LICENSE                ← AGPL-3.0
 ├── plan/                  ← per-phase implementation plans (00–16)
 ├── docs/                  ← will hold user/admin/developer documentation
-├── backend/               ← Python 3.12 + FastAPI + SQLModel + Alembic + Celery (1439 tests)
+├── backend/               ← Python 3.12 + FastAPI + SQLModel + Alembic + Celery (1873 tests)
 ├── frontend/              ← React 19 admin SPA · Astro 6 public site · shared design system
 ├── docs/                  ← Starlight docs site (theourgia tokens bridged onto Starlight)
 └── plugins/               ← will hold reference plugins (Phase 14+)
