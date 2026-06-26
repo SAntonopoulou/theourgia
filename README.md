@@ -30,7 +30,7 @@ Open source, self-hostable, federated. For working magicians.
 - **H06 ports 2/3/5/6/7/8/9/10** (2026-06-26) — Cross-Journal Search · Per-Study Page · Studies Index · Transliteration Utility · Analytics Dashboard · Query Builder · Synchronicity Log · Synchronicity Quick-Capture.
 - **Phase 09 backend** (B120-B124, 2026-06-26) — Synchronicity table + auto-tag (location-precision floor enforced server-side) · QUERY_BUILDER study kind + saved-query DSL · executor (sealed exclusion via JOIN-layer guard + sealed_excluded_count indicator) · `/analytics/query` · timeseries / heatmap / correlation / today aggregates · weekly digest builder (banned-phrase regex blocks modal/oracular headlines; tier-2/3 gated by sample size). Alembic 0043→0047; +146 backend tests.
 
-As of latest commit: **2194 vitest tests · 2181 backend tests · alembic head 0053 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
+As of latest commit: **2194 vitest tests · 2228 backend tests · alembic head 0054 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
 
 **H06 sprint COMPLETE: 10/10 surfaces shipped + Phase 09 backend solo subset closed.** B120-B125 in. Network-aggregate / differential-privacy / cross-vault federation explicitly deferred to Phase 12+. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
@@ -72,7 +72,7 @@ collapses sealed entries into "N sealed entries today" markers).
 174 new tests across the close-out window; backend total 1899 → **2073**.
 Alembic head **0051**.
 
-**B132 + B133 SHIPPED** (Phase 11 backend kickoff · 2026-06-26).
+**B132 + B133 + B134 SHIPPED** (Phase 11 backend in flight · 2026-06-26).
 
 - **B132** — Media asset table + sealed substrate + link-count cache.
   Alembic 0051 → 0052: `media_asset` (4-kind enum) + `media_link`
@@ -99,10 +99,33 @@ Alembic head **0051**.
   `/skip-strip` endpoints; sealed-strip rejection AND the quota
   check both live inside `begin_upload`'s source.
 
-108 new tests across the two batches; backend total 2073 → **2181**.
-Alembic head **0053**.
+- **B134** — Pilgrimage sites + precision floor + re-quantize.
+  Alembic 0053 → 0054: `pilgrimage_site` (5-kind enum SACRED /
+  ANCESTRAL / WORKING / PILGRIMAGE / OTHER · lat-lng paired
+  CheckConstraint · stored_precision restricted to the 5 allowed
+  values). Eight endpoints: list (sealed STRIPPED · sealed_count
+  surfaced separately), POST sealed-cluster (count-only · no
+  ids, no coords · the H07 map-badge data source), CRUD, /seal
+  (one-way · unseal is client-side via Mode B), /requantize
+  (one-way LOWER ONLY · attempting to raise precision → 400).
+  Precision floor applied via the SHARED `apply_precision_floor`
+  helper from B120 autotag (same string set: `exact / 1km / 10km
+  / country / hidden`). The H07 `‡ Geocoding by Nominatim / ©
+  OpenStreetMap contributors.` line is embedded as a default
+  string on `PilgrimageSiteRead` and `ListResponse` so the
+  surface renders it verbatim without owning the copy. Source-
+  level CI invariants: `apply_precision_floor` MUST be called in
+  both create + requantize sources; `is_lower_or_equal_precision`
+  MUST be referenced in requantize source; no /unseal · /promote
+  · /sharpen · /refine · /raise-precision · /within-radius ·
+  /nearest endpoints exist.
 
-**Next:** B134 — Pilgrimage sites + precision floor + re-quantize.
+155 new tests across the three batches; backend total 2073 → **2228**.
+Alembic head **0054**.
+
+**Next:** B135 — iCal feed serializer (collapses sealed days into
+"N sealed entries today" markers; no plaintext for sealed practice
+or pilgrimage events).
 
 For the canonical feature catalog, see **[FEATURES.md](FEATURES.md)** — the "Phase Status Snapshot" table at the top tracks sprint progress per-batch. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
@@ -151,7 +174,7 @@ Theourgia is built in 17 phases. Each phase is architecturally dependent on prio
 | 08 | Linguistic Tools (gematria, transliteration, voces magicae) | `[x]` ✅ backend B110-B115 + H06 surfaces 1/4/6 frontend (cipher catalog · gematria index + search · studies · 8 transliteration schemes · voce per-vault state) | [plan/08-linguistic-tools.md](plan/08-linguistic-tools.md) · [plan/08-batches-backend.md](plan/08-batches-backend.md) |
 | 09 | Synchronicity & Analytics (scientific illuminism dashboards) | `[x]` ✅ backend solo subset B120-B125 + all 10 H06 surfaces frontend (synchronicity + autotag · QUERY_BUILDER DSL + executor · timeseries/heatmap/correlation/today · weekly digest with banned-phrase regex). Network-aggregate / DP / cross-vault federation deferred to Phase 12+. | [plan/09-synchronicity-and-analytics.md](plan/09-synchronicity-and-analytics.md) · [plan/09-batches-backend.md](plan/09-batches-backend.md) |
 | 10 | Publishing & Monetization (books, Stripe, newsletters, blog) | `[x]` ✅ backend B126-B131 + H07 Cluster B frontend (10 surfaces) — publication lifecycle · Stripe Connect 0% fee + portal-only refund (no `/refund` POST anywhere) · subscription tiers (amount IMMUTABLE) · double-opt-in subscribers · newsletter delivery (once-sent immutability · per-recipient unsubscribe URL) · public reader with structural paywall + unversioned RSS/Atom/JSON feeds carrying AGPLv3 credit + per-pub license | [plan/10-publishing-and-monetization.md](plan/10-publishing-and-monetization.md) · [plan/10-batches-backend.md](plan/10-batches-backend.md) |
-| 11 | Media Library (images, audio, video, iCal feeds, pilgrimage map) | `[~]` 🔨 backend plan B132-B136 LOCKED · **B132 + B133 SHIPPED** (media_asset + media_link · sealed = count-only · R2 upload pipeline with Protocol-isolated EXIF strip · 24h session TTL · 5 GB quota · sealed-strip rejection) · H07 Cluster C frontend (8 surfaces) already in | [plan/11-media-library.md](plan/11-media-library.md) · [plan/11-batches-backend.md](plan/11-batches-backend.md) |
+| 11 | Media Library (images, audio, video, iCal feeds, pilgrimage map) | `[~]` 🔨 backend plan B132-B136 LOCKED · **B132 + B133 + B134 SHIPPED** (media_asset + media_link · R2 upload pipeline with EXIF strip · pilgrimage_site with precision FLOOR + lower-only re-quantize) · H07 Cluster C frontend (8 surfaces) already in | [plan/11-media-library.md](plan/11-media-library.md) · [plan/11-batches-backend.md](plan/11-batches-backend.md) |
 | 12 | Federation (native protocol, network hubs, group ritual, SSO) | `[ ]` | [plan/12-federation.md](plan/12-federation.md) |
 | 13 | ActivityPub (Fediverse interop) | `[ ]` | [plan/13-activitypub.md](plan/13-activitypub.md) |
 | 14 | Plugin Ecosystem (SDK, official registry, sandbox-before-commit) | `[ ]` | [plan/14-plugin-ecosystem.md](plan/14-plugin-ecosystem.md) |
