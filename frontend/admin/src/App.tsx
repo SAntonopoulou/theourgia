@@ -87,6 +87,7 @@ import { AudioLibraryRoute } from "./routes/AudioLibraryRoute.js";
 import { CrossJournalSearchRoute } from "./routes/CrossJournalSearchRoute.js";
 import { PerStudyPageRoute } from "./routes/PerStudyPageRoute.js";
 import { StudiesIndexRoute } from "./routes/StudiesIndexRoute.js";
+import { SynchronicityLogRoute } from "./routes/SynchronicityLogRoute.js";
 import { TransliterationUtilityRoute } from "./routes/TransliterationUtilityRoute.js";
 import { ICalFeedRoute } from "./routes/ICalFeedRoute.js";
 import { MediaDetailRoute } from "./routes/MediaDetailRoute.js";
@@ -189,7 +190,8 @@ function ShellRoutes() {
         <Route path="/connection" element={<Connection />} />
         <Route path="/journal" element={<Journal />} />
         <Route path="/library" element={<Library />} />
-        <Route path="/synchronicities" element={<Synchronicities />} />
+        <Route path="/synchronicities" element={<SynchronicityLogRoute />} />
+        <Route path="/synchronicities/legacy" element={<Synchronicities />} />
         <Route path="/daily-practice" element={<DailyPracticeRoute />} />
         <Route path="/practice-logs" element={<PracticeLogsRoute />} />
         <Route path="/entities" element={<Entities />} />

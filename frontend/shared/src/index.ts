@@ -113,6 +113,8 @@ export * from "./StatusDot/index.js";
 export * from "./StudiesIndex/index.js";
 export * from "./TalismanDesigner/index.js";
 export * from "./Switch/index.js";
+export * from "./SynchronicityLog/index.js";
+export * from "./SynchronicityQuickCapture/index.js";
 export * from "./Tarot/index.js";
 export * from "./TemplateDesigner/index.js";
 export * from "./Editor/index.js";
