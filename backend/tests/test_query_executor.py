@@ -97,12 +97,54 @@ def test_column_for_axis_synchronicity_axes_resolve() -> None:
     assert col is not None
 
 
-def test_column_for_axis_astro_axes_raise_until_materialised() -> None:
-    """astro.* axes are declared in the DSL but the entry's
-    astro_snapshot column is still Text-encoded JSON. The executor
-    should fail loudly until those columns get the JSONB treatment."""
+def test_column_for_axis_astro_axes_raise_without_subject() -> None:
+    """astro.* axes are cross-cutting. Without a subject context,
+    the resolver can't route them to a column — it raises loudly
+    so legacy callers don't accidentally produce empty queries."""
     with pytest.raises(ExecutionError):
         _column_for_axis("astro.moon_phase")
+
+
+def test_column_for_axis_astro_resolves_for_synchronicity_subject() -> None:
+    """On the synchronicity subject, astro.* axes resolve to the
+    JSONB ->> indexing expression on astro_snapshot."""
+    col = _column_for_axis("astro.moon_phase", subject="synchronicity")
+    assert col is not None
+    sql = str(col.compile(compile_kwargs={"literal_binds": True}))
+    # The PG operator ->> renders as the textual JSONB key access.
+    assert "astro_snapshot" in sql
+    assert "moon_phase" in sql
+
+
+def test_column_for_axis_calendar_resolves_for_synchronicity_subject() -> None:
+    col = _column_for_axis("calendar.weekday", subject="synchronicity")
+    assert col is not None
+    sql = str(col.compile(compile_kwargs={"literal_binds": True}))
+    assert "calendar_stamp" in sql
+    assert "weekday" in sql
+
+
+def test_column_for_axis_astro_bool_axis_casts_to_boolean() -> None:
+    """astro.has_aspect_to_natal is bool-typed in the DSL; the
+    executor casts the JSONB text to Boolean so comparisons line up."""
+    col = _column_for_axis(
+        "astro.has_aspect_to_natal", subject="synchronicity",
+    )
+    sql = str(col.compile(compile_kwargs={"literal_binds": True}))
+    assert "BOOLEAN" in sql.upper() or "boolean" in sql.lower()
+
+
+def test_column_for_axis_astro_rejected_for_entry_subject() -> None:
+    """The Entry table's astro_snapshot is Text, not JSONB. The
+    executor refuses entry-subject astro queries until that column
+    gets the JSONB treatment."""
+    with pytest.raises(ExecutionError):
+        _column_for_axis("astro.moon_phase", subject="entry")
+
+
+def test_column_for_axis_calendar_rejected_for_working_subject() -> None:
+    with pytest.raises(ExecutionError):
+        _column_for_axis("calendar.weekday", subject="working")
 
 
 def test_column_for_axis_unknown_raises_execution_error() -> None:
@@ -307,13 +349,13 @@ def test_sealed_touches_body_text_unwraps_not_nodes() -> None:
     assert _filter_touches_body_text(node) is True
 
 
-# ── Astro axis raises until materialised ─────────────────────────
+# ── Astro / calendar JSONB axes ──────────────────────────────────
 
 
-def test_executor_rejects_astro_axis_for_now() -> None:
-    """The DSL accepts astro.moon_phase syntactically, but the
-    executor refuses to run it until the JSONB column treatment
-    lands. Loud failure > silent zero rows."""
+def test_executor_resolves_astro_filter_on_synchronicity_subject() -> None:
+    """The synchronicity subject now supports astro.* filters via
+    JSONB indexing on astro_snapshot. The DSL parses, the executor
+    compiles a clean PG expression."""
     parsed = parse(
         {
             "version": 1,
@@ -327,11 +369,72 @@ def test_executor_rejects_astro_axis_for_now() -> None:
             ],
         }
     )
-    # Calling _node_to_sql on a filter that references an axis
-    # without a materialised column raises ExecutionError —
-    # validated even before we touch the DB.
+    expr = _node_to_sql(parsed.filters[0], subject="synchronicity")
+    sql = str(expr.compile(compile_kwargs={"literal_binds": True}))
+    assert "astro_snapshot" in sql
+    assert "moon_phase" in sql
+    assert "waning" in sql
+
+
+def test_executor_resolves_calendar_filter_on_synchronicity_subject() -> None:
+    parsed = parse(
+        {
+            "version": 1,
+            "subject": "synchronicity",
+            "filters": [
+                {
+                    "field": "calendar.weekday",
+                    "cmp": "eq",
+                    "value": "wednesday",
+                }
+            ],
+        }
+    )
+    expr = _node_to_sql(parsed.filters[0], subject="synchronicity")
+    sql = str(expr.compile(compile_kwargs={"literal_binds": True}))
+    assert "calendar_stamp" in sql
+    assert "wednesday" in sql
+
+
+def test_executor_rejects_astro_filter_on_entry_subject() -> None:
+    """Cross-cutting astro.* axes don't yet route to the Entry
+    table — its astro_snapshot column is Text-encoded at B121,
+    not JSONB. The executor raises so the route surfaces 400."""
+    parsed = parse(
+        {
+            "version": 1,
+            "subject": "entry",
+            "filters": [
+                {
+                    "field": "astro.moon_phase",
+                    "cmp": "eq",
+                    "value": "waning",
+                }
+            ],
+        }
+    )
     with pytest.raises(ExecutionError):
-        _node_to_sql(parsed.filters[0])
+        _node_to_sql(parsed.filters[0], subject="entry")
+
+
+def test_executor_legacy_no_subject_call_still_raises_for_astro() -> None:
+    """Backwards-compat: a caller that doesn't yet thread subject
+    through gets the old loud failure. No silent zero rows."""
+    parsed = parse(
+        {
+            "version": 1,
+            "subject": "synchronicity",
+            "filters": [
+                {
+                    "field": "astro.moon_phase",
+                    "cmp": "eq",
+                    "value": "waning",
+                }
+            ],
+        }
+    )
+    with pytest.raises(ExecutionError):
+        _node_to_sql(parsed.filters[0])  # no subject kwarg
 
 
 # ── Result schema ────────────────────────────────────────────────

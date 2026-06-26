@@ -41,9 +41,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import (
+    Boolean,
     Column,
+    Integer,
     String,
     and_,
+    cast,
     func,
     not_,
     or_,
@@ -164,11 +167,81 @@ _SYNCHRONICITY_AXES: dict[str, Column] = {
 }
 
 
-def _column_for_axis(axis: str) -> Column:
+# JSONB-axis paths. The DSL declares ``astro.*`` and ``calendar.*`` as
+# cross-cutting axes. On the Synchronicity table these live as JSONB
+# columns ``astro_snapshot`` and ``calendar_stamp``. Each axis maps
+# its dotted suffix to the JSONB key + the SQL type the value should
+# cast to.
+_JSONB_AXIS_PATHS: dict[str, tuple[str, str]] = {
+    # astro.* → key inside astro_snapshot
+    "astro.moon_phase": ("astro_snapshot", "moon_phase"),
+    "astro.planetary_hour": ("astro_snapshot", "planetary_hour"),
+    "astro.sun_sign": ("astro_snapshot", "sun_sign"),
+    "astro.moon_sign": ("astro_snapshot", "moon_sign"),
+    "astro.has_aspect_to_natal": ("astro_snapshot", "has_aspect_to_natal"),
+    # calendar.* → key inside calendar_stamp
+    "calendar.season": ("calendar_stamp", "season"),
+    "calendar.festival": ("calendar_stamp", "festival"),
+    "calendar.weekday": ("calendar_stamp", "weekday"),
+}
+
+
+def _jsonb_axis_expression(axis: str):
+    """Compile a JSONB-path axis into a SQLAlchemy expression on the
+    Synchronicity table.
+
+    The DSL axis type drives the cast:
+      * string → ``.astext`` (Text column)
+      * bool   → cast(.astext, Boolean)
+      * int    → cast(.astext, Integer)
+
+    Other subjects (entry / working / divination) raise — their
+    astro/calendar columns are Text-encoded (B121), not JSONB."""
+    column_name, key = _JSONB_AXIS_PATHS[axis]
+    sa_col = Synchronicity.__table__.c[column_name]
+    expr = sa_col[key].astext
+    # Type-cast the JSON text based on the DSL declaration.
+    axis_type = ALLOWED_FIELDS.get(axis)
+    if axis_type == "bool":
+        return cast(expr, Boolean)
+    if axis_type == "int":
+        return cast(expr, Integer)
+    # Default: leave as Text (DSL "string" / unknown).
+    return expr
+
+
+def _column_for_axis(axis: str, subject: str | None = None):
+    """Resolve a DSL axis to a SQLAlchemy column expression.
+
+    The ``subject`` argument routes cross-cutting axes
+    (``astro.*`` / ``calendar.*``) to the right per-subject substrate.
+    On the Synchronicity table those are JSONB indexing expressions
+    on ``astro_snapshot`` / ``calendar_stamp``. On the Entry table
+    they're not yet materialised (the columns are Text-encoded JSON
+    at B121) — calls from entry-subject queries raise.
+
+    When ``subject`` is None, the older single-arg behaviour is
+    preserved: cross-cutting axes raise. Existing callers (tests +
+    code paths that don't yet route subject) keep working unchanged.
+    """
     if axis in _ENTRY_AXES:
         return _ENTRY_AXES[axis]
     if axis in _SYNCHRONICITY_AXES:
         return _SYNCHRONICITY_AXES[axis]
+    if axis in _JSONB_AXIS_PATHS:
+        if subject == "synchronicity":
+            return _jsonb_axis_expression(axis)
+        if subject is None:
+            raise ExecutionError(
+                f"Axis {axis!r} requires a subject context to "
+                "resolve. Cross-cutting axes (astro.* / calendar.*) "
+                "are only materialised on the synchronicity subject.",
+            )
+        raise ExecutionError(
+            f"Axis {axis!r} is declared in the DSL but not yet "
+            f"materialised for subject {subject!r}. "
+            "Cross-cutting axes currently route only to synchronicity.",
+        )
     raise ExecutionError(
         f"Axis {axis!r} is declared in the DSL but not yet "
         "materialised in the schema. Hold off on this query until "
@@ -192,14 +265,18 @@ def _filter_touches_body_text(node: FilterNode) -> bool:
     return False
 
 
-def _node_to_sql(node: FilterNode):
+def _node_to_sql(node: FilterNode, subject: str | None = None):
+    """Walk the filter tree and produce a SQLAlchemy boolean
+    expression. ``subject`` is threaded so cross-cutting axes
+    (astro.* / calendar.*) resolve correctly on the synchronicity
+    subject — see ``_column_for_axis``."""
     if isinstance(node, LogicalNode):
-        clauses = [_node_to_sql(c) for c in node.children]
+        clauses = [_node_to_sql(c, subject) for c in node.children]
         return and_(*clauses) if node.op == "and" else or_(*clauses)
     if isinstance(node, NotNode):
-        return not_(_node_to_sql(node.child))
+        return not_(_node_to_sql(node.child, subject))
     if isinstance(node, FieldNode):
-        col = _column_for_axis(node.field)
+        col = _column_for_axis(node.field, subject)
         cmp = node.cmp
         v = node.value
         if cmp == "eq":
@@ -339,8 +416,10 @@ async def execute_query(
 
     base = _base_stmt_for_subject(parsed.subject, owner_id)
 
-    # Apply each top-level filter as a conjunction.
-    where_clauses = [_node_to_sql(f) for f in parsed.filters]
+    # Apply each top-level filter as a conjunction. Subject is
+    # threaded so cross-cutting axes (astro.* / calendar.*) resolve
+    # to the right per-subject substrate.
+    where_clauses = [_node_to_sql(f, parsed.subject) for f in parsed.filters]
 
     # Sealed exclusion: applies to any subject that maps to the
     # entry table when the filter tree touches body_text.
@@ -360,7 +439,7 @@ async def execute_query(
     # Order by
     if parsed.order_by:
         for ob in parsed.order_by:
-            col = _column_for_axis(ob.field)
+            col = _column_for_axis(ob.field, parsed.subject)
             stmt = stmt.order_by(col.desc() if ob.dir == "desc" else col.asc())
 
     # Cap result rows. Honour DSL `limit` when smaller than the cap.
@@ -390,7 +469,7 @@ async def execute_query(
         non_body_clauses = [
             c
             for c in [
-                _node_to_sql(f)
+                _node_to_sql(f, parsed.subject)
                 for f in parsed.filters
                 if not _filter_touches_body_text(f)
             ]
@@ -411,7 +490,17 @@ async def execute_query(
     groups: list[GroupRow] | None = None
     aggregate_value: float | None = None
     if parsed.group_by and len(parsed.group_by) == 1:
-        group_col = _column_for_axis(parsed.group_by[0])
+        group_axis = parsed.group_by[0]
+        # JSONB-axis group-by isn't supported yet — the subquery
+        # path uses ``sub.c[col.name]`` which a JSONB expression
+        # doesn't have. A future batch can add a named-label hook.
+        if group_axis in _JSONB_AXIS_PATHS:
+            raise ExecutionError(
+                f"Group-by on JSONB axis {group_axis!r} is not yet "
+                "supported. Use a synchronicity.* or entry.* axis "
+                "for grouping.",
+            )
+        group_col = _column_for_axis(group_axis, parsed.subject)
         group_stmt = (
             select(group_col, func.count())
             .select_from(stmt.subquery())

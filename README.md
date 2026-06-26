@@ -30,7 +30,7 @@ Open source, self-hostable, federated. For working magicians.
 - **H06 ports 2/3/5/6/7/8/9/10** (2026-06-26) — Cross-Journal Search · Per-Study Page · Studies Index · Transliteration Utility · Analytics Dashboard · Query Builder · Synchronicity Log · Synchronicity Quick-Capture.
 - **Phase 09 backend** (B120-B124, 2026-06-26) — Synchronicity table + auto-tag (location-precision floor enforced server-side) · QUERY_BUILDER study kind + saved-query DSL · executor (sealed exclusion via JOIN-layer guard + sealed_excluded_count indicator) · `/analytics/query` · timeseries / heatmap / correlation / today aggregates · weekly digest builder (banned-phrase regex blocks modal/oracular headlines; tier-2/3 gated by sample size). Alembic 0043→0047; +146 backend tests.
 
-As of latest commit: **2194 vitest tests · 2276 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
+As of latest commit: **2194 vitest tests · 2284 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
 
 **H06 sprint COMPLETE: 10/10 surfaces shipped + Phase 09 backend solo subset closed.** B120-B125 in. Network-aggregate / differential-privacy / cross-vault federation explicitly deferred to Phase 12+. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
@@ -150,22 +150,31 @@ backend (with Phase 09's network-aggregate path explicitly deferred
 to Phase 12+).
 
 **H08 design request opened** (2026-06-26 · `docs/design-requests/
-2026-06-26-h08-federation-activitypub.md` · 767 lines). 21
-surfaces across two clusters (15 Phase 12 Federation surfaces +
-6 Phase 13 ActivityPub surfaces). Anticipated to unblock 6-8
-weeks of frontend + backend work. 13 net-new honesty rules pinned
-(no engagement metrics on home surfaces · no recommendation
-algorithm · consent-first follows · network revocation never
-silent · group ritual once-final-then-frozen · cross-timezone
-three-pinned display · AP only sees Visibility=public · federation
-never auto-DMs · no central SSO server · federated comments mark
-source · per-network opt-in for everything · instance trust
-ledger is matter-of-fact · federation is NOT a walled garden).
+2026-06-26-h08-federation-activitypub.md` · 767 lines · 21 surfaces
+across two clusters · 13 net-new honesty rules pinned).
 
-**Next:** Awaiting designer pickup on H08. Until then, the
-deferred follow-ups remain available: astro/calendar JSONB axes
-for the Phase 09 executor, weekly digest tier-2/3 pre-compute,
-Tool Registry kind-icon folding into the SVG sprite sheet,
+**Phase 09 executor extended — astro.* / calendar.* JSONB axes
+materialise on the synchronicity subject** (2026-06-26 ·
+autonomous follow-up). The Phase 09 query executor now compiles
+cross-cutting DSL axes (`astro.moon_phase` · `astro.planetary_hour`
+· `astro.sun_sign` · `astro.moon_sign` · `astro.has_aspect_to_natal`
+· `calendar.season` · `calendar.festival` · `calendar.weekday`)
+into PostgreSQL `astro_snapshot ->> 'key'` JSONB indexing
+expressions when the subject is `synchronicity`. Bool-typed axis
+(`astro.has_aspect_to_natal`) auto-casts to Boolean; string axes
+keep `.astext`. The Entry table's astro_snapshot is Text-encoded
+at B121 (not JSONB) so entry / working / divination subjects
+continue to raise `ExecutionError` with a clear "not yet
+materialised for subject {kind}" message. Backwards-compat: the
+legacy `_column_for_axis(axis)` / `_node_to_sql(node)` signatures
+keep working — `subject` is an optional second argument; without
+it, cross-cutting axes still raise. Group-by on JSONB axes is
+explicitly rejected (the subquery-named-column path needs a
+follow-up label hook). 8 new tests · backend total 2276 → **2284**.
+
+**Next:** Awaiting designer pickup on H08. Until then, remaining
+deferred follow-ups: weekly digest tier-2/3 pre-compute, Tool
+Registry kind-icon folding into the SVG sprite sheet,
 custom-square kamea sigil.
 
 For the canonical feature catalog, see **[FEATURES.md](FEATURES.md)** — the "Phase Status Snapshot" table at the top tracks sprint progress per-batch. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
