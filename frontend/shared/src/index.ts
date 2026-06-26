@@ -74,6 +74,7 @@ export * from "./AnalyticsTabs/index.js";
 export * from "./AudioLibrary/index.js";
 export * from "./LinguisticTabs/index.js";
 export * from "./OracleTabs/index.js";
+export * from "./PilgrimageMap/index.js";
 export * from "./PlanetaryHourDetail/index.js";
 export * from "./PlanetaryHourStrip/index.js";
 export * from "./practice/index.js";
