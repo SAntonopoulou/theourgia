@@ -34,7 +34,12 @@ As of latest commit: **2194 vitest tests · 1899 backend tests · alembic head 0
 
 **H06 sprint COMPLETE: 10/10 surfaces shipped + Phase 09 backend solo subset closed.** B120-B125 in. Network-aggregate / differential-privacy / cross-vault federation explicitly deferred to Phase 12+. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
-**Next:** Phase 10 (Publishing & Monetization) + Phase 11 (Media Library) backend authoring. The H07 frontend is in (18 surfaces); the backend plans need writing — Stripe Connect for Publishing, R2 + EXIF pipeline + iCal feed for Media.
+**Phase 10 + 11 backend plans LOCKED** (2026-06-26).
+
+- `plan/10-batches-backend.md` — B126→B131 · publication lifecycle · Stripe Connect with 0% application fee (Theourgia takes no cut) · refunds via portal hand-off (never inline) · double-opt-in subscriptions · newsletter delivery · public reader + RSS/Atom/JSON Feed · paywall is structural-not-promotional (no countdown timers, no "limited time" pressure).
+- `plan/11-batches-backend.md` — B132→B136 · media asset table with sealed-only count-list rule · R2 direct-upload + EXIF strip on the server hop · pilgrimage sites with precision floor enforced at write time (never raise) · iCal feed that collapses sealed entries into "N sealed entries today" markers and excludes sealed pilgrimage anniversaries entirely.
+
+**Next:** execute B126 → publication lifecycle (lowest-leverage entry point for Phase 10 — every other batch builds on the publication table).
 
 For the canonical feature catalog, see **[FEATURES.md](FEATURES.md)** — the "Phase Status Snapshot" table at the top tracks sprint progress per-batch. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
