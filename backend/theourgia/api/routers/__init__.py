@@ -58,6 +58,9 @@ from theourgia.api.routers.v1 import synchronicities as v1_synchronicities
 from theourgia.api.routers.v1 import analytics as v1_analytics
 from theourgia.api.routers.v1 import digest as v1_digest
 from theourgia.api.routers.v1 import publications as v1_publications
+from theourgia.api.routers.v1 import stripe_connect as v1_stripe_connect
+from theourgia.api.routers.v1 import checkout as v1_checkout
+from theourgia.api.routers.v1 import stripe_webhook as v1_stripe_webhook
 
 __all__ = ["register_routers"]
 
@@ -128,4 +131,7 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_digest.router, tags=["digest"])
     # Phase 10 Publishing (B126+)
     v1.include_router(v1_publications.router, tags=["publications"])
+    v1.include_router(v1_stripe_connect.router, tags=["stripe-connect"])
+    v1.include_router(v1_checkout.router, tags=["publications"])
+    v1.include_router(v1_stripe_webhook.router, tags=["stripe-webhook"])
     app.include_router(v1)

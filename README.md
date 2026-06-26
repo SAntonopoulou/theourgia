@@ -39,9 +39,9 @@ As of latest commit: **2194 vitest tests · 1899 backend tests · alembic head 0
 - `plan/10-batches-backend.md` — B126→B131 · publication lifecycle · Stripe Connect with 0% application fee (Theourgia takes no cut) · refunds via portal hand-off (never inline) · double-opt-in subscriptions · newsletter delivery · public reader + RSS/Atom/JSON Feed · paywall is structural-not-promotional.
 - `plan/11-batches-backend.md` — B132→B136 · media asset table with sealed-only count-list rule · R2 direct-upload + EXIF strip on the server hop · pilgrimage sites with precision floor enforced at write time (never raise) · iCal feed that collapses sealed entries into "N sealed entries today" markers.
 
-**B126 shipped** — Publication + PublicationChapter models · alembic 0048 · 13 routes (5 CRUD + 4 lifecycle + 4 chapter sub-resources) · slug auto-derivation with collision suffix · sealed-embed rejection at /publish + /republish · withdrawn rows STAY · generic PATCH refuses to mutate `state`/`kind`/`owner_id`/`published_at`. 37 new tests; backend total 1899 → 1936.
+**B126 + B127 shipped** — B126: Publication + chapter models · alembic 0048 · lifecycle (DRAFT/SCHEDULED/LIVE/WITHDRAWN + republish) · sealed-embed rejection. B127: StripeConnectAccount + Purchase models · alembic 0049 · Protocol-isolated Stripe client (`stripe` SDK imported lazily; never required by CI) · Connect onboarding/refresh/disconnect · checkout session creation (0% application fee invariant CI-tested) · token-gated download with single-use + expiry + count limit · **`/refund-link` returns Stripe portal URL ONLY — no `/refund` endpoint that calls Stripe's refund API** (CI invariant enforces no `POST /refund` path anywhere). Idempotent webhook processor. 71 new tests across the two batches; backend total 1899 → 1970.
 
-**Next:** B127 — Stripe Connect substrate + purchase (the 0% application fee invariant + refund-via-portal-only contract).
+**Next:** B128 — subscription tiers + subscribers (double-opt-in confirmation flow; failed-payment is `--warn` not `--danger`; tier amount immutable to dodge Stripe price churn).
 
 For the canonical feature catalog, see **[FEATURES.md](FEATURES.md)** — the "Phase Status Snapshot" table at the top tracks sprint progress per-batch. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
@@ -89,7 +89,7 @@ Theourgia is built in 17 phases. Each phase is architecturally dependent on prio
 | 07 | Workshop (sigils, talismans, magical circles, tool registry) | `[x]` ✅ backend B103-B107 + H05 frontend + B108 wiring (B108-2e Tool Registry form shipped in H07 Cluster A) | [plan/07-workshop.md](plan/07-workshop.md) · [plan/07-batches-backend.md](plan/07-batches-backend.md) |
 | 08 | Linguistic Tools (gematria, transliteration, voces magicae) | `[x]` ✅ backend B110-B115 + H06 surfaces 1/4/6 frontend (cipher catalog · gematria index + search · studies · 8 transliteration schemes · voce per-vault state) | [plan/08-linguistic-tools.md](plan/08-linguistic-tools.md) · [plan/08-batches-backend.md](plan/08-batches-backend.md) |
 | 09 | Synchronicity & Analytics (scientific illuminism dashboards) | `[x]` ✅ backend solo subset B120-B125 + all 10 H06 surfaces frontend (synchronicity + autotag · QUERY_BUILDER DSL + executor · timeseries/heatmap/correlation/today · weekly digest with banned-phrase regex). Network-aggregate / DP / cross-vault federation deferred to Phase 12+. | [plan/09-synchronicity-and-analytics.md](plan/09-synchronicity-and-analytics.md) · [plan/09-batches-backend.md](plan/09-batches-backend.md) |
-| 10 | Publishing & Monetization (books, Stripe, newsletters, blog) | `[~]` 🔨 backend plan B126-B131 LOCKED · **B126 SHIPPED** (publication lifecycle · 13 routes · sealed-embed rejection · 9-license picker) · H07 Cluster B frontend (10 surfaces) already in | [plan/10-publishing-and-monetization.md](plan/10-publishing-and-monetization.md) · [plan/10-batches-backend.md](plan/10-batches-backend.md) |
+| 10 | Publishing & Monetization (books, Stripe, newsletters, blog) | `[~]` 🔨 backend plan B126-B131 LOCKED · **B126 + B127 SHIPPED** (publication lifecycle · Stripe Connect with 0% application fee invariant + refund-via-portal-only · single-use download tokens · idempotent webhooks) · H07 Cluster B frontend (10 surfaces) already in | [plan/10-publishing-and-monetization.md](plan/10-publishing-and-monetization.md) · [plan/10-batches-backend.md](plan/10-batches-backend.md) |
 | 11 | Media Library (images, audio, video, iCal feeds, pilgrimage map) | `[~]` 🔨 backend plan B132-B136 LOCKED · H07 Cluster C frontend (8 surfaces) already in (Media Library · Detail · Upload · Audio · Pilgrimage Map · Sacred Site · Add Place · iCal Feed) | [plan/11-media-library.md](plan/11-media-library.md) · [plan/11-batches-backend.md](plan/11-batches-backend.md) |
 | 12 | Federation (native protocol, network hubs, group ritual, SSO) | `[ ]` | [plan/12-federation.md](plan/12-federation.md) |
 | 13 | ActivityPub (Fediverse interop) | `[ ]` | [plan/13-activitypub.md](plan/13-activitypub.md) |
@@ -219,7 +219,7 @@ theourgia/
 ├── LICENSE                ← AGPL-3.0
 ├── plan/                  ← per-phase implementation plans (00–16)
 ├── docs/                  ← will hold user/admin/developer documentation
-├── backend/               ← Python 3.12 + FastAPI + SQLModel + Alembic + Celery (1936 tests)
+├── backend/               ← Python 3.12 + FastAPI + SQLModel + Alembic + Celery (1970 tests)
 ├── frontend/              ← React 19 admin SPA · Astro 6 public site · shared design system
 ├── docs/                  ← Starlight docs site (theourgia tokens bridged onto Starlight)
 └── plugins/               ← will hold reference plugins (Phase 14+)
