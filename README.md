@@ -27,12 +27,12 @@ Open source, self-hostable, federated. For working magicians.
 - **Phase 07 backend** (B103-B107, 2026-06-25) — Five domain models · alembic 0033→0037 · seven routers · 152 new tests · 7 Agrippa planetary squares · 5 PD circle presets · 32 PD voces (PGM + Sefer Yetzirah + Lemegeton + Heptameron + Sanskrit).
 - **B108 wiring + H07 sprint** (2026-06-26) — Workshop surfaces persist live · Mode B vault crypto end-to-end · H07 Foundation + Cluster A (3 Workshop modals · closes B108-2e) + Cluster B (10 Publishing surfaces) + Cluster C (8 Media + Pilgrimage surfaces). Phases 10 + 11 frontend ✅ end-to-end.
 - **Phase 08 backend** (B110-B115, 2026-06-26) — Cipher catalog (13 PD bundled, byte-for-byte parity with H06-1 client) · gematria_index + cross-journal search (3 match modes · sealed entries never indexed) · studies + frozen snapshots · 8 PD transliteration schemes · voce per-vault state. Alembic 0038→0042; +128 backend tests.
-- **H06 ports 2/3/5/6/8/9/10** (2026-06-26) — Cross-Journal Search · Per-Study Page · Studies Index · Transliteration Utility · Query Builder · Synchronicity Log · Synchronicity Quick-Capture.
-- **Phase 09 backend** (B120-B123, 2026-06-26) — Synchronicity table + auto-tag (location-precision floor enforced server-side) · QUERY_BUILDER study kind + saved-query DSL · executor (sealed exclusion via JOIN-layer guard + sealed_excluded_count indicator) · `/analytics/query` · timeseries / heatmap / correlation / today aggregates (every response carries sample_size + small_sample flag). Alembic 0043→0044; +120 backend tests.
+- **H06 ports 2/3/5/6/7/8/9/10** (2026-06-26) — Cross-Journal Search · Per-Study Page · Studies Index · Transliteration Utility · Analytics Dashboard · Query Builder · Synchronicity Log · Synchronicity Quick-Capture.
+- **Phase 09 backend** (B120-B124, 2026-06-26) — Synchronicity table + auto-tag (location-precision floor enforced server-side) · QUERY_BUILDER study kind + saved-query DSL · executor (sealed exclusion via JOIN-layer guard + sealed_excluded_count indicator) · `/analytics/query` · timeseries / heatmap / correlation / today aggregates · weekly digest builder (banned-phrase regex blocks modal/oracular headlines; tier-2/3 gated by sample size). Alembic 0043→0047; +146 backend tests.
 
-As of latest commit: **2194 vitest tests · 1873 backend tests · alembic head 0044 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
+As of latest commit: **2194 vitest tests · 1899 backend tests · alembic head 0047 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
 
-**H06 progress: 9/10 surfaces shipped.** Only the Analytics Dashboard (7/10) remains — wires the just-shipped B123 aggregates and is queued for the next batch. **Phase 09 backend solo subset:** B120-B123 in; B124 (weekly digest) + B125 (close-out) queued. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
+**H06 progress: 10/10 surfaces shipped.** Only B125 (Phase 09 close-out docs + memory) remains queued. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
 For the canonical feature catalog, see **[FEATURES.md](FEATURES.md)** — the "Phase Status Snapshot" table at the top tracks sprint progress per-batch. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
@@ -210,7 +210,7 @@ theourgia/
 ├── LICENSE                ← AGPL-3.0
 ├── plan/                  ← per-phase implementation plans (00–16)
 ├── docs/                  ← will hold user/admin/developer documentation
-├── backend/               ← Python 3.12 + FastAPI + SQLModel + Alembic + Celery (1873 tests)
+├── backend/               ← Python 3.12 + FastAPI + SQLModel + Alembic + Celery (1899 tests)
 ├── frontend/              ← React 19 admin SPA · Astro 6 public site · shared design system
 ├── docs/                  ← Starlight docs site (theourgia tokens bridged onto Starlight)
 └── plugins/               ← will hold reference plugins (Phase 14+)
