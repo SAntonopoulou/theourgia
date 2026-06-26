@@ -10,11 +10,13 @@
 import {
   type PilgrimageSite,
   PilgrimageMapSurface,
+  type SacredSiteRecord,
+  SacredSiteSurface,
+  type SiteRequantizeChoice,
   Toast,
   useTopbar,
 } from "@theourgia/shared";
-import { useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useMemo, useState } from "react";
 
 const FIXTURE_SITES: PilgrimageSite[] = [
   {
@@ -64,8 +66,71 @@ const FIXTURE_SITES: PilgrimageSite[] = [
   },
 ];
 
+const FIXTURE_SITE_DETAILS: Record<string, SacredSiteRecord> = {
+  tainaron: {
+    id: "tainaron",
+    name: "Cape Tainaron",
+    kind: "pilgrimage",
+    stored_precision: "1km",
+    coord_label: "36.39° N, 22.48° E",
+    story:
+      "The southernmost point of the Mani — the ancients held it for one of the mouths of the underworld, where Herakles dragged Cerberus up into the light. I made the descent to the sea-cave at dawn and left the offering at the waterline.",
+    linked_workings: [
+      { id: "w1", title: "Descent at Tainaron", date_label: "21 Sep 2025" },
+      {
+        id: "w2",
+        title: "Offering at the waterline",
+        date_label: "21 Sep 2025",
+      },
+    ],
+    linked_media: [{ id: "m1" }, { id: "m2" }, { id: "m3" }],
+  },
+  eleusis: {
+    id: "eleusis",
+    name: "Eleusis",
+    kind: "sacred",
+    stored_precision: "exact",
+    coord_label: "38.04° N, 23.55° E",
+    story:
+      "The Telesterion of the Mysteries. Even in ruin the ground holds something that remembers.",
+    linked_workings: [],
+    linked_media: [],
+  },
+  crossroads: {
+    id: "crossroads",
+    name: "The crossroads stone",
+    kind: "working",
+    stored_precision: "1km",
+    coord_label: "37.97° N, 23.72° E",
+    story: "A three-way stone outside the city, used at the dark moon.",
+    linked_workings: [],
+    linked_media: [],
+  },
+  village: {
+    id: "village",
+    name: "Grandmother's village",
+    kind: "ancestral",
+    stored_precision: "country",
+    coord_label: "Greece",
+    story: "Where she was born, where the line begins for me.",
+    linked_workings: [],
+    linked_media: [],
+  },
+  library: {
+    id: "library",
+    name: "The old library",
+    kind: "other",
+    stored_precision: "10km",
+    coord_label: "Somewhere in the city",
+    story: "Where I first read the Chaldean Oracles.",
+    linked_workings: [],
+    linked_media: [],
+  },
+};
+
 export function PilgrimageMapRoute() {
-  const navigate = useNavigate();
+  const [openSiteId, setOpenSiteId] = useState<string | null>(null);
+  const [siteDetails, setSiteDetails] = useState(FIXTURE_SITE_DETAILS);
 
   useTopbar(
     () => ({
@@ -75,11 +140,41 @@ export function PilgrimageMapRoute() {
     [],
   );
 
-  const handleSelectSite = useCallback(
-    (id: string) => {
-      navigate(`/pilgrimage/${id}`);
+  const openRecord = useMemo(
+    () => (openSiteId ? siteDetails[openSiteId] : null),
+    [openSiteId, siteDetails],
+  );
+
+  const handleSelectSite = useCallback((id: string) => {
+    setOpenSiteId(id);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setOpenSiteId(null);
+  }, []);
+
+  const handleRequantize = useCallback(
+    (next: SiteRequantizeChoice) => {
+      if (!openSiteId) return;
+      setSiteDetails((d) => {
+        const cur = d[openSiteId];
+        if (!cur) return d;
+        return {
+          ...d,
+          [openSiteId]: {
+            ...cur,
+            stored_precision:
+              next === "unmapped" ? "unmapped" : next,
+          },
+        };
+      });
+      Toast.push({
+        tone: "info",
+        title: "Precision lowered",
+        body: "The precise coordinates have been discarded.",
+      });
     },
-    [navigate],
+    [openSiteId],
   );
 
   const handleAddPlace = useCallback(() => {
@@ -91,11 +186,21 @@ export function PilgrimageMapRoute() {
   }, []);
 
   return (
-    <PilgrimageMapSurface
-      sites={FIXTURE_SITES}
-      sealed_count={2}
-      onSelectSite={handleSelectSite}
-      onAddPlace={handleAddPlace}
-    />
+    <>
+      <PilgrimageMapSurface
+        sites={FIXTURE_SITES}
+        sealed_count={2}
+        onSelectSite={handleSelectSite}
+        onAddPlace={handleAddPlace}
+      />
+      {openRecord ? (
+        <SacredSiteSurface
+          open={openSiteId !== null}
+          record={openRecord}
+          onClose={handleClose}
+          onRequantize={handleRequantize}
+        />
+      ) : null}
+    </>
   );
 }
