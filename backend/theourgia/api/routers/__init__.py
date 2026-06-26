@@ -65,6 +65,9 @@ from theourgia.api.routers.v1 import (
     subscribers as v1_subscribers,
     subscription_tiers as v1_subscription_tiers,
 )
+from theourgia.api.routers.v1 import (
+    newsletter_issues as v1_newsletter_issues,
+)
 
 __all__ = ["register_routers"]
 
@@ -142,4 +145,7 @@ def register_routers(app: FastAPI) -> None:
         v1_subscription_tiers.router, tags=["subscription-tiers"],
     )
     v1.include_router(v1_subscribers.router, tags=["subscribers"])
+    v1.include_router(
+        v1_newsletter_issues.router, tags=["newsletter-issues"],
+    )
     app.include_router(v1)
