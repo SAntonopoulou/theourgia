@@ -86,6 +86,7 @@ export * from "./PracticeLogs/index.js";
 export * from "./workshop/index.js";
 export * from "./Popover/index.js";
 export * from "./Progress/index.js";
+export * from "./QueryBuilder/index.js";
 export * from "./PublicChrome/index.js";
 export * from "./PricingDistribution/index.js";
 export * from "./PrintPreview/index.js";

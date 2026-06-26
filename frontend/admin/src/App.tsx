@@ -86,6 +86,7 @@ import { MagicSquaresRoute } from "./routes/MagicSquaresRoute.js";
 import { AudioLibraryRoute } from "./routes/AudioLibraryRoute.js";
 import { CrossJournalSearchRoute } from "./routes/CrossJournalSearchRoute.js";
 import { PerStudyPageRoute } from "./routes/PerStudyPageRoute.js";
+import { QueryBuilderRoute } from "./routes/QueryBuilderRoute.js";
 import { StudiesIndexRoute } from "./routes/StudiesIndexRoute.js";
 import { SynchronicityLogRoute } from "./routes/SynchronicityLogRoute.js";
 import { TransliterationUtilityRoute } from "./routes/TransliterationUtilityRoute.js";
@@ -227,6 +228,7 @@ function ShellRoutes() {
         />
         <Route path="/studies" element={<StudiesIndexRoute />} />
         <Route path="/studies/:id" element={<PerStudyPageRoute />} />
+        <Route path="/query" element={<QueryBuilderRoute />} />
         <Route path="/voces-library" element={<VocesLibraryRoute />} />
         <Route path="/publications" element={<PublicationsRoute />} />
         <Route
