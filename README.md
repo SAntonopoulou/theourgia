@@ -8,7 +8,7 @@ A magickal journal CMS and full practitioner's toolkit.
 Open source, self-hostable, federated. For working magicians.
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
-[![Status: Active development](https://img.shields.io/badge/status-active_development_(Phase_10_complete)-orange.svg)](#status)
+[![Status: Active development](https://img.shields.io/badge/status-active_development_(Phase_11_complete)-orange.svg)](#status)
 [![Telemetry: Zero](https://img.shields.io/badge/telemetry-zero-brightgreen.svg)](#privacy)
 [![Federated](https://img.shields.io/badge/federation-native_+_ActivityPub-purple.svg)](FEATURES.md#14-federation-networks--group-work)
 [![Plugins](https://img.shields.io/badge/plugins-from_day_one-orange.svg)](FEATURES.md#17-plugin-ecosystem)
@@ -19,7 +19,7 @@ Open source, self-hostable, federated. For working magicians.
 
 ## Status
 
-**Pre-alpha — Phases 00-11 end-to-end on the frontend; backend through Phase 10 (+ Phase 09 solo subset).** Sprint trajectory:
+**Pre-alpha — Phases 00-11 end-to-end on both frontend and backend (+ Phase 09 solo subset).** Sprint trajectory:
 
 - **H01-H03 sprint** (B50-B75) — Phases 03 · 04 · 05 frontend coverage end-to-end against existing backend.
 - **H04 sprint** (B76-B86) — Daily Practice Tracker (Tier 1) + Phase 06 Divination & Practice cluster (Tier 2): Tarot · I Ching · Geomancy · Runes · Pendulum/Bibliomancy/Horary/Scrying · Practice Logs.
@@ -144,8 +144,15 @@ Alembic head **0051**.
 203 new tests across the four Phase 11 batches; backend total
 2073 → **2276**. Alembic head **0055**.
 
-**Next:** B136 — Phase 11 close-out (CHANGELOG · FEATURES ·
-README · memory · DoD).
+**Phase 11 Media Library + Pilgrimage backend ✅ COMPLETE**
+(B132 → B136). Phases 00-11 are now end-to-end on both frontend AND
+backend (with Phase 09's network-aggregate path explicitly deferred
+to Phase 12+).
+
+**Next:** Phase 12 Federation backend authoring (or the deferred
+follow-ups: astro/calendar JSONB axes for the Phase 09 executor,
+weekly digest tier-2/3 pre-compute, Tool Registry kind-icon
+folding into the SVG sprite sheet, custom-square kamea sigil).
 
 For the canonical feature catalog, see **[FEATURES.md](FEATURES.md)** — the "Phase Status Snapshot" table at the top tracks sprint progress per-batch. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
@@ -194,7 +201,7 @@ Theourgia is built in 17 phases. Each phase is architecturally dependent on prio
 | 08 | Linguistic Tools (gematria, transliteration, voces magicae) | `[x]` ✅ backend B110-B115 + H06 surfaces 1/4/6 frontend (cipher catalog · gematria index + search · studies · 8 transliteration schemes · voce per-vault state) | [plan/08-linguistic-tools.md](plan/08-linguistic-tools.md) · [plan/08-batches-backend.md](plan/08-batches-backend.md) |
 | 09 | Synchronicity & Analytics (scientific illuminism dashboards) | `[x]` ✅ backend solo subset B120-B125 + all 10 H06 surfaces frontend (synchronicity + autotag · QUERY_BUILDER DSL + executor · timeseries/heatmap/correlation/today · weekly digest with banned-phrase regex). Network-aggregate / DP / cross-vault federation deferred to Phase 12+. | [plan/09-synchronicity-and-analytics.md](plan/09-synchronicity-and-analytics.md) · [plan/09-batches-backend.md](plan/09-batches-backend.md) |
 | 10 | Publishing & Monetization (books, Stripe, newsletters, blog) | `[x]` ✅ backend B126-B131 + H07 Cluster B frontend (10 surfaces) — publication lifecycle · Stripe Connect 0% fee + portal-only refund (no `/refund` POST anywhere) · subscription tiers (amount IMMUTABLE) · double-opt-in subscribers · newsletter delivery (once-sent immutability · per-recipient unsubscribe URL) · public reader with structural paywall + unversioned RSS/Atom/JSON feeds carrying AGPLv3 credit + per-pub license | [plan/10-publishing-and-monetization.md](plan/10-publishing-and-monetization.md) · [plan/10-batches-backend.md](plan/10-batches-backend.md) |
-| 11 | Media Library (images, audio, video, iCal feeds, pilgrimage map) | `[~]` 🔨 backend plan B132-B136 LOCKED · **B132 + B133 + B134 + B135 SHIPPED** (media_asset + media_link · R2 upload pipeline with EXIF strip · pilgrimage_site precision FLOOR · iCal feed with sealed-day collapse + unversioned URL + RFC 5545 serializer) · only B136 close-out remains · H07 Cluster C frontend (8 surfaces) already in | [plan/11-media-library.md](plan/11-media-library.md) · [plan/11-batches-backend.md](plan/11-batches-backend.md) |
+| 11 | Media Library (images, audio, video, iCal feeds, pilgrimage map) | `[x]` ✅ backend B132-B136 + H07 Cluster C frontend (8 surfaces) — media_asset + polymorphic media_link · R2 upload pipeline with Protocol-isolated EXIF strip · pilgrimage_site with precision FLOOR (one-way ratchet) · iCal feed with sealed-day collapse + unversioned URL + pure-Python RFC 5545 serializer · anti-gamification CI invariants (no play_count / view_count / forge / unseal endpoints anywhere) | [plan/11-media-library.md](plan/11-media-library.md) · [plan/11-batches-backend.md](plan/11-batches-backend.md) |
 | 12 | Federation (native protocol, network hubs, group ritual, SSO) | `[ ]` | [plan/12-federation.md](plan/12-federation.md) |
 | 13 | ActivityPub (Fediverse interop) | `[ ]` | [plan/13-activitypub.md](plan/13-activitypub.md) |
 | 14 | Plugin Ecosystem (SDK, official registry, sandbox-before-commit) | `[ ]` | [plan/14-plugin-ecosystem.md](plan/14-plugin-ecosystem.md) |

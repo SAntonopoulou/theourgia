@@ -109,11 +109,64 @@ A unified, well-organized, secure media library with strong privacy defaults, vi
 
 ## Definition of Done
 
-- [ ] Upload, view, download for all media kinds works at scale
-- [ ] EXIF stripping verified across image formats
-- [ ] Audio waveform + scrub + optional transcription functional
-- [ ] YouTube embeds with privacy-enhanced mode
-- [ ] Self-hosted video reference integration with Cloudflare Stream
-- [ ] Pilgrimage map renders with appropriate coordinate fuzzing per visibility
-- [ ] Storage quota enforcement
-- [ ] Per-vault public gallery
+Status as of 2026-06-26 (B132 → B136 closed). DoD items shipped this
+phase are checked; deferred items are scoped to the phase they actually
+land in.
+
+- [x] Upload, view, download for media works (begin → complete →
+      delete on top of the Phase 01 S3CompatibleBackend; H07
+      Cluster C surfaces wire to live endpoints).
+- [x] EXIF stripping verified — Protocol-isolated stripper with
+      NullExifStripper (CI fallback) + PillowExifStripper (lazy
+      import). Strip step records pre/post sizes; fixture-based
+      round-trip test runs locally when Pillow is installed.
+- [ ] Audio waveform + scrub + optional transcription functional —
+      audio precompute + transcription pipeline explicitly deferred
+      to Phase 12+ (the H07 Audio Library frontend already pins
+      "no play-counts"; backend keeps that contract).
+- [ ] YouTube embeds with privacy-enhanced mode — privacy-proxy
+      deferred to Phase 14 (plugin ecosystem).
+- [ ] Self-hosted video reference integration with Cloudflare
+      Stream — deferred to Phase 14.
+- [x] Pilgrimage map renders with coordinate FLOORING per
+      visibility — precision is a one-way ratchet via the shared
+      apply_precision_floor helper; sealed sites STRIPPED from
+      list; sealed-cluster is count-only.
+- [x] Storage quota enforcement — 5 GB per vault default; 413
+      returned on /uploads/begin when used + claimed > quota.
+- [ ] Per-vault public gallery — deferred to Phase 15 hardening.
+
+Additional honesty invariants pinned this phase:
+
+- [x] **No play_count anywhere** — source-level CI test asserts
+      the literal substring is absent from every Phase 11 router.
+- [x] **No view_count anywhere** — same test set.
+- [x] **No /forge · /clone · /peek-sealed · /reveal · /unseal
+      endpoints** anywhere in Phase 11 routers.
+- [x] **No /promote · /sharpen · /refine · /raise-precision
+      endpoints** on the pilgrimage router (precision is FLOOR).
+- [x] **No /within-radius · /nearest endpoints** on the
+      pilgrimage router (would leak precision).
+- [x] **Sealed media surfaces as count-only** — defence in depth
+      via the schema-level `_to_read` sealed branch + the list
+      endpoint's `sealed_count` aggregate.
+- [x] **Sealed pilgrimage anniversaries excluded ENTIRELY** from
+      iCal feeds (no count-only fallback for these).
+- [x] **iCal sealed-day collapse** — `SealedDayMarker` dataclass
+      restricted to `{date, count}` by construction; produces
+      ONE all-day VEVENT per date with summary
+      `"{N} sealed entries today"`, NO description, NO location.
+- [x] **iCal feed URL unversioned** — mounted on app, not
+      /api/v1, so subscribers' calendar clients stay stable.
+- [x] **Sealed-AND-strip rejected at upload begin** — encrypted
+      bytes can't be re-stripped server-side; explicit 400.
+- [x] **Precision floor is APPLIED at write time** — the stored
+      lat/lng IS the quantized value; finer precision is
+      irreversibly lost.
+- [x] **PATCH cannot mutate location_lat / location_lng /
+      stored_precision / kind / sealed** on pilgrimage sites —
+      schema omits them by construction.
+- [x] **Linked workings must be owned by the caller** —
+      sealed entries CAN be linked, but id must match owner_id.
+- [x] **Nominatim attribution embedded verbatim** as a schema
+      default value on PilgrimageSiteRead + ListResponse.

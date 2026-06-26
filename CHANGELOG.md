@@ -7,6 +7,115 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-26 (Phase 11 Media Library + Pilgrimage backend COMPLETE · B132 → B136)
+
+Phase 11 backend is fully shipped. Four new tables across Alembic
+0051 → 0055 (media_asset · media_link · media_upload_session ·
+pilgrimage_site · ical_feed). 2276 backend tests passing (+203 vs
+Phase 10 close).
+
+Explicitly OUT of scope (Phase 12+ / 14 / 15):
+- Audio waveform precompute + transcription pipeline
+- Privacy-enhanced YouTube embed proxy + Cloudflare Stream reference
+- Per-vault public gallery (deferred to Phase 15 hardening)
+- Pilgrimage-anniversary push-notification fan-out (Phase 12 network)
+- Multi-tenant storage quota plans (single 5 GB default for v0.x)
+- Live VEVENT data-walking (B136 shells the route; the data assembly
+  lands when the integration harness comes online in Phase 15)
+
+What landed across the five execution batches:
+
+- **B132 (media asset table + sealed substrate + link cache)** —
+  ``MediaAsset`` (4-kind enum image/audio/video/document) with a
+  polymorphic ``MediaLink`` (ref_kind/ref_id; no per-target FK so
+  adding a new linkable kind doesn't require a migration). Sealed
+  read response NULLS filename / caption / alt_text / tags /
+  exif_metadata / dimensions / duration but PRESERVES size_bytes
+  (storage-quota math) + link_count (the H07 "linked to N
+  workings" stat) + r2_object_key (the bytes still resolve;
+  client decrypts after fetching) + kind/mime. List endpoint
+  surfaces sealed assets as a ``sealed_count`` aggregate only —
+  never individual cards. /media/sealed-count standalone endpoint
+  for the H07 Library card. ``MediaUpdate`` schema omits
+  r2_object_key / size_bytes / mime_type / kind / owner_id by
+  construction. CI source-level invariant: no ``play_count``
+  anywhere.
+
+- **B133 (R2 upload pipeline)** — Protocol-isolated EXIF stripper
+  with ``NullExifStripper`` (CI fallback) + ``PillowExifStripper``
+  (lazy PIL import). Three endpoints: ``/begin`` (quota guard at
+  5 GB default · sealed-AND-strip explicit 400 because encrypted
+  bytes can't be re-stripped server-side · EXIF strip default ON
+  for unsealed images via ``_effective_exif_policy``), ``/complete``
+  (R2 existence check · strip step records pre/post sizes ·
+  creates MediaAsset row · flips session COMPLETED),
+  ``DELETE /uploads/{id}`` (idempotent on CANCELLED; 409 on
+  COMPLETED — use ``DELETE /media/{id}`` to soft-delete a
+  completed asset). ``MediaUploadSession`` 4-state lifecycle
+  with 24h TTL. Source-level invariants: no /retry · /refund ·
+  /force-complete · /skip-strip endpoints.
+
+- **B134 (pilgrimage sites + precision FLOOR)** — 5-kind
+  ``PilgrimageSite`` (sacred/ancestral/working/pilgrimage/other
+  with ck_pilgrimage_lat_lng_paired + ck_pilgrimage_precision
+  CheckConstraints). Eight endpoints. The defining rule: precision
+  is a FLOOR — never raise. ``/requantize`` uses
+  ``is_lower_or_equal_precision`` against ``PRECISION_RANK`` to
+  reject any transition where target rank < current rank. The
+  shared ``apply_precision_floor`` helper from B120 autotag does
+  the rounding — same string set: exact / 1km / 10km / country /
+  hidden. PATCH does NOT touch location_lat / location_lng /
+  stored_precision / kind / sealed. Sealed sites are STRIPPED
+  from the map list; ``/sealed-cluster`` returns ONLY a count
+  (no ids, no coords) even with map bounds. ``‡ Geocoding by
+  Nominatim / © OpenStreetMap contributors.`` embedded as a
+  schema default. Source-level invariants: ``apply_precision_floor``
+  called in create AND requantize sources;
+  ``is_lower_or_equal_precision`` referenced in requantize
+  source; no /unseal · /promote · /sharpen · /refine ·
+  /raise-precision · /within-radius · /nearest endpoints.
+
+- **B135 (iCal feed serializer)** — per-vault ``ICalFeed`` (6
+  include toggles + visibility CheckConstraint + 32-byte
+  url-safe token + last_regenerated_at). Pure-Python RFC 5545
+  serializer at ``core/calendar/ical_serializer.py``: § 3.3.11
+  text escape (backslash-first), § 3.1 line folding to 75 octets
+  (decode-and-retry boundary check so multi-byte UTF-8 never
+  splits), CRLF discipline, PRODID ``-//Theourgia//Practitioner
+  Calendar 1.0//EN``. The CRITICAL rule: ``SealedDayMarker``
+  dataclass is restricted to ``{date, count}`` — no title field
+  by construction. Each marker becomes ONE all-day VEVENT with
+  summary ``"{N} sealed entries today"``, NO description, NO
+  location. Three settings endpoints + ``/ical/v1/{token}.ics``
+  delivery endpoint mounted at app-level (NOT /api/v1) so
+  subscribers' URLs stay stable across API versioning. Private
+  feeds require auth cookie + owner match. Source-level
+  invariants: no /forge · /clone · /peek-sealed · /reveal ·
+  /unseal endpoints; ``SealedDayMarker`` dataclass remains
+  exactly ``{date, count}``.
+
+- **B136 (close-out)** — this commit. Docs + memory.
+
+Honesty rules added or strengthened (vs Phase 10):
+
+- Sealed media surfaces as count-only in the list endpoint
+  (defence in depth on top of B130's structural paywall).
+- Pre-strip / post-strip sizes recorded so callers can assert
+  non-passthrough on EXIF-bearing fixtures.
+- Precision floor is a one-way ratchet — finer precision is
+  irreversibly lost the moment a site is saved or re-quantized.
+- Sealed pilgrimage anniversaries are EXCLUDED ENTIRELY from
+  iCal feeds (no count-only fallback for these).
+- iCal sealed-day collapse keeps the count visible (the
+  practitioner knows their own commitments) without ever
+  leaking the underlying entry titles to a calendar client.
+- Anti-gamification carried forward: no play_count, no
+  view_count, no /retry, no /forge, no /unseal endpoints
+  anywhere in Phase 11 routers.
+
+Backend test count: 2073 → 2276 (+203 across B132 → B135).
+Alembic chain: 0051 → 0055 (head).
+
 ### Added — 2026-06-26 (Phase 10 Publishing & Monetization backend COMPLETE · B126 → B131)
 
 Phase 10 backend is fully shipped. Four new tables across Alembic
