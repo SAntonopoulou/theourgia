@@ -64,6 +64,7 @@ export * from "./MagicalCircle/index.js";
 export * from "./MagicSquares/index.js";
 export * from "./MediaDetail/index.js";
 export * from "./MediaLibrary/index.js";
+export * from "./MediaUpload/index.js";
 export * from "./Menu/index.js";
 export * from "./MultiCalendarCard/index.js";
 export * from "./Oaths/index.js";

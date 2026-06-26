@@ -10,10 +10,12 @@
 import {
   type MediaAsset,
   MediaLibrarySurface,
+  MediaUploadModal,
   Toast,
+  type UploadFileDraft,
   useTopbar,
 } from "@theourgia/shared";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const FIXTURE_ASSETS: MediaAsset[] = [
@@ -87,6 +89,7 @@ const FIXTURE_ASSETS: MediaAsset[] = [
 
 export function MediaLibraryRoute() {
   const navigate = useNavigate();
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   useTopbar(
     () => ({
@@ -105,12 +108,26 @@ export function MediaLibraryRoute() {
   );
 
   const handleUpload = useCallback(() => {
-    Toast.push({
-      tone: "info",
-      title: "Upload",
-      body: "Upload modal ships next in Cluster C. EXIF-strip default ON; sealed uploads use the B108 vault key.",
-    });
+    setUploadOpen(true);
   }, []);
+
+  const handleUploadClose = useCallback(() => {
+    setUploadOpen(false);
+  }, []);
+
+  const handleUploadSubmit = useCallback(
+    (files: readonly UploadFileDraft[]) => {
+      // Phase 11 backend lands later; toast a friendly stand-in.
+      Toast.push({
+        tone: "info",
+        title: `Uploading ${files.length} ${files.length === 1 ? "file" : "files"}`,
+        body: "Phase 11 backend lands next — the modal stages everything client-side until then.",
+      });
+      // Close after a brief moment so the user sees the progress.
+      setTimeout(() => setUploadOpen(false), 1400);
+    },
+    [],
+  );
 
   const handleOpenSealed = useCallback(() => {
     Toast.push({
@@ -121,12 +138,19 @@ export function MediaLibraryRoute() {
   }, []);
 
   return (
-    <MediaLibrarySurface
-      assets={FIXTURE_ASSETS}
-      sealed_count={3}
-      onSelect={handleSelect}
-      onUpload={handleUpload}
-      onOpenSealed={handleOpenSealed}
-    />
+    <>
+      <MediaLibrarySurface
+        assets={FIXTURE_ASSETS}
+        sealed_count={3}
+        onSelect={handleSelect}
+        onUpload={handleUpload}
+        onOpenSealed={handleOpenSealed}
+      />
+      <MediaUploadModal
+        open={uploadOpen}
+        onClose={handleUploadClose}
+        onUpload={handleUploadSubmit}
+      />
+    </>
   );
 }
