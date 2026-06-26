@@ -86,18 +86,18 @@ Theourgia is built in 17 phases. Each phase is architecturally dependent on prio
 | 04 | Journaling (entries, blog, library, body diagrams, quotes) | `[x]` (**Batch 35 CLOSED**: B97-B99c3 Tiptap live editor · 8 custom block nodes · 9 slash commands · 3 picker modals · auto-save · visibility chip + sealed toggle · Publish CTA) | [plan/04-journaling.md](plan/04-journaling.md) |
 | 05 | Magical Beings (entities, offerings, oaths, lineage attestation) | `[x]` (backend ✓; **H03 frontend primitives + Today ledger complete B67-B75**) | [plan/05-magical-beings.md](plan/05-magical-beings.md) |
 | 06 | Divination & Practice (tarot, I Ching, geomancy, scrying, rituals) | `[x]` (backend ✓; **H04 frontend complete B76-B86** — 5 oracle surfaces · Daily Practice Tracker · Practice Logs · OracleTabs nav) | [plan/06-divination-and-practice.md](plan/06-divination-and-practice.md) |
-| 07 | Workshop (sigils, talismans, magical circles, tool registry) | `[x]` ✅ backend done + frontend wired (B108-2e Tool Registry form pending) | [plan/07-workshop.md](plan/07-workshop.md) |
-| 08 | Linguistic Tools (gematria, transliteration, voces magicae) | `[ ]` | [plan/08-linguistic-tools.md](plan/08-linguistic-tools.md) |
-| 09 | Synchronicity & Analytics (scientific illuminism dashboards) | `[ ]` | [plan/09-synchronicity-and-analytics.md](plan/09-synchronicity-and-analytics.md) |
-| 10 | Publishing & Monetization (books, Stripe, newsletters, blog) | `[ ]` | [plan/10-publishing-and-monetization.md](plan/10-publishing-and-monetization.md) |
-| 11 | Media Library (images, audio, video, iCal feeds, pilgrimage map) | `[ ]` | [plan/11-media-library.md](plan/11-media-library.md) |
+| 07 | Workshop (sigils, talismans, magical circles, tool registry) | `[x]` ✅ backend B103-B107 + H05 frontend + B108 wiring (B108-2e Tool Registry form shipped in H07 Cluster A) | [plan/07-workshop.md](plan/07-workshop.md) · [plan/07-batches-backend.md](plan/07-batches-backend.md) |
+| 08 | Linguistic Tools (gematria, transliteration, voces magicae) | `[x]` ✅ backend B110-B115 + H06 surfaces 1/4/6 frontend (cipher catalog · gematria index + search · studies · 8 transliteration schemes · voce per-vault state) | [plan/08-linguistic-tools.md](plan/08-linguistic-tools.md) · [plan/08-batches-backend.md](plan/08-batches-backend.md) |
+| 09 | Synchronicity & Analytics (scientific illuminism dashboards) | `[x]` ✅ backend solo subset B120-B125 + all 10 H06 surfaces frontend (synchronicity + autotag · QUERY_BUILDER DSL + executor · timeseries/heatmap/correlation/today · weekly digest with banned-phrase regex). Network-aggregate / DP / cross-vault federation deferred to Phase 12+. | [plan/09-synchronicity-and-analytics.md](plan/09-synchronicity-and-analytics.md) · [plan/09-batches-backend.md](plan/09-batches-backend.md) |
+| 10 | Publishing & Monetization (books, Stripe, newsletters, blog) | `[~]` 🔨 backend plan B126-B131 LOCKED · **B126 SHIPPED** (publication lifecycle · 13 routes · sealed-embed rejection · 9-license picker) · H07 Cluster B frontend (10 surfaces) already in | [plan/10-publishing-and-monetization.md](plan/10-publishing-and-monetization.md) · [plan/10-batches-backend.md](plan/10-batches-backend.md) |
+| 11 | Media Library (images, audio, video, iCal feeds, pilgrimage map) | `[~]` 🔨 backend plan B132-B136 LOCKED · H07 Cluster C frontend (8 surfaces) already in (Media Library · Detail · Upload · Audio · Pilgrimage Map · Sacred Site · Add Place · iCal Feed) | [plan/11-media-library.md](plan/11-media-library.md) · [plan/11-batches-backend.md](plan/11-batches-backend.md) |
 | 12 | Federation (native protocol, network hubs, group ritual, SSO) | `[ ]` | [plan/12-federation.md](plan/12-federation.md) |
 | 13 | ActivityPub (Fediverse interop) | `[ ]` | [plan/13-activitypub.md](plan/13-activitypub.md) |
 | 14 | Plugin Ecosystem (SDK, official registry, sandbox-before-commit) | `[ ]` | [plan/14-plugin-ecosystem.md](plan/14-plugin-ecosystem.md) |
 | 15 | Hardening & Launch (GDPR audit, a11y, performance, security, ops) | `[ ]` | [plan/15-hardening-and-launch.md](plan/15-hardening-and-launch.md) |
 | 16 | AI Agent Integration (daskalos-pattern daemon + MCP) | `[ ]` | [plan/16-ai-agent-integration.md](plan/16-ai-agent-integration.md) |
 
-**Legend:** `[ ]` planned · `[~]` in progress · `[x]` done
+**Legend:** `[ ]` planned · `[~]` in progress (backend plan locked but execution still rolling) · `[x]` done
 
 This README is updated continuously as phases progress. The roadmap reflects the current state of work, not a snapshot at any point in time.
 
