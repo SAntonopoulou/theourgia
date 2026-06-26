@@ -32,7 +32,9 @@ Open source, self-hostable, federated. For working magicians.
 
 As of latest commit: **2194 vitest tests · 1899 backend tests · alembic head 0047 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
 
-**H06 progress: 10/10 surfaces shipped.** Only B125 (Phase 09 close-out docs + memory) remains queued. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
+**H06 sprint COMPLETE: 10/10 surfaces shipped + Phase 09 backend solo subset closed.** B120-B125 in. Network-aggregate / differential-privacy / cross-vault federation explicitly deferred to Phase 12+. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
+
+**Next:** Phase 10 (Publishing & Monetization) + Phase 11 (Media Library) backend authoring. The H07 frontend is in (18 surfaces); the backend plans need writing — Stripe Connect for Publishing, R2 + EXIF pipeline + iCal feed for Media.
 
 For the canonical feature catalog, see **[FEATURES.md](FEATURES.md)** — the "Phase Status Snapshot" table at the top tracks sprint progress per-batch. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 

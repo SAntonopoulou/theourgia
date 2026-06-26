@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-26 (Phase 09 Synchronicity & Analytics backend [solo subset] COMPLETE · B120 → B125)
+
+Phase 09's solo-magician analytics path is fully shipped. Five new
+tables across Alembic 0042 → 0047 (synchronicity ·
+study_kind extended with QUERY_BUILDER · digest · digest_item +
+the cross-cutting analytics module). 1899 backend tests passing.
+
+Explicitly OUT of scope (Phase 12+): network aggregates,
+differential-privacy noise, anonymized cross-vault contribution,
+federated study sharing, email digest delivery, automated
+pattern-detection ML. Documented forward in `plan/09-batches-backend.md`.
+
+What landed across the six execution batches:
+
+- **B120 (synchronicity + auto-tag)** — Synchronicity table with
+  10 closed-enum categories · intensity 1-10 · auto-tag pipeline
+  with AstroProvider / CalendarProvider / WeatherProvider protocols
+  + dependency injection. The location-precision floor (Pilgrimage
+  Map substrate) is enforced BEFORE providers see lat/lng so they
+  cannot leak precision. Sealed entries cannot be linked.
+
+- **B121 (QUERY_BUILDER + DSL)** — StudyKind extended with
+  QUERY_BUILDER (Postgres `ALTER TYPE … ADD VALUE`). Pure DSL
+  parser + validator covering 4 subjects · 11 comparators · 4
+  aggregates · cross-cutting astro/calendar axes. Strict: extra
+  keys rejected, empty AND/OR rejected, value type enforced per
+  axis type.
+
+- **B122 (executor + /analytics/query)** — DSL → SQLAlchemy
+  translator. Sealed entries' body text NEVER enters a result
+  when the filter tree touches `entry.body_text`; a separate
+  `sealed_excluded_count` indicator reports the structural count
+  without leaking content. Owner-scoped at every base statement.
+  1000-row cap. Loud failure on axes that haven't been
+  materialised yet (astro.*, working.outcome_rating) — silent
+  zero rows are worse.
+
+- **B123 (analytics aggregates)** — Four endpoints: timeseries,
+  heatmap, correlation, today. Every aggregate response carries
+  sample_size + small_sample flag. Minimums: timeseries ≥ 5 ·
+  heatmap ≥ 10 · correlation ≥ 20. Pearson + Spearman pure
+  helpers handle constant series (zero variance) by returning
+  0.0 — no divide-by-zero crash.
+
+- **B124 (weekly digest)** — Pure-where-possible digest builder
+  with tier-1 counts always present + tier-2/tier-3 patterns
+  gated by sample size (≥ 10 / ≥ 20). Banned-phrase regex blocks
+  modal language (must/will/should work/guaranteed) AND oracular
+  framing (destiny/fated/"the gods favor"/conviction without
+  sample size). The check runs at draft emission AND at test
+  time against the shipped templates. Four routes:
+  GET /weekly · GET /weekly/{period_start} · PATCH /items/{id}
+  (dismissed only) · POST /rebuild (idempotent).
+
+- **B125 (close-out)** — This commit. Docs + memory updates.
+
+Honesty rules added or strengthened (vs Phase 08):
+
+- Location precision is a per-vault floor. The DB row never holds
+  finer precision than the floor allows; the autotagger applies
+  it BEFORE any provider sees lat/lng.
+- Sealed body-text NEVER enters a query result. Sealed structural
+  filters (date / type) DO match — the protection is on the
+  content, not the shape. `sealed_excluded_count` surfaces the
+  structural count without leaking content.
+- Aggregate responses ALWAYS carry sample_size + small_sample.
+  Sub-threshold means the data still returns but the surface
+  flag fires.
+- Personal-cipher provenance carries through the executor for
+  any gematria-axis filter (mirrors the B111 invariant).
+- Digest headlines NEVER use modal or oracular language. The
+  banned-phrase regex is tested against every shipped template.
+- Study queries + digest items are immutable history. Only the
+  `dismissed` flag on a digest item changes after creation.
+
+H06 frontend porting also complete this session (10/10 surfaces):
+
+- 2/10 Cross-Journal Search · 3/10 Per-Study Page ·
+  5/10 Studies Index · 6/10 Transliteration Utility ·
+  7/10 Analytics Dashboard · 8/10 Query Builder ·
+  9/10 Synchronicity Log · 10/10 Quick-Capture.
+
+(Surfaces 1/10 Gematria Calculator + 4/10 Voces Library Browser
+shipped earlier in 2026-06-25's H06 wave.)
+
+Backend test count: 1753 → 1899 (+146 across B120-B124).
+Alembic chain: 0042 → 0047 (head).
+Frontend shared tests: 2071 → 2194 across the eight H06 ports.
+
 ### Added — 2026-06-26 (Phase 08 Linguistic Tools backend COMPLETE · B110 → B115)
 
 Phase 08 backend is fully shipped. Five new tables ship across
