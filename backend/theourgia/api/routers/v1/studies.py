@@ -295,6 +295,36 @@ async def run_study(
             )
         response = await search_gematria(payload, db, current_user)
         results = response.model_dump()
+    elif row.kind == StudyKind.QUERY_BUILDER:
+        # B121 stub. The actual executor lands in B122 (see
+        # ``theourgia.core.analytics.executor``). For now we parse +
+        # validate the stored query and snapshot a placeholder
+        # result so the round-trip still works end-to-end.
+        from theourgia.core.analytics.query_dsl import (
+            DSLValidationError,
+            parse as parse_query,
+            validate as validate_query,
+        )
+
+        try:
+            parsed = parse_query(dict(row.query or {}))
+            validate_query(parsed)
+        except DSLValidationError as exc:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                f"Stored query is invalid: {exc}",
+            )
+        results = {
+            "subject": parsed.subject,
+            "executor_pending": True,
+            "note": (
+                "Query DSL parsed and validated. "
+                "The executor that runs the filters ships in B122."
+            ),
+            "rows": [],
+            "total_rows": 0,
+            "sealed_excluded_count": 0,
+        }
     elif row.kind == StudyKind.GEMATRIA_CALCULATION:
         # Stored as { input: str, cipher_ids: [uuid, ...] }. We
         # execute against the per-vault ciphers and produce a

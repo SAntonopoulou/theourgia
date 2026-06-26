@@ -38,7 +38,9 @@ class StudyKind(str, enum.Enum):
 
     GEMATRIA_SEARCH = "gematria_search"
     GEMATRIA_CALCULATION = "gematria_calculation"
-    # Phase 09 will extend with QUERY_BUILDER, etc.
+    # Added in B121 — the query-builder kind. Stored ``query`` follows
+    # the DSL in :mod:`theourgia.core.analytics.query_dsl`.
+    QUERY_BUILDER = "query_builder"
 
 
 class StudyVisibility(str, enum.Enum):

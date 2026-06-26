@@ -223,11 +223,12 @@ def test_studies_router_response_models() -> None:
     assert by_path[("/studies/{study_id}/snapshots", "GET")] == list[StudySnapshotRead]
 
 
-def test_study_kind_enum_has_two_values_in_phase08() -> None:
-    """Phase 08 ships two kinds; Phase 09 will extend."""
+def test_study_kind_enum_covers_phase_08_and_09() -> None:
+    """Phase 08 shipped 2 kinds; B121 added query_builder for Phase 09."""
     assert {k.value for k in StudyKind} == {
         "gematria_search",
         "gematria_calculation",
+        "query_builder",
     }
 
 
