@@ -7,6 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-26 (Phase 08 Linguistic Tools backend COMPLETE · B110 → B115)
+
+Phase 08 backend is fully shipped. Five new tables ship across
+Alembic 0038 → 0042 (cipher · gematria_index · study · study_snapshot ·
+transliteration_scheme · voce_per_vault_state). 1753 backend tests
+passing.
+
+What landed across the five execution batches:
+
+- **B110 (cipher catalog)** — `cipher` table with 13 PD-cited
+  bundled fixtures across six language families (Greek · Hebrew ·
+  English · Coptic · Arabic · Sanskrit). The seven ciphers shipped
+  client-side in H06-1 have byte-for-byte identical mappings on
+  the server — verified by per-cipher parity tests. Six
+  endpoints: `GET /bundled` (public) + per-vault CRUD with 409
+  on PATCH/DELETE for bundled rows. Bundled rows are immutable.
+
+- **B111 (gematria index + cross-journal search)** — Pure indexer
+  in `core/linguistic/indexer.py` (`compute_index_rows` builds
+  1/2/3-gram phrase candidates and computes their value per
+  cipher). Sealed entries are NEVER indexed; the search router
+  surfaces a separate `sealed_match_count` indicator. Three match
+  modes: exact (`=N`) · near (`BETWEEN N-δ AND N+δ`) · reduced
+  (digit_sum equality). CSV export. Owner-scoped 401.
+
+- **B112 (studies)** — Saved gematria queries + frozen snapshots.
+  The Study `query` field is IMMUTABLE after first save (the
+  StudyUpdate schema doesn't declare it). Snapshots are equally
+  frozen: only `notes` is editable. Every `/run` creates a new
+  snapshot row, never replaces. Nine endpoints (CRUD + run +
+  snapshot list/read/annotate).
+
+- **B113 (transliteration schemes)** — 8 PD-cited reference
+  tables: Beta Code · ALA-LC · IAST · Harvard-Kyoto · SBL
+  Hebrew · ISO 233 · DIN 31635 · SBL Coptic. Each verified by a
+  canonical-input test (अग्नि→agni for IAST, θ→q for Beta Code,
+  etc.). Round-trip status surfaced explicitly (lossless ·
+  normalises · lossy). No write routes — schemes ship as
+  Python constants.
+
+- **B114 (voce per-vault state)** — A practitioner can attach a
+  private note ("Why I learned this voce") to any voce AND hide
+  individual entries from their own library without affecting
+  the canonical row. New `voce_per_vault_state` table with
+  unique (voce_id, owner_id). The `/voces` list endpoint now
+  honours hidden state by default; `?include_hidden=true` opts
+  back in.
+
+Honesty rules added or strengthened:
+
+- Sealed entries NEVER leak phrase content. The B111 indexer
+  skips sealed entries entirely; the search router double-defends
+  at the JOIN layer; `sealed_match_count` is a separate query
+  against entry counts.
+- Personal-cipher provenance: every gematria search result
+  carries `cipher_personal=true|false` so the frontend can flag
+  matches that come from a vault's custom cipher only.
+- Bundled cipher / scheme citations are mandatory (≥10 chars,
+  CI gate enforced).
+- Study queries are immutable after first save (H06 §8 ritual
+  rule); snapshots are frozen.
+
+Backend test count: 1625 → 1753 (+128 across the five batches).
+Alembic chain: 0037 → 0042 (head).
+
 ### Added — 2026-06-25 (Phase 07 Workshop backend COMPLETE · B103 → B108-2d)
 
 Phase 07 backend is now fully shipped. Five domains live across Alembic
