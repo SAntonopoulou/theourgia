@@ -84,6 +84,7 @@ import { Library } from "./routes/Library.js";
 import { MagicalCircleRoute } from "./routes/MagicalCircleRoute.js";
 import { MagicSquaresRoute } from "./routes/MagicSquaresRoute.js";
 import { AudioLibraryRoute } from "./routes/AudioLibraryRoute.js";
+import { ICalFeedRoute } from "./routes/ICalFeedRoute.js";
 import { MediaDetailRoute } from "./routes/MediaDetailRoute.js";
 import { MediaLibraryRoute } from "./routes/MediaLibraryRoute.js";
 import { PilgrimageMapRoute } from "./routes/PilgrimageMapRoute.js";
@@ -132,6 +133,7 @@ function navKeyForPath(pathname: string): NavKey | undefined {
   if (pathname.startsWith("/tools")) return "tools";
   if (pathname.startsWith("/voces")) return "voces";
   if (pathname.startsWith("/audio")) return "audio";
+  if (pathname.startsWith("/icalfeed")) return "icalfeed";
   if (pathname.startsWith("/media")) return "media";
   if (pathname.startsWith("/pilgrimage")) return "pilgrimage";
   if (pathname.startsWith("/analytics")) return "analytics";
@@ -250,6 +252,7 @@ function ShellRoutes() {
           element={<NewsletterEditorRoute />}
         />
         <Route path="/audio" element={<AudioLibraryRoute />} />
+        <Route path="/icalfeed" element={<ICalFeedRoute />} />
         <Route path="/pilgrimage" element={<PilgrimageMapRoute />} />
         <Route path="/media" element={<MediaLibraryRoute />} />
         <Route path="/media/:id" element={<MediaDetailRoute />} />

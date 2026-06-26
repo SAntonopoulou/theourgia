@@ -8,6 +8,8 @@
  */
 
 import {
+  type AddPlaceDraft,
+  AddPlaceModal,
   type PilgrimageSite,
   PilgrimageMapSurface,
   type SacredSiteRecord,
@@ -131,6 +133,7 @@ const FIXTURE_SITE_DETAILS: Record<string, SacredSiteRecord> = {
 export function PilgrimageMapRoute() {
   const [openSiteId, setOpenSiteId] = useState<string | null>(null);
   const [siteDetails, setSiteDetails] = useState(FIXTURE_SITE_DETAILS);
+  const [addPlaceOpen, setAddPlaceOpen] = useState(false);
 
   useTopbar(
     () => ({
@@ -178,12 +181,30 @@ export function PilgrimageMapRoute() {
   );
 
   const handleAddPlace = useCallback(() => {
-    Toast.push({
-      tone: "info",
-      title: "Add place",
-      body: "Add Place modal ships next in Cluster C (surface 20).",
-    });
+    setAddPlaceOpen(true);
   }, []);
+
+  const handleAddPlaceClose = useCallback(() => {
+    setAddPlaceOpen(false);
+  }, []);
+
+  const handleAddPlaceSave = useCallback(
+    (draft: AddPlaceDraft) => {
+      Toast.push({
+        tone: "info",
+        title: `Saved "${draft.name}"`,
+        body: `Recorded at ${
+          draft.precision === "1km"
+            ? "~1 km"
+            : draft.precision === "10km"
+              ? "~10 km"
+              : draft.precision
+        }${draft.seal ? " · sealed on this device" : ""}.`,
+      });
+      setAddPlaceOpen(false);
+    },
+    [],
+  );
 
   return (
     <>
@@ -201,6 +222,11 @@ export function PilgrimageMapRoute() {
           onRequantize={handleRequantize}
         />
       ) : null}
+      <AddPlaceModal
+        open={addPlaceOpen}
+        onClose={handleAddPlaceClose}
+        onSave={handleAddPlaceSave}
+      />
     </>
   );
 }
