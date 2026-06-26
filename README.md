@@ -153,6 +153,19 @@ to Phase 12+).
 2026-06-26-h08-federation-activitypub.md` · 767 lines · 21 surfaces
 across two clusters · 13 net-new honesty rules pinned).
 
+**Tool Registry kind-icon SVG sprite fold** (2026-06-26 ·
+autonomous follow-up). The 14 ToolKind symbols were already in
+`tokens/theourgia-icons.svg` as `theo-tool-{kind}` (B95/B101),
+and `ToolKindIcon.tsx` was the canonical `<use>`-based component.
+The H07 Cluster A `NewToolModal` was still rendering all 14 inline
+`<svg>` paths via a 117-line `kindIcon(kind, color)` switch
+function. Refactored to `<ToolKindIcon kind={k} size={20} color=
+{...} />` — removes the inline duplication, makes the modal
+consistent with the rest of the Workshop chrome, and any future
+icon update (e.g., refining the cingulum glyph) lands in one
+place. NewToolModal slimmed by ~117 lines; admin tsc + 2194
+shared vitest still green.
+
 **Weekly digest tier-2/3 pre-compute wired** (2026-06-26 ·
 autonomous follow-up). The Phase 09 digest route now pre-computes
 two real-data candidate sources alongside the existing tier-1

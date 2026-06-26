@@ -22,10 +22,11 @@
 import {
   type CSSProperties,
   type KeyboardEvent,
-  type ReactElement,
   useMemo,
   useState,
 } from "react";
+
+import { ToolKindIcon } from "../ToolRegistry/ToolKindIcon.js";
 
 import {
   NT_ACQUIRED_LABEL,
@@ -169,126 +170,6 @@ const FOOTER: CSSProperties = {
   background: "var(--bg)",
 };
 
-// ── Tool-kind icons (lifted verbatim from the H07 .dc.html script) ──
-
-function kindIcon(kind: NewToolKind, color: string): ReactElement {
-  const s = {
-    width: 20,
-    height: 20,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: color,
-    strokeWidth: 1.3,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    "aria-hidden": true,
-  };
-  switch (kind) {
-    case "athame":
-      return (
-        <svg {...s}>
-          <path d="M7 17l7-7 1 1-7 7z" />
-          <path d="M14 10l4-4a1.4 1.4 0 0 0-2-2l-4 4" />
-          <path d="M6 18l-1 1" />
-        </svg>
-      );
-    case "wand":
-      return (
-        <svg {...s}>
-          <path d="M5 19L17 7" />
-          <path d="M17 7l2-2M16 4l.5 1.5L18 6l-1.5.5L16 8l-.5-1.5L14 6l1.5-.5z" />
-        </svg>
-      );
-    case "chalice":
-      return (
-        <svg {...s}>
-          <path d="M7 4h10l-1 6a4 4 0 0 1-8 0z" />
-          <path d="M12 14v5M9 19h6" />
-        </svg>
-      );
-    case "pentacle":
-      return (
-        <svg {...s}>
-          <circle cx={12} cy={12} r={8} />
-          <path d="M12 5l4.3 8.6H7.7z" transform="rotate(180 12 12)" />
-        </svg>
-      );
-    case "censer":
-      return (
-        <svg {...s}>
-          <path d="M8 21h8l-1-6H9z" />
-          <path d="M9 15a3 3 0 0 0 6 0" />
-          <path d="M12 3v3M10 5c0 1.5 2 1.5 2 3" />
-        </svg>
-      );
-    case "bell":
-      return (
-        <svg {...s}>
-          <path d="M6 17a6 6 0 0 1 12 0z" />
-          <path d="M10 17a2 2 0 0 0 4 0" />
-          <circle cx={12} cy={4} r={1.4} />
-        </svg>
-      );
-    case "sword":
-      return (
-        <svg {...s}>
-          <path d="M5 19l9-9M14 10l5-5-2-2-5 5" />
-          <path d="M5 19l1.5-.5M9 14l1 1" />
-        </svg>
-      );
-    case "lamp":
-      return (
-        <svg {...s}>
-          <path d="M9 4h6l-1 5h-4z" />
-          <path d="M8 9h8l1 8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2z" />
-          <path d="M12 2v2" />
-        </svg>
-      );
-    case "mirror":
-      return (
-        <svg {...s}>
-          <ellipse cx={12} cy={10} rx={6} ry={7} />
-          <path d="M12 17v4M9 21h6" />
-        </svg>
-      );
-    case "bowl":
-      return (
-        <svg {...s}>
-          <path d="M4 11h16a8 8 0 0 1-16 0z" />
-          <path d="M8 8c0-1.5 8-1.5 8 0" />
-        </svg>
-      );
-    case "statue":
-      return (
-        <svg {...s}>
-          <circle cx={12} cy={6} r={2.4} />
-          <path d="M9 21l1-9h4l1 9M8 12h8" />
-        </svg>
-      );
-    case "robe":
-      return (
-        <svg {...s}>
-          <path d="M8 3l-3 4 2 2v11h10V9l2-2-3-4-2 2h-2z" />
-        </svg>
-      );
-    case "cingulum":
-      return (
-        <svg {...s}>
-          <path d="M5 8c4 3 10 3 14 0" />
-          <path d="M12 8v8M10 16l2 4 2-4" />
-        </svg>
-      );
-    case "other":
-    default:
-      return (
-        <svg {...s}>
-          <circle cx={12} cy={12} r={8} />
-          <path d="M12 8v8M8 12h8" />
-        </svg>
-      );
-  }
-}
-
 // ── Component ──────────────────────────────────────────────────────
 
 export function NewToolModal({ open, onClose, onSave }: NewToolModalProps) {
@@ -419,10 +300,11 @@ export function NewToolModal({ open, onClose, onSave }: NewToolModalProps) {
                     minHeight: 64,
                   }}
                 >
-                  {kindIcon(
-                    k as NewToolKind,
-                    on ? "var(--accent)" : "var(--ink-soft)",
-                  )}
+                  <ToolKindIcon
+                    kind={k as NewToolKind}
+                    size={20}
+                    color={on ? "var(--accent)" : "var(--ink-soft)"}
+                  />
                   <span>{label}</span>
                 </button>
               );
