@@ -87,6 +87,7 @@ import { AudioLibraryRoute } from "./routes/AudioLibraryRoute.js";
 import { CrossJournalSearchRoute } from "./routes/CrossJournalSearchRoute.js";
 import { PerStudyPageRoute } from "./routes/PerStudyPageRoute.js";
 import { StudiesIndexRoute } from "./routes/StudiesIndexRoute.js";
+import { TransliterationUtilityRoute } from "./routes/TransliterationUtilityRoute.js";
 import { ICalFeedRoute } from "./routes/ICalFeedRoute.js";
 import { MediaDetailRoute } from "./routes/MediaDetailRoute.js";
 import { MediaLibraryRoute } from "./routes/MediaLibraryRoute.js";
@@ -289,6 +290,7 @@ function ShellRoutes() {
         <Route path="/sandbox" element={<Sandbox />} />
         <Route path="/oracle" element={<Oracle />} />
         <Route path="/transliterate" element={<Transliterate />} />
+        <Route path="/transliterations" element={<TransliterationUtilityRoute />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/foundations" element={<Foundations />} />
         <Route

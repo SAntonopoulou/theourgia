@@ -117,6 +117,7 @@ export * from "./Tarot/index.js";
 export * from "./TemplateDesigner/index.js";
 export * from "./Editor/index.js";
 export * from "./Toast/index.js";
+export * from "./TransliterationUtility/index.js";
 export * from "./TodayLedger/index.js";
 export * from "./Tooltip/index.js";
 export * from "./ToolRegistry/index.js";
