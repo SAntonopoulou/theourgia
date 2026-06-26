@@ -57,6 +57,7 @@ from theourgia.api.routers.v1 import transliteration as v1_transliteration
 from theourgia.api.routers.v1 import synchronicities as v1_synchronicities
 from theourgia.api.routers.v1 import analytics as v1_analytics
 from theourgia.api.routers.v1 import digest as v1_digest
+from theourgia.api.routers.v1 import publications as v1_publications
 
 __all__ = ["register_routers"]
 
@@ -125,4 +126,6 @@ def register_routers(app: FastAPI) -> None:
     )
     v1.include_router(v1_analytics.router, tags=["analytics"])
     v1.include_router(v1_digest.router, tags=["digest"])
+    # Phase 10 Publishing (B126+)
+    v1.include_router(v1_publications.router, tags=["publications"])
     app.include_router(v1)

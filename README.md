@@ -34,12 +34,14 @@ As of latest commit: **2194 vitest tests · 1899 backend tests · alembic head 0
 
 **H06 sprint COMPLETE: 10/10 surfaces shipped + Phase 09 backend solo subset closed.** B120-B125 in. Network-aggregate / differential-privacy / cross-vault federation explicitly deferred to Phase 12+. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
-**Phase 10 + 11 backend plans LOCKED** (2026-06-26).
+**Phase 10 + 11 backend plans LOCKED + B126 SHIPPED** (2026-06-26).
 
-- `plan/10-batches-backend.md` — B126→B131 · publication lifecycle · Stripe Connect with 0% application fee (Theourgia takes no cut) · refunds via portal hand-off (never inline) · double-opt-in subscriptions · newsletter delivery · public reader + RSS/Atom/JSON Feed · paywall is structural-not-promotional (no countdown timers, no "limited time" pressure).
-- `plan/11-batches-backend.md` — B132→B136 · media asset table with sealed-only count-list rule · R2 direct-upload + EXIF strip on the server hop · pilgrimage sites with precision floor enforced at write time (never raise) · iCal feed that collapses sealed entries into "N sealed entries today" markers and excludes sealed pilgrimage anniversaries entirely.
+- `plan/10-batches-backend.md` — B126→B131 · publication lifecycle · Stripe Connect with 0% application fee (Theourgia takes no cut) · refunds via portal hand-off (never inline) · double-opt-in subscriptions · newsletter delivery · public reader + RSS/Atom/JSON Feed · paywall is structural-not-promotional.
+- `plan/11-batches-backend.md` — B132→B136 · media asset table with sealed-only count-list rule · R2 direct-upload + EXIF strip on the server hop · pilgrimage sites with precision floor enforced at write time (never raise) · iCal feed that collapses sealed entries into "N sealed entries today" markers.
 
-**Next:** execute B126 → publication lifecycle (lowest-leverage entry point for Phase 10 — every other batch builds on the publication table).
+**B126 shipped** — Publication + PublicationChapter models · alembic 0048 · 13 routes (5 CRUD + 4 lifecycle + 4 chapter sub-resources) · slug auto-derivation with collision suffix · sealed-embed rejection at /publish + /republish · withdrawn rows STAY · generic PATCH refuses to mutate `state`/`kind`/`owner_id`/`published_at`. 37 new tests; backend total 1899 → 1936.
+
+**Next:** B127 — Stripe Connect substrate + purchase (the 0% application fee invariant + refund-via-portal-only contract).
 
 For the canonical feature catalog, see **[FEATURES.md](FEATURES.md)** — the "Phase Status Snapshot" table at the top tracks sprint progress per-batch. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
@@ -217,7 +219,7 @@ theourgia/
 ├── LICENSE                ← AGPL-3.0
 ├── plan/                  ← per-phase implementation plans (00–16)
 ├── docs/                  ← will hold user/admin/developer documentation
-├── backend/               ← Python 3.12 + FastAPI + SQLModel + Alembic + Celery (1899 tests)
+├── backend/               ← Python 3.12 + FastAPI + SQLModel + Alembic + Celery (1936 tests)
 ├── frontend/              ← React 19 admin SPA · Astro 6 public site · shared design system
 ├── docs/                  ← Starlight docs site (theourgia tokens bridged onto Starlight)
 └── plugins/               ← will hold reference plugins (Phase 14+)
