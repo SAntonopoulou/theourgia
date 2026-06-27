@@ -27,15 +27,17 @@ from typing import TYPE_CHECKING, Optional
 from uuid import UUID
 
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     Column,
     DateTime,
     ForeignKey,
     Index,
     String,
+    Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import CITEXT
+from sqlalchemy.dialects.postgresql import CITEXT, JSONB
 from sqlmodel import Enum as SQLEnum
 from sqlmodel import Field, SQLModel
 
@@ -49,10 +51,24 @@ __all__ = [
     "Session",
     "Vault",
     "Hub",
+    "HubMembershipPolicy",
     "Membership",
     "MembershipRole",
     "PrivateViewer",
 ]
+
+
+class HubMembershipPolicy(str, enum.Enum):
+    """How members join a hub (H08 surface 3 + 5).
+
+    ``PUBLIC`` — anyone can join immediately, no approval step.
+    ``OWA``    — open-with-approval; anyone can request, an officer approves.
+    ``PRIVATE`` — invite-only. **The default.**
+    """
+
+    PUBLIC = "public"
+    OWA = "open_with_approval"
+    PRIVATE = "private"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -230,24 +246,93 @@ class Vault(IDMixin, TimestampMixin, table=True):
 class Hub(IDMixin, TimestampMixin, table=True):
     """A group / order / coven / sodality shared namespace.
 
-    Hubs aggregate content from member vaults and have their own public
-    face. The hub's federation identity is derived from its ``slug`` and
-    the instance host.
+    Hubs aggregate content from member vaults and have their own
+    public face. The hub's federation identity is derived from its
+    ``slug`` and the instance host. The Phase 01 sparse shape was
+    extended in B137 (H08 surface set) — additions are nullable +
+    default-backfill, so existing rows survive the migration.
     """
 
     __tablename__ = "hub"
     __table_args__ = (
         UniqueConstraint("slug", name="uq_hub_slug"),
+        Index("ix_hub_owner", "owner_id"),
+        Index("ix_hub_deleted_at", "deleted_at"),
     )
 
     slug: str = Field(sa_column=Column(String(64), nullable=False))
     display_name: str = Field(sa_column=Column(String(255), nullable=False))
-    description: str = Field(default="", sa_column=Column(String(2000), nullable=False))
+    description: str = Field(
+        default="", sa_column=Column(String(2000), nullable=False)
+    )
 
     # Tradition tags (free-form labels for discovery)
     # Stored as a comma-separated string for simplicity at this stage;
     # later phases may move to a junction table if querying needs grow.
-    tradition_tags: str = Field(default="", sa_column=Column(String(500), nullable=False))
+    tradition_tags: str = Field(
+        default="", sa_column=Column(String(500), nullable=False)
+    )
+
+    # ── B137 (Phase 12) extensions ──────────────────────────────────
+    # H08 surface set: tagline + policy + owner + curation flags +
+    # public-face configuration. Nullable + default-backfilled so
+    # the migration is non-destructive on existing rows.
+
+    tagline: Optional[str] = Field(
+        default=None, sa_column=Column(String(420), nullable=True),
+    )
+
+    owner_id: Optional[UUID] = Field(
+        default=None,
+        sa_column=Column(
+            ForeignKey("user.id", ondelete="CASCADE"),
+            nullable=True,
+        ),
+    )
+
+    membership_policy: HubMembershipPolicy = Field(
+        default=HubMembershipPolicy.PRIVATE,
+        sa_column=Column(
+            SQLEnum(
+                HubMembershipPolicy,
+                name="hub_membership_policy",
+                values_callable=lambda obj: [m.value for m in obj],
+            ),
+            nullable=False,
+            server_default=HubMembershipPolicy.PRIVATE.value,
+        ),
+    )
+
+    accepts_sso: bool = Field(
+        default=False,
+        sa_column=Column(
+            Boolean(), nullable=False, server_default="false",
+        ),
+    )
+
+    auto_curates: bool = Field(
+        default=False,
+        sa_column=Column(
+            Boolean(), nullable=False, server_default="false",
+        ),
+    )
+
+    public_banner_url: Optional[str] = Field(
+        default=None,
+        sa_column=Column(String(2048), nullable=True),
+    )
+
+    public_tradition_tags: list[str] = Field(
+        default_factory=list,
+        sa_column=Column(
+            JSONB(), nullable=False, server_default="[]",
+        ),
+    )
+
+    deleted_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True),
+    )
 
 
 class Membership(IDMixin, TimestampMixin, table=True):
