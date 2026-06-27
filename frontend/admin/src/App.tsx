@@ -57,6 +57,7 @@ import { RunesRoute } from "./routes/RunesRoute.js";
 import { TarotRoute } from "./routes/TarotRoute.js";
 import { Entities } from "./routes/Entities.js";
 import { Foundations } from "./routes/Foundations.js";
+import { HubAdminDashboard } from "./routes/HubAdminDashboard.js";
 import { HubDiscovery } from "./routes/HubDiscovery.js";
 import { MyNetworks } from "./routes/MyNetworks.js";
 import { NetworkBrowser } from "./routes/NetworkBrowser.js";
@@ -287,6 +288,10 @@ function ShellRoutes() {
         <Route path="/networks/peers" element={<NetworkBrowser />} />
         <Route path="/networks/discover" element={<HubDiscovery />} />
         <Route path="/hubs" element={<MyNetworks />} />
+        <Route
+          path="/hubs/:hubId/admin"
+          element={<HubAdminDashboard />}
+        />
         <Route path="/identities" element={<Identities />} />
         <Route path="/lineage" element={<LineageAdmin />} />
         <Route path="/membership" element={<Membership />} />
