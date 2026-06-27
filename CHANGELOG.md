@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-27 (H09 Storybook stories · 17/17 · `26b9edc`)
+
+One story per H09 surface, mirroring the H08 story pattern shipped at `0b520aa`. Stories cover the default state plus the variants that exercise the worked-example logic — Install / Update / Tier3 capability review; NoNewCaps / WithNewCaps update-diff; NoReferences bundle-discard; Tombstoned registry detail; severity tiers (high / medium / low / collapsed) on the vulnerability banner. **2677 shared vitest pass · admin tsc clean.**
+
 ### Added — 2026-06-27 (H09 sprint COMPLETE · Phase 14 Plugin Ecosystem frontend · 17/17)
 
 The H09 frontend sprint closed the same day the designer returned the package. All 17 surfaces against the H09 bundle at `/home/sophia/design-handoffs/theourgia/2026-06-27-H09/handoff_H09/` shipped — nine Cluster A (Plugin ecosystem) + eight Cluster B (Bundles + Sandbox). Phase 14 frontend is end-to-end against the design corpus. Backend (Phase 14 routes — substrate from Phase 01 B7-B10 already exists) queued.

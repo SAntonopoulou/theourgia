@@ -24,8 +24,8 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `ee065c9` |
-| **vitest** | 2657 passing · admin tsc clean |
+| **Latest commit** | `26b9edc` |
+| **vitest** | 2677 passing · admin tsc clean |
 | **backend** | 2435 passing · alembic head **0060** |
 | **a11y** | 543 / 557 (97.5%); remaining 14 are intentional design tradeoffs |
 | **Sprints shipped** | H01-H03 · H04 · H05 · H06 · H07 · H08 (21/21) · **H09 (17/17)** |
