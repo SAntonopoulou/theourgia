@@ -115,6 +115,7 @@ export * from "./AccountDeletion/index.js";
 export * from "./PerUserAuditLog/index.js";
 export * from "./SessionsAndDevices/index.js";
 export * from "./AccountSettings/index.js";
+export * from "./AccessibilityAndMotion/index.js";
 export * from "./RegistryBrowser/index.js";
 export * from "./RegistryPluginDetail/index.js";
 export * from "./PluginAuthorProfile/index.js";
