@@ -113,3 +113,57 @@ export function useRemoveMember(hubId: string | undefined) {
     },
   });
 }
+
+// ── Capability matrix ──────────────────────────────────────────────
+
+export type BareHubRole =
+  | "admin"
+  | "officer"
+  | "moderator"
+  | "member"
+  | "observer";
+
+export interface CapabilityMatrix {
+  hub_id: string;
+  matrix: Record<BareHubRole, string[]>;
+}
+
+const matrixKey = (id: string) => ["hubs", "matrix", id] as const;
+
+export function useCapabilityMatrix(
+  hubId: string | undefined,
+): UseQueryResult<CapabilityMatrix, Error> {
+  return useQuery<CapabilityMatrix, Error>({
+    queryKey: matrixKey(hubId ?? ""),
+    enabled: !!hubId,
+    queryFn: () => apiGet<CapabilityMatrix>(`/hubs/${hubId}/roles`),
+  });
+}
+
+export function useUpdateCapabilityMatrix(hubId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (matrix: Record<BareHubRole, string[]>) => {
+      // PATCH inline — the api helper only does GET/POST/DELETE.
+      const res = await fetch(`/api/v1/hubs/${hubId}/roles`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ matrix }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `PATCH failed (HTTP ${res.status})`);
+      }
+      return (await res.json()) as CapabilityMatrix;
+    },
+    onSuccess: () => {
+      if (hubId) {
+        qc.invalidateQueries({ queryKey: matrixKey(hubId) });
+      }
+    },
+  });
+}
