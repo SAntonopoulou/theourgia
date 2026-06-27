@@ -26,6 +26,7 @@ import {
   type VaultNavLinkProps,
   VaultTopbar,
 } from "@theourgia/shared";
+import { QueryClientProvider } from "@tanstack/react-query";
 import {
   BrowserRouter,
   NavLink,
@@ -36,6 +37,7 @@ import {
 } from "react-router-dom";
 
 import { apiMethods } from "./data/api.js";
+import { queryClient } from "./lib/queryClient.js";
 import { Analytics } from "./routes/Analytics.js";
 import { CircleBuilder } from "./routes/CircleBuilder.js";
 import { Connection } from "./routes/Connection.js";
@@ -420,22 +422,24 @@ function ShellRoutes() {
 
 export function App() {
   return (
-    <I18nProvider>
-      <AuthProvider api={apiMethods}>
-        <ActingAsProvider initial={ACTING_AS_DEFAULT_ID}>
-          <ToastProvider />
-          <BrowserRouter basename={ROUTER_BASENAME}>
-            <TopbarProvider>
-              <Routes>
-                {/* Full-viewport routes — no chrome. */}
-                <Route path="/capture" element={<Capture />} />
-                {/* Everything else renders inside the AppShell. */}
-                <Route path="*" element={<ShellRoutes />} />
-              </Routes>
-            </TopbarProvider>
-          </BrowserRouter>
-        </ActingAsProvider>
-      </AuthProvider>
-    </I18nProvider>
+    <QueryClientProvider client={queryClient}>
+      <I18nProvider>
+        <AuthProvider api={apiMethods}>
+          <ActingAsProvider initial={ACTING_AS_DEFAULT_ID}>
+            <ToastProvider />
+            <BrowserRouter basename={ROUTER_BASENAME}>
+              <TopbarProvider>
+                <Routes>
+                  {/* Full-viewport routes — no chrome. */}
+                  <Route path="/capture" element={<Capture />} />
+                  {/* Everything else renders inside the AppShell. */}
+                  <Route path="*" element={<ShellRoutes />} />
+                </Routes>
+              </TopbarProvider>
+            </BrowserRouter>
+          </ActingAsProvider>
+        </AuthProvider>
+      </I18nProvider>
+    </QueryClientProvider>
   );
 }

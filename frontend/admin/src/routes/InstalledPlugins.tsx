@@ -1,15 +1,17 @@
 /**
  * InstalledPlugins — admin route at ``/plugins``.
  *
- * Renders the H09 Cluster A surface 1 against fixtures.
+ * THE worked example for the admin API-wiring convention:
  *
- * Wiring deferred to Phase 14:
+ *   · TanStack Query for fetching + cache invalidation
+ *   · SurfaceSkeleton for loading
+ *   · SurfaceError (inline --warn-soft banner) for failure
+ *   · Mutation for per-row activate / deactivate / uninstall actions
  *
- *   * GET   /api/v1/plugins/installed   — list owned plugins.
- *   * POST  /api/v1/plugins/{id}/activate · /deactivate ·
- *     /uninstall — per-row kebab actions.
+ * Backend routes: `backend/theourgia/api/routers/v1/plugins.py`.
  */
 
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -18,73 +20,124 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 
-const PLUGINS: InstalledPluginRow[] = [
-  {
-    id: "p1",
-    kind: "divination",
-    name: "Geomancy Workbench",
-    version: "v2.1.0",
-    author: "did:theourgia:terra.example:agrippa-tools",
-    description:
-      "A full geomantic divination system — the sixteen figures, shield + house charts, and judge derivation.",
-    status: "active",
-  },
-  {
-    id: "p2",
-    kind: "correspondence",
-    name: "Decanic Correspondences",
-    version: "v1.4.2",
-    author: "did:theourgia:hermetica.org:decan-press",
-    description:
-      "The thirty-six decans with their faces, images, and planetary + zodiacal rulerships.",
-    status: "active",
-  },
-  {
-    id: "p3",
-    kind: "editor-block",
-    name: "Runic Tabular Block",
-    version: "v0.9.1",
-    author: "did:theourgia:nine-worlds.example:vala",
-    description:
-      "Editor blocks for Elder Futhark tables, bind-rune composition, and futhark-line annotation.",
-    status: "active",
-  },
-  {
-    id: "p4",
-    kind: "cipher",
-    name: "Trithemian Cipher",
-    version: "v1.0.3",
-    author: "did:theourgia:steganographia.example:abbot",
-    description:
-      "Encode and decode steganographic ciphers from the Polygraphia and Steganographia.",
-    status: "disabled",
-  },
-  {
-    id: "p5",
-    kind: "exporter",
-    name: "Obsidian Vault Exporter",
-    version: "v0.6.0",
-    author: "did:theourgia:bridges.example:scribe",
-    description:
-      "Export entries + entities to an Obsidian-compatible Markdown vault.",
-    status: "active",
-    tombstoned: true,
-  },
+import { SurfaceError } from "../lib/SurfaceError.js";
+import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
+import {
+  type PluginInstall,
+  usePluginAction,
+  useInstalledPlugins,
+} from "../lib/plugins.js";
+
+const KNOWN_KINDS: readonly InstalledPluginRow["kind"][] = [
+  "divination",
+  "calendar",
+  "cipher",
+  "correspondence",
+  "editor-block",
+  "widget",
+  "exporter",
+  "importer",
+  "notification",
+  "auth",
+  "storage",
+  "email",
+  "federation-event",
+  "ap-object",
 ];
+
+function deriveKind(install: PluginInstall): InstalledPluginRow["kind"] {
+  const manifest = install as unknown as {
+    manifest_json?: { kind?: string };
+  };
+  const claimed = manifest.manifest_json?.kind;
+  if (
+    typeof claimed === "string" &&
+    (KNOWN_KINDS as readonly string[]).includes(claimed)
+  ) {
+    return claimed as InstalledPluginRow["kind"];
+  }
+  return "widget";
+}
+
+function toRow(install: PluginInstall): InstalledPluginRow {
+  let status: InstalledPluginRow["status"] = "disabled";
+  if (install.state === "active") {
+    status = "active";
+  } else if (install.state === "error") {
+    status = "error";
+  }
+  return {
+    id: install.id,
+    kind: deriveKind(install),
+    name: install.name,
+    version: install.version,
+    author: install.author,
+    description: install.description,
+    status,
+  };
+}
 
 export function InstalledPlugins() {
   const navigate = useNavigate();
   useTopbar(() => ({ title: "Plugins" }));
 
+  const { data, isLoading, error, refetch } = useInstalledPlugins();
+  const action = usePluginAction();
+
+  const rows = useMemo(
+    () => (data ? data.map(toRow) : []),
+    [data],
+  );
+
+  if (isLoading) {
+    return <SurfaceSkeleton rowCount={5} />;
+  }
+
+  if (error) {
+    return (
+      <SurfaceError
+        title="Couldn’t load your installed plugins."
+        message={error.message}
+        onRetry={() => {
+          void refetch();
+        }}
+      />
+    );
+  }
+
   return (
-    <InstalledPluginsSurface
-      plugins={PLUGINS}
-      onBrowseRegistry={() => navigate("/plugins/registry")}
-      onPluginAction={(pluginId, action) => {
-        // TODO Phase 14 — POST /api/v1/plugins/{id}/{action}.
-        // eslint-disable-next-line no-console
-        console.info("[plugins] action", pluginId, action);
-      }}
-    />
+    <>
+      {action.error ? (
+        <SurfaceError
+          title="That action didn’t go through."
+          message={action.error.message}
+          onRetry={() => action.reset()}
+          retryLabel="Dismiss"
+        />
+      ) : null}
+      <InstalledPluginsSurface
+        plugins={rows}
+        onBrowseRegistry={() => navigate("/plugins/registry")}
+        onPluginAction={(pluginId, kind) => {
+          if (
+            kind === "activate" ||
+            kind === "deactivate" ||
+            kind === "uninstall"
+          ) {
+            action.mutate({ id: pluginId, action: kind });
+            return;
+          }
+          if (kind === "configure") {
+            navigate(`/plugins/${pluginId}/configure`);
+            return;
+          }
+          if (kind === "view-capabilities") {
+            navigate(`/plugins/${pluginId}`);
+            return;
+          }
+          // "update" handled by the PluginUpdateDiff surface (H09 17/17)
+        }}
+      />
+    </>
   );
 }
