@@ -128,6 +128,7 @@ export * from "./VulnerabilityAdvisorySubmit/index.js";
 export * from "./AgentsHome/index.js";
 export * from "./AgentMarketplace/index.js";
 export * from "./AgentInstall/index.js";
+export * from "./AgentCapabilityReview/index.js";
 export * from "./RegistryBrowser/index.js";
 export * from "./RegistryPluginDetail/index.js";
 export * from "./PluginAuthorProfile/index.js";
