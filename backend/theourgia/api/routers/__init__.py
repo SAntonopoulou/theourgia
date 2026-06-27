@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, FastAPI
 
-from theourgia.api.routers import health, metrics, well_known
+from theourgia.api.routers import health, metrics, webfinger, well_known
 from theourgia.api.routers.v1 import altars as v1_altars
 from theourgia.api.routers.v1 import astro as v1_astro
 from theourgia.api.routers.v1 import attestations as v1_attestations
@@ -103,6 +103,7 @@ def register_routers(app: FastAPI) -> None:
 
     # .well-known endpoints (federation discovery, etc.)
     app.include_router(well_known.router, tags=["federation"])
+    app.include_router(webfinger.router, tags=["federation"])
 
     # Unversioned vault feed endpoints (RSS / Atom / JSON Feed).
     # Feed readers subscribe to stable URLs; we don't version them.

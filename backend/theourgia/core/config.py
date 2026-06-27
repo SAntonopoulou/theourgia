@@ -98,6 +98,23 @@ class Settings(BaseSettings):
         default=Path("/var/lib/theourgia/federation.pub"),
         alias="THEOURGIA_FEDERATION_PUBLIC_KEY_PATH",
     )
+    federation_transport_enabled: bool = Field(
+        default=False,
+        alias="THEOURGIA_FEDERATION_TRANSPORT_ENABLED",
+    )
+    """Whether cross-instance federation transport is enabled.
+
+    When false (the default), outbound delivery is a no-op and inbox
+    endpoints reject with 503. This is the v1.0 default — the gate flips
+    to true only after a second test instance + an external threat-model
+    review have been completed. See ``docs/architecture/federation-
+    transport-threat-model.md``."""
+    federation_replay_window_seconds: int = Field(
+        default=300,
+        alias="THEOURGIA_FEDERATION_REPLAY_WINDOW_SECONDS",
+    )
+    """Sliding window for replay-nonce uniqueness. Five minutes by default
+    — matches the RFC 9421 recommended skew + a small buffer."""
 
     # ── Backups ───────────────────────────────────────────────────────────
     restic_repository: str = Field(default="", alias="RESTIC_REPOSITORY")
