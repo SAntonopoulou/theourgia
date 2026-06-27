@@ -25,6 +25,7 @@ from theourgia.api.routers.v1 import entity_aliases as v1_entity_aliases
 from theourgia.api.routers.v1 import entries as v1_entries
 from theourgia.api.routers.v1 import geomancy as v1_geomancy
 from theourgia.api.routers.v1 import horary as v1_horary
+from theourgia.api.routers.v1 import hubs as v1_hubs
 from theourgia.api.routers.v1 import iching as v1_iching
 from theourgia.api.routers.v1 import identities as v1_identities
 from theourgia.api.routers.v1 import initiations as v1_initiations
@@ -168,6 +169,8 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_media_uploads.router, tags=["media"])
     v1.include_router(v1_pilgrimage_sites.router, tags=["pilgrimage"])
     v1.include_router(v1_ical_feed.router, tags=["ical"])
+    # Phase 12 Federation (B137+) — single-vault subset.
+    v1.include_router(v1_hubs.router, tags=["federation"])
     # Unversioned iCal feed delivery — calendar clients subscribe to a
     # stable URL (RFC 5545). Lives at app level, not /api/v1.
     app.include_router(v1_ical_feed.feed_router, tags=["ical"])
