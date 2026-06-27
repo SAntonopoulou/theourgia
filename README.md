@@ -20,17 +20,17 @@ Open source, self-hostable, federated. For working magicians.
 
 ## Status
 
-**Pre-alpha.** Phases 00-11 end-to-end on both frontend and backend (with Phase 09's network-aggregate / DP path explicitly deferred to Phase 12+). Phase 12 (Federation) single-vault backend complete; cross-instance transport (Phase 12.5) queued. Phase 13 (ActivityPub) frontend complete + backend persistence stubbed; cross-instance delivery queued.
+**Pre-alpha.** Phases 00-11 end-to-end on both frontend and backend. Phase 12 (Federation) single-vault backend complete + frontend done; cross-instance transport (Phase 12.5) queued. Phase 13 (ActivityPub) frontend complete + backend persistence stubbed; cross-instance delivery queued. **Phase 14 (Plugin Ecosystem) frontend complete** — H09 shipped end-to-end the same day the designer returned the package.
 
 | | |
 |---|---|
-| **Latest commit** | `58f2571` |
+| **Latest commit** | `ee065c9` |
 | **vitest** | 2657 passing · admin tsc clean |
 | **backend** | 2435 passing · alembic head **0060** |
 | **a11y** | 543 / 557 (97.5%); remaining 14 are intentional design tradeoffs |
-| **Sprints shipped** | H01-H03 · H04 · H05 · H06 · H07 · H08 (21/21) |
-| **Design queue** | **H09 open** — Phase 14 Plugin Ecosystem · 17 surfaces · `docs/design-requests/2026-06-27-h09-plugin-ecosystem.md` |
-| **Next build** | Phase 12.5 transport (HTTP Signatures + capability tokens) · Phase 13 cross-instance delivery · H09 substrate-wire-up when designer returns |
+| **Sprints shipped** | H01-H03 · H04 · H05 · H06 · H07 · H08 (21/21) · **H09 (17/17)** |
+| **Design queue** | (none — awaiting next handoff) |
+| **Next build** | Phase 12.5 transport (HTTP Signatures + capability tokens) · Phase 13 cross-instance delivery · Phase 14 backend (substrate exists from B7-B10; routes pending) |
 
 The full per-batch history lives in **[CHANGELOG.md](CHANGELOG.md)**. For the canonical feature catalog and per-phase status snapshot, see **[FEATURES.md](FEATURES.md)**. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
@@ -84,7 +84,7 @@ Theourgia is built in 17 phases. Each phase is architecturally dependent on prio
 | 11 | Media Library (images, audio, video, iCal feeds, pilgrimage map) | `[x]` ✅ backend B132-B136 + H07 Cluster C frontend (8 surfaces) — media_asset + polymorphic media_link · R2 upload pipeline with Protocol-isolated EXIF strip · pilgrimage_site with precision FLOOR (one-way ratchet) · iCal feed with sealed-day collapse + unversioned URL + pure-Python RFC 5545 serializer · anti-gamification CI invariants (no play_count / view_count / forge / unseal endpoints anywhere) | [plan/11-media-library.md](plan/11-media-library.md) · [plan/11-batches-backend.md](plan/11-batches-backend.md) |
 | 12 | Federation (native protocol, network hubs, group ritual, SSO) | `[~]` (H08 frontend ✓ · single-vault backend B137-B141 ✓; **Phase 12.5 transport queued** — HTTP Signatures + capability tokens + replay-nonce store) | [plan/12-federation.md](plan/12-federation.md) · [plan/12-batches-backend.md](plan/12-batches-backend.md) |
 | 13 | ActivityPub (Fediverse interop) | `[~]` (H08 frontend ✓ · persistence stub ✓ alembic 0060; **cross-instance delivery queued** — WebFinger endpoint · outbound POST · inbox · signed envelopes) | [plan/13-activitypub.md](plan/13-activitypub.md) |
-| 14 | Plugin Ecosystem (SDK, official registry, sandbox-before-commit) | `[ ]` (**H09 design request open** — 17 surfaces) | [plan/14-plugin-ecosystem.md](plan/14-plugin-ecosystem.md) |
+| 14 | Plugin Ecosystem (SDK, official registry, sandbox-before-commit) | `[~]` (H09 frontend ✓ 17/17 · substrate from Phase 01 B7-B10 ✓; **Phase 14 routes queued** — 8 endpoints documented in plan/14 § 9) | [plan/14-plugin-ecosystem.md](plan/14-plugin-ecosystem.md) |
 | 15 | Hardening & Launch (GDPR audit, a11y, performance, security, ops) | `[ ]` | [plan/15-hardening-and-launch.md](plan/15-hardening-and-launch.md) |
 | 16 | AI Agent Integration (daskalos-pattern daemon + MCP) | `[ ]` | [plan/16-ai-agent-integration.md](plan/16-ai-agent-integration.md) |
 

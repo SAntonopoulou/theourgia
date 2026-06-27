@@ -7,6 +7,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-27 (H09 sprint COMPLETE · Phase 14 Plugin Ecosystem frontend · 17/17)
+
+The H09 frontend sprint closed the same day the designer returned the package. All 17 surfaces against the H09 bundle at `/home/sophia/design-handoffs/theourgia/2026-06-27-H09/handoff_H09/` shipped — nine Cluster A (Plugin ecosystem) + eight Cluster B (Bundles + Sandbox). Phase 14 frontend is end-to-end against the design corpus. Backend (Phase 14 routes — substrate from Phase 01 B7-B10 already exists) queued.
+
+**Foundation — `7b3332e`**:
+
+- Five H09 token aliases (all aliases of existing families per rule 1 — no new hues):
+  - `--plugin-active` / `-soft` → `--peer-ok` family
+  - `--plugin-error` / `-soft` → `--warn` family
+  - `--plugin-disabled-line` → `--line-2`
+  - `--sandbox-frame` / `-soft` → `--remote` family ("from elsewhere, not yet yours")
+  - `--tombstone-soft` → `--bg-3`
+- VaultNav extension: new `Platform` section appended after `Network`. Three keys — `plugins` · `bundles` · `sandbox`. Three new SVG icons (puzzle/socket · single scroll · bordered tray).
+
+**Cluster A — Plugin ecosystem (9 surfaces · `2ad0e2e → 2af1e68`)**:
+
+- **Installed Plugins** (`/plugins`) — Per-row PluginCard with PluginKindIcon (14-kind sprite family) · status chips in --plugin-active / --ink-mute / --plugin-error (NEVER --danger) · tombstone chip on --tombstone-soft for withdrawn plugins (rule 40 — withdraw ≠ delete; row still functional). Sort chronological by installed_at desc (rule 38).
+- **Plugin Detail** (`/plugins/:id`) — Six sections (Manifest · Description · Capabilities granted · Extension points used · Migration history · Storage footprint quiet --ink-mute). Update CTA --accent-soft · Uninstall --warn-soft (NEVER --danger).
+- **Plugin Capability Review modal** — **THE worked example.** Permission-grant chrome with the new **ScrollGate primitive** (rule 31): the Install CTA stays disabled until the user has scrolled the capability list to the bottom (`scrollTop + clientHeight >= scrollHeight - 6`). Footer note flips "Scroll through every capability to continue" → "Reviewed". UPDATE scenario adds "Newly-requested capabilities" in --warn-soft above "Already-granted." Tier-3 (Unverified) adds a verbatim --warn-soft callout + ack checkbox that gates Install on top of the scroll-gate.
+- **Plugin Configuration** (`/plugins/:id/configure`) — JSON-schema-driven form with 7 field kinds (string · text · number · boolean · enum radio · secret · url). Secret fields NEVER show the existing value — render `••••••••••••` + [Reset].
+- **Plugin Status Dashboard** (`/plugins/status`) — Three sections: Active table · Errors (expand for FULL exception trace per rule 39 · --font-mono <pre>) · Performance (two quiet tiles · NO charts NO leaderboards).
+- **Vulnerability Advisory Banner** — Component-only banner that pins atop /plugins. --warn-soft chrome NEVER --danger. Severity badge: dot + label word; NEVER a red alarm. Tier-3 advisories use the SAME chrome (rule 32). Dismiss is SESSION-ONLY — verbatim disclosure: "Dismiss hides it until your next session — never permanently."
+- **Registry Browser** (`/plugins/registry`) — Tier chips (All / Official / Community / Unverified) with neutral TierBadge chrome (rule 29 — no red/green/score). Sort: alpha (default) · recent-update · recently-added — NEVER popularity (rule 38). Verbatim citation framing: `‡ from registry.theourgia.com`.
+- **Registry Plugin Detail** (`/plugins/registry/:id`) — Tier-3 → persistent --warn-soft banner with verbatim rule-33 disclosure. Tombstoned → persistent --warn-soft banner with verbatim withdrawal reason + `‡ tombstoned by author` chip; Install CTA flips to "Install anyway" (--warn-soft). Capabilities rendered read-only — full review at install via the Capability Review modal.
+- **Plugin Author Profile** (`/plugins/authors/:did`) — Citation, not star rating (rule 37). Stat tiles: Plugins · First-published · Last-activity · License. NO follower count, NO stars, NO downloads, NO rating chrome.
+
+**Cluster B — Bundles + Sandbox (8 surfaces · `752bf57 → ee065c9`)**:
+
+- **Bundle Library** (`/bundles`) — Per-card BundleScrollIcon (visually divergent from puzzle/socket plugin family). `‡ {citation}` chip in --remote chrome on every card (rule 7). Verbatim count tail: "Bundles are installed datasets — they hold no code and request no capabilities."
+- **Bundle Detail** (`/bundles/:id`) — About (Author · License · Source citation chip · Installed date) · Data shape table · References-from-vault count BEFORE Remove (rule 35 irrevocability disclosure). Footer warn-line surfaces the affected count verbatim.
+- **Bundle Install Preview modal** — **HONESTY RULE 34 — DATA ONLY. Never runs plugin code.** Even when the bundle ships a plugin, the preview renders only the data shape + sample rows. Default install path is `Install into sandbox` (--accent); `Install directly` is --warn-soft (bypasses sandbox, irrevocable per rule 35).
+- **Sandbox Browser** (`/sandbox`) — **Persistent rule-36 disclosure band** below the topbar (NOT a tooltip): "Sandbox content is local to this device. It never federates, never appears in network feeds, never reaches the Fediverse — even if you've enabled federation." Expiry pill flips --warn when close to expiry, --ink-mute otherwise.
+- **Sandbox Detail** (`/sandbox/:id`) — Same persistent rule-36 disclosure. **Every content card wrapped in NEW SandboxFrame primitive** (--sandbox-frame border + `‡ in sandbox` chip upper-right) — visually impossible to confuse with main-vault content.
+- **Sandbox Promote modal** — Rule 35 VERBATIM body: "Once promoted, the bundle's data merges into your main vault and cannot be cleanly removed. Sandbox contents already referenced by main vault entries will remain after sandbox discard." Promote CTA --warn-soft NEVER --danger.
+- **Bundle Discard modal** — Two-row body: `--warn-soft` "{N} sandbox-local rows will be permanently deleted" + `--peer-ok-soft` "{N} references already in your main vault will survive — they were copied when you used them, and remain after the sandbox is gone."
+- **Plugin Update Diff modal · FINAL** — Changelog · NEW capabilities (--warn-soft) · REMOVED capabilities (--peer-ok-soft — surface-area reduction is GOOD) · Migration steps. Apply CTA: --accent "Apply update" when no new caps; --warn-soft "Review & apply" when new caps exist (re-opens the Capability Review modal gated on the new caps only).
+
+**Six new shared primitives across the sprint**:
+
+- **PluginKindIcon** — 14-sprite family for plugin kinds.
+- **BundleScrollIcon** — single scroll, distinct from plugin family.
+- **CapabilityRow** — label + wire-key chip + one-line consequence. Used in 4 surfaces.
+- **ScrollGate** — rule 31's engagement gate (hook + component variants). Used in 2 surfaces (3, 17).
+- **TierBadge** — neutral three-tier chrome (rule 29). Used in 3 surfaces.
+- **SandboxFrame** — --sandbox-frame border + `‡ in sandbox` chip. Used in surface 14 + reusable.
+
+**Cross-cutting H09 rules wired across all 17 surfaces (31-40)**:
+
+1. **No "Grant all" shortcut** — every capability surfaced individually; ScrollGate proves intent.
+2. **Plugins NEVER auto-update** — vulnerability advisories surface explicit "Update now."
+3. **Tier-3 install is a deliberate moment** — verbatim disclosure + ack checkbox on top of scroll-gate.
+4. **Bundle preview is data-only** — NEVER runs plugin code.
+5. **Sandbox promotion is irrevocable** — rule-35 verbatim warning.
+6. **Sandbox content NEVER federates** — persistent topbar disclosure.
+7. **Author profile is citation, not star rating** — no follower/star/download stats.
+8. **NO "trending" / "featured"** — alpha + recent-update sort only.
+9. **Status dashboard is honest about errors** — full exception traces in --font-mono <pre>.
+10. **Withdraw and tombstone are different states** — plugins never "disappear."
+
+**The `--danger` audit is CLEAN — zero uses across all 17 surfaces.** Uninstall · Deactivate · Remove · Discard · Tier-3 install · Sandbox promote · new-capability update — ALL --warn-soft.
+
+**Sprint totals**: 17 surfaces · 5 commits (`7b3332e → ee065c9`). Admin tsc clean across every commit. Backend tests unchanged (2435 passing).
+
+**Followups noted in commits**:
+
+- Phase 14 backend routes (8 endpoints in `plan/14-plugin-ecosystem.md § 9`) — substrate from Phase 01 B7-B10 already exists; routes pending.
+- Storybook stories for the 17 surfaces (follow-on quality batch, mirror of the H08 story sprint).
+- Visual + a11y baselines for the 17 surfaces.
+
 ### Added — 2026-06-27 (H09 design request opened · Tier 7 Phase 14 Plugin Ecosystem)
 
 412-line handoff at `docs/design-requests/2026-06-27-h09-plugin-ecosystem.md`. **17 surfaces across two clusters** — 9 plugin + 8 bundle/sandbox — targeting Phase 14 Plugin Ecosystem. Carry-forward rules 1-30 from H08 unchanged; ten new H09-only honesty rules earned:
