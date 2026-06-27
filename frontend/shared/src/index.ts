@@ -130,6 +130,8 @@ export * from "./AgentMarketplace/index.js";
 export * from "./AgentInstall/index.js";
 export * from "./AgentCapabilityReview/index.js";
 export * from "./AgentByoKeySettings/index.js";
+export * from "./AgentTaskComposer/index.js";
+export * from "./AgentRunMonitor/index.js";
 export * from "./RegistryBrowser/index.js";
 export * from "./RegistryPluginDetail/index.js";
 export * from "./PluginAuthorProfile/index.js";
