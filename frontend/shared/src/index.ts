@@ -77,6 +77,7 @@ export * from "./AnalyticsDashboard/index.js";
 export * from "./AnalyticsTabs/index.js";
 export * from "./AudioLibrary/index.js";
 export * from "./LinguisticTabs/index.js";
+export * from "./GroupRitualCoordination/index.js";
 export * from "./GroupRitualScheduler/index.js";
 export * from "./GroupRitualTimeTrio/index.js";
 export * from "./HubAdmin/index.js";

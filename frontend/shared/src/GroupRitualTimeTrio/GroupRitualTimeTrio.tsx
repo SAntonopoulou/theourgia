@@ -84,6 +84,11 @@ export interface GroupRitualTimeTrioProps {
   utcEyebrow?: string;
   planetaryEyebrow?: string;
 
+  /** Compact mode renders three smaller centered cards. Used by
+   *  the in-the-moment Coordination surface (surface 9) and the
+   *  frozen Post-Mortem surface (surface 10). */
+  compact?: boolean;
+
   className?: string;
   style?: CSSProperties;
 }
@@ -144,9 +149,11 @@ const SECONDARY: CSSProperties = {
 function HourGlyph({
   ruler,
   isCurrent,
+  compact = false,
 }: {
   ruler: PlanetaryHourRuler;
   isCurrent: boolean;
+  compact?: boolean;
 }): ReactNode {
   return (
     <span
@@ -154,7 +161,7 @@ function HourGlyph({
       aria-hidden="true"
       style={{
         fontFamily: "var(--font-glyph)",
-        fontSize: 18,
+        fontSize: compact ? 15 : 18,
         color: isCurrent
           ? "var(--planetary-hour-now)"
           : "var(--ink-soft)",
@@ -165,6 +172,55 @@ function HourGlyph({
   );
 }
 
+/** Compact-mode style overrides — smaller cards, centered text,
+ *  no secondary lines. */
+const CARD_COMPACT: CSSProperties = {
+  flex: 1,
+  minWidth: 80,
+  border: "1px solid var(--line)",
+  borderRadius: "var(--r-md)",
+  background: "var(--bg-2)",
+  padding: "11px 12px",
+  textAlign: "center",
+};
+
+const CARD_COMPACT_CURRENT: CSSProperties = {
+  ...CARD_COMPACT,
+  border: "1px solid var(--planetary-hour-now)",
+  background: "var(--planetary-hour-now-soft)",
+};
+
+const EYEBROW_COMPACT: CSSProperties = {
+  fontFamily: "var(--font-ui)",
+  fontSize: 9,
+  letterSpacing: ".08em",
+  textTransform: "uppercase",
+  color: "var(--ink-mute)",
+  marginBottom: 4,
+};
+
+const PRIMARY_DISPLAY_COMPACT: CSSProperties = {
+  fontFamily: "var(--font-display)",
+  fontSize: 16,
+  color: "var(--ink)",
+};
+
+const PRIMARY_MONO_COMPACT: CSSProperties = {
+  fontFamily: "var(--font-mono)",
+  fontSize: 16,
+  color: "var(--ink)",
+};
+
+const TRIO_ROW_COMPACT: CSSProperties = {
+  display: "flex",
+  gap: 8,
+};
+
+const COMPACT_LOCAL_EYEBROW = "Local";
+const COMPACT_UTC_EYEBROW = "UTC";
+const COMPACT_PLANETARY_EYEBROW = "Planetary hour";
+const COMPACT_HOUR_OF_PREFIX = "of the ";
+
 export function GroupRitualTimeTrio({
   localPrimary,
   localSecondary,
@@ -173,63 +229,103 @@ export function GroupRitualTimeTrio({
   planetaryRuler,
   planetarySecondary,
   isCurrent,
-  localEyebrow = GRTT_LOCAL_EYEBROW,
-  utcEyebrow = GRTT_UTC_EYEBROW,
-  planetaryEyebrow = GRTT_PLANETARY_EYEBROW,
+  localEyebrow,
+  utcEyebrow,
+  planetaryEyebrow,
+  compact = false,
   className,
   style,
 }: GroupRitualTimeTrioProps) {
+  const localEb =
+    localEyebrow ??
+    (compact ? COMPACT_LOCAL_EYEBROW : GRTT_LOCAL_EYEBROW);
+  const utcEb =
+    utcEyebrow ?? (compact ? COMPACT_UTC_EYEBROW : GRTT_UTC_EYEBROW);
+  const planetaryEb =
+    planetaryEyebrow ??
+    (compact ? COMPACT_PLANETARY_EYEBROW : GRTT_PLANETARY_EYEBROW);
+  const cardBase = compact ? CARD_COMPACT : CARD_BASE;
+  const cardCurrent = compact ? CARD_COMPACT_CURRENT : CARD_CURRENT;
+  const eyebrow = compact ? EYEBROW_COMPACT : EYEBROW;
+  const primaryDisplay = compact ? PRIMARY_DISPLAY_COMPACT : PRIMARY_DISPLAY;
+  const primaryMono = compact ? PRIMARY_MONO_COMPACT : PRIMARY_MONO;
+  const rowStyle = compact ? TRIO_ROW_COMPACT : TRIO_ROW;
+  const hourPrefix = compact ? COMPACT_HOUR_OF_PREFIX : GRTT_HOUR_OF_PREFIX;
+  // Compact lets the planetary card stretch slightly so the
+  // "of the {ruler}" line doesn't wrap on narrow viewports.
+  const planetaryCardStyle = compact
+    ? { ...(isCurrent ? cardCurrent : cardBase), flex: 1.2 }
+    : isCurrent
+      ? cardCurrent
+      : cardBase;
+
   return (
     <div
       className={`grt-trio ${className ?? ""}`}
       data-block="time-trio"
+      data-compact={compact}
       data-current={isCurrent}
-      style={{ ...TRIO_ROW, ...style }}
+      style={{ ...rowStyle, ...style }}
     >
-      <div style={CARD_BASE} data-card="local">
-        <div style={EYEBROW} data-field="eyebrow">
-          {localEyebrow}
+      <div style={cardBase} data-card="local">
+        <div style={eyebrow} data-field="eyebrow">
+          {localEb}
         </div>
-        <div style={PRIMARY_DISPLAY} data-field="primary">
+        <div style={primaryDisplay} data-field="primary">
           {localPrimary}
         </div>
-        <div style={SECONDARY} data-field="secondary">
-          {localSecondary}
-        </div>
+        {!compact ? (
+          <div style={SECONDARY} data-field="secondary">
+            {localSecondary}
+          </div>
+        ) : null}
       </div>
 
-      <div style={CARD_BASE} data-card="utc">
-        <div style={EYEBROW} data-field="eyebrow">
-          {utcEyebrow}
+      <div style={cardBase} data-card="utc">
+        <div style={eyebrow} data-field="eyebrow">
+          {utcEb}
         </div>
-        <div style={PRIMARY_MONO} data-field="primary">
+        <div style={primaryMono} data-field="primary">
           {utcPrimary}
         </div>
-        <div style={SECONDARY} data-field="secondary">
-          {utcSecondary}
-        </div>
+        {!compact ? (
+          <div style={SECONDARY} data-field="secondary">
+            {utcSecondary}
+          </div>
+        ) : null}
       </div>
 
       <div
-        style={isCurrent ? CARD_CURRENT : CARD_BASE}
+        style={planetaryCardStyle}
         data-card="planetary"
         data-current={isCurrent}
       >
-        <div style={EYEBROW} data-field="eyebrow">
-          {planetaryEyebrow}
+        <div style={eyebrow} data-field="eyebrow">
+          {planetaryEb}
         </div>
         <div
-          style={{ display: "flex", alignItems: "center", gap: 7 }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: compact ? "center" : "flex-start",
+            gap: compact ? 5 : 7,
+          }}
         >
-          <HourGlyph ruler={planetaryRuler} isCurrent={isCurrent} />
-          <span style={PRIMARY_DISPLAY} data-field="primary">
-            {GRTT_HOUR_OF_PREFIX}
+          <HourGlyph
+            ruler={planetaryRuler}
+            isCurrent={isCurrent}
+            compact={compact}
+          />
+          <span style={primaryDisplay} data-field="primary">
+            {hourPrefix}
             {planetaryRuler}
           </span>
         </div>
-        <div style={SECONDARY} data-field="secondary">
-          {planetarySecondary}
-        </div>
+        {!compact ? (
+          <div style={SECONDARY} data-field="secondary">
+            {planetarySecondary}
+          </div>
+        ) : null}
       </div>
     </div>
   );
