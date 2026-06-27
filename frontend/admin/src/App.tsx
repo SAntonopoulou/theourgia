@@ -68,6 +68,7 @@ import { HubPublicFace } from "./routes/HubPublicFace.js";
 import { MyNetworks } from "./routes/MyNetworks.js";
 import { NetworkBrowser } from "./routes/NetworkBrowser.js";
 import { PrivateViewers } from "./routes/PrivateViewers.js";
+import { RolesPermissionsEditor } from "./routes/RolesPermissionsEditor.js";
 import { Account } from "./routes/Account.js";
 import { Agents } from "./routes/Agents.js";
 import { BookPreview } from "./routes/BookPreview.js";
@@ -298,6 +299,10 @@ function ShellRoutes() {
         <Route
           path="/hubs/:hubId/admin"
           element={<HubAdminDashboard />}
+        />
+        <Route
+          path="/hubs/:hubId/admin/roles"
+          element={<RolesPermissionsEditor />}
         />
         <Route
           path="/hubs/:hubId/newsletter"

@@ -1,0 +1,25 @@
+export {
+  type HubRoleRow,
+  type RolesPermissionsEditorSurfaceProps,
+  type RpeDeniedBanner,
+  RolesPermissionsEditorSurface,
+} from "./RolesPermissionsEditorSurface.js";
+export {
+  type HubCapabilityKey,
+  RPE_ADD_CUSTOM_ROLE,
+  RPE_APPLY_TEMPLATE_LABEL,
+  RPE_APPLY_TEMPLATE_PLACEHOLDER,
+  RPE_BREADCRUMB_TAIL,
+  RPE_CAPABILITIES,
+  RPE_DENIED_REQUEST_LINK,
+  RPE_DENIED_TEMPLATE,
+  RPE_LAST_CHANGED_BY,
+  RPE_LAST_CHANGED_PREFIX,
+  RPE_PREVIEW_AS_LABEL,
+  RPE_PREVIEW_AS_PLACEHOLDER,
+  RPE_ROLE_ACTIONS_LABEL,
+  RPE_SAVE_AND_APPLY,
+  RPE_SAVE_CHANGES,
+  RPE_TEMPLATES,
+  type RpeTemplate,
+} from "./copy.js";
