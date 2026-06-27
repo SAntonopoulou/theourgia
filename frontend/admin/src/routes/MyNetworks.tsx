@@ -1,19 +1,12 @@
 /**
  * MyNetworks — admin route at ``/networks`` (and ``/hubs`` legacy alias).
  *
- * Renders the H08 §S3 Cluster A surface 1 against fixture data
- * until the Phase 12 federation endpoints land. The fixtures mirror
- * the .dc.html's demo state — the "populated" preview — so the
- * route looks the same as the design exit.
- *
- * Wiring deferred to Phase 12 backend:
- *
- *   * /api/v1/hubs/memberships — replaces the HUBS fixture.
- *   * /api/v1/hubs/invitations — replaces the INVITES fixture.
- *   * Accept / Decline call /api/v1/hubs/{id}/invitations/{id}/accept
- *     and /decline respectively.
+ * Wired to ``GET /api/v1/hubs`` (member-of) per the admin API-wiring
+ * convention. Invitations endpoint is queued with the federation
+ * transport (Phase 12.5) — the invites pane shows empty until then.
  */
 
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -23,72 +16,84 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 
-const HUBS: HubMembershipCard[] = [
-  {
-    hubId: "hub-crossroads-coven",
-    hubName: "The Crossroads Coven",
-    tradition: "Hellenic",
-    role: "officer",
-    lastActivity: "2 days ago",
-    initial: "Κ",
-    initialBg: "var(--network-soft)",
-  },
-  {
-    hubId: "hub-silver-star-lodge",
-    hubName: "Lodge of the Silver Star",
-    tradition: "Thelemic",
-    role: "member",
-    lastActivity: "5 days ago",
-    initial: "A",
-  },
-  {
-    hubId: "hub-hedgerow-study",
-    hubName: "Hedgerow Study Group",
-    tradition: "Folk",
-    role: "admin",
-    lastActivity: "9 days ago",
-    initial: "H",
-  },
-];
+import { SurfaceError } from "../lib/SurfaceError.js";
+import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
+import { type Hub, useHubs } from "../lib/hubs.js";
 
-const INVITES: HubInvitationCard[] = [
-  {
-    hubId: "inv-hermetic-circle",
-    hubName: "The Hermetic Circle",
-    invitedBy: "did:theourgia:aurora.example:soror-aurora",
-    note:
-      "We read your essay on the crossroads — would be glad to have you.",
-    initial: "Ⲏ",
-  },
-  {
-    hubId: "inv-geomancers-table",
-    hubName: "Geomancers' Table",
-    invitedBy: "did:theourgia:terra.example:frater-v",
-    initial: "G",
-  },
-];
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function lastActivityLabel(iso: string, now: number = Date.now()): string {
+  const days = Math.floor((now - new Date(iso).getTime()) / DAY_MS);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days} days ago`;
+  if (days < 30) {
+    const w = Math.floor(days / 7);
+    return `${w} week${w === 1 ? "" : "s"} ago`;
+  }
+  const m = Math.floor(days / 30);
+  return `${m} month${m === 1 ? "" : "s"} ago`;
+}
+
+function initialOf(name: string): string {
+  return (name[0] ?? "·").toUpperCase();
+}
+
+function toCard(hub: Hub): HubMembershipCard {
+  return {
+    hubId: hub.id,
+    hubName: hub.name,
+    tradition: hub.public_tradition_tags?.[0] ?? "—",
+    // The membership role is per-user; the /hubs endpoint returns
+    // hubs the user can see but doesn't include their role. Until
+    // the read shape carries it, render "member" as a calm fallback.
+    role: "member",
+    lastActivity: lastActivityLabel(hub.updated_at),
+    initial: initialOf(hub.name),
+  };
+}
 
 export function MyNetworks() {
   const navigate = useNavigate();
   useTopbar(() => ({ title: "My networks" }));
 
+  const { data, isLoading, error, refetch } = useHubs();
+
+  const hubs = useMemo(
+    () => (data ? data.map(toCard) : []),
+    [data],
+  );
+
+  // Invitations endpoint queued with federation transport.
+  const invites: HubInvitationCard[] = [];
+
+  if (isLoading) {
+    return <SurfaceSkeleton rowCount={3} />;
+  }
+
+  if (error) {
+    return (
+      <SurfaceError
+        title="Couldn’t load your networks."
+        message={error.message}
+        onRetry={() => {
+          void refetch();
+        }}
+      />
+    );
+  }
+
   return (
     <MyNetworksSurface
-      hubs={HUBS}
-      invites={INVITES}
+      hubs={hubs}
+      invites={invites}
       onDiscover={() => navigate("/networks/discover")}
       onOpenHub={(hubId) => navigate(`/networks/hubs/${hubId}`)}
-      onAcceptInvite={(hubId) => {
-        // TODO Phase 12 — POST /api/v1/hubs/{id}/invitations/{id}/accept.
-        // For now, log so the wiring is visible while the route
-        // ships against fixtures.
-        // eslint-disable-next-line no-console
-        console.info("[my-networks] accept invitation", hubId);
+      onAcceptInvite={() => {
+        // Stubbed until the invitations endpoint ships.
       }}
-      onDeclineInvite={(hubId) => {
-        // TODO Phase 12 — POST /api/v1/hubs/{id}/invitations/{id}/decline.
-        // eslint-disable-next-line no-console
-        console.info("[my-networks] decline invitation", hubId);
+      onDeclineInvite={() => {
+        // Stubbed until the invitations endpoint ships.
       }}
     />
   );
