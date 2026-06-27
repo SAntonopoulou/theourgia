@@ -97,6 +97,7 @@ export * from "./PrivateViewers/index.js";
 export * from "./RolesPermissionsEditor/index.js";
 export * from "./SsoAuthorizeConsent/index.js";
 export * from "./FederationAuditLog/index.js";
+export * from "./PushToHub/index.js";
 export * from "./practice/index.js";
 export * from "./PracticeLogs/index.js";
 export * from "./workshop/index.js";
