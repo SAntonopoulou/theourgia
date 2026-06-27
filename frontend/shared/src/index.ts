@@ -103,6 +103,7 @@ export * from "./FollowersPane/index.js";
 export * from "./RemoteContentEmbed/index.js";
 export * from "./WebFingerVerify/index.js";
 export * from "./FederatedComments/index.js";
+export * from "./CrossPostPreview/index.js";
 export * from "./practice/index.js";
 export * from "./PracticeLogs/index.js";
 export * from "./workshop/index.js";
