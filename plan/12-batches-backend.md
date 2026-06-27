@@ -71,12 +71,44 @@ migration; reuses `audit_event`) → 0059 (SSO).
 
 ## B137 — Hub + membership + role + capability-grant
 
-**Files created:**
+> ⚠ **REVISION 2026-06-27 — IMPLEMENTATION DISCOVERY.** Phase 01
+> `backend/theourgia/models/identity.py` already defines
+> ``Hub`` (sparse: slug + display_name + description +
+> tradition_tags CSV), ``Membership`` (with vault-OR-hub
+> semantics + CHECK constraint + ``MembershipRole`` enum
+> prefixed `hub_admin`/`hub_officer`/etc.), and
+> ``PrivateViewer`` (vault-scoped, revoked-at timestamp).
+>
+> B137 therefore **EXTENDS** the existing identity-layer tables
+> instead of creating new ones. The migration is ALTER TABLE +
+> CREATE TABLE for the only genuinely new model:
+> ``HubRoleCapability``. B138 likewise extends the existing
+> ``PrivateViewer`` row with the H08 scope-kind + delivery +
+> credential-hash columns rather than creating a parallel
+> table.
+>
+> Frontend wire-key impact: H08 surface 12 renders the role
+> chip without the `hub_` prefix. The backend either (a)
+> strips the prefix at the read seam, or (b) renames the enum
+> to bare values via a follow-on Alembic. Decision deferred to
+> the executing batch.
 
-- `backend/theourgia/models/hub.py`
-- `backend/alembic/versions/0056_phase12_hubs.py`
-- `backend/theourgia/api/routers/v1/hubs.py`
-- `backend/tests/test_hubs.py`
+**Files created (revised):**
+
+- `backend/theourgia/models/hub_capability.py` — the only
+  net-new model (`HubRoleCapability`).
+- `backend/alembic/versions/0056_phase12_hubs.py` — ALTER
+  TABLE on ``hub`` (add tagline, membership_policy enum,
+  accepts_sso, auto_curates, public_banner_url,
+  public_tradition_tags JSONB) + CREATE TABLE
+  ``hub_role_capability``.
+- `backend/theourgia/api/routers/v1/hubs.py` — REST surface
+  against the merged model.
+- `backend/tests/test_hubs.py` — unit tests against the
+  router schemas + the default capability matrix invariants.
+
+**Original plan body retained below as reference for the
+fields B137 must end up with — only the *origin* changes.**
 
 **Models:**
 
