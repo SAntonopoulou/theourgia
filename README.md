@@ -30,7 +30,7 @@ Open source, self-hostable, federated. For working magicians.
 - **H06 ports 2/3/5/6/7/8/9/10** (2026-06-26) — Cross-Journal Search · Per-Study Page · Studies Index · Transliteration Utility · Analytics Dashboard · Query Builder · Synchronicity Log · Synchronicity Quick-Capture.
 - **Phase 09 backend** (B120-B124, 2026-06-26) — Synchronicity table + auto-tag (location-precision floor enforced server-side) · QUERY_BUILDER study kind + saved-query DSL · executor (sealed exclusion via JOIN-layer guard + sealed_excluded_count indicator) · `/analytics/query` · timeseries / heatmap / correlation / today aggregates · weekly digest builder (banned-phrase regex blocks modal/oracular headlines; tier-2/3 gated by sample size). Alembic 0043→0047; +146 backend tests.
 
-As of latest commit: **2470 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
+As of latest commit: **2486 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
 
 **H06 sprint COMPLETE: 10/10 surfaces shipped + Phase 09 backend solo subset closed.** B120-B125 in. Network-aggregate / differential-privacy / cross-vault federation explicitly deferred to Phase 12+. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
@@ -152,6 +152,19 @@ to Phase 12+).
 **H08 design request opened** (2026-06-26 · `docs/design-requests/
 2026-06-26-h08-federation-activitypub.md` · 767 lines · 21 surfaces
 across two clusters · 13 net-new honesty rules pinned).
+
+**H08 surface 11/21 — Private Viewer Management** (2026-06-27 ·
+`/private-viewers`). Read-only credentialled access (rule 21).
+Active rows + REVOKED rows persist together for audit — revoked
+shown at `opacity .55` with verbatim `Revoked at {ts}` chip in
+`--ink-mute` (never `--danger`; never deleted). New-viewer modal
+defaults to **tag-scoped + signed-link delivery** — Full vault
+is the explicit opt-in, never default (rule 11 · restrictive
+defaults). Modal footer carries the verbatim **"This credential
+is shown ONCE. Save it now."** warning in `--warn` ink — the
+plaintext credential is unrecoverable after the issue flow. 16
+new tests; shared 2470 → **2486**. **11/21 done · Cluster A
+crossing into post-half.**
 
 **H08 surface 10/21 — Group Ritual Post-Mortem** (2026-06-27 ·
 `/group-rituals/:id`). Frozen-then-extensible collective log

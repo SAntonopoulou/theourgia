@@ -67,6 +67,7 @@ import { HubNewsletterComposer } from "./routes/HubNewsletterComposer.js";
 import { HubPublicFace } from "./routes/HubPublicFace.js";
 import { MyNetworks } from "./routes/MyNetworks.js";
 import { NetworkBrowser } from "./routes/NetworkBrowser.js";
+import { PrivateViewers } from "./routes/PrivateViewers.js";
 import { Account } from "./routes/Account.js";
 import { Agents } from "./routes/Agents.js";
 import { BookPreview } from "./routes/BookPreview.js";
@@ -307,6 +308,7 @@ function ShellRoutes() {
           element={<HubMemberDashboard />}
         />
         <Route path="/hub/:slug" element={<HubPublicFace />} />
+        <Route path="/private-viewers" element={<PrivateViewers />} />
         <Route
           path="/group-rituals/:id/run"
           element={<GroupRitualCoordination />}
