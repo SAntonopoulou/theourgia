@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-27 (Admin API-wiring sweep · 14 surfaces live · `9b20fc0` → `fb34338`)
+
+Continued the admin sweep through 8 more surfaces past the worked example. Each commit adds a new resource library; the established convention (TanStack Query + skeleton + `--warn-soft` error banner + per-resource lib hook file) holds across all 14:
+
+- **b108-2v `a4732b5`** — PrivateViewers · introduces one-time plaintext-credential reveal pattern (transient component state · `--peer-ok-soft` banner with monospace code block · never persisted).
+- **b108-2w `fefc405`** — HubDiscovery + MyNetworks · `lib/hubs.ts`. Discovery filters non-private membership policies; MyNetworks shows the hubs the user can see (invitations pane queued with transport).
+- **b108-2x `c8213ed`** — RolesPermissionsEditor · capability-matrix GET/PATCH. Bidirectional mapping between bare role keys and Set<HubCapabilityKey>; defensive filter on incoming capability strings.
+- **b108-2y `4e59f85`** — GroupRitualScheduler · POST /group-rituals. `lib/groupRituals.ts` covers the whole ritual lifecycle. Both onSaveDraft + onScheduleInvite funnel through the same create mutation.
+- **b108-2z `08a9208`** — GroupRitualCoordination + PostMortem · GET ritual + GET/POST fragments + GET/POST reflections. Backend RitualStatus → surface vocabulary mapping is defensive.
+- **b108-2aa `fb34338`** — HubPublicFace · slug-filtered hub lookup. Featured-items pane queued.
+
+Sweep paused at 14 routes. Remaining ~6 routes (HubAdminDashboard · HubMemberDashboard · HubNewsletterComposer · NetworkBrowser · WebFingerVerify · PluginDetail · RegistryPluginDetail) are blocked on backend endpoints that don't exist yet — hub curation queue, federation peer list, hub-level newsletter sender, single-plugin GET (manifest schema not exposed), cross-instance WebFinger proxy, the entire plugins.theourgia.com host.
+
 ### Added — 2026-06-27 (Admin API-wiring sweep · 6 surfaces live · `9b20fc0` → `c108e1d`)
 
 Six admin routes wired to live backend endpoints under the chosen convention (TanStack Query · skeleton loaders · inline `--warn-soft` error banners with retry CTAs · per-resource lib hooks). Each commit introduces a new pattern on top of the established convention:
