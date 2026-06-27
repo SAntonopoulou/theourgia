@@ -74,6 +74,7 @@ import { ActivityPubSettings } from "./routes/ActivityPubSettings.js";
 import { Followers } from "./routes/Followers.js";
 import { WebFingerVerify } from "./routes/WebFingerVerify.js";
 import { InstalledPlugins } from "./routes/InstalledPlugins.js";
+import { PluginDetail } from "./routes/PluginDetail.js";
 import { Account } from "./routes/Account.js";
 import { Agents } from "./routes/Agents.js";
 import { BookPreview } from "./routes/BookPreview.js";
@@ -335,6 +336,7 @@ function ShellRoutes() {
         <Route path="/verify" element={<WebFingerVerify />} />
         {/* H09 — Platform section */}
         <Route path="/plugins" element={<InstalledPlugins />} />
+        <Route path="/plugins/:id" element={<PluginDetail />} />
         <Route
           path="/group-rituals/:id/run"
           element={<GroupRitualCoordination />}

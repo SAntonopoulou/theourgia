@@ -105,6 +105,8 @@ export * from "./WebFingerVerify/index.js";
 export * from "./FederatedComments/index.js";
 export * from "./CrossPostPreview/index.js";
 export * from "./InstalledPlugins/index.js";
+export * from "./PluginDetail/index.js";
+export * from "./PluginCapabilityReview/index.js";
 export * from "./practice/index.js";
 export * from "./PracticeLogs/index.js";
 export * from "./workshop/index.js";
