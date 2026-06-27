@@ -82,6 +82,8 @@ import { RegistryPluginDetail } from "./routes/RegistryPluginDetail.js";
 import { PluginAuthorProfile } from "./routes/PluginAuthorProfile.js";
 import { BundleLibrary } from "./routes/BundleLibrary.js";
 import { BundleDetail } from "./routes/BundleDetail.js";
+import { SandboxBrowser as SandboxBrowserRoute } from "./routes/SandboxBrowser.js";
+import { SandboxDetail } from "./routes/SandboxDetail.js";
 import { Account } from "./routes/Account.js";
 import { Agents } from "./routes/Agents.js";
 import { BookPreview } from "./routes/BookPreview.js";
@@ -363,6 +365,8 @@ function ShellRoutes() {
         <Route path="/plugins/:id" element={<PluginDetail />} />
         <Route path="/bundles" element={<BundleLibrary />} />
         <Route path="/bundles/:id" element={<BundleDetail />} />
+        <Route path="/sandbox" element={<SandboxBrowserRoute />} />
+        <Route path="/sandbox/:id" element={<SandboxDetail />} />
         <Route
           path="/group-rituals/:id/run"
           element={<GroupRitualCoordination />}
