@@ -30,7 +30,7 @@ Open source, self-hostable, federated. For working magicians.
 - **H06 ports 2/3/5/6/7/8/9/10** (2026-06-26) — Cross-Journal Search · Per-Study Page · Studies Index · Transliteration Utility · Analytics Dashboard · Query Builder · Synchronicity Log · Synchronicity Quick-Capture.
 - **Phase 09 backend** (B120-B124, 2026-06-26) — Synchronicity table + auto-tag (location-precision floor enforced server-side) · QUERY_BUILDER study kind + saved-query DSL · executor (sealed exclusion via JOIN-layer guard + sealed_excluded_count indicator) · `/analytics/query` · timeseries / heatmap / correlation / today aggregates · weekly digest builder (banned-phrase regex blocks modal/oracular headlines; tier-2/3 gated by sample size). Alembic 0043→0047; +146 backend tests.
 
-As of latest commit: **2609 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
+As of latest commit: **2620 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
 
 **H06 sprint COMPLETE: 10/10 surfaces shipped + Phase 09 backend solo subset closed.** B120-B125 in. Network-aggregate / differential-privacy / cross-vault federation explicitly deferred to Phase 12+. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
@@ -152,6 +152,20 @@ to Phase 12+).
 **H08 design request opened** (2026-06-26 · `docs/design-requests/
 2026-06-26-h08-federation-activitypub.md` · 767 lines · 21 surfaces
 across two clusters · 13 net-new honesty rules pinned).
+
+**H08 surface 19/21 — WebFinger Verification** (2026-06-27 ·
+`/verify`). Three-step lookup that ties a Fediverse handle to
+the vault's actor + signing key. **Failures never blame**
+(H08 rule 25) — fail subtitle is verbatim: **"The handle did
+not resolve to your vault. This is a configuration issue, not
+an error on your part."** Failure card uses `--warn-soft` NEVER
+`--danger` (a misconfiguration is fixable, not catastrophic).
+Pass card surfaces the **full SHA256 key fingerprint** in
+`--peer-ok` `--font-mono` so the user can compare against an
+out-of-band channel. Run-check button refuses on empty handle;
+loading state shows inline spinner + verbatim "Querying
+WebFinger…". 11 new tests; shared 2609 → **2620**. **19/21
+done.**
 
 **H08 surface 18/21 — Remote Content Embed primitive** (2026-06-27).
 Tiptap-node-shaped card for displaying federated Mastodon /
