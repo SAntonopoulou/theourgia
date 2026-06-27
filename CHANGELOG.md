@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-27 (Admin API-wiring sweep · 6 surfaces live · `9b20fc0` → `c108e1d`)
+
+Six admin routes wired to live backend endpoints under the chosen convention (TanStack Query · skeleton loaders · inline `--warn-soft` error banners with retry CTAs · per-resource lib hooks). Each commit introduces a new pattern on top of the established convention:
+
+- **b108-2q `9b20fc0`** — `InstalledPlugins` is THE worked example. Lib scaffolding (`api.ts` · `queryClient.ts` · `SurfaceError.tsx` · `SurfaceSkeleton.tsx` · `plugins.ts`). `QueryClientProvider` mounted at the top of the App provider tree. Simple list + per-row mutation pattern.
+- **b108-2r `026ffb2`** — `SandboxBrowser` + `PluginConfiguration`. Derived display fields from ISO timestamps · mutation-only surfaces (configure has no list of its own).
+- **b108-2s `2b7c51f`** — `FederationAuditLog`. Time-range refetch + client-side filter + CSV export via browser navigation. Action vocabulary mapped `federation.*` → surface `FalEventKey`.
+- **b108-2t `725cfda`** — `ActivityPubSettings`. GET/PATCH pattern with bidirectional camelCase ↔ snake_case mapping (`toDraft` / `fromDraft`). Discard refetches from server (re-seeds the draft).
+- **b108-2u `c108e1d`** — `Followers`. Dual-query pattern (followers + pending requests) with shared error/loading state. Approve / decline mutations invalidate both caches.
+
+Conventions established that the remaining sweep will follow: `lib/<resource>.ts` per resource (one file per backend router · `use*` query hooks + `use*` mutation hooks · invalidate-on-success) · `SurfaceSkeleton rowCount={N}` while `isLoading` · `SurfaceError` for fetch errors with retry · second `SurfaceError` rendered above the surface for mutation errors (dismiss-only). Admin tsc clean across every commit.
+
 ### Added — 2026-06-27 (Federation transport scaffold · b108-2p · `0d58da6`)
 
 Cross-instance federation substrate landed behind a feature gate. RFC 9421 HTTP Signatures + Ed25519 keys + capability tokens already shipped in earlier batches; this adds the missing infrastructure: **Postgres-backed replay-nonce store** (`federation_nonce` table · alembic 0062 · `record_nonce()` / `purge_expired()` / `ReplayDetectedError` · 5-minute window per RFC 9421 guidance · unique-constraint-as-detection-mechanism) · **WebFinger endpoint** at `.well-known/webfinger` (RFC 7033 actor discovery · only `acct:` resources · defence-in-depth 404 when host doesn't match · 404 when transport disabled) · **`FEDERATION_TRANSPORT_ENABLED` feature gate** (env-controlled · default FALSE · cross-instance federation OFF until external review signs off) · **threat model doc** at `docs/architecture/federation-transport-threat-model.md` (T1-T10 + pre-enablement checklist + open questions for reviewer). 10 new schema-level tests · 2464 backend pass · alembic head 0062. Outbound POST scheduler + inbox + per-peer pubkey cache queued for the next batch (queue-worker design choice pending).
