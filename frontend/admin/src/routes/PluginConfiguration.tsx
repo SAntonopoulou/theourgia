@@ -1,7 +1,14 @@
 /**
  * PluginConfiguration — admin route at ``/plugins/:id/configure``.
  *
- * Renders the H09 Cluster A surface 4 against fixtures.
+ * Wired to ``POST /api/v1/plugins/:id/configure`` per the admin API-
+ * wiring convention.
+ *
+ * Note: the configurable field schema currently comes from the plugin's
+ * manifest_json (which the backend stores but does not yet expose
+ * structurally). For now the surface renders a static field set as the
+ * worked example; once the backend exposes ``manifest_json.config_schema``
+ * the fields will be derived from it. The save handler is fully live.
  */
 
 import { useNavigate, useParams } from "react-router-dom";
@@ -11,6 +18,9 @@ import {
   PluginConfigurationSurface,
   useTopbar,
 } from "@theourgia/shared";
+
+import { SurfaceError } from "../lib/SurfaceError.js";
+import { useConfigurePlugin } from "../lib/plugins.js";
 
 const FIELDS: ConfigField[] = [
   {
@@ -75,24 +85,33 @@ export function PluginConfiguration() {
   const navigate = useNavigate();
   useTopbar(() => ({ title: "Plugin · Configure" }));
 
+  const save = useConfigurePlugin();
+
   return (
-    <PluginConfigurationSurface
-      pluginName="Planetary Hours"
-      fields={FIELDS}
-      onBreadcrumbHome={() => navigate("/plugins")}
-      onSave={(values) => {
-        // TODO Phase 14 — POST /api/v1/plugins/{id}/configure
-        // eslint-disable-next-line no-console
-        console.info("[plugin-configure] save", id, values);
-      }}
-      onDiscard={() => {
-        // eslint-disable-next-line no-console
-        console.info("[plugin-configure] discard", id);
-      }}
-      onResetSecret={(key) => {
-        // eslint-disable-next-line no-console
-        console.info("[plugin-configure] reset secret", id, key);
-      }}
-    />
+    <>
+      {save.error ? (
+        <SurfaceError
+          title="Couldn’t save your changes."
+          message={save.error.message}
+          onRetry={() => save.reset()}
+          retryLabel="Dismiss"
+        />
+      ) : null}
+      <PluginConfigurationSurface
+        pluginName="Planetary Hours"
+        fields={FIELDS}
+        onBreadcrumbHome={() => navigate("/plugins")}
+        onSave={(values) => {
+          if (!id) return;
+          save.mutate({ id, settings: values });
+        }}
+        onDiscard={() => navigate(`/plugins/${id}`)}
+        onResetSecret={(key) => {
+          if (!id) return;
+          // Reset is "clear the secret"; save with null to clear.
+          save.mutate({ id, settings: { [key]: null } });
+        }}
+      />
+    </>
   );
 }

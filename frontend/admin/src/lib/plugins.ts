@@ -77,3 +77,26 @@ export function usePluginAction() {
     },
   });
 }
+
+interface ConfigureResponse {
+  updated_keys: string[];
+}
+
+export function useConfigurePlugin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      settings,
+    }: {
+      id: string;
+      settings: Record<string, unknown>;
+    }) =>
+      apiPost<ConfigureResponse>(`/plugins/${id}/configure`, {
+        settings,
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: PLUGINS_QUERY_KEY });
+    },
+  });
+}
