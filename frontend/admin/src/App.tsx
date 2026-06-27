@@ -71,6 +71,7 @@ import { PrivateViewers } from "./routes/PrivateViewers.js";
 import { RolesPermissionsEditor } from "./routes/RolesPermissionsEditor.js";
 import { FederationAuditLog } from "./routes/FederationAuditLog.js";
 import { ActivityPubSettings } from "./routes/ActivityPubSettings.js";
+import { Followers } from "./routes/Followers.js";
 import { Account } from "./routes/Account.js";
 import { Agents } from "./routes/Agents.js";
 import { BookPreview } from "./routes/BookPreview.js";
@@ -324,6 +325,7 @@ function ShellRoutes() {
           path="/settings/activitypub"
           element={<ActivityPubSettings />}
         />
+        <Route path="/followers" element={<Followers />} />
         <Route
           path="/group-rituals/:id/run"
           element={<GroupRitualCoordination />}
