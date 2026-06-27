@@ -27,6 +27,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import CurrentUser, get_db_session
+from theourgia.core.authz.audit import AuditLogger
+from theourgia.models.audit import AuditEventKind, AuditOutcome
 from theourgia.models.identity import Vault
 from theourgia.models.sandbox import DEFAULT_LIFETIME, Sandbox, SandboxKind
 
@@ -167,6 +169,19 @@ async def import_into_sandbox(
         expires_at=datetime.now() + DEFAULT_LIFETIME,
     )
     db.add(sandbox)
+    await db.flush()
+    await AuditLogger(db).log(
+        kind=AuditEventKind.PLUGIN,
+        action="sandbox.import",
+        outcome=AuditOutcome.SUCCESS,
+        actor_id=user.id,
+        vault_id=vault.id,
+        detail={
+            "sandbox_id": str(sandbox.id),
+            "kind": body.kind,
+            "source": body.source,
+        },
+    )
     await db.commit()
     await db.refresh(sandbox)
     return _to_read(sandbox)
@@ -187,6 +202,18 @@ async def promote_sandbox(
     against the bundle's data persist after the sandbox is gone."""
     sandbox = await _load_sandbox(db, user.id, sandbox_id)
     sandbox.promoted_at = datetime.now()
+    await AuditLogger(db).log(
+        kind=AuditEventKind.PLUGIN,
+        action="sandbox.promote",
+        outcome=AuditOutcome.SUCCESS,
+        actor_id=user.id,
+        vault_id=sandbox.vault_id,
+        detail={
+            "sandbox_id": str(sandbox.id),
+            "kind": sandbox.kind.value,
+            "source": sandbox.source,
+        },
+    )
     await db.commit()
     await db.refresh(sandbox)
     return _to_read(sandbox)
@@ -203,4 +230,15 @@ async def discard_sandbox(
 ) -> None:
     sandbox = await _load_sandbox(db, user.id, sandbox_id)
     sandbox.discarded_at = datetime.now()
+    await AuditLogger(db).log(
+        kind=AuditEventKind.PLUGIN,
+        action="sandbox.discard",
+        outcome=AuditOutcome.SUCCESS,
+        actor_id=user.id,
+        vault_id=sandbox.vault_id,
+        detail={
+            "sandbox_id": str(sandbox.id),
+            "kind": sandbox.kind.value,
+        },
+    )
     await db.commit()

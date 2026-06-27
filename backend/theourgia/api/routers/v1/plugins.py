@@ -35,8 +35,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import CurrentUser, get_db_session
+from theourgia.core.authz.audit import AuditLogger
 from theourgia.core.plugins.capabilities import Capability
 from theourgia.core.plugins.state import PluginState, allowed_transition
+from theourgia.models.audit import AuditEventKind, AuditOutcome
 from theourgia.models.identity import Vault
 from theourgia.models.plugins import (
     PluginCapabilityGrant,
@@ -307,6 +309,20 @@ async def install_plugin(
             )
         )
 
+    await AuditLogger(db).log(
+        kind=AuditEventKind.PLUGIN,
+        action="plugin.install",
+        outcome=AuditOutcome.SUCCESS,
+        actor_id=user.id,
+        vault_id=vault.id,
+        detail={
+            "plugin_id": str(install.id),
+            "name": body.name,
+            "version": body.version,
+            "capabilities": [c.value for c in parsed_caps],
+        },
+    )
+
     await db.commit()
     await db.refresh(install)
 
@@ -326,12 +342,30 @@ async def _transition(
     db: AsyncSession,
     install: PluginInstall,
     target: PluginState,
+    *,
+    actor_id: UUID,
+    vault_id: UUID,
 ) -> PluginInstall:
-    if not allowed_transition(install.state, target):
+    previous = install.state
+    if not allowed_transition(previous, target):
+        await AuditLogger(db).log(
+            kind=AuditEventKind.PLUGIN,
+            action=f"plugin.{target.value}",
+            outcome=AuditOutcome.FAILURE,
+            actor_id=actor_id,
+            vault_id=vault_id,
+            detail={
+                "plugin_id": str(install.id),
+                "name": install.name,
+                "from_state": previous.value,
+                "target_state": target.value,
+            },
+        )
+        await db.commit()
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
-                f"Cannot move plugin from {install.state.value!r} "
+                f"Cannot move plugin from {previous.value!r} "
                 f"to {target.value!r}."
             ),
         )
@@ -341,6 +375,23 @@ async def _transition(
         install.last_error = None
     if target is PluginState.INACTIVE:
         install.activated_at = None
+    await AuditLogger(db).log(
+        kind=AuditEventKind.PLUGIN,
+        action=(
+            "plugin.activate"
+            if target is PluginState.ACTIVE
+            else "plugin.deactivate"
+        ),
+        outcome=AuditOutcome.SUCCESS,
+        actor_id=actor_id,
+        vault_id=vault_id,
+        detail={
+            "plugin_id": str(install.id),
+            "name": install.name,
+            "from_state": previous.value,
+            "to_state": target.value,
+        },
+    )
     await db.commit()
     await db.refresh(install)
     return install
@@ -354,7 +405,10 @@ async def activate_plugin(
 ) -> PluginInstallRead:
     vault = await _resolve_user_vault(db, user.id)
     install = await _load_install(db, vault.id, install_id)
-    install = await _transition(db, install, PluginState.ACTIVE)
+    install = await _transition(
+        db, install, PluginState.ACTIVE,
+        actor_id=user.id, vault_id=vault.id,
+    )
     grants = list(
         (
             await db.execute(
@@ -375,7 +429,10 @@ async def deactivate_plugin(
 ) -> PluginInstallRead:
     vault = await _resolve_user_vault(db, user.id)
     install = await _load_install(db, vault.id, install_id)
-    install = await _transition(db, install, PluginState.INACTIVE)
+    install = await _transition(
+        db, install, PluginState.INACTIVE,
+        actor_id=user.id, vault_id=vault.id,
+    )
     grants = list(
         (
             await db.execute(
@@ -399,7 +456,21 @@ async def uninstall_plugin(
 ) -> None:
     vault = await _resolve_user_vault(db, user.id)
     install = await _load_install(db, vault.id, install_id)
+    snapshot_name = install.name
+    snapshot_version = install.version
     await db.delete(install)
+    await AuditLogger(db).log(
+        kind=AuditEventKind.PLUGIN,
+        action="plugin.uninstall",
+        outcome=AuditOutcome.SUCCESS,
+        actor_id=user.id,
+        vault_id=vault.id,
+        detail={
+            "plugin_id": str(install_id),
+            "name": snapshot_name,
+            "version": snapshot_version,
+        },
+    )
     await db.commit()
 
 
@@ -458,6 +529,21 @@ async def configure_plugin(
                 )
             )
         updated.append(key)
+
+    await AuditLogger(db).log(
+        kind=AuditEventKind.PLUGIN,
+        action="plugin.configure",
+        outcome=AuditOutcome.SUCCESS,
+        actor_id=user.id,
+        vault_id=vault.id,
+        detail={
+            "plugin_id": str(install.id),
+            "name": install.name,
+            # Audit the keys touched but NOT the values — settings may
+            # carry secrets (the H09 "secret" field kind).
+            "updated_keys": updated,
+        },
+    )
 
     await db.commit()
     return ConfigureResponse(updated_keys=updated)
