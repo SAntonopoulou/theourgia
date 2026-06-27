@@ -30,7 +30,7 @@ Open source, self-hostable, federated. For working magicians.
 - **H06 ports 2/3/5/6/7/8/9/10** (2026-06-26) — Cross-Journal Search · Per-Study Page · Studies Index · Transliteration Utility · Analytics Dashboard · Query Builder · Synchronicity Log · Synchronicity Quick-Capture.
 - **Phase 09 backend** (B120-B124, 2026-06-26) — Synchronicity table + auto-tag (location-precision floor enforced server-side) · QUERY_BUILDER study kind + saved-query DSL · executor (sealed exclusion via JOIN-layer guard + sealed_excluded_count indicator) · `/analytics/query` · timeseries / heatmap / correlation / today aggregates · weekly digest builder (banned-phrase regex blocks modal/oracular headlines; tier-2/3 gated by sample size). Alembic 0043→0047; +146 backend tests.
 
-As of latest commit: **2243 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
+As of latest commit: **2267 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
 
 **H06 sprint COMPLETE: 10/10 surfaces shipped + Phase 09 backend solo subset closed.** B120-B125 in. Network-aggregate / differential-privacy / cross-vault federation explicitly deferred to Phase 12+. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
@@ -152,6 +152,22 @@ to Phase 12+).
 **H08 design request opened** (2026-06-26 · `docs/design-requests/
 2026-06-26-h08-federation-activitypub.md` · 767 lines · 21 surfaces
 across two clusters · 13 net-new honesty rules pinned).
+
+**H08 surface 3/21 — Hub Discovery** (2026-06-27 · `/networks/discover`).
+Search-band + 8 tradition chips + 2-col HubDiscoveryCard grid.
+**Default sort is alphabetical** — `HubDiscoverySort` type
+enumerates ONLY `"alpha" | "recent"`; popularity is NEVER an
+option (rules 18 + 19). Each card carries name + policy chip
+(Public → `--peer-ok` ink; Open-with-approval / Private →
+`--ink-mute`) + italic motto + tradition pills + quiet
+`--font-mono` "N members" stat. CTA matrix: Public/Open-with-
+approval → "Request to join" enabled; isMember=true → "Already
+a member" disabled; Private → "This hub is invitation-only"
+disabled. Empty-state copy verbatim per H08 brief ("Hubs choose
+whether to appear in the directory — many private hubs are
+joinable only by invitation."). Defensive tests pin: no
+"trending" / "popular" / "bestseller" / "featured" chrome.
+24 new tests; shared 2243 → **2267**.
 
 **H08 surface 2/21 — Network Browser** (2026-06-27 · `/networks/peers`).
 Federation peer directory: two-pane layout (filter rail + peer

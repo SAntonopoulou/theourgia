@@ -57,6 +57,7 @@ import { RunesRoute } from "./routes/RunesRoute.js";
 import { TarotRoute } from "./routes/TarotRoute.js";
 import { Entities } from "./routes/Entities.js";
 import { Foundations } from "./routes/Foundations.js";
+import { HubDiscovery } from "./routes/HubDiscovery.js";
 import { MyNetworks } from "./routes/MyNetworks.js";
 import { NetworkBrowser } from "./routes/NetworkBrowser.js";
 import { Account } from "./routes/Account.js";
@@ -284,6 +285,7 @@ function ShellRoutes() {
             stay alive while the rest of Cluster A ships. */}
         <Route path="/networks" element={<MyNetworks />} />
         <Route path="/networks/peers" element={<NetworkBrowser />} />
+        <Route path="/networks/discover" element={<HubDiscovery />} />
         <Route path="/hubs" element={<MyNetworks />} />
         <Route path="/identities" element={<Identities />} />
         <Route path="/lineage" element={<LineageAdmin />} />
