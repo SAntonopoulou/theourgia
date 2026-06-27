@@ -57,7 +57,7 @@ import { RunesRoute } from "./routes/RunesRoute.js";
 import { TarotRoute } from "./routes/TarotRoute.js";
 import { Entities } from "./routes/Entities.js";
 import { Foundations } from "./routes/Foundations.js";
-import { Hubs } from "./routes/Hubs.js";
+import { MyNetworks } from "./routes/MyNetworks.js";
 import { Account } from "./routes/Account.js";
 import { Agents } from "./routes/Agents.js";
 import { BookPreview } from "./routes/BookPreview.js";
@@ -277,14 +277,12 @@ function ShellRoutes() {
         <Route path="/analytics" element={<AnalyticsDashboardRoute />} />
         <Route path="/analytics/legacy" element={<Analytics />} />
         <Route path="/feed" element={<RitualFeed />} />
-        {/* H08 — Network section routes. Cluster A surfaces (My Networks,
-            Followers, Private Viewers) replace the placeholder Hubs page
-            across the next handful of batches. For now `/hubs` and
-            `/networks` both render the existing placeholder so the new
-            VaultNav doesn't 404; the Followers + Private Viewers slots
-            land in their own batches. */}
-        <Route path="/networks" element={<Hubs />} />
-        <Route path="/hubs" element={<Hubs />} />
+        {/* H08 — Network section routes. Cluster A surfaces land one per
+            batch; My Networks is in. The legacy `/hubs` URL still
+            resolves (now to the same surface) so any external bookmarks
+            stay alive while the rest of Cluster A ships. */}
+        <Route path="/networks" element={<MyNetworks />} />
+        <Route path="/hubs" element={<MyNetworks />} />
         <Route path="/identities" element={<Identities />} />
         <Route path="/lineage" element={<LineageAdmin />} />
         <Route path="/membership" element={<Membership />} />

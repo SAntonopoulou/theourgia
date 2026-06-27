@@ -30,7 +30,7 @@ Open source, self-hostable, federated. For working magicians.
 - **H06 ports 2/3/5/6/7/8/9/10** (2026-06-26) — Cross-Journal Search · Per-Study Page · Studies Index · Transliteration Utility · Analytics Dashboard · Query Builder · Synchronicity Log · Synchronicity Quick-Capture.
 - **Phase 09 backend** (B120-B124, 2026-06-26) — Synchronicity table + auto-tag (location-precision floor enforced server-side) · QUERY_BUILDER study kind + saved-query DSL · executor (sealed exclusion via JOIN-layer guard + sealed_excluded_count indicator) · `/analytics/query` · timeseries / heatmap / correlation / today aggregates · weekly digest builder (banned-phrase regex blocks modal/oracular headlines; tier-2/3 gated by sample size). Alembic 0043→0047; +146 backend tests.
 
-As of latest commit: **2198 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
+As of latest commit: **2221 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
 
 **H06 sprint COMPLETE: 10/10 surfaces shipped + Phase 09 backend solo subset closed.** B120-B125 in. Network-aggregate / differential-privacy / cross-vault federation explicitly deferred to Phase 12+. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
@@ -152,6 +152,18 @@ to Phase 12+).
 **H08 design request opened** (2026-06-26 · `docs/design-requests/
 2026-06-26-h08-federation-activitypub.md` · 767 lines · 21 surfaces
 across two clusters · 13 net-new honesty rules pinned).
+
+**H08 surface 1/21 — My Networks** (2026-06-27 · `/networks`).
+First Cluster A surface ported. `HubMembershipCard` rows
+(avatar + name + tradition pill + role pill + "Last activity {when}"
+in `--ink-mute`); `HubInvitationCard` rows (inviter DID in
+`--font-mono` + optional italic note + Accept `--warn-soft` + Decline
+ghost — Accept NEVER `--danger` per rule 2). Verbatim empty-state
+copy from the H08 supplement. **Defensive anti-gamification tests
+pin:** no "trending" / "popular" / "streak" / "active now" /
+"online" chrome anywhere; no member-count on pending invitations.
+The legacy `/hubs` route aliases to the new surface so bookmarks
+stay alive. 23 new tests; shared 2198 → **2221**.
 
 **H08 bundle received + Foundation in** (2026-06-27 ·
 `/home/sophia/design-handoffs/theourgia/2026-06-27-H08/handoff_H08/`).
