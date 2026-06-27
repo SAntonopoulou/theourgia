@@ -24,13 +24,13 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `fb34338` |
+| **Latest commit** | `3a20dc4` |
 | **vitest** | 2677 passing · admin tsc clean |
-| **backend** | 2464 passing · alembic head **0062** |
+| **backend** | 2490 passing · alembic head **0063** |
 | **a11y** | 543 / 557 (97.5%); remaining 14 are intentional design tradeoffs |
 | **Sprints shipped** | H01-H03 · H04 · H05 · H06 · H07 · H08 (21/21) · **H09 (17/17)** |
 | **Design queue** | **H10 OPEN** (27 surfaces · Phase 14 author/reviewer + Phase 15 hardening + Phase 16 AI agents · 884 lines · 20 new honesty rules 41-60) |
-| **Next build** | H10-prerequisite backend (per-user audit log endpoint · GDPR data export job · 30-day grace-period account deletion · Phase 12.5 inbox + outbound POST). Admin sweep paused at 14 surfaces live (`fb34338`); remaining ~6 routes blocked on backend endpoints that don't exist yet (hub curation queue · federation peers · hub-level newsletters · single-plugin GET · cross-instance webfinger). |
+| **Next build** | Phase 12.5 inbox endpoint + delivery worker (queue + retry policy) · Phase 14 plugins.theourgia.com host. H10 backend prerequisites shipped: per-user audit + GDPR export + 30-day grace deletion + sessions/devices live; federation outbound primitive + reaper script in place. Awaiting H10 designer return for Cluster B surfaces (B1-B7). |
 
 The full per-batch history lives in **[CHANGELOG.md](CHANGELOG.md)**. For the canonical feature catalog and per-phase status snapshot, see **[FEATURES.md](FEATURES.md)**. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 

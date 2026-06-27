@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-27 (Phase 15 hardening backend + federation outbound + reaper · `be6b3db` → `3a20dc4`)
+
+H10 Cluster B backend prerequisites land ahead of the designer's surface package.
+
+- **b108-2ab `be6b3db`** — Phase 15 hardening backend. Three new routers: `user_audit.py` (GET /me/audit + .csv export · per-user filterable audit log), `user_account.py` (GET /me · POST /me/data-export · POST /me/account/delete · POST /me/account/reactivate). Account deletion uses a NEW column `user.scheduled_for_deletion_at` (alembic 0063 · indexed) with a HARDCODED 30-day grace period (rule 46). Data export runs the existing GDPRService inline + returns the JSON archive; async-with-email pipeline (rule 45) is a v1.1 enhancement on the same endpoint shape. Every state change emits a SECURITY-kind audit event.
+- **b108-2ac `3471304`** — Per-device session lifecycle (H10 Cluster B6). `user_sessions.py` with GET /me/sessions + DELETE /me/sessions/:id + POST /me/sessions/revoke-others. Rule 48 verified: `SessionRead` carries device-friendly fields only — NO `token_hash`, NO raw `user_agent`. Device labels derived server-side ("Laptop · Firefox" / "Phone · Chrome" / etc.) from the User-Agent + mobile heuristic. `is_current` flagged by hashing the incoming bearer token + comparing against the stored hash.
+- **b108-2ad `3a20dc4`** — Federation outbound primitive + reaper script. `core/federation/outbound.py` is the lowest-level signed-POST attempt (composes RFC 9421 signer + httpx AsyncClient · canonical-JSON body so the verifier never rejects on digest mismatch · NEVER raises on transport failure — returns `DeliveryResult` · no-op when transport is disabled · rejects non-HTTPS URLs). `scripts/reaper.py` is operator-runnable cleanup for federation nonces (past `expires_at`) + scheduled-for-deletion users (LOGS candidates for v1 until the integration test exercises the destructive path end-to-end).
+
+**2464 → 2490 backend pass · alembic head 0063 · 26 new tests.**
+
 ### Added — 2026-06-27 (Admin API-wiring sweep · 14 surfaces live · `9b20fc0` → `fb34338`)
 
 Continued the admin sweep through 8 more surfaces past the worked example. Each commit adds a new resource library; the established convention (TanStack Query + skeleton + `--warn-soft` error banner + per-resource lib hook file) holds across all 14:
