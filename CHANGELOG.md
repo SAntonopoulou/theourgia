@@ -7,6 +7,69 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-27 (H08 sprint COMPLETE · Phase 12 Federation + Phase 13 ActivityPub frontend · 21/21)
+
+The H08 frontend sprint closed today. All 21 surfaces against the H08 design package at `/home/sophia/design-handoffs/theourgia/2026-06-27-H08/handoff_H08/` shipped — fifteen Cluster A (Federation) + six Cluster B (ActivityPub). Phase 12 + Phase 13 frontends are end-to-end against the design corpus. Backend (single-vault subset plus the ActivityPub adapter) lands as a follow-on under `plan/12-batches-backend.md`.
+
+**Foundation — `ef2d968`**:
+
+- H08 token block in `theourgia.tokens.css`: `--network*` (peer network framing), `--peer-{ok|pending|refused|blocked}*` (handshake states), `--planetary-hour-now*` (current-hour highlight on the group-ritual time trio), `--remote*` (off-instance origin), `--seal-border` (modal chrome for sealed-blocked callouts). Four themed variants (base · hellenic · thelemic · light).
+- VaultNav extension: `hubs` key renamed `networks`; added `followers` + `privateviewers` items.
+- Admin App.tsx route registration + nav-key mapping.
+
+**Cluster A — Federation networks (15 surfaces · `21e2dd3 → 8a87800`)**:
+
+- **My Networks** (`/networks`) — HubMembershipCard + HubInvitationCard. Accept-invitation chrome `--warn-soft`. Verbatim empty-state copy.
+- **Network Browser** (`/networks/peers`) — peer list with local-pinned in `--network` framing. `pillTokens()` centralises `--peer-{ok|pending|refused|blocked}` mapping. Status counts memoized over FULL peer set (not the filtered view).
+- **Hub Discovery** (`/networks/discover`) — `HubDiscoverySort = "alpha" | "recent"`; NEVER popularity. CTA matrix: public/owa → "Request to join" enabled; private → invitation-only disabled; isMember → "Already a member" disabled.
+- **Hub Admin Dashboard** (`/hubs/:hubId/admin`) — 4 tabs (Members default · Curation queue · Public face · Settings). Reject CTA `--warn-soft`; Approve `--network-soft`; Send back ghost. Analytics opt-in radiogroup (opt-in/opt-out/require-explicit).
+- **Hub Public Face** (`/hub/:slug`) — PUBLIC route, no VaultNav. Verbatim `‡ Powered by Theourgia (AGPLv3)` footer. **No member count.** CTA matrix 6 combinations.
+- **Hub Member Dashboard** (`/hubs/:hubId`) — 3 tabs (Feed default · My submissions · Sharing settings). Chronological feed with day separators, **no inline reactions**. Verbatim cache-persistence disclosure. Sharing toggles DEFAULT OFF.
+- **Network Newsletter Composer** (`/hubs/:hubId/newsletter`) — Two-pane source picker + Tiptap-lite editor + ConfirmSendModal. Verbatim "Send to {N} members?" + "Once sent, a newsletter cannot be recalled." Distinct from Phase 10 publication newsletter.
+- **Group Ritual Scheduler** (`/group-rituals/new`) — THE H08 worked example. 6 sections (Basics · Time · Location · Participants · Correspondences · Script). Location radio defaults dispersed. Verbatim correspondences helper: "A prep checklist for each participant — not a lock-in." "Schedule + invite" CTA `--warn-soft`.
+- **Group Ritual Coordination** (`/group-rituals/:id/run`) — Narrow ~600px. Compact TimeTrio (shared primitive). Presence pills (in-ritual → `--peer-ok`, joined → `--network`, completed/not-present → `--ink-mute`). Fragment stream with `--network-line` border-left. **No edit affordances per fragment.** Sticky footer with input + "Mark me as completed" one-way CTA.
+- **Group Ritual Post-Mortem** (`/group-rituals/:id`) — "Closed" badge neutral chrome. Frozen script/fragments (`--ink-soft` + `--line-2` border-left). Egregore chip conditional render. Write-once reflection form (4000-char limit). Verbatim "Open as an entry in your journal" footer.
+- **Private Viewer Management** (`/private-viewers`) — Active rows + revoked rows persist together at `opacity .55` with verbatim `Revoked at {ts}` chip in `--ink-mute` (NEVER `--danger`; audit trail is the point). New-viewer modal defaults to **tag-scoped + signed-link delivery** — Full vault is explicit opt-in, never default. Verbatim shown-once warning in `--warn`: **"This credential is shown ONCE. Save it now."**
+- **Roles & Permissions Editor** (`/hubs/:hubId/admin/roles`) — 11-capability × 5-role matrix. Save changes vs **Save + apply** (`--warn-soft` chrome, the propagation edge). Verbatim permission-denied banner template: **"You cannot do {action} because you lack permission {permission}."** Add custom role defaults to least-privilege (zero caps). `Preview as role` is read-only — never mutates.
+- **SSO Authorize / Consent modal** — Three MANDATORY sections in fixed order: identity DID (`--font-mono`) · what the hub receives · what the assertion authorizes (scope + 24h expiry + revoke path). Verbatim `--warn-soft` callout: **"This is NOT a login. Your home instance never sees the hub's pages directly — only this consent moment."** Esc + scrim click → DECLINE. No credential inputs.
+- **Federation Audit Log** (`/hubs/:hubId/admin/audit`) — Append-only ledger. Every row expands to reveal its signed envelope JSON in `--font-mono`. Tone families: Revoke → `--warn` (NEVER `--danger`); Heartbeat / Mirror / Comment → `--remote`; Accept → `--peer-ok`; rest → `--network`. Filters compose. **"Show only my actions" OFF by default.** CSV export hands the filter triple to the consumer.
+- **Push Content to Hub modal** — Two states. Network: hub checkboxes ("you're {role}") + auto-curating warning chip vs reviewing peer-ok chip. Sealed: `--seal-soft` block with verbatim **"Sealed entries cannot be pushed."** + **"Sealed content never federates."** Push CTA `--warn-soft` NEVER `--accent`/`--danger`. Cache caveat verbatim: **"Content already mirrored may persist in caches."**
+
+**Cluster B — ActivityPub (6 surfaces · `0c4bb60 → 932fe6d`)**:
+
+- **ActivityPub Settings** (`/settings/activitypub`) — Master switch OFF by default. First activation requires `--danger` alertdialog (rule 2: `--danger` reserved for Visibility-becoming-Public moments — this is the matching irreversible-feeling step). Verbatim title **"Open your public actor to the wider web"** + sub **"This is the one irreversible-feeling step in Theourgia."** ON→OFF single tap. Body dims to `opacity .42 · pointer-events:none` when disabled. Delete-broadcast outbound switch defaults OFF with verbatim cache caveat.
+- **Followers Pane** (`/followers`) — Two tabs. **No engagement metrics** beyond count — verbatim disclosure: **"Listed in the order they followed — newest first. Theourgia keeps no engagement metrics beyond this count."** Consent-first follows: Decline `--warn-soft` (refusing is protective, NOT punitive — NEVER `--danger`). Pending count chip `--warn-soft`. Verbatim pending callout. WebFinger handles in `--font-mono` `--remote`.
+- **Remote Content Embed primitive** (Tiptap node) — Three states: resolvable / loading (`aria-busy`) / unresolvable. **Citation preserved even when origin is gone** — `{handle} · ‡ from {instance}` survives the post's disappearance. `--remote` border + chip + handle + `View original →` link.
+- **WebFinger Verification** (`/verify`) — Three-step lookup. **Failures never blame** (rule 25): verbatim fail subtitle **"The handle did not resolve to your vault. This is a configuration issue, not an error on your part."** Failure card `--warn-soft` NEVER `--danger`. Pass card surfaces full SHA256 key fingerprint in `--peer-ok` `--font-mono`.
+- **Federated Comments Stream** — Three sections (Approved default open · Pending owner-only · Hidden owner-only). Federated comments mark their source via `--font-mono` `--remote` handle + `‡ from {instance}` chip. **Layout identical to local replies otherwise.** Hide/Unhide flips with section. Flag hidden inside Hidden section. **No engagement metrics anywhere** — only per-section count.
+- **Cross-Post Preview modal** — Mastodon preview rendered in **Mastodon's actual colour palette** (literal hex tokens, NOT `var(--…)` Theourgia tokens — the user sees what the audience sees, dishonest preview would be a branded preview). Three "Before you post" disclosures in fixed order: public-only reach (rule 27 verbatim) · graceful degradation (verbatim "never broken markup") · Settings → Fediverse pointer. CW preserved by default. Footer disclosure verbatim: **"Posts once, now. Edits sync if you enable Update activities."**
+
+**Cross-cutting H08 honesty rules honoured across all 21 surfaces**:
+
+1. **`--danger` reserved.** Only Visibility-becoming-Public moments (rule 2) — both the ActivityPub first-activation confirm and the entry-publication downgrade banner. **No other surface uses `--danger`.** Revoke / Decline / Reject / sealed-callouts use `--warn-soft` or `--seal-soft`.
+2. **No central SSO authority** (rule 23) — point-to-point consent moment; no broker, no Theourgia ID. Identity DID rendered in `--font-mono` so the user reads the wire key.
+3. **Per-network opt-in** (rule 28) — every federation surface gates on explicit opt-in. ActivityPub master is OFF by default. Push-to-Hub picks hubs one-by-one, no "push to all" shortcut.
+4. **Consent-first follows** (rule 19) — pending list is explicit Approve / Decline.
+5. **No engagement metrics** (rule 18) — no likes, reposts, view counts, rankings. The follower count is the ONLY number across the federation chrome.
+6. **Federated comments mark source** (rule 24) — handle + `‡ from {instance}` chip; layout identical to local otherwise.
+7. **AP only sees Visibility=public** (rule 27) — re-stated verbatim in three places (settings intro, settings confirm body, cross-post preview disclosure).
+8. **Failures never blame** (rule 25) — WebFinger Verify fail subtitle verbatim: "This is a configuration issue, not an error on your part."
+9. **Three-pin time display** (rule 23) — local + UTC + planetary-hour ruler for every group-ritual time render.
+10. **Federation is NOT a walled garden** — Hub Public Face is reachable without VaultNav; remote content embed renders verbatim; comments stream treats federated equals to local.
+11. **Audit is append-only** — Federation Audit Log renders no edit/delete affordances; rows persist with signed envelopes inspectable inline.
+12. **Restrictive defaults** (rule 11) — Private Viewer modal defaults tag-scoped not full-vault; ActivityPub Delete-broadcast outbound defaults OFF; Sharing toggles in Hub Member dashboard default OFF.
+13. **Cache-persistence disclosed** at every push moment — verbatim "Content already mirrored may persist in caches."
+
+**Sprint totals**: 21 surfaces. **2657 vitest tests** (2073 → 2657; **+584** over the sprint). Admin tsc clean across every commit. The five new H08 design tokens are wired through every relevant surface.
+
+**Followups noted in commits**:
+
+- Phase 12 backend (B137-B141) — single-vault hubs/membership/private-viewers/group-rituals/SSO scaffolding. Plan locked at `plan/12-batches-backend.md`.
+- Phase 12.5 (federation transport) — HTTP Signatures sender + receiver, replay-nonce store, capability-token issuance. Lands when a second test instance is available + threat model is signed off.
+- Phase 13 backend (ActivityPub adapter) — WebFinger endpoint, AP actor + outbox + inbox, federated comments wire, Mastodon-compat note/article rendering. Follows Phase 12 transport.
+- Storybook stories for the 21 surfaces (follow-on quality batch).
+- Visual + a11y baselines for the 21 surfaces.
+
 ### Added — 2026-06-26 (Phase 11 Media Library + Pilgrimage backend COMPLETE · B132 → B136)
 
 Phase 11 backend is fully shipped. Four new tables across Alembic
