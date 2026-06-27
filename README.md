@@ -30,7 +30,7 @@ Open source, self-hostable, federated. For working magicians.
 - **H06 ports 2/3/5/6/7/8/9/10** (2026-06-26) — Cross-Journal Search · Per-Study Page · Studies Index · Transliteration Utility · Analytics Dashboard · Query Builder · Synchronicity Log · Synchronicity Quick-Capture.
 - **Phase 09 backend** (B120-B124, 2026-06-26) — Synchronicity table + auto-tag (location-precision floor enforced server-side) · QUERY_BUILDER study kind + saved-query DSL · executor (sealed exclusion via JOIN-layer guard + sealed_excluded_count indicator) · `/analytics/query` · timeseries / heatmap / correlation / today aggregates · weekly digest builder (banned-phrase regex blocks modal/oracular headlines; tier-2/3 gated by sample size). Alembic 0043→0047; +146 backend tests.
 
-As of latest commit: **2350 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
+As of latest commit: **2373 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
 
 **H06 sprint COMPLETE: 10/10 surfaces shipped + Phase 09 backend solo subset closed.** B120-B125 in. Network-aggregate / differential-privacy / cross-vault federation explicitly deferred to Phase 12+. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
@@ -152,6 +152,26 @@ to Phase 12+).
 **H08 design request opened** (2026-06-26 · `docs/design-requests/
 2026-06-26-h08-federation-activitypub.md` · 767 lines · 21 surfaces
 across two clusters · 13 net-new honesty rules pinned).
+
+**H08 surface 7/21 — Network Newsletter Composer** (2026-06-27 ·
+`/hubs/:hubId/newsletter`). Two-pane: left rail of approved
+member submissions + right pane with title input + Tiptap
+mini-toolbar (B/I/H/Link + "/ Insert block") + body (paragraphs
++ embedded curation cards in `--network-soft` chrome) + footer
+disclaimer. **Send now CTA opens a confirm modal** — never sends
+on the topbar click — and the modal shows the verbatim header
+"Send to {N} members?" + subtitle "Once sent, a newsletter
+cannot be recalled." The footer disclaimer is the surface's
+defining honesty moment, verbatim: "Every issue carries each
+recipient's own unsubscribe link, and a sent newsletter is
+frozen — it cannot be recalled." Send-now CTA + confirm-modal
+header both `--warn-soft` — NEVER `--danger` (rule 2). Defensive
+tests: no engagement-metric chrome ("open rate" / "click rate"
+/ "engagement" / "high reach"). Distinct from the existing
+Phase-10 per-vault `NewsletterComposer` route at
+`/newsletter/compose`; the new route file is
+`HubNewsletterComposer.tsx` so the two coexist cleanly. 23 new
+tests; shared 2350 → **2373**.
 
 **H08 surface 6/21 — Hub Member Dashboard** (2026-06-27 ·
 `/hubs/:hubId`). 3 tabs (Feed [default] · My submissions ·

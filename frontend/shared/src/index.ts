@@ -83,6 +83,7 @@ export * from "./HubMember/index.js";
 export * from "./HubPublicFace/index.js";
 export * from "./MyNetworks/index.js";
 export * from "./NetworkBrowser/index.js";
+export * from "./NewsletterComposer/index.js";
 export * from "./OracleTabs/index.js";
 export * from "./PerStudyPage/index.js";
 export * from "./PilgrimageMap/index.js";

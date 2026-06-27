@@ -60,6 +60,7 @@ import { Foundations } from "./routes/Foundations.js";
 import { HubAdminDashboard } from "./routes/HubAdminDashboard.js";
 import { HubDiscovery } from "./routes/HubDiscovery.js";
 import { HubMemberDashboard } from "./routes/HubMemberDashboard.js";
+import { HubNewsletterComposer } from "./routes/HubNewsletterComposer.js";
 import { HubPublicFace } from "./routes/HubPublicFace.js";
 import { MyNetworks } from "./routes/MyNetworks.js";
 import { NetworkBrowser } from "./routes/NetworkBrowser.js";
@@ -293,6 +294,10 @@ function ShellRoutes() {
         <Route
           path="/hubs/:hubId/admin"
           element={<HubAdminDashboard />}
+        />
+        <Route
+          path="/hubs/:hubId/newsletter"
+          element={<HubNewsletterComposer />}
         />
         <Route
           path="/hubs/:hubId"
