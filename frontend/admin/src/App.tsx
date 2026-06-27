@@ -80,6 +80,8 @@ import { PluginStatus } from "./routes/PluginStatus.js";
 import { RegistryBrowser as RegistryBrowserRoute } from "./routes/RegistryBrowser.js";
 import { RegistryPluginDetail } from "./routes/RegistryPluginDetail.js";
 import { PluginAuthorProfile } from "./routes/PluginAuthorProfile.js";
+import { BundleLibrary } from "./routes/BundleLibrary.js";
+import { BundleDetail } from "./routes/BundleDetail.js";
 import { Account } from "./routes/Account.js";
 import { Agents } from "./routes/Agents.js";
 import { BookPreview } from "./routes/BookPreview.js";
@@ -359,6 +361,8 @@ function ShellRoutes() {
           element={<PluginConfiguration />}
         />
         <Route path="/plugins/:id" element={<PluginDetail />} />
+        <Route path="/bundles" element={<BundleLibrary />} />
+        <Route path="/bundles/:id" element={<BundleDetail />} />
         <Route
           path="/group-rituals/:id/run"
           element={<GroupRitualCoordination />}

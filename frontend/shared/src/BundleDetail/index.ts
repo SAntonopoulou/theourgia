@@ -1,0 +1,23 @@
+export {
+  type BundleDataShape,
+  type BundleDetailSurfaceProps,
+  BundleDetailSurface,
+} from "./BundleDetailSurface.js";
+export {
+  BD_ABOUT_HEADING,
+  BD_CITATION_GLYPH,
+  BD_COL_COUNT,
+  BD_COL_KIND,
+  BD_COL_SAMPLE,
+  BD_DATA_SHAPE_HEADING,
+  BD_DATA_SHAPE_SUB,
+  BD_LABEL_AUTHOR,
+  BD_LABEL_INSTALLED,
+  BD_LABEL_LICENSE,
+  BD_LABEL_SOURCE,
+  BD_REFERENCES_HEADING,
+  BD_REFERENCES_TAIL,
+  BD_REMOVE_CTA,
+  BD_REMOVE_WARN_PREFIX,
+  BD_REMOVE_WARN_SUFFIX,
+} from "./copy.js";
