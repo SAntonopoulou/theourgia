@@ -1,18 +1,12 @@
 /**
  * Followers — admin route at ``/followers``.
  *
- * Renders the H08 §S3 Cluster B surface 17 against fixtures.
- *
- * Wiring deferred to Phase 13 backend:
- *
- *   * GET  /api/v1/activitypub/followers — list.
- *   * GET  /api/v1/activitypub/follow-requests — pending.
- *   * POST /api/v1/activitypub/follow-requests/{id}/approve
- *   * POST /api/v1/activitypub/follow-requests/{id}/decline
- *
- * NO endpoint for "all followers, sorted by engagement." There
- * are no engagement metrics in Theourgia (rule 18).
+ * Wired to ``/api/v1/activitypub/followers`` + ``/follow-requests``
+ * per the admin API-wiring convention. No engagement metrics surface
+ * (rule 18) — the list is name + handle + when-followed only.
  */
+
+import { useMemo } from "react";
 
 import {
   type FollowerRow,
@@ -21,109 +15,121 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 
-const FOLLOWERS: FollowerRow[] = [
-  {
-    id: "f-vesper",
-    name: "Lucia Vesper",
-    handle: "@lvesper@thelema.example",
-    tradition: "Thelemic",
-    since: "4 days",
-    initial: "L",
-    tone: 0,
-  },
-  {
-    id: "f-hedge",
-    name: "Hedge & Hollow",
-    handle: "@hedge@folkcraft.social",
-    tradition: "Folk",
-    since: "1 week",
-    initial: "H",
-    tone: 1,
-  },
-  {
-    id: "f-tullius",
-    name: "Marcus Tullius",
-    handle: "@mtullius@hermetica.org",
-    tradition: "Hermetic",
-    since: "2 weeks",
-    initial: "M",
-    tone: 2,
-  },
-  {
-    id: "f-demeter",
-    name: "Δήμητρα Κ.",
-    handle: "@demeter@hellenismos.gr",
-    tradition: "Hellenic",
-    since: "3 weeks",
-    initial: "Δ",
-    tone: 3,
-  },
-  {
-    id: "f-nightjar",
-    name: "nightjar",
-    handle: "@nightjar@mastodon.social",
-    tradition: "Independent",
-    since: "1 month",
-    initial: "N",
-    tone: 0,
-  },
-  {
-    id: "f-owl",
-    name: "The Owl Library",
-    handle: "@owllib@books.bookwyrm.social",
-    tradition: "Scholarly",
-    since: "2 months",
-    initial: "T",
-    tone: 1,
-  },
-];
+import { SurfaceError } from "../lib/SurfaceError.js";
+import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
+import {
+  type ApFollower,
+  type ApFollowRequest,
+  useApFollowRequestAction,
+  useApFollowRequests,
+  useApFollowers,
+} from "../lib/activitypub.js";
 
-const PENDING: PendingFollowRow[] = [
-  {
-    id: "p-orphic",
-    name: "orphic.flame",
-    handle: "@orphic@pleroma.example",
-    initial: "O",
-    tone: 2,
-  },
-  {
-    id: "p-sortilege",
-    name: "Sortilege Press",
-    handle: "@sortilege@writing.exchange",
-    initial: "S",
-    tone: 3,
-  },
-  {
-    id: "p-wanderer",
-    name: "a wanderer",
-    handle: "@wanderer@mas.to",
-    initial: "A",
-    tone: 0,
-  },
-];
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function sinceLabel(iso: string, now: number = Date.now()): string {
+  const days = Math.floor((now - new Date(iso).getTime()) / DAY_MS);
+  if (days < 1) return "today";
+  if (days < 7) return `${days} day${days === 1 ? "" : "s"}`;
+  if (days < 30) {
+    const w = Math.floor(days / 7);
+    return `${w} week${w === 1 ? "" : "s"}`;
+  }
+  const m = Math.floor(days / 30);
+  return `${m} month${m === 1 ? "" : "s"}`;
+}
+
+function nameAndInitial(handle: string | null, did: string): {
+  name: string;
+  initial: string;
+} {
+  const display = handle ?? did;
+  // For "@user@host" pull the user part; otherwise first char of did.
+  const userPart = display.startsWith("@")
+    ? display.slice(1).split("@")[0] ?? display
+    : display;
+  return {
+    name: userPart,
+    initial: (userPart[0] ?? "·").toUpperCase(),
+  };
+}
+
+function toFollowerRow(f: ApFollower, index: number): FollowerRow {
+  const { name, initial } = nameAndInitial(f.follower_handle, f.follower_did);
+  return {
+    id: f.id,
+    name,
+    handle: f.follower_handle ?? f.follower_did,
+    tradition: "—",
+    since: sinceLabel(f.created_at),
+    initial,
+    tone: (index % 4) as 0 | 1 | 2 | 3,
+  };
+}
+
+function toPendingRow(r: ApFollowRequest, index: number): PendingFollowRow {
+  const { name, initial } = nameAndInitial(r.follower_handle, r.follower_did);
+  return {
+    id: r.id,
+    name,
+    handle: r.follower_handle ?? r.follower_did,
+    initial,
+    tone: (index % 4) as 0 | 1 | 2 | 3,
+  };
+}
 
 export function Followers() {
   useTopbar(() => ({ title: "Followers" }));
 
+  const followers = useApFollowers();
+  const requests = useApFollowRequests();
+  const action = useApFollowRequestAction();
+
+  const followerRows = useMemo(
+    () =>
+      followers.data ? followers.data.map((f, i) => toFollowerRow(f, i)) : [],
+    [followers.data],
+  );
+  const pendingRows = useMemo(
+    () =>
+      requests.data ? requests.data.map((r, i) => toPendingRow(r, i)) : [],
+    [requests.data],
+  );
+
+  if (followers.isLoading || requests.isLoading) {
+    return <SurfaceSkeleton rowCount={4} />;
+  }
+
+  const error = followers.error ?? requests.error;
+  if (error) {
+    return (
+      <SurfaceError
+        title="Couldn’t load your followers."
+        message={error.message}
+        onRetry={() => {
+          void followers.refetch();
+          void requests.refetch();
+        }}
+      />
+    );
+  }
+
   return (
-    <FollowersPaneSurface
-      followers={FOLLOWERS}
-      pending={PENDING}
-      onApprove={(id) => {
-        // TODO Phase 13 — POST /follow-requests/{id}/approve
-        // eslint-disable-next-line no-console
-        console.info("[followers] approve", id);
-      }}
-      onDecline={(id) => {
-        // TODO Phase 13 — POST /follow-requests/{id}/decline
-        // eslint-disable-next-line no-console
-        console.info("[followers] decline", id);
-      }}
-      onFollowerAction={(id) => {
-        // TODO Phase 13 — kebab menu (block / view profile / ...).
-        // eslint-disable-next-line no-console
-        console.info("[followers] action", id);
-      }}
-    />
+    <>
+      {action.error ? (
+        <SurfaceError
+          title="That action didn’t go through."
+          message={action.error.message}
+          onRetry={() => action.reset()}
+          retryLabel="Dismiss"
+        />
+      ) : null}
+      <FollowersPaneSurface
+        followers={followerRows}
+        pending={pendingRows}
+        onApprove={(id) => action.mutate({ id, action: "approve" })}
+        onDecline={(id) => action.mutate({ id, action: "decline" })}
+      />
+    </>
   );
 }

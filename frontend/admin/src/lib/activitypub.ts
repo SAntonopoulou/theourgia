@@ -79,9 +79,10 @@ export function useUpdateApSettings() {
 export interface ApFollower {
   id: string;
   follower_did: string;
-  display_name: string | null;
-  inbox_url: string;
-  followed_at: string;
+  follower_handle: string | null;
+  follower_inbox_url: string | null;
+  last_delivery_at: string | null;
+  created_at: string;
 }
 
 export function useApFollowers(): UseQueryResult<ApFollower[], Error> {
@@ -91,5 +92,45 @@ export function useApFollowers(): UseQueryResult<ApFollower[], Error> {
   });
 }
 
-// Keep the unused-import lint happy when the import is conditional
-void apiPost;
+export type FollowRequestState = "pending" | "accepted" | "declined";
+
+export interface ApFollowRequest {
+  id: string;
+  follower_did: string;
+  follower_handle: string | null;
+  state: FollowRequestState;
+  resolved_at: string | null;
+  created_at: string;
+}
+
+const FOLLOW_REQUESTS_KEY = ["activitypub", "follow-requests"] as const;
+
+export function useApFollowRequests(): UseQueryResult<ApFollowRequest[], Error> {
+  return useQuery<ApFollowRequest[], Error>({
+    queryKey: FOLLOW_REQUESTS_KEY,
+    queryFn: () =>
+      apiGet<ApFollowRequest[]>(
+        "/activitypub/follow-requests?state=pending",
+      ),
+  });
+}
+
+export function useApFollowRequestAction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      action,
+    }: {
+      id: string;
+      action: "approve" | "decline";
+    }) =>
+      apiPost<ApFollowRequest>(
+        `/activitypub/follow-requests/${id}/${action}`,
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: FOLLOW_REQUESTS_KEY });
+      qc.invalidateQueries({ queryKey: FOLLOWERS_KEY });
+    },
+  });
+}
