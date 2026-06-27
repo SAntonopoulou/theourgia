@@ -668,6 +668,18 @@
 
   --remote: #8fa4b8;
   --remote-soft: rgba(143, 164, 184, 0.14);
+
+  /* H09 — Plugin / Bundle / Sandbox aliases (no new hues per
+     H09 §S1 — these alias existing families so the build side
+     can rename later without a hunt). */
+  --plugin-active: var(--peer-ok);
+  --plugin-active-soft: var(--peer-ok-soft);
+  --plugin-error: var(--warn);
+  --plugin-error-soft: var(--warn-soft);
+  --plugin-disabled-line: var(--line-2);
+  --sandbox-frame: var(--remote);
+  --sandbox-frame-soft: var(--remote-soft);
+  --tombstone-soft: var(--bg-3);
 }
 
 [data-theme="hellenic"] {

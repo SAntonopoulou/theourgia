@@ -225,6 +225,35 @@ const NAV_ICONS = {
       <path d="M19 5l-2 2M5 19l2-2" />
     </svg>
   ),
+  // ── H09 Platform section ───────────────────────────────────────────
+  plugins: (
+    // Puzzle / socket family (rule from H09 §S0 — plugins read as a
+    // *puzzle/socket* family; bundles as a single *scroll*).
+    <svg {...ICON_PROPS}>
+      <path d="M9 4h3a2 2 0 0 1 2 2v2h2a2 2 0 0 1 2 2v3" />
+      <path d="M14 8a1.5 1.5 0 0 1 0-3" />
+      <path d="M14 13v7H5v-9h3" />
+      <path d="M8 11a1.5 1.5 0 0 1-3 0" />
+    </svg>
+  ),
+  bundles: (
+    // Single scroll, distinct from plugin icon. The bundle is *data*
+    // — content rolled up for installation.
+    <svg {...ICON_PROPS}>
+      <path d="M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6" />
+      <path d="M6 4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2" />
+      <path d="M9 9h6M9 12h6M9 15h4" />
+    </svg>
+  ),
+  sandbox: (
+    // A small bordered tray with a content square inside — the safe
+    // place to look before committing. Echoes the SandboxFrame chrome.
+    <svg {...ICON_PROPS}>
+      <rect x="3" y="6" width="18" height="14" rx="1.5" />
+      <path d="M3 10h18" />
+      <rect x="8" y="13" width="8" height="4" />
+    </svg>
+  ),
 } as const;
 
 export type NavKey = keyof typeof NAV_ICONS;
@@ -332,6 +361,19 @@ export const DEFAULT_VAULT_NAV: VaultNavSection[] = [
         to: "/private-viewers",
         label: "Private viewers",
       },
+    ],
+  },
+  // ── Phase 14 (H09) — Platform ──────────────────────────────────────
+  // Plugin = code that extends the platform (requests capabilities,
+  // can error). Bundle = data that populates it (no code, no
+  // capability, previewable). Sandbox is the safe place to look
+  // before committing.
+  {
+    heading: "Platform",
+    items: [
+      { key: "plugins", to: "/plugins", label: "Plugins" },
+      { key: "bundles", to: "/bundles", label: "Bundles" },
+      { key: "sandbox", to: "/sandbox", label: "Sandbox" },
     ],
   },
 ];

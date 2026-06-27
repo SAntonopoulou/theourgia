@@ -164,6 +164,10 @@ function navKeyForPath(pathname: string): NavKey | undefined {
   if (pathname.startsWith("/networks")) return "networks";
   if (pathname.startsWith("/followers")) return "followers";
   if (pathname.startsWith("/private-viewers")) return "privateviewers";
+  // H09 — Platform section
+  if (pathname.startsWith("/plugins")) return "plugins";
+  if (pathname.startsWith("/bundles")) return "bundles";
+  if (pathname.startsWith("/sandbox")) return "sandbox";
   return undefined;
 }
 

@@ -143,10 +143,22 @@ describe("VaultNav", () => {
     ]);
   });
 
-  it("section order keeps Network last", () => {
+  it("section order keeps Platform last (H09: Platform appended after Network)", () => {
     const last =
       DEFAULT_VAULT_NAV[DEFAULT_VAULT_NAV.length - 1]?.heading;
-    expect(last).toBe("Network");
+    expect(last).toBe("Platform");
+  });
+
+  it("Platform section holds plugins / bundles / sandbox items in that order", () => {
+    const platform = DEFAULT_VAULT_NAV.find(
+      (s) => s.heading === "Platform",
+    );
+    expect(platform).toBeDefined();
+    expect(platform?.items.map((i) => i.key)).toEqual([
+      "plugins",
+      "bundles",
+      "sandbox",
+    ]);
   });
 
   // ─── H05 — Workshop section extension ───────────────────────────
