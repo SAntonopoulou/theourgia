@@ -110,6 +110,8 @@ export * from "./PluginCapabilityReview/index.js";
 export * from "./PluginConfiguration/index.js";
 export * from "./PluginStatusDashboard/index.js";
 export * from "./VulnerabilityAdvisoryBanner/index.js";
+export * from "./DataExportRequest/index.js";
+export * from "./AccountDeletion/index.js";
 export * from "./RegistryBrowser/index.js";
 export * from "./RegistryPluginDetail/index.js";
 export * from "./PluginAuthorProfile/index.js";
