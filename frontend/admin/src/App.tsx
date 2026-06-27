@@ -58,6 +58,7 @@ import { TarotRoute } from "./routes/TarotRoute.js";
 import { Entities } from "./routes/Entities.js";
 import { Foundations } from "./routes/Foundations.js";
 import { MyNetworks } from "./routes/MyNetworks.js";
+import { NetworkBrowser } from "./routes/NetworkBrowser.js";
 import { Account } from "./routes/Account.js";
 import { Agents } from "./routes/Agents.js";
 import { BookPreview } from "./routes/BookPreview.js";
@@ -282,6 +283,7 @@ function ShellRoutes() {
             resolves (now to the same surface) so any external bookmarks
             stay alive while the rest of Cluster A ships. */}
         <Route path="/networks" element={<MyNetworks />} />
+        <Route path="/networks/peers" element={<NetworkBrowser />} />
         <Route path="/hubs" element={<MyNetworks />} />
         <Route path="/identities" element={<Identities />} />
         <Route path="/lineage" element={<LineageAdmin />} />

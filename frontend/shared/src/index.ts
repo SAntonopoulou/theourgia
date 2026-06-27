@@ -78,6 +78,7 @@ export * from "./AnalyticsTabs/index.js";
 export * from "./AudioLibrary/index.js";
 export * from "./LinguisticTabs/index.js";
 export * from "./MyNetworks/index.js";
+export * from "./NetworkBrowser/index.js";
 export * from "./OracleTabs/index.js";
 export * from "./PerStudyPage/index.js";
 export * from "./PilgrimageMap/index.js";
