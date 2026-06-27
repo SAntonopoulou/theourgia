@@ -30,7 +30,7 @@ Open source, self-hostable, federated. For working magicians.
 - **H06 ports 2/3/5/6/7/8/9/10** (2026-06-26) — Cross-Journal Search · Per-Study Page · Studies Index · Transliteration Utility · Analytics Dashboard · Query Builder · Synchronicity Log · Synchronicity Quick-Capture.
 - **Phase 09 backend** (B120-B124, 2026-06-26) — Synchronicity table + auto-tag (location-precision floor enforced server-side) · QUERY_BUILDER study kind + saved-query DSL · executor (sealed exclusion via JOIN-layer guard + sealed_excluded_count indicator) · `/analytics/query` · timeseries / heatmap / correlation / today aggregates · weekly digest builder (banned-phrase regex blocks modal/oracular headlines; tier-2/3 gated by sample size). Alembic 0043→0047; +146 backend tests.
 
-As of latest commit: **2373 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
+As of latest commit: **2421 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
 
 **H06 sprint COMPLETE: 10/10 surfaces shipped + Phase 09 backend solo subset closed.** B120-B125 in. Network-aggregate / differential-privacy / cross-vault federation explicitly deferred to Phase 12+. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
@@ -152,6 +152,28 @@ to Phase 12+).
 **H08 design request opened** (2026-06-26 · `docs/design-requests/
 2026-06-26-h08-federation-activitypub.md` · 767 lines · 21 surfaces
 across two clusters · 13 net-new honesty rules pinned).
+
+**H08 surface 8/21 — Group Ritual Scheduler** (2026-06-27 ·
+`/group-rituals/new`). **THE H08 worked example** — introduces
+the three-pin time trio (rule 23, the deepest new structure of
+the whole tier). New shared primitive `GroupRitualTimeTrio`
+lives at `frontend/shared/src/GroupRitualTimeTrio/` (reused by
+surfaces 9 + 10). Three cards always render together: local
+clock (font-display) | UTC anchor (font-mono) | planetary hour
+with `--planetary-hour-now` chrome when `isCurrent=true`,
+neutral `--bg-2` otherwise. **The planetary hour is per-VIEWER**
+— the surface receives pre-computed values; the consumer
+derives them from the viewer's lat/long via Swiss Ephemeris.
+The seven planetary glyphs (☉ ☽ ♂ ☿ ♃ ♀ ♄) map to canonical
+rulers. Scheduler itself: 6 sections (Basics · Time · Location
+· Participants · Correspondences · Script). Location radio
+defaults to "dispersed" with verbatim hint "Each participant
+works from their own space". Correspondences helper verbatim:
+"A prep checklist for each participant — not a lock-in." (not
+gating). Participants accept hub-member chips OR free-form DID
+(rule 28). "Schedule + invite" CTA uses `--warn-soft` — NEVER
+`--danger`. 48 new tests (20 trio + 28 scheduler); shared 2373
+→ **2421**.
 
 **H08 surface 7/21 — Network Newsletter Composer** (2026-06-27 ·
 `/hubs/:hubId/newsletter`). Two-pane: left rail of approved
