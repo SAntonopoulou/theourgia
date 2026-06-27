@@ -100,6 +100,7 @@ export * from "./FederationAuditLog/index.js";
 export * from "./PushToHub/index.js";
 export * from "./ActivityPubSettings/index.js";
 export * from "./FollowersPane/index.js";
+export * from "./RemoteContentEmbed/index.js";
 export * from "./practice/index.js";
 export * from "./PracticeLogs/index.js";
 export * from "./workshop/index.js";
