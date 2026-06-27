@@ -59,6 +59,7 @@ import { Entities } from "./routes/Entities.js";
 import { Foundations } from "./routes/Foundations.js";
 import { HubAdminDashboard } from "./routes/HubAdminDashboard.js";
 import { HubDiscovery } from "./routes/HubDiscovery.js";
+import { HubPublicFace } from "./routes/HubPublicFace.js";
 import { MyNetworks } from "./routes/MyNetworks.js";
 import { NetworkBrowser } from "./routes/NetworkBrowser.js";
 import { Account } from "./routes/Account.js";
@@ -292,6 +293,7 @@ function ShellRoutes() {
           path="/hubs/:hubId/admin"
           element={<HubAdminDashboard />}
         />
+        <Route path="/hub/:slug" element={<HubPublicFace />} />
         <Route path="/identities" element={<Identities />} />
         <Route path="/lineage" element={<LineageAdmin />} />
         <Route path="/membership" element={<Membership />} />

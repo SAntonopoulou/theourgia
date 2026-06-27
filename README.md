@@ -30,7 +30,7 @@ Open source, self-hostable, federated. For working magicians.
 - **H06 ports 2/3/5/6/7/8/9/10** (2026-06-26) — Cross-Journal Search · Per-Study Page · Studies Index · Transliteration Utility · Analytics Dashboard · Query Builder · Synchronicity Log · Synchronicity Quick-Capture.
 - **Phase 09 backend** (B120-B124, 2026-06-26) — Synchronicity table + auto-tag (location-precision floor enforced server-side) · QUERY_BUILDER study kind + saved-query DSL · executor (sealed exclusion via JOIN-layer guard + sealed_excluded_count indicator) · `/analytics/query` · timeseries / heatmap / correlation / today aggregates · weekly digest builder (banned-phrase regex blocks modal/oracular headlines; tier-2/3 gated by sample size). Alembic 0043→0047; +146 backend tests.
 
-As of latest commit: **2296 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
+As of latest commit: **2324 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
 
 **H06 sprint COMPLETE: 10/10 surfaces shipped + Phase 09 backend solo subset closed.** B120-B125 in. Network-aggregate / differential-privacy / cross-vault federation explicitly deferred to Phase 12+. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
@@ -152,6 +152,21 @@ to Phase 12+).
 **H08 design request opened** (2026-06-26 · `docs/design-requests/
 2026-06-26-h08-federation-activitypub.md` · 767 lines · 21 surfaces
 across two clusters · 13 net-new honesty rules pinned).
+
+**H08 surface 5/21 — Hub Public Face** (2026-06-27 ·
+`/hub/:slug`). **PUBLIC route** — no VaultNav, no app shell.
+Hero (banner + monogram + name + motto + tradition pills +
+"Established {when}") · About section (Tiptap-lite paragraph)
+· 2-col Featured grid · membership policy band with the CTA
+matrix locked: Public → "Join"; Open-with-approval → "Request
+to join"; Private → "This hub is invitation-only" disabled;
+member → "You're already a member" disabled; pending →
+"Request pending" disabled. Member viewer gets a `--peer-ok-soft`
+chip; pending viewer gets `--warn-soft` — NEVER `--danger`.
+**`‡ Powered by Theourgia (AGPLv3)`** footer verbatim per rule 7.
+**No member-count anywhere** (rule 18 — the surface props don't
+even accept one; CI test enforces). 28 new tests; shared 2296
+→ **2324**.
 
 **H08 surface 4/21 — Hub Admin Dashboard** (2026-06-27 ·
 `/hubs/:hubId/admin`). Biggest single port so far — 4 tabs
