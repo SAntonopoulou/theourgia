@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-06-27 (H09 design request opened · Tier 7 Phase 14 Plugin Ecosystem)
+
+412-line handoff at `docs/design-requests/2026-06-27-h09-plugin-ecosystem.md`. **17 surfaces across two clusters** — 9 plugin + 8 bundle/sandbox — targeting Phase 14 Plugin Ecosystem. Carry-forward rules 1-30 from H08 unchanged; ten new H09-only honesty rules earned:
+
+- **31** Capability review is permission-grant chrome — no "Grant all" shortcut; CTA gated on scroll-to-bottom (no checkbox theatre).
+- **32** Plugins NEVER auto-update; vulnerability advisories surface explicit "Update now."
+- **33** Tier-3 (Unverified) install is a deliberate moment — `--warn-soft` chrome, verbatim disclosure, explicit acknowledgement checkbox.
+- **34** Bundle preview is data-only — NEVER runs plugin code.
+- **35** Sandbox promotion is irrevocable — verbatim warning.
+- **36** Sandbox content NEVER federates — persistent topbar disclosure.
+- **37** Plugin author profile is citation, not star rating.
+- **38** NO "trending" / "featured" — alpha + recent-update sort only (carries forward H06/H08 anti-popularity rule).
+- **39** Plugin status dashboard is honest about errors — full exception traces, not polished euphemisms.
+- **40** Withdraw and tombstone are different states — plugins never "disappear."
+
+Cluster A — Plugin ecosystem (9): Installed Plugins · Plugin Detail · Plugin Capability Review · Plugin Configuration · Plugin Status Dashboard · Vulnerability Advisory Banner · Registry Browser · Registry Plugin Detail · Plugin Author Profile.
+
+Cluster B — Bundles + Sandbox (8): Bundle Library · Bundle Detail · Bundle Install Preview · Sandbox Browser · Sandbox Detail · Sandbox Promote · Bundle Discard · Plugin Update Diff Preview.
+
+Substrate from Phase 01 B7-B10 already exists (plugin loader · manifest validator · capability allowlist). `plan/14-plugin-ecosystem.md § 9` documents the 8 backend routes the surfaces will exercise. Anticipated to unblock 5-7 weeks of build-side work.
+
+### Added — 2026-06-27 (Phase 12 single-vault backend COMPLETE · B137 → B141)
+
+Eight commits across five batches (`e2c617e` → `6ba8649`). Alembic chain 0056 → 0057 → 0058 → 0059. Backend tests 2331 → **2423** (+92 over the phase). Admin tsc clean across every commit.
+
+- **B137 — Hub + role-capability matrix.** Extended Phase 01 `Hub` table with H08 columns (tagline · owner_id · membership_policy enum · accepts_sso · auto_curates · public_banner_url · public_tradition_tags JSONB · deleted_at) via non-destructive ALTER TABLE. New `hub_role_capability` join table with the canonical 11-capability matrix per H08 surface 12. **Strip-prefix-at-seam adapter** for the role enum: DB stores `hub_admin`/`hub_officer`/etc. (Phase 01 `MembershipRole` shape); wire renders bare `admin`/`officer`/etc. via Pydantic `Literal` + `bare_to_role`/`role_to_bare` helpers — no data migration needed. 9-endpoint router (`/api/v1/hubs/*`) with audit-event emission per mutation. Honesty rules wired: owner is auto-admin via Membership row written in the same transaction as `POST /hubs` · private hubs return 403 to non-members · owner cannot be demoted from admin (409) or removed · every PATCH /roles cell diff generates an op=grant/revoke audit entry. 32 tests.
+
+- **B138 — Private viewer grant.** New `private_viewer_grant` table — distinct from the Phase 01 `PrivateViewer` — for the H08 surface 11 flow where a credential is issued to an email-or-handle holder who is NOT a Theourgia user. **PBKDF2-HMAC-SHA256 credential primitives** at 100k iterations, 16-byte salt, 32-byte digest. The plaintext is returned exactly ONCE at issue time in `PrivateViewerGrantIssued.plaintext_credential`; the read shape `PrivateViewerGrantRead` carries NO credential fields (defence-in-depth against accidental leak via list endpoint). 3-endpoint router. Default scope is `TAG` — never `FULL` — per H08 rule 11. `revoked_at` is immutable once set (409 on re-revoke). 24 tests.
+
+- **B139 — Group ritual lifecycle.** Four new tables: `group_ritual` · `group_ritual_participant` · `group_ritual_fragment` · `group_ritual_reflection`. Status state-machine `DRAFT → INVITED → IN_PROGRESS → COMPLETED`. **`GroupRitualReflection` is write-once per (ritual, author)** via `UniqueConstraint uq_reflection_ritual_author`; router catches `IntegrityError` + returns 409. **`GroupRitualFragment` is append-only** — no `SoftDeleteMixin`, no PATCH/DELETE handlers. PATCH on the ritual refuses if `status != DRAFT` per H08 rule 22 (once-final lock). 11-endpoint router covering the full lifecycle. 23 tests.
+
+- **B140 — Federation audit-log query + CSV export.** Reuses the existing Phase 01 `audit_event` table — no migration. `GET /api/v1/hubs/{id}/audit` returns paginated JSON; `GET /api/v1/hubs/{id}/audit.csv` returns a forensic CSV of signed envelopes (10k internal cap). Both gated on `VIEW_AUDIT_LOG` capability. **Append-only invariant verified by route inspection** — the router has only GET handlers. Time-range floors render in tz-aware UTC. 7 tests.
+
+- **B141 — SSO assertion scaffold.** New `sso_assertion` table — issuer_user_id · target_did · scope_payload (JSONB) · expires_at_utc · revoked_at · signature_b64 (nullable until Phase 12.5 fills it). 3 endpoints: list, `POST /sso/authorize` (server fixes `expires_at_utc = now + 24h` per H08), `POST /sso/assertions/{id}/revoke` (immutable). 6 tests.
+
+**Phase 12.5 (HTTP Signatures + capability tokens) and Phase 13 cross-instance delivery remain queued.** The substrate they need (audit_event, hub model, sso_assertion with nullable signature_b64, AP follower + follow-request tables) is in place.
+
+### Added — 2026-06-27 (Phase 13 ActivityPub adapter STUB · persistence layer)
+
+Three new tables wiring the H08 Cluster B surfaces (16-21) to persistence; cross-instance HTTP delivery + signed inbox processing remain queued. Migration 0060. 12 tests.
+
+- **`activitypub_settings`** — per-vault: `enabled` (default **FALSE** per H08 rule 28 · per-network opt-in) · `display_name_override` · `bio_override` · `follower_approval` (default **MANUAL** for vaults per H08 rule 20) · `broadcast_creates`/`_updates` (default TRUE) · `broadcast_deletes` (default **FALSE** per H08 rule 32 carry-forward — user explicitly opts in given the cache caveat) · `object_type_mapping` (JSONB, plugin-extensible).
+
+- **`activitypub_follower`** — confirmed followers · `follower_did` (canonical AP actor URL) · `follower_handle` · `follower_inbox_url` · `last_delivery_at`. Unique on `(owner_id, follower_did)`.
+
+- **`activitypub_follow_request`** — Pending / Accepted / Rejected state machine. `resolved_at` fills on accept/reject.
+
+Settings router · WebFinger endpoint · follower-management routes · outbound delivery queue land as follow-on commits once the cross-instance transport (Phase 12.5) is ready to test.
+
+### Added — 2026-06-27 (H08 Storybook stories · 21 surfaces covered)
+
+One Storybook story file per H08 surface (`0b520aa`). Cluster A 15 + Cluster B 6. Each story renders the surface against the same fixture data the test files use, so the visual baseline lines up with the unit-test baseline. Multiple stories per surface where states are rule-level (RemoteContentEmbed: resolvable/loading/unresolvable · WebFingerVerify: idle/pass/fail · PushToHub: network-entry/sealed-blocked · CrossPostPreview: with-CW/no-CW · HubPublicFace: anonymous/member/invitation-only). `pnpm build-storybook` builds clean in 36s; `@storybook/addon-a11y` axe runner is wired for in-browser a11y baseline regeneration.
+
 ### Added — 2026-06-27 (H08 sprint COMPLETE · Phase 12 Federation + Phase 13 ActivityPub frontend · 21/21)
 
 The H08 frontend sprint closed today. All 21 surfaces against the H08 design package at `/home/sophia/design-handoffs/theourgia/2026-06-27-H08/handoff_H08/` shipped — fifteen Cluster A (Federation) + six Cluster B (ActivityPub). Phase 12 + Phase 13 frontends are end-to-end against the design corpus. Backend (single-vault subset plus the ActivityPub adapter) lands as a follow-on under `plan/12-batches-backend.md`.
