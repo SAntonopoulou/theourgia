@@ -1,0 +1,22 @@
+export {
+  type RegistryPluginDetailSurfaceProps,
+  type RegistryVersionEntry,
+  RegistryPluginDetailSurface,
+} from "./RegistryPluginDetailSurface.js";
+export {
+  RPD_BREADCRUMB_REGISTRY,
+  RPD_CAPABILITIES_HEADING,
+  RPD_CAPABILITIES_SUB,
+  RPD_DESCRIPTION_HEADING,
+  RPD_EXT_POINTS_HEADING,
+  RPD_INSTALL_ANYWAY_CTA,
+  RPD_INSTALL_CTA,
+  RPD_LABEL_AUTHOR,
+  RPD_LABEL_HOMEPAGE,
+  RPD_LABEL_LICENSE,
+  RPD_TIER3_DISCLOSURE,
+  RPD_TOMBSTONE_BADGE,
+  RPD_TOMBSTONE_PREFIX,
+  RPD_VERSION_HISTORY_HEADING,
+  RPD_VIEW_AUTHOR_CTA,
+} from "./copy.js";

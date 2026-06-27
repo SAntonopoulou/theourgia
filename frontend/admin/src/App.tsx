@@ -77,6 +77,9 @@ import { InstalledPlugins } from "./routes/InstalledPlugins.js";
 import { PluginDetail } from "./routes/PluginDetail.js";
 import { PluginConfiguration } from "./routes/PluginConfiguration.js";
 import { PluginStatus } from "./routes/PluginStatus.js";
+import { RegistryBrowser as RegistryBrowserRoute } from "./routes/RegistryBrowser.js";
+import { RegistryPluginDetail } from "./routes/RegistryPluginDetail.js";
+import { PluginAuthorProfile } from "./routes/PluginAuthorProfile.js";
 import { Account } from "./routes/Account.js";
 import { Agents } from "./routes/Agents.js";
 import { BookPreview } from "./routes/BookPreview.js";
@@ -339,6 +342,18 @@ function ShellRoutes() {
         {/* H09 — Platform section */}
         <Route path="/plugins" element={<InstalledPlugins />} />
         <Route path="/plugins/status" element={<PluginStatus />} />
+        <Route
+          path="/plugins/registry"
+          element={<RegistryBrowserRoute />}
+        />
+        <Route
+          path="/plugins/registry/:id"
+          element={<RegistryPluginDetail />}
+        />
+        <Route
+          path="/plugins/authors/:did"
+          element={<PluginAuthorProfile />}
+        />
         <Route
           path="/plugins/:id/configure"
           element={<PluginConfiguration />}
