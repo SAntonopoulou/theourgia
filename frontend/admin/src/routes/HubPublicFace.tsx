@@ -1,21 +1,14 @@
 /**
  * HubPublicFace — admin-side preview route at ``/hub/:slug``.
  *
- * The H08 brief positions this as a **public** surface (no
- * VaultNav, no app shell). Even so, the admin app exposes the
- * preview here so practitioners can verify how their hub's
- * outward face renders before publishing. Production hosting
- * will serve the public asset under a different origin / route
- * once the Phase 12 backend lands.
- *
- * Wiring deferred to Phase 12 backend:
- *
- *   * GET /hub/{slug} → resolves the slug to a Hub + featured
- *     items + the viewer's membership state.
- *   * POST /api/v1/hubs/{id}/invitations → fires when Join /
- *     Request to join is clicked on an enabled CTA.
+ * Wired to ``GET /api/v1/hubs`` (filtered by slug client-side) per
+ * the admin API-wiring convention. The featured-items pane stays at
+ * a placeholder until the backend exposes a /hubs/:id/featured
+ * endpoint — at which point this route picks it up via a per-hub
+ * query.
  */
 
+import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 
 import {
@@ -23,48 +16,74 @@ import {
   HubPublicFaceSurface,
 } from "@theourgia/shared";
 
-const FEATURED: HubFeaturedItem[] = [
-  {
-    id: "feat-ephesia",
-    title: "On the Ephesia Grammata",
-    author: "Soror Aurora",
-    href: "/reader/aurora/ephesia-grammata",
-  },
-  {
-    id: "feat-deipnon",
-    title: "Keeping the Deipnon",
-    author: "Diotima",
-    href: "/reader/diotima/keeping-the-deipnon",
-  },
-  {
-    id: "feat-lamp",
-    title: "The Lamp at the Crossroads",
-    author: "Soror Ευ. Α.",
-    href: "/reader/sophia/lamp-at-the-crossroads",
-  },
-];
+import { SurfaceError } from "../lib/SurfaceError.js";
+import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
+import { type Hub, useHubs } from "../lib/hubs.js";
+
+const POLICY_TO_SURFACE: Record<
+  Hub["membership_policy"],
+  React.ComponentProps<typeof HubPublicFaceSurface>["policy"]
+> = {
+  open: "public",
+  request_to_join: "open-with-approval",
+  invite_only: "private",
+  private: "private",
+};
+
+function monogramOf(name: string): string {
+  return (name[0] ?? "·").toUpperCase();
+}
+
+const FEATURED_PLACEHOLDER: HubFeaturedItem[] = [];
 
 export function HubPublicFace() {
   const { slug } = useParams<{ slug: string }>();
+  const { data, isLoading, error, refetch } = useHubs();
+
+  const hub = useMemo(
+    () => (data && slug ? data.find((h) => h.slug === slug) : undefined),
+    [data, slug],
+  );
+
+  if (isLoading) {
+    return <SurfaceSkeleton rowCount={3} />;
+  }
+
+  if (error) {
+    return (
+      <SurfaceError
+        title="Couldn’t load this hub."
+        message={error.message}
+        onRetry={() => {
+          void refetch();
+        }}
+      />
+    );
+  }
+
+  if (!hub) {
+    return (
+      <SurfaceError
+        title="Hub not found."
+        message={`No hub with slug ${slug ?? ""} is visible to you.`}
+      />
+    );
+  }
+
   return (
     <HubPublicFaceSurface
-      hubName="The Crossroads Coven"
-      motto="Tending Hekate's lamp, together."
-      traditions={["Hellenic"]}
-      establishedAt="March 2024"
-      monogram="Κ"
-      about={
-        "A hub for practitioners keeping the crossroads. We share workings, compare notes on the Deipnon, and tend a shared egregore. New members are welcome — read a little of our featured work below, then knock."
-      }
-      featured={FEATURED}
-      policy="open-with-approval"
+      hubName={hub.name}
+      motto={hub.tagline ?? ""}
+      traditions={hub.public_tradition_tags ?? []}
+      establishedAt={new Date(hub.created_at).toLocaleDateString("en-GB", {
+        month: "long",
+        year: "numeric",
+      })}
+      monogram={monogramOf(hub.name)}
+      about={hub.description || ""}
+      featured={FEATURED_PLACEHOLDER}
+      policy={POLICY_TO_SURFACE[hub.membership_policy]}
       viewer="anonymous"
-      footerEpigraph="The road is long, and she keeps it longer."
-      onJoin={() => {
-        // TODO Phase 12 — POST /api/v1/hubs/{slug}/invitations.
-        // eslint-disable-next-line no-console
-        console.info("[hub-public-face] request to join", slug);
-      }}
     />
   );
 }
