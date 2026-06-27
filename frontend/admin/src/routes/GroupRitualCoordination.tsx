@@ -1,21 +1,17 @@
 /**
- * GroupRitualCoordination — admin route at
- * ``/group-rituals/:id/run``.
+ * GroupRitualCoordination — admin route at ``/group-rituals/:id/run``.
  *
- * Renders the H08 §S3 Cluster A surface 9 against fixtures.
+ * Wired to GET /api/v1/group-rituals/:id + /:id/fragments per the
+ * admin API-wiring convention. POST /:id/fragments dispatches new
+ * fragments; the cache invalidates and the surface re-renders.
  *
- * Wiring deferred to Phase 12 backend:
- *
- *   * GET /api/v1/group-rituals/{id} — header + script + meta.
- *   * GET /api/v1/group-rituals/{id}/time?lat=&lng= — per-viewer
- *     planetary hour for the time trio.
- *   * GET /api/v1/group-rituals/{id}/fragments — chronological.
- *   * POST /api/v1/group-rituals/{id}/fragments — post one.
- *   * POST /api/v1/group-rituals/{id}/presence { presence:
- *     'completed' } — fired by Mark me as completed (one-way).
+ * Participants list is queued — the backend has the data via
+ * /:id (participant_ids on the ritual row) but presence-streaming
+ * is the federation-transport layer's job. Until then the participants
+ * pane stays at a placeholder showing only the organizer.
  */
 
-import { useState } from "react";
+import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 
 import {
@@ -26,103 +22,108 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 
-const INITIAL_PARTICIPANTS: GroupRitualParticipant[] = [
-  { id: "you", initial: "Σ", name: "You", presence: "in-ritual" },
-  {
-    id: "aurora",
-    initial: "A",
-    name: "Soror Aurora",
-    presence: "in-ritual",
-  },
-  { id: "diotima", initial: "Δ", name: "Diotima", presence: "joined" },
-  {
-    id: "peregrina",
-    initial: "P",
-    name: "Peregrina",
-    presence: "not-present",
-  },
-];
+import { SurfaceError } from "../lib/SurfaceError.js";
+import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
+import {
+  type Fragment as ApiFragment,
+  type RitualStatus,
+  useAddFragment,
+  useFragments,
+  useGroupRitual,
+} from "../lib/groupRituals.js";
 
-const INITIAL_FRAGMENTS: GroupRitualFragment[] = [
-  {
-    id: "f-3",
-    did: "aurora.example",
-    time: "06:14",
-    body: "The light just cleared the ridge. I can feel the others.",
-  },
-  {
-    id: "f-2",
-    did: "hearth.sophia.example",
-    time: "06:13",
-    body: "Vessel filled, incense lit. Beginning.",
-  },
-  {
-    id: "f-1",
-    did: "terra.example",
-    time: "06:12",
-    body: "Present at the eastern door.",
-  },
-];
+const BACKEND_TO_SURFACE_STATUS: Record<RitualStatus, GroupRitualStatus> = {
+  draft: "countdown",
+  invited: "countdown",
+  in_progress: "in-progress",
+  completed: "completed",
+  cancelled: "completed",
+};
 
-const SCRIPT = [
-  "Hail to thee who art Ra in thy rising, even unto thee who art Ra in thy strength, who travellest over the heavens in thy bark at the uprising of the sun.",
-  "Tahuti standeth in his splendour at the prow, and Ra-Hoor abideth at the helm. Hail unto thee from the abodes of night.",
-];
+function toSurfaceFragment(f: ApiFragment): GroupRitualFragment {
+  return {
+    id: f.id,
+    did: f.author_id.slice(0, 8),
+    time: new Date(f.posted_at_utc).toLocaleTimeString(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    body: f.body,
+  };
+}
 
 export function GroupRitualCoordination() {
   const { id } = useParams<{ id: string }>();
-  const [participants, setParticipants] =
-    useState<GroupRitualParticipant[]>(INITIAL_PARTICIPANTS);
-  const [fragments, setFragments] =
-    useState<GroupRitualFragment[]>(INITIAL_FRAGMENTS);
-  const [status] = useState<GroupRitualStatus>("in-progress");
-
   useTopbar(() => ({ title: "Ritual in progress" }));
 
-  const youIsCompleted =
-    participants.find((p) => p.id === "you")?.presence === "completed";
+  const ritual = useGroupRitual(id);
+  const fragments = useFragments(id);
+  const addFragment = useAddFragment(id);
+
+  const surfaceFragments = useMemo(
+    () => (fragments.data ? fragments.data.map(toSurfaceFragment) : []),
+    [fragments.data],
+  );
+
+  if (ritual.isLoading || fragments.isLoading) {
+    return <SurfaceSkeleton rowCount={4} />;
+  }
+
+  const error = ritual.error ?? fragments.error;
+  if (error) {
+    return (
+      <SurfaceError
+        title="Couldn’t load the ritual."
+        message={error.message}
+        onRetry={() => {
+          void ritual.refetch();
+          void fragments.refetch();
+        }}
+      />
+    );
+  }
+
+  if (!ritual.data) return null;
+
+  const r = ritual.data;
+  const scheduled = new Date(r.scheduled_for_utc);
+  const participants: GroupRitualParticipant[] = [
+    {
+      id: r.organizer_id,
+      initial: (r.organizer_id[0] ?? "·").toUpperCase(),
+      name: "Organizer",
+      presence: r.status === "in_progress" ? "in-ritual" : "joined",
+    },
+  ];
 
   return (
-    <GroupRitualCoordinationSurface
-      ritualTitle="Spring equinox — shared dawn adoration"
-      status={status}
-      trio={{
-        localPrimary: "06:12",
-        utcPrimary: "04:12",
-        planetaryRuler: "Sun",
-        isCurrent: true,
-      }}
-      participants={participants}
-      scriptParagraphs={SCRIPT}
-      fragments={fragments}
-      canMarkCompleted={!youIsCompleted}
-      onPostFragment={(body) => {
-        // TODO Phase 12 — POST /fragments.
-        // Local optimistic prepend so the new fragment appears
-        // at the top of the stream immediately.
-        const fragment: GroupRitualFragment = {
-          id: `f-${Date.now()}`,
-          did: "you",
-          time: new Date().toLocaleTimeString(undefined, {
+    <>
+      {addFragment.error ? (
+        <SurfaceError
+          title="Couldn’t post your fragment."
+          message={addFragment.error.message}
+          onRetry={() => addFragment.reset()}
+          retryLabel="Dismiss"
+        />
+      ) : null}
+      <GroupRitualCoordinationSurface
+        ritualTitle={r.title}
+        status={BACKEND_TO_SURFACE_STATUS[r.status]}
+        trio={{
+          localPrimary: scheduled.toLocaleTimeString(undefined, {
             hour: "2-digit",
             minute: "2-digit",
           }),
-          body,
-        };
-        setFragments((prev) => [fragment, ...prev]);
-        // eslint-disable-next-line no-console
-        console.info("[group-ritual-coordination] post fragment", id, body);
-      }}
-      onMarkCompleted={() => {
-        // TODO Phase 12 — POST /presence { presence: 'completed' }.
-        setParticipants((prev) =>
-          prev.map((p) =>
-            p.id === "you" ? { ...p, presence: "completed" } : p,
-          ),
-        );
-        // eslint-disable-next-line no-console
-        console.info("[group-ritual-coordination] mark completed", id);
-      }}
-    />
+          utcPrimary: scheduled.toISOString().slice(11, 16),
+          planetaryRuler: "Sun",
+          isCurrent: r.status === "in_progress",
+        }}
+        participants={participants}
+        scriptParagraphs={r.shared_script ? [r.shared_script] : []}
+        fragments={surfaceFragments}
+        canMarkCompleted={r.status === "in_progress"}
+        onPostFragment={(body) => addFragment.mutate(body)}
+      />
+    </>
   );
 }
