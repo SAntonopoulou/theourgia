@@ -58,6 +58,7 @@ import { TarotRoute } from "./routes/TarotRoute.js";
 import { Entities } from "./routes/Entities.js";
 import { Foundations } from "./routes/Foundations.js";
 import { GroupRitualCoordination } from "./routes/GroupRitualCoordination.js";
+import { GroupRitualPostMortem } from "./routes/GroupRitualPostMortem.js";
 import { GroupRitualScheduler } from "./routes/GroupRitualScheduler.js";
 import { HubAdminDashboard } from "./routes/HubAdminDashboard.js";
 import { HubDiscovery } from "./routes/HubDiscovery.js";
@@ -313,6 +314,10 @@ function ShellRoutes() {
         <Route
           path="/group-rituals/new"
           element={<GroupRitualScheduler />}
+        />
+        <Route
+          path="/group-rituals/:id"
+          element={<GroupRitualPostMortem />}
         />
         <Route path="/identities" element={<Identities />} />
         <Route path="/lineage" element={<LineageAdmin />} />
