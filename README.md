@@ -30,7 +30,7 @@ Open source, self-hostable, federated. For working magicians.
 - **H06 ports 2/3/5/6/7/8/9/10** (2026-06-26) — Cross-Journal Search · Per-Study Page · Studies Index · Transliteration Utility · Analytics Dashboard · Query Builder · Synchronicity Log · Synchronicity Quick-Capture.
 - **Phase 09 backend** (B120-B124, 2026-06-26) — Synchronicity table + auto-tag (location-precision floor enforced server-side) · QUERY_BUILDER study kind + saved-query DSL · executor (sealed exclusion via JOIN-layer guard + sealed_excluded_count indicator) · `/analytics/query` · timeseries / heatmap / correlation / today aggregates · weekly digest builder (banned-phrase regex blocks modal/oracular headlines; tier-2/3 gated by sample size). Alembic 0043→0047; +146 backend tests.
 
-As of latest commit: **2523 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
+As of latest commit: **2541 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
 
 **H06 sprint COMPLETE: 10/10 surfaces shipped + Phase 09 backend solo subset closed.** B120-B125 in. Network-aggregate / differential-privacy / cross-vault federation explicitly deferred to Phase 12+. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
@@ -152,6 +152,24 @@ to Phase 12+).
 **H08 design request opened** (2026-06-26 · `docs/design-requests/
 2026-06-26-h08-federation-activitypub.md` · 767 lines · 21 surfaces
 across two clusters · 13 net-new honesty rules pinned).
+
+**H08 surface 14/21 — Federation Audit Log** (2026-06-27 ·
+`/hubs/:hubId/admin/audit`). **Append-only ledger** of every
+federation event — Push · Pull · Mirror · Invite · Accept ·
+Revoke · RitualSchedule · RitualUpdate · Comment · Heartbeat.
+No edit / delete affordances render. **Every row carries its
+signed envelope** (`--font-mono` JSON, expandable per row) so a
+practitioner can audit the wire form against another party's
+log. Tone families colour the affect, not the verdict (H08 rule
+26): Revoke → `--warn` (NEVER `--danger`) · Heartbeat /
+Mirror / Comment → `--remote` · Accept → `--peer-ok` · the rest
+→ `--network`. Filters compose (actor + event-type + time-range
++ Show-only-my-actions, OFF by default). Verbatim zone
+disclosure: `Times shown in your local zone ({zone})`. CSV
+export hands the active filter triple to the consumer — a CSV
+of signed envelopes (forensic artefact, not summary). 18 new
+tests; shared 2523 → **2541**. **14/21 done · Cluster A 4
+remaining (Push to Hub, plus three deferred-design items).**
 
 **H08 surface 13/21 — SSO Authorize / Consent modal** (2026-06-27).
 Point-to-point federated authorization moment (rule 23: **no
