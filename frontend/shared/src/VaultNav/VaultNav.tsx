@@ -199,12 +199,30 @@ const NAV_ICONS = {
       <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
     </svg>
   ),
-  hubs: (
+  networks: (
+    // H08: same engraving as the prior "hubs" key — renamed only.
     <svg {...ICON_PROPS}>
       <circle cx="12" cy="7" r="3" />
       <circle cx="5.5" cy="17" r="2.5" />
       <circle cx="18.5" cy="17" r="2.5" />
       <path d="M12 10v3M10 14l-3 2M14 14l3 2" />
+    </svg>
+  ),
+  followers: (
+    // H08: a head + two outward-facing followers behind. Distinct from
+    // the "subscribers" icon (which is broader profile work).
+    <svg {...ICON_PROPS}>
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3.5 19a5.5 5.5 0 0 1 11 0M16.5 6.2a3 3 0 0 1 0 5.6M20 19a5.5 5.5 0 0 0-3.2-5" />
+    </svg>
+  ),
+  privateviewers: (
+    // H08: an eye with two corner sparks — a quiet "shown to a chosen
+    // few" glyph, no surveillance feel.
+    <svg {...ICON_PROPS}>
+      <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" />
+      <circle cx="12" cy="12" r="2.5" />
+      <path d="M19 5l-2 2M5 19l2-2" />
     </svg>
   ),
 } as const;
@@ -297,11 +315,23 @@ export const DEFAULT_VAULT_NAV: VaultNavSection[] = [
       { key: "icalfeed", to: "/ical-feed", label: "Calendar feed" },
     ],
   },
+  // ── Phase 12 (H08) — Federation ──────────────────────────────────────
+  // The Network section grew at H08: the existing Ritual feed entry is
+  // now joined by My networks (renamed from "Hubs" — the practitioner
+  // belongs to networks they don't necessarily admin), Followers (the
+  // single quiet follower-count surface — rule 18), and Private viewers
+  // (read-only scoped credentials — Phase 12 § 5).
   {
     heading: "Network",
     items: [
       { key: "feed", to: "/feed", label: "Ritual feed" },
-      { key: "hubs", to: "/hubs", label: "Hubs" },
+      { key: "networks", to: "/networks", label: "My networks" },
+      { key: "followers", to: "/followers", label: "Followers" },
+      {
+        key: "privateviewers",
+        to: "/private-viewers",
+        label: "Private viewers",
+      },
     ],
   },
 ];

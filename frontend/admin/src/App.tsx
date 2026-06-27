@@ -145,7 +145,10 @@ function navKeyForPath(pathname: string): NavKey | undefined {
   if (pathname.startsWith("/pilgrimage")) return "pilgrimage";
   if (pathname.startsWith("/analytics")) return "analytics";
   if (pathname.startsWith("/feed")) return "feed";
-  if (pathname.startsWith("/hubs")) return "hubs";
+  // H08: the Network section gains three keys.
+  if (pathname.startsWith("/networks")) return "networks";
+  if (pathname.startsWith("/followers")) return "followers";
+  if (pathname.startsWith("/private-viewers")) return "privateviewers";
   return undefined;
 }
 
@@ -274,6 +277,13 @@ function ShellRoutes() {
         <Route path="/analytics" element={<AnalyticsDashboardRoute />} />
         <Route path="/analytics/legacy" element={<Analytics />} />
         <Route path="/feed" element={<RitualFeed />} />
+        {/* H08 — Network section routes. Cluster A surfaces (My Networks,
+            Followers, Private Viewers) replace the placeholder Hubs page
+            across the next handful of batches. For now `/hubs` and
+            `/networks` both render the existing placeholder so the new
+            VaultNav doesn't 404; the Followers + Private Viewers slots
+            land in their own batches. */}
+        <Route path="/networks" element={<Hubs />} />
         <Route path="/hubs" element={<Hubs />} />
         <Route path="/identities" element={<Identities />} />
         <Route path="/lineage" element={<LineageAdmin />} />

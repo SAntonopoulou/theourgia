@@ -153,6 +153,25 @@ to Phase 12+).
 2026-06-26-h08-federation-activitypub.md` · 767 lines · 21 surfaces
 across two clusters · 13 net-new honesty rules pinned).
 
+**H08 bundle received + Foundation in** (2026-06-27 ·
+`/home/sophia/design-handoffs/theourgia/2026-06-27-H08/handoff_H08/`).
+32-file bundle covering Phase 12 Federation (15 surfaces) + Phase
+13 ActivityPub (6 surfaces) + the shared runtime (`VaultNav`,
+`tokens/`, `support.js`). Foundation: the four new token families
+(`--network*`, `--peer-{ok/pending/refused/blocked}*`,
+`--planetary-hour-now*`, `--remote*`) folded into `theourgia.tokens.css`
+across base + hellenic + thelemic + light. `--peer-refused` and
+`--peer-blocked` deliberately warm-clay in the `--warn` family —
+NEVER `--danger` (rule 2). VaultNav Network section restructured:
+the prior single `hubs` key renamed to `networks`; two new keys
+added (`followers` for the single quiet follower-count surface
+per anti-gamification rule 18; `privateviewers` for read-only
+scoped credentials per Phase 12 § 5). Admin route table extended
+— `/networks` mounted now (aliased to the existing Hubs placeholder),
+`/followers` and `/private-viewers` land with their surfaces.
+2198 vitest still green; admin tsc clean. The 21 surfaces follow
+per the build order in `agent_onboarding_H08.md` § S4.
+
 **Federation protocol spec v0.1 authored** (2026-06-26 ·
 autonomous follow-up). `docs/developer/federation-protocol.md`
 ships at 778 lines covering the Phase 12 native protocol end-to-

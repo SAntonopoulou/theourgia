@@ -626,3 +626,86 @@
   --fire: #d5562b;
   --air: #e0a93b;
 }
+
+/* ============================================================================
+   H08 · Federation + ActivityPub (Phase 12 + 13)
+   ----------------------------------------------------------------------------
+   --network-*          hub / community chrome — calm teal-slate.
+                        NOT --seal violet (sealing is a different axis), NOT
+                        --accent gold (federation is a context, not the brand
+                        voice).
+   --peer-*             the four handshake states (ok / pending / refused /
+                        blocked). All `--warn` family. NONE is `--danger`
+                        (carry-forward rule 2: `--danger` reserved for
+                        Visibility → Public; in this tier surfacing exactly
+                        once on the ActivityPub master-switch first activation).
+   --planetary-hour-now the in-the-moment planetary-hour pin on group-ritual
+                        surfaces (the three-pin time trio's "you are here").
+   --remote-*           federated / ActivityPub-sourced content chrome — the
+                        `‡ from {instance}` chip + remote-card frame. Muted
+                        blue-grey: "these words came from elsewhere and their
+                        origin is disclosed."
+   No engagement / recommendation / DM tokens introduced — H08 honesty rules
+   18 (no engagement metrics), 19 (no recommendation algorithm), 25 (no auto-
+   DMs) preserved by not even providing the tokens that would tempt them.
+   ============================================================================ */
+:root {
+  --network: #5e8fa8;
+  --network-soft: rgba(94, 143, 168, 0.14);
+  --network-line: rgba(94, 143, 168, 0.42);
+
+  --peer-ok: #6ba892;
+  --peer-ok-soft: rgba(107, 168, 146, 0.16);
+  --peer-pending: #c99a3c;
+  --peer-pending-soft: rgba(201, 154, 60, 0.16);
+  --peer-refused: #bc7a5a; /* warn-family, never --danger */
+  --peer-refused-soft: rgba(188, 122, 90, 0.16);
+  --peer-blocked: #a8705c; /* warn-family, never --danger */
+  --peer-blocked-soft: rgba(168, 112, 92, 0.18);
+
+  --planetary-hour-now: #d8a14a;
+  --planetary-hour-now-soft: rgba(216, 161, 74, 0.16);
+
+  --remote: #8fa4b8;
+  --remote-soft: rgba(143, 164, 184, 0.14);
+}
+
+[data-theme="hellenic"] {
+  --network: #5e9ba6;
+  --network-soft: rgba(94, 155, 166, 0.14);
+  --network-line: rgba(94, 155, 166, 0.42);
+  --peer-ok: #6e9c72;
+  --peer-ok-soft: rgba(110, 156, 114, 0.16);
+  --planetary-hour-now: #bfa15b;
+  --planetary-hour-now-soft: rgba(191, 161, 91, 0.16);
+  --remote: #8fa8c0;
+  --remote-soft: rgba(143, 168, 192, 0.14);
+}
+
+[data-theme="thelemic"] {
+  --network: #7e91ce;
+  --network-soft: rgba(126, 145, 206, 0.14);
+  --network-line: rgba(126, 145, 206, 0.42);
+  --planetary-hour-now: #cda53e;
+  --planetary-hour-now-soft: rgba(205, 165, 62, 0.16);
+  --remote: #a98ac0;
+  --remote-soft: rgba(169, 138, 192, 0.14);
+}
+
+[data-mode="light"] {
+  --network: #3f6e86;
+  --network-soft: rgba(63, 110, 134, 0.12);
+  --network-line: rgba(63, 110, 134, 0.4);
+  --peer-ok: #3e7a5e;
+  --peer-ok-soft: rgba(62, 122, 94, 0.13);
+  --peer-pending: #8a6a2e;
+  --peer-pending-soft: rgba(138, 106, 46, 0.12);
+  --peer-refused: #93512f;
+  --peer-refused-soft: rgba(147, 81, 47, 0.12);
+  --peer-blocked: #834a33;
+  --peer-blocked-soft: rgba(131, 74, 51, 0.14);
+  --planetary-hour-now: #9a6e22;
+  --planetary-hour-now-soft: rgba(154, 110, 34, 0.13);
+  --remote: #52659e;
+  --remote-soft: rgba(82, 101, 158, 0.12);
+}
