@@ -153,6 +153,14 @@ class User(IDMixin, TimestampMixin, table=True):
     )
     failed_login_count: int = Field(default=0, nullable=False)
 
+    # H10 Cluster B3 — 30-day grace-period account deletion.
+    # When set, login during the window shows a reactivation banner;
+    # at the timestamp, a background job purges the account.
+    scheduled_for_deletion_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True, index=True),
+    )
+
 
 class Session(IDMixin, TimestampMixin, table=True):
     """An active authenticated session.

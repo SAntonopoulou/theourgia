@@ -90,6 +90,8 @@ from theourgia.api.routers.v1 import pilgrimage_sites as v1_pilgrimage_sites
 from theourgia.api.routers.v1 import ical_feed as v1_ical_feed
 from theourgia.api.routers.v1 import plugins as v1_plugins
 from theourgia.api.routers.v1 import sandbox as v1_sandbox
+from theourgia.api.routers.v1 import user_account as v1_user_account
+from theourgia.api.routers.v1 import user_audit as v1_user_audit
 from theourgia.api.routers import feeds as app_feeds
 
 __all__ = ["register_routers"]
@@ -199,6 +201,9 @@ def register_routers(app: FastAPI) -> None:
     # Phase 14 Plugin Ecosystem
     v1.include_router(v1_plugins.router, tags=["plugins"])
     v1.include_router(v1_sandbox.router, tags=["sandbox"])
+    # Phase 15 Hardening (H10 Cluster B prerequisites)
+    v1.include_router(v1_user_audit.router, tags=["hardening"])
+    v1.include_router(v1_user_account.router, tags=["hardening"])
     # Unversioned iCal feed delivery — calendar clients subscribe to a
     # stable URL (RFC 5545). Lives at app level, not /api/v1.
     app.include_router(v1_ical_feed.feed_router, tags=["ical"])
