@@ -30,7 +30,7 @@ Open source, self-hostable, federated. For working magicians.
 - **H06 ports 2/3/5/6/7/8/9/10** (2026-06-26) — Cross-Journal Search · Per-Study Page · Studies Index · Transliteration Utility · Analytics Dashboard · Query Builder · Synchronicity Log · Synchronicity Quick-Capture.
 - **Phase 09 backend** (B120-B124, 2026-06-26) — Synchronicity table + auto-tag (location-precision floor enforced server-side) · QUERY_BUILDER study kind + saved-query DSL · executor (sealed exclusion via JOIN-layer guard + sealed_excluded_count indicator) · `/analytics/query` · timeseries / heatmap / correlation / today aggregates · weekly digest builder (banned-phrase regex blocks modal/oracular headlines; tier-2/3 gated by sample size). Alembic 0043→0047; +146 backend tests.
 
-As of latest commit: **2267 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
+As of latest commit: **2296 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
 
 **H06 sprint COMPLETE: 10/10 surfaces shipped + Phase 09 backend solo subset closed.** B120-B125 in. Network-aggregate / differential-privacy / cross-vault federation explicitly deferred to Phase 12+. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
@@ -152,6 +152,24 @@ to Phase 12+).
 **H08 design request opened** (2026-06-26 · `docs/design-requests/
 2026-06-26-h08-federation-activitypub.md` · 767 lines · 21 surfaces
 across two clusters · 13 net-new honesty rules pinned).
+
+**H08 surface 4/21 — Hub Admin Dashboard** (2026-06-27 ·
+`/hubs/:hubId/admin`). Biggest single port so far — 4 tabs
+(Members [default] · Curation queue · Public face · Settings)
+under a `HubAdminTabs` chrome that uses `--network` for the
+active-tab underline. **Members tab**: role filter (All + 5
+canonical roles) + member rows (avatar + name + DID in
+`--font-mono` + role pill + last-activity + kebab). **Curation
+tab**: per-item cards; Approve is `--network-soft` primary;
+Send back is ghost; **Reject is `--warn-soft` (NEVER
+`--danger`** — rule 2). Approved items get a `--peer-ok-soft`
+pill ("Approved · {when}"). **Public face tab**: motto +
+description + banner upload draft, ONE "Publish public face
+changes" CTA at the bottom — `onPublicFaceSave` does NOT fire
+on each keystroke (committed-make rule 8). **Settings tab**:
+3-option analytics-opt-in radiogroup (opt-in / opt-out / require-
+explicit) + matter-of-fact links to Roles (surface 12) + Audit
+log (surface 14). 29 new tests; shared 2267 → **2296**.
 
 **H08 surface 3/21 — Hub Discovery** (2026-06-27 · `/networks/discover`).
 Search-band + 8 tradition chips + 2-col HubDiscoveryCard grid.
