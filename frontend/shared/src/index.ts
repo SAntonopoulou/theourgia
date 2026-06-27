@@ -119,6 +119,7 @@ export * from "./AccessibilityAndMotion/index.js";
 export * from "./KeyRotation/index.js";
 export * from "./RegistryPublicHome/index.js";
 export * from "./PluginSubmissionForm/index.js";
+export * from "./PluginSubmissionList/index.js";
 export * from "./RegistryBrowser/index.js";
 export * from "./RegistryPluginDetail/index.js";
 export * from "./PluginAuthorProfile/index.js";
