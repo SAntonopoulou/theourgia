@@ -30,7 +30,7 @@ Open source, self-hostable, federated. For working magicians.
 - **H06 ports 2/3/5/6/7/8/9/10** (2026-06-26) — Cross-Journal Search · Per-Study Page · Studies Index · Transliteration Utility · Analytics Dashboard · Query Builder · Synchronicity Log · Synchronicity Quick-Capture.
 - **Phase 09 backend** (B120-B124, 2026-06-26) — Synchronicity table + auto-tag (location-precision floor enforced server-side) · QUERY_BUILDER study kind + saved-query DSL · executor (sealed exclusion via JOIN-layer guard + sealed_excluded_count indicator) · `/analytics/query` · timeseries / heatmap / correlation / today aggregates · weekly digest builder (banned-phrase regex blocks modal/oracular headlines; tier-2/3 gated by sample size). Alembic 0043→0047; +146 backend tests.
 
-As of latest commit: **2657 vitest tests · 2331 backend tests · alembic head 0055 · admin tsc clean · H08 COMPLETE 21/21**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
+As of latest commit: **2657 vitest tests · 2435 backend tests · alembic head 0060 · admin tsc clean · H08 COMPLETE 21/21 · Phase 12 single-vault backend COMPLETE B137-B141 · Phase 13 ActivityPub stub shipped · H09 design request opened**. The a11y gate (restored 2026-06-23 in B101) holds at 543/557 (97.5%); remaining 14 are intentional design tradeoffs.
 
 **H06 sprint COMPLETE: 10/10 surfaces shipped + Phase 09 backend solo subset closed.** B120-B125 in. Network-aggregate / differential-privacy / cross-vault federation explicitly deferred to Phase 12+. The defining rule across this phase: **Scientific Illuminism** — every finding shows n, n<10 caveated, n<5 never surfaced; zero gamification; no red anywhere in charts.
 
@@ -153,10 +153,65 @@ to Phase 12+).
 2026-06-26-h08-federation-activitypub.md` · 767 lines · 21 surfaces
 across two clusters · 13 net-new honesty rules pinned).
 
+**H09 design request opened** (2026-06-27 · `docs/design-requests/
+2026-06-27-h09-plugin-ecosystem.md` · 412 lines · 17 surfaces
+across two clusters · 10 net-new honesty rules (31-40) ·
+targeting Phase 14 Plugin Ecosystem). 9 plugin surfaces
+(installed list · detail · capability review · configuration ·
+status dashboard · vulnerability banner · registry browser ·
+registry detail · author profile) + 8 bundle/sandbox surfaces
+(bundle library · bundle detail · install preview · sandbox
+browser · sandbox detail · sandbox promote · bundle discard ·
+plugin update diff preview).
+
+**Phase 12 single-vault backend COMPLETE — B137-B141 SHIPPED ·
+2026-06-27**. Eight commits across five batches (`e2c617e →
+6ba8649`):
+
+  · B137 — Hub model extended (8 new columns · ALTER TABLE
+    non-destructive on Phase 01 rows) · hub_role_capability
+    matrix join · 9-endpoint `/api/v1/hubs` router with
+    strip-prefix-at-seam adapter (DB stores `hub_admin`,
+    wire renders `admin`) · audit-event emission per mutation.
+    32 tests.
+  · B138 — `private_viewer_grant` table (distinct from Phase 01
+    PrivateViewer · for non-Theourgia recipients) ·
+    PBKDF2-HMAC-SHA256 credential primitives (100k iterations ·
+    plaintext returned exactly once at issue time) · 3-endpoint
+    router. 24 tests.
+  · B139 — Group ritual + 4 tables (ritual · participant ·
+    fragment · reflection) · status state-machine
+    (DRAFT → INVITED → IN_PROGRESS → COMPLETED) · reflection
+    write-once via UniqueConstraint · 11-endpoint router. 23
+    tests.
+  · B140 — Federation audit-log query + CSV export · reuses
+    Phase 01 audit_event (no migration) · requires
+    VIEW_AUDIT_LOG capability · GET-only invariant verified by
+    route inspection. 7 tests.
+  · B141 — SSO assertion scaffold · 24h server-fixed TTL ·
+    revoked_at immutable · signature_b64 nullable (Phase 12.5
+    fills it). 6 tests.
+
+Alembic chain 0056 → 0057 → 0058 → 0059. Backend tests
+2331 → **2423** (+92 over the phase).
+
+**Phase 13 ActivityPub adapter — STUB SHIPPED 2026-06-27**
+(`9aeabba`). Three new tables: `activitypub_settings`
+(enabled defaults FALSE per rule 28 · follower_approval defaults
+MANUAL per rule 20 · broadcast_deletes defaults FALSE per rule
+32 carry-forward) · `activitypub_follower` (uniqueness on
+owner+follower_did) · `activitypub_follow_request` (Pending →
+Accepted/Rejected). Migration 0060. 12 tests. **Settings router
+· WebFinger endpoint · follower-management routes · outbound
+delivery queue** land as follow-on commits once the
+cross-instance transport (Phase 12.5) is ready to test.
+
 **H08 COMPLETE — 21/21 SHIPPED · 2026-06-27**. All 21 H08
 Federation + ActivityPub surfaces in. Cluster A (Federation
 networks · 15 surfaces) + Cluster B (ActivityPub · 6 surfaces)
-end-to-end. **2657 vitest tests · admin tsc clean.**
+end-to-end. **2657 vitest tests · admin tsc clean.** 21
+Storybook stories landed alongside (one per surface;
+`0b520aa`). H08 CHANGELOG entry shipped (`57baa60`).
 
 **H08 surface 21/21 — Cross-Post Preview modal** (2026-06-27 ·
 FINAL). The pre-cross-post moment. Two-pane modal: **Mastodon
