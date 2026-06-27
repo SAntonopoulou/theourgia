@@ -136,6 +136,7 @@ export * from "./AgentTranscriptViewer/index.js";
 export * from "./AgentMemoryReader/index.js";
 export * from "./AgentCostDashboard/index.js";
 export * from "./AgentActivityLog/index.js";
+export * from "./AgentTrustReview/index.js";
 export * from "./RegistryBrowser/index.js";
 export * from "./RegistryPluginDetail/index.js";
 export * from "./PluginAuthorProfile/index.js";
