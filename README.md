@@ -24,13 +24,14 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `f246296` |
-| **vitest** | 2870+ passing · admin tsc clean |
-| **backend** | 2490 passing · alembic head **0063** · registry alembic head **0001** |
+| **Latest commit** | `92c56c1` |
+| **vitest** | 2923+ passing · admin tsc clean |
+| **backend** | 2490 passing · alembic head **0063** · registry alembic head **0001** · agent-daemon alembic head **0001** |
+| **agent-daemon** | **124 passing** — MCP client + dispatch + JSON-RPC + SSE + launcher + subprocess runner + per-run cost-cap hard halt |
 | **a11y** | 543 / 557 (97.5%); remaining 14 are intentional design tradeoffs |
 | **Sprints shipped** | H01-H03 · H04 · H05 · H06 · H07 · H08 (21/21) · H09 (17/17) · **H10 (27/27) ✓** |
 | **Design queue** | **(empty — H10 was the last design package before v1.0)** |
-| **Next build** | Phase 16 agent daemon backend (separate process · MCP server · waker · BYO-key crypto Mode B) · registry SSO bridge + DB persistence · Phase 12.5 inbox + delivery worker. |
+| **Next build** | Phase 16: audit log + filesystem sandbox + DB persistence + main-backend wiring · registry routes (H10 A1-A8 backing) · Phase 12.5 inbox + delivery worker. |
 
 The full per-batch history lives in **[CHANGELOG.md](CHANGELOG.md)**. For the canonical feature catalog and per-phase status snapshot, see **[FEATURES.md](FEATURES.md)**. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
