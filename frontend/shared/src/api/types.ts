@@ -1049,3 +1049,63 @@ export interface MemoryFileContent {
   body: string;
   size_bytes: number;
 }
+
+
+// ── Registry author submissions (H10 A2-A4 + A8) ────────────────────────
+
+export type RegistrySubmissionStatus =
+  | "pending_review"
+  | "under_review"
+  | "changes_requested"
+  | "accepted_community"
+  | "accepted_official"
+  | "rejected"
+  | "withdrawn";
+
+export interface RegistrySubmission {
+  id: string;
+  plugin_id: string;
+  plugin_name: string;
+  version: string;
+  status: RegistrySubmissionStatus | string;
+  license_spdx: string;
+  submitted_at: string;
+  decided_at: string | null;
+}
+
+export interface RegistrySubmissionListResponse {
+  submissions: RegistrySubmission[];
+}
+
+export interface SubmitPluginInput {
+  name: string;
+  version: string;
+  license_spdx: string;
+  description?: string;
+  homepage?: string | null;
+  source_url: string;
+  signature_base64: string;
+  manifest?: Record<string, unknown>;
+  capabilities?: string[];
+  target_tier?: string;
+}
+
+export interface FileAdvisoryInput {
+  plugin_id: string;
+  severity: "low" | "medium" | "high";
+  affected_version_range: string;
+  body: string;
+  remediation_version?: string | null;
+}
+
+export interface RegistryAdvisory {
+  id: string;
+  plugin_id: string;
+  severity: string;
+  affected_version_range: string;
+  body: string;
+  remediation_version: string | null;
+  filed_at: string;
+  filed_by_author_did: string;
+  published_at: string | null;
+}

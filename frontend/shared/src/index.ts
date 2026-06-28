@@ -135,10 +135,13 @@ export { RegistryPublicHomeSurface, type RegistryPublicHomeSurfaceProps } from "
 export type { ExtensionPointTile, RecentlyAddedItem, RecentlyUpdatedItem, TierKey } from "./RegistryPublicHome/copy.js";
 export * as PluginSubmissionFormCopy from "./PluginSubmissionForm/index.js";
 export { PluginSubmissionFormSurface, type PluginSubmissionFormProps } from "./PluginSubmissionForm/PluginSubmissionFormSurface.js";
+export type { CapabilityChip as RegistryCapabilityChip, SourceKind as RegistrySourceKind } from "./PluginSubmissionForm/copy.js";
 export * as PluginSubmissionListCopy from "./PluginSubmissionList/index.js";
-export { PluginSubmissionListSurface, type PluginSubmissionListSurfaceProps } from "./PluginSubmissionList/PluginSubmissionListSurface.js";
+export { PluginSubmissionListSurface, type PluginSubmissionListSurfaceProps, type SubmissionRow } from "./PluginSubmissionList/PluginSubmissionListSurface.js";
+export type { SubmissionState } from "./PluginSubmissionList/copy.js";
 export * as PluginSubmissionDetailCopy from "./PluginSubmissionDetail/index.js";
 export { PluginSubmissionDetailSurface, type PluginSubmissionDetailSurfaceProps } from "./PluginSubmissionDetail/PluginSubmissionDetailSurface.js";
+export type { CapabilityChip as DetailCapabilityChip, TimelineEntry, TimelineDotTone } from "./PluginSubmissionDetail/copy.js";
 export * as RegistryReviewQueueCopy from "./RegistryReviewQueue/index.js";
 export { RegistryReviewQueueSurface, type RegistryReviewQueueSurfaceProps } from "./RegistryReviewQueue/RegistryReviewQueueSurface.js";
 export * as RegistryReviewDetailCopy from "./RegistryReviewDetail/index.js";

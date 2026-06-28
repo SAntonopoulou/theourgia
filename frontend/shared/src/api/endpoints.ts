@@ -80,6 +80,11 @@ import type {
   CreateAgentInstallInput,
   MemoryFileContent,
   MemoryListResponse,
+  FileAdvisoryInput,
+  RegistryAdvisory,
+  RegistrySubmission,
+  RegistrySubmissionListResponse,
+  SubmitPluginInput,
 } from "./types.js";
 
 export class NotImplementedError extends Error {
@@ -1006,6 +1011,34 @@ export function api(client: ApiClient) {
       return client.request<{ name: string; size_bytes: number }>(
         `/api/v1/agents/installs/${encodeURIComponent(installId)}/memory/${encodeURIComponent(name)}`,
         { method: "PUT", json: { body } },
+      );
+    },
+
+    // ── Registry author (H10 A2-A4 + A8) ──────────────────────────
+
+    submitPlugin(input: SubmitPluginInput): Promise<RegistrySubmission> {
+      return client.request<RegistrySubmission>(
+        "/api/v1/registry/author/submissions",
+        { method: "POST", json: input },
+      );
+    },
+
+    listMySubmissions(): Promise<RegistrySubmissionListResponse> {
+      return client.request<RegistrySubmissionListResponse>(
+        "/api/v1/registry/author/submissions",
+      );
+    },
+
+    getMySubmission(submissionId: string): Promise<RegistrySubmission> {
+      return client.request<RegistrySubmission>(
+        `/api/v1/registry/author/submissions/${encodeURIComponent(submissionId)}`,
+      );
+    },
+
+    fileAdvisory(input: FileAdvisoryInput): Promise<RegistryAdvisory> {
+      return client.request<RegistryAdvisory>(
+        "/api/v1/registry/author/advisories",
+        { method: "POST", json: input },
       );
     },
   };

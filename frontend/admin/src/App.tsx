@@ -101,6 +101,9 @@ import { AgentTrustReviewRoute } from "./routes/AgentTrustReviewRoute.js";
 import { AgentCapabilityReviewRoute } from "./routes/AgentCapabilityReviewRoute.js";
 import { AgentByoKeySettingsRoute } from "./routes/AgentByoKeySettingsRoute.js";
 import { AgentMemoryReaderRoute } from "./routes/AgentMemoryReaderRoute.js";
+import { PluginSubmissionFormRoute } from "./routes/PluginSubmissionFormRoute.js";
+import { PluginSubmissionListRoute } from "./routes/PluginSubmissionListRoute.js";
+import { PluginSubmissionDetailRoute } from "./routes/PluginSubmissionDetailRoute.js";
 import { BookPreview } from "./routes/BookPreview.js";
 import { BundleInstall } from "./routes/BundleInstall.js";
 import { Bundles } from "./routes/Bundles.js";
@@ -414,6 +417,9 @@ function ShellRoutes() {
         <Route path="/agents/:installId/capabilities" element={<AgentCapabilityReviewRoute />} />
         <Route path="/agents-keys" element={<AgentByoKeySettingsRoute />} />
         <Route path="/agents/:installId/memory" element={<AgentMemoryReaderRoute />} />
+        <Route path="/registry/submit" element={<PluginSubmissionFormRoute />} />
+        <Route path="/registry/submissions" element={<PluginSubmissionListRoute />} />
+        <Route path="/registry/submissions/:submissionId" element={<PluginSubmissionDetailRoute />} />
         <Route path="/bundles" element={<Bundles />} />
         <Route path="/bundles/install" element={<BundleInstall />} />
         <Route path="/editor" element={<Editor />} />
