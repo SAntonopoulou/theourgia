@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+import pytest
+
 from theourgia_agent.mcp.capabilities import AgentCapability
 from theourgia_agent.mcp.sessions import MCPSessionRegistry
 from theourgia_agent.runs.launcher import (
@@ -34,9 +36,10 @@ def _request(**overrides) -> LaunchRequest:
     return LaunchRequest(**defaults)
 
 
-def test_launch_refused_when_month_spent_at_or_over_cap() -> None:
+@pytest.mark.asyncio
+async def test_launch_refused_when_month_spent_at_or_over_cap() -> None:
     reg = MCPSessionRegistry()
-    out = plan_launch(
+    out = await plan_launch(
         request=_request(
             monthly_cap_usd=Decimal("5.00"),
             month_spent_usd=Decimal("5.00"),
@@ -48,11 +51,12 @@ def test_launch_refused_when_month_spent_at_or_over_cap() -> None:
     assert len(reg) == 0
 
 
-def test_launch_refused_when_estimate_exceeds_remaining_cap() -> None:
+@pytest.mark.asyncio
+async def test_launch_refused_when_estimate_exceeds_remaining_cap() -> None:
     """Recent runs each cost $4; remaining cap is $5; 1.4× estimate $5.6
     is over remaining. Halt."""
     reg = MCPSessionRegistry()
-    out = plan_launch(
+    out = await plan_launch(
         request=_request(
             monthly_cap_usd=Decimal("10.00"),
             month_spent_usd=Decimal("5.00"),
@@ -66,18 +70,20 @@ def test_launch_refused_when_estimate_exceeds_remaining_cap() -> None:
     assert "remaining monthly cap" in out.reason
 
 
-def test_happy_path_returns_plan_and_registers_session() -> None:
+@pytest.mark.asyncio
+async def test_happy_path_returns_plan_and_registers_session() -> None:
     reg = MCPSessionRegistry()
-    out = plan_launch(request=_request(), registry=reg)
+    out = await plan_launch(request=_request(), registry=reg)
     assert isinstance(out, LaunchPlan)
     assert len(reg) == 1
     # Session looked up by its token reaches the same DispatchContext.
     assert reg.lookup(out.session.token) is out.session
 
 
-def test_plan_command_passes_task_text_verbatim() -> None:
+@pytest.mark.asyncio
+async def test_plan_command_passes_task_text_verbatim() -> None:
     reg = MCPSessionRegistry()
-    out = plan_launch(
+    out = await plan_launch(
         request=_request(task_text="audit my last week's synchronicities"),
         registry=reg,
     )
@@ -85,18 +91,20 @@ def test_plan_command_passes_task_text_verbatim() -> None:
     assert "audit my last week's synchronicities" in out.command
 
 
-def test_plan_env_carries_mcp_url_and_bearer() -> None:
+@pytest.mark.asyncio
+async def test_plan_env_carries_mcp_url_and_bearer() -> None:
     reg = MCPSessionRegistry()
-    out = plan_launch(request=_request(), registry=reg)
+    out = await plan_launch(request=_request(), registry=reg)
     assert isinstance(out, LaunchPlan)
     assert out.env["THEOURGIA_MCP_TOKEN"] == out.session.token
     assert out.env["THEOURGIA_MCP_URL"].endswith("/mcp/sse")
     assert out.env["THEOURGIA_RUN_ID"] == "install-123"
 
 
-def test_plan_env_carries_api_key_in_named_var_only() -> None:
+@pytest.mark.asyncio
+async def test_plan_env_carries_api_key_in_named_var_only() -> None:
     reg = MCPSessionRegistry()
-    out = plan_launch(
+    out = await plan_launch(
         request=_request(
             api_key_env="ANTHROPIC_API_KEY",
             api_key_plaintext="sk-abc-123",
@@ -112,9 +120,10 @@ def test_plan_env_carries_api_key_in_named_var_only() -> None:
         assert "sk-abc-123" not in v
 
 
-def test_plan_env_omits_api_key_when_none() -> None:
+@pytest.mark.asyncio
+async def test_plan_env_omits_api_key_when_none() -> None:
     reg = MCPSessionRegistry()
-    out = plan_launch(
+    out = await plan_launch(
         request=_request(api_key_plaintext=None),
         registry=reg,
     )
@@ -122,9 +131,10 @@ def test_plan_env_omits_api_key_when_none() -> None:
     assert "ANTHROPIC_API_KEY" not in out.env
 
 
-def test_plan_cwd_uses_vault_did_and_install_id() -> None:
+@pytest.mark.asyncio
+async def test_plan_cwd_uses_vault_did_and_install_id() -> None:
     reg = MCPSessionRegistry()
-    out = plan_launch(
+    out = await plan_launch(
         request=_request(
             vault_did="did:vault:my-grove",
             install_id="install-xyz",
@@ -136,9 +146,10 @@ def test_plan_cwd_uses_vault_did_and_install_id() -> None:
     assert "install-xyz" in str(out.cwd)
 
 
-def test_plan_reservation_matches_decision() -> None:
+@pytest.mark.asyncio
+async def test_plan_reservation_matches_decision() -> None:
     reg = MCPSessionRegistry()
-    out = plan_launch(
+    out = await plan_launch(
         request=_request(
             monthly_cap_usd=Decimal("100.00"),
             month_spent_usd=Decimal("10.00"),
@@ -151,9 +162,10 @@ def test_plan_reservation_matches_decision() -> None:
     assert out.reservation_usd == Decimal("1.4")
 
 
-def test_session_dispatch_context_carries_granted_caps() -> None:
+@pytest.mark.asyncio
+async def test_session_dispatch_context_carries_granted_caps() -> None:
     reg = MCPSessionRegistry()
-    out = plan_launch(
+    out = await plan_launch(
         request=_request(
             granted_caps=[
                 AgentCapability.READ_ENTRIES,

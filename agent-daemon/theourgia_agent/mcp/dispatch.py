@@ -17,8 +17,16 @@ from typing import Any
 
 from theourgia_agent.mcp.capabilities import AgentCapability
 from theourgia_agent.mcp.filters import filter_records
-from theourgia_agent.mcp.gating import require_capability
+from theourgia_agent.mcp.gating import CapabilityDenied, require_capability
 from theourgia_agent.mcp.vault_client import VaultClient
+from theourgia_agent.models.audit import AuditEventType
+from theourgia_agent.runs.audit import (
+    AuditRecord,
+    AuditSink,
+    NullAuditSink,
+    now,
+    sanitise_arguments,
+)
 
 
 __all__ = ["ToolCallResult", "DispatchContext", "dispatch_tool"]
@@ -47,6 +55,15 @@ class DispatchContext:
     granted: list[AgentCapability]
     vault: VaultClient
     closed_tradition_slugs: frozenset[str] = field(default=frozenset())
+    audit_sink: AuditSink = field(default_factory=NullAuditSink)
+    """Where MCP audit records land. Defaults to a no-op sink so unit
+    tests can ignore the audit dimension; production wires a DbAuditSink."""
+    vault_did: str = ""
+    """DID of the vault this session belongs to — denormalised onto every
+    audit row so the B4 query layer doesn't need to join."""
+    run_id: str | None = None
+    """Run this session is bound to. Set by the launcher; the SSE
+    transport copies it from the MCPSession at request time."""
 
     async def ensure_closed_slugs_loaded(self) -> None:
         if not self.closed_tradition_slugs:
@@ -70,8 +87,23 @@ async def dispatch_tool(
     args = arguments or {}
     cap = AgentCapability.from_string(tool_name)
 
-    # Gate: must be in the granted set.
-    require_capability(ctx.granted, cap)
+    # Gate: must be in the granted set. Emit deny audit BEFORE raising.
+    try:
+        require_capability(ctx.granted, cap)
+    except CapabilityDenied as exc:
+        await ctx.audit_sink.emit(
+            AuditRecord(
+                vault_did=ctx.vault_did,
+                event_type=AuditEventType.MCP_CAPABILITY_DENIED,
+                happened_at=now(),
+                run_id=ctx.run_id,
+                tool_name=tool_name,
+                arguments_json=sanitise_arguments(args),
+                allowed=False,
+                detail=f"capability {exc.required.value!r} not granted",
+            ),
+        )
+        raise
 
     # Load closed-tradition slugs lazily — first read.* call costs
     # this round-trip; subsequent calls reuse.
@@ -113,7 +145,22 @@ async def dispatch_tool(
     filtered = filter_records(
         raw, closed_tradition_slugs=ctx.closed_tradition_slugs,
     )
+    dropped = before - len(filtered)
+
+    await ctx.audit_sink.emit(
+        AuditRecord(
+            vault_did=ctx.vault_did,
+            event_type=AuditEventType.MCP_TOOLS_CALL,
+            happened_at=now(),
+            run_id=ctx.run_id,
+            tool_name=tool_name,
+            arguments_json=sanitise_arguments(args),
+            allowed=True,
+            filtered_count=dropped,
+        ),
+    )
+
     return ToolCallResult(
         records=filtered,
-        filtered_count=before - len(filtered),
+        filtered_count=dropped,
     )

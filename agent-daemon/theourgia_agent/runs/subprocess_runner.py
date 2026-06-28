@@ -29,6 +29,13 @@ from decimal import Decimal
 from typing import Protocol
 
 from theourgia_agent.mcp.sessions import MCPSessionRegistry
+from theourgia_agent.models.audit import AuditEventType
+from theourgia_agent.runs.audit import (
+    AuditRecord,
+    AuditSink,
+    NullAuditSink,
+    now as audit_now,
+)
 from theourgia_agent.runs.cost import CostAccumulator
 from theourgia_agent.runs.launcher import LaunchPlan
 
@@ -230,6 +237,8 @@ async def execute_run(
     spawner: SubprocessSpawner,
     mcp_registry: MCPSessionRegistry,
     run_registry: RunRegistry,
+    audit_sink: AuditSink | None = None,
+    vault_did: str = "",
 ) -> RunHandle:
     """Spawn the subprocess, start pump tasks, register the run.
 
@@ -237,6 +246,7 @@ async def execute_run(
     background. The handle's `transcript.aiter()` is what the SSE
     /runs/{id}/stream endpoint subscribes to.
     """
+    sink: AuditSink = audit_sink or NullAuditSink()
     transcript = TranscriptStream()
     process = await spawner.spawn(
         command=plan.command,
@@ -254,6 +264,16 @@ async def execute_run(
         _process=process,
     )
     run_registry.register(handle)
+
+    await sink.emit(
+        AuditRecord(
+            vault_did=vault_did,
+            event_type=AuditEventType.RUN_STARTED,
+            happened_at=audit_now(),
+            run_id=handle.run_id,
+            detail=f"reservation_usd={plan.reservation_usd}",
+        ),
+    )
 
     async def supervise() -> None:
         pumps: list[asyncio.Task] = []
@@ -293,6 +313,25 @@ async def execute_run(
             handle.ended_at = datetime.now(tz=UTC)
             mcp_registry.drop(plan.session.token)
             await transcript.close()
+            terminal_event = {
+                RunStatus.COMPLETED: AuditEventType.RUN_COMPLETED,
+                RunStatus.HALTED: AuditEventType.RUN_HALTED,
+                RunStatus.ERRORED: AuditEventType.RUN_ERRORED,
+            }.get(handle.status)
+            if terminal_event is not None:
+                await sink.emit(
+                    AuditRecord(
+                        vault_did=vault_did,
+                        event_type=terminal_event,
+                        happened_at=audit_now(),
+                        run_id=handle.run_id,
+                        detail=(
+                            f"returncode={handle.returncode}"
+                            if handle.returncode is not None
+                            else None
+                        ),
+                    ),
+                )
 
     handle._task = asyncio.create_task(supervise())
     return handle

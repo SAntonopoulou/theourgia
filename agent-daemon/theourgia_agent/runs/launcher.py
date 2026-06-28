@@ -29,6 +29,13 @@ from theourgia_agent.mcp.capabilities import AgentCapability
 from theourgia_agent.mcp.dispatch import DispatchContext
 from theourgia_agent.mcp.sessions import MCPSession, MCPSessionRegistry
 from theourgia_agent.mcp.vault_client import VaultClient
+from theourgia_agent.models.audit import AuditEventType
+from theourgia_agent.runs.audit import (
+    AuditRecord,
+    AuditSink,
+    NullAuditSink,
+    now as audit_now,
+)
 
 
 __all__ = [
@@ -123,26 +130,43 @@ def _memory_dir(memory_root: Path, vault_did: str, install_id: str) -> Path:
     return memory_root / vault_did / install_id
 
 
-def plan_launch(
+async def plan_launch(
     *,
     request: LaunchRequest,
     registry: MCPSessionRegistry,
+    audit_sink: AuditSink | None = None,
 ) -> LaunchOutcome:
     """Decide if a run may wake, and if so describe how to spawn it."""
+    sink: AuditSink = audit_sink or NullAuditSink()
     decision: CapDecision = evaluate_cap(
         monthly_cap_usd=request.monthly_cap_usd,
         month_spent_usd=request.month_spent_usd,
         recent_run_cost_usd=request.recent_run_cost_usd,
     )
     if not decision.allowed:
-        return LaunchRefused(
-            reason=decision.reason or "cost cap exceeded",
+        reason = decision.reason or "cost cap exceeded"
+        await sink.emit(
+            AuditRecord(
+                vault_did=request.vault_did,
+                event_type=AuditEventType.CAP_REFUSED_AT_WAKE,
+                happened_at=audit_now(),
+                run_id=request.install_id,
+                allowed=False,
+                detail=reason,
+            ),
         )
+        return LaunchRefused(reason=reason)
 
     settings = get_settings()
 
     vault = VaultClient(session_token=request.vault_session_token)
-    ctx = DispatchContext(granted=list(request.granted_caps), vault=vault)
+    ctx = DispatchContext(
+        granted=list(request.granted_caps),
+        vault=vault,
+        audit_sink=sink,
+        vault_did=request.vault_did,
+        run_id=request.install_id,
+    )
     session = registry.register(ctx=ctx, run_id=request.install_id)
 
     cwd = _memory_dir(

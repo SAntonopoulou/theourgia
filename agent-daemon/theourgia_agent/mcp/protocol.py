@@ -29,6 +29,8 @@ from theourgia_agent.mcp.vault_client import (
     VaultClientError,
     VaultUnauthorisedError,
 )
+from theourgia_agent.models.audit import AuditEventType
+from theourgia_agent.runs.audit import AuditRecord, now
 
 
 __all__ = [
@@ -210,6 +212,15 @@ async def handle_request(
 ) -> JsonRpcResponse:
     """Map a parsed JSON-RPC request to a response."""
     if request.method == "tools/list":
+        await ctx.audit_sink.emit(
+            AuditRecord(
+                vault_did=ctx.vault_did,
+                event_type=AuditEventType.MCP_TOOLS_LIST,
+                happened_at=now(),
+                run_id=ctx.run_id,
+                allowed=True,
+            ),
+        )
         return JsonRpcResponse(
             id=request.id,
             result={"tools": tool_descriptors(ctx.granted)},

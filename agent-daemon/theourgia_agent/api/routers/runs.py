@@ -28,6 +28,13 @@ from pydantic import BaseModel, Field
 
 from theourgia_agent.mcp.capabilities import AgentCapability
 from theourgia_agent.mcp.sessions import MCPSessionRegistry
+from theourgia_agent.models.audit import AuditEventType
+from theourgia_agent.runs.audit import (
+    AuditRecord,
+    AuditSink,
+    InMemoryAuditSink,
+    now as audit_now,
+)
 from theourgia_agent.runs.cost import (
     CostExceededReservation,
     CostSample,
@@ -53,6 +60,7 @@ __all__ = [
     "mcp_registry_dependency",
     "run_registry_dependency",
     "subprocess_spawner_dependency",
+    "audit_sink_dependency",
 ]
 
 
@@ -74,6 +82,7 @@ def control_token_dependency() -> str | None:
 _default_mcp_registry: MCPSessionRegistry | None = None
 _default_run_registry: RunRegistry | None = None
 _default_spawner: SubprocessSpawner | None = None
+_default_audit_sink: AuditSink | None = None
 
 
 def mcp_registry_dependency() -> MCPSessionRegistry:
@@ -95,6 +104,16 @@ def subprocess_spawner_dependency() -> SubprocessSpawner:
     if _default_spawner is None:
         _default_spawner = AsyncioSubprocessSpawner()
     return _default_spawner
+
+
+def audit_sink_dependency() -> AuditSink:
+    """Process-wide audit sink. In production this is a DbAuditSink
+    that writes through `core.db.session_scope`; the in-memory default
+    here keeps tests pure-Python and is also fine for early dev."""
+    global _default_audit_sink
+    if _default_audit_sink is None:
+        _default_audit_sink = InMemoryAuditSink()
+    return _default_audit_sink
 
 
 def _check_control_token(
@@ -214,6 +233,7 @@ def create_runs_router() -> APIRouter:
         mcp_registry: MCPSessionRegistry = Depends(mcp_registry_dependency),
         run_registry: RunRegistry = Depends(run_registry_dependency),
         spawner: SubprocessSpawner = Depends(subprocess_spawner_dependency),
+        audit_sink: AuditSink = Depends(audit_sink_dependency),
     ) -> JSONResponse:
         _check_control_token(x_daemon_auth, expected_token)
 
@@ -240,7 +260,11 @@ def create_runs_router() -> APIRouter:
             api_key_plaintext=body.api_key_plaintext,
         )
 
-        outcome = plan_launch(request=request, registry=mcp_registry)
+        outcome = await plan_launch(
+            request=request,
+            registry=mcp_registry,
+            audit_sink=audit_sink,
+        )
         if isinstance(outcome, LaunchRefused):
             return JSONResponse(
                 status_code=409,
@@ -253,6 +277,8 @@ def create_runs_router() -> APIRouter:
             spawner=spawner,
             mcp_registry=mcp_registry,
             run_registry=run_registry,
+            audit_sink=audit_sink,
+            vault_did=body.vault_did,
         )
         _reservations[handle.run_id] = outcome.reservation_usd
         return JSONResponse(
@@ -287,6 +313,7 @@ def create_runs_router() -> APIRouter:
         x_daemon_auth: str | None = Header(default=None),
         expected_token: str | None = Depends(control_token_dependency),
         run_registry: RunRegistry = Depends(run_registry_dependency),
+        audit_sink: AuditSink = Depends(audit_sink_dependency),
     ) -> JSONResponse:
         """Subprocess wrapper posts incremental cost samples here.
 
@@ -308,6 +335,19 @@ def create_runs_router() -> APIRouter:
         try:
             await handle.cost.record(sample)
         except CostExceededReservation as exc:
+            await audit_sink.emit(
+                AuditRecord(
+                    vault_did="",
+                    event_type=AuditEventType.CAP_HALTED_AT_SPEND,
+                    happened_at=audit_now(),
+                    run_id=run_id,
+                    allowed=False,
+                    detail=(
+                        f"reservation_usd={exc.reservation_usd} "
+                        f"spent_usd={exc.spent_usd}"
+                    ),
+                ),
+            )
             await handle.terminate()
             return JSONResponse(
                 status_code=409,
