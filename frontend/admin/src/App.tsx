@@ -88,6 +88,7 @@ import { SandboxBrowser as SandboxBrowserRoute } from "./routes/SandboxBrowser.j
 import { SandboxDetail } from "./routes/SandboxDetail.js";
 import { Account } from "./routes/Account.js";
 import { Agents } from "./routes/Agents.js";
+import { AgentsHomeRoute } from "./routes/AgentsHomeRoute.js";
 import { BookPreview } from "./routes/BookPreview.js";
 import { BundleInstall } from "./routes/BundleInstall.js";
 import { Bundles } from "./routes/Bundles.js";
@@ -388,6 +389,7 @@ function ShellRoutes() {
         <Route path="/account" element={<Account />} />
         <Route path="/wellbeing" element={<Wellbeing />} />
         <Route path="/agents" element={<Agents />} />
+        <Route path="/agents-home" element={<AgentsHomeRoute />} />
         <Route path="/bundles" element={<Bundles />} />
         <Route path="/bundles/install" element={<BundleInstall />} />
         <Route path="/editor" element={<Editor />} />
