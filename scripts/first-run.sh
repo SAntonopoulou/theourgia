@@ -33,9 +33,9 @@ command -v openssl >/dev/null || fail "openssl not installed"
 # Generate secrets
 SECRET_KEY=$(openssl rand -base64 64 | tr -d '\n')
 MASTER_ENC_KEY=$(openssl rand -base64 64 | tr -d '\n')
-DB_PASS=$(openssl rand -base64 32 | tr -d '\n=' | head -c 40)
-AGENT_DB_PASS=$(openssl rand -base64 32 | tr -d '\n=' | head -c 40)
-REGISTRY_DB_PASS=$(openssl rand -base64 32 | tr -d '\n=' | head -c 40)
+DB_PASS=$(openssl rand -hex 32)
+AGENT_DB_PASS=$(openssl rand -hex 32)
+REGISTRY_DB_PASS=$(openssl rand -hex 32)
 AGENT_CONTROL_TOKEN=$(openssl rand -base64 48 | tr -d '\n')
 HKDF_SALT=$(openssl rand -hex 32)
 
