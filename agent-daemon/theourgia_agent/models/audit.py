@@ -16,8 +16,8 @@ import enum
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Column, DateTime, Integer, String
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PgUUID
 from sqlmodel import Enum as SQLEnum
 from sqlmodel import Field
 
@@ -66,7 +66,7 @@ class AuditEvent(IDMixin, TimestampMixin, table=True):
     # installs can be deleted).
     install_id: UUID | None = Field(
         default=None,
-        sa_column=Column("install_id", nullable=True),
+        sa_column=Column("install_id", PgUUID(as_uuid=True), nullable=True),
     )
 
     event_type: AuditEventType = Field(
@@ -91,7 +91,10 @@ class AuditEvent(IDMixin, TimestampMixin, table=True):
     )
 
     # Was the action allowed? False on capability_denied / cap.refused.
-    allowed: bool = Field(default=True, sa_column=Column("allowed", nullable=False))
+    allowed: bool = Field(
+        default=True,
+        sa_column=Column("allowed", Boolean, nullable=False),
+    )
 
     # How many records the filter pass dropped. 0 for non-filtering events.
     filtered_count: int = Field(

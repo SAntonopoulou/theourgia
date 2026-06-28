@@ -17,7 +17,7 @@ import enum
 from decimal import Decimal
 from uuid import UUID
 
-from sqlalchemy import Column, Numeric, String, UniqueConstraint
+from sqlalchemy import Column, LargeBinary, Numeric, String, UniqueConstraint
 from sqlmodel import Enum as SQLEnum
 from sqlmodel import Field
 
@@ -71,15 +71,15 @@ class AgentInstall(IDMixin, TimestampMixin, table=True):
     # Mode B encrypted API key. NULL when state == INACTIVE.
     api_key_record_id: bytes | None = Field(
         default=None,
-        sa_column=Column("api_key_record_id", nullable=True),
+        sa_column=Column("api_key_record_id", LargeBinary, nullable=True),
     )
     api_key_nonce: bytes | None = Field(
         default=None,
-        sa_column=Column("api_key_nonce", nullable=True),
+        sa_column=Column("api_key_nonce", LargeBinary, nullable=True),
     )
     api_key_ciphertext: bytes | None = Field(
         default=None,
-        sa_column=Column("api_key_ciphertext", nullable=True),
+        sa_column=Column("api_key_ciphertext", LargeBinary, nullable=True),
     )
 
     # Monthly cost cap (USD). The H10 C3 install form requires the
