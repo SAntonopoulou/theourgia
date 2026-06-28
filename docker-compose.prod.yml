@@ -59,3 +59,31 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+
+  agent-daemon:
+    build:
+      context: ./agent-daemon
+      dockerfile: Dockerfile
+      target: prod
+    command: ["uvicorn", "theourgia_agent.api.app:app", "--host", "0.0.0.0", "--port", "8002", "--workers", "${THEOURGIA_AGENT_WORKERS:-2}"]
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  registry:
+    build:
+      context: ./registry
+      dockerfile: Dockerfile
+      target: prod
+    command: ["uvicorn", "theourgia_registry.api.app:app", "--host", "0.0.0.0", "--port", "8003", "--workers", "${THEOURGIA_REGISTRY_WORKERS:-2}"]
+    ports:
+      # plugins.theourgia.com — bound to host loopback only; host Caddy
+      # routes plugins.theourgia.com 443 → 127.0.0.1:8193.
+      - "127.0.0.1:${THEOURGIA_REGISTRY_HOST_PORT:-8193}:8003"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

@@ -80,6 +80,40 @@ www.theourgia.example.com {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Plugin registry — plugins.theourgia.example.com
+# ─────────────────────────────────────────────────────────────────────────────
+plugins.theourgia.example.com {
+    encode gzip zstd
+
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+    }
+
+    # Registry container binds to host loopback on 8193 by default.
+    # Override via THEOURGIA_REGISTRY_HOST_PORT in .env if you reserve
+    # a different port in your local range.
+    reverse_proxy 127.0.0.1:8193 {
+        flush_interval -1
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "interest-cohort=()"
+        -Server
+    }
+
+    log {
+        output stdout
+        format console
+    }
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Optional: docs subdomain
 # ─────────────────────────────────────────────────────────────────────────────
 # docs.theourgia.example.com {
@@ -89,3 +123,12 @@ www.theourgia.example.com {
 #     root * /var/www/theourgia-docs
 #     file_server
 # }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# NOTE — Agent daemon is NOT exposed externally
+# ─────────────────────────────────────────────────────────────────────────────
+# The agent daemon (Phase 16) listens on the internal Docker network only.
+# All access goes through the backend's /api/v1/agents/* bridge. There is
+# no public endpoint for the daemon's MCP server — that is by design
+# (rule 59: the daemon's filesystem sandbox + capability gate are the
+# trust boundary; exposing the daemon directly would route around them).

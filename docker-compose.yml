@@ -72,6 +72,9 @@ services:
       DATABASE_URL: postgresql+asyncpg://${THEOURGIA_DB_USER:-theourgia}:${THEOURGIA_DB_PASSWORD}@postgres:5432/${THEOURGIA_DB_NAME:-theourgia}
       REDIS_URL: redis://redis:6379/0
       THEOURGIA_EPHE_PATH: /app/data/ephe
+      THEOURGIA_AGENT_DAEMON_URL: ${THEOURGIA_AGENT_DAEMON_URL:-http://agent-daemon:8002}
+      THEOURGIA_AGENT_DAEMON_CONTROL_TOKEN: ${THEOURGIA_AGENT_CONTROL_TOKEN}
+      THEOURGIA_REGISTRY_URL: ${THEOURGIA_REGISTRY_URL:-http://registry:8003}
     restart: unless-stopped
     networks:
       - theourgia-internal
@@ -122,6 +125,86 @@ services:
       - theourgia-internal
 
   # ───────────────────────────────────────────────────────────────────────
+  # Agent daemon (Phase 16) — separate process for AI agent supervision.
+  # Its own DB so daemon failures can't poison the vault.
+  # Mounted memory dir for agent filesystem (rule 59).
+  # ───────────────────────────────────────────────────────────────────────
+  agent-daemon-pg:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${THEOURGIA_AGENT_DB_USER:-theourgia}
+      POSTGRES_PASSWORD: ${THEOURGIA_AGENT_DB_PASSWORD:?THEOURGIA_AGENT_DB_PASSWORD must be set}
+      POSTGRES_DB: ${THEOURGIA_AGENT_DB_NAME:-theourgia_agent}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - agent_daemon_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${THEOURGIA_AGENT_DB_USER:-theourgia} -d ${THEOURGIA_AGENT_DB_NAME:-theourgia_agent}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - theourgia-internal
+
+  agent-daemon:
+    build:
+      context: ./agent-daemon
+      dockerfile: Dockerfile
+    depends_on:
+      agent-daemon-pg:
+        condition: service_healthy
+    environment:
+      THEOURGIA_AGENT_ENV: ${THEOURGIA_ENV:-development}
+      THEOURGIA_AGENT_DATABASE_URL: postgresql+asyncpg://${THEOURGIA_AGENT_DB_USER:-theourgia}:${THEOURGIA_AGENT_DB_PASSWORD}@agent-daemon-pg:5432/${THEOURGIA_AGENT_DB_NAME:-theourgia_agent}
+      THEOURGIA_AGENT_VAULT_MCP_URL: http://backend:8000/mcp
+      THEOURGIA_AGENT_CONTROL_TOKEN: ${THEOURGIA_AGENT_CONTROL_TOKEN:?THEOURGIA_AGENT_CONTROL_TOKEN must be set}
+      THEOURGIA_AGENT_HKDF_SALT: ${THEOURGIA_AGENT_HKDF_SALT:?THEOURGIA_AGENT_HKDF_SALT must be set}
+      THEOURGIA_AGENT_LISTEN_HOST: 0.0.0.0
+      THEOURGIA_AGENT_LISTEN_PORT: "8002"
+    volumes:
+      - agent_memory:/srv/theourgia/agents
+    restart: unless-stopped
+    networks:
+      - theourgia-internal
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Plugin registry (plugins.theourgia.com) — separate process + DB
+  # ───────────────────────────────────────────────────────────────────────
+  registry-pg:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${THEOURGIA_REGISTRY_DB_USER:-theourgia}
+      POSTGRES_PASSWORD: ${THEOURGIA_REGISTRY_DB_PASSWORD:?THEOURGIA_REGISTRY_DB_PASSWORD must be set}
+      POSTGRES_DB: ${THEOURGIA_REGISTRY_DB_NAME:-theourgia_registry}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - registry_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${THEOURGIA_REGISTRY_DB_USER:-theourgia} -d ${THEOURGIA_REGISTRY_DB_NAME:-theourgia_registry}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - theourgia-internal
+
+  registry:
+    build:
+      context: ./registry
+      dockerfile: Dockerfile
+    depends_on:
+      registry-pg:
+        condition: service_healthy
+    environment:
+      THEOURGIA_REGISTRY_ENV: ${THEOURGIA_ENV:-development}
+      THEOURGIA_REGISTRY_DATABASE_URL: postgresql+asyncpg://${THEOURGIA_REGISTRY_DB_USER:-theourgia}:${THEOURGIA_REGISTRY_DB_PASSWORD}@registry-pg:5432/${THEOURGIA_REGISTRY_DB_NAME:-theourgia_registry}
+      THEOURGIA_REGISTRY_BOOTSTRAP_MAINTAINER_DID: ${THEOURGIA_REGISTRY_BOOTSTRAP_MAINTAINER_DID:-}
+    restart: unless-stopped
+    networks:
+      - theourgia-internal
+
+  # ───────────────────────────────────────────────────────────────────────
   # Frontend (static-served by internal Caddy; reverse-proxies API to backend)
   # ───────────────────────────────────────────────────────────────────────
   frontend:
@@ -143,6 +226,12 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
+    driver: local
+  agent_daemon_data:
+    driver: local
+  registry_data:
+    driver: local
+  agent_memory:
     driver: local
 
 networks:
