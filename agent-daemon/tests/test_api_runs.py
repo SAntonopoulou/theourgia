@@ -258,3 +258,69 @@ def test_stream_endpoint_returns_event_stream_content_type(client) -> None:
     with client.stream("GET", "/runs/install-1/stream") as r:
         assert r.status_code == 200
         assert r.headers["content-type"].startswith("text/event-stream")
+
+
+def test_get_run_snapshot_includes_cost(client) -> None:
+    start = client.post("/runs", json=_start_request())
+    assert start.status_code == 202
+    snap = client.get("/runs/install-1").json()
+    assert "cost" in snap
+    assert snap["cost"]["cost_usd"] == "0"
+    assert snap["cost"]["over_reservation"] is False
+
+
+def test_post_cost_accumulates(client) -> None:
+    req = _start_request()
+    req["monthly_cap_usd"] = "100.00"
+    req["recent_run_cost_usd"] = ["10.00", "10.00"]
+    start = client.post("/runs", json=req)
+    assert start.status_code == 202
+    sample = {
+        "tokens_in": 100,
+        "tokens_out": 50,
+        "tokens_cache": 0,
+        "tokens_fresh": 80,
+        "tokens_resume": 20,
+        "cost_usd": "0.50",
+    }
+    r = client.post("/runs/install-1/cost", json=sample)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["cost_usd"] == "0.50"
+    assert body["tokens_in"] == 100
+
+
+def test_post_cost_returns_409_and_halts_when_over_reservation(
+    client,
+) -> None:
+    """Hard cap: when actual spend exceeds reservation, the daemon
+    terminates the run AND surfaces a 409 with verbatim 'cost_exceeded'."""
+    req = _start_request()
+    req["monthly_cap_usd"] = "100.00"
+    req["recent_run_cost_usd"] = ["0.50", "0.50"]  # reservation ≈ $0.70
+    start = client.post("/runs", json=req)
+    assert start.status_code == 202
+    over = client.post(
+        "/runs/install-1/cost",
+        json={
+            "tokens_in": 0, "tokens_out": 0, "tokens_cache": 0,
+            "tokens_fresh": 0, "tokens_resume": 0,
+            "cost_usd": "5.00",
+        },
+    )
+    assert over.status_code == 409
+    body = over.json()
+    assert body["cost_exceeded"] is True
+    assert body["halted"] is True
+
+
+def test_post_cost_returns_404_for_unknown_run(client) -> None:
+    r = client.post(
+        "/runs/missing/cost",
+        json={
+            "tokens_in": 0, "tokens_out": 0, "tokens_cache": 0,
+            "tokens_fresh": 0, "tokens_resume": 0,
+            "cost_usd": "0.00",
+        },
+    )
+    assert r.status_code == 404

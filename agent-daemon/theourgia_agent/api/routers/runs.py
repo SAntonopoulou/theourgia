@@ -28,6 +28,10 @@ from pydantic import BaseModel, Field
 
 from theourgia_agent.mcp.capabilities import AgentCapability
 from theourgia_agent.mcp.sessions import MCPSessionRegistry
+from theourgia_agent.runs.cost import (
+    CostExceededReservation,
+    CostSample,
+)
 from theourgia_agent.runs.launcher import (
     LaunchPlan,
     LaunchRefused,
@@ -171,6 +175,25 @@ class RunSnapshot:
         }
 
 
+class CostSampleBody(BaseModel):
+    tokens_in: int = 0
+    tokens_out: int = 0
+    tokens_cache: int = 0
+    tokens_fresh: int = 0
+    tokens_resume: int = 0
+    cost_usd: Decimal
+
+
+def _snapshot_with_cost(
+    handle: RunHandle, *, reservation_usd: Decimal,
+) -> dict[str, Any]:
+    out = RunSnapshot.from_handle(
+        handle, reservation_usd=reservation_usd,
+    ).to_dict()
+    out["cost"] = handle.cost.snapshot()
+    return out
+
+
 # Map handle.run_id → reservation_usd (cheap; only live runs are stored).
 # In production this lives in agent_run rows; the in-memory map is a
 # stopgap until the DB write-through lands.
@@ -251,11 +274,51 @@ def create_runs_router() -> APIRouter:
         if handle is None:
             raise HTTPException(status_code=404, detail="run not found")
         return JSONResponse(
-            content=RunSnapshot.from_handle(
+            content=_snapshot_with_cost(
                 handle,
                 reservation_usd=_reservations.get(run_id, Decimal("0")),
-            ).to_dict(),
+            ),
         )
+
+    @router.post("/{run_id}/cost")
+    async def report_cost(
+        run_id: str,
+        body: CostSampleBody,
+        x_daemon_auth: str | None = Header(default=None),
+        expected_token: str | None = Depends(control_token_dependency),
+        run_registry: RunRegistry = Depends(run_registry_dependency),
+    ) -> JSONResponse:
+        """Subprocess wrapper posts incremental cost samples here.
+
+        On `CostExceededReservation`, the daemon terminates the run
+        immediately — the magician is NEVER charged beyond the at-wake
+        reservation (a hard guarantee of the cap design)."""
+        _check_control_token(x_daemon_auth, expected_token)
+        handle = run_registry.lookup(run_id)
+        if handle is None:
+            raise HTTPException(status_code=404, detail="run not found")
+        sample = CostSample(
+            tokens_in=body.tokens_in,
+            tokens_out=body.tokens_out,
+            tokens_cache=body.tokens_cache,
+            tokens_fresh=body.tokens_fresh,
+            tokens_resume=body.tokens_resume,
+            cost_usd=body.cost_usd,
+        )
+        try:
+            await handle.cost.record(sample)
+        except CostExceededReservation as exc:
+            await handle.terminate()
+            return JSONResponse(
+                status_code=409,
+                content={
+                    "cost_exceeded": True,
+                    "reservation_usd": str(exc.reservation_usd),
+                    "spent_usd": str(exc.spent_usd),
+                    "halted": True,
+                },
+            )
+        return JSONResponse(content=handle.cost.snapshot())
 
     @router.delete("/{run_id}")
     async def terminate_run(

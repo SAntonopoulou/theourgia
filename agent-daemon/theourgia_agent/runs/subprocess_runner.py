@@ -25,9 +25,11 @@ import signal
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from decimal import Decimal
 from typing import Protocol
 
 from theourgia_agent.mcp.sessions import MCPSessionRegistry
+from theourgia_agent.runs.cost import CostAccumulator
 from theourgia_agent.runs.launcher import LaunchPlan
 
 
@@ -154,6 +156,11 @@ class RunHandle:
     status: RunStatus
     transcript: TranscriptStream
     started_at: datetime
+    cost: CostAccumulator = field(
+        default_factory=lambda: CostAccumulator(
+            reservation_usd=Decimal("0"),
+        ),
+    )
     ended_at: datetime | None = None
     returncode: int | None = None
     _task: asyncio.Task | None = None
@@ -243,6 +250,7 @@ async def execute_run(
         status=RunStatus.RUNNING,
         transcript=transcript,
         started_at=datetime.now(tz=UTC),
+        cost=CostAccumulator(reservation_usd=plan.reservation_usd),
         _process=process,
     )
     run_registry.register(handle)
