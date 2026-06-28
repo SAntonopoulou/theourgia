@@ -2,12 +2,6 @@ export {
   AccountDeletionSurface,
   type AccountDeletionSurfaceProps,
 } from "./AccountDeletionSurface.js";
-export {
-  BUTTONS,
-  FACTS,
-  FIELD_LABELS,
-  HEADERS,
-  MEMORIAL_INTERACTION,
-  RETENTION_LINE,
-  scheduledForLine,
-} from "./copy.js";
+// Copy constants (BUTTONS, HEADERS, etc.) collide with sibling H10
+// surfaces in the shared barrel — consumers import them via the deep
+// path `@theourgia/shared/AccountDeletion/copy` when needed.
