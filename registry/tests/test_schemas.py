@@ -116,10 +116,34 @@ def test_submission_read_extra_forbidden() -> None:
         SubmissionRead(  # type: ignore[call-arg]
             id="x",
             plugin_id="y",
+            plugin_name="x-plugin",
             version="0.0.1",
             status="pending_review",
+            license_spdx="MIT",
+            submitted_at="2026-06-28T12:00:00Z",
             sneaky=True,
         )
+
+
+def test_submission_read_carries_lifecycle_metadata() -> None:
+    """A3 chip + A4 detail surfaces need license + submitted_at +
+    decided_at to render the right vocabulary."""
+    sub = SubmissionRead(
+        id="x", plugin_id="y", plugin_name="x-plugin",
+        version="0.0.1", status="pending_review", license_spdx="MIT",
+        submitted_at="2026-06-28T12:00:00Z",
+    )
+    assert sub.decided_at is None
+    assert sub.license_spdx == "MIT"
+
+
+def test_submission_list_response_round_trip() -> None:
+    from theourgia_registry.api.routers.author import (
+        SubmissionListResponse,
+    )
+
+    resp = SubmissionListResponse(submissions=[])
+    assert resp.submissions == []
 
 
 def test_public_plugin_card_extra_forbidden() -> None:

@@ -1,26 +1,38 @@
 """Author-side endpoints — submission lifecycle.
 
-The author signs a request with their vault DID's private key; the
-verifier here re-fetches the public key from the author's DID
-document (cached on the Author row). For v1 the implementation is
-schema-only — the auth dependency stubs out and returns 401 until
-the SSO bridge to the vault host is wired.
+The author signs requests with their vault DID's Ed25519 private key;
+the verifier here re-fetches the public key from the author's DID
+document (cached on the Author row). See `core.did_auth` for the
+signature scheme.
 
 Rule 41: authors can NEVER promote themselves. No self-promotion path.
-Rule 42: License SPDX-validated at submit.
+Rule 42: License SPDX-validated at submit (rule 44 blocks non-AGPL-
+compatible licenses outright).
+Rule 44: every submission carries a manifest + capability declaration;
+diff against previously accepted version is computed at review time.
 """
 
 from __future__ import annotations
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import desc, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia_registry.api.deps import CurrentAuthor
+from theourgia_registry.api.deps import CurrentAuthor, get_db_session
+from theourgia_registry.models.author import Author
+from theourgia_registry.models.plugin import (
+    Plugin,
+    PluginTier,
+    PluginVersion,
+    VersionStatus,
+)
 
 
-__all__ = ["router"]
+__all__ = ["router", "ACCEPTED_LICENSES"]
 
 
 router = APIRouter()
@@ -39,7 +51,7 @@ ACCEPTED_LICENSES: frozenset[str] = frozenset(
         "Apache-2.0",
         "CC-BY-SA-4.0",
         "Unlicense",
-    }
+    },
 )
 
 
@@ -63,8 +75,35 @@ class SubmissionRead(BaseModel):
 
     id: str
     plugin_id: str
+    plugin_name: str
     version: str
     status: str
+    license_spdx: str
+    submitted_at: str
+    decided_at: str | None = None
+
+
+class SubmissionListResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    submissions: list[SubmissionRead]
+
+
+def _serialise(plugin: Plugin, version: PluginVersion) -> SubmissionRead:
+    return SubmissionRead(
+        id=str(version.id),
+        plugin_id=str(plugin.id),
+        plugin_name=plugin.name,
+        version=version.version,
+        status=version.status.value,
+        license_spdx=version.license_spdx,
+        submitted_at=version.created_at.isoformat(),
+        decided_at=(
+            version.decided_at.isoformat()
+            if version.decided_at is not None
+            else None
+        ),
+    )
 
 
 @router.post(
@@ -74,13 +113,18 @@ class SubmissionRead(BaseModel):
 )
 async def submit(
     payload: SubmissionCreate,
-    author: CurrentAuthor,  # noqa: ARG001 — auth dependency placeholder
+    author: CurrentAuthor,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> SubmissionRead:
     """Submit a new version of a plugin.
 
     Rule 42 — license validated against ACCEPTED_LICENSES BEFORE any
     insert. Non-acceptable licenses surface a 400 with the accepted
     list in the detail.
+
+    If the plugin name is new for this author, create a Plugin row
+    (tier=UNVERIFIED). Otherwise, attach the version to the existing
+    Plugin row. Duplicate (plugin, version) → 409.
     """
     if payload.license_spdx not in ACCEPTED_LICENSES:
         raise HTTPException(
@@ -90,9 +134,108 @@ async def submit(
                 "accepted": sorted(ACCEPTED_LICENSES),
             },
         )
-    # The DB write lands in a follow-on commit alongside the
-    # SSO bridge; this endpoint is the schema lock.
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Submission persistence wires after SSO bridge.",
+
+    plugin = (
+        await db.execute(
+            select(Plugin).where(
+                Plugin.author_id == author.id, Plugin.name == payload.name,
+            ),
+        )
+    ).scalar_one_or_none()
+
+    if plugin is None:
+        plugin = Plugin(
+            author_id=author.id,
+            name=payload.name,
+            description=payload.description,
+            homepage=payload.homepage,
+            tier=PluginTier.UNVERIFIED,
+        )
+        db.add(plugin)
+        await db.flush()
+
+    existing_version = (
+        await db.execute(
+            select(PluginVersion).where(
+                PluginVersion.plugin_id == plugin.id,
+                PluginVersion.version == payload.version,
+            ),
+        )
+    ).scalar_one_or_none()
+    if existing_version is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="this version already submitted",
+        )
+
+    version = PluginVersion(
+        plugin_id=plugin.id,
+        version=payload.version,
+        license_spdx=payload.license_spdx,
+        source_url=payload.source_url,
+        signature_base64=payload.signature_base64,
+        manifest_json=payload.manifest,
+        capabilities=payload.capabilities,
+        status=VersionStatus.PENDING_REVIEW,
+        submitted_by_author_id=author.id,
     )
+    db.add(version)
+    await db.commit()
+    await db.refresh(version)
+    return _serialise(plugin, version)
+
+
+@router.get(
+    "/submissions",
+    response_model=SubmissionListResponse,
+)
+async def list_my_submissions(
+    author: CurrentAuthor,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> SubmissionListResponse:
+    """The author's own submissions, newest first — backs surface A3.
+
+    Other authors' submissions are not visible (rule 9 — no leaderboard,
+    no cross-author counts on this view either)."""
+    rows = (
+        await db.execute(
+            select(Plugin, PluginVersion)
+            .join(PluginVersion, PluginVersion.plugin_id == Plugin.id)
+            .where(Plugin.author_id == author.id)
+            .order_by(desc(PluginVersion.created_at)),
+        )
+    ).all()
+    return SubmissionListResponse(
+        submissions=[_serialise(plugin, version) for plugin, version in rows],
+    )
+
+
+@router.get(
+    "/submissions/{submission_id}",
+    response_model=SubmissionRead,
+)
+async def get_submission(
+    submission_id: UUID,
+    author: CurrentAuthor,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> SubmissionRead:
+    """One submission's detail — backs surface A4.
+
+    Only the submitting author can view their own submission (404
+    masquerades as 'not found' for other authors' submissions —
+    privacy-by-default; we don't differentiate 'forbidden' from
+    'absent' on read endpoints)."""
+    row = (
+        await db.execute(
+            select(Plugin, PluginVersion)
+            .join(PluginVersion, PluginVersion.plugin_id == Plugin.id)
+            .where(
+                PluginVersion.id == submission_id,
+                Plugin.author_id == author.id,
+            ),
+        )
+    ).one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail="submission not found")
+    plugin, version = row
+    return _serialise(plugin, version)
