@@ -97,6 +97,7 @@ import { AgentTranscriptViewerRoute } from "./routes/AgentTranscriptViewerRoute.
 import { AgentMarketplaceRoute } from "./routes/AgentMarketplaceRoute.js";
 import { RegistryPublicHomeRoute } from "./routes/RegistryPublicHomeRoute.js";
 import { AgentInstallRoute } from "./routes/AgentInstallRoute.js";
+import { AgentTrustReviewRoute } from "./routes/AgentTrustReviewRoute.js";
 import { BookPreview } from "./routes/BookPreview.js";
 import { BundleInstall } from "./routes/BundleInstall.js";
 import { Bundles } from "./routes/Bundles.js";
@@ -406,6 +407,7 @@ function ShellRoutes() {
         <Route path="/agents-marketplace" element={<AgentMarketplaceRoute />} />
         <Route path="/registry" element={<RegistryPublicHomeRoute />} />
         <Route path="/agents-marketplace/:agentSlug" element={<AgentInstallRoute />} />
+        <Route path="/agents/:installId/trust" element={<AgentTrustReviewRoute />} />
         <Route path="/bundles" element={<Bundles />} />
         <Route path="/bundles/install" element={<BundleInstall />} />
         <Route path="/editor" element={<Editor />} />
