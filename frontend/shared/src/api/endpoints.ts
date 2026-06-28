@@ -72,6 +72,8 @@ import type {
   AgentRunCostSnapshot,
   AgentRunSnapshot,
   StartAgentRunInput,
+  RegistryAuthorRead,
+  RegistryPluginListResponse,
 } from "./types.js";
 
 export class NotImplementedError extends Error {
@@ -913,6 +915,25 @@ export function api(client: ApiClient) {
       const query = search.toString();
       return client.request<AgentAuditQueryResponse>(
         `/api/v1/agents/audit${query ? `?${query}` : ""}`,
+      );
+    },
+
+    // ── Registry browse (H10 A1 + C2) ─────────────────────────────
+
+    listRegistryPlugins(params?: {
+      sort?: "alpha" | "recent_update" | "recently_added";
+    }): Promise<RegistryPluginListResponse> {
+      const search = new URLSearchParams();
+      if (params?.sort) search.set("sort", params.sort);
+      const query = search.toString();
+      return client.request<RegistryPluginListResponse>(
+        `/api/v1/registry/plugins${query ? `?${query}` : ""}`,
+      );
+    },
+
+    getRegistryAuthor(did: string): Promise<RegistryAuthorRead> {
+      return client.request<RegistryAuthorRead>(
+        `/api/v1/registry/authors/${encodeURIComponent(did)}`,
       );
     },
   };

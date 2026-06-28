@@ -974,3 +974,31 @@ export interface AgentAuditQueryResponse {
   offset: number;
   events: AgentAuditEvent[];
 }
+
+
+// ── Registry (H10 A-cluster · marketplace browse) ───────────────────────
+
+export type RegistryPluginTier = "official" | "community" | "unverified";
+
+export interface RegistryPluginCard {
+  id: string;
+  name: string;
+  author_did: string;
+  author_display_name: string;
+  description: string;
+  tier: RegistryPluginTier | string;
+  homepage: string | null;
+  updated_at: string;
+  tombstoned: boolean;
+}
+
+export interface RegistryPluginListResponse {
+  plugins: RegistryPluginCard[];
+}
+
+export interface RegistryAuthorRead {
+  did: string;
+  display_name: string;
+  homepage: string | null;
+  plugin_count: number;
+}

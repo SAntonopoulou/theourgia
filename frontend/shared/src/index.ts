@@ -149,7 +149,8 @@ export { VulnerabilityAdvisorySubmitSurface, type VulnerabilityAdvisorySubmitSur
 export * as AgentsHomeCopy from "./AgentsHome/index.js";
 export { AgentsHomeSurface, type AgentRow, type AgentsHomeSurfaceProps, type DisabledAgentRow } from "./AgentsHome/AgentsHomeSurface.js";
 export * as AgentMarketplaceCopy from "./AgentMarketplace/index.js";
-export { AgentMarketplaceSurface, type AgentMarketplaceSurfaceProps } from "./AgentMarketplace/AgentMarketplaceSurface.js";
+export { AgentMarketplaceSurface, type AgentMarketplaceSurfaceProps, type MarketAgentCard } from "./AgentMarketplace/AgentMarketplaceSurface.js";
+export type { AgentMarketKind, AgentTier, CapabilityFilter, SourceFilter, SortOption as MarketSortOption } from "./AgentMarketplace/copy.js";
 export * as AgentInstallCopy from "./AgentInstall/index.js";
 export { AgentInstallSurface, type AgentInstallSurfaceProps } from "./AgentInstall/AgentInstallSurface.js";
 export * as AgentCapabilityReviewCopy from "./AgentCapabilityReview/index.js";
