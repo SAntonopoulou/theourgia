@@ -7,7 +7,7 @@ all you need to clone it + read this file.
 
 ---
 
-## State of the world (commit `8dd624e`)
+## State of the world (commit `2994dea`)
 
 ### Production
 
@@ -46,11 +46,11 @@ all you need to clone it + read this file.
 | Task | Status | Notes |
 |---|---|---|
 | #192 Frontend H10 A-cluster (8 surfaces) | 1/8 done (A1 wired) | A2-A8 need DID + Ed25519 author signing UX through the bridge — substantial UX flow |
-| #193 Frontend H10 C-cluster (12 surfaces) | 11/12 done | Remaining: C9 AgentMemoryReader (needs daemon GET memory endpoint) |
+| #193 Frontend H10 C-cluster (12 surfaces) | **12/12 ✓** | Complete — all C-cluster surfaces live |
 
 ---
 
-## H10 surfaces wired so far (12 of 27)
+## H10 surfaces wired so far (13 of 27)
 
 | Surface | Route | Backing endpoint |
 |---|---|---|
@@ -65,6 +65,7 @@ all you need to clone it + read this file.
 | C8 AgentTranscriptViewer | `/app/agents/runs/:runId/transcript` | `GET /api/v1/agents/audit` |
 | C10 AgentCostDashboard | `/app/agents-cost` | `GET /api/v1/agents/audit` |
 | C11 AgentActivityLog | `/app/agents-activity` | `GET /api/v1/agents/audit` |
+| C9 AgentMemoryReader | `/app/agents/:installId/memory` | `GET/PUT /api/v1/agents/installs/:id/memory/*` |
 | C12 AgentTrustReview | `/app/agents/:installId/trust` | `GET /api/v1/agents/audit` + delete-install |
 
 ---
