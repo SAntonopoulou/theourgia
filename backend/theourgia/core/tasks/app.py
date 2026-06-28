@@ -104,6 +104,14 @@ def build_celery_app() -> Celery:
             "schedule": crontab(minute="*/15"),
             "options": {"queue": "default"},
         },
+        "theourgia.federation.drain_delivery": {
+            "task": "theourgia.core.tasks.federation_delivery.run_drain_federation_delivery",
+            # Every minute — outbound retry queue. The drain is a no-op
+            # when federation_transport_enabled is False, so this is
+            # safe on instances that haven't opted in.
+            "schedule": crontab(minute="*"),
+            "options": {"queue": "default"},
+        },
     }
 
     return app
