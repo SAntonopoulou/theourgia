@@ -239,6 +239,15 @@ class Settings(BaseSettings):
     author_private_key_path: Path | None = Field(
         default=None, alias="THEOURGIA_AUTHOR_PRIVATE_KEY_PATH",
     )
+    # Maintainer DID at the registry — used to sign A5/A6/A7 maintainer
+    # endpoints (review queue, decide, tier-promote). When unset, those
+    # routes return 503.
+    maintainer_did: str | None = Field(
+        default=None, alias="THEOURGIA_MAINTAINER_DID",
+    )
+    maintainer_private_key_path: Path | None = Field(
+        default=None, alias="THEOURGIA_MAINTAINER_PRIVATE_KEY_PATH",
+    )
 
     # ── Observability ─────────────────────────────────────────────────────
     sentry_dsn: SecretStr | None = Field(default=None, alias="THEOURGIA_SENTRY_DSN")
