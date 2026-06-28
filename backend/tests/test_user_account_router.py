@@ -9,7 +9,7 @@ Schema invariants:
 
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from pydantic import ValidationError
@@ -27,18 +27,27 @@ def test_grace_period_is_thirty_days() -> None:
     assert GRACE_PERIOD == timedelta(days=30)
 
 
+_FIXED_CREATED_AT = datetime(2026, 1, 1, tzinfo=UTC)
+
+
 def test_me_read_extra_forbidden() -> None:
     with pytest.raises(ValidationError):
         MeRead(  # type: ignore[call-arg]
             id="x",
             email="x@example.com",
             scheduled_for_deletion_at=None,
+            account_created_at=_FIXED_CREATED_AT,
             sneaky=True,
         )
 
 
 def test_me_read_scheduled_can_be_null() -> None:
-    MeRead(id="x", email="x@example.com", scheduled_for_deletion_at=None)
+    MeRead(
+        id="x",
+        email="x@example.com",
+        scheduled_for_deletion_at=None,
+        account_created_at=_FIXED_CREATED_AT,
+    )
 
 
 def test_deletion_scheduled_read_extra_forbidden() -> None:

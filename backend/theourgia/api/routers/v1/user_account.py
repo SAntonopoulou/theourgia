@@ -46,6 +46,7 @@ class MeRead(BaseModel):
     id: str
     email: str
     scheduled_for_deletion_at: datetime | None
+    account_created_at: datetime
 
 
 class DeletionScheduledRead(BaseModel):
@@ -66,6 +67,7 @@ async def get_me(user: CurrentUser) -> MeRead:
         id=str(user.id),
         email=user.email,
         scheduled_for_deletion_at=user.scheduled_for_deletion_at,
+        account_created_at=user.created_at,
     )
 
 
@@ -156,4 +158,5 @@ async def reactivate_account(
         id=str(user.id),
         email=user.email,
         scheduled_for_deletion_at=user.scheduled_for_deletion_at,
+        account_created_at=user.created_at,
     )

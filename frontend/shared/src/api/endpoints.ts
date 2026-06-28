@@ -88,6 +88,12 @@ import type {
   DecideSubmissionInput,
   MaintainerQueueResponse,
   PromotePluginInput,
+  MeRead,
+  DeletionScheduledRead,
+  DataExportResponse,
+  MyAuditListResponse,
+  MyAuditQueryInput,
+  MySessionsListResponse,
 } from "./types.js";
 
 export class NotImplementedError extends Error {
@@ -1077,6 +1083,75 @@ export function api(client: ApiClient) {
       return client.request<Record<string, unknown>>(
         `/api/v1/registry/maintainer/plugins/${encodeURIComponent(pluginId)}/promote`,
         { method: "POST", json: input },
+      );
+    },
+
+    // ── B-cluster (H10 Hardening) — account / privacy / sessions ──
+
+    getMe(opts?: { signal?: AbortSignal }): Promise<MeRead> {
+      return client.request<MeRead>("/api/v1/me", { signal: opts?.signal });
+    },
+
+    requestDataExport(): Promise<DataExportResponse> {
+      return client.request<DataExportResponse>("/api/v1/me/data-export", {
+        method: "POST",
+      });
+    },
+
+    scheduleAccountDeletion(): Promise<DeletionScheduledRead> {
+      return client.request<DeletionScheduledRead>(
+        "/api/v1/me/account/delete",
+        { method: "POST" },
+      );
+    },
+
+    reactivateAccount(): Promise<MeRead> {
+      return client.request<MeRead>("/api/v1/me/account/reactivate", {
+        method: "POST",
+      });
+    },
+
+    listMyAudit(input: MyAuditQueryInput = {}): Promise<MyAuditListResponse> {
+      const params = new URLSearchParams();
+      if (input.kind && input.kind !== "all") params.set("kind", input.kind);
+      if (input.action && input.action !== "all")
+        params.set("action", input.action);
+      if (input.time_range) params.set("time_range", input.time_range);
+      if (typeof input.limit === "number")
+        params.set("limit", String(input.limit));
+      if (typeof input.offset === "number")
+        params.set("offset", String(input.offset));
+      const qs = params.toString();
+      return client.request<MyAuditListResponse>(
+        `/api/v1/me/audit${qs ? `?${qs}` : ""}`,
+      );
+    },
+
+    myAuditCsvUrl(input: MyAuditQueryInput = {}): string {
+      const params = new URLSearchParams();
+      if (input.kind && input.kind !== "all") params.set("kind", input.kind);
+      if (input.action && input.action !== "all")
+        params.set("action", input.action);
+      if (input.time_range) params.set("time_range", input.time_range);
+      const qs = params.toString();
+      return `/api/v1/me/audit.csv${qs ? `?${qs}` : ""}`;
+    },
+
+    listMySessions(): Promise<MySessionsListResponse> {
+      return client.request<MySessionsListResponse>("/api/v1/me/sessions");
+    },
+
+    revokeMySession(sessionId: string): Promise<void> {
+      return client.request<void>(
+        `/api/v1/me/sessions/${encodeURIComponent(sessionId)}`,
+        { method: "DELETE" },
+      );
+    },
+
+    revokeOtherSessions(): Promise<MySessionsListResponse> {
+      return client.request<MySessionsListResponse>(
+        "/api/v1/me/sessions/revoke-others",
+        { method: "POST" },
       );
     },
   };

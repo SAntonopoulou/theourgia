@@ -1138,3 +1138,65 @@ export interface PromotePluginInput {
   to_tier: "official" | "community" | "unverified";
   justification: string;
 }
+
+// ─── B-cluster — H10 Hardening surfaces (per-user settings) ──────────
+
+export interface MeRead {
+  id: string;
+  email: string;
+  scheduled_for_deletion_at: string | null;
+  account_created_at: string;
+}
+
+export interface DeletionScheduledRead {
+  scheduled_for_deletion_at: string;
+}
+
+export interface DataExportResponse {
+  archive: Record<string, unknown>;
+}
+
+export type MyAuditTimeRange =
+  | "last_7_days"
+  | "last_30_days"
+  | "last_90_days"
+  | "all_time";
+
+export interface MyAuditEvent {
+  id: string;
+  kind: string;
+  action: string;
+  actor_id: string | null;
+  hub_id: string | null;
+  vault_id: string | null;
+  outcome: string;
+  detail: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface MyAuditListResponse {
+  events: MyAuditEvent[];
+  total: number;
+}
+
+export interface MyAuditQueryInput {
+  kind?: string;
+  action?: string;
+  time_range?: MyAuditTimeRange;
+  limit?: number;
+  offset?: number;
+}
+
+export interface MySessionRead {
+  id: string;
+  device_label: string;
+  ip_address: string | null;
+  created_at: string;
+  last_used_at: string;
+  expires_at: string;
+  is_current: boolean;
+}
+
+export interface MySessionsListResponse {
+  sessions: MySessionRead[];
+}

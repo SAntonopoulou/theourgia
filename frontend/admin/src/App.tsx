@@ -151,6 +151,12 @@ import { PracticeLogsRoute } from "./routes/PracticeLogsRoute.js";
 import { SigilGeneratorRoute } from "./routes/SigilGeneratorRoute.js";
 import { RitualFeed } from "./routes/RitualFeed.js";
 import { Settings } from "./routes/Settings.js";
+import { AccountSettingsRoute } from "./routes/AccountSettingsRoute.js";
+import { DataExportRequestRoute } from "./routes/DataExportRequestRoute.js";
+import { AccountDeletionRoute } from "./routes/AccountDeletionRoute.js";
+import { PerUserAuditLogRoute } from "./routes/PerUserAuditLogRoute.js";
+import { SessionsAndDevicesRoute } from "./routes/SessionsAndDevicesRoute.js";
+import { AccessibilityAndMotionRoute } from "./routes/AccessibilityAndMotionRoute.js";
 import { SigilStudio } from "./routes/SigilStudio.js";
 import { Talismans } from "./routes/Talismans.js";
 import { Synchronicities } from "./routes/Synchronicities.js";
@@ -443,7 +449,33 @@ function ShellRoutes() {
         <Route path="/oracle" element={<Oracle />} />
         <Route path="/transliterate" element={<Transliterate />} />
         <Route path="/transliterations" element={<TransliterationUtilityRoute />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/settings" element={<AccountSettingsRoute />} />
+        <Route path="/settings/data-export" element={<DataExportRequestRoute />} />
+        <Route path="/settings/delete-account" element={<AccountDeletionRoute />} />
+        <Route path="/settings/audit" element={<PerUserAuditLogRoute />} />
+        <Route path="/settings/sessions" element={<SessionsAndDevicesRoute />} />
+        <Route path="/settings/accessibility" element={<AccessibilityAndMotionRoute />} />
+        <Route path="/settings/preferences" element={<Settings />} />
+        <Route
+          path="/settings/keys"
+          element={
+            <Placeholder
+              glyph="key"
+              title="Key rotation"
+              body="WebAuthn enrolment and signing-key rotation arrive with Phase 15's authn wave. Your account is currently authenticated via session cookies."
+            />
+          }
+        />
+        <Route
+          path="/settings/webauthn"
+          element={
+            <Placeholder
+              glyph="key"
+              title="WebAuthn enrolment"
+              body="Hardware-backed sign-in lands when Phase 15's authn wave wires the ceremony."
+            />
+          }
+        />
         <Route path="/foundations" element={<Foundations />} />
         <Route
           path="*"
