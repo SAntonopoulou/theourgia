@@ -29,6 +29,7 @@ from theourgia_agent.mcp.capabilities import AgentCapability
 from theourgia_agent.mcp.dispatch import DispatchContext
 from theourgia_agent.mcp.sessions import MCPSession, MCPSessionRegistry
 from theourgia_agent.mcp.vault_client import VaultClient
+from theourgia_agent.mcp.capabilities import AgentCapability as _Cap  # noqa: F401
 from theourgia_agent.models.audit import AuditEventType
 from theourgia_agent.runs.audit import (
     AuditRecord,
@@ -36,6 +37,7 @@ from theourgia_agent.runs.audit import (
     NullAuditSink,
     now as audit_now,
 )
+from theourgia_agent.runs.sandbox import wrap_command_with_sandbox
 
 
 __all__ = [
@@ -192,12 +194,23 @@ async def plan_launch(
     if request.api_key_plaintext is not None:
         env[request.api_key_env] = request.api_key_plaintext
 
-    command = [
+    base_command = [
         request.claude_binary,
         "--print",
         "--input-format", "text",
         request.task_text,
     ]
+
+    # Rule 59: when filesystem capability is granted, the subprocess
+    # must be confined to its memory dir. wrap_command_with_sandbox()
+    # is a no-op when bwrap isn't installed (dev fallback); production
+    # daemon Docker image installs bwrap.
+    has_filesystem = AgentCapability.FILESYSTEM in request.granted_caps
+    command = (
+        wrap_command_with_sandbox(command=base_command, memory_dir=cwd)
+        if has_filesystem
+        else base_command
+    )
 
     return LaunchPlan(
         session=session,
