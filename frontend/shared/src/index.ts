@@ -166,9 +166,11 @@ export { AgentTranscriptViewerSurface, type AgentTranscriptViewerSurfaceProps } 
 export * as AgentMemoryReaderCopy from "./AgentMemoryReader/index.js";
 export { AgentMemoryReaderSurface, type AgentMemoryReaderSurfaceProps } from "./AgentMemoryReader/AgentMemoryReaderSurface.js";
 export * as AgentCostDashboardCopy from "./AgentCostDashboard/index.js";
-export { AgentCostDashboardSurface, type AgentCostDashboardSurfaceProps } from "./AgentCostDashboard/AgentCostDashboardSurface.js";
+export { AgentCostDashboardSurface, type AgentCostDashboardSurfaceProps, type PerAgentRow } from "./AgentCostDashboard/AgentCostDashboardSurface.js";
+export type { TokenBreakdown, AgentRowKind } from "./AgentCostDashboard/copy.js";
 export * as AgentActivityLogCopy from "./AgentActivityLog/index.js";
-export { AgentActivityLogSurface, type AgentActivityLogSurfaceProps } from "./AgentActivityLog/AgentActivityLogSurface.js";
+export { AgentActivityLogSurface, type AgentActivityLogSurfaceProps, type ActivityRunRow } from "./AgentActivityLog/AgentActivityLogSurface.js";
+export type { ActivityTimeRange, OutcomeFilter, RunOutcome as ActivityRunOutcome } from "./AgentActivityLog/copy.js";
 export * as AgentTrustReviewCopy from "./AgentTrustReview/index.js";
 export { AgentTrustReviewSurface, type AgentTrustReviewSurfaceProps } from "./AgentTrustReview/AgentTrustReviewSurface.js";
 export * from "./RegistryBrowser/index.js";
