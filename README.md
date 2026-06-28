@@ -24,14 +24,15 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `92c56c1` |
+| **Latest commit** | `b654315` |
 | **vitest** | 2923+ passing · admin tsc clean |
-| **backend** | 2490 passing · alembic head **0063** · registry alembic head **0001** · agent-daemon alembic head **0001** |
+| **backend** | 2490 passing · alembic head **0063** · agent-daemon alembic head **0001** |
 | **agent-daemon** | **124 passing** — MCP client + dispatch + JSON-RPC + SSE + launcher + subprocess runner + per-run cost-cap hard halt |
+| **registry** | **34 passing** — DID + Ed25519 auth · A2 submit · A3 list · A4 detail · A5 queue · A6 decide · A7 tier promote · A8 advisory · alembic head **0001** |
 | **a11y** | 543 / 557 (97.5%); remaining 14 are intentional design tradeoffs |
 | **Sprints shipped** | H01-H03 · H04 · H05 · H06 · H07 · H08 (21/21) · H09 (17/17) · **H10 (27/27) ✓** |
 | **Design queue** | **(empty — H10 was the last design package before v1.0)** |
-| **Next build** | Phase 16: audit log + filesystem sandbox + DB persistence + main-backend wiring · registry routes (H10 A1-A8 backing) · Phase 12.5 inbox + delivery worker. |
+| **Next build** | Postgres integration tests for registry · daemon audit log + filesystem sandbox + DB persistence · main-backend → daemon wiring · Phase 12.5 inbox + delivery worker. |
 
 The full per-batch history lives in **[CHANGELOG.md](CHANGELOG.md)**. For the canonical feature catalog and per-phase status snapshot, see **[FEATURES.md](FEATURES.md)**. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
