@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from theourgia_agent.__about__ import __instance_name__, __version__
 from theourgia_agent.api.routers.mcp import create_mcp_router
+from theourgia_agent.api.routers.runs import create_runs_router
 
 
 __all__ = ["create_app", "app"]
@@ -30,6 +31,7 @@ def create_app() -> FastAPI:
         }
 
     app.include_router(create_mcp_router())
+    app.include_router(create_runs_router())
     return app
 
 
