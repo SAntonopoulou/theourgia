@@ -24,16 +24,19 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `e6e135e` |
-| **vitest** | 2923+ passing · admin tsc clean |
-| **backend** | 2508 passing · alembic head **0063** — `/api/v1/agents/*` daemon bridge live · daemon_client + Ed25519 + httpx MockTransport tests |
-| **agent-daemon** | **177 passing** · alembic head **0002** — MCP + JSON-RPC + SSE + launcher + subprocess runner + cost-cap hard halt + audit emission · DbAuditSink + DbInstallRepo + DbRunRepo (Postgres-backed) · bwrap filesystem sandbox (rule 59 enforced) |
-| **registry** | **34 passing** · alembic head **0001** — DID + Ed25519 auth · A2-A4 author submission lifecycle · A5-A7 maintainer queue/decide/promote · A8 advisory filing |
-| **Deploy artefacts** | docker-compose.prod (3 services + 3 DBs + Caddy) · scripts/deploy-prod.sh · scripts/first-run.sh · `docs/ops/DEPLOYMENT_RUNBOOK.md` (9-section walkthrough) · R2 buckets provisioned (theourgia-media · theourgia-backups · theourgia-plugins, WEUR) |
+| **Latest commit** | `3af899a` |
+| **Production** | **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; 8 prod containers, isolated compose project) |
+| **vitest** | 2923 passing · admin tsc clean |
+| **backend** | **2547 passing** · alembic head **0065** — `/api/v1/agents/*` daemon bridge + `/api/v1/federation/inbox` + `/users/{handle}` AP actor + outbox + collections |
+| **agent-daemon** | 177 passing · alembic head **0002** — MCP + JSON-RPC + SSE + launcher + subprocess runner + cost-cap hard halt + audit emission · DB-backed (sinks + repos) · bwrap filesystem sandbox (rule 59 enforced) |
+| **registry** | 34 passing · alembic head **0001** — DID + Ed25519 auth · author submission lifecycle · maintainer queue/decide/promote · advisory filing |
+| **Phase 12.5** | federation inbox + delivery worker (retry queue with 60s→24h backoff · DEAD after 6 attempts · Celery beat every minute) |
+| **Phase 13** | ActivityPub bridge — actor JSON-LD · per-actor inbox + outbox · followers (count-private) · following (always-empty by design) · privacy-gated 404 when transport disabled |
+| **Deploy artefacts** | docker-compose.{yml,prod,agent-house} · scripts/deploy-prod.sh + first-run.sh · DEPLOYMENT_RUNBOOK.md · R2 buckets provisioned · agent-house Caddy snippet wired |
 | **a11y** | 543 / 557 (97.5%); remaining 14 are intentional design tradeoffs |
 | **Sprints shipped** | H01-H03 · H04 · H05 · H06 · H07 · H08 (21/21) · H09 (17/17) · **H10 (27/27) ✓** |
 | **Design queue** | **(empty — H10 was the last design package before v1.0)** |
-| **Next build** | Frontend H10 A+C swap to live data · Phase 12.5 federation inbox + delivery worker · Phase 13 ActivityPub bridge · production deploy via `scripts/deploy-prod.sh` (operator-driven first run). |
+| **Next build** | Mount remaining 11 H10 C-cluster + 8 H10 A-cluster surfaces as admin routes (one worked example shipped at /agents-home; same pattern). |
 
 The full per-batch history lives in **[CHANGELOG.md](CHANGELOG.md)**. For the canonical feature catalog and per-phase status snapshot, see **[FEATURES.md](FEATURES.md)**. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
