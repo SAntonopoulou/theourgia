@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import FastAPI
 
 from theourgia_agent.__about__ import __instance_name__, __version__
+from theourgia_agent.api.routers.mcp import create_mcp_router
 
 
 __all__ = ["create_app", "app"]
@@ -28,7 +29,7 @@ def create_app() -> FastAPI:
             "version": __version__,
         }
 
-    # Control + SSE MCP routes land in follow-on commits.
+    app.include_router(create_mcp_router())
     return app
 
 
