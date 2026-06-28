@@ -144,6 +144,33 @@ class DaemonClient:
             "POST", f"/runs/{run_id}/cost", json_body=sample,
         )
 
+    # ── installs lifecycle ─────────────────────────────────────────────
+
+    async def create_install(
+        self, body: dict[str, Any],
+    ) -> dict[str, Any]:
+        return await self._request("POST", "/installs", json_body=body)
+
+    async def list_installs(self, vault_id: str) -> dict[str, Any]:
+        return await self._request(
+            "GET", f"/installs?vault_id={vault_id}",
+        )
+
+    async def get_install(self, install_id: str) -> dict[str, Any]:
+        return await self._request("GET", f"/installs/{install_id}")
+
+    async def update_install_state(
+        self, install_id: str, state: str,
+    ) -> dict[str, Any]:
+        return await self._request(
+            "PATCH",
+            f"/installs/{install_id}/state",
+            json_body={"state": state},
+        )
+
+    async def delete_install(self, install_id: str) -> dict[str, Any]:
+        return await self._request("DELETE", f"/installs/{install_id}")
+
     async def query_audit(
         self,
         *,

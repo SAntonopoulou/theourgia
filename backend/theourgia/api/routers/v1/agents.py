@@ -119,6 +119,21 @@ class CostSampleBody(BaseModel):
     cost_usd: str
 
 
+class InstallCreateBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    agent_id: str = Field(min_length=1, max_length=64)
+    display_name: str = Field(min_length=1, max_length=255)
+    kind: str = Field(min_length=1, max_length=64)
+    monthly_cost_cap_usd: str
+
+
+class InstallStateBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    state: str = Field(pattern=r"^(inactive|active|paused|cost_capped)$")
+
+
 # ── routes ───────────────────────────────────────────────────────────
 
 
@@ -218,6 +233,90 @@ async def stream_run(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+# ── installs lifecycle ────────────────────────────────────────────────
+
+
+def _vault_id_for_user(user: User) -> str:
+    """Derive the daemon-side vault id for the calling user.
+
+    The daemon's `vault_id` is a stable string per magician; we use
+    the user's UUID stringified for v1 single-tenant. Multi-tenant
+    deployments would map this to the magician's vault row id."""
+    return str(user.id)
+
+
+@router.post("/installs")
+async def create_install(
+    body: InstallCreateBody,
+    user: CurrentUser,
+    daemon: Annotated[DaemonClient, Depends(get_daemon_client)],
+) -> JSONResponse:
+    daemon_body = {
+        "vault_id": _vault_id_for_user(user),
+        "agent_id": body.agent_id,
+        "display_name": body.display_name,
+        "kind": body.kind,
+        "monthly_cost_cap_usd": body.monthly_cost_cap_usd,
+    }
+    try:
+        result = await daemon.create_install(daemon_body)
+    except DaemonError as exc:
+        raise _handle_daemon_error(exc) from exc
+    return JSONResponse(status_code=201, content=result)
+
+
+@router.get("/installs")
+async def list_installs(
+    user: CurrentUser,
+    daemon: Annotated[DaemonClient, Depends(get_daemon_client)],
+) -> JSONResponse:
+    try:
+        result = await daemon.list_installs(_vault_id_for_user(user))
+    except DaemonError as exc:
+        raise _handle_daemon_error(exc) from exc
+    return JSONResponse(content=result)
+
+
+@router.get("/installs/{install_id}")
+async def get_install(
+    install_id: str,
+    user: CurrentUser,  # noqa: ARG001
+    daemon: Annotated[DaemonClient, Depends(get_daemon_client)],
+) -> JSONResponse:
+    try:
+        result = await daemon.get_install(install_id)
+    except DaemonError as exc:
+        raise _handle_daemon_error(exc) from exc
+    return JSONResponse(content=result)
+
+
+@router.patch("/installs/{install_id}/state")
+async def update_install_state(
+    install_id: str,
+    body: InstallStateBody,
+    user: CurrentUser,  # noqa: ARG001
+    daemon: Annotated[DaemonClient, Depends(get_daemon_client)],
+) -> JSONResponse:
+    try:
+        result = await daemon.update_install_state(install_id, body.state)
+    except DaemonError as exc:
+        raise _handle_daemon_error(exc) from exc
+    return JSONResponse(content=result)
+
+
+@router.delete("/installs/{install_id}")
+async def delete_install(
+    install_id: str,
+    user: CurrentUser,  # noqa: ARG001
+    daemon: Annotated[DaemonClient, Depends(get_daemon_client)],
+) -> JSONResponse:
+    try:
+        result = await daemon.delete_install(install_id)
+    except DaemonError as exc:
+        raise _handle_daemon_error(exc) from exc
+    return JSONResponse(content=result)
 
 
 @router.get("/audit")
