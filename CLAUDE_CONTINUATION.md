@@ -7,7 +7,7 @@ all you need to clone it + read this file.
 
 ---
 
-## State of the world (commit `3da625b`)
+## State of the world (commit `8dd624e`)
 
 ### Production
 
@@ -46,11 +46,11 @@ all you need to clone it + read this file.
 | Task | Status | Notes |
 |---|---|---|
 | #192 Frontend H10 A-cluster (8 surfaces) | 1/8 done (A1 wired) | A2-A8 need DID + Ed25519 author signing UX through the bridge — substantial UX flow |
-| #193 Frontend H10 C-cluster (12 surfaces) | 9/12 done | Remaining: C4 CapabilityReview · C5 BYO Key Settings · C9 Memory Reader · C12 Trust Review |
+| #193 Frontend H10 C-cluster (12 surfaces) | 11/12 done | Remaining: C9 AgentMemoryReader (needs daemon GET memory endpoint) |
 
 ---
 
-## H10 surfaces wired so far (9 of 27)
+## H10 surfaces wired so far (12 of 27)
 
 | Surface | Route | Backing endpoint |
 |---|---|---|
@@ -58,11 +58,14 @@ all you need to clone it + read this file.
 | C1 AgentsHome | `/app/agents-home` | `GET /api/v1/agents/installs` + `/audit` |
 | C2 AgentMarketplace | `/app/agents-marketplace` | `GET /api/v1/registry/plugins` |
 | C3 AgentInstall | `/app/agents-marketplace/:slug` | `POST /api/v1/agents/installs` |
+| C4 AgentCapabilityReview | `/app/agents/:installId/capabilities` | `GET /api/v1/agents/installs/:id` + audit |
+| C5 AgentByoKeySettings | `/app/agents-keys` | `GET /api/v1/agents/installs` |
 | C6 AgentTaskComposer | `/app/agents/:installId/compose` | `POST /api/v1/agents/runs` |
 | C7 AgentRunMonitor | `/app/agents/runs/:runId` | `GET /api/v1/agents/runs/:runId` + audit |
 | C8 AgentTranscriptViewer | `/app/agents/runs/:runId/transcript` | `GET /api/v1/agents/audit` |
 | C10 AgentCostDashboard | `/app/agents-cost` | `GET /api/v1/agents/audit` |
 | C11 AgentActivityLog | `/app/agents-activity` | `GET /api/v1/agents/audit` |
+| C12 AgentTrustReview | `/app/agents/:installId/trust` | `GET /api/v1/agents/audit` + delete-install |
 
 ---
 
