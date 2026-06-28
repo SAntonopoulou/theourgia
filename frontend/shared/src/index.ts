@@ -160,6 +160,7 @@ export * as AgentTaskComposerCopy from "./AgentTaskComposer/index.js";
 export { AgentTaskComposerSurface, type AgentTaskComposerSurfaceProps } from "./AgentTaskComposer/AgentTaskComposerSurface.js";
 export * as AgentRunMonitorCopy from "./AgentRunMonitor/index.js";
 export { AgentRunMonitorSurface, type AgentRunMonitorSurfaceProps } from "./AgentRunMonitor/AgentRunMonitorSurface.js";
+export type { ActivityRowTone, HumanActivityRow } from "./AgentRunMonitor/copy.js";
 export * as AgentTranscriptViewerCopy from "./AgentTranscriptViewer/index.js";
 export { AgentTranscriptViewerSurface, type AgentTranscriptViewerSurfaceProps } from "./AgentTranscriptViewer/AgentTranscriptViewerSurface.js";
 export * as AgentMemoryReaderCopy from "./AgentMemoryReader/index.js";
