@@ -97,6 +97,7 @@ from theourgia.api.routers.v1 import agents as v1_agents
 from theourgia.api.routers.v1 import federation_inbox as v1_federation_inbox
 from theourgia.api.routers.v1 import activitypub_actor as ap_actor
 from theourgia.api.routers.v1 import registry_bridge as v1_registry_bridge
+from theourgia.api.routers.v1 import registry_author as v1_registry_author
 from theourgia.api.routers import feeds as app_feeds
 
 __all__ = ["register_routers"]
@@ -213,6 +214,7 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_agents.router, tags=["agents"])
     v1.include_router(v1_federation_inbox.router, tags=["federation"])
     v1.include_router(v1_registry_bridge.router, tags=["registry"])
+    v1.include_router(v1_registry_author.router, tags=["registry"])
     # Unversioned iCal feed delivery — calendar clients subscribe to a
     # stable URL (RFC 5545). Lives at app level, not /api/v1.
     app.include_router(v1_ical_feed.feed_router, tags=["ical"])

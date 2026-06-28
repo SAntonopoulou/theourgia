@@ -140,3 +140,20 @@ class RegistryClient:
         return await self._request(
             "GET", f"/api/v1/authors/{did}",
         )
+
+    # ── author-signed endpoints ───────────────────────────────────
+
+    async def author_request(
+        self,
+        method: str,
+        path: str,
+        *,
+        body: dict[str, Any] | None,
+        signing_headers: dict[str, str],
+    ) -> dict[str, Any]:
+        """Run an author-protected call with the operator's signing
+        headers. The body MUST be the exact JSON the signer hashed —
+        the headers contain the SHA-256 of those bytes."""
+        return await self._request(
+            method, path, json_body=body, headers=signing_headers,
+        )

@@ -227,6 +227,18 @@ class Settings(BaseSettings):
     registry_url: str | None = Field(
         default=None, alias="THEOURGIA_REGISTRY_URL",
     )
+    # Operator's author DID at the registry — used to sign A-cluster
+    # author-protected calls (submit / list-submissions / advisory).
+    # When unset, A2-A4 + A8 routes return 503.
+    author_did: str | None = Field(
+        default=None, alias="THEOURGIA_AUTHOR_DID",
+    )
+    # Path to the Ed25519 private key (PEM) used to sign registry
+    # requests. The matching public key must be registered at the
+    # registry as the author's public_key.
+    author_private_key_path: Path | None = Field(
+        default=None, alias="THEOURGIA_AUTHOR_PRIVATE_KEY_PATH",
+    )
 
     # ── Observability ─────────────────────────────────────────────────────
     sentry_dsn: SecretStr | None = Field(default=None, alias="THEOURGIA_SENTRY_DSN")
