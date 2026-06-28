@@ -7,7 +7,7 @@ all you need to clone it + read this file.
 
 ---
 
-## State of the world (commit `aa3776e`)
+## State of the world (commit `e4671e1`)
 
 ### Production
 
@@ -22,8 +22,8 @@ all you need to clone it + read this file.
 
 | Service | Passing | Notes |
 |---|---|---|
-| backend | 2566 | 1 pre-existing CORS test failure unrelated |
-| agent-daemon | 188 | alembic head 0002 |
+| backend | 2576+ | includes 18 B-cluster hardening tests (b108-2cl) |
+| agent-daemon | 198 | alembic head 0002 |
 | registry | 34 | alembic head 0001 |
 | vitest (shared) | 2923 | admin tsc clean |
 
@@ -40,6 +40,7 @@ all you need to clone it + read this file.
 | #197 Deploy artefacts (compose + Caddy + scripts) | ✅ |
 | #198 R2 buckets provisioned (3 buckets via MCP) | ✅ |
 | #199 Production deployment runbook | ✅ |
+| #200 H10 Cluster B (B1-B4 + B6-B7) wired live | ✅ b108-2cl |
 
 ### What's still open
 
@@ -47,10 +48,11 @@ all you need to clone it + read this file.
 |---|---|---|
 | #192 Frontend H10 A-cluster (8 surfaces) | **8/8 ✓** | Complete — A1-A4 author-signed · A5-A7 maintainer-signed · A8 author-signed |
 | #193 Frontend H10 C-cluster (12 surfaces) | **12/12 ✓** | Complete — all C-cluster surfaces live |
+| #200 Frontend H10 B-cluster (7 surfaces) | **6/7 ✓** | B5 KeyRotation blocked on WebAuthn (needs a user-facing keypair fingerprint to render) |
 
 ---
 
-## H10 surfaces wired so far (20 of 27)
+## H10 surfaces wired so far (26 of 27)
 
 | Surface | Route | Backing endpoint |
 |---|---|---|
@@ -74,6 +76,13 @@ all you need to clone it + read this file.
 | C11 AgentActivityLog | `/app/agents-activity` | `GET /api/v1/agents/audit` |
 | C9 AgentMemoryReader | `/app/agents/:installId/memory` | `GET/PUT /api/v1/agents/installs/:id/memory/*` |
 | C12 AgentTrustReview | `/app/agents/:installId/trust` | `GET /api/v1/agents/audit` + delete-install |
+| B1 AccountSettings | `/app/settings` | client-side hub (localStorage for inheritance toggle) |
+| B2 DataExportRequest | `/app/settings/data-export` | `POST /api/v1/me/data-export` (archive returned inline as download blob) |
+| B3 AccountDeletion | `/app/settings/delete-account` | `POST /api/v1/me/account/delete` + `…/reactivate` (30-day grace) |
+| B4 PerUserAuditLog | `/app/settings/audit` | `GET /api/v1/me/audit` + CSV via `myAuditCsvUrl` |
+| B5 KeyRotation | `/app/settings/keys` | **Placeholder** — needs WebAuthn |
+| B6 SessionsAndDevices | `/app/settings/sessions` | `GET /api/v1/me/sessions` + revoke + revoke-others |
+| B7 AccessibilityAndMotion | `/app/settings/accessibility` | localStorage prefs (no backend for v1) |
 
 ---
 
@@ -130,30 +139,17 @@ The wiring pattern is now well-established. Per surface:
 
 ## Remaining surfaces — what each needs
 
-### Cluster A (registry-side)
+### Cluster B (1 of 7 still open)
 
 | Surface | What's missing |
 |---|---|
-| A2 PluginSubmissionForm | DID + Ed25519 author signing flow in admin SPA. The registry endpoint is ready (POST `/api/v1/submissions` requires the X-Author-{DID,Timestamp,Signature} headers). Frontend needs a "create / import author keypair" UX. |
-| A3 PluginSubmissionList | Author-signed `GET /api/v1/submissions`. Pattern: once A2 lands, A3 follows. |
-| A4 PluginSubmissionDetail | Same — author-signed read on `/submissions/{id}`. |
-| A5 RegistryReviewQueue | Maintainer DID auth — a separate signed-request flow. Endpoint `GET /api/v1/maintainer/queue` exists. |
-| A6 RegistryReviewDetail | `POST /api/v1/maintainer/submissions/{id}/take` + `decide`. |
-| A7 TierPromotion | `POST /api/v1/maintainer/plugins/{id}/promote`. |
-| A8 VulnerabilityAdvisorySubmit | Author-signed POST `/advisories`. |
+| B5 KeyRotation | Blocked on WebAuthn. The surface needs `current: { fingerprint, createdOn, lastUsed }` — there are no user-facing signing keys until WebAuthn enrolment ships. Implement that first (it also retires demo signin). |
 
-The blocker is the signing-key UX — the admin SPA doesn't yet have a
-"manage your DID keypair" surface. That's the keystone for the
-A-cluster; once it lands, A2-A8 are mechanical.
+### Cluster A + Cluster C
 
-### Cluster C (agents)
-
-| Surface | What's missing |
-|---|---|
-| C4 AgentCapabilityReview | A modal pattern, usually shown inside C3. Needs: render the capability list + diff between existing grants + new grants. Can be local-state-only since grant flips through C5 + reinstall through C3. |
-| C5 AgentByoKeySettings | Mode B passphrase ceremony. Daemon's `core/crypto.py` has the primitives; needs: a per-install endpoint that accepts plaintext key + passphrase + encrypts via Argon2id + AES-GCM + stores blob columns on `agent_install`. |
-| C9 AgentMemoryReader | Daemon endpoint that lists + reads files under `/srv/theourgia/agents/<vault>/<install>/`. Filesystem sandbox already enforces the boundary; this is just read-side exposure. |
-| C12 AgentTrustReview | Trust state = (granted_caps, install date, last-used timestamp, recent audit summary). Mostly derivable from existing endpoints + new aggregation on the install row. |
+All shipped. See the routes table above for the live mappings; each
+of the 8 A-cluster + 12 C-cluster routes is wired against a real
+backend endpoint.
 
 ---
 
@@ -228,9 +224,14 @@ All WEUR. **Generate API tokens via Cloudflare dashboard** — see
    subprocess path doesn't inject an API key when none is provided,
    so the claude CLI uses Max subscription auth. Verify on first run
    by logging into claude CLI on the host as the daemon's user.
-4. **`THEOURGIA_REGISTRY_BOOTSTRAP_MAINTAINER_DID`** is unset in prod
-   `.env` — the registry won't have a first LEAD maintainer until this
-   is set + the first authenticated request comes from that DID.
+4. **Registry LEAD maintainer is provisioned.** `did:vault:theourgia.com/soror-eu-a`
+   was inserted directly into the registry DB during b108-2cj; the
+   server-side Ed25519 signer reads its key from
+   `/run/secrets/theourgia-author-soror-eu-a.pem` (bind-mounted from
+   `/home/theourgia/secrets/` with POSIX ACL for container UID 1000).
+   `THEOURGIA_AUTHOR_DID` / `THEOURGIA_MAINTAINER_DID` are set in
+   prod `.env`. A2-A8 routes verified end-to-end with empty arrays
+   (no submissions yet).
 
 ---
 
