@@ -1032,3 +1032,20 @@ export interface CreateAgentInstallInput {
   kind: string;
   monthly_cost_cap_usd: string;
 }
+
+
+export interface MemoryFile {
+  name: string;
+  size_bytes: number;
+  modified_at: number;
+}
+
+export interface MemoryListResponse {
+  files: MemoryFile[];
+}
+
+export interface MemoryFileContent {
+  name: string;
+  body: string;
+  size_bytes: number;
+}

@@ -319,6 +319,59 @@ async def delete_install(
     return JSONResponse(content=result)
 
 
+# ── memory directory ──────────────────────────────────────────────────
+
+
+class MemoryWriteBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    body: str = Field(max_length=256 * 1024)
+
+
+@router.get("/installs/{install_id}/memory")
+async def list_install_memory(
+    install_id: str,
+    user: CurrentUser,  # noqa: ARG001
+    daemon: Annotated[DaemonClient, Depends(get_daemon_client)],
+) -> JSONResponse:
+    try:
+        result = await daemon.list_install_memory(install_id)
+    except DaemonError as exc:
+        raise _handle_daemon_error(exc) from exc
+    return JSONResponse(content=result)
+
+
+@router.get("/installs/{install_id}/memory/{name}")
+async def read_install_memory(
+    install_id: str,
+    name: str,
+    user: CurrentUser,  # noqa: ARG001
+    daemon: Annotated[DaemonClient, Depends(get_daemon_client)],
+) -> JSONResponse:
+    try:
+        result = await daemon.read_install_memory(install_id, name)
+    except DaemonError as exc:
+        raise _handle_daemon_error(exc) from exc
+    return JSONResponse(content=result)
+
+
+@router.put("/installs/{install_id}/memory/{name}")
+async def write_install_memory(
+    install_id: str,
+    name: str,
+    payload: MemoryWriteBody,
+    user: CurrentUser,  # noqa: ARG001
+    daemon: Annotated[DaemonClient, Depends(get_daemon_client)],
+) -> JSONResponse:
+    try:
+        result = await daemon.write_install_memory(
+            install_id, name, payload.body,
+        )
+    except DaemonError as exc:
+        raise _handle_daemon_error(exc) from exc
+    return JSONResponse(content=result)
+
+
 @router.get("/audit")
 async def query_audit(
     user: CurrentUser,

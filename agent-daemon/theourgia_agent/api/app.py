@@ -8,6 +8,7 @@ from theourgia_agent.__about__ import __instance_name__, __version__
 from theourgia_agent.api.routers.audit import create_audit_router
 from theourgia_agent.api.routers.installs import create_installs_router
 from theourgia_agent.api.routers.mcp import create_mcp_router
+from theourgia_agent.api.routers.memory import create_memory_router
 from theourgia_agent.api.routers.runs import create_runs_router
 
 
@@ -36,6 +37,7 @@ def create_app() -> FastAPI:
     app.include_router(create_runs_router())
     app.include_router(create_audit_router())
     app.include_router(create_installs_router())
+    app.include_router(create_memory_router())
     return app
 
 

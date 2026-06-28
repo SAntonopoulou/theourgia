@@ -78,6 +78,8 @@ import type {
   AgentInstallSnapshot,
   AgentInstallState,
   CreateAgentInstallInput,
+  MemoryFileContent,
+  MemoryListResponse,
 } from "./types.js";
 
 export class NotImplementedError extends Error {
@@ -978,6 +980,32 @@ export function api(client: ApiClient) {
       return client.request<{ deleted: boolean }>(
         `/api/v1/agents/installs/${encodeURIComponent(installId)}`,
         { method: "DELETE" },
+      );
+    },
+
+    listInstallMemory(installId: string): Promise<MemoryListResponse> {
+      return client.request<MemoryListResponse>(
+        `/api/v1/agents/installs/${encodeURIComponent(installId)}/memory`,
+      );
+    },
+
+    readInstallMemory(
+      installId: string,
+      name: string,
+    ): Promise<MemoryFileContent> {
+      return client.request<MemoryFileContent>(
+        `/api/v1/agents/installs/${encodeURIComponent(installId)}/memory/${encodeURIComponent(name)}`,
+      );
+    },
+
+    writeInstallMemory(
+      installId: string,
+      name: string,
+      body: string,
+    ): Promise<{ name: string; size_bytes: number }> {
+      return client.request<{ name: string; size_bytes: number }>(
+        `/api/v1/agents/installs/${encodeURIComponent(installId)}/memory/${encodeURIComponent(name)}`,
+        { method: "PUT", json: { body } },
       );
     },
   };

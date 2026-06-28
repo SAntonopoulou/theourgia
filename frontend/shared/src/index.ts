@@ -171,7 +171,7 @@ export * as AgentTranscriptViewerCopy from "./AgentTranscriptViewer/index.js";
 export { AgentTranscriptViewerSurface, type AgentTranscriptViewerSurfaceProps, type TranscriptRow } from "./AgentTranscriptViewer/AgentTranscriptViewerSurface.js";
 export type { SpeakerKind } from "./AgentTranscriptViewer/copy.js";
 export * as AgentMemoryReaderCopy from "./AgentMemoryReader/index.js";
-export { AgentMemoryReaderSurface, type AgentMemoryReaderSurfaceProps } from "./AgentMemoryReader/AgentMemoryReaderSurface.js";
+export { AgentMemoryReaderSurface, type AgentMemoryReaderSurfaceProps, type MemoryFileMeta } from "./AgentMemoryReader/AgentMemoryReaderSurface.js";
 export * as AgentCostDashboardCopy from "./AgentCostDashboard/index.js";
 export { AgentCostDashboardSurface, type AgentCostDashboardSurfaceProps, type PerAgentRow } from "./AgentCostDashboard/AgentCostDashboardSurface.js";
 export type { TokenBreakdown, AgentRowKind } from "./AgentCostDashboard/copy.js";

@@ -171,6 +171,38 @@ class DaemonClient:
     async def delete_install(self, install_id: str) -> dict[str, Any]:
         return await self._request("DELETE", f"/installs/{install_id}")
 
+    # ── memory directory ───────────────────────────────────────────────
+
+    async def list_install_memory(
+        self, install_id: str,
+    ) -> dict[str, Any]:
+        return await self._request(
+            "GET", f"/installs/{install_id}/memory",
+        )
+
+    async def read_install_memory(
+        self, install_id: str, name: str,
+    ) -> dict[str, Any]:
+        return await self._request(
+            "GET", f"/installs/{install_id}/memory/{name}",
+        )
+
+    async def write_install_memory(
+        self, install_id: str, name: str, body: str,
+    ) -> dict[str, Any]:
+        return await self._request(
+            "PUT",
+            f"/installs/{install_id}/memory/{name}",
+            json_body={"body": body},
+        )
+
+    async def delete_install_memory(
+        self, install_id: str, name: str,
+    ) -> dict[str, Any]:
+        return await self._request(
+            "DELETE", f"/installs/{install_id}/memory/{name}",
+        )
+
     async def query_audit(
         self,
         *,
