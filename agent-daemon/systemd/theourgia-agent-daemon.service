@@ -1,0 +1,45 @@
+# Theourgia AI agent daemon — systemd-user unit.
+#
+# Locked with the user 2026-06-28: process supervision is systemd-user.
+# Install at `~/.config/systemd/user/theourgia-agent-daemon.service`
+# and enable with:
+#
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now theourgia-agent-daemon.service
+#
+# The daemon stays under the user's session — no root privileges
+# required. Memory directories at `/srv/theourgia/agents/...` must be
+# writable by the running user (operator sets up at first install).
+
+[Unit]
+Description=Theourgia AI agent daemon
+Documentation=https://github.com/SAntonopoulou/theourgia/blob/main/plan/16-ai-agent-integration.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+WorkingDirectory=%h/.local/share/theourgia
+Environment=PYTHONUNBUFFERED=1
+# Operators override these in `~/.config/theourgia/agent-daemon.env`
+# loaded via EnvironmentFile below.
+EnvironmentFile=-%h/.config/theourgia/agent-daemon.env
+ExecStart=%h/.local/share/theourgia/.venv/bin/uvicorn theourgia_agent.api.app:app \
+    --host 127.0.0.1 \
+    --port 8002 \
+    --log-level info
+
+# Lifecycle
+Restart=on-failure
+RestartSec=4s
+TimeoutStopSec=20s
+
+# Hardening — these are the user-level defaults that don't require
+# system-level capabilities. Operators on hardened systems can layer
+# more aggressive sandboxing.
+NoNewPrivileges=true
+ProtectSystem=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

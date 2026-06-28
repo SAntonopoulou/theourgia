@@ -1,0 +1,65 @@
+# Theourgia AI agent daemon (Python / FastAPI · separate process)
+#
+# Lives alongside the main backend/ app. The vault host talks to this
+# daemon over a localhost HTTP port (SSE for MCP, REST for control).
+# Per-vault MCP scoping + sandboxed memory directory per (vault, agent).
+#
+# Phase 16 plan locks the shape: opt-in, never-required, daskalos
+# pattern adapted. BYO keys with Mode B passphrase encryption (locked
+# with the user 2026-06-28). systemd-user supervision; SSE-over-HTTP
+# MCP transport.
+
+[project]
+name = "theourgia-agent-daemon"
+version = "0.0.0-dev"
+description = "Theourgia AI agent daemon — optional companion layer (Phase 16)"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "AGPL-3.0-only" }
+authors = [{ name = "Soror Ευ. Α." }]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Framework :: FastAPI",
+    "Typing :: Typed",
+]
+dependencies = [
+    "fastapi >=0.115,<1.0",
+    "uvicorn[standard] >=0.32,<1.0",
+    "sqlmodel >=0.0.22,<1.0",
+    "alembic >=1.14,<2.0",
+    "asyncpg >=0.30,<1.0",
+    "psycopg[binary] >=3.2,<4.0",
+    "pydantic >=2.10,<3.0",
+    "pydantic-settings >=2.6,<3.0",
+    "cryptography >=44.0,<45.0",
+    "argon2-cffi >=23.1,<25.0",
+    # MCP server + client (will follow the Anthropic mcp SDK once Python
+    # bindings stabilise; for now we hand-roll the SSE transport per the
+    # MCP spec to avoid a moving dep).
+    "httpx >=0.28,<1.0",
+    "sse-starlette >=2.1,<3.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest >=8.3,<9.0",
+    "pytest-asyncio >=0.24,<1.0",
+    "httpx >=0.28,<1.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["theourgia_agent"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+extend-select = ["I", "UP", "B", "SIM", "RUF"]
