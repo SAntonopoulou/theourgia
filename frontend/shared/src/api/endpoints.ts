@@ -85,6 +85,9 @@ import type {
   RegistrySubmission,
   RegistrySubmissionListResponse,
   SubmitPluginInput,
+  DecideSubmissionInput,
+  MaintainerQueueResponse,
+  PromotePluginInput,
 } from "./types.js";
 
 export class NotImplementedError extends Error {
@@ -1038,6 +1041,41 @@ export function api(client: ApiClient) {
     fileAdvisory(input: FileAdvisoryInput): Promise<RegistryAdvisory> {
       return client.request<RegistryAdvisory>(
         "/api/v1/registry/author/advisories",
+        { method: "POST", json: input },
+      );
+    },
+
+    // ── Registry maintainer (H10 A5-A7) ───────────────────────────
+
+    reviewQueue(): Promise<MaintainerQueueResponse> {
+      return client.request<MaintainerQueueResponse>(
+        "/api/v1/registry/maintainer/queue",
+      );
+    },
+
+    takeSubmission(submissionId: string): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/registry/maintainer/submissions/${encodeURIComponent(submissionId)}/take`,
+        { method: "POST" },
+      );
+    },
+
+    decideSubmission(
+      submissionId: string,
+      input: DecideSubmissionInput,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/registry/maintainer/submissions/${encodeURIComponent(submissionId)}/decide`,
+        { method: "POST", json: input },
+      );
+    },
+
+    promotePlugin(
+      pluginId: string,
+      input: PromotePluginInput,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/registry/maintainer/plugins/${encodeURIComponent(pluginId)}/promote`,
         { method: "POST", json: input },
       );
     },

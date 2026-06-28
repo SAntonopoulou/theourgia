@@ -104,6 +104,10 @@ import { AgentMemoryReaderRoute } from "./routes/AgentMemoryReaderRoute.js";
 import { PluginSubmissionFormRoute } from "./routes/PluginSubmissionFormRoute.js";
 import { PluginSubmissionListRoute } from "./routes/PluginSubmissionListRoute.js";
 import { PluginSubmissionDetailRoute } from "./routes/PluginSubmissionDetailRoute.js";
+import { RegistryReviewQueueRoute } from "./routes/RegistryReviewQueueRoute.js";
+import { RegistryReviewDetailRoute } from "./routes/RegistryReviewDetailRoute.js";
+import { TierPromotionRoute } from "./routes/TierPromotionRoute.js";
+import { VulnerabilityAdvisorySubmitRoute } from "./routes/VulnerabilityAdvisorySubmitRoute.js";
 import { BookPreview } from "./routes/BookPreview.js";
 import { BundleInstall } from "./routes/BundleInstall.js";
 import { Bundles } from "./routes/Bundles.js";
@@ -420,6 +424,10 @@ function ShellRoutes() {
         <Route path="/registry/submit" element={<PluginSubmissionFormRoute />} />
         <Route path="/registry/submissions" element={<PluginSubmissionListRoute />} />
         <Route path="/registry/submissions/:submissionId" element={<PluginSubmissionDetailRoute />} />
+        <Route path="/registry/review" element={<RegistryReviewQueueRoute />} />
+        <Route path="/registry/review/:submissionId" element={<RegistryReviewDetailRoute />} />
+        <Route path="/registry/promote/:pluginId" element={<TierPromotionRoute />} />
+        <Route path="/registry/advisory" element={<VulnerabilityAdvisorySubmitRoute />} />
         <Route path="/bundles" element={<Bundles />} />
         <Route path="/bundles/install" element={<BundleInstall />} />
         <Route path="/editor" element={<Editor />} />

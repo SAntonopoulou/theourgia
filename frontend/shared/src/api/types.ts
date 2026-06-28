@@ -1109,3 +1109,32 @@ export interface RegistryAdvisory {
   filed_by_author_did: string;
   published_at: string | null;
 }
+
+
+// ── Registry maintainer (H10 A5-A7) ─────────────────────────────────────
+
+export interface MaintainerQueueItem {
+  submission_id: string;
+  plugin_id: string;
+  plugin_name: string;
+  author_did: string;
+  version: string;
+  license_spdx: string;
+  status: string;
+  submitted_at: string;
+  capabilities: string[];
+}
+
+export interface MaintainerQueueResponse {
+  queue: MaintainerQueueItem[];
+}
+
+export interface DecideSubmissionInput {
+  decision: "accept_community" | "accept_official" | "reject" | "changes_requested";
+  note: string;
+}
+
+export interface PromotePluginInput {
+  to_tier: "official" | "community" | "unverified";
+  justification: string;
+}
