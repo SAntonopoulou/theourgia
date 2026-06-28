@@ -24,9 +24,21 @@ from theourgia_registry.core.did_auth import (
     verify_request_signature,
 )
 from theourgia_registry.models.author import Author
+from theourgia_registry.models.maintainer import (
+    Maintainer,
+    MaintainerRole,
+)
 
 
-__all__ = ["get_db_session", "get_current_author", "CurrentAuthor"]
+__all__ = [
+    "get_db_session",
+    "get_current_author",
+    "CurrentAuthor",
+    "get_current_maintainer",
+    "CurrentMaintainer",
+    "get_current_lead",
+    "CurrentLead",
+]
 
 
 async def get_db_session() -> AsyncIterator[AsyncSession]:
@@ -86,3 +98,47 @@ async def get_current_author(
 
 
 CurrentAuthor = Annotated[Author, Depends(get_current_author)]
+
+
+async def get_current_maintainer(
+    author: CurrentAuthor,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Maintainer:
+    """Resolve to an active Maintainer or raise 403.
+
+    Multi-maintainer governance — any LEAD or REVIEWER may review.
+    Revoked maintainers cannot use any maintainer-only endpoint."""
+    result = await db.execute(
+        select(Maintainer).where(
+            Maintainer.author_id == author.id,
+            Maintainer.revoked_at.is_(None),
+        ),
+    )
+    maintainer = result.scalar_one_or_none()
+    if maintainer is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="this DID is not an active maintainer",
+        )
+    return maintainer
+
+
+CurrentMaintainer = Annotated[Maintainer, Depends(get_current_maintainer)]
+
+
+async def get_current_lead(
+    maintainer: CurrentMaintainer,
+) -> Maintainer:
+    """Resolve to a LEAD maintainer or raise 403.
+
+    Only LEAD can appoint/revoke other maintainers (rule 41 — no
+    self-promotion path; appointment is a LEAD's gated action)."""
+    if maintainer.role != MaintainerRole.LEAD:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="this action requires LEAD maintainer role",
+        )
+    return maintainer
+
+
+CurrentLead = Annotated[Maintainer, Depends(get_current_lead)]

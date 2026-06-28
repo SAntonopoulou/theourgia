@@ -23,6 +23,10 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia_registry.api.deps import CurrentAuthor, get_db_session
+from theourgia_registry.models.advisory import (
+    AdvisorySeverity,
+    VulnerabilityAdvisory,
+)
 from theourgia_registry.models.author import Author
 from theourgia_registry.models.plugin import (
     Plugin,
@@ -239,3 +243,88 @@ async def get_submission(
         raise HTTPException(status_code=404, detail="submission not found")
     plugin, version = row
     return _serialise(plugin, version)
+
+
+# ── advisories (A8) ────────────────────────────────────────────────────
+
+
+class AdvisoryCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    plugin_id: str
+    severity: str = Field(pattern=r"^(low|medium|high)$")
+    affected_version_range: str = Field(min_length=1, max_length=255)
+    body: str = Field(min_length=1, max_length=8000)
+    remediation_version: str | None = Field(default=None, max_length=64)
+
+
+class AdvisoryRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    plugin_id: str
+    severity: str
+    affected_version_range: str
+    body: str
+    remediation_version: str | None
+    filed_at: str
+    filed_by_author_did: str
+    published_at: str | None
+
+
+@router.post(
+    "/advisories",
+    response_model=AdvisoryRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def file_advisory(
+    payload: AdvisoryCreate,
+    author: CurrentAuthor,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> AdvisoryRead:
+    """File a vulnerability advisory against a plugin — backs surface A8.
+
+    Rule 43: three severity tiers (low/medium/high), no `critical`. The
+    pattern check on `severity` enforces this at the wire.
+    Rule 30: the advisory body renders verbatim in the H09 banner; no
+    auto-formatting beyond minimal Markdown is applied at read time.
+
+    The `published_at` field starts NULL — a maintainer (or the filing
+    author, on a separate publish endpoint) sets it when the advisory
+    is ready to be visible. Until then it's draft."""
+    plugin = (
+        await db.execute(
+            select(Plugin).where(Plugin.id == UUID(payload.plugin_id)),
+        )
+    ).scalar_one_or_none()
+    if plugin is None:
+        raise HTTPException(status_code=404, detail="plugin not found")
+
+    advisory = VulnerabilityAdvisory(
+        plugin_id=plugin.id,
+        filed_by_author_id=author.id,
+        severity=AdvisorySeverity(payload.severity),
+        affected_version_range=payload.affected_version_range,
+        body=payload.body,
+        remediation_version=payload.remediation_version,
+        published_at=None,
+    )
+    db.add(advisory)
+    await db.commit()
+    await db.refresh(advisory)
+
+    return AdvisoryRead(
+        id=str(advisory.id),
+        plugin_id=str(advisory.plugin_id),
+        severity=advisory.severity.value,
+        affected_version_range=advisory.affected_version_range,
+        body=advisory.body,
+        remediation_version=advisory.remediation_version,
+        filed_at=advisory.created_at.isoformat(),
+        filed_by_author_did=author.did,
+        published_at=(
+            advisory.published_at.isoformat()
+            if advisory.published_at is not None
+            else None
+        ),
+    )

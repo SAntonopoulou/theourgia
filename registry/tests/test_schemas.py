@@ -146,6 +146,110 @@ def test_submission_list_response_round_trip() -> None:
     assert resp.submissions == []
 
 
+def test_decision_body_rejects_unknown_decision() -> None:
+    from theourgia_registry.api.routers.maintainer import DecisionBody
+
+    with pytest.raises(ValidationError):
+        DecisionBody(decision="approve_blind", note="lgtm")
+
+
+def test_decision_body_requires_non_empty_note() -> None:
+    """Rule 44 — decisions must carry a note. Empty string rejected."""
+    from theourgia_registry.api.routers.maintainer import DecisionBody
+
+    with pytest.raises(ValidationError):
+        DecisionBody(decision="reject", note="")
+
+
+def test_decision_body_accepts_all_four_decisions() -> None:
+    from theourgia_registry.api.routers.maintainer import DecisionBody
+
+    for decision in (
+        "accept_community",
+        "accept_official",
+        "reject",
+        "changes_requested",
+    ):
+        body = DecisionBody(decision=decision, note="x")
+        assert body.decision == decision
+
+
+def test_tier_promotion_body_rejects_unknown_tier() -> None:
+    from theourgia_registry.api.routers.maintainer import (
+        TierPromotionBody,
+    )
+
+    with pytest.raises(ValidationError):
+        TierPromotionBody(to_tier="elder", justification="reason")
+
+
+def test_appoint_maintainer_body_rejects_unknown_role() -> None:
+    from theourgia_registry.api.routers.maintainer import (
+        AppointMaintainerBody,
+    )
+
+    with pytest.raises(ValidationError):
+        AppointMaintainerBody(author_did="did:vault:x", role="god")
+
+
+def test_advisory_create_rejects_critical_severity() -> None:
+    """Rule 43 — no `critical` tier on the wire either."""
+    from theourgia_registry.api.routers.author import AdvisoryCreate
+
+    with pytest.raises(ValidationError):
+        AdvisoryCreate(
+            plugin_id="11111111-1111-1111-1111-111111111111",
+            severity="critical",
+            affected_version_range=">=1.0.0",
+            body="vulnerability description",
+        )
+
+
+def test_advisory_create_requires_non_empty_body() -> None:
+    """Rule 30 — advisory body renders verbatim in the H09 banner; an
+    empty body is meaningless."""
+    from theourgia_registry.api.routers.author import AdvisoryCreate
+
+    with pytest.raises(ValidationError):
+        AdvisoryCreate(
+            plugin_id="11111111-1111-1111-1111-111111111111",
+            severity="high",
+            affected_version_range=">=1.0.0",
+            body="",
+        )
+
+
+def test_advisory_create_accepts_all_three_severities() -> None:
+    from theourgia_registry.api.routers.author import AdvisoryCreate
+
+    for severity in ("low", "medium", "high"):
+        body = AdvisoryCreate(
+            plugin_id="11111111-1111-1111-1111-111111111111",
+            severity=severity,
+            affected_version_range=">=1.0.0",
+            body="non-empty body",
+        )
+        assert body.severity == severity
+
+
+def test_queue_item_extra_forbidden() -> None:
+    from theourgia_registry.api.routers.maintainer import QueueItem
+
+    with pytest.raises(ValidationError):
+        QueueItem(  # type: ignore[call-arg]
+            submission_id="x",
+            plugin_id="y",
+            plugin_name="x-plugin",
+            author_did="did:vault:x",
+            version="0.0.1",
+            license_spdx="MIT",
+            status="pending_review",
+            submitted_at="2026-06-28T12:00:00Z",
+            capabilities=[],
+            popularity=99,  # would be rule 38 violation
+        )
+
+
 def test_public_plugin_card_extra_forbidden() -> None:
     with pytest.raises(ValidationError):
         PublicPluginCard(  # type: ignore[call-arg]
