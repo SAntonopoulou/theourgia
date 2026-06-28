@@ -99,6 +99,7 @@ import { RegistryPublicHomeRoute } from "./routes/RegistryPublicHomeRoute.js";
 import { AgentInstallRoute } from "./routes/AgentInstallRoute.js";
 import { AgentTrustReviewRoute } from "./routes/AgentTrustReviewRoute.js";
 import { AgentCapabilityReviewRoute } from "./routes/AgentCapabilityReviewRoute.js";
+import { AgentByoKeySettingsRoute } from "./routes/AgentByoKeySettingsRoute.js";
 import { BookPreview } from "./routes/BookPreview.js";
 import { BundleInstall } from "./routes/BundleInstall.js";
 import { Bundles } from "./routes/Bundles.js";
@@ -410,6 +411,7 @@ function ShellRoutes() {
         <Route path="/agents-marketplace/:agentSlug" element={<AgentInstallRoute />} />
         <Route path="/agents/:installId/trust" element={<AgentTrustReviewRoute />} />
         <Route path="/agents/:installId/capabilities" element={<AgentCapabilityReviewRoute />} />
+        <Route path="/agents-keys" element={<AgentByoKeySettingsRoute />} />
         <Route path="/bundles" element={<Bundles />} />
         <Route path="/bundles/install" element={<BundleInstall />} />
         <Route path="/editor" element={<Editor />} />
