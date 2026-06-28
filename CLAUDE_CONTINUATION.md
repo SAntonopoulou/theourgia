@@ -7,7 +7,7 @@ all you need to clone it + read this file.
 
 ---
 
-## State of the world (commit `95477c4`)
+## State of the world (commit `aa3776e`)
 
 ### Production
 
@@ -45,12 +45,12 @@ all you need to clone it + read this file.
 
 | Task | Status | Notes |
 |---|---|---|
-| #192 Frontend H10 A-cluster (8 surfaces) | 4/8 done (A1-A4 wired) | A5-A7 need maintainer-key auth flow · A8 ready when needed (author-signed) |
+| #192 Frontend H10 A-cluster (8 surfaces) | **8/8 ✓** | Complete — A1-A4 author-signed · A5-A7 maintainer-signed · A8 author-signed |
 | #193 Frontend H10 C-cluster (12 surfaces) | **12/12 ✓** | Complete — all C-cluster surfaces live |
 
 ---
 
-## H10 surfaces wired so far (16 of 27)
+## H10 surfaces wired so far (20 of 27)
 
 | Surface | Route | Backing endpoint |
 |---|---|---|
@@ -58,6 +58,10 @@ all you need to clone it + read this file.
 | A2 PluginSubmissionForm | `/app/registry/submit` | `POST /api/v1/registry/author/submissions` (signed) |
 | A3 PluginSubmissionList | `/app/registry/submissions` | `GET /api/v1/registry/author/submissions` (signed) |
 | A4 PluginSubmissionDetail | `/app/registry/submissions/:id` | `GET /api/v1/registry/author/submissions/:id` (signed) |
+| A5 RegistryReviewQueue | `/app/registry/review` | `GET /api/v1/registry/maintainer/queue` (signed) |
+| A6 RegistryReviewDetail | `/app/registry/review/:id` | `POST /api/v1/registry/maintainer/submissions/:id/decide` (signed) |
+| A7 TierPromotion | `/app/registry/promote/:pluginId` | `POST /api/v1/registry/maintainer/plugins/:id/promote` (signed) |
+| A8 VulnerabilityAdvisorySubmit | `/app/registry/advisory` | `POST /api/v1/registry/author/advisories` (signed) |
 | C1 AgentsHome | `/app/agents-home` | `GET /api/v1/agents/installs` + `/audit` |
 | C2 AgentMarketplace | `/app/agents-marketplace` | `GET /api/v1/registry/plugins` |
 | C3 AgentInstall | `/app/agents-marketplace/:slug` | `POST /api/v1/agents/installs` |
