@@ -67,6 +67,11 @@ import type {
   TodayLedger,
   UpdatePracticeInput,
   UserLocation,
+  AgentAuditQueryResponse,
+  AgentRunCostSampleInput,
+  AgentRunCostSnapshot,
+  AgentRunSnapshot,
+  StartAgentRunInput,
 } from "./types.js";
 
 export class NotImplementedError extends Error {
@@ -859,6 +864,55 @@ export function api(client: ApiClient) {
       return client.request<void>(
         `/api/v1/voces/${voceId}/recordings/${recordingId}`,
         { method: "DELETE" },
+      );
+    },
+
+    // ── Phase 16 · agents (H10 C-cluster) ────────────────────────────
+
+    startAgentRun(input: StartAgentRunInput): Promise<AgentRunSnapshot> {
+      return client.request<AgentRunSnapshot>("/api/v1/agents/runs", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    getAgentRun(runId: string): Promise<AgentRunSnapshot> {
+      return client.request<AgentRunSnapshot>(`/api/v1/agents/runs/${runId}`);
+    },
+
+    terminateAgentRun(
+      runId: string,
+    ): Promise<{ run_id: string; status: string }> {
+      return client.request<{ run_id: string; status: string }>(
+        `/api/v1/agents/runs/${runId}`,
+        { method: "DELETE" },
+      );
+    },
+
+    reportAgentRunCost(
+      runId: string,
+      sample: AgentRunCostSampleInput,
+    ): Promise<AgentRunCostSnapshot> {
+      return client.request<AgentRunCostSnapshot>(
+        `/api/v1/agents/runs/${runId}/cost`,
+        { method: "POST", json: sample },
+      );
+    },
+
+    queryAgentAudit(params?: {
+      eventType?: string;
+      limit?: number;
+      offset?: number;
+    }): Promise<AgentAuditQueryResponse> {
+      const search = new URLSearchParams();
+      if (params?.eventType) search.set("event_type", params.eventType);
+      if (params?.limit !== undefined)
+        search.set("limit", String(params.limit));
+      if (params?.offset !== undefined)
+        search.set("offset", String(params.offset));
+      const query = search.toString();
+      return client.request<AgentAuditQueryResponse>(
+        `/api/v1/agents/audit${query ? `?${query}` : ""}`,
       );
     },
   };

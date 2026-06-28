@@ -889,3 +889,88 @@ export interface CreateVoceRecordingInput {
   duration_seconds: number;
   notes?: string | null;
 }
+
+
+// ── Phase 16 · agents (H10 C-cluster) ───────────────────────────────────
+
+export type AgentRunStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "halted"
+  | "errored";
+
+export interface AgentRunCostSnapshot {
+  tokens_in: number;
+  tokens_out: number;
+  tokens_cache: number;
+  tokens_fresh: number;
+  tokens_resume: number;
+  cost_usd: string;
+  reservation_usd: string;
+  remaining_usd: string;
+  over_reservation: boolean;
+}
+
+export interface AgentRunSnapshot {
+  run_id: string;
+  session_token: string;
+  status: AgentRunStatus;
+  started_at: string;
+  ended_at: string | null;
+  returncode: number | null;
+  reservation_usd: string;
+  cost: AgentRunCostSnapshot;
+}
+
+export interface StartAgentRunInput {
+  install_id: string;
+  agent_slug: string;
+  task_text: string;
+  granted_caps: string[];
+  scope_id: string;
+  monthly_cap_usd: string;
+  month_spent_usd?: string;
+  recent_run_cost_usd?: string[];
+  api_key_plaintext?: string | null;
+}
+
+export interface AgentRunCostSampleInput {
+  tokens_in?: number;
+  tokens_out?: number;
+  tokens_cache?: number;
+  tokens_fresh?: number;
+  tokens_resume?: number;
+  cost_usd: string;
+}
+
+export type AgentAuditEventType =
+  | "mcp.tools_list"
+  | "mcp.tools_call"
+  | "mcp.capability_denied"
+  | "run.started"
+  | "run.completed"
+  | "run.halted"
+  | "run.errored"
+  | "cap.refused_at_wake"
+  | "cap.halted_at_spend";
+
+export interface AgentAuditEvent {
+  vault_did: string;
+  event_type: AgentAuditEventType;
+  happened_at: string;
+  run_id: string | null;
+  install_id: string | null;
+  tool_name: string | null;
+  arguments_json: Record<string, unknown> | null;
+  allowed: boolean;
+  filtered_count: number;
+  detail: string | null;
+}
+
+export interface AgentAuditQueryResponse {
+  vault_did: string;
+  limit: number;
+  offset: number;
+  events: AgentAuditEvent[];
+}
