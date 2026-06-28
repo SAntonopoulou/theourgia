@@ -96,6 +96,7 @@ import { AgentTaskComposerRoute } from "./routes/AgentTaskComposerRoute.js";
 import { AgentTranscriptViewerRoute } from "./routes/AgentTranscriptViewerRoute.js";
 import { AgentMarketplaceRoute } from "./routes/AgentMarketplaceRoute.js";
 import { RegistryPublicHomeRoute } from "./routes/RegistryPublicHomeRoute.js";
+import { AgentInstallRoute } from "./routes/AgentInstallRoute.js";
 import { BookPreview } from "./routes/BookPreview.js";
 import { BundleInstall } from "./routes/BundleInstall.js";
 import { Bundles } from "./routes/Bundles.js";
@@ -404,6 +405,7 @@ function ShellRoutes() {
         <Route path="/agents/runs/:runId/transcript" element={<AgentTranscriptViewerRoute />} />
         <Route path="/agents-marketplace" element={<AgentMarketplaceRoute />} />
         <Route path="/registry" element={<RegistryPublicHomeRoute />} />
+        <Route path="/agents-marketplace/:agentSlug" element={<AgentInstallRoute />} />
         <Route path="/bundles" element={<Bundles />} />
         <Route path="/bundles/install" element={<BundleInstall />} />
         <Route path="/editor" element={<Editor />} />

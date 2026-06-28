@@ -74,6 +74,10 @@ import type {
   StartAgentRunInput,
   RegistryAuthorRead,
   RegistryPluginListResponse,
+  AgentInstallListResponse,
+  AgentInstallSnapshot,
+  AgentInstallState,
+  CreateAgentInstallInput,
 } from "./types.js";
 
 export class NotImplementedError extends Error {
@@ -934,6 +938,46 @@ export function api(client: ApiClient) {
     getRegistryAuthor(did: string): Promise<RegistryAuthorRead> {
       return client.request<RegistryAuthorRead>(
         `/api/v1/registry/authors/${encodeURIComponent(did)}`,
+      );
+    },
+
+    // ── Agent installs (Phase 16) ─────────────────────────────────
+
+    createAgentInstall(
+      input: CreateAgentInstallInput,
+    ): Promise<AgentInstallSnapshot> {
+      return client.request<AgentInstallSnapshot>(
+        "/api/v1/agents/installs",
+        { method: "POST", json: input },
+      );
+    },
+
+    listAgentInstalls(): Promise<AgentInstallListResponse> {
+      return client.request<AgentInstallListResponse>(
+        "/api/v1/agents/installs",
+      );
+    },
+
+    getAgentInstall(installId: string): Promise<AgentInstallSnapshot> {
+      return client.request<AgentInstallSnapshot>(
+        `/api/v1/agents/installs/${encodeURIComponent(installId)}`,
+      );
+    },
+
+    updateAgentInstallState(
+      installId: string,
+      state: AgentInstallState,
+    ): Promise<AgentInstallSnapshot> {
+      return client.request<AgentInstallSnapshot>(
+        `/api/v1/agents/installs/${encodeURIComponent(installId)}/state`,
+        { method: "PATCH", json: { state } },
+      );
+    },
+
+    deleteAgentInstall(installId: string): Promise<{ deleted: boolean }> {
+      return client.request<{ deleted: boolean }>(
+        `/api/v1/agents/installs/${encodeURIComponent(installId)}`,
+        { method: "DELETE" },
       );
     },
   };

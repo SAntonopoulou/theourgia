@@ -1002,3 +1002,33 @@ export interface RegistryAuthorRead {
   homepage: string | null;
   plugin_count: number;
 }
+
+
+// ── Agent installs (Phase 16 lifecycle) ─────────────────────────────────
+
+export type AgentInstallState = "inactive" | "active" | "paused" | "cost_capped";
+
+export interface AgentInstallSnapshot {
+  id: string;
+  vault_id: string;
+  agent_id: string;
+  display_name: string;
+  kind: string;
+  state: AgentInstallState;
+  monthly_cost_cap_usd: string;
+  has_api_key: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AgentInstallListResponse {
+  vault_id: string;
+  installs: AgentInstallSnapshot[];
+}
+
+export interface CreateAgentInstallInput {
+  agent_id: string;
+  display_name: string;
+  kind: string;
+  monthly_cost_cap_usd: string;
+}

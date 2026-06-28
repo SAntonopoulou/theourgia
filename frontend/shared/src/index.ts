@@ -154,6 +154,7 @@ export { AgentMarketplaceSurface, type AgentMarketplaceSurfaceProps, type Market
 export type { AgentMarketKind, AgentTier, CapabilityFilter, SourceFilter, SortOption as MarketSortOption } from "./AgentMarketplace/copy.js";
 export * as AgentInstallCopy from "./AgentInstall/index.js";
 export { AgentInstallSurface, type AgentInstallSurfaceProps } from "./AgentInstall/AgentInstallSurface.js";
+export type { AgentCapabilityChip } from "./AgentInstall/copy.js";
 export * as AgentCapabilityReviewCopy from "./AgentCapabilityReview/index.js";
 export { AgentCapabilityReviewSurface, type AgentCapabilityReviewSurfaceProps } from "./AgentCapabilityReview/AgentCapabilityReviewSurface.js";
 export * as AgentByoKeySettingsCopy from "./AgentByoKeySettings/index.js";
