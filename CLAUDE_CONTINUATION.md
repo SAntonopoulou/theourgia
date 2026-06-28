@@ -7,7 +7,7 @@ all you need to clone it + read this file.
 
 ---
 
-## State of the world (commit `2994dea`)
+## State of the world (commit `95477c4`)
 
 ### Production
 
@@ -45,16 +45,19 @@ all you need to clone it + read this file.
 
 | Task | Status | Notes |
 |---|---|---|
-| #192 Frontend H10 A-cluster (8 surfaces) | 1/8 done (A1 wired) | A2-A8 need DID + Ed25519 author signing UX through the bridge — substantial UX flow |
+| #192 Frontend H10 A-cluster (8 surfaces) | 4/8 done (A1-A4 wired) | A5-A7 need maintainer-key auth flow · A8 ready when needed (author-signed) |
 | #193 Frontend H10 C-cluster (12 surfaces) | **12/12 ✓** | Complete — all C-cluster surfaces live |
 
 ---
 
-## H10 surfaces wired so far (13 of 27)
+## H10 surfaces wired so far (16 of 27)
 
 | Surface | Route | Backing endpoint |
 |---|---|---|
 | A1 RegistryPublicHome | `/app/registry` | `GET /api/v1/registry/plugins` |
+| A2 PluginSubmissionForm | `/app/registry/submit` | `POST /api/v1/registry/author/submissions` (signed) |
+| A3 PluginSubmissionList | `/app/registry/submissions` | `GET /api/v1/registry/author/submissions` (signed) |
+| A4 PluginSubmissionDetail | `/app/registry/submissions/:id` | `GET /api/v1/registry/author/submissions/:id` (signed) |
 | C1 AgentsHome | `/app/agents-home` | `GET /api/v1/agents/installs` + `/audit` |
 | C2 AgentMarketplace | `/app/agents-marketplace` | `GET /api/v1/registry/plugins` |
 | C3 AgentInstall | `/app/agents-marketplace/:slug` | `POST /api/v1/agents/installs` |
