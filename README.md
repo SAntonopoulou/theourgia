@@ -24,15 +24,16 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `55dbad7` |
+| **Latest commit** | `e6e135e` |
 | **vitest** | 2923+ passing · admin tsc clean |
-| **backend** | 2490 passing · alembic head **0063** |
-| **agent-daemon** | **145 passing** · alembic head **0002** — MCP + dispatch + JSON-RPC + SSE + launcher + subprocess runner + cost-cap hard halt + audit emission (9 event types · GET /audit) |
-| **registry** | **34 passing** · alembic head **0001** — DID + Ed25519 auth · A2 submit · A3 list · A4 detail · A5 queue · A6 decide · A7 tier promote · A8 advisory |
+| **backend** | 2508 passing · alembic head **0063** — `/api/v1/agents/*` daemon bridge live · daemon_client + Ed25519 + httpx MockTransport tests |
+| **agent-daemon** | **177 passing** · alembic head **0002** — MCP + JSON-RPC + SSE + launcher + subprocess runner + cost-cap hard halt + audit emission · DbAuditSink + DbInstallRepo + DbRunRepo (Postgres-backed) · bwrap filesystem sandbox (rule 59 enforced) |
+| **registry** | **34 passing** · alembic head **0001** — DID + Ed25519 auth · A2-A4 author submission lifecycle · A5-A7 maintainer queue/decide/promote · A8 advisory filing |
+| **Deploy artefacts** | docker-compose.prod (3 services + 3 DBs + Caddy) · scripts/deploy-prod.sh · scripts/first-run.sh · `docs/ops/DEPLOYMENT_RUNBOOK.md` (9-section walkthrough) · R2 buckets provisioned (theourgia-media · theourgia-backups · theourgia-plugins, WEUR) |
 | **a11y** | 543 / 557 (97.5%); remaining 14 are intentional design tradeoffs |
 | **Sprints shipped** | H01-H03 · H04 · H05 · H06 · H07 · H08 (21/21) · H09 (17/17) · **H10 (27/27) ✓** |
 | **Design queue** | **(empty — H10 was the last design package before v1.0)** |
-| **Next build** | DbAuditSink + DbInstallRepo + DbRunRepo (write-through to Postgres) · Postgres integration tests for registry · filesystem sandbox · main-backend → daemon wiring · Phase 12.5 inbox + delivery worker. |
+| **Next build** | Frontend H10 A+C swap to live data · Phase 12.5 federation inbox + delivery worker · Phase 13 ActivityPub bridge · production deploy via `scripts/deploy-prod.sh` (operator-driven first run). |
 
 The full per-batch history lives in **[CHANGELOG.md](CHANGELOG.md)**. For the canonical feature catalog and per-phase status snapshot, see **[FEATURES.md](FEATURES.md)**. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
