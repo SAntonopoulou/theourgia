@@ -158,6 +158,7 @@ export * as AgentByoKeySettingsCopy from "./AgentByoKeySettings/index.js";
 export { AgentByoKeySettingsSurface, type AgentByoKeySettingsSurfaceProps } from "./AgentByoKeySettings/AgentByoKeySettingsSurface.js";
 export * as AgentTaskComposerCopy from "./AgentTaskComposer/index.js";
 export { AgentTaskComposerSurface, type AgentTaskComposerSurfaceProps } from "./AgentTaskComposer/AgentTaskComposerSurface.js";
+export type { ScopeOption } from "./AgentTaskComposer/copy.js";
 export * as AgentRunMonitorCopy from "./AgentRunMonitor/index.js";
 export { AgentRunMonitorSurface, type AgentRunMonitorSurfaceProps } from "./AgentRunMonitor/AgentRunMonitorSurface.js";
 export type { ActivityRowTone, HumanActivityRow } from "./AgentRunMonitor/copy.js";
