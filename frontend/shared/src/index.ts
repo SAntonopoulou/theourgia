@@ -157,6 +157,7 @@ export { AgentInstallSurface, type AgentInstallSurfaceProps } from "./AgentInsta
 export type { AgentCapabilityChip } from "./AgentInstall/copy.js";
 export * as AgentCapabilityReviewCopy from "./AgentCapabilityReview/index.js";
 export { AgentCapabilityReviewSurface, type AgentCapabilityReviewSurfaceProps } from "./AgentCapabilityReview/AgentCapabilityReviewSurface.js";
+export type { AgentCapabilityRow, CapabilityReviewScenario } from "./AgentCapabilityReview/copy.js";
 export * as AgentByoKeySettingsCopy from "./AgentByoKeySettings/index.js";
 export { AgentByoKeySettingsSurface, type AgentByoKeySettingsSurfaceProps } from "./AgentByoKeySettings/AgentByoKeySettingsSurface.js";
 export * as AgentTaskComposerCopy from "./AgentTaskComposer/index.js";
