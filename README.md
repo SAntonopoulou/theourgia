@@ -24,7 +24,7 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `33fae7a` |
+| **Latest commit** | `82f4746` |
 | **Production** | **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; 8 prod containers, isolated compose project) |
 | **vitest** | 2923 passing · admin tsc clean |
 | **backend** | **2576 passing** · alembic head **0065** — `/api/v1/agents/*` daemon bridge + `/api/v1/federation/inbox` + `/users/{handle}` AP actor + outbox + collections + `/api/v1/registry/*` author + maintainer signed bridges |
@@ -32,13 +32,13 @@ Open source, self-hostable, federated. For working magicians.
 | **registry** | 34 passing · alembic head **0001** — DID + Ed25519 auth · author submission lifecycle · maintainer queue/decide/promote · advisory filing |
 | **Phase 12.5** | federation inbox + delivery worker (retry queue with 60s→24h backoff · DEAD after 6 attempts · Celery beat every minute) |
 | **Phase 13** | ActivityPub bridge — actor JSON-LD · per-actor inbox + outbox · followers (count-private) · following (always-empty by design) · privacy-gated 404 when transport disabled |
-| **H10 surfaces wired live** | **20 of 27** — Cluster A 8/8 ✓ · Cluster C 12/12 ✓ · Cluster B 7 (shipped as H10 originals via design-system gate) |
+| **H10 surfaces wired live** | **26 of 27** — Cluster A 8/8 ✓ · Cluster B 6/7 (B5 KeyRotation placeholder pending WebAuthn) · Cluster C 12/12 ✓ |
 | **Identity provisioned** | Author + LEAD maintainer registered in prod registry (`did:vault:theourgia.com/soror-eu-a`); server-side Ed25519 signer wires A2-A8 routes end-to-end |
 | **Deploy artefacts** | docker-compose.{yml,prod,agent-house} · scripts/deploy-prod.sh + first-run.sh · DEPLOYMENT_RUNBOOK.md · R2 buckets provisioned · agent-house Caddy snippet wired |
 | **a11y** | 543 / 557 (97.5%); remaining 14 are intentional design tradeoffs |
 | **Sprints shipped** | H01-H03 · H04 · H05 · H06 · H07 · H08 (21/21) · H09 (17/17) · **H10 (27/27) ✓** |
 | **Design queue** | **(empty — H10 was the last design package before v1.0)** |
-| **Next build** | Phase 15 hardening (WebAuthn → retire demo signin · GDPR audit · perf budget verification · public footer page set) · operator-side flows (R2 token generation · plugins.theourgia.com DNS · first-plugin smoke). |
+| **Next build** | Phase 15 last mile (WebAuthn ceremony → retire demo signin → unblocks B5 KeyRotation · perf budget audit · public footer page set) · operator-side flows (R2 token generation · plugins.theourgia.com DNS · first-plugin smoke). |
 
 The full per-batch history lives in **[CHANGELOG.md](CHANGELOG.md)**. For the canonical feature catalog and per-phase status snapshot, see **[FEATURES.md](FEATURES.md)**. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
@@ -93,7 +93,7 @@ Theourgia is built in 17 phases. Each phase is architecturally dependent on prio
 | 12 | Federation (native protocol, network hubs, group ritual, SSO) | `[x]` ✅ H08 frontend ✓ · backend B137-B141 ✓ · **Phase 12.5 transport ✓** — inbox (b108-2br · HTTP-sig verifier + replay-nonce + activity persistence) · outbound delivery worker (b108-2bs · 60s→24h backoff · DEAD after 6 attempts · Celery beat every minute) | [plan/12-federation.md](plan/12-federation.md) · [plan/12-batches-backend.md](plan/12-batches-backend.md) |
 | 13 | ActivityPub (Fediverse interop) | `[x]` ✅ H08 frontend ✓ · persistence ✓ alembic 0060 · **Phase 13 bridge ✓** — actor JSON-LD · per-actor inbox + outbox · followers (count-private) · following (always-empty) · privacy-gated 404 when transport disabled (b108-2bt) | [plan/13-activitypub.md](plan/13-activitypub.md) |
 | 14 | Plugin Ecosystem (SDK, official registry, sandbox-before-commit) | `[x]` ✅ H09 frontend ✓ 17/17 · substrate from Phase 01 B7-B10 ✓ · lifecycle routes b108-2n ✓ alembic 0061 · **Registry deployed + bridge wired end-to-end** — server-side Ed25519 author signer (b108-2ch) + maintainer signer (b108-2cj) · all 8 A-cluster surfaces live in admin SPA · `did:vault:theourgia.com/soror-eu-a` registered as LEAD maintainer in prod | [plan/14-plugin-ecosystem.md](plan/14-plugin-ecosystem.md) |
-| 15 | Hardening & Launch (GDPR audit, a11y, performance, security, ops) | `[~]` (Cluster B 7 surfaces in design system ✓ · bwrap filesystem sandbox enforcing rule 59 ✓ · per-user audit log + GET /audit ✓ · deploy artefacts + runbook ✓; **remaining**: WebAuthn → retire demo signin · GDPR data export verification · perf budget audit · public footer page set) | [plan/15-hardening-and-launch.md](plan/15-hardening-and-launch.md) |
+| 15 | Hardening & Launch (GDPR audit, a11y, performance, security, ops) | `[~]` (Cluster B B1-B4 + B6-B7 wired live ✓ b108-2cl · bwrap filesystem sandbox enforcing rule 59 ✓ · per-user audit log + GET /audit ✓ · GDPR data export inline ✓ · 30-day account-deletion grace + reactivation ✓ · sessions/devices revoke ✓ · accessibility prefs persisted ✓ · deploy artefacts + runbook ✓; **remaining**: B5 KeyRotation needs WebAuthn ceremony · WebAuthn → retire demo signin · perf budget audit · public footer page set) | [plan/15-hardening-and-launch.md](plan/15-hardening-and-launch.md) |
 | 16 | AI Agent Integration (daskalos-pattern daemon + MCP) | `[x]` ✅ **agent-daemon scaffold complete** — MCP (JSON-RPC + SSE) · launcher + subprocess runner · cost-cap (at-wake + at-spend hard halt) · audit log · DB persistence · bwrap filesystem sandbox (rule 59) · install lifecycle CRUD · memory dir read/write · all 12 C-cluster surfaces live in admin SPA wired to bridge. (Operational: subprocess launch needs the claude CLI logged into Max on the host; no API key required.) | [plan/16-ai-agent-integration.md](plan/16-ai-agent-integration.md) |
 
 **Legend:** `[ ]` planned · `[~]` in progress (backend plan locked but execution still rolling) · `[x]` done
