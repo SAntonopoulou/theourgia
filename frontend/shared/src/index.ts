@@ -132,6 +132,7 @@ export * as KeyRotationCopy from "./KeyRotation/index.js";
 export { KeyRotationSurface, type CurrentKey, type KeyHistoryEntry, type KeyRotationSurfaceProps } from "./KeyRotation/KeyRotationSurface.js";
 export * as RegistryPublicHomeCopy from "./RegistryPublicHome/index.js";
 export { RegistryPublicHomeSurface, type RegistryPublicHomeSurfaceProps } from "./RegistryPublicHome/RegistryPublicHomeSurface.js";
+export type { ExtensionPointTile, RecentlyAddedItem, RecentlyUpdatedItem, TierKey } from "./RegistryPublicHome/copy.js";
 export * as PluginSubmissionFormCopy from "./PluginSubmissionForm/index.js";
 export { PluginSubmissionFormSurface, type PluginSubmissionFormProps } from "./PluginSubmissionForm/PluginSubmissionFormSurface.js";
 export * as PluginSubmissionListCopy from "./PluginSubmissionList/index.js";
