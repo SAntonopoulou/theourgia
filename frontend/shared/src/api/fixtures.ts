@@ -659,7 +659,7 @@ const BUNDLED_VOCES_FIXTURE: BundledVoce[] = [
 function workshopFixture(
   method: string,
   bare: string,
-  _qs: string,
+  qs: string,
   body: unknown,
 ): unknown {
   // ── Sigils ────────────────────────────────────────────────────
@@ -1201,8 +1201,170 @@ function workshopFixture(
     }
   }
 
+  // ── Phase 16 · agents (H10 C-cluster) ────────────────────────────────
+  // NB: lives inside the workshopFixture dispatcher historically; it's
+  // invoked for every fixture call that didn't match a more-specific
+  // handler above, so /api/v1/agents/* paths route through here too.
+  // Cleaner home would be a dedicated agentFixture() with its own
+  // delegated dispatch — a small refactor to do separately.
+
+  if (bare === "/api/v1/agents/runs") {
+    if (method === "POST") {
+      const runId = `mock-run-${Date.now()}`;
+      const startedAt = nowIso();
+      const fixture: AgentRunFixture = {
+        run_id: runId,
+        session_token: `mock-session-${runId}`,
+        status: "running",
+        started_at: startedAt,
+        ended_at: null,
+        returncode: null,
+        reservation_usd: "0.50",
+        cost: {
+          tokens_in: 0,
+          tokens_out: 0,
+          tokens_cache: 0,
+          tokens_fresh: 0,
+          tokens_resume: 0,
+          cost_usd: "0",
+          reservation_usd: "0.50",
+          remaining_usd: "0.50",
+          over_reservation: false,
+        },
+      };
+      AGENT_RUNS.set(runId, fixture);
+      return fixture;
+    }
+  }
+
+  if (bare.startsWith("/api/v1/agents/runs/")) {
+    const rest = bare.slice("/api/v1/agents/runs/".length);
+    const [runIdMaybe, sub] = rest.split("/");
+    const runId = runIdMaybe ?? "";
+    const fixture = AGENT_RUNS.get(runId);
+    if (!fixture) {
+      return new NotFoundError(
+        problem(404, "Not Found", `Agent run ${runId} not found`),
+      );
+    }
+    if (sub === undefined) {
+      if (method === "GET") return fixture;
+      if (method === "DELETE") {
+        fixture.status = "halted";
+        fixture.ended_at = nowIso();
+        return { run_id: runId, status: "halted" };
+      }
+    }
+    if (sub === "cost") {
+      if (method === "POST") {
+        const sample = (body ?? {}) as {
+          tokens_in?: number;
+          tokens_out?: number;
+          tokens_cache?: number;
+          tokens_fresh?: number;
+          tokens_resume?: number;
+          cost_usd?: string;
+        };
+        fixture.cost.tokens_in += sample.tokens_in ?? 0;
+        fixture.cost.tokens_out += sample.tokens_out ?? 0;
+        fixture.cost.tokens_cache += sample.tokens_cache ?? 0;
+        fixture.cost.tokens_fresh += sample.tokens_fresh ?? 0;
+        fixture.cost.tokens_resume += sample.tokens_resume ?? 0;
+        const delta = Number.parseFloat(sample.cost_usd ?? "0");
+        const next = Number.parseFloat(fixture.cost.cost_usd) + delta;
+        fixture.cost.cost_usd = next.toFixed(4);
+        const reservation = Number.parseFloat(fixture.cost.reservation_usd);
+        fixture.cost.remaining_usd = (reservation - next).toFixed(4);
+        fixture.cost.over_reservation = next > reservation;
+        return { ...fixture.cost };
+      }
+    }
+  }
+
+  if (bare === "/api/v1/agents/audit") {
+    if (method === "GET") {
+      const params = new URLSearchParams(qs);
+      const limit = Number.parseInt(params.get("limit") ?? "100", 10);
+      const offset = Number.parseInt(params.get("offset") ?? "0", 10);
+      const eventType = params.get("event_type");
+      let rows = [...AGENT_AUDIT];
+      if (eventType) {
+        rows = rows.filter((r) => r.event_type === eventType);
+      }
+      return {
+        vault_did: "did:vault:mock",
+        limit,
+        offset,
+        events: rows.slice(offset, offset + limit),
+      };
+    }
+  }
+
   return undefined;
 }
+
+// ── Phase 16 fixture state ─────────────────────────────────────────────
+
+interface AgentRunFixture {
+  run_id: string;
+  session_token: string;
+  status: "running" | "completed" | "halted" | "errored" | "pending";
+  started_at: string;
+  ended_at: string | null;
+  returncode: number | null;
+  reservation_usd: string;
+  cost: {
+    tokens_in: number;
+    tokens_out: number;
+    tokens_cache: number;
+    tokens_fresh: number;
+    tokens_resume: number;
+    cost_usd: string;
+    reservation_usd: string;
+    remaining_usd: string;
+    over_reservation: boolean;
+  };
+}
+
+const AGENT_RUNS: Map<string, AgentRunFixture> = new Map();
+
+const AGENT_AUDIT: Array<{
+  vault_did: string;
+  event_type: string;
+  happened_at: string;
+  run_id: string | null;
+  install_id: string | null;
+  tool_name: string | null;
+  arguments_json: Record<string, unknown> | null;
+  allowed: boolean;
+  filtered_count: number;
+  detail: string | null;
+}> = [
+  {
+    vault_did: "did:vault:mock",
+    event_type: "run.completed",
+    happened_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+    run_id: "mock-prior-run-1",
+    install_id: null,
+    tool_name: null,
+    arguments_json: null,
+    allowed: true,
+    filtered_count: 0,
+    detail: "returncode=0",
+  },
+  {
+    vault_did: "did:vault:mock",
+    event_type: "mcp.tools_call",
+    happened_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+    run_id: "mock-prior-run-1",
+    install_id: null,
+    tool_name: "read.entries",
+    arguments_json: { tag: "hekate", limit: 10 },
+    allowed: true,
+    filtered_count: 2,
+    detail: null,
+  },
+];
 
 function isValidMagicSquareFixture(cells: number[][]): boolean {
   const n = cells.length;
