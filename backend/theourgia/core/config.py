@@ -206,6 +206,28 @@ class Settings(BaseSettings):
         default=True, alias="THEOURGIA_STORAGE_S3_USE_SSL"
     )
 
+    # ── Agent daemon (Phase 16) ───────────────────────────────────────────
+    # Localhost HTTP URL of the agent daemon's control plane. The vault
+    # proxies the H10 C-cluster surfaces through here; when unset, agent
+    # routes return 503 with a 'daemon not configured' message.
+    agent_daemon_url: str | None = Field(
+        default=None, alias="THEOURGIA_AGENT_DAEMON_URL",
+    )
+    # Shared secret presented as `X-Daemon-Auth` on every daemon call.
+    # Must match the daemon's `THEOURGIA_AGENT_CONTROL_TOKEN`. Required
+    # whenever agent_daemon_url is set.
+    agent_daemon_control_token: SecretStr = Field(
+        default=SecretStr(""),
+        alias="THEOURGIA_AGENT_DAEMON_CONTROL_TOKEN",
+    )
+
+    # ── Registry (Phase 14) ───────────────────────────────────────────────
+    # Base URL of the plugin registry (https://plugins.theourgia.com).
+    # When unset, the H10 A-cluster marketplace browse routes return 503.
+    registry_url: str | None = Field(
+        default=None, alias="THEOURGIA_REGISTRY_URL",
+    )
+
     # ── Observability ─────────────────────────────────────────────────────
     sentry_dsn: SecretStr | None = Field(default=None, alias="THEOURGIA_SENTRY_DSN")
     """Crash reporting DSN. **Off by default** — Theourgia ships with
