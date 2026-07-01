@@ -29,9 +29,9 @@ jobs:
     name: deep-dep-audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v7
         with:
           version: ${{ env.UV_VERSION }}
 
@@ -44,17 +44,17 @@ jobs:
           uv run pip-audit --format json > pip-audit.json || true
 
       - name: Upload pip-audit results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pip-audit-${{ github.run_id }}
           path: backend/pip-audit.json
           retention-days: 30
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: ${{ env.PNPM_VERSION }}
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
@@ -64,7 +64,7 @@ jobs:
       - name: pnpm audit (full)
         run: pnpm audit --json > pnpm-audit.json || true
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: pnpm-audit-${{ github.run_id }}
           path: pnpm-audit.json
@@ -74,9 +74,9 @@ jobs:
     name: license-compatibility
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: astral-sh/setup-uv@v3
+      - uses: astral-sh/setup-uv@v7
         with:
           version: ${{ env.UV_VERSION }}
 
@@ -118,7 +118,7 @@ jobs:
           print(f"All {len(data)} Python deps AGPL-compatible.")
           PYEOF
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: licenses-python-${{ github.run_id }}
           path: backend/licenses-python.json
@@ -131,7 +131,7 @@ jobs:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Generate SBOM (CycloneDX)
         uses: anchore/sbom-action@v0
@@ -140,7 +140,7 @@ jobs:
           artifact-name: theourgia-sbom.cdx.json
           output-file: ./sbom.cdx.json
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sbom-${{ github.run_id }}
           path: sbom.cdx.json
