@@ -312,7 +312,7 @@ export const DEFAULT_VAULT_NAV: VaultNavSection[] = [
     heading: "Linguistic",
     items: [
       { key: "gematria", to: "/gematria", label: "Gematria" },
-      { key: "translit", to: "/transliteration", label: "Transliteration" },
+      { key: "translit", to: "/transliterations", label: "Transliteration" },
       { key: "voceslib", to: "/voces-library", label: "Voces library" },
     ],
   },
@@ -339,9 +339,9 @@ export const DEFAULT_VAULT_NAV: VaultNavSection[] = [
     heading: "Media",
     items: [
       { key: "media", to: "/media", label: "Media library" },
-      { key: "audio", to: "/audio-library", label: "Audio library" },
+      { key: "audio", to: "/audio", label: "Audio library" },
       { key: "pilgrimage", to: "/pilgrimage", label: "Pilgrimage map" },
-      { key: "icalfeed", to: "/ical-feed", label: "Calendar feed" },
+      { key: "icalfeed", to: "/icalfeed", label: "Calendar feed" },
     ],
   },
   // ── Phase 12 (H08) — Federation ──────────────────────────────────────
