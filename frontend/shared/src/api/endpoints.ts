@@ -418,6 +418,12 @@ export function api(client: ApiClient) {
       );
     },
 
+    listTemplates(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/templates",
+      );
+    },
+
     // ─── Entries (live as of Batch 10) ───────────────────────────────
 
     listEntries(opts?: { signal?: AbortSignal; type?: EntryType }): Promise<EntryRecord[]> {

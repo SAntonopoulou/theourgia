@@ -11,7 +11,20 @@
  */
 
 import { useTopbar } from "@theourgia/shared";
+import { useQuery } from "@tanstack/react-query";
 import { type CSSProperties, useMemo, useState } from "react";
+
+import { apiMethods } from "../data/api.js";
+
+interface WireTemplate {
+  id: string;
+  name: string;
+  description: string;
+  kind: string;
+  scope: string;
+  default_glyph: string;
+  tradition?: string | null;
+}
 
 const LINE = "var(--line)";
 const LINE_2 = "var(--line-2)";
@@ -165,9 +178,52 @@ function FilterChip({ label, active, onClick }: { label: string; active: boolean
   );
 }
 
+function kindToCategory(kind: string): Category {
+  if (kind === "ritual" || kind === "working" || kind === "ritual_log") return "Working";
+  if (kind === "divination" || kind === "scrying") return "Divination";
+  return "Journal";
+}
+
+function backendTemplateToLocal(w: WireTemplate): Template {
+  const category = kindToCategory(w.kind);
+  const color =
+    category === "Working"
+      ? "var(--c-working)"
+      : category === "Divination"
+        ? "var(--c-divination)"
+        : "var(--c-journal)";
+  return {
+    id: w.id,
+    category,
+    color,
+    glyph: w.default_glyph || "❖",
+    name: w.name,
+    description: w.description || "(no description)",
+    blocks: 0,
+    uses: 0,
+    structure: [],
+  };
+}
+
 export function Templates() {
   const [cat, setCat] = useState<CategoryFilter>("all");
   const [selectedId, setSelectedId] = useState<string>(TEMPLATES[0]!.id);
+
+  const query = useQuery({
+    queryKey: ["templates"],
+    queryFn: async () =>
+      (await apiMethods.listTemplates()) as unknown as WireTemplate[],
+    staleTime: 30_000,
+  });
+
+  const allTemplates = useMemo(() => {
+    const backend = (query.data ?? []).map(backendTemplateToLocal);
+    // Show user-created templates first, followed by the built-in
+    // starters. Once the "New template" button wires to POST /templates,
+    // the backend list grows and the starters remain as a starting
+    // point.
+    return [...backend, ...TEMPLATES];
+  }, [query.data]);
 
   useTopbar(
     () => ({
@@ -208,11 +264,11 @@ export function Templates() {
   );
 
   const visible = useMemo(() => {
-    if (cat === "all") return TEMPLATES;
-    return TEMPLATES.filter((t) => t.category === cat);
-  }, [cat]);
+    if (cat === "all") return allTemplates;
+    return allTemplates.filter((t) => t.category === cat);
+  }, [cat, allTemplates]);
 
-  const sel = TEMPLATES.find((t) => t.id === selectedId) ?? TEMPLATES[0]!;
+  const sel = allTemplates.find((t) => t.id === selectedId) ?? allTemplates[0]!;
 
   return (
     <main className="scroll" style={{ overflowY: "auto", minHeight: 0, padding: "24px 28px 60px" }}>
