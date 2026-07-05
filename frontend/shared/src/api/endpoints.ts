@@ -427,6 +427,22 @@ export function api(client: ApiClient) {
       );
     },
 
+    getMedia(id: string): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/media/${encodeURIComponent(id)}`,
+      );
+    },
+
+    updateMedia(
+      id: string,
+      patch: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/media/${encodeURIComponent(id)}`,
+        { method: "PATCH", json: patch },
+      );
+    },
+
     listPilgrimageSites(): Promise<Record<string, unknown>> {
       return client.request<Record<string, unknown>>(
         "/api/v1/pilgrimage-sites",

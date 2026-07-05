@@ -1,10 +1,10 @@
 /**
- * Media Detail — admin route wrapping the shared MediaDetailSurface
- * (H07 §S3 surface 15).
+ * Media Detail — admin route.
  *
- * Phase 11 backend is unbuilt — the route holds a fixture record
- * keyed off the URL `:id` param. The Insert CTA Toasts until the
- * Tiptap editor handoff lands in B108-3.
+ * Live-wired: GET /media/{id} on mount, PATCH /media/{id} on every
+ * change to alt-text / caption / seal / tags. Insert-into-entry
+ * stays surface-scoped until the Tiptap picker exposes an insert
+ * path from outside the editor.
  */
 
 import {
@@ -13,86 +13,129 @@ import {
   Toast,
   useTopbar,
 } from "@theourgia/shared";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-const FIXTURE_RECORDS: Record<string, MediaDetailRecord> = {
-  "m-altar-dark-moon": {
-    id: "m-altar-dark-moon",
-    kind: "image",
-    filename: "altar-dark-moon.jpg",
-    dimensions_label: "2400×1800",
-    type_size_label: "image/jpeg · 2.4 MB",
-    exif_policy: "retained",
-    exif_label: "EXIF retained · 15 Jun 22:41",
-    alt_text:
-      "A small altar lit by a single oil lamp at the dark of the moon.",
-    caption: "The Deipnon offering, before the bell.",
-    tags: ["altar", "dark moon"],
-    sealed: false,
-    links: [
-      { id: "l-deipnon", glyph: "✶", label: "Deipnon working" },
-      { id: "l-hekate", glyph: "☽", label: "Hekate" },
-    ],
-  },
-  "m-brimo-sounding": {
-    id: "m-brimo-sounding",
-    kind: "audio",
-    filename: "brimo-sounding.m4a",
-    dimensions_label: "44.1 kHz · mono",
-    type_size_label: "audio/m4a · 500 KB",
-    duration_label: "0:42",
-    alt_text: "",
-    caption: "A barbarous-name working, slowed.",
-    tags: ["voce"],
-    sealed: false,
-    links: [{ id: "l-voce", glyph: "✶", label: "Brimo voce" }],
-  },
-  "m-banishing-rite": {
-    id: "m-banishing-rite",
-    kind: "video",
-    filename: "banishing-rite.mp4",
-    dimensions_label: "1920×1080 · 24 fps",
-    type_size_label: "video/mp4 · 12 MB",
-    duration_label: "4:18",
-    alt_text: "",
-    caption: "Banishing rite, May Day.",
-    tags: ["rite"],
-    sealed: false,
-    links: [{ id: "l-rite", glyph: "✶", label: "May Day working" }],
-  },
-  "m-oracle-transcript": {
-    id: "m-oracle-transcript",
-    kind: "document",
-    filename: "oracle-transcript.pdf",
-    dimensions_label: "12 pages",
-    type_size_label: "application/pdf · 220 KB",
-    alt_text: "",
-    caption: "",
-    tags: ["oracle"],
-    sealed: false,
-    links: [],
-  },
-};
+import { apiMethods } from "../data/api.js";
 
-const DEFAULT_RECORD = FIXTURE_RECORDS["m-altar-dark-moon"]!;
+
+interface WireMediaAsset {
+  id: string;
+  kind: string;
+  filename: string;
+  size_bytes: number;
+  content_type?: string | null;
+  width?: number | null;
+  height?: number | null;
+  duration_seconds?: number | null;
+  page_count?: number | null;
+  frame_rate?: number | null;
+  alt_text?: string | null;
+  caption?: string | null;
+  tags?: string[];
+  exif_policy?: string;
+  sealed?: boolean;
+}
+
+function sizeLabel(size: number, kind: string, content_type: string | null): string {
+  const bytes =
+    size >= 1_000_000
+      ? `${(size / 1_000_000).toFixed(1)} MB`
+      : `${Math.max(1, Math.round(size / 1_000))} KB`;
+  const type = content_type ?? kind;
+  return `${type} · ${bytes}`;
+}
+
+function dimensionsLabel(w: WireMediaAsset): string {
+  if (w.width && w.height) {
+    const parts = [`${w.width}×${w.height}`];
+    if (w.frame_rate) parts.push(`${w.frame_rate} fps`);
+    return parts.join(" · ");
+  }
+  if (w.duration_seconds) {
+    return `${Math.floor(w.duration_seconds / 60)}:${String(
+      Math.round(w.duration_seconds % 60),
+    ).padStart(2, "0")}`;
+  }
+  if (w.page_count) return `${w.page_count} pages`;
+  return "—";
+}
+
+function toRecord(w: WireMediaAsset): MediaDetailRecord {
+  const secs = w.duration_seconds ?? null;
+  return {
+    id: w.id,
+    kind: (w.kind as MediaDetailRecord["kind"]) ?? "document",
+    filename: w.filename,
+    dimensions_label: dimensionsLabel(w),
+    type_size_label: sizeLabel(w.size_bytes, w.kind, w.content_type ?? null),
+    duration_label: secs
+      ? `${Math.floor(secs / 60)}:${String(Math.round(secs % 60)).padStart(2, "0")}`
+      : undefined,
+    exif_policy: (w.exif_policy as MediaDetailRecord["exif_policy"]) ?? "stripped",
+    exif_label:
+      w.exif_policy === "retained" ? "EXIF retained" : "EXIF stripped",
+    alt_text: w.alt_text ?? "",
+    caption: w.caption ?? "",
+    tags: [...(w.tags ?? [])],
+    sealed: w.sealed ?? false,
+    links: [],
+  };
+}
 
 export function MediaDetailRoute() {
   const params = useParams<{ id?: string }>();
   const navigate = useNavigate();
-  const initial = useMemo<MediaDetailRecord>(() => {
-    const id = params.id;
-    return (id && FIXTURE_RECORDS[id]) || DEFAULT_RECORD;
-  }, [params.id]);
 
-  const [record, setRecord] = useState<MediaDetailRecord>(initial);
+  const [record, setRecord] = useState<MediaDetailRecord | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!params.id) return;
+    let cancelled = false;
+    apiMethods
+      .getMedia(params.id)
+      .then((row) => {
+        if (cancelled) return;
+        setRecord(toRecord(row as unknown as WireMediaAsset));
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setLoadError(
+            e instanceof Error ? e.message : "Failed to load media asset",
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [params.id]);
 
   useTopbar(
     () => ({
-      title: record.filename,
-      subtitle: `${record.dimensions_label} · ${record.type_size_label}`,
+      title: record?.filename ?? "Media asset",
+      subtitle: record
+        ? `${record.dimensions_label} · ${record.type_size_label}`
+        : loadError ?? "loading…",
     }),
-    [record.filename, record.dimensions_label, record.type_size_label],
+    [record?.filename, record?.dimensions_label, record?.type_size_label, loadError],
+  );
+
+  const patchAsset = useCallback(
+    async (patch: Record<string, unknown>) => {
+      if (!params.id) return;
+      try {
+        const updated = await apiMethods.updateMedia(params.id, patch);
+        setRecord(toRecord(updated as unknown as WireMediaAsset));
+      } catch (err) {
+        Toast.push({
+          tone: "error",
+          title: "Could not save",
+          body: err instanceof Error ? err.message : "Unexpected error.",
+        });
+      }
+    },
+    [params.id],
   );
 
   const handleBack = useCallback(() => {
@@ -103,53 +146,82 @@ export function MediaDetailRoute() {
     Toast.push({
       tone: "info",
       title: "Insert into entry",
-      body: "Tiptap editor handoff lands in B108-3. The asset reference is staged.",
+      body: "The Tiptap picker doesn't yet accept out-of-band inserts. Open an entry and use the picker there.",
     });
   }, []);
 
-  const handleAltText = useCallback((alt_text: string) => {
-    setRecord((r) => ({ ...r, alt_text }));
-  }, []);
+  const handleAltText = useCallback(
+    (alt_text: string) => {
+      setRecord((r) => (r ? { ...r, alt_text } : r));
+      void patchAsset({ alt_text });
+    },
+    [patchAsset],
+  );
 
-  const handleCaption = useCallback((caption: string) => {
-    setRecord((r) => ({ ...r, caption }));
-  }, []);
+  const handleCaption = useCallback(
+    (caption: string) => {
+      setRecord((r) => (r ? { ...r, caption } : r));
+      void patchAsset({ caption });
+    },
+    [patchAsset],
+  );
 
-  const handleToggleSeal = useCallback((next: boolean) => {
-    setRecord((r) => ({ ...r, sealed: next }));
-    Toast.push({
-      tone: "info",
-      title: next ? "Will seal on save" : "Will unseal on save",
-      body: "Seal state is staged until you save. Vault must be unlocked.",
-    });
-  }, []);
+  const handleToggleSeal = useCallback(
+    (next: boolean) => {
+      setRecord((r) => (r ? { ...r, sealed: next } : r));
+      void patchAsset({ sealed: next });
+    },
+    [patchAsset],
+  );
 
   const handleAddTag = useCallback(() => {
     Toast.push({
       tone: "info",
       title: "Add tag",
-      body: "Tag editor lands with the Phase 11 backend.",
+      body: "Tag editing shipped for entries but not yet as a modal on media detail. Coming next.",
     });
   }, []);
 
-  const handleRemoveTag = useCallback((t: string) => {
-    setRecord((r) => ({ ...r, tags: r.tags.filter((x) => x !== t) }));
-  }, []);
+  const handleRemoveTag = useCallback(
+    (t: string) => {
+      if (!record) return;
+      const next = record.tags.filter((x) => x !== t);
+      setRecord({ ...record, tags: next });
+      void patchAsset({ tags: next });
+    },
+    [record, patchAsset],
+  );
 
   const handleAddLink = useCallback(() => {
     Toast.push({
       tone: "info",
       title: "Link",
-      body: "Entity / Library / Chart picker reuses the Tiptap pickers; ships in B108-3.",
+      body: "Entity / Library / Chart picker for media asset links is on the roadmap.",
     });
   }, []);
 
-  const handleRemoveLink = useCallback((id: string) => {
-    setRecord((r) => ({
-      ...r,
-      links: r.links.filter((x) => x.id !== id),
-    }));
-  }, []);
+  const handleRemoveLink = useCallback(
+    (id: string) => {
+      setRecord((r) =>
+        r ? { ...r, links: r.links.filter((x) => x.id !== id) } : r,
+      );
+    },
+    [],
+  );
+
+  if (!record) {
+    return (
+      <div
+        style={{
+          padding: "40px 24px",
+          fontFamily: "var(--font-ui)",
+          color: "var(--ink-mute)",
+        }}
+      >
+        {loadError ?? "Loading media…"}
+      </div>
+    );
+  }
 
   return (
     <MediaDetailSurface

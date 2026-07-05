@@ -46,12 +46,10 @@ const MODE_NOTE: Record<Mode, string> = {
   off: "Off — your vault is private. No federation; network rites and shared notices are disabled.",
 };
 
-const PEERS: Peer[] = [
-  { id: "ordo", domain: "vault.ordotheurgica.net", trust: "Trusted", software: "Theourgia v1.4", shared: "47 members · 11 rites", sync: "synced 2m ago", status: "Reachable", latency: "38 ms" },
-  { id: "hermetic", domain: "nexus.hermetic.lib", trust: "Trusted", software: "Theourgia v1.3", shared: "library mirror", sync: "synced 6m ago", status: "Reachable", latency: "64 ms" },
-  { id: "isis", domain: "temple.isis-urania.org", trust: "Probationary", software: "Theourgia v1.4", shared: "public rites only", sync: "synced 41m ago", status: "Degraded", latency: "320 ms" },
-  { id: "grove", domain: "grove.albion.net", trust: "Trusted", software: "Aurora v0.9 (compatible)", shared: "notices only", sync: "last seen 2d ago", status: "Unreachable", latency: "—" },
-];
+// Backend federation-peer probe endpoint not yet built. Empty until
+// /api/v1/federation/peers ships; render an honest empty state
+// instead of fabricated peer latencies.
+const PEERS: Peer[] = [];
 
 function statusColor(s: Peer["status"]): string {
   if (s === "Reachable") return "var(--success)";
