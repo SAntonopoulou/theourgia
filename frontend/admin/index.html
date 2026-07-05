@@ -6,8 +6,8 @@
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#15120D" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#EFE7D4" media="(prefers-color-scheme: light)" />
-    <link rel="manifest" href="/admin/manifest.webmanifest" />
-    <link rel="icon" href="/admin/icon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="/app/manifest.webmanifest" />
+    <link rel="icon" href="/app/icon.svg" type="image/svg+xml" />
     <title>Theourgia — Admin</title>
     <script>
       (function () {
@@ -48,9 +48,9 @@
       // Service worker registration — runs after first paint so it never
       // blocks the shell. Only registers in production (Vite dev server's
       // module fetch URLs don't match SW cache rules).
-      if ("serviceWorker" in navigator && location.pathname.startsWith("/admin/")) {
+      if ("serviceWorker" in navigator && location.pathname.startsWith("/app/")) {
         window.addEventListener("load", function () {
-          navigator.serviceWorker.register("/admin/sw.js", { scope: "/admin/" }).catch(function () {
+          navigator.serviceWorker.register("/app/sw.js", { scope: "/app/" }).catch(function () {
             // Best-effort — failing SW registration shouldn't break the app.
           });
         });

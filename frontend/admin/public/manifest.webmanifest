@@ -2,21 +2,21 @@
   "name": "Theourgia",
   "short_name": "Theourgia",
   "description": "Magickal journal CMS and practitioner toolkit",
-  "start_url": "/admin/capture",
-  "scope": "/admin/",
+  "start_url": "/app/capture",
+  "scope": "/app/",
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#15120D",
   "background_color": "#15120D",
   "icons": [
     {
-      "src": "/admin/icon.svg",
+      "src": "/app/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "/admin/icon-maskable.svg",
+      "src": "/app/icon-maskable.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
@@ -27,15 +27,15 @@
       "name": "Quick capture",
       "short_name": "Capture",
       "description": "Write a quick entry",
-      "url": "/admin/capture",
-      "icons": [{ "src": "/admin/icon.svg", "sizes": "any" }]
+      "url": "/app/capture",
+      "icons": [{ "src": "/app/icon.svg", "sizes": "any" }]
     },
     {
       "name": "Today",
       "short_name": "Today",
       "description": "Open today's vault",
-      "url": "/admin/",
-      "icons": [{ "src": "/admin/icon.svg", "sizes": "any" }]
+      "url": "/app/",
+      "icons": [{ "src": "/app/icon.svg", "sizes": "any" }]
     }
   ],
   "categories": ["lifestyle", "productivity", "books"]

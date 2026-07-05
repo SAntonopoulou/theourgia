@@ -22,7 +22,7 @@ const VERSION = "v1";
 const SHELL_CACHE = `theo-shell-${VERSION}`;
 const RUNTIME_CACHE = `theo-runtime-${VERSION}`;
 
-const SHELL_ASSETS = ["/admin/", "/admin/index.html", "/admin/manifest.webmanifest", "/admin/icon.svg"];
+const SHELL_ASSETS = ["/app/", "/app/index.html", "/app/manifest.webmanifest", "/app/icon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -55,7 +55,7 @@ self.addEventListener("fetch", (event) => {
   // Navigation requests — serve the cached shell so offline boot works.
   if (request.mode === "navigate") {
     event.respondWith(
-      caches.match("/admin/index.html").then(
+      caches.match("/app/index.html").then(
         (cached) =>
           cached ??
           fetch(request).catch(

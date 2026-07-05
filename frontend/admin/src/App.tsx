@@ -163,7 +163,7 @@ import { Talismans } from "./routes/Talismans.js";
 import { Synchronicities } from "./routes/Synchronicities.js";
 import { Today } from "./routes/Today.js";
 
-// Vite's BASE_URL: "/" in dev, "/admin/" in prod. BrowserRouter
+// Vite's BASE_URL: "/" in dev, "/app/" in prod. BrowserRouter
 // basename wants no trailing slash; trim it.
 const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, "");
 
