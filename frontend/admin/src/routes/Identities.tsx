@@ -739,6 +739,24 @@ export function Identities() {
       >
         {/* LEFT */}
         <div style={{ flex: "3 1 520px", minWidth: 0 }}>
+          <div
+            style={{
+              marginBottom: 20,
+              padding: "12px 16px",
+              border: "1px dashed var(--line-2)",
+              borderRadius: "var(--r-md)",
+              background: "var(--bg-3)",
+              fontFamily: "var(--font-ui)",
+              fontSize: 13,
+              color: "var(--ink-soft)",
+              lineHeight: 1.5,
+            }}
+          >
+            <strong style={{ color: "var(--ink)" }}>Preview surface.</strong>{" "}
+            The Persona table (Option D, per the resolved-decisions memory) is
+            queued for Phase 02/03 and the identity rows below are illustrative.
+            Actions do not persist yet.
+          </div>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 4 }}>
             <h2 style={{ fontFamily: "var(--font-display)", fontSize: 23, margin: 0 }}>Your identities</h2>
             <span style={{ fontFamily: "var(--font-ui)", fontSize: 12.5, color: "var(--ink-mute)" }}>

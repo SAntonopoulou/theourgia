@@ -36,6 +36,9 @@ export interface PluginInstall {
   activated_at: string | null;
   installed_at: string;
   capabilities: CapabilityGrant[];
+  /** Raw manifest as declared by the plugin bundle. May include a
+   *  ``config_schema`` object describing user-configurable fields. */
+  manifest: Record<string, unknown>;
 }
 
 interface InstalledListResponse {

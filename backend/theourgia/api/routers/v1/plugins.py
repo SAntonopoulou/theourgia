@@ -120,6 +120,10 @@ class PluginInstallRead(BaseModel):
     activated_at: datetime | None
     installed_at: datetime
     capabilities: list[CapabilityGrantRead]
+    # Manifest is exposed so the configure surface can render the
+    # plugin's declared config_schema. May be an empty dict for
+    # legacy installs.
+    manifest: dict[str, object] = Field(default_factory=dict)
 
 
 def _to_read(
@@ -146,6 +150,7 @@ def _to_read(
             )
             for g in grants
         ],
+        manifest=dict(install.manifest_json or {}),
     )
 
 
