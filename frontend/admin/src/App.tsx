@@ -115,7 +115,6 @@ import { Identities } from "./routes/Identities.js";
 import { LineageAdmin } from "./routes/LineageAdmin.js";
 import { Membership } from "./routes/Membership.js";
 import { Oracle } from "./routes/Oracle.js";
-import { Permissions } from "./routes/Permissions.js";
 import { Scheduler } from "./routes/Scheduler.js";
 import { Templates } from "./routes/Templates.js";
 import { Wellbeing } from "./routes/Wellbeing.js";
@@ -409,7 +408,6 @@ function ShellRoutes() {
         <Route path="/identities" element={<Identities />} />
         <Route path="/lineage" element={<LineageAdmin />} />
         <Route path="/membership" element={<Membership />} />
-        <Route path="/permissions" element={<Permissions />} />
         <Route path="/wellbeing" element={<Wellbeing />} />
         <Route path="/agents-home" element={<AgentsHomeRoute />} />
         <Route path="/agents/runs/:runId" element={<AgentRunMonitorRoute />} />
