@@ -2,14 +2,15 @@
  * HubNewsletterComposer — admin route at
  * ``/hubs/:hubId/newsletter`` (H08 §S3 Cluster A surface 7).
  *
- * Distinct from the existing ``NewsletterComposer.tsx`` route, which
- * powers the Phase-10 per-vault subscriber newsletter at
- * ``/newsletter/compose``. The hub-network composer here is the
- * Phase-12 federation variant: a curator (hub officer) assembles
- * an issue from approved member submissions and sends it to the
- * hub's role-tiered subscribers.
+ * Distinct from the existing ``NewsletterEditor`` route, which powers
+ * the Phase-10 per-vault subscriber newsletter. The hub-network
+ * composer here is the Phase-12 federation variant: a curator (hub
+ * officer) assembles an issue from approved member submissions and
+ * sends it to the hub's role-tiered subscribers.
  *
- * Wiring deferred to Phase 12 backend:
+ * Hub name is fetched from `/api/v1/hubs/{id}`; sources / body /
+ * recipient count / send are Phase-12 backend and stay honestly
+ * empty (recipientCount=0) until:
  *
  *   * GET /api/v1/hubs/{id}/curation?status=approved — sources.
  *   * GET/PATCH /api/v1/hubs/{id}/newsletter/draft — title + body.
@@ -18,50 +19,69 @@
  *   * GET /api/v1/hubs/{id}/subscribers?status=active — count.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 import {
   type NewsletterBodyPart,
   NewsletterComposerSurface,
   type NewsletterSource,
+  Toast,
   useTopbar,
 } from "@theourgia/shared";
 
-// Hub curation-sources endpoint not yet built. Empty until it ships.
-const SOURCES: NewsletterSource[] = [];
+import { apiClient } from "../data/api.js";
 
-// Empty draft — the newsletter draft endpoint is queued.
+interface WireHub {
+  id: string;
+  name: string;
+}
+
+const SOURCES: NewsletterSource[] = [];
 const INITIAL_BODY: NewsletterBodyPart[] = [];
 
 export function HubNewsletterComposer() {
   const { hubId } = useParams<{ hubId: string }>();
-  const [title, setTitle] = useState("The crossroads, this month");
+  const [title, setTitle] = useState("");
   const [bodyParts] = useState<NewsletterBodyPart[]>(INITIAL_BODY);
+  const [hubName, setHubName] = useState<string>("Hub");
   useTopbar(() => ({ title: "Newsletter" }));
+
+  useEffect(() => {
+    if (!hubId) return;
+    let cancelled = false;
+    apiClient
+      .request<WireHub>(`/api/v1/hubs/${encodeURIComponent(hubId)}`)
+      .then((row) => {
+        if (!cancelled) setHubName(row.name || "Hub");
+      })
+      .catch(() => {
+        // Best-effort — keep the fallback label.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [hubId]);
+
+  const notYetWired = (label: string) => () => {
+    Toast.push({
+      tone: "info",
+      title: `${label} — hub-network newsletter is Phase 12`,
+      body: "Curation sources and send are queued behind the hub-newsletter backend.",
+    });
+  };
 
   return (
     <NewsletterComposerSurface
-      hubName="Crossroads Coven"
-      recipientCount={34}
+      hubName={hubName}
+      recipientCount={0}
       title={title}
       onTitleChange={setTitle}
       sources={SOURCES}
       bodyParts={bodyParts}
-      onInsertSource={(sourceId) => {
-        // TODO Phase 12 — insert curation embed at the caret.
-        // eslint-disable-next-line no-console
-        console.info("[hub-newsletter] insert source", sourceId);
-      }}
-      onPreview={() => {
-        // eslint-disable-next-line no-console
-        console.info("[hub-newsletter] preview");
-      }}
-      onSend={() => {
-        // TODO Phase 12 — POST send.
-        // eslint-disable-next-line no-console
-        console.info("[hub-newsletter] send confirmed", hubId, title);
-      }}
+      onInsertSource={notYetWired("Insert curation")}
+      onPreview={notYetWired("Preview")}
+      onSend={notYetWired("Send")}
     />
   );
 }

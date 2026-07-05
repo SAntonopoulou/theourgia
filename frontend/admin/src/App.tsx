@@ -108,13 +108,10 @@ import { VulnerabilityAdvisorySubmitRoute } from "./routes/VulnerabilityAdvisory
 import { BookPreview } from "./routes/BookPreview.js";
 import { Capture } from "./routes/Capture.js";
 import { Editor } from "./routes/Editor.js";
-import { Federation } from "./routes/Federation.js";
 import { Health } from "./routes/Health.js";
 import { Identities } from "./routes/Identities.js";
 import { LineageAdmin } from "./routes/LineageAdmin.js";
-import { Membership } from "./routes/Membership.js";
 import { Oracle } from "./routes/Oracle.js";
-import { Scheduler } from "./routes/Scheduler.js";
 import { Templates } from "./routes/Templates.js";
 import { Wellbeing } from "./routes/Wellbeing.js";
 import { Workshop } from "./routes/Workshop.js";
@@ -406,7 +403,6 @@ function ShellRoutes() {
         />
         <Route path="/identities" element={<Identities />} />
         <Route path="/lineage" element={<LineageAdmin />} />
-        <Route path="/membership" element={<Membership />} />
         <Route path="/wellbeing" element={<Wellbeing />} />
         <Route path="/agents-home" element={<AgentsHomeRoute />} />
         <Route path="/agents/runs/:runId" element={<AgentRunMonitorRoute />} />
@@ -431,9 +427,7 @@ function ShellRoutes() {
         <Route path="/editor" element={<Editor />} />
         <Route path="/editor/:id" element={<Editor />} />
         <Route path="/book/preview" element={<BookPreview />} />
-        <Route path="/scheduler" element={<Scheduler />} />
         <Route path="/templates" element={<Templates />} />
-        <Route path="/federation" element={<Federation />} />
         <Route path="/health" element={<Health />} />
         <Route path="/workshop" element={<Workshop />} />
         <Route path="/oracle" element={<Oracle />} />
