@@ -1,12 +1,11 @@
 /**
- * Gematria Calculator — admin route wrapping the shared
- * GematriaCalculatorSurface (H06 §S6.1).
+ * Gematria Calculator — admin route.
  *
- * Phase 08 backend is unbuilt by design. "Save as study" and
- * "Insert into draft" surface a Toast acknowledging the in-memory
- * commit; the live wiring (POST /api/v1/gematria/studies + Tiptap
- * editor block insertion) lands once the Phase 08 backend is
- * authored.
+ * Live-wired: "Save as study" POSTs to /api/v1/studies with the
+ * captured input + selected cipher IDs. "Save custom cipher" POSTs
+ * to /api/v1/ciphers with the mapping + citation. Editor-block
+ * insertion is still surface-scoped until the Tiptap picker
+ * plumbing exposes an insert-from-outside path.
  */
 
 import {
@@ -15,6 +14,8 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 import { useCallback } from "react";
+
+import { apiMethods } from "../data/api.js";
 
 export function GematriaCalculatorRoute() {
   useTopbar(
@@ -27,15 +28,29 @@ export function GematriaCalculatorRoute() {
   );
 
   const handleSaveStudy = useCallback(
-    (payload: {
-      input: string;
-      cipherIds: readonly string[];
-    }) => {
-      Toast.push({
-        tone: "success",
-        title: "Study captured",
-        body: `“${payload.input}” computed across ${payload.cipherIds.length} ciphers. Backend wiring for POST /api/v1/gematria/studies lands when Phase 08 ships.`,
-      });
+    async (payload: { input: string; cipherIds: readonly string[] }) => {
+      try {
+        await apiMethods.createStudy({
+          name: payload.input,
+          kind: "gematria_calculation",
+          query: {
+            input: payload.input,
+            cipher_ids: [...payload.cipherIds],
+          },
+          visibility: "personal",
+        });
+        Toast.push({
+          tone: "success",
+          title: "Study saved",
+          body: `“${payload.input}” persisted across ${payload.cipherIds.length} cipher${payload.cipherIds.length === 1 ? "" : "s"}.`,
+        });
+      } catch (err) {
+        Toast.push({
+          tone: "error",
+          title: "Could not save",
+          body: err instanceof Error ? err.message : "Unexpected error.",
+        });
+      }
     },
     [],
   );
@@ -45,21 +60,53 @@ export function GematriaCalculatorRoute() {
       Toast.push({
         tone: "info",
         title: "Insert queued",
-        body: `“${payload.word}” = ${payload.value}. Editor block-insert wiring lands with Phase 08 frontend integration.`,
+        body: `“${payload.word}” = ${payload.value}. Editor block-insert plumbing is a surface-side follow-up.`,
       });
     },
     [],
   );
 
   const handleSaveCustomCipher = useCallback(
-    (cipher: { name: string; personal: boolean }) => {
-      Toast.push({
-        tone: "success",
-        title: cipher.personal
-          ? `“${cipher.name}” saved · marked personal`
-          : `“${cipher.name}” saved with citation`,
-        body: "Custom ciphers live in your vault. Sharing with the community ships with Phase 14.",
-      });
+    async (cipher: {
+      name: string;
+      personal: boolean;
+      language?: string;
+      citation?: string;
+      values?: Readonly<Record<string, number>>;
+    }) => {
+      try {
+        // Backend deduces `personal` from source_citation:
+        //   null/empty → personal=true, otherwise personal=false.
+        const source_citation = cipher.personal ? null : (cipher.citation ?? null);
+        const language =
+          (cipher.language as
+            | "greek"
+            | "hebrew"
+            | "english"
+            | "coptic"
+            | "arabic"
+            | "sanskrit"
+            | "custom") ?? "custom";
+        await apiMethods.createCipher({
+          name: cipher.name,
+          language,
+          mapping: cipher.values ? { ...cipher.values } : {},
+          source_citation,
+        });
+        Toast.push({
+          tone: "success",
+          title: cipher.personal
+            ? `“${cipher.name}” saved · marked personal`
+            : `“${cipher.name}” saved with citation`,
+          body: "Custom ciphers live in your vault.",
+        });
+      } catch (err) {
+        Toast.push({
+          tone: "error",
+          title: "Could not save",
+          body: err instanceof Error ? err.message : "Unexpected error.",
+        });
+      }
     },
     [],
   );

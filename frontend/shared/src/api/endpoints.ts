@@ -424,6 +424,53 @@ export function api(client: ApiClient) {
       );
     },
 
+    // ── Studies + Ciphers (Phase 08) ─────────────────────────────
+
+    createStudy(input: {
+      name: string;
+      kind: "gematria_calculation" | "gematria_search";
+      query: Record<string, unknown>;
+      description?: string;
+      visibility?: "personal" | "vault_shared" | "publishable";
+    }): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/studies",
+        { method: "POST", json: input },
+      );
+    },
+
+    listCiphers(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/ciphers",
+      );
+    },
+
+    listBundledCiphers(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/ciphers/bundled",
+      );
+    },
+
+    createCipher(input: {
+      name: string;
+      language:
+        | "greek"
+        | "hebrew"
+        | "english"
+        | "coptic"
+        | "arabic"
+        | "sanskrit"
+        | "custom";
+      mapping: Record<string, number>;
+      notes?: string;
+      source_citation?: string | null;
+    }): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/ciphers",
+        { method: "POST", json: input },
+      );
+    },
+
     // ─── Entries (live as of Batch 10) ───────────────────────────────
 
     listEntries(opts?: { signal?: AbortSignal; type?: EntryType }): Promise<EntryRecord[]> {
