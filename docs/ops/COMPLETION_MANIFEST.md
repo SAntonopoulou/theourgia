@@ -289,6 +289,32 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     "Natal — Aspasia, 1980-03-14" → generic. Workshop builder
     hrefs `/sigil` and `/circle` → `/sigils` and `/circles`
     (both were 404'ing).
+  - b108-2ei: **Agent install + task composer honesty.**
+    AgentInstallRoute passed a hardcoded pair of DEFAULT_CAPABILITIES
+    (read.entries + read.entities) as if they were the agent's real
+    caps — displayed on every install regardless of the agent.
+    Removed; the preamble now says "the agent's declared capabilities
+    aren't yet returned by the marketplace endpoint; you'll be
+    prompted at first run". AgentTaskComposerRoute was calling
+    startAgentRun with `agent_slug=installId` (wrong), granted_caps=
+    ["read.entries"] hardcoded, and monthly_cap_usd="10.00" — all
+    invented. Now fetches GET /agents/installs/:id and uses the
+    real agent_id and monthly_cost_cap_usd from the install.
+  - b108-2ej: **Silent console.info stubs → honest Toasts.**
+    Six action buttons (Agent BYO key save/reset/subscription/
+    override · Agent memory archive · Bundle library action ·
+    Hub member Withdraw + Sharing toggle · Plugin submission
+    Replace manifest · Plugin submission Withdraw) were logging
+    "endpoint queued" to console.info while showing the CTA as if
+    it worked. Replaced with tone=info Toasts that explicitly say
+    what's not wired. Also swapped the AgentMemoryReader Add file
+    `window.prompt` for the shared PromptDialog.
+  - b108-2ek: **Native window.confirm/prompt swept.**
+    TotpEnrollmentRoute's "Disable TOTP" `window.confirm` replaced
+    with ConfirmDialog (tone=destructive). The shared Editor
+    Toolbar Link button's `window.prompt("URL", …)` replaced with
+    PromptDialog. Two remaining native browser dialogs were the
+    last violations of the UI-modals-only feedback rule; both gone.
   - b108-2eh: **Editor `/editor` auto-creates a draft.**
     Loading /editor with no :id previously rendered a fabricated
     "Invocation of the Agathos Daimon" specimen (fake ritual log ·
