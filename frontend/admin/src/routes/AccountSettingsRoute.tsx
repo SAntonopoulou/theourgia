@@ -15,9 +15,11 @@
 
 import {
   AccountSettingsSurface,
+  useAuth,
   useTopbar,
 } from "@theourgia/shared";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const INHERITANCE_KEY = "theourgia.inheritance.enabled";
 
@@ -44,24 +46,65 @@ export function AccountSettingsRoute() {
     sourceHref: "https://github.com/SAntonopoulou/theourgia",
   };
 
+  const auth = useAuth();
+  const navigate = useNavigate();
+
+  async function handleSignOut(): Promise<void> {
+    try {
+      await auth.signOut();
+    } finally {
+      navigate("/signin", { replace: true });
+    }
+  }
+
   return (
-    <AccountSettingsSurface
-      about={about}
-      inheritanceOn={inheritanceOn}
-      onToggleInheritance={(next) => {
-        setInheritanceOn(next);
-        try {
-          if (next) localStorage.setItem(INHERITANCE_KEY, "1");
-          else localStorage.removeItem(INHERITANCE_KEY);
-        } catch {
-          // localStorage unavailable — toggle is in-memory only.
-        }
-      }}
-      onSetupExecutor={() => {
-        // For v1 the executor-designation flow lives in the Identities
-        // surface; the dedicated wizard lands with Digital Inheritance.
-        window.location.href = "/identities";
-      }}
-    />
+    <>
+      <AccountSettingsSurface
+        about={about}
+        inheritanceOn={inheritanceOn}
+        onToggleInheritance={(next) => {
+          setInheritanceOn(next);
+          try {
+            if (next) localStorage.setItem(INHERITANCE_KEY, "1");
+            else localStorage.removeItem(INHERITANCE_KEY);
+          } catch {
+            // localStorage unavailable — toggle is in-memory only.
+          }
+        }}
+        onSetupExecutor={() => {
+          // For v1 the executor-designation flow lives in the Identities
+          // surface; the dedicated wizard lands with Digital Inheritance.
+          window.location.href = "/identities";
+        }}
+      />
+      <div
+        style={{
+          maxWidth: 680,
+          margin: "0 auto",
+          padding: "0 24px 56px",
+          display: "flex",
+          justifyContent: "center",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => void handleSignOut()}
+          style={{
+            padding: "9px 22px",
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderColor: "var(--line-2)",
+            borderRadius: "var(--r-md)",
+            background: "var(--bg-2)",
+            color: "var(--ink-soft)",
+            fontFamily: "var(--font-ui)",
+            fontSize: 13,
+            cursor: "pointer",
+          }}
+        >
+          Sign out
+        </button>
+      </div>
+    </>
   );
 }

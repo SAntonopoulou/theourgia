@@ -22,6 +22,7 @@ import {
   type NavKey,
   ToastProvider,
   TopbarProvider,
+  useAuth,
   VaultNav,
   type VaultNavLinkProps,
   VaultTopbar,
@@ -216,7 +217,17 @@ function navKeyForPath(pathname: string): NavKey | undefined {
 function Shell({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const auth = useAuth();
   const active = navKeyForPath(location.pathname);
+
+  async function handleSignOut(): Promise<void> {
+    try {
+      await auth.signOut();
+    } finally {
+      navigate("/signin", { replace: true });
+    }
+  }
+
   return (
     <AppShell
       topbar={
@@ -225,6 +236,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             <ActingAsSwitcher
               identities={DEMO_IDENTITIES}
               onManage={() => navigate("/identities")}
+              onSignOut={() => void handleSignOut()}
             />
           }
         />

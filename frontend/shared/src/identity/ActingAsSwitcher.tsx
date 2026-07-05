@@ -34,6 +34,12 @@ export interface ActingAsSwitcherProps {
    * plain anchor to ``/identities`` (works in Astro and React Router).
    */
   onManage?: () => void;
+  /**
+   * Optional callback for the "Sign out" footer link. When provided,
+   * a Sign out row renders below "Manage identities". When omitted,
+   * the row is hidden (dev tools + Storybook path).
+   */
+  onSignOut?: () => void;
 }
 
 const chipBase: CSSProperties = {
@@ -142,6 +148,26 @@ function GearIcon(): ReactNode {
   );
 }
 
+function SignOutIcon(): ReactNode {
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+
 function IdentityMedallion({ identity, size = 30 }: { identity: Identity; size?: number }): ReactNode {
   const tone = identity.glyphTone ?? "accent";
   return (
@@ -167,7 +193,7 @@ function IdentityMedallion({ identity, size = 30 }: { identity: Identity; size?:
   );
 }
 
-export function ActingAsSwitcher({ identities, onManage }: ActingAsSwitcherProps) {
+export function ActingAsSwitcher({ identities, onManage, onSignOut }: ActingAsSwitcherProps) {
   const acting = useActingAs();
   const setActing = useSetActingAs();
   const [open, setOpen] = useState(false);
@@ -327,6 +353,40 @@ export function ActingAsSwitcher({ identities, onManage }: ActingAsSwitcherProps
               <GearIcon />
               Manage identities
             </a>
+            {onSignOut ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onSignOut();
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 9,
+                  width: "100%",
+                  padding: "8px 10px",
+                  marginTop: 2,
+                  border: "none",
+                  background: "transparent",
+                  borderRadius: "var(--r-md)",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 12.5,
+                  color: "var(--warn, var(--ink-soft))",
+                  textAlign: "left",
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "var(--warn-soft, var(--bg-3))";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                }}
+              >
+                <SignOutIcon />
+                Sign out
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}
