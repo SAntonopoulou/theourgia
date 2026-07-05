@@ -26,6 +26,7 @@ import {
   HubMemberDashboardSurface,
   type HubMySubmission,
   type HubSharingToggle,
+  Toast,
   useTopbar,
 } from "@theourgia/shared";
 
@@ -81,16 +82,20 @@ export function HubMemberDashboard() {
       onOpenNewsletter={() =>
         navigate(`/hubs/${hubId ?? ""}/newsletter`)
       }
-      onWithdraw={(submissionId) => {
-        // TODO Phase 12 — POST withdraw endpoint.
-        // eslint-disable-next-line no-console
-        console.info("[hub-member] withdraw", submissionId);
+      onWithdraw={() => {
+        Toast.push({
+          tone: "info",
+          title: "Withdraw not wired",
+          body: "The submission-withdraw endpoint is Phase 12 backend work.",
+        });
       }}
       onSharingToggle={(toggle, next) => {
         setSharingState((prev) => ({ ...prev, [toggle]: next }));
-        // TODO Phase 12 — PUT sharing-settings endpoint.
-        // eslint-disable-next-line no-console
-        console.info("[hub-member] sharing toggle", toggle, next);
+        Toast.push({
+          tone: "info",
+          title: "Toggled locally only",
+          body: "The sharing-settings PUT endpoint is Phase 12 backend work.",
+        });
       }}
     />
   );

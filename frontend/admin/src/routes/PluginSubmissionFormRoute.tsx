@@ -15,6 +15,7 @@
 import {
   PluginSubmissionFormSurface,
   type RegistryCapabilityChip,
+  Toast,
   useTopbar,
 } from "@theourgia/shared";
 import { useMutation } from "@tanstack/react-query";
@@ -85,9 +86,11 @@ export function PluginSubmissionFormRoute() {
         submit.mutate();
       }}
       onReplaceManifest={() => {
-        console.info(
-          "PluginSubmissionForm · replace manifest requested · file picker queued",
-        );
+        Toast.push({
+          tone: "info",
+          title: "Manifest picker queued",
+          body: "The file-picker bridge that uploads a plugin's manifest.json ships in the next registry batch.",
+        });
       }}
     />
   );

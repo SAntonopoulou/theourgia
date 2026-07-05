@@ -13,6 +13,8 @@
 import {
   AgentMemoryReaderSurface,
   type MemoryFileMeta,
+  PromptDialog,
+  Toast,
   useTopbar,
 } from "@theourgia/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -44,6 +46,7 @@ export function AgentMemoryReaderRoute() {
   const { installId } = useParams<{ installId: string }>();
   const queryClient = useQueryClient();
   const [activeFile, setActiveFile] = useState<string>("");
+  const [addOpen, setAddOpen] = useState(false);
 
   useTopbar(() => ({
     title: "Memory",
@@ -98,26 +101,43 @@ export function AgentMemoryReaderRoute() {
   });
 
   return (
+    <>
     <AgentMemoryReaderSurface
       files={files}
       activeFile={activeFile}
       content={contentQuery.data?.body ?? ""}
       onSelectFile={setActiveFile}
-      onAdd={() => {
-        const name = window.prompt("New file name (e.g. notes.md)") ?? "";
-        if (!name) return;
-        saveMutation.mutate({ name, body: "" });
-        setActiveFile(name);
-      }}
-      onArchive={(name) => {
-        // No archive endpoint yet — for v1 we surface a hint to the
-        // operator that this is queued. Hard-delete via DELETE is wired
-        // in the daemon but archive (move-to-trash semantics) isn't.
-        console.info("AgentMemory · archive requested · endpoint queued", {
-          name,
+      onAdd={() => setAddOpen(true)}
+      onArchive={() => {
+        // Archive (move-to-trash) endpoint not yet built on the
+        // daemon; hard-delete works via DELETE but archive is the
+        // reversible one and lives on a separate batch.
+        Toast.push({
+          tone: "info",
+          title: "Archive not wired",
+          body: "Move-to-trash semantics ship with the next daemon batch.",
         });
       }}
       onSave={(name, body) => saveMutation.mutate({ name, body })}
     />
+    <PromptDialog
+      open={addOpen}
+      title="New memory file"
+      label="File name"
+      placeholder="notes.md"
+      confirmLabel="Create"
+      validate={(v) =>
+        !v.trim() ? "A file name is required." : null
+      }
+      onSubmit={(name) => {
+        setAddOpen(false);
+        const cleaned = name.trim();
+        if (!cleaned) return;
+        saveMutation.mutate({ name: cleaned, body: "" });
+        setActiveFile(cleaned);
+      }}
+      onCancel={() => setAddOpen(false)}
+    />
+    </>
   );
 }

@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import {
   type BundleRow,
   BundleLibrarySurface,
+  Toast,
   useTopbar,
 } from "@theourgia/shared";
 
@@ -22,9 +23,12 @@ export function BundleLibrary() {
       bundles={BUNDLES}
       onBrowseRegistry={() => navigate("/registry")}
       onBundleClick={(id) => navigate(`/bundles/${id}`)}
-      onBundleAction={(id, action) => {
-        // eslint-disable-next-line no-console
-        console.info("[bundles] action", id, action);
+      onBundleAction={() => {
+        Toast.push({
+          tone: "info",
+          title: "Bundle action not wired",
+          body: "The bundle install/remove backend is queued behind the registry work.",
+        });
       }}
     />
   );

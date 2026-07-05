@@ -14,6 +14,7 @@
 import {
   AgentByoKeySettingsSurface,
   type PerAgentKeyRow,
+  Toast,
   useTopbar,
 } from "@theourgia/shared";
 import { useQuery } from "@tanstack/react-query";
@@ -53,24 +54,36 @@ export function AgentByoKeySettingsRoute() {
     <AgentByoKeySettingsSurface
       hasKey={hasKey}
       perAgent={perAgent}
-      onSaveKey={(key) => {
-        // Mode B encryption endpoint queued — for v1 we just confirm.
-        console.info(
-          "AgentByoKey · save requested · backend endpoint queued",
-          { keyLength: key.length },
-        );
+      onSaveKey={() => {
+        // Mode B encryption endpoint (POST /installs/{id}/key) is
+        // still queued behind daemon core/crypto.py wiring. Loud
+        // about that instead of pretending to save.
+        Toast.push({
+          tone: "info",
+          title: "Key not saved",
+          body: "The BYO-key persistence endpoint is queued behind the daemon's Mode B encryption wiring.",
+        });
       }}
       onReset={() => {
-        console.info("AgentByoKey · reset requested · backend endpoint queued");
+        Toast.push({
+          tone: "info",
+          title: "Reset not wired",
+          body: "The reset endpoint ships with the same daemon batch as save.",
+        });
       }}
       onConnectSubscription={() => {
-        console.info(
-          "AgentByoKey · Claude Max subscription connect requested · " +
-            "Phase 16.1 will wire OAuth/PAT.",
-        );
+        Toast.push({
+          tone: "info",
+          title: "Subscription connect · Phase 16.1",
+          body: "Claude Max OAuth/PAT wiring lands in Phase 16.1.",
+        });
       }}
-      onOverrideAgent={(id) => {
-        console.info("AgentByoKey · per-agent override", { id });
+      onOverrideAgent={() => {
+        Toast.push({
+          tone: "info",
+          title: "Per-agent override not wired",
+          body: "Lands with the daemon's per-install key endpoint.",
+        });
       }}
     />
   );

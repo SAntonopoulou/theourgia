@@ -14,6 +14,7 @@ import {
   PluginSubmissionDetailSurface,
   type TimelineDotTone,
   type TimelineEntry,
+  Toast,
   useTopbar,
 } from "@theourgia/shared";
 import { useQuery } from "@tanstack/react-query";
@@ -109,14 +110,11 @@ export function PluginSubmissionDetailRoute() {
       }
       onResubmit={() => navigate("/registry/submit")}
       onWithdraw={() => {
-        // Registry doesn't yet expose a withdraw endpoint — the
-        // SubmissionRead carries the WITHDRAWN state but transitions
-        // there are maintainer-only for now. Surface a console note
-        // for the operator.
-        console.info(
-          "PluginSubmissionDetail · withdraw requested · endpoint queued",
-          { submissionId },
-        );
+        Toast.push({
+          tone: "info",
+          title: "Withdraw not wired",
+          body: "The registry doesn't yet expose a submitter-side withdraw endpoint — the state exists but only maintainers can transition to it.",
+        });
       }}
     />
   );
