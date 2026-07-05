@@ -39,15 +39,21 @@ export function AccountSettingsRoute() {
     }
   }, []);
 
+  const auth = useAuth();
+  const navigate = useNavigate();
+
+  // Operator is whoever is signed in on this self-hosted instance
+  // (the "operator" IS the vault owner). Falls back to a generic
+  // label when no session is available (e.g. first-run wizard).
+  const operator =
+    auth.session?.display_name || auth.session?.magickal_name || "This instance";
+
   const about = {
-    operator: "Soror Ευ. Α.",
+    operator,
     version: import.meta.env.VITE_THEOURGIA_VERSION ?? "0.x",
     sourceLabel: "github.com/SAntonopoulou/theourgia",
     sourceHref: "https://github.com/SAntonopoulou/theourgia",
   };
-
-  const auth = useAuth();
-  const navigate = useNavigate();
 
   async function handleSignOut(): Promise<void> {
     try {

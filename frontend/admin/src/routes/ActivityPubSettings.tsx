@@ -10,6 +10,7 @@ import { useMemo } from "react";
 import {
   ActivityPubSettingsSurface,
   type ApsSettingsDraft,
+  useSession,
   useTopbar,
 } from "@theourgia/shared";
 
@@ -54,8 +55,23 @@ function fromDraft(d: ApsSettingsDraft): Parameters<
 export function ActivityPubSettings() {
   useTopbar(() => ({ title: "Fediverse integration" }));
 
+  const session = useSession();
   const { data, isLoading, error, refetch } = useApSettings();
   const update = useUpdateApSettings();
+
+  // Local part is the magickal name (preferred) or display name, both
+  // slugged. Instance host comes from the browser's location — the
+  // vault serves ActivityPub from its own origin.
+  const webFingerHandle = useMemo(() => {
+    const local = (session?.magickal_name || session?.display_name || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]+/g, "-")
+      .replace(/(^-+|-+$)/g, "");
+    const host =
+      typeof window !== "undefined" ? window.location.host : "";
+    if (!local || !host) return "";
+    return `${local}@${host}`;
+  }, [session?.magickal_name, session?.display_name]);
 
   const initial = useMemo(
     () => (data ? toDraft(data) : undefined),
@@ -89,10 +105,7 @@ export function ActivityPubSettings() {
         />
       ) : null}
       <ActivityPubSettingsSurface
-        // The handle is rendered from instance-side data once the
-        // backend exposes it. For now we leave it blank; the surface
-        // shows a placeholder.
-        webFingerHandle=""
+        webFingerHandle={webFingerHandle}
         initial={initial}
         onSave={(draft) => {
           update.mutate(fromDraft(draft));
