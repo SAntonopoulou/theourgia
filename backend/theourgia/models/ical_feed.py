@@ -16,7 +16,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import CheckConstraint, Column, ForeignKey
+from sqlalchemy import CheckConstraint, Column, DateTime, ForeignKey
 from sqlmodel import Field
 
 from theourgia.models.base import IDMixin, TimestampMixin
@@ -64,4 +64,7 @@ class ICalFeed(IDMixin, TimestampMixin, table=True):
     # The unique token in the feed URL. Rotating it via /regenerate
     # invalidates existing subscribers without taking the feed offline.
     url_token: str = Field(max_length=64, nullable=False, unique=True)
-    last_regenerated_at: Optional[datetime] = Field(default=None)
+    last_regenerated_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True),
+    )
