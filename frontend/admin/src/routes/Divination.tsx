@@ -18,6 +18,7 @@
 
 import { type Planet, useCelestial, useSession, useTopbar } from "@theourgia/shared";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useMyLocation } from "../data/useLocation.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
@@ -116,7 +117,7 @@ function ToolTabs({ active, onChange }: { active: Tool; onChange: (t: Tool) => v
 
 // ─── Tarot stage ────────────────────────────────────────────────────────────
 
-function TarotStage() {
+function TarotStage({ onOpen }: { onOpen: () => void }) {
   return (
     <div
       style={{
@@ -230,40 +231,7 @@ function TarotStage() {
           </div>
           <button
             type="button"
-            disabled
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 7,
-              padding: "9px 15px",
-              border: "1px solid var(--line-2)",
-              borderRadius: "var(--r-md, 8px)",
-              background: "transparent",
-              color: "var(--ink-mute)",
-              fontFamily: "var(--font-ui)",
-              fontSize: 13,
-              cursor: "not-allowed",
-            }}
-            title="Shuffle wires up with the tarot engine."
-          >
-            <svg
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M3 8h13l-3-3M21 16H8l3 3" />
-            </svg>
-            Shuffle
-          </button>
-          <button
-            type="button"
-            disabled
+            onClick={onOpen}
             style={{
               padding: "9px 18px",
               borderRadius: "var(--r-md, 8px)",
@@ -273,12 +241,10 @@ function TarotStage() {
               fontWeight: 700,
               fontSize: 13,
               border: "none",
-              cursor: "not-allowed",
-              opacity: 0.7,
+              cursor: "pointer",
             }}
-            title="Draw wires up with the tarot engine."
           >
-            Draw
+            Open Tarot →
           </button>
         </div>
       </div>
@@ -375,7 +341,7 @@ function EmptyCardSlot({ highlight }: { highlight: boolean }) {
 
 // ─── Generic "altar" stage (I Ching / Geomancy / Runes / Scrying) ──────────
 
-function AltarStage({ tool }: { tool: Exclude<Tool, "tarot"> }) {
+function AltarStage({ tool, onCast }: { tool: Exclude<Tool, "tarot">; onCast: () => void }) {
   const m = TOOL_META[tool];
   return (
     <div
@@ -427,27 +393,7 @@ function AltarStage({ tool }: { tool: Exclude<Tool, "tarot"> }) {
       <div style={{ display: "flex", gap: 12 }}>
         <button
           type="button"
-          disabled
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "11px 18px",
-            border: "1px solid var(--line-2)",
-            borderRadius: "var(--r-md, 8px)",
-            background: "transparent",
-            color: "var(--ink-mute)",
-            fontFamily: "var(--font-ui)",
-            fontSize: 13.5,
-            cursor: "not-allowed",
-          }}
-          title="Configure wires up with the casting engine."
-        >
-          Configure
-        </button>
-        <button
-          type="button"
-          disabled
+          onClick={onCast}
           style={{
             padding: "11px 24px",
             borderRadius: "var(--r-md, 8px)",
@@ -457,12 +403,10 @@ function AltarStage({ tool }: { tool: Exclude<Tool, "tarot"> }) {
             fontWeight: 700,
             fontSize: 13.5,
             border: "none",
-            cursor: "not-allowed",
-            opacity: 0.7,
+            cursor: "pointer",
           }}
-          title={`${m.name} engine ships per agent_data_and_components §10.`}
         >
-          Cast {m.name}
+          Open {m.name} →
         </button>
       </div>
       <div
@@ -483,6 +427,7 @@ function AltarStage({ tool }: { tool: Exclude<Tool, "tarot"> }) {
 
 export function Divination() {
   const session = useSession();
+  const navigate = useNavigate();
   const locationCall = useMyLocation({ enabled: session !== null });
   const location = locationCall.data ?? MOCK_LOCATION;
   const celestial = useCelestial({ lat: location.lat, lng: location.lng });
@@ -511,7 +456,20 @@ export function Divination() {
           and don't share the inner content padding. We pull negative margins
           to undo AppShell's main padding. */}
       <ToolTabs active={tool} onChange={setTool} />
-      {tool === "tarot" ? <TarotStage /> : <AltarStage tool={tool} />}
+      {tool === "tarot" ? (
+        <TarotStage onOpen={() => navigate("/divination/tarot")} />
+      ) : (
+        <AltarStage
+          tool={tool}
+          onCast={() =>
+            navigate(
+              tool === "scrying"
+                ? "/divination/more"
+                : `/divination/${tool}`,
+            )
+          }
+        />
+      )}
     </div>
   );
 }
