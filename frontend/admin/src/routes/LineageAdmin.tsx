@@ -23,10 +23,53 @@
  */
 
 import { ConfirmDialog, useTopbar } from "@theourgia/shared";
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
+
+import { apiClient } from "../data/api.js";
 
 const LINE = "var(--line)";
 const LINE_2 = "var(--line-2)";
+
+interface WireAttestation {
+  id: string;
+  kind: string;
+  description: string;
+  tradition: string | null;
+  grade_or_degree: string | null;
+  granted_at: string | null;
+  revoked_at: string | null;
+  signatures: Array<{
+    signer_label: string;
+    role: string;
+  }>;
+}
+
+function wireToAttestation(w: WireAttestation): Attestation {
+  const counter = w.signatures.find((s) => s.role === "counter-sign");
+  const revoked = w.revoked_at !== null;
+  const state: AttestationState = revoked
+    ? "revoked"
+    : counter
+      ? "verified"
+      : "self-declared";
+  const year = (() => {
+    const iso = w.granted_at ?? null;
+    if (!iso) return "—";
+    const y = new Date(iso).getFullYear();
+    return Number.isFinite(y) ? String(y) : "—";
+  })();
+  return {
+    id: w.id,
+    state,
+    kindLabel: w.kind.replace(/_/g, " "),
+    title: w.grade_or_degree || w.description.slice(0, 80),
+    authority: w.tradition ?? counter?.signer_label ?? "—",
+    counterSigner: counter?.signer_label,
+    keyDigest: w.id.slice(0, 8),
+    year,
+    relinquishable: state === "self-declared",
+  };
+}
 
 type AttestationState = "verified" | "self-declared" | "revoked";
 
@@ -46,8 +89,9 @@ interface Attestation {
   relinquishable: boolean;
 }
 
-// Attestation endpoint /api/v1/attestations returns real data — this admin surface will fetch on mount in a follow-up. Empty for now instead of fabricated attestations.
-const ATTESTATIONS: Attestation[] = [];
+// Fetched live on mount via ``useEffect`` below. Declared as an empty
+// placeholder here so the initial render has stable identity.
+const ATTESTATIONS_INITIAL: Attestation[] = [];
 
 function stateTone(s: AttestationState): { color: string; border: string; label: string } {
   if (s === "verified") return { color: "var(--success)", border: "var(--success)", label: "Verified" };
@@ -101,6 +145,22 @@ function ActionLink({ children, onClick, danger }: { children: React.ReactNode; 
 export function LineageAdmin() {
   const [declareOpen, setDeclareOpen] = useState(false);
   const [relinquishTarget, setRelinquishTarget] = useState<Attestation | null>(null);
+  const [attestations, setAttestations] = useState<Attestation[]>(ATTESTATIONS_INITIAL);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiClient
+      .request<WireAttestation[]>("/api/v1/attestations")
+      .then((rows) => {
+        if (!cancelled) setAttestations(rows.map(wireToAttestation));
+      })
+      .catch(() => {
+        // Best-effort — empty state is fine.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useTopbar(
     () => ({
@@ -164,7 +224,24 @@ export function LineageAdmin() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          {ATTESTATIONS.map((a) => {
+          {attestations.length === 0 ? (
+            <div
+              style={{
+                border: "1px dashed var(--line)",
+                borderRadius: "var(--r-lg)",
+                padding: "24px 22px",
+                fontFamily: "var(--font-serif)",
+                fontSize: 14,
+                color: "var(--ink-mute)",
+                lineHeight: 1.5,
+                textAlign: "center",
+              }}
+            >
+              No attestations on file. Declaring one requires the §10.5
+              keypair signing endpoint (not yet wired end-to-end).
+            </div>
+          ) : null}
+          {attestations.map((a) => {
             const tone = stateTone(a.state);
             return (
               <div
