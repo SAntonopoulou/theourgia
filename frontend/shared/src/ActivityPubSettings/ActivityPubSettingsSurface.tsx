@@ -129,11 +129,9 @@ export function ActivityPubSettingsSurface({
   );
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [displayName, setDisplayName] = useState<string>(
-    initial?.displayName ?? "Aspasia of the Crossroads",
+    initial?.displayName ?? "",
   );
-  const [bio, setBio] = useState<string>(
-    initial?.bio ?? "Theurgist. Keeper of a magical record.",
-  );
+  const [bio, setBio] = useState<string>(initial?.bio ?? "");
   const [approval, setApproval] = useState<FollowApprovalKey>(
     initial?.approval ?? "manual",
   );

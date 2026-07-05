@@ -30,7 +30,7 @@ const BUILDERS: {
   innerPath: string;
 }[] = [
   {
-    href: "/sigil",
+    href: "/sigils",
     title: "Sigil Studio",
     body: "Intent → kamea construction, traced and saved.",
     innerPath: "M12 3v18M5 8l14 8M19 8 5 16",
@@ -43,7 +43,7 @@ const BUILDERS: {
     innerPath: "M12 3v3M12 18v3M3 12h3M18 12h3",
   },
   {
-    href: "/circle",
+    href: "/circles",
     title: "Circle Builder",
     body: "Quarters, names of power, the triangle of art.",
     innerCircleR: 5,

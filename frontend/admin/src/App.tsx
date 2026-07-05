@@ -17,7 +17,6 @@ import {
   ActingAsSwitcher,
   AppShell,
   AuthProvider,
-  DEMO_IDENTITIES,
   I18nProvider,
   type NavKey,
   ToastProvider,
@@ -212,13 +211,56 @@ function Shell({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Identity shown in the VaultNav footer + medallion. Falls back to a
+  // neutral "This vault / Practitioner" pair when there's no session
+  // (SignIn / Connection pre-auth screens).
+  const navIdentity = auth.session
+    ? {
+        name:
+          auth.session.magickal_name ||
+          auth.session.display_name ||
+          "Practitioner",
+        role: "Practitioner",
+      }
+    : { name: "Practitioner", role: "This vault" };
+
+  // Real single-identity list for the topbar acting-as switcher. The
+  // Persona table (Phase 02/03) will grow this into a real multi-
+  // identity list; until then we render a single identity built from
+  // the current session, not the fabricated DEMO_IDENTITIES.
+  const actingIdentities = auth.session
+    ? [
+        {
+          id: auth.session.user_id,
+          vaultId: auth.session.vault_id ?? auth.session.user_id,
+          name:
+            auth.session.magickal_name ||
+            auth.session.display_name ||
+            "Practitioner",
+          bio: "",
+          glyph: undefined,
+          glyphTone: "accent" as const,
+          avatarUrl: null,
+          signing: {
+            algo: "ed25519" as const,
+            publicKey: "",
+            createdAt: new Date().toISOString(),
+          },
+          signingEnabled: false,
+          archived: false,
+          defaultsBySurface: {},
+          displayName: auth.session.display_name || undefined,
+        },
+      ]
+    : [];
+
   return (
     <AppShell
       topbar={
         <VaultTopbar
           actingAs={
             <ActingAsSwitcher
-              identities={DEMO_IDENTITIES}
+              identities={actingIdentities}
               onManage={() => navigate("/identities")}
               onSignOut={() => void handleSignOut()}
             />
@@ -229,6 +271,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <VaultNav
           active={active}
           LinkComponent={NavLinkAdapter}
+          identity={navIdentity}
           onSettings={() => navigate("/settings")}
         />
       }

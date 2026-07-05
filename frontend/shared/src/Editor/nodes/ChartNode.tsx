@@ -136,7 +136,7 @@ function ChartView({ node, updateAttributes, editor }: NodeViewProps) {
                 type="text"
                 value={title}
                 onChange={(e) => updateAttributes({ title: e.target.value })}
-                placeholder="Chart title (e.g. Natal — Aspasia, 1980-03-14)"
+                placeholder="Chart title (e.g. Natal — subject name, YYYY-MM-DD)"
                 aria-label="Chart title"
                 style={{
                   background: "none",
