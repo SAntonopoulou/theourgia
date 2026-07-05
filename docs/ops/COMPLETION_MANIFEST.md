@@ -194,6 +194,33 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
   - b108-2cz: Nav path typos (audio, icalfeed, transliterations)
   - b108-2da: TOTP backend + frontend + SignInRoute + TOTP nav
   - b108-2db: Sigil purpose + mode wire mapping fix (422 fix)
+  - b108-2dc: Sign-out button in topbar + settings hub
+  - b108-2dd: Deleted 10 legacy/superseded route files
+  - b108-2de: Health page live /api/v1/meta probe + honest labelling
+  - b108-2df: WebFinger verify · real cross-instance probe
+
+### Curl-verified end-to-end THIS SESSION (real prod)
+
+| Endpoint | Method | Status | Notes |
+|---|---|---:|---|
+| `/api/v1/auth/demo-signin` | POST | 200 | opens cookie session |
+| `/api/v1/auth/session` | GET | 200 → 401 after logout | dual bearer/cookie auth verified |
+| `/api/v1/auth/session` | DELETE | 204 | logout works |
+| `/api/v1/me` | GET | 200 | real user row |
+| `/api/v1/me/audit` | GET | 200 | real audit rows |
+| `/api/v1/me/audit.csv` | GET | 200 | CSV export |
+| `/api/v1/me/sessions` | GET | 200 | active session list |
+| `/api/v1/me/data-export` | POST | 200 | archive JSON (audit-enum fix) |
+| `/api/v1/auth/webauthn/register/begin` | POST | 200 | issues creation options |
+| `/api/v1/auth/webauthn/assert/begin` | POST | 200 | issues assertion options |
+| `/api/v1/auth/webauthn/credentials` | GET | 200 | list |
+| `/api/v1/auth/totp/status` | GET | 200 | unenrolled state |
+| `/api/v1/auth/totp/begin` | POST | 200 | secret + otpauth URI |
+| `/api/v1/auth/totp/verify` | POST | 200 | enrols + backup codes |
+| `/api/v1/sigils` | POST | 201 | full round-trip (wire-map fix) |
+| `/api/v1/circles` | POST | 201 | full round-trip verified |
+| `/api/v1/meta` | GET | 200 | Health page live probe |
+| `/.well-known/webfinger` | GET | 200 or 404 | WebFinger verify surface |
 
 ---
 
