@@ -20,15 +20,17 @@ import {
   type ScopeOption,
   useTopbar,
 } from "@theourgia/shared";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
 
-// Default scope shipped on every install — broadest grants the user
-// selected at install time. The install-detail endpoint will replace
-// this with the actual install's granted scope set.
+// Two coarse scope presets — the install-detail endpoint doesn't yet
+// carry a per-install scope set, so we render these as the same two
+// on every install. When the daemon exposes granted capabilities on
+// the install snapshot, the "default" scope will map to the real
+// grant list.
 const DEFAULT_SCOPES: readonly ScopeOption[] = [
   { id: "default", label: "Default — all granted capabilities" },
   { id: "read-only", label: "Read-only — no writes" },
@@ -44,16 +46,34 @@ export function AgentTaskComposerRoute() {
     subtitle: installId ?? "—",
   }));
 
+  const install = useQuery({
+    queryKey: ["agent-install", installId],
+    queryFn: async () =>
+      installId
+        ? apiMethods.getAgentInstall(installId)
+        : Promise.reject(new Error("missing installId")),
+    enabled: Boolean(installId),
+  });
+
   const mutation = useMutation({
     mutationFn: async (payload: { task: string; scopeId: string }) => {
       if (!installId) throw new Error("missing installId");
+      if (!install.data) throw new Error("install not yet loaded");
+      // Read-only scope: read.entries only. Default: the install's
+      // configured broadest reads (still not exposed on the snapshot,
+      // so we send read.entries + read.entities as the widest safe
+      // default until the daemon adds a granted_caps field).
+      const granted_caps =
+        payload.scopeId === "read-only"
+          ? ["read.entries"]
+          : ["read.entries", "read.entities"];
       return apiMethods.startAgentRun({
         install_id: installId,
-        agent_slug: installId,  // placeholder until install-detail endpoint lands
+        agent_slug: install.data.agent_id,
         task_text: payload.task,
-        granted_caps: ["read.entries"],
+        granted_caps,
         scope_id: payload.scopeId,
-        monthly_cap_usd: "10.00",
+        monthly_cap_usd: install.data.monthly_cost_cap_usd,
       });
     },
     onSuccess: (snapshot) => {
@@ -64,12 +84,22 @@ export function AgentTaskComposerRoute() {
     },
   });
 
+  const disabledReason =
+    error ??
+    (install.isLoading
+      ? "Loading install details…"
+      : install.error
+        ? install.error instanceof Error
+          ? install.error.message
+          : String(install.error)
+        : undefined);
+
   return (
     <AgentTaskComposerSurface
       preamble="Describe the working you want to delegate. The agent reads what your capability grants allow — sealed and closed-tradition records never leave the vault."
       scopes={DEFAULT_SCOPES}
       busy={mutation.isPending}
-      disabledReason={error ?? undefined}
+      disabledReason={disabledReason}
       onStart={(payload) => {
         setError(null);
         mutation.mutate(payload);

@@ -22,22 +22,13 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
 
-// Placeholder capabilities — until the marketplace card carries per-
-// agent capability data + we can fetch the marketplace detail.
-// Surfacing the wire keys verbatim (rule 31 — few clear capabilities,
-// no opaque bundles).
-const DEFAULT_CAPABILITIES: readonly AgentCapabilityChip[] = [
-  {
-    label: "Read your journal entries",
-    wireKey: "read.entries",
-    note: "Sealed entries are never returned. Closed-tradition tags are filtered.",
-  },
-  {
-    label: "Read your magical beings",
-    wireKey: "read.entities",
-    note: "Closed-tradition entities are filtered.",
-  },
-];
+// The marketplace endpoint doesn't yet return per-agent capability
+// data. Rather than pin a fabricated pair of capabilities that every
+// install would display regardless of what the agent actually needs
+// (rule 31: no opaque bundles), we render an empty capability set
+// and let the daemon prompt for grants at first-run. When the
+// marketplace detail carries capabilities the surface will fill in.
+const CAPABILITIES_PLACEHOLDER: readonly AgentCapabilityChip[] = [];
 
 export function AgentInstallRoute() {
   const navigate = useNavigate();
@@ -74,9 +65,11 @@ export function AgentInstallRoute() {
       preamble={
         "This agent will run under capabilities you grant it. Capabilities are " +
         "enforced at the wire — sealed and closed-tradition records never leave " +
-        "the vault, even when the agent has read access."
+        "the vault, even when the agent has read access. The agent's declared " +
+        "capabilities aren't yet returned by the marketplace endpoint; you'll " +
+        "be prompted to grant each one at first run."
       }
-      capabilities={DEFAULT_CAPABILITIES}
+      capabilities={CAPABILITIES_PLACEHOLDER}
       memoryDirPath={`/srv/theourgia/agents/${agentSlug ?? "your-vault-id"}/your-install/`}
       hasKey={false}
       initialCostCap="10.00"
