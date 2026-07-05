@@ -25,13 +25,13 @@
 import {
   type EntryRecord,
   type EntryType,
-  PromptDialog,
   Skeleton,
   Toast,
   useApiCall,
   useTopbar,
 } from "@theourgia/shared";
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
 import { createEntry } from "../data/useEntries.js";
@@ -334,22 +334,34 @@ function EntryRow({
   entry,
   isLast,
   now,
+  onOpen,
 }: {
   entry: EntryRecord;
   isLast: boolean;
   now: Date;
+  onOpen: (id: string) => void;
 }) {
   const color = TYPE_COLOR[entry.type];
   const label = TYPE_LABEL[entry.type];
   return (
     <article
       className="entry-row"
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(entry.id)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen(entry.id);
+        }
+      }}
       style={{
         display: "flex",
         gap: 14,
         padding: "15px 18px",
         borderBottom: isLast ? "none" : "1px solid var(--line)",
         transition: "background-color 0.15s ease",
+        cursor: "pointer",
       }}
     >
       <span
@@ -409,10 +421,12 @@ function GroupedSection({
   heading,
   entries,
   now,
+  onOpen,
 }: {
   heading: string;
   entries: EntryRecord[];
   now: Date;
+  onOpen: (id: string) => void;
 }) {
   if (entries.length === 0) return null;
   return (
@@ -440,7 +454,13 @@ function GroupedSection({
         }}
       >
         {entries.map((entry, i) => (
-          <EntryRow key={entry.id} entry={entry} isLast={i === entries.length - 1} now={now} />
+          <EntryRow
+            key={entry.id}
+            entry={entry}
+            isLast={i === entries.length - 1}
+            now={now}
+            onOpen={onOpen}
+          />
         ))}
       </div>
     </section>
@@ -676,7 +696,7 @@ export function Journal() {
   const [view, setView] = useState<JournalView>("timeline");
   const [search, setSearch] = useState("");
   const [activeChips, setActiveChips] = useState<Set<ChipFilter>>(new Set());
-  const [composing, setComposing] = useState(false);
+  const navigate = useNavigate();
 
   const entries = useApiCall<EntryRecord[]>((signal) => apiMethods.listEntries({ signal }));
 
@@ -685,11 +705,33 @@ export function Journal() {
   const total = entries.data?.length ?? 0;
   const subtitle = `${total.toLocaleString()} entries`;
 
+  async function beginNewEntry(): Promise<void> {
+    try {
+      const created = await createEntry({
+        title: "Untitled entry",
+        type: "observation",
+        excerpt: "",
+        glyph: "feather",
+      });
+      navigate(`/editor/${created.id}`);
+    } catch (e) {
+      Toast.push({
+        tone: "error",
+        title: "Could not create entry",
+        body: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
+
+  function openEntry(id: string): void {
+    navigate(`/editor/${id}`);
+  }
+
   useTopbar(
     () => ({
       title: "Journal",
       subtitle,
-      after: <NewEntryButton onClick={() => setComposing(true)} />,
+      after: <NewEntryButton onClick={() => void beginNewEntry()} />,
     }),
     [subtitle],
   );
@@ -741,26 +783,6 @@ export function Journal() {
     }
     return buckets;
   }, [filtered, now]);
-
-  async function applyCompose(value: string): Promise<void> {
-    setComposing(false);
-    try {
-      await createEntry({
-        title: value.slice(0, 64),
-        type: "observation",
-        excerpt: value,
-        glyph: "feather",
-      });
-      Toast.push({ tone: "success", title: "Captured" });
-      await entries.refresh();
-    } catch (e) {
-      Toast.push({
-        tone: "error",
-        title: "Capture failed",
-        body: e instanceof Error ? e.message : String(e),
-      });
-    }
-  }
 
   const showComingSoon =
     view !== "timeline" && (entries.status !== "loading" || filtered.length > 0);
@@ -853,21 +875,25 @@ export function Journal() {
                   heading={groupHeading("today", now)}
                   entries={grouped.today}
                   now={now}
+                  onOpen={openEntry}
                 />
                 <GroupedSection
                   heading={groupHeading("thisWeek", now)}
                   entries={grouped.thisWeek}
                   now={now}
+                  onOpen={openEntry}
                 />
                 <GroupedSection
                   heading={groupHeading("thisMonth", now)}
                   entries={grouped.thisMonth}
                   now={now}
+                  onOpen={openEntry}
                 />
                 <GroupedSection
                   heading={groupHeading("earlier", now)}
                   entries={grouped.earlier}
                   now={now}
+                  onOpen={openEntry}
                 />
               </>
             )}
@@ -889,17 +915,6 @@ export function Journal() {
           </aside>
         </div>
       </div>
-
-      <PromptDialog
-        open={composing}
-        title="New entry"
-        label="Observation"
-        placeholder="What did you notice?"
-        validate={(v) => (v.trim().length < 3 ? "A few words at least." : null)}
-        confirmLabel="Capture"
-        onSubmit={(value) => void applyCompose(value)}
-        onCancel={() => setComposing(false)}
-      />
     </>
   );
 }
