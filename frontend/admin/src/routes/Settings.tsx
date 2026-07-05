@@ -294,92 +294,37 @@ function FontRoleRow({
   );
 }
 
-function EncryptionRow({
-  color,
-  label,
-  zeroKnowledge,
-  isLast,
-}: {
-  color: string;
-  label: string;
-  zeroKnowledge: boolean;
-  isLast: boolean;
-}) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        padding: "13px 16px",
-        borderBottom: isLast ? "none" : "1px solid var(--line)",
-        background: "var(--bg-2)",
-      }}
-    >
-      <span
-        aria-hidden="true"
-        style={{
-          width: 9,
-          height: 9,
-          borderRadius: "50%",
-          background: color,
-          marginRight: 11,
-        }}
-      />
-      <span
-        style={{
-          fontFamily: "var(--font-ui)",
-          fontSize: 13.5,
-          color: "var(--ink)",
-          flex: 1,
-        }}
-      >
-        {label}
-      </span>
-      {zeroKnowledge ? (
-        <span
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            fontFamily: "var(--font-ui)",
-            fontSize: 12.5,
-            color: "var(--accent)",
-            padding: "5px 11px",
-            border: "1px solid var(--accent)",
-            borderRadius: "var(--r-md, 8px)",
-          }}
-        >
-          <svg
-            width="11"
-            height="11"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.9"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <rect x="5" y="11" width="14" height="9" rx="1.5" />
-            <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-          </svg>
-          Zero-knowledge
-        </span>
-      ) : (
-        <span
-          style={{
-            fontFamily: "var(--font-ui)",
-            fontSize: 12.5,
-            color: "var(--ink-mute)",
-            padding: "5px 11px",
-            border: "1px solid var(--line-2)",
-            borderRadius: "var(--r-md, 8px)",
-          }}
-        >
-          Standard
-        </span>
-      )}
-    </div>
-  );
+const A11Y_PREFS_KEY = "theourgia.a11y.prefs";
+
+function readA11yPrefs(): { contrast: boolean; reducedMotion: boolean; textScale: number } {
+  try {
+    const raw = window.localStorage.getItem(A11Y_PREFS_KEY);
+    if (!raw) return { contrast: false, reducedMotion: false, textScale: 1 };
+    const p = JSON.parse(raw) as Record<string, unknown>;
+    return {
+      contrast: Boolean(p.contrast),
+      reducedMotion: Boolean(p.reducedMotion),
+      textScale: typeof p.textScale === "number" ? p.textScale : 1,
+    };
+  } catch {
+    return { contrast: false, reducedMotion: false, textScale: 1 };
+  }
+}
+
+function writeA11yPrefs(prefs: {
+  contrast: boolean;
+  reducedMotion: boolean;
+  textScale: number;
+}): void {
+  try {
+    window.localStorage.setItem(A11Y_PREFS_KEY, JSON.stringify(prefs));
+  } catch {
+    // Best-effort.
+  }
+  const root = document.documentElement;
+  root.dataset.reducedMotion = prefs.reducedMotion ? "1" : "";
+  root.dataset.contrast = prefs.contrast ? "high" : "";
+  root.style.fontSize = `${Math.round(prefs.textScale * 100)}%`;
 }
 
 function AppearanceSection() {
@@ -404,9 +349,20 @@ function AppearanceSection() {
     setLocal(next);
   }
 
-  const [hc, setHc] = useState(false);
-  const [rm, setRm] = useState(false);
-  const [lt, setLt] = useState(false);
+  const [a11y, setA11y] = useState(() => readA11yPrefs());
+  const hc = a11y.contrast;
+  const rm = a11y.reducedMotion;
+  const lt = a11y.textScale > 1;
+  const applyA11y = (
+    patch: Partial<typeof a11y>,
+  ) => {
+    const next = { ...a11y, ...patch };
+    setA11y(next);
+    writeA11yPrefs(next);
+  };
+  const setHc = (v: boolean) => applyA11y({ contrast: v });
+  const setRm = (v: boolean) => applyA11y({ reducedMotion: v });
+  const setLt = (v: boolean) => applyA11y({ textScale: v ? 1.2 : 1 });
 
   return (
     <div style={{ maxWidth: 680 }}>
@@ -664,105 +620,43 @@ function AppearanceSection() {
         />
       </div>
 
-      <h3
-        style={{
-          fontFamily: "var(--font-display, var(--font-serif))",
-          fontSize: 19,
-          margin: "26px 0 6px",
-          paddingTop: 18,
-          borderTop: "1px solid var(--line)",
-        }}
-      >
-        Encryption per content type
-      </h3>
-      <p
+      <div
         style={{
           fontFamily: "var(--font-ui)",
-          fontSize: 13,
+          fontSize: 12.5,
           color: "var(--ink-mute)",
-          margin: "0 0 16px",
+          marginTop: 24,
+          paddingTop: 18,
+          borderTop: "1px solid var(--line)",
+          lineHeight: 1.55,
         }}
       >
-        Choose what stays on the server in plaintext and what is sealed end-to-end.
-      </p>
-      <div
-        style={{
-          border: "1px solid var(--line)",
-          borderRadius: "var(--r-lg, 14px)",
-          overflow: "hidden",
-          marginBottom: 16,
-        }}
-      >
-        <EncryptionRow
-          color="var(--c-journal)"
-          label="Journal"
-          zeroKnowledge={false}
-          isLast={false}
-        />
-        <EncryptionRow
-          color="var(--c-working)"
-          label="Workings"
-          zeroKnowledge={true}
-          isLast={false}
-        />
-        <EncryptionRow
-          color="var(--c-divination)"
-          label="Divination"
-          zeroKnowledge={false}
-          isLast={false}
-        />
-        <EncryptionRow
-          color="var(--c-working)"
-          label="Sigils"
-          zeroKnowledge={true}
-          isLast={true}
-        />
-      </div>
-      <div
-        style={{
-          display: "flex",
-          gap: 12,
-          padding: "14px 16px",
-          border: "1px solid var(--line-2)",
-          background: "var(--bg-2)",
-          borderRadius: "var(--r-md, 8px)",
-        }}
-      >
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="var(--danger, #c2554a)"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{ flex: "none", marginTop: 1 }}
-          aria-hidden="true"
-        >
-          <path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
-        </svg>
-        <div
-          style={{
-            fontFamily: "var(--font-ui)",
-            fontSize: 13,
-            lineHeight: 1.55,
-            color: "var(--ink-soft)",
-          }}
-        >
-          <strong style={{ color: "var(--ink)" }}>
-            Zero-knowledge content cannot be recovered if you lose your key.
-          </strong>{" "}
-          Theourgia never sees it, cannot reset it, and cannot help you read it. Keep your
-          recovery phrase somewhere only you can reach.
-        </div>
+        For finer control (contrast levels · text-scale slider ·
+        autoplay), open the dedicated{" "}
+        <a href="/settings/accessibility" style={{ color: "var(--accent)" }}>
+          Accessibility &amp; motion
+        </a>{" "}
+        page.
       </div>
     </div>
   );
 }
 
+// Sections that have a dedicated route on the admin nav — the
+// subnav here just points to them so a practitioner following the
+// design's expected layout still ends up on the real page.
+const SECTION_HREF: Partial<Record<SectionKey, string>> = {
+  account: "/settings",
+  security: "/settings/sessions",
+  networks: "/networks",
+  plugins: "/plugins",
+  accessibility: "/settings/accessibility",
+  billing: "/pricing-distribution",
+};
+
 function StubSection({ section }: { section: SectionKey }) {
   const label = SECTIONS.find((s) => s.key === section)?.label ?? "Section";
+  const href = SECTION_HREF[section];
   return (
     <div style={{ maxWidth: 680 }}>
       <h2
@@ -782,23 +676,45 @@ function StubSection({ section }: { section: SectionKey }) {
           margin: "0 0 22px",
         }}
       >
-        This section ships with its dedicated backend wiring.
+        The dedicated {label.toLowerCase()} surface lives at its own route.
       </p>
-      <div
-        style={{
-          padding: 24,
-          border: "1px solid var(--line)",
-          borderRadius: "var(--r-lg, 14px)",
-          background: "var(--bg-2)",
-          fontFamily: "var(--font-serif)",
-          fontSize: 14.5,
-          lineHeight: 1.55,
-          color: "var(--ink-mute)",
-          textAlign: "center",
-        }}
-      >
-        {label} controls will appear here once the underlying systems land.
-      </div>
+      {href ? (
+        <a
+          href={href}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "9px 16px",
+            borderRadius: "var(--r-md, 8px)",
+            background: "var(--accent)",
+            color: "var(--accent-ink)",
+            fontFamily: "var(--font-ui)",
+            fontWeight: 700,
+            fontSize: 13.5,
+            border: "none",
+            textDecoration: "none",
+          }}
+        >
+          Open {label} →
+        </a>
+      ) : (
+        <div
+          style={{
+            padding: 24,
+            border: "1px solid var(--line)",
+            borderRadius: "var(--r-lg, 14px)",
+            background: "var(--bg-2)",
+            fontFamily: "var(--font-serif)",
+            fontSize: 14.5,
+            lineHeight: 1.55,
+            color: "var(--ink-mute)",
+            textAlign: "center",
+          }}
+        >
+          {label} controls will appear here once the underlying systems land.
+        </div>
+      )}
     </div>
   );
 }
