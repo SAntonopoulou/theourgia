@@ -40,4 +40,36 @@ export default defineConfig(({ command }) => ({
       "@": resolve(here, "./src"),
     },
   },
+  build: {
+    // Split heavy third-party libs into their own chunks so the
+    // long-lived cache survives app-code updates. First paint fetches
+    // a smaller main chunk; library chunks are fetched in parallel.
+    // Vite 8 uses rolldown; manualChunks MUST be a function.
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes("node_modules")) {
+            if (
+              id.includes("/react/") ||
+              id.includes("/react-dom/") ||
+              id.includes("/react-router") ||
+              id.includes("/scheduler/")
+            ) {
+              return "vendor-react";
+            }
+            if (
+              id.includes("/@tiptap/") ||
+              id.includes("/prosemirror-")
+            ) {
+              return "vendor-tiptap";
+            }
+            if (id.includes("/@tanstack/")) {
+              return "vendor-query";
+            }
+          }
+          return undefined;
+        },
+      },
+    },
+  },
 }));
