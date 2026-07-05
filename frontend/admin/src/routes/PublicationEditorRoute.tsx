@@ -1,17 +1,11 @@
 /**
- * Publication Editor — admin route (H07 §S3 surface 5).
+ * Publication Editor — admin route.
  *
- * Wraps PublicationEditorSurface with a debounced autosave
- * indicator. Phase 10 backend is unbuilt by design (per H07
- * onboarding) — the route holds the publication in memory; once
- * the backend ships it'll wire to GET /publications/{id} +
- * debounced PATCH.
- *
- * Autosave pattern (per H07 worked example point b):
- *   • Any state change → autosaveState = 'saving' immediately.
- *   • 700ms after last edit (debounced) → simulate PATCH +
- *     autosaveState = 'saved'.
- *   • 4s after 'saved' → autosaveState = 'idle' (indicator hides).
+ * Live-wired: GET /publications/{id} on mount, PATCH after a 700ms
+ * debounce. Chapter body / title changes hit
+ * PATCH /publications/{id}/chapters/{cid}; other metadata hits
+ * PATCH /publications/{id}. Autosave indicator flips saving → saved
+ * → idle as the network calls complete.
  */
 
 import {
@@ -23,6 +17,8 @@ import {
 } from "@theourgia/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+
+import { apiMethods } from "../data/api.js";
 
 const SAVE_DEBOUNCE_MS = 700;
 const HIDE_AFTER_SAVED_MS = 4000;
@@ -92,8 +88,7 @@ export function PublicationEditorRoute() {
     [],
   );
 
-  // useParams is reserved for when /publications/:id wires up.
-  useParams<{ id: string }>();
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
   const [publication, setPublication] = useState<PublicationEditorRecord>(
@@ -104,22 +99,117 @@ export function PublicationEditorRoute() {
   );
   const [autosaveState, setAutosaveState] = useState<AutosaveState>("idle");
   const [lastSavedLabel, setLastSavedLabel] = useState<string | null>(null);
+  const [, setLoadError] = useState<string | null>(null);
+
+  // Fetch real publication if we have an :id. If none, fall through to
+  // the fixture (dev-mode composition target).
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    apiMethods
+      .getPublication(id)
+      .then((row) => {
+        if (cancelled) return;
+        const rec = row as unknown as {
+          id: string;
+          title: string;
+          kind: string;
+          state: string;
+          language: string;
+          license: string;
+          summary: string | null;
+          cover_url: string | null;
+          chapters: Array<{
+            id: string;
+            title: string;
+            body: Record<string, unknown>;
+          }>;
+        };
+        setPublication({
+          id: rec.id,
+          title: rec.title,
+          kind: rec.kind as PublicationEditorRecord["kind"],
+          state: rec.state as PublicationEditorRecord["state"],
+          language: rec.language,
+          license: rec.license as PublicationEditorRecord["license"],
+          summary: rec.summary ?? "",
+          tags: [],
+          cover_url: rec.cover_url,
+          chapters: (rec.chapters ?? []).map((c) => ({
+            id: c.id,
+            title: c.title,
+            body: c.body ?? { type: "doc", content: [{ type: "paragraph" }] },
+            word_count: 0,
+          })),
+        });
+        setActiveChapterId(rec.chapters?.[0]?.id ?? null);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setLoadError(
+            e instanceof Error ? e.message : "Failed to load publication",
+          );
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingRef = useRef<Partial<PublicationEditorRecord>>({});
+  const pendingChapterRef = useRef<
+    Map<string, { title?: string; body?: Record<string, unknown> }>
+  >(new Map());
+
+  const flushSave = useCallback(async () => {
+    if (!id) {
+      // No id → fixture mode; simulate a successful save so the
+      // autosave indicator still animates.
+      setAutosaveState("saved");
+      setLastSavedLabel(formatTimeOfDay(new Date()));
+      hideRef.current = setTimeout(
+        () => setAutosaveState("idle"),
+        HIDE_AFTER_SAVED_MS,
+      );
+      return;
+    }
+    const pending = { ...pendingRef.current };
+    const pendingChapters = new Map(pendingChapterRef.current);
+    pendingRef.current = {};
+    pendingChapterRef.current.clear();
+    try {
+      if (Object.keys(pending).length > 0) {
+        await apiMethods.updatePublication(id, pending);
+      }
+      for (const [chapterId, patch] of pendingChapters) {
+        await apiMethods.updatePublicationChapter(id, chapterId, patch);
+      }
+      setAutosaveState("saved");
+      setLastSavedLabel(formatTimeOfDay(new Date()));
+      hideRef.current = setTimeout(
+        () => setAutosaveState("idle"),
+        HIDE_AFTER_SAVED_MS,
+      );
+    } catch (err) {
+      Toast.push({
+        tone: "error",
+        title: "Autosave failed",
+        body: err instanceof Error ? err.message : String(err),
+      });
+      setAutosaveState("idle");
+    }
+  }, [id]);
 
   const triggerAutosave = useCallback(() => {
     setAutosaveState("saving");
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (hideRef.current) clearTimeout(hideRef.current);
     debounceRef.current = setTimeout(() => {
-      setAutosaveState("saved");
-      setLastSavedLabel(formatTimeOfDay(new Date()));
-      hideRef.current = setTimeout(() => {
-        setAutosaveState("idle");
-      }, HIDE_AFTER_SAVED_MS);
+      void flushSave();
     }, SAVE_DEBOUNCE_MS);
-  }, []);
+  }, [flushSave]);
 
   useEffect(
     () => () => {
@@ -137,6 +227,11 @@ export function PublicationEditorRoute() {
           c.id === chapterId ? { ...c, body: doc } : c,
         ),
       }));
+      const prev = pendingChapterRef.current.get(chapterId) ?? {};
+      pendingChapterRef.current.set(chapterId, {
+        ...prev,
+        body: doc as Record<string, unknown>,
+      });
       triggerAutosave();
     },
     [triggerAutosave],
@@ -145,6 +240,7 @@ export function PublicationEditorRoute() {
   const handleBodyChange = useCallback(
     (doc: unknown) => {
       setPublication((prev) => ({ ...prev, body: doc }));
+      pendingRef.current.body = doc as PublicationEditorRecord["body"];
       triggerAutosave();
     },
     [triggerAutosave],
@@ -158,6 +254,8 @@ export function PublicationEditorRoute() {
           c.id === chapterId ? { ...c, title } : c,
         ),
       }));
+      const prev = pendingChapterRef.current.get(chapterId) ?? {};
+      pendingChapterRef.current.set(chapterId, { ...prev, title });
       triggerAutosave();
     },
     [triggerAutosave],
@@ -166,6 +264,14 @@ export function PublicationEditorRoute() {
   const handleMetadataChange = useCallback(
     (patch: Partial<PublicationEditorRecord>) => {
       setPublication((prev) => ({ ...prev, ...patch }));
+      // Merge only string / boolean / null fields the backend accepts.
+      const backendPatch: Record<string, unknown> = {};
+      if (patch.title !== undefined) backendPatch.title = patch.title;
+      if (patch.summary !== undefined) backendPatch.summary = patch.summary;
+      if (patch.language !== undefined) backendPatch.language = patch.language;
+      if (patch.license !== undefined) backendPatch.license = patch.license;
+      if (patch.cover_url !== undefined) backendPatch.cover_url = patch.cover_url;
+      pendingRef.current = { ...pendingRef.current, ...backendPatch };
       triggerAutosave();
     },
     [triggerAutosave],

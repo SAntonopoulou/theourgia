@@ -375,6 +375,43 @@ export function api(client: ApiClient) {
       );
     },
 
+    getPublication(id: string): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/publications/${encodeURIComponent(id)}`,
+      );
+    },
+
+    updatePublication(
+      id: string,
+      patch: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/publications/${encodeURIComponent(id)}`,
+        { method: "PATCH", json: patch },
+      );
+    },
+
+    createPublicationChapter(
+      pubId: string,
+      input: { title: string; body?: Record<string, unknown> },
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/publications/${encodeURIComponent(pubId)}/chapters`,
+        { method: "POST", json: input },
+      );
+    },
+
+    updatePublicationChapter(
+      pubId: string,
+      chapterId: string,
+      patch: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/publications/${encodeURIComponent(pubId)}/chapters/${encodeURIComponent(chapterId)}`,
+        { method: "PATCH", json: patch },
+      );
+    },
+
     listSubscribers(): Promise<Array<Record<string, unknown>>> {
       return client.request<Array<Record<string, unknown>>>(
         "/api/v1/subscribers",
