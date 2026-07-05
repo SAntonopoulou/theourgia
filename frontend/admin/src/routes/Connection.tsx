@@ -151,7 +151,7 @@ export function Connection() {
         <Banner
           tone="info"
           title="Mock mode"
-          body="The API client is resolving fixtures locally — no backend is reachable. Set VITE_THEOURGIA_API_BASE at build time to switch to live mode."
+          body="The API client is resolving fixtures locally instead of hitting the real backend. Unset VITE_THEOURGIA_API_MOCK (or set it to 0) at build time to switch to live mode."
         />
       ) : (
         <Banner tone="success" title="Live mode" body={`Calling ${API_BASE_URL}.`} />
