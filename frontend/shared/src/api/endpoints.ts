@@ -453,6 +453,62 @@ export function api(client: ApiClient) {
       return client.request<Array<Record<string, unknown>>>("/api/v1/hubs");
     },
 
+    getHub(hubId: string): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/hubs/${encodeURIComponent(hubId)}`,
+      );
+    },
+
+    updateHub(
+      hubId: string,
+      patch: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/hubs/${encodeURIComponent(hubId)}`,
+        { method: "PATCH", json: patch },
+      );
+    },
+
+    listHubMembers(hubId: string): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        `/api/v1/hubs/${encodeURIComponent(hubId)}/members`,
+      );
+    },
+
+    changeHubMemberRole(
+      hubId: string,
+      userId: string,
+      role: "hub_admin" | "hub_officer" | "hub_moderator" | "hub_member" | "hub_observer",
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/hubs/${encodeURIComponent(hubId)}/members/${encodeURIComponent(userId)}/role`,
+        { method: "POST", json: { role } },
+      );
+    },
+
+    removeHubMember(hubId: string, userId: string): Promise<void> {
+      return client.request<void>(
+        `/api/v1/hubs/${encodeURIComponent(hubId)}/members/${encodeURIComponent(userId)}`,
+        { method: "DELETE" },
+      );
+    },
+
+    getHubRoleMatrix(hubId: string): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/hubs/${encodeURIComponent(hubId)}/roles`,
+      );
+    },
+
+    updateHubRoleMatrix(
+      hubId: string,
+      matrix: Record<string, string[]>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/hubs/${encodeURIComponent(hubId)}/roles`,
+        { method: "PATCH", json: { matrix } },
+      );
+    },
+
     listPrivateViewers(): Promise<Array<Record<string, unknown>>> {
       return client.request<Array<Record<string, unknown>>>(
         "/api/v1/private-viewers",

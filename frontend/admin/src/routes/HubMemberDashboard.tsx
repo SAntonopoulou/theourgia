@@ -19,6 +19,7 @@
 
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   type HubFeedDay,
@@ -28,68 +29,20 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 
-const FEED_DAYS: HubFeedDay[] = [
-  {
-    label: "Today",
-    items: [
-      {
-        id: "f-1",
-        did: "did:theourgia:terra.example:diotima",
-        kind: "working",
-        time: "2h ago",
-        preview:
-          "Pushed: a dark-moon Deipnon at the shared stone. The lamp held all night.",
-      },
-      {
-        id: "f-2",
-        did: "did:theourgia:aurora.example:soror-aurora",
-        kind: "divination",
-        time: "5h ago",
-        preview: "Pushed: a three-card draw on the hub's spring working.",
-      },
-    ],
-  },
-  {
-    label: "Yesterday",
-    items: [
-      {
-        id: "f-3",
-        did: "did:theourgia:hearth.sophia.example:frater-h",
-        kind: "publication",
-        time: "18:40",
-        preview:
-          "Pushed: notes toward a shared egregore — for the hub library.",
-      },
-    ],
-  },
-];
+import { apiMethods } from "../data/api.js";
 
-const SUBMISSIONS: HubMySubmission[] = [
-  {
-    id: "s-1",
-    title: "Dark-moon Deipnon",
-    submitted: "2h ago",
-    status: "pending",
-  },
-  {
-    id: "s-2",
-    title: "On the Ephesia Grammata",
-    submitted: "3 days ago",
-    status: "approved",
-  },
-  {
-    id: "s-3",
-    title: "A draft, reconsidered",
-    submitted: "a week ago",
-    status: "sent-back",
-  },
-  {
-    id: "s-4",
-    title: "An old working",
-    submitted: "2 weeks ago",
-    status: "withdrawn",
-  },
-];
+// Hub feed endpoint not yet built. Empty until it ships.
+const FEED_DAYS: HubFeedDay[] = [];
+
+// Hub submissions endpoint not yet built. Empty until it ships.
+const SUBMISSIONS: HubMySubmission[] = [];
+
+interface WireHub {
+  id: string;
+  name: string;
+  tagline: string | null;
+  public_tradition_tags: string[];
+}
 
 export function HubMemberDashboard() {
   const { hubId } = useParams<{ hubId: string }>();
@@ -97,19 +50,31 @@ export function HubMemberDashboard() {
   const [sharingState, setSharingState] = useState<
     Partial<Record<HubSharingToggle, boolean>>
   >({
-    // The .dc.html demo state — one of four flipped on so the
-    // "on" chrome is visible. Live default is all false per
-    // rule 28.
-    "push-publications": true,
+    // Live default is all false per rule 28 — no fixture flipped
+    // "on" chrome; the surface renders honest defaults.
   });
-  useTopbar(() => ({ title: "Hub" }));
+
+  const hubQuery = useQuery({
+    queryKey: ["hub", hubId],
+    queryFn: async () =>
+      hubId
+        ? ((await apiMethods.getHub(hubId)) as unknown as WireHub)
+        : Promise.reject(new Error("No hub id in URL")),
+    enabled: !!hubId,
+  });
+
+  useTopbar(() => ({ title: hubQuery.data?.name ?? "Hub" }), [hubQuery.data?.name]);
+
+  const hub = hubQuery.data;
+  const monogram = hub?.name?.[0]?.toUpperCase() ?? "·";
+  const tradition = hub?.public_tradition_tags?.[0] ?? "—";
 
   return (
     <HubMemberDashboardSurface
-      hubName="The Crossroads Coven"
-      monogram="Κ"
-      tradition="Hellenic"
-      role="officer"
+      hubName={hub?.name ?? "Hub"}
+      monogram={monogram}
+      tradition={tradition}
+      role="member"
       feedDays={FEED_DAYS}
       submissions={SUBMISSIONS}
       sharingState={sharingState}

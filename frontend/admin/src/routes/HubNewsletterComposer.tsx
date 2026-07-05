@@ -28,49 +28,11 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 
-const SOURCES: NewsletterSource[] = [
-  {
-    id: "src-deipnon",
-    kind: "entry",
-    title: "Dark-moon Deipnon at the shared stone",
-    byHandle: "diotima",
-  },
-  {
-    id: "src-draw",
-    kind: "divination",
-    title: "A three-card draw on the spring rite",
-    byHandle: "soror-aurora",
-  },
-  {
-    id: "src-ephesia",
-    kind: "publication",
-    title: "On the Ephesia Grammata",
-    byHandle: "soror-aurora",
-  },
-  {
-    id: "src-egregore",
-    kind: "entry",
-    title: "Notes toward a shared egregore",
-    byHandle: "frater-h",
-  },
-];
+// Hub curation-sources endpoint not yet built. Empty until it ships.
+const SOURCES: NewsletterSource[] = [];
 
-const INITIAL_BODY: NewsletterBodyPart[] = [
-  {
-    kind: "paragraph",
-    text:
-      "Friends of the crossroads — a fuller month than most. Three workings shared, a new member welcomed, and the spring equinox rite now on the calendar. A few pieces worth your time below.",
-  },
-  {
-    kind: "embed",
-    embedKind: "entry",
-    did: "did:theourgia:terra.example:diotima",
-    title: "Dark-moon Deipnon at the shared stone",
-    excerpt:
-      "The lamp held all night; I have never felt the crossroads so open.",
-  },
-  { kind: "paragraph", text: "Keep the lamp. — the officers" },
-];
+// Empty draft — the newsletter draft endpoint is queued.
+const INITIAL_BODY: NewsletterBodyPart[] = [];
 
 export function HubNewsletterComposer() {
   const { hubId } = useParams<{ hubId: string }>();

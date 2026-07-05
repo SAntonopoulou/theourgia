@@ -1,25 +1,19 @@
 /**
  * HubAdminDashboard — admin route at ``/hubs/:hubId/admin``.
  *
- * Renders the H08 §S3 Cluster A surface 4 against fixtures. The
- * data set mirrors the .dc.html demo state (5 members across all
- * 5 roles + 3 curation items: 2 pending + 1 approved).
+ * Live-wired against the Phase 12 hub backend:
+ *   · GET /hubs/{id} → hubName + publicFace
+ *   · GET /hubs/{id}/members → membership rows
+ *   · PATCH /hubs/{id} → save public face
  *
- * Wiring deferred to Phase 12 backend:
- *
- *   * GET /api/v1/hubs/{id}/members?role= — replaces MEMBERS.
- *   * PATCH /api/v1/hubs/{id}/members/{did} — kebab actions
- *     (change role / suspend / expel — all --warn-soft confirm).
- *   * GET /api/v1/hubs/{id}/curation — replaces CURATION.
- *   * PATCH /api/v1/hubs/{id}/curation/{itemId} { status,
- *     reviewNote? } — approve / send-back / reject.
- *   * PATCH /api/v1/hubs/{id} — public-face commit.
- *   * PUT /api/v1/hubs/{id}/sharing-settings — analytics opt-in
- *     default change.
+ * Curation endpoint is not yet built; the section renders empty
+ * until it lands. Analytics opt-in is a local toggle until the
+ * sharing-settings endpoint ships.
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   type AnalyticsOptInDefault,
@@ -27,124 +21,151 @@ import {
   HubAdminDashboardSurface,
   type HubMemberRow,
   type HubPublicFaceDraft,
+  Toast,
   useTopbar,
 } from "@theourgia/shared";
 
-const MEMBERS: HubMemberRow[] = [
-  {
-    initial: "A",
-    name: "Soror Aurora",
-    did: "did:theourgia:aurora.example:soror-aurora",
-    role: "admin",
-    activity: "today",
-  },
-  {
-    initial: "H",
-    name: "Frater Hermes",
-    did: "did:theourgia:hearth.sophia.example:frater-h",
-    role: "officer",
-    activity: "2 days ago",
-  },
-  {
-    initial: "Δ",
-    name: "Diotima",
-    did: "did:theourgia:terra.example:diotima",
-    role: "moderator",
-    activity: "4 days ago",
-  },
-  {
-    initial: "Κ",
-    name: "K[honoured]",
-    did: "did:theourgia:hearth.sophia.example:k",
-    role: "member",
-    activity: "a week ago",
-  },
-  {
-    initial: "V",
-    name: "A. Visitor",
-    did: "did:theourgia:aurora.example:visitor",
-    role: "observer",
-    activity: "3 weeks ago",
-  },
-];
+import { apiMethods } from "../data/api.js";
 
-const CURATION: CurationItem[] = [
-  {
-    id: "cur-1",
-    did: "did:theourgia:terra.example:diotima",
-    kind: "entry",
-    submitted: "2 hours ago",
-    preview:
-      "A working at the dark moon — I named the threshold-keeper and the air changed…",
-    status: "pending",
-  },
-  {
-    id: "cur-2",
-    did: "did:theourgia:hearth.sophia.example:frater-h",
-    kind: "divination",
-    submitted: "yesterday",
-    preview:
-      "A three-card draw on the timing of the Deipnon. Past · present · future.",
-    status: "pending",
-  },
-  {
-    id: "cur-3",
-    did: "did:theourgia:aurora.example:soror-aurora",
-    kind: "publication",
-    submitted: "3 days ago",
-    preview:
-      "On the Ephesia Grammata — a short essay for the hub library.",
-    status: "approved",
-    approvedAt: "2 days ago",
-  },
-];
+interface WireHub {
+  id: string;
+  slug: string;
+  name: string;
+  tagline: string | null;
+  description: string;
+  membership_policy: string;
+  public_banner_url: string | null;
+}
 
-const PUBLIC_FACE: HubPublicFaceDraft = {
-  motto: "Tending Hekate's lamp, together.",
-  description:
-    "A hub for practitioners keeping the crossroads. We share workings, compare notes on the Deipnon, and tend a shared egregore.",
-  bannerUrl: null,
+interface WireMembership {
+  id: string;
+  user_id: string;
+  hub_id: string;
+  role: string;
+  created_at: string;
+}
+
+const ROLE_MAP: Record<string, HubMemberRow["role"]> = {
+  hub_admin: "admin",
+  hub_officer: "officer",
+  hub_moderator: "moderator",
+  hub_member: "member",
+  hub_observer: "observer",
 };
+
+function membershipToRow(m: WireMembership): HubMemberRow {
+  const initial = m.user_id.slice(0, 1).toUpperCase();
+  const created = new Date(m.created_at).toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+  return {
+    initial,
+    name: `user ${m.user_id.slice(0, 8)}`,
+    did: `did:vault:${m.user_id}`,
+    role: ROLE_MAP[m.role] ?? "observer",
+    activity: `joined ${created}`,
+  };
+}
+
 
 export function HubAdminDashboard() {
   const { hubId } = useParams<{ hubId: string }>();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [analyticsOptIn, setAnalyticsOptIn] =
     useState<AnalyticsOptInDefault>("opt-in");
-  useTopbar(() => ({ title: "Hub admin" }));
+
+  const hubQuery = useQuery({
+    queryKey: ["hub", hubId],
+    queryFn: async () =>
+      hubId
+        ? ((await apiMethods.getHub(hubId)) as unknown as WireHub)
+        : Promise.reject(new Error("No hub id in URL")),
+    enabled: !!hubId,
+  });
+
+  const membersQuery = useQuery({
+    queryKey: ["hub", hubId, "members"],
+    queryFn: async () =>
+      hubId
+        ? ((await apiMethods.listHubMembers(hubId)) as unknown as WireMembership[])
+        : [],
+    enabled: !!hubId,
+  });
+
+  const patchHub = useMutation({
+    mutationFn: async (patch: Record<string, unknown>) =>
+      hubId
+        ? apiMethods.updateHub(hubId, patch)
+        : Promise.reject(new Error("No hub id")),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["hub", hubId] }),
+    onError: (e) => {
+      Toast.push({
+        tone: "error",
+        title: "Could not save",
+        body: e instanceof Error ? e.message : String(e),
+      });
+    },
+  });
+
+  useTopbar(
+    () => ({ title: hubQuery.data?.name ?? "Hub admin" }),
+    [hubQuery.data?.name],
+  );
+
+  const members = useMemo<HubMemberRow[]>(
+    () => (membersQuery.data ?? []).map(membershipToRow),
+    [membersQuery.data],
+  );
+
+  const publicFace: HubPublicFaceDraft = useMemo(
+    () => ({
+      motto: hubQuery.data?.tagline ?? "",
+      description: hubQuery.data?.description ?? "",
+      bannerUrl: hubQuery.data?.public_banner_url ?? null,
+    }),
+    [hubQuery.data],
+  );
+
+  // Curation endpoint isn't built yet; empty until it ships.
+  const curation: CurationItem[] = [];
 
   return (
     <HubAdminDashboardSurface
-      hubName="The Crossroads Coven"
-      members={MEMBERS}
-      curation={CURATION}
-      publicFace={PUBLIC_FACE}
+      hubName={hubQuery.data?.name ?? "Hub"}
+      members={members}
+      curation={curation}
+      publicFace={publicFace}
       analyticsOptIn={analyticsOptIn}
       onOpenMyNetworks={() => navigate("/networks")}
       onOpenRoles={() => navigate(`/hubs/${hubId ?? ""}/admin/roles`)}
       onOpenAuditLog={() => navigate(`/hubs/${hubId ?? ""}/admin/audit`)}
       onMemberAction={(did) => {
-        // TODO Phase 12 — open the member-actions menu
-        // (Change role / Suspend / Expel / View audit).
-        // eslint-disable-next-line no-console
-        console.info("[hub-admin] member action", did);
+        Toast.push({
+          tone: "info",
+          title: "Member actions",
+          body: `Kebab menu for ${did.slice(0, 24)}… lands with the member-detail surface.`,
+        });
       }}
       onCurationAction={(itemId, action) => {
-        // TODO Phase 12 — PATCH /api/v1/hubs/{id}/curation/{itemId}.
-        // eslint-disable-next-line no-console
-        console.info("[hub-admin] curation action", itemId, action);
+        Toast.push({
+          tone: "info",
+          title: "Curation",
+          body: `${action} on ${itemId} — endpoint /hubs/{id}/curation not yet built.`,
+        });
       }}
       onPublicFaceSave={(draft) => {
-        // TODO Phase 12 — PATCH /api/v1/hubs/{id} with the draft.
-        // eslint-disable-next-line no-console
-        console.info("[hub-admin] save public face", draft);
+        patchHub.mutate({
+          tagline: draft.motto,
+          description: draft.description,
+          public_banner_url: draft.bannerUrl,
+        });
       }}
       onAnalyticsOptInChange={(next) => {
         setAnalyticsOptIn(next);
-        // TODO Phase 12 — PUT
-        // /api/v1/hubs/{id}/sharing-settings with the new policy.
-        // eslint-disable-next-line no-console
-        console.info("[hub-admin] analytics opt-in changed", next);
+        // Sharing-settings endpoint not yet built.
       }}
     />
   );
