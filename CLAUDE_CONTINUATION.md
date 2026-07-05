@@ -7,7 +7,7 @@ all you need to clone it + read this file.
 
 ---
 
-## State of the world (commit `e4671e1`)
+## State of the world (commit `c9db780`)
 
 ### Production
 
@@ -22,7 +22,7 @@ all you need to clone it + read this file.
 
 | Service | Passing | Notes |
 |---|---|---|
-| backend | 2576+ | includes 18 B-cluster hardening tests (b108-2cl) |
+| backend | 2587+ | + 11 WebAuthn ceremony tests (b108-2cm); alembic head 0066 |
 | agent-daemon | 198 | alembic head 0002 |
 | registry | 34 | alembic head 0001 |
 | vitest (shared) | 2923 | admin tsc clean |
@@ -41,6 +41,11 @@ all you need to clone it + read this file.
 | #198 R2 buckets provisioned (3 buckets via MCP) | ✅ |
 | #199 Production deployment runbook | ✅ |
 | #200 H10 Cluster B (B1-B4 + B6-B7) wired live | ✅ b108-2cl |
+| #201 WebAuthn backend (endpoints + credential table) | ✅ b108-2cm |
+| #202 WebAuthn frontend (ceremony + enrolment surface) | ✅ b108-2cn |
+| #205 Public footer pages (/vault /federation /hubs /self-host) | ✅ b108-2co |
+| #206 Perf audit + vendor-chunk split | ✅ b108-2cp |
+| H11 design request (auto-context: moon · weather · calendars) | ✅ 2026-07-05 opened |
 
 ### What's still open
 
@@ -48,7 +53,8 @@ all you need to clone it + read this file.
 |---|---|---|
 | #192 Frontend H10 A-cluster (8 surfaces) | **8/8 ✓** | Complete — A1-A4 author-signed · A5-A7 maintainer-signed · A8 author-signed |
 | #193 Frontend H10 C-cluster (12 surfaces) | **12/12 ✓** | Complete — all C-cluster surfaces live |
-| #200 Frontend H10 B-cluster (7 surfaces) | **6/7 ✓** | B5 KeyRotation blocked on WebAuthn (needs a user-facing keypair fingerprint to render) |
+| #200 Frontend H10 B-cluster (7 surfaces) | **6/7 ✓** | B5 KeyRotation is federation-signing-key rotation (envelope resigning + DID doc republish); WebAuthn credentials now live at `/settings/webauthn`. B5 needs its own backend + surface batch. |
+| #204 Retire demo signin | pending | Waits on prod deploy + first WebAuthn enrolment. Delete `POST /api/v1/auth/demo-signin` + the fallback button on `/connection` once every prod user has ≥1 credential. |
 
 ---
 
@@ -139,17 +145,32 @@ The wiring pattern is now well-established. Per surface:
 
 ## Remaining surfaces — what each needs
 
-### Cluster B (1 of 7 still open)
+### Cluster B (1 of 7 still open, distinct from WebAuthn)
 
 | Surface | What's missing |
 |---|---|
-| B5 KeyRotation | Blocked on WebAuthn. The surface needs `current: { fingerprint, createdOn, lastUsed }` — there are no user-facing signing keys until WebAuthn enrolment ships. Implement that first (it also retires demo signin). |
+| B5 KeyRotation | Federation-key rotation. The surface at `/settings/keys` is currently a Placeholder; the real feature needs (a) backend endpoint that generates a new Ed25519 keypair, (b) an envelope-resigning worker that touches every outbox entry, and (c) DID doc republish so peers learn the new key. Copy at `frontend/shared/src/KeyRotation/copy.ts` describes the 4-step wizard. WebAuthn is orthogonal — passkey management lives at `/settings/webauthn`. |
+
+### WebAuthn — shipped, deploy pending
+
+Backend + frontend end-to-end. Prod requires:
+1. Set `THEOURGIA_WEBAUTHN_RP_ID=theourgia.com` in `/srv/theourgia/prod/.env`
+2. Set `THEOURGIA_WEBAUTHN_ORIGIN=https://theourgia.com` in same
+3. `alembic upgrade head` (0065 → 0066)
+4. Rebuild + redeploy backend + frontend containers
+5. First user enrols via `/settings/webauthn`, then signs in via
+   `/connection` → "Sign in with passkey"
+6. Once every user has ≥1 credential, delete
+   `POST /api/v1/auth/demo-signin` and the "Demo signin" button
 
 ### Cluster A + Cluster C
 
-All shipped. See the routes table above for the live mappings; each
-of the 8 A-cluster + 12 C-cluster routes is wired against a real
-backend endpoint.
+All shipped. See the routes table above for the live mappings.
+
+### Public footer
+
+All four pages shipped (`/vault` · `/federation` · `/hubs` ·
+`/self-host`). Index footer updated to point at them.
 
 ---
 
@@ -208,6 +229,16 @@ All WEUR. **Generate API tokens via Cloudflare dashboard** — see
   `theourgia.com` on Cloudflare (DNS only, grey cloud)
 
 ---
+
+## Open design request
+
+**H11 · Journal auto-context** — moon phase, weather, planetary hour,
+multi-calendar chip all auto-captured on every journal entry. Design
+request opened 2026-07-05 at
+`docs/design-requests/2026-07-05-h11-journal-auto-context.md`. Six
+surfaces + five honesty rules (nos. 61-65). Substrate (Swiss
+Ephemeris, calendars, location) already exists; needs Open-Meteo
+adapter + 3 frontend surfaces + Entry model columns.
 
 ## Open conversations from this session
 
