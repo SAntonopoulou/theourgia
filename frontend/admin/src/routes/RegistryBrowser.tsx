@@ -1,97 +1,65 @@
 /**
  * RegistryBrowser — admin route at ``/plugins/registry``.
+ *
+ * Live-wired against GET /api/v1/registry/plugins. Wire→surface
+ * mapper fills the surface's kind/version/rank fields with what
+ * the registry currently exposes (partial — the registry doesn't
+ * yet return version metadata; those fields render "—").
  */
 
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
 import {
-  type RegistryPluginCard,
+  type RegistryPluginCard as SurfaceCard,
   RegistryBrowserSurface,
   useTopbar,
 } from "@theourgia/shared";
 
-const CARDS: RegistryPluginCard[] = [
-  {
-    id: "geomancy-workbench",
-    kind: "divination",
-    name: "Geomancy Workbench",
-    version: "v2.1.0",
-    tier: "official",
-    author: "did:theourgia:terra.example:agrippa-tools",
-    description:
-      "The complete geomantic system — sixteen figures, shield and house charts, and judge derivation.",
-    updatedRank: 2,
-    addedRank: 5,
-  },
-  {
-    id: "liber-777-tables",
-    kind: "correspondence",
-    name: "Liber 777 Tables",
-    version: "v4.0.1",
-    tier: "official",
-    author: "did:theourgia:thelema.example:ordo-press",
-    description:
-      "The full Liber 777 correspondence tables — qabalistic, planetary, elemental, and tarot attributions.",
-    updatedRank: 9,
-    addedRank: 40,
-  },
-  {
-    id: "vedic-correspondences",
-    kind: "correspondence",
-    name: "Vedic Correspondences",
-    version: "v1.2.0",
-    tier: "community",
-    author: "did:theourgia:jyotisha.example:nakshatra",
-    description:
-      "Grahas, nakshatras, and their associations — herbs, gems, mantras, and deities.",
-    updatedRank: 4,
-    addedRank: 18,
-  },
-  {
-    id: "trithemian-cipher",
-    kind: "cipher",
-    name: "Trithemian Cipher",
-    version: "v1.0.3",
-    tier: "community",
-    author: "did:theourgia:steganographia.example:abbot",
-    description:
-      "Encode and decode steganographic ciphers from the Polygraphia and Steganographia.",
-    updatedRank: 30,
-    addedRank: 30,
-  },
-  {
-    id: "goetic-sigil-importer",
-    kind: "editor-block",
-    name: "Goetic Sigil Importer",
-    version: "v0.3.0",
-    tier: "unverified",
-    author: "did:theourgia:unverified.example:anon-scribe",
-    description:
-      "Imports the 72 Goetic seals as editor blocks. Author not yet reviewed.",
-    updatedRank: 2,
-    addedRank: 2,
-  },
-  {
-    id: "coptic-calendar",
-    kind: "calendar",
-    name: "Coptic Calendar",
-    version: "v1.1.0",
-    tier: "unverified",
-    author: "did:theourgia:kemet.example:wabt",
-    description:
-      "The Coptic liturgical and agricultural calendar with feast days and Nile markers.",
-    updatedRank: 7,
-    addedRank: 11,
-  },
-];
+import { apiMethods } from "../data/api.js";
+import { SurfaceError } from "../lib/SurfaceError.js";
+import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
 
 export function RegistryBrowser() {
   const navigate = useNavigate();
   useTopbar(() => ({ title: "Registry" }));
 
+  const query = useQuery({
+    queryKey: ["registry-plugins"],
+    queryFn: async () => apiMethods.listRegistryPlugins(),
+    staleTime: 60_000,
+  });
+
+  const cards = useMemo<SurfaceCard[]>(() => {
+    const rows = query.data?.plugins ?? [];
+    return rows.map<SurfaceCard>((p, i) => ({
+      id: p.id,
+      kind: "widget" as never,
+      name: p.name,
+      version: "—",
+      tier: p.tier as never,
+      author: p.author_did,
+      description: p.description,
+      updatedRank: i + 1,
+      addedRank: i + 1,
+    }));
+  }, [query.data]);
+
+  if (query.isPending) return <SurfaceSkeleton rowCount={4} />;
+  if (query.isError) {
+    return (
+      <SurfaceError
+        title="Couldn't load the registry."
+        message={query.error instanceof Error ? query.error.message : "Unknown"}
+        onRetry={() => void query.refetch()}
+      />
+    );
+  }
+
   return (
     <RegistryBrowserSurface
-      cards={CARDS}
+      cards={cards}
       onBreadcrumbHome={() => navigate("/plugins")}
       onView={(id) => navigate(`/plugins/registry/${id}`)}
     />

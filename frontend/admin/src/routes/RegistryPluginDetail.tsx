@@ -1,95 +1,87 @@
 /**
  * RegistryPluginDetail — admin route at ``/plugins/registry/:id``.
+ *
+ * Live-wired: fetches the plugin from the registry via the
+ * /api/v1/registry/plugins list and picks the row with the matching
+ * id. Full plugin-detail JSON on the registry side ships a per-slug
+ * endpoint in a follow-up.
  */
 
+import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   RegistryPluginDetailSurface,
   useTopbar,
 } from "@theourgia/shared";
 
+import { apiMethods } from "../data/api.js";
+import { SurfaceError } from "../lib/SurfaceError.js";
+import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
+
 export function RegistryPluginDetail() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  useTopbar(() => ({ title: "Plugin" }));
+
+  const query = useQuery({
+    queryKey: ["registry-plugins"],
+    queryFn: async () => apiMethods.listRegistryPlugins(),
+    staleTime: 60_000,
+  });
+
+  const plugin = useMemo(
+    () => query.data?.plugins?.find((p) => p.id === id),
+    [query.data, id],
+  );
+
+  useTopbar(
+    () => ({ title: plugin?.name ?? "Plugin" }),
+    [plugin?.name],
+  );
+
+  if (query.isPending) return <SurfaceSkeleton rowCount={4} />;
+  if (query.isError) {
+    return (
+      <SurfaceError
+        title="Couldn't load the registry."
+        message={query.error instanceof Error ? query.error.message : "Unknown error"}
+        onRetry={() => void query.refetch()}
+      />
+    );
+  }
+  if (!plugin) {
+    return (
+      <SurfaceError
+        title="Plugin not found"
+        message={`No plugin with id ${id ?? "(none)"} in the registry listing.`}
+        onRetry={() => navigate("/registry")}
+        retryLabel="Back to registry"
+      />
+    );
+  }
 
   return (
     <RegistryPluginDetailSurface
-      name="Geomancy Workbench"
-      version="v2.1.0"
-      kind="divination"
-      tier="official"
-      author="did:theourgia:terra.example:agrippa-tools"
-      license="CC-BY-SA-4.0"
-      homepage="terra.example/geomancy"
-      description={
-        <p style={{ margin: 0 }}>
-          The complete geomantic divination system — generate the
-          sixteen figures, lay the shield and house charts, and
-          derive the Judge. Adds a divination method to the
-          Divination workbench and a figure-reference panel.
-        </p>
-      }
-      capabilities={[
-        {
-          label: "Read all your journal entries",
-          wireKey: "read.entries",
-          consequence:
-            "Reads your entries to suggest geomantic context. It cannot modify or delete them.",
-        },
-        {
-          label: "Add a divination system",
-          wireKey: "ui.divination.add-system",
-          consequence:
-            "Registers geomancy in the Divination workbench.",
-        },
-        {
-          label: "Apply database migrations",
-          wireKey: "db.migrations",
-          consequence:
-            "Creates the tables that store castings and figure data.",
-        },
-      ]}
-      extensionPoints={[
-        {
-          label: "Divination systems (1)",
-          detail: "'geomancy'",
-        },
-        {
-          label: "Entity inspector panels (1)",
-          detail: "'geomantic-figure'",
-        },
-      ]}
-      versions={[
-        {
-          version: "v2.1.0",
-          date: "2 days ago",
-          notes:
-            "Added house-chart derivation and the Part of Fortune.",
-        },
-        {
-          version: "v2.0.0",
-          date: "6 weeks ago",
-          notes:
-            "Rewrote the judge algorithm; corrected the Via / Populus reconciliation.",
-        },
-        {
-          version: "v1.6.2",
-          date: "4 months ago",
-          notes: "Fixed the Rubeus image in the figure reference.",
-        },
-      ]}
-      onBreadcrumbHome={() => navigate("/plugins/registry")}
+      name={plugin.name}
+      version="—"
+      kind="widget"
+      tier={plugin.tier as never}
+      author={plugin.author_did}
+      license="—"
+      homepage={plugin.homepage ?? undefined}
+      description={<p style={{ margin: 0 }}>{plugin.description}</p>}
+      capabilities={[]}
+      extensionPoints={[]}
+      versions={[]}
+      onBreadcrumbHome={() => navigate("/registry")}
       onInstall={() => {
-        // TODO Phase 14 — open Capability Review modal
-        // eslint-disable-next-line no-console
-        console.info("[registry-detail] install", id);
+        // Install-from-registry flow requires the local vault to
+        // exist + the manifest to be validated; the "capability
+        // review" modal is the entry, queued in H10 Cluster A close.
       }}
       onViewAuthor={() =>
-        navigate(
-          "/plugins/authors/did:theourgia:terra.example:agrippa-tools",
-        )
+        navigate(`/plugins/authors/${encodeURIComponent(plugin.author_did)}`)
       }
     />
   );

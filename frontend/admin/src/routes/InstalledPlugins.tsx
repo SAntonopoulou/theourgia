@@ -117,7 +117,7 @@ export function InstalledPlugins() {
       ) : null}
       <InstalledPluginsSurface
         plugins={rows}
-        onBrowseRegistry={() => navigate("/plugins/registry")}
+        onBrowseRegistry={() => navigate("/registry")}
         onPluginAction={(pluginId, kind) => {
           if (
             kind === "activate" ||
