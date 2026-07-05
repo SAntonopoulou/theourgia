@@ -263,6 +263,18 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     fetches the hub name from `GET /hubs/:id` instead of hardcoding
     "Crossroads Coven"; recipient count is 0 with an honest tone=info
     toast until the hub-newsletter backend ships.
+  - b108-2ec: **Settings · encryption-per-content-type table removed.**
+    The Settings page's Journal=standard / Workings=zero-knowledge /
+    Divination=standard / Sigils=zero-knowledge table hardcoded a
+    security posture that nothing on the backend actually enforces —
+    a reader was being told "your Workings are zero-knowledge" with
+    no truth behind it. Removed and replaced with a link to the
+    dedicated /settings/accessibility page. High-contrast / Reduced-
+    motion / Larger-text toggles now persist to localStorage
+    (`theourgia.a11y.prefs`) and apply live to
+    `document.documentElement`. Stub sections now show an "Open
+    <section> →" link to each section's real dedicated route (Account
+    · Security · Networks · Plugins · Accessibility · Billing).
   - b108-2eb: **Lineage attestations live.**
     LineageAdmin now fetches `GET /api/v1/attestations` on mount and
     derives state (verified / self-declared / revoked) from the
