@@ -356,6 +356,68 @@ export function api(client: ApiClient) {
       );
     },
 
+    // ── Publications / Subscribers / Media / Pilgrimage / Hubs ───
+
+    listPublications(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/publications",
+      );
+    },
+
+    createPublication(input: {
+      kind: string;
+      title: string;
+      summary?: string;
+    }): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/publications",
+        { method: "POST", json: input },
+      );
+    },
+
+    listSubscribers(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/subscribers",
+      );
+    },
+
+    listMedia(
+      opts: { kind?: "image" | "audio" | "video" | "document" } = {},
+    ): Promise<Array<Record<string, unknown>>> {
+      const qs = opts.kind ? `?kind=${encodeURIComponent(opts.kind)}` : "";
+      return client.request<Array<Record<string, unknown>>>(
+        `/api/v1/media${qs}`,
+      );
+    },
+
+    listPilgrimageSites(): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/pilgrimage-sites",
+      );
+    },
+
+    listHubs(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>("/api/v1/hubs");
+    },
+
+    listPrivateViewers(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/private-viewers",
+      );
+    },
+
+    listSynchronicities(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/synchronicities",
+      );
+    },
+
+    listStudies(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/studies",
+      );
+    },
+
     // ─── Entries (live as of Batch 10) ───────────────────────────────
 
     listEntries(opts?: { signal?: AbortSignal; type?: EntryType }): Promise<EntryRecord[]> {

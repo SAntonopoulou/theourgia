@@ -1,10 +1,9 @@
 /**
- * Media Library — admin route wrapping the shared MediaLibrarySurface
- * (H07 §S3 surface 14, Cluster C entry point).
+ * Media Library — admin route wrapping MediaLibrarySurface.
  *
- * Phase 11 backend is unbuilt by design (per H07 onboarding) — the
- * surface receives a fixture list. "+ Upload" + card-click Toast
- * until the Upload modal + Media Detail surfaces ship next.
+ * Live-wired: GET /api/v1/media populates the grid. Upload dispatches
+ * to /api/v1/media/uploads (multipart) — that plumbing lives in the
+ * MediaUploadModal shared component.
  */
 
 import {
@@ -15,77 +14,54 @@ import {
   type UploadFileDraft,
   useTopbar,
 } from "@theourgia/shared";
-import { useCallback, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const FIXTURE_ASSETS: MediaAsset[] = [
-  {
-    id: "m-altar-dark-moon",
-    kind: "image",
-    filename: "altar-dark-moon.jpg",
-    meta_label: "15 Jun · 2.4 MB",
-    link_count_label: "linked to 2 workings",
-    size_bytes: 2_400_000,
-    uploaded_at: "2026-06-15T00:00:00Z",
-  },
-  {
-    id: "m-brimo-sounding",
-    kind: "audio",
-    filename: "brimo-sounding.m4a",
-    meta_label: "15 Jun · 0:42",
-    duration_label: "0:42",
-    link_count_label: "linked voce",
-    size_bytes: 500_000,
-    uploaded_at: "2026-06-15T00:00:00Z",
-  },
-  {
-    id: "m-crossroads-stone",
-    kind: "image",
-    filename: "crossroads-stone.jpg",
-    meta_label: "08 Jun · 3.1 MB",
-    link_count_label: null,
-    size_bytes: 3_100_000,
-    uploaded_at: "2026-06-08T00:00:00Z",
-  },
-  {
-    id: "m-banishing-rite",
-    kind: "video",
-    filename: "banishing-rite.mp4",
-    meta_label: "01 May · 4:18",
-    duration_label: "4:18",
-    link_count_label: "linked to 1 working",
-    size_bytes: 12_000_000,
-    uploaded_at: "2026-05-01T00:00:00Z",
-  },
-  {
-    id: "m-sigil-engraved",
-    kind: "image",
-    filename: "sigil-engraved.jpg",
-    meta_label: "19 Apr · 1.8 MB",
-    link_count_label: "linked talisman",
-    size_bytes: 1_800_000,
-    uploaded_at: "2026-04-19T00:00:00Z",
-  },
-  {
-    id: "m-oracle-transcript",
-    kind: "document",
-    filename: "oracle-transcript.pdf",
-    meta_label: "12 Apr · 220 KB",
-    link_count_label: null,
-    size_bytes: 220_000,
-    uploaded_at: "2026-04-12T00:00:00Z",
-  },
-  {
-    id: "m-deipnon-recording",
-    kind: "audio",
-    filename: "deipnon-recording.m4a",
-    meta_label: "15 Mar · 12:04",
-    duration_label: "12:04",
-    link_count_label: null,
-    size_bytes: 4_200_000,
-    uploaded_at: "2026-03-15T00:00:00Z",
-  },
-];
+import { apiMethods } from "../data/api.js";
+
+interface WireMediaAsset {
+  id: string;
+  kind: string;
+  filename: string;
+  size_bytes: number;
+  uploaded_at?: string;
+  duration_seconds?: number;
+  link_count?: number;
+}
+
+function toAsset(m: WireMediaAsset): MediaAsset {
+  const size = m.size_bytes;
+  const sizeLabel =
+    size >= 1_000_000
+      ? `${(size / 1_000_000).toFixed(1)} MB`
+      : `${Math.max(1, Math.round(size / 1_000))} KB`;
+  const date = m.uploaded_at
+    ? new Date(m.uploaded_at).toLocaleDateString(undefined, {
+        day: "2-digit",
+        month: "short",
+      })
+    : "";
+  const duration =
+    typeof m.duration_seconds === "number"
+      ? `${Math.floor(m.duration_seconds / 60)}:${String(
+          Math.round(m.duration_seconds % 60),
+        ).padStart(2, "0")}`
+      : undefined;
+  return {
+    id: m.id,
+    kind: (m.kind as MediaAsset["kind"]) ?? "document",
+    filename: m.filename,
+    meta_label: `${date}${date && sizeLabel ? " · " : ""}${duration ?? sizeLabel}`,
+    duration_label: duration ?? null,
+    link_count_label: m.link_count
+      ? `linked to ${m.link_count} ${m.link_count === 1 ? "item" : "items"}`
+      : null,
+    size_bytes: size,
+    uploaded_at: m.uploaded_at ?? "",
+  };
+}
+
 
 export function MediaLibraryRoute() {
   const navigate = useNavigate();
@@ -98,6 +74,18 @@ export function MediaLibraryRoute() {
         "Images, audio, video, documents — every asset in this vault.",
     }),
     [],
+  );
+
+  const query = useQuery({
+    queryKey: ["media"],
+    queryFn: async () =>
+      (await apiMethods.listMedia()) as unknown as WireMediaAsset[],
+    staleTime: 30_000,
+  });
+
+  const assets = useMemo<MediaAsset[]>(
+    () => (query.data ?? []).map(toAsset),
+    [query.data],
   );
 
   const handleSelect = useCallback(
@@ -140,8 +128,8 @@ export function MediaLibraryRoute() {
   return (
     <>
       <MediaLibrarySurface
-        assets={FIXTURE_ASSETS}
-        sealed_count={3}
+        assets={assets}
+        sealed_count={0}
         onSelect={handleSelect}
         onUpload={handleUpload}
         onOpenSealed={handleOpenSealed}

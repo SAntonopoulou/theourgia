@@ -1,11 +1,8 @@
 /**
  * Publications — admin route wrapping the shared
- * PublicationsSurface (H07 §S3 surface 4).
- *
- * Phase 10 backend is unbuilt by design (per H07 onboarding) — the
- * surface receives a fixture-mode list for now. "+ New publication"
- * + card-click both Toast until the Publication Editor surface
- * + Phase 10 backend ship.
+ * PublicationsSurface. Live-wired against GET /api/v1/publications;
+ * "+ New publication" POSTs an empty publication and navigates to
+ * the editor.
  */
 
 import {
@@ -15,85 +12,53 @@ import {
   Toast,
   useTopbar,
 } from "@theourgia/shared";
-import { useCallback } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 
-// Fixture data for mock mode. Replaced by `listPublications()`
-// once the Phase 10 backend lands (planned in B116+; the H07
-// `.dc.html` surfaces inform the schema first).
-const FIXTURE_PUBLICATIONS: PublicationCardRecord[] = [
-  {
-    id: "demo-walking-crossroads",
-    title: "Walking the Crossroads",
-    author_label: "Soror Ευ. Α.",
-    kind: "book",
-    state: "live",
-    pricing: { model: "one-time", amount_cents: 1800, currency: "USD" },
-    purchase_count: 47,
-    cited: true,
-    cover_url: null,
-    created_at: "2026-05-12T00:00:00Z",
-  },
-  {
-    id: "demo-sealed-oath",
-    title: "On the Sealed Oath",
-    author_label: "Soror Ευ. Α.",
-    kind: "essay",
-    state: "live",
-    pricing: { model: "free" },
+import { apiMethods } from "../data/api.js";
+
+interface WirePublication {
+  id: string;
+  owner_id: string;
+  kind: string;
+  state: string;
+  title: string;
+  summary?: string | null;
+  cover_url?: string | null;
+  pricing_model: string;
+  one_time_amount_cents?: number | null;
+  currency: string;
+  cited: boolean;
+  created_at: string;
+}
+
+function toPricing(p: WirePublication): PublicationCardRecord["pricing"] {
+  if (p.pricing_model === "subscribe") return { model: "subscribe" };
+  if (p.pricing_model === "one-time" && typeof p.one_time_amount_cents === "number") {
+    return {
+      model: "one-time",
+      amount_cents: p.one_time_amount_cents,
+      currency: p.currency,
+    };
+  }
+  return { model: "free" };
+}
+
+function toCard(p: WirePublication): PublicationCardRecord {
+  return {
+    id: p.id,
+    title: p.title,
+    author_label: "You",
+    kind: (p.kind as PublicationKind) ?? "essay",
+    state: p.state as PublicationCardRecord["state"],
+    pricing: toPricing(p),
     purchase_count: 0,
-    cited: false,
-    cover_url: null,
-    created_at: "2026-05-18T00:00:00Z",
-  },
-  {
-    id: "demo-notes-theurgy",
-    title: "Notes Toward a Theurgy",
-    author_label: "Soror Ευ. Α.",
-    kind: "essay",
-    state: "draft",
-    pricing: { model: "free" },
-    purchase_count: 0,
-    cited: false,
-    cover_url: null,
-    created_at: "2026-06-01T00:00:00Z",
-  },
-  {
-    id: "demo-dark-moon",
-    title: "The Dark Moon Letters",
-    author_label: "Soror Ευ. Α.",
-    kind: "post",
-    state: "scheduled",
-    pricing: { model: "subscribe" },
-    purchase_count: 0,
-    cited: false,
-    cover_url: null,
-    created_at: "2026-06-15T00:00:00Z",
-  },
-  {
-    id: "demo-voces-grammar",
-    title: "A Grammar of Voces",
-    author_label: "Soror Ευ. Α.",
-    kind: "book",
-    state: "live",
-    pricing: { model: "one-time", amount_cents: 2400, currency: "USD" },
-    purchase_count: 12,
-    cited: true,
-    cover_url: null,
-    created_at: "2026-06-02T00:00:00Z",
-  },
-  {
-    id: "demo-hours-keeping",
-    title: "Hours & Their Keeping",
-    author_label: "Soror Ευ. Α.",
-    kind: "page",
-    state: "withdrawn",
-    pricing: { model: "free" },
-    purchase_count: 0,
-    cited: false,
-    cover_url: null,
-    created_at: "2026-04-20T00:00:00Z",
-  },
-];
+    cited: p.cited,
+    cover_url: p.cover_url ?? null,
+    created_at: p.created_at,
+  };
+}
 
 export function PublicationsRoute() {
   useTopbar(
@@ -104,25 +69,57 @@ export function PublicationsRoute() {
     [],
   );
 
-  const handleNew = useCallback((kind: PublicationKind) => {
-    Toast.push({
-      tone: "info",
-      title: `New ${kind}`,
-      body: "Publication Editor surface ships next in the H07 Cluster B sprint. Phase 10 backend lands alongside.",
-    });
-  }, []);
+  const navigate = useNavigate();
+  const qc = useQueryClient();
 
-  const handleSelect = useCallback((id: string) => {
-    Toast.push({
-      tone: "info",
-      title: "Open publication",
-      body: `Editor route for publication ${id} ships with surface 5 (Publication Editor) in the next H07 batch.`,
-    });
-  }, []);
+  const query = useQuery({
+    queryKey: ["publications"],
+    queryFn: async () =>
+      (await apiMethods.listPublications()) as unknown as WirePublication[],
+    staleTime: 30_000,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (kind: PublicationKind) =>
+      (await apiMethods.createPublication({
+        kind: String(kind),
+        title: `New ${kind}`,
+      })) as unknown as WirePublication,
+    onSuccess: (created) => {
+      qc.invalidateQueries({ queryKey: ["publications"] });
+      navigate(`/publications/${created.id}/edit`);
+    },
+    onError: (err) => {
+      Toast.push({
+        tone: "error",
+        title: "Could not create",
+        body: err instanceof Error ? err.message : String(err),
+      });
+    },
+  });
+
+  const publications = useMemo<PublicationCardRecord[]>(
+    () => (query.data ?? []).map(toCard),
+    [query.data],
+  );
+
+  const handleNew = useCallback(
+    (kind: PublicationKind) => {
+      createMutation.mutate(kind);
+    },
+    [createMutation],
+  );
+
+  const handleSelect = useCallback(
+    (id: string) => {
+      navigate(`/publications/${id}/edit`);
+    },
+    [navigate],
+  );
 
   return (
     <PublicationsSurface
-      publications={FIXTURE_PUBLICATIONS}
+      publications={publications.length > 0 ? publications : []}
       onNew={handleNew}
       onSelect={handleSelect}
     />
