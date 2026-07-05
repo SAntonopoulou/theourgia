@@ -289,6 +289,16 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     "Natal — Aspasia, 1980-03-14" → generic. Workshop builder
     hrefs `/sigil` and `/circle` → `/sigils` and `/circles`
     (both were 404'ing).
+  - b108-2eh: **Editor `/editor` auto-creates a draft.**
+    Loading /editor with no :id previously rendered a fabricated
+    "Invocation of the Agathos Daimon" specimen (fake ritual log ·
+    Greek quote · PGM citation · gematria · sensation map). Save
+    status read "Demo · not saved". Multiple links routed users
+    here (Oracle "Open as entry" · Templates "Start new entry" ·
+    GroupRitualPostMortem "Open as entry"). Now POSTs a real draft
+    (`Untitled entry`, type=observation) and replace-navigates to
+    /editor/:id. The 70-line DEMO_DOC constant + `"demo"` SaveStatus
+    variant deleted.
   - b108-2eg: **BookPreview orphan removed.**
     772-line print-preview surface pinned to a fabricated
     "Bornless Working · Theophrastos" specimen — chapter opener,
