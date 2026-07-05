@@ -1,8 +1,17 @@
 /**
  * PluginStatus — admin route at ``/plugins/status``.
  *
- * Renders the H09 Cluster A surface 5 against fixtures.
+ * Derives active-plugin rows from the same /plugins/installed feed
+ * the InstalledPlugins route uses. Load-time telemetry + memory
+ * telemetry aren't emitted by the plugin loader yet, so those
+ * fields render as "—" instead of fabricated numbers.
+ *
+ * Error rows are derived from installs with `state=error`; when the
+ * loader begins recording per-plugin stack traces they'll appear
+ * here automatically.
  */
+
+import { useMemo } from "react";
 
 import {
   type ActiveRow,
@@ -11,67 +20,71 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 
-const ACTIVE: ActiveRow[] = [
-  {
-    name: "Decanic Correspondences",
-    version: "v1.4.2",
-    loadMs: "84 ms",
-    extensionPointsLabel: "3 active",
-  },
-  {
-    name: "Geomancy Workbench",
-    version: "v2.1.0",
-    loadMs: "151 ms",
-    extensionPointsLabel: "2 active",
-  },
-  {
-    name: "Planetary Hours",
-    version: "v3.0.0",
-    loadMs: "63 ms",
-    extensionPointsLabel: "1 active",
-  },
-  {
-    name: "Runic Tabular Block",
-    version: "v0.9.1",
-    loadMs: "114 ms",
-    extensionPointsLabel: "3 active",
-  },
-];
+import { SurfaceError } from "../lib/SurfaceError.js";
+import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
+import {
+  type PluginInstall,
+  useInstalledPlugins,
+} from "../lib/plugins.js";
 
-const ERRORS: ErrorRow[] = [
-  {
-    id: "e0",
-    name: "Planetary Hours",
-    version: "v3.0.0",
-    summary:
-      "EphemerisError: failed to load ephemeris table at startup",
-    when: "27 Jun · 09:31",
-    trace:
-      'Traceback (most recent call last):\n  File "theourgia/core/plugins/loader.py", line 212, in _activate\n    instance.on_load(ctx)\n  File "plugins/planetary_hours/main.py", line 47, in on_load\n    self.ephemeris = load_swe(ctx.config["ephemeris_source"])\n  File "plugins/planetary_hours/swe.py", line 88, in load_swe\n    resp = http.get(url, timeout=5.0)\n  File "theourgia/core/net.py", line 134, in get\n    raise NetworkError(f"unreachable: {url}")\ntheourgia.core.net.NetworkError: unreachable: https://ephemeris.example/swe\n\nThe plugin requested network.outbound but the host is not responding.\nThe plugin is loaded in a degraded state; the Today widget is hidden until the ephemeris resolves.',
-  },
-  {
-    id: "e1",
-    name: "Trithemian Cipher",
-    version: "v1.0.3",
-    summary: "MigrationError: pending migration could not apply",
-    when: "25 Jun · 14:02",
-    trace:
-      'Traceback (most recent call last):\n  File "theourgia/core/plugins/migrate.py", line 76, in run_pending\n    op.execute(stmt)\n  File "plugins/trithemian/migrations/0003_add_tableau.py", line 19, in upgrade\n    op.create_table("cipher_tableau", ...)\nsqlalchemy.exc.OperationalError: table cipher_tableau already exists\n\nThe migration was rolled back. The plugin remains at schema revision 0002.\nDeactivate and reactivate the plugin to retry, or report this to the author.',
-  },
-];
+function toActive(p: PluginInstall): ActiveRow {
+  return {
+    name: p.name,
+    version: p.version,
+    loadMs: "—",
+    extensionPointsLabel: "—",
+  };
+}
+
+function toError(p: PluginInstall): ErrorRow {
+  return {
+    id: p.id,
+    name: p.name,
+    version: p.version,
+    summary: p.description || "Plugin reported an error at load time.",
+    when: "—",
+    trace: "Per-plugin stack traces are not yet captured by the loader.",
+  };
+}
 
 export function PluginStatus() {
   useTopbar(() => ({ title: "Plugin status" }));
 
+  const { data, isLoading, error, refetch } = useInstalledPlugins();
+
+  const { active, errors } = useMemo(() => {
+    const rows = data ?? [];
+    return {
+      active: rows.filter((r) => r.state === "active").map(toActive),
+      errors: rows.filter((r) => r.state === "error").map(toError),
+    };
+  }, [data]);
+
+  if (isLoading) {
+    return <SurfaceSkeleton rowCount={4} />;
+  }
+
+  if (error) {
+    return (
+      <SurfaceError
+        title="Couldn't load plugin status."
+        message={error.message}
+        onRetry={() => {
+          void refetch();
+        }}
+      />
+    );
+  }
+
   return (
     <PluginStatusDashboardSurface
-      active={ACTIVE}
-      errors={ERRORS}
+      active={active}
+      errors={errors}
       performance={{
-        totalLoadTimeLabel: "412 ms",
-        totalLoadTimeDetail: "across 4 active plugins, last startup",
-        memoryLabel: "~38 MB",
-        memoryDetail: "rough estimate, resident",
+        totalLoadTimeLabel: "—",
+        totalLoadTimeDetail: "loader telemetry not yet emitted",
+        memoryLabel: "—",
+        memoryDetail: "resident-set-size probe not yet emitted",
       }}
     />
   );
