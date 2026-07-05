@@ -16,6 +16,8 @@ import {
 import { useMemo } from "react";
 import { NavLink } from "react-router-dom";
 
+import { apiMethods } from "../data/api.js";
+
 function NavLinkAdapter({
   to,
   current,
@@ -47,12 +49,24 @@ export function GeomancyRoute() {
     [],
   );
 
-  const handleSave = (title: string) => {
-    Toast.push({
-      tone: "success",
-      title: "Chart saved",
-      body: `“${title}” added to your journal. (Backend wiring lands with the readings API.)`,
-    });
+  const handleSave = async (title: string) => {
+    try {
+      await apiMethods.castGeomancy({
+        question: title,
+        method: "rng",
+      });
+      Toast.push({
+        tone: "success",
+        title: "Chart saved",
+        body: `“${title}” persisted. Note: server casts a fresh figure set; full seed round-trip lands when the surface exposes its drawn state.`,
+      });
+    } catch (err) {
+      Toast.push({
+        tone: "error",
+        title: "Could not save",
+        body: err instanceof Error ? err.message : "An unexpected error occurred.",
+      });
+    }
   };
 
   return useMemo(

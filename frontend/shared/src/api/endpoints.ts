@@ -257,6 +257,105 @@ export function api(client: ApiClient) {
       return client.request<void>("/api/v1/auth/totp", { method: "DELETE" });
     },
 
+    // ── Divination (Phase 06) ─────────────────────────────────────
+
+    listTarotDecks(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/tarot/decks",
+      );
+    },
+
+    listTarotSpreads(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/tarot/spreads",
+      );
+    },
+
+    listTarotReadings(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/tarot/readings",
+      );
+    },
+
+    castTarot(input: {
+      deck_id: string;
+      spread_id: string;
+      question?: string;
+      draw_method?: string;
+      seed?: string;
+      title?: string;
+    }): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/tarot/cast",
+        { method: "POST", json: input },
+      );
+    },
+
+    listIchingReadings(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/iching/readings",
+      );
+    },
+
+    castIching(input: {
+      question?: string;
+      method?: "three_coins" | "yarrow_stalks" | "six_coins";
+      seed?: string;
+    }): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/iching/cast",
+        { method: "POST", json: input },
+      );
+    },
+
+    listGeomancyReadings(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/geomancy/readings",
+      );
+    },
+
+    castGeomancy(input: {
+      question?: string;
+      method?: "rng" | "sand" | "manual";
+      seed?: string;
+    }): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/geomancy/cast",
+        { method: "POST", json: input },
+      );
+    },
+
+    listRuneSets(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/runes/sets",
+      );
+    },
+
+    listRuneSpreads(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/runes/spreads",
+      );
+    },
+
+    listRuneReadings(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/runes/readings",
+      );
+    },
+
+    castRunes(input: {
+      rune_set?: "elder_futhark" | "younger_futhark" | "anglo_saxon";
+      spread?: "single_rune" | "three_rune" | "cross" | "runic_five" | "nine_rune_grid";
+      question?: string;
+      seed?: string;
+      allow_reversals?: boolean;
+    }): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/runes/cast",
+        { method: "POST", json: input },
+      );
+    },
+
     // ─── Entries (live as of Batch 10) ───────────────────────────────
 
     listEntries(opts?: { signal?: AbortSignal; type?: EntryType }): Promise<EntryRecord[]> {

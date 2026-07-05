@@ -16,6 +16,8 @@ import {
 import { useMemo } from "react";
 import { NavLink } from "react-router-dom";
 
+import { apiMethods } from "../data/api.js";
+
 function NavLinkAdapter({
   to,
   current,
@@ -47,12 +49,25 @@ export function RunesRoute() {
     [],
   );
 
-  const handleSave = (title: string) => {
-    Toast.push({
-      tone: "success",
-      title: "Draw saved",
-      body: `“${title}” added to your journal. (Backend wiring lands with the readings API.)`,
-    });
+  const handleSave = async (title: string) => {
+    try {
+      await apiMethods.castRunes({
+        question: title,
+        rune_set: "elder_futhark",
+        spread: "three_rune",
+      });
+      Toast.push({
+        tone: "success",
+        title: "Draw saved",
+        body: `“${title}” persisted. Note: server draws a fresh set; full seed round-trip lands when the surface exposes its drawn state.`,
+      });
+    } catch (err) {
+      Toast.push({
+        tone: "error",
+        title: "Could not save",
+        body: err instanceof Error ? err.message : "An unexpected error occurred.",
+      });
+    }
   };
 
   return useMemo(

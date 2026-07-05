@@ -16,6 +16,8 @@ import {
 import { useMemo } from "react";
 import { NavLink } from "react-router-dom";
 
+import { apiMethods } from "../data/api.js";
+
 function NavLinkAdapter({
   to,
   current,
@@ -53,12 +55,24 @@ export function IChingRoute() {
     [],
   );
 
-  const handleSave = (title: string) => {
-    Toast.push({
-      tone: "success",
-      title: "Consultation saved",
-      body: `“${title}” added to your journal. (Backend wiring lands with the readings API.)`,
-    });
+  const handleSave = async (title: string) => {
+    try {
+      await apiMethods.castIching({
+        question: title,
+        method: "three_coins",
+      });
+      Toast.push({
+        tone: "success",
+        title: "Consultation saved",
+        body: `“${title}” persisted. Note: the server casts a fresh reading; the surface's current display uses its own client-side cast. Full seed round-trip lands with a surface prop extension.`,
+      });
+    } catch (err) {
+      Toast.push({
+        tone: "error",
+        title: "Could not save",
+        body: err instanceof Error ? err.message : "An unexpected error occurred.",
+      });
+    }
   };
 
   return useMemo(
