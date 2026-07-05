@@ -114,7 +114,11 @@ class AuditEvent(IDMixin, TimestampMixin, table=True):
 
     kind: AuditEventKind = Field(
         sa_column=Column(
-            SQLEnum(AuditEventKind, name="audit_event_kind"),
+            SQLEnum(
+                AuditEventKind,
+                name="audit_event_kind",
+                values_callable=lambda enum: [e.value for e in enum],
+            ),
             nullable=False,
         ),
     )
@@ -126,7 +130,11 @@ class AuditEvent(IDMixin, TimestampMixin, table=True):
 
     outcome: AuditOutcome = Field(
         sa_column=Column(
-            SQLEnum(AuditOutcome, name="audit_outcome"),
+            SQLEnum(
+                AuditOutcome,
+                name="audit_outcome",
+                values_callable=lambda enum: [e.value for e in enum],
+            ),
             nullable=False,
         ),
     )
