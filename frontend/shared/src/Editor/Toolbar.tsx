@@ -7,8 +7,9 @@
  */
 
 import type { Editor } from "@tiptap/core";
-import { type CSSProperties, type ReactElement } from "react";
+import { type CSSProperties, type ReactElement, useState } from "react";
 
+import { PromptDialog } from "../Dialog/PromptDialog.js";
 import { BlockKindMenu } from "./BlockKindMenu.js";
 import type { LangScript } from "./extensions.js";
 
@@ -117,6 +118,8 @@ export function Toolbar({ editor, lang, onLangChange, onInsertBlockClick }: Tool
   const isItalic = editor.isActive("italic");
   const isSmallCaps = editor.isActive("smallCaps");
   const isLink = editor.isActive("link");
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkInitial, setLinkInitial] = useState("");
 
   const setLang = (value: LangScript) => {
     onLangChange(value);
@@ -132,6 +135,7 @@ export function Toolbar({ editor, lang, onLangChange, onInsertBlockClick }: Tool
   };
 
   return (
+    <>
     <div
       data-editor-toolbar
       style={{
@@ -171,13 +175,8 @@ export function Toolbar({ editor, lang, onLangChange, onInsertBlockClick }: Tool
         active={isLink}
         onClick={() => {
           const prev = editor.getAttributes("link").href as string | undefined;
-          const url = window.prompt("URL", prev ?? "https://");
-          if (url === null) return;
-          if (url === "") {
-            editor.chain().focus().extendMarkRange("link").unsetLink().run();
-            return;
-          }
-          editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+          setLinkInitial(prev ?? "https://");
+          setLinkDialogOpen(true);
         }}
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
@@ -220,5 +219,28 @@ export function Toolbar({ editor, lang, onLangChange, onInsertBlockClick }: Tool
         Insert block · /
       </button>
     </div>
+    <PromptDialog
+      open={linkDialogOpen}
+      title="Link URL"
+      label="URL (empty to remove the link)"
+      placeholder="https://"
+      defaultValue={linkInitial}
+      confirmLabel="Set link"
+      onSubmit={(value) => {
+        setLinkDialogOpen(false);
+        if (value === "") {
+          editor.chain().focus().extendMarkRange("link").unsetLink().run();
+          return;
+        }
+        editor
+          .chain()
+          .focus()
+          .extendMarkRange("link")
+          .setLink({ href: value })
+          .run();
+      }}
+      onCancel={() => setLinkDialogOpen(false)}
+    />
+    </>
   );
 }

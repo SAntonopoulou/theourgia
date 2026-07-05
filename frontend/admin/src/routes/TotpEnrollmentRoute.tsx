@@ -11,7 +11,7 @@
  * action + a "Regenerate backup codes" action.
  */
 
-import { useAuth, useTopbar } from "@theourgia/shared";
+import { ConfirmDialog, useAuth, useTopbar } from "@theourgia/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
@@ -161,6 +161,7 @@ export function TotpEnrollmentRoute() {
   const [code, setCode] = useState("");
   const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [disableConfirmOpen, setDisableConfirmOpen] = useState(false);
 
   const statusQuery = useQuery({
     queryKey: ["totp-status", auth.session?.user_id],
@@ -427,18 +428,23 @@ export function TotpEnrollmentRoute() {
               type="button"
               style={WARN_BUTTON}
               disabled={disableMutation.isPending}
-              onClick={() => {
-                if (
-                  window.confirm(
-                    "Disable TOTP for this account? Your backup codes will be revoked.",
-                  )
-                ) {
-                  disableMutation.mutate();
-                }
-              }}
+              onClick={() => setDisableConfirmOpen(true)}
             >
               {disableMutation.isPending ? "Disabling…" : "Disable TOTP"}
             </button>
+            <ConfirmDialog
+              open={disableConfirmOpen}
+              title="Disable TOTP for this account?"
+              body="Your backup codes will be revoked. You can re-enrol at any time."
+              confirmLabel="Disable TOTP"
+              cancelLabel="Keep enabled"
+              tone="destructive"
+              onConfirm={() => {
+                setDisableConfirmOpen(false);
+                disableMutation.mutate();
+              }}
+              onCancel={() => setDisableConfirmOpen(false)}
+            />
           </div>
         </div>
       </div>
