@@ -202,6 +202,11 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
   - b108-2dh: Publications / Media / Subscribers · live-wired
   - b108-2di: Audio / Pilgrimage / Capture · live-wired
   - b108-2dj: NetworkBrowser · honest empty state (was demo peers)
+  - b108-2dk: Templates + editor pickers verified live
+  - b108-2dl: Gematria · save-study + save-cipher live-wired
+  - b108-2dm: iCal feed · live PATCH/regenerate + tz column fix
+  - b108-2dn: Plugin status / Plugin detail · live
+  - b108-2do: Publication editor · live GET + debounced PATCH
 
 ### Newly live-wired in this session's continuation
 
@@ -217,6 +222,21 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
   · Pilgrimage Map (list + sealed count) — `GET /pilgrimage-sites`
   · Capture (drain) — `POST /entries` per queued item
   · NetworkBrowser — deliberate empty state (backend not yet built)
+  · Templates — `GET /templates` merged with built-in starters
+  · Gematria Calculator — `POST /studies` + `POST /ciphers`
+  · iCal Feed — `GET/PATCH /ical-feed` + `POST /ical-feed/regenerate`
+  · Plugin Status — real active/error rows from useInstalledPlugins
+  · Plugin Detail — real install by :id, wire→human capability map
+  · Publication Editor — live GET on mount + debounced PATCH per
+    metadata field and per-chapter title/body
+
+### Real backend bugs surfaced + fixed by the sweep
+
+  · `audit_event_kind` enum values_callable (500 fix)
+  · `ical_feed.last_regenerated_at` timezone-aware conversion
+    (alembic 0067, prod-migrated)
+  · Sigil purpose+mode wire-mapping (422 fix)
+  · Mock-mode-in-prod (silent for weeks; caught by cookie-auth verify)
 
 ### Routes discovered to be already live (my earlier grep missed them)
 
