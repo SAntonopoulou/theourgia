@@ -44,20 +44,11 @@ interface Petition {
   note: string;
 }
 
-const ROSTER: RosterRow[] = [
-  { glyph: "Θ", name: "Theophrastos", office: "Hierophant", degree: "III°", standing: "Good standing", standingTone: "success" },
-  { glyph: "Δ", name: "Demetra", office: "Hiereus", degree: "II°", standing: "Good standing", standingTone: "success" },
-  { glyph: "Φ", name: "Philon", office: "Keeper of the Record", degree: "II°", standing: "Good standing", standingTone: "success" },
-  { glyph: "Α", name: "Aspasia", office: "Member", degree: "II°", standing: "Good standing", standingTone: "success" },
-  { glyph: "Ω", name: "Orpheas", office: "Member", degree: "I°", standing: "Dues owing", standingTone: "warning" },
-  { glyph: "Ψ", name: "Psyche", office: "Member", degree: "I°", standing: "Good standing", standingTone: "success" },
-  { glyph: "Λ", name: "Lykourgos", office: "Member", degree: "I°", standing: "Suspended", standingTone: "mute" },
-];
+// Hub roster endpoint /api/v1/hubs/{id}/members returns real data once a hub is selected; this default view stays empty.
+const ROSTER: RosterRow[] = [];
 
-const PETITIONS: Petition[] = [
-  { glyph: "S", name: "scriptorium.adeptus", note: "attested by Demetra · read at the equinox" },
-  { glyph: "N", name: "A. Novato", note: "attested by Philon · awaiting second" },
-];
+// Petition endpoint /api/v1/hubs/{id}/petitions returns real data once wired; empty by default.
+const PETITIONS: Petition[] = [];
 
 function standingColor(tone: RosterRow["standingTone"]): string {
   return tone === "success" ? "var(--success)" : tone === "warning" ? "var(--warning)" : "var(--ink-mute)";

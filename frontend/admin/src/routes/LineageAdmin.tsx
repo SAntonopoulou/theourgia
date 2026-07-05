@@ -46,52 +46,8 @@ interface Attestation {
   relinquishable: boolean;
 }
 
-const ATTESTATIONS: Attestation[] = [
-  {
-    id: "rosy-cross",
-    state: "verified",
-    kindLabel: "Degree",
-    title: "Adeptus Minor · 5°=6▢",
-    authority: "Order of the Rosy Cross · conferred 2021",
-    counterSigner: "Frater N.·.O.·.",
-    counterSignerHref: "/profile",
-    keyDigest: "ed25519 · 3f9a…c21d",
-    year: "2021",
-    relinquishable: true,
-  },
-  {
-    id: "aurora",
-    state: "verified",
-    kindLabel: "Membership",
-    title: "Aurora Lodge · O.T.O.",
-    authority: "Active member in good standing · since 2019",
-    counterSigner: "Aurora Lodge",
-    counterSignerHref: "/hub/ordo-theurgica",
-    keyDigest: "ed25519 · a17b…90fe",
-    year: "2019",
-    relinquishable: true,
-  },
-  {
-    id: "private-lineage",
-    state: "self-declared",
-    kindLabel: "Initiation",
-    title: "Received from Soror V.V.V.V.V.",
-    authority: "A private lineage · 2017",
-    keyDigest: "ed25519 · 7c44…1ab9",
-    year: "2017",
-    relinquishable: true,
-  },
-  {
-    id: "golden-dawn",
-    state: "revoked",
-    kindLabel: "Degree",
-    title: "Neophyte → Zelator",
-    authority: "Hermetic Order of the Golden Dawn (a successor body)",
-    keyDigest: "ed25519 · revoked",
-    year: "2024",
-    relinquishable: false,
-  },
-];
+// Attestation endpoint /api/v1/attestations returns real data — this admin surface will fetch on mount in a follow-up. Empty for now instead of fabricated attestations.
+const ATTESTATIONS: Attestation[] = [];
 
 function stateTone(s: AttestationState): { color: string; border: string; label: string } {
   if (s === "verified") return { color: "var(--success)", border: "var(--success)", label: "Verified" };

@@ -34,50 +34,8 @@ interface QueueRow {
   traditionAnchor?: { glyph: string; label: string };
 }
 
-const QUEUE: QueueRow[] = [
-  {
-    id: "newsletter-7",
-    type: "newsletter",
-    typeLabel: "Newsletter",
-    typeColor: "var(--c-news)",
-    day: "21",
-    month: "Jun",
-    title: "Newsletter №7 — the Solstice issue",
-    meta: "12:00 · Subscribers",
-  },
-  {
-    id: "liber-resh",
-    type: "post",
-    typeLabel: "Blog post",
-    typeColor: "var(--c-post)",
-    day: "25",
-    month: "Jun",
-    title: "Liber Resh — a year charted",
-    meta: "18:00 · Network · as Frater Sub Rosā",
-  },
-  {
-    id: "equinox-essay",
-    type: "post",
-    typeLabel: "Blog post",
-    typeColor: "var(--c-post)",
-    day: "22",
-    month: "Sep",
-    title: "On equilibrium, and the scales of Maat",
-    meta: "auto-dated",
-    traditionAnchor: { glyph: "♎", label: "Autumn Equinox" },
-  },
-  {
-    id: "bornless",
-    type: "publication",
-    typeLabel: "Publication",
-    typeColor: "var(--c-pub)",
-    day: "01",
-    month: "May ’27",
-    title: "The Bornless Working — a practical edition",
-    meta: "",
-    traditionAnchor: { glyph: "🜂", label: "Beltane 2027" },
-  },
-];
+// Backend /api/v1/schedule endpoint not yet built. Empty until it ships.
+const QUEUE: QueueRow[] = [];
 
 interface CurriculumStep {
   number: string;
@@ -86,13 +44,8 @@ interface CurriculumStep {
   statusLabel: string;
 }
 
-const CURRICULUM: CurriculumStep[] = [
-  { number: "I", title: "The Foundation of the Temple", status: "released", statusLabel: "Released" },
-  { number: "II", title: "The Lesser Banishing", status: "released", statusLabel: "Released" },
-  { number: "III", title: "The Middle Pillar", status: "next", statusLabel: "Unlocks Mon 23 Jun" },
-  { number: "IV", title: "The Vision of the Sphere", status: "scheduled", statusLabel: "30 Jun" },
-  { number: "V–VII", title: "The Higher Rungs", status: "scheduled", statusLabel: "Jul" },
-];
+// Course-curriculum schedule endpoint not yet built.
+const CURRICULUM: CurriculumStep[] = [];
 
 const TRADITION_OPTIONS: { key: Tradition; glyph: string; label: string; resolvesTo: string; hour: string }[] = [
   { key: "solstice", glyph: "☀", label: "Summer Solstice", resolvesTo: "Sat 21 June 2026 · 09:30", hour: "Hour of the Sun · planetary" },
