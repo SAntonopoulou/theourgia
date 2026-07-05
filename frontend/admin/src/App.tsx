@@ -39,8 +39,6 @@ import {
 
 import { apiMethods } from "./data/api.js";
 import { queryClient } from "./lib/queryClient.js";
-import { Analytics } from "./routes/Analytics.js";
-import { CircleBuilder } from "./routes/CircleBuilder.js";
 import { Connection } from "./routes/Connection.js";
 import { DailyPracticeRoute } from "./routes/DailyPracticeRoute.js";
 import { GematriaCalculatorRoute } from "./routes/GematriaCalculatorRoute.js";
@@ -87,8 +85,6 @@ import { BundleLibrary } from "./routes/BundleLibrary.js";
 import { BundleDetail } from "./routes/BundleDetail.js";
 import { SandboxBrowser as SandboxBrowserRoute } from "./routes/SandboxBrowser.js";
 import { SandboxDetail } from "./routes/SandboxDetail.js";
-import { Account } from "./routes/Account.js";
-import { Agents } from "./routes/Agents.js";
 import { AgentsHomeRoute } from "./routes/AgentsHomeRoute.js";
 import { AgentRunMonitorRoute } from "./routes/AgentRunMonitorRoute.js";
 import { AgentActivityLogRoute } from "./routes/AgentActivityLogRoute.js";
@@ -111,7 +107,6 @@ import { TierPromotionRoute } from "./routes/TierPromotionRoute.js";
 import { VulnerabilityAdvisorySubmitRoute } from "./routes/VulnerabilityAdvisorySubmitRoute.js";
 import { BookPreview } from "./routes/BookPreview.js";
 import { BundleInstall } from "./routes/BundleInstall.js";
-import { Bundles } from "./routes/Bundles.js";
 import { Capture } from "./routes/Capture.js";
 import { Editor } from "./routes/Editor.js";
 import { Federation } from "./routes/Federation.js";
@@ -122,10 +117,8 @@ import { Membership } from "./routes/Membership.js";
 import { NewsletterComposer } from "./routes/NewsletterComposer.js";
 import { Oracle } from "./routes/Oracle.js";
 import { Permissions } from "./routes/Permissions.js";
-import { Sandbox } from "./routes/Sandbox.js";
 import { Scheduler } from "./routes/Scheduler.js";
 import { Templates } from "./routes/Templates.js";
-import { Transliterate } from "./routes/Transliterate.js";
 import { Wellbeing } from "./routes/Wellbeing.js";
 import { Workshop } from "./routes/Workshop.js";
 import { Journal } from "./routes/Journal.js";
@@ -161,9 +154,6 @@ import { AccessibilityAndMotionRoute } from "./routes/AccessibilityAndMotionRout
 import { WebAuthnEnrollmentRoute } from "./routes/WebAuthnEnrollmentRoute.js";
 import { TotpEnrollmentRoute } from "./routes/TotpEnrollmentRoute.js";
 import { SignInRoute } from "./routes/SignInRoute.js";
-import { SigilStudio } from "./routes/SigilStudio.js";
-import { Talismans } from "./routes/Talismans.js";
-import { Synchronicities } from "./routes/Synchronicities.js";
 import { Today } from "./routes/Today.js";
 
 // Vite's BASE_URL: "/" in dev, "/app/" in prod. BrowserRouter
@@ -269,7 +259,6 @@ function ShellRoutes() {
         <Route path="/journal" element={<Journal />} />
         <Route path="/library" element={<Library />} />
         <Route path="/synchronicities" element={<SynchronicityLogRoute />} />
-        <Route path="/synchronicities/legacy" element={<Synchronicities />} />
         <Route path="/daily-practice" element={<DailyPracticeRoute />} />
         <Route path="/practice-logs" element={<PracticeLogsRoute />} />
         <Route path="/entities" element={<Entities />} />
@@ -289,13 +278,10 @@ function ShellRoutes() {
         <Route path="/divination/geomancy" element={<GeomancyRoute />} />
         <Route path="/divination/runes" element={<RunesRoute />} />
         <Route path="/divination/more" element={<DivinationMiscRoute />} />
-        <Route path="/sigil" element={<SigilStudio />} />
         <Route path="/sigils" element={<SigilGeneratorRoute />} />
         <Route path="/magic-squares" element={<MagicSquaresRoute />} />
-        <Route path="/circle" element={<CircleBuilder />} />
         <Route path="/circles" element={<MagicalCircleRoute />} />
         <Route path="/talismans" element={<TalismanDesignerRoute />} />
-        <Route path="/talismans/legacy" element={<Talismans />} />
         <Route path="/tools" element={<ToolRegistryRoute />} />
         <Route path="/voces" element={<VocesMagicaeRoute />} />
         <Route path="/gematria" element={<GematriaCalculatorRoute />} />
@@ -348,7 +334,6 @@ function ShellRoutes() {
         <Route path="/media" element={<MediaLibraryRoute />} />
         <Route path="/media/:id" element={<MediaDetailRoute />} />
         <Route path="/analytics" element={<AnalyticsDashboardRoute />} />
-        <Route path="/analytics/legacy" element={<Analytics />} />
         <Route path="/feed" element={<RitualFeed />} />
         {/* H08 — Network section routes. Cluster A surfaces land one per
             batch; My Networks is in. The legacy `/hubs` URL still
@@ -426,9 +411,7 @@ function ShellRoutes() {
         <Route path="/lineage" element={<LineageAdmin />} />
         <Route path="/membership" element={<Membership />} />
         <Route path="/permissions" element={<Permissions />} />
-        <Route path="/account" element={<Account />} />
         <Route path="/wellbeing" element={<Wellbeing />} />
-        <Route path="/agents" element={<Agents />} />
         <Route path="/agents-home" element={<AgentsHomeRoute />} />
         <Route path="/agents/runs/:runId" element={<AgentRunMonitorRoute />} />
         <Route path="/agents-activity" element={<AgentActivityLogRoute />} />
@@ -449,7 +432,6 @@ function ShellRoutes() {
         <Route path="/registry/review/:submissionId" element={<RegistryReviewDetailRoute />} />
         <Route path="/registry/promote/:pluginId" element={<TierPromotionRoute />} />
         <Route path="/registry/advisory" element={<VulnerabilityAdvisorySubmitRoute />} />
-        <Route path="/bundles" element={<Bundles />} />
         <Route path="/bundles/install" element={<BundleInstall />} />
         <Route path="/editor" element={<Editor />} />
         <Route path="/editor/:id" element={<Editor />} />
@@ -460,9 +442,7 @@ function ShellRoutes() {
         <Route path="/federation" element={<Federation />} />
         <Route path="/health" element={<Health />} />
         <Route path="/workshop" element={<Workshop />} />
-        <Route path="/sandbox" element={<Sandbox />} />
         <Route path="/oracle" element={<Oracle />} />
-        <Route path="/transliterate" element={<Transliterate />} />
         <Route path="/transliterations" element={<TransliterationUtilityRoute />} />
         <Route path="/settings" element={<AccountSettingsRoute />} />
         <Route path="/settings/data-export" element={<DataExportRequestRoute />} />
