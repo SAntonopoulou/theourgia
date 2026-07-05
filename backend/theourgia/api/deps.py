@@ -27,6 +27,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from theourgia.api.errors import ForbiddenError, UnauthorizedError
+
+SESSION_COOKIE_NAME = "theourgia_session"
 from theourgia.core.auth.tokens import hash_token
 from theourgia.core.authz import (
     GLOBAL_RESOURCE,
@@ -89,20 +91,36 @@ async def _resolve_session_token(
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer_scheme)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    theourgia_session: Annotated[str | None, Cookie()] = None,
 ) -> User:
     """Authenticated dependency: resolve and return the current user.
 
-    Raises :class:`UnauthorizedError` for any of: missing bearer token,
+    Two accepted transports:
+      · ``Authorization: Bearer <token>`` — the historical form,
+        primarily used by API clients + tests.
+      · ``theourgia_session=<token>`` cookie — the browser SPA form
+        set by /auth/demo-signin, /auth/session, and WebAuthn assert.
+
+    Raises :class:`UnauthorizedError` for any of: missing credential,
     unknown token, revoked session, expired session, missing user.
 
     On success, the RLS GUC ``theourgia.current_user_id`` is set on the
     same session so subsequent queries enforce row-level policies as
     this user.
     """
-    if credentials is None or not credentials.credentials:
-        raise UnauthorizedError("missing bearer token")
+    # Prefer the bearer header when present; fall through to the
+    # session cookie. The two transports carry the same token shape
+    # (opaque string; SHA-256 hashed for storage).
+    token: str | None = None
+    if credentials is not None and credentials.credentials:
+        token = credentials.credentials
+    elif theourgia_session:
+        token = theourgia_session
 
-    session_row = await _resolve_session_token(credentials.credentials, session)
+    if not token:
+        raise UnauthorizedError("missing credentials")
+
+    session_row = await _resolve_session_token(token, session)
     if session_row is None:
         raise UnauthorizedError("invalid or expired session")
 
@@ -125,18 +143,23 @@ async def get_current_user(
 async def get_optional_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer_scheme)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    theourgia_session: Annotated[str | None, Cookie()] = None,
 ) -> User | None:
     """Like :func:`get_current_user` but returns ``None`` on no/bad auth
     instead of raising. For endpoints that have a public anonymous mode."""
-    if credentials is None or not credentials.credentials:
+    if (
+        (credentials is None or not credentials.credentials)
+        and not theourgia_session
+    ):
         return None
     try:
-        return await get_current_user(credentials=credentials, session=session)
+        return await get_current_user(
+            credentials=credentials,
+            session=session,
+            theourgia_session=theourgia_session,
+        )
     except UnauthorizedError:
         return None
-
-
-SESSION_COOKIE_NAME = "theourgia_session"
 
 
 async def get_optional_user_from_cookie(
