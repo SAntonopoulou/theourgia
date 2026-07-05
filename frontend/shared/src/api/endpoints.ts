@@ -202,6 +202,61 @@ export function api(client: ApiClient) {
       );
     },
 
+    // ── TOTP 2FA (Phase 15) ──────────────────────────────────────
+
+    totpStatus(): Promise<{ enrolled: boolean; remaining_backup_codes: number }> {
+      return client.request<{ enrolled: boolean; remaining_backup_codes: number }>(
+        "/api/v1/auth/totp/status",
+      );
+    },
+
+    totpBegin(): Promise<{
+      secret: string;
+      uri: string;
+      account_name: string;
+      issuer: string;
+    }> {
+      return client.request<{
+        secret: string;
+        uri: string;
+        account_name: string;
+        issuer: string;
+      }>("/api/v1/auth/totp/begin", { method: "POST" });
+    },
+
+    totpVerify(input: { code: string }): Promise<{
+      enrolled: boolean;
+      backup_codes: string[];
+    }> {
+      return client.request<{ enrolled: boolean; backup_codes: string[] }>(
+        "/api/v1/auth/totp/verify",
+        { method: "POST", json: input },
+      );
+    },
+
+    totpChallenge(input: { code: string }): Promise<{
+      ok: boolean;
+      used_backup_code: boolean;
+      remaining_backup_codes: number;
+    }> {
+      return client.request<{
+        ok: boolean;
+        used_backup_code: boolean;
+        remaining_backup_codes: number;
+      }>("/api/v1/auth/totp/challenge", { method: "POST", json: input });
+    },
+
+    totpRegenerateBackupCodes(): Promise<{ backup_codes: string[] }> {
+      return client.request<{ backup_codes: string[] }>(
+        "/api/v1/auth/totp/backup-codes",
+        { method: "POST" },
+      );
+    },
+
+    totpDisable(): Promise<void> {
+      return client.request<void>("/api/v1/auth/totp", { method: "DELETE" });
+    },
+
     // ─── Entries (live as of Batch 10) ───────────────────────────────
 
     listEntries(opts?: { signal?: AbortSignal; type?: EntryType }): Promise<EntryRecord[]> {

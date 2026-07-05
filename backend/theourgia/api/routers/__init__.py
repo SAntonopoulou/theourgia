@@ -100,6 +100,7 @@ from theourgia.api.routers.v1 import registry_bridge as v1_registry_bridge
 from theourgia.api.routers.v1 import registry_author as v1_registry_author
 from theourgia.api.routers.v1 import registry_maintainer as v1_registry_maintainer
 from theourgia.api.routers.v1 import webauthn as v1_webauthn
+from theourgia.api.routers.v1 import totp as v1_totp
 from theourgia.api.routers import feeds as app_feeds
 
 __all__ = ["register_routers"]
@@ -124,6 +125,7 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_meta.router, tags=["meta"])
     v1.include_router(v1_auth.router, tags=["auth"])
     v1.include_router(v1_webauthn.router, tags=["auth"])
+    v1.include_router(v1_totp.router, tags=["auth"])
     v1.include_router(v1_entries.router, tags=["entries"])
     v1.include_router(v1_entities.router, tags=["entities"])
     v1.include_router(v1_library.router, tags=["library"])

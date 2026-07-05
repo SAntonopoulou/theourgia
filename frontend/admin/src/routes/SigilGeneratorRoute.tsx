@@ -25,6 +25,32 @@ import { useSearchParams } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
 
+/**
+ * The frontend uses short purpose keys (draft / study) while the
+ * backend enum has domain-verbose ones (workshop_draft / personal_study).
+ * Map at the wire boundary; do NOT cast — casts hide 422s.
+ */
+const PURPOSE_MAP: Record<SigilPurpose, SigilPurposeWire> = {
+  draft: "workshop_draft",
+  consecrated: "consecrated",
+  gift: "gift",
+  study: "personal_study",
+};
+
+const MODE_MAP: Record<SigilMode, SigilModeWire> = {
+  spare: "spare",
+  kamea: "kamea",
+  rose: "rose_cross",
+  rosette: "pythagorean",
+  hebrew: "hebrew",
+  greek: "greek",
+  hashed: "hashed",
+  harmonograph: "harmonograph",
+  formula: "formula",
+  freeform: "freeform",
+  image: "image",
+};
+
 const PLANET_KEYS: PlanetKey[] = [
   "saturn",
   "jupiter",
@@ -84,11 +110,11 @@ export function SigilGeneratorRoute() {
         const sigil = await apiMethods.createSigil({
           title: payload.title,
           intention: payload.intention,
-          mode: payload.mode as SigilModeWire,
+          mode: MODE_MAP[payload.mode],
           parameters: payload.parameters,
           svg: payload.svg,
           seed: payload.seed,
-          purpose: payload.purpose as SigilPurposeWire,
+          purpose: PURPOSE_MAP[payload.purpose],
         });
         Toast.push({
           tone: "success",

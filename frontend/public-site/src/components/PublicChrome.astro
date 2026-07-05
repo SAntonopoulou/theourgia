@@ -78,7 +78,9 @@ const {
       </button>
       {subscribe ? (
         <a href={subscribeHref} class="pub-cta-primary" style="padding:8px 15px;border-radius:var(--r-md);background:var(--accent);color:var(--accent-ink);font-family:var(--font-ui);font-weight:700;font-size:13px;text-decoration:none">{subscribe}</a>
-      ) : null}
+      ) : (
+        <a href="/app/signin" class="pub-cta-primary" style="padding:8px 18px;border-radius:var(--r-md);background:var(--accent);color:var(--accent-ink);font-family:var(--font-ui);font-weight:700;font-size:13px;text-decoration:none">Sign in</a>
+      )}
     </div>
   </div>
 </header>

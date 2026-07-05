@@ -158,6 +158,8 @@ import { PerUserAuditLogRoute } from "./routes/PerUserAuditLogRoute.js";
 import { SessionsAndDevicesRoute } from "./routes/SessionsAndDevicesRoute.js";
 import { AccessibilityAndMotionRoute } from "./routes/AccessibilityAndMotionRoute.js";
 import { WebAuthnEnrollmentRoute } from "./routes/WebAuthnEnrollmentRoute.js";
+import { TotpEnrollmentRoute } from "./routes/TotpEnrollmentRoute.js";
+import { SignInRoute } from "./routes/SignInRoute.js";
 import { SigilStudio } from "./routes/SigilStudio.js";
 import { Talismans } from "./routes/Talismans.js";
 import { Synchronicities } from "./routes/Synchronicities.js";
@@ -468,6 +470,8 @@ function ShellRoutes() {
           }
         />
         <Route path="/settings/webauthn" element={<WebAuthnEnrollmentRoute />} />
+        <Route path="/settings/totp" element={<TotpEnrollmentRoute />} />
+        <Route path="/signin" element={<SignInRoute />} />
         <Route path="/foundations" element={<Foundations />} />
         <Route
           path="*"
