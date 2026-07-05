@@ -207,6 +207,9 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
   - b108-2dm: iCal feed · live PATCH/regenerate + tz column fix
   - b108-2dn: Plugin status / Plugin detail · live
   - b108-2do: Publication editor · live GET + debounced PATCH
+  - b108-2dp: Media Detail live · Federation honest empty state
+  - b108-2dq: Scheduler / Membership / LineageAdmin fixtures emptied
+  - b108-2dr: Dead Hubs.tsx removed (unused since MyNetworks landed)
 
 ### Newly live-wired in this session's continuation
 
@@ -229,6 +232,10 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
   · Plugin Detail — real install by :id, wire→human capability map
   · Publication Editor — live GET on mount + debounced PATCH per
     metadata field and per-chapter title/body
+  · Media Detail — GET /media/{id} + PATCH on every field change
+  · Federation status — honest empty state (no more fake peers)
+  · Scheduler, Membership, LineageAdmin — fixture arrays emptied
+    to honest empty states (backends not yet built)
 
 ### Real backend bugs surfaced + fixed by the sweep
 
