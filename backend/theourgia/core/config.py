@@ -249,6 +249,23 @@ class Settings(BaseSettings):
         default=None, alias="THEOURGIA_MAINTAINER_PRIVATE_KEY_PATH",
     )
 
+    # ── WebAuthn (Phase 15) ───────────────────────────────────────────────
+    # RP identifier — the registrable domain the authenticator scopes
+    # credentials to. Must match the hostname the SPA is served from.
+    # When unset, WebAuthn endpoints return 503.
+    webauthn_rp_id: str | None = Field(
+        default=None, alias="THEOURGIA_WEBAUTHN_RP_ID",
+    )
+    # Human-readable name shown by some authenticators during ceremony.
+    webauthn_rp_name: str = Field(
+        default="Theourgia", alias="THEOURGIA_WEBAUTHN_RP_NAME",
+    )
+    # Expected `Origin` header for verification. Usually
+    # `https://<rp_id>` but distinct so localhost dev works.
+    webauthn_origin: str | None = Field(
+        default=None, alias="THEOURGIA_WEBAUTHN_ORIGIN",
+    )
+
     # ── Observability ─────────────────────────────────────────────────────
     sentry_dsn: SecretStr | None = Field(default=None, alias="THEOURGIA_SENTRY_DSN")
     """Crash reporting DSN. **Off by default** — Theourgia ships with
