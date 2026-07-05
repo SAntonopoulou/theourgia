@@ -462,8 +462,8 @@ function ShellRoutes() {
           element={
             <Placeholder
               glyph="key"
-              title="Key rotation"
-              body="WebAuthn enrolment and signing-key rotation arrive with Phase 15's authn wave. Your account is currently authenticated via session cookies."
+              title="Federation signing keys"
+              body="Rotates the Ed25519 keypair that signs your outbound federation envelopes and appears in your DID document. Passkey sign-in has moved to Passkeys & hardware keys under Settings → Security. Federation key rotation lands in a follow-up batch alongside the envelope-resigning worker."
             />
           }
         />
