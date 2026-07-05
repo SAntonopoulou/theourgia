@@ -30,10 +30,11 @@ import {
   type EntryDetailRecord,
 } from "@theourgia/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
 import {
+  createEntry,
   publishEntry,
   updateEntryBody,
   useBooks,
@@ -49,8 +50,7 @@ type SaveStatus =
   | { state: "dirty" }
   | { state: "saving" }
   | { state: "saved"; at: Date }
-  | { state: "error"; message: string }
-  | { state: "demo" };
+  | { state: "error"; message: string };
 
 interface VisibilityChipProps {
   entryId: string | null;
@@ -234,99 +234,25 @@ function VisibilityChip({ entryId, visibility, sealed, onChange }: VisibilityChi
   );
 }
 
-const DEMO_DOC = {
-  type: "doc",
-  content: [
-    {
-      type: "heading",
-      attrs: { level: 1 },
-      content: [{ type: "text", text: "Invocation of the Agathos Daimon" }],
-    },
-    {
-      type: "paragraph",
-      content: [
-        {
-          type: "text",
-          text:
-            "Began with the banishing by the Lesser Ritual of the Pentagram, then the Bornless preliminary invocation. The temple settled quickly tonight — the candle flames steadied at the third circumambulation.",
-        },
-      ],
-    },
-    {
-      type: "ritualLog",
-      attrs: {
-        entries: [
-          { time: "14:12", text: "Banishing — LRP, all quarters" },
-          { time: "14:18", text: "Bornless preliminary invocation" },
-          { time: "14:31", text: "Conjuration — third call, presence felt" },
-        ],
-      },
-    },
-    {
-      type: "quoteCitation",
-      attrs: {
-        sourceText: "Ἐγώ εἰμι ὁ Ἀκέφαλος δαίμων…",
-        sourceScript: "el",
-        translation: "“I am the Headless daemon, seeing with my feet.”",
-        citation: "Papyri Graecae Magicae, PGM V. 96–172",
-      },
-    },
-    {
-      type: "paragraph",
-      content: [
-        { type: "text", text: "At the name of the " },
-        {
-          type: "text",
-          marks: [{ type: "lang", attrs: { script: "el" } }],
-          text: "ἀγαθὸς δαίμων",
-        },
-        {
-          type: "text",
-          text:
-            " the air thickened and a faint citrus scent rose — recorded below in the sensation map. I held the image of the serpent crowned until the vision steadied.",
-        },
-      ],
-    },
-    {
-      type: "gematria",
-      attrs: { word: "ἀγαθοδαίμων", script: "greek", also: "also: ἡ σφραγίς · 989" },
-    },
-    {
-      type: "sensation",
-      attrs: {
-        points: [
-          { y: 8, color: "var(--accent)", label: "Crown · pressure" },
-          { y: 38, color: "var(--c-divination)", label: "Throat · cool" },
-          { y: 58, color: "var(--c-working)", label: "Solar plexus · heat" },
-        ],
-      },
-    },
-  ],
-};
-
 function SaveStatusIndicator({ status }: { status: SaveStatus }) {
   const text =
-    status.state === "demo"
-      ? "Demo · not saved"
-      : status.state === "saving"
-        ? "Saving…"
-        : status.state === "saved"
-          ? "Saved · just now"
-          : status.state === "error"
-            ? `Save failed · ${status.message}`
-            : status.state === "dirty"
-              ? "Unsaved"
-              : "—";
+    status.state === "saving"
+      ? "Saving…"
+      : status.state === "saved"
+        ? "Saved · just now"
+        : status.state === "error"
+          ? `Save failed · ${status.message}`
+          : status.state === "dirty"
+            ? "Unsaved"
+            : "—";
   const color =
     status.state === "error"
       ? "var(--warn)"
       : status.state === "saving"
         ? "var(--ink-mute)"
-        : status.state === "demo"
-          ? "var(--ink-mute)"
-          : status.state === "saved"
-            ? "var(--c-synchronicity)"
-            : "var(--ink-mute)";
+        : status.state === "saved"
+          ? "var(--c-synchronicity)"
+          : "var(--ink-mute)";
   return (
     <span
       style={{
@@ -397,25 +323,49 @@ function PublishCta({ entryId, publishedAt, onPublished }: PublishCtaProps) {
 
 export function Editor() {
   const params = useParams<{ id?: string }>();
+  const navigate = useNavigate();
   const entryId = params.id ?? null;
   const detail = useEntryDetail(entryId);
   const entities = useEntities();
   const books = useBooks();
 
+  // No :id → create a fresh draft and navigate onto it. The old
+  // behaviour rendered a fabricated "Invocation of the Agathos
+  // Daimon" specimen document that saved nothing.
+  useEffect(() => {
+    if (entryId !== null) return;
+    let cancelled = false;
+    createEntry({
+      title: "Untitled entry",
+      type: "observation",
+      excerpt: "",
+      glyph: "quill",
+    })
+      .then((row) => {
+        if (cancelled) return;
+        navigate(`/editor/${row.id}`, { replace: true });
+      })
+      .catch((cause) => {
+        Toast.push({
+          tone: "error",
+          title: "Couldn't start a new entry",
+          body: cause instanceof Error ? cause.message : String(cause),
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [entryId, navigate]);
+
   const [doc, setDoc] = useState<unknown | null>(null);
-  const [status, setStatus] = useState<SaveStatus>(
-    entryId === null ? { state: "demo" } : { state: "idle" },
-  );
+  const [status, setStatus] = useState<SaveStatus>({ state: "idle" });
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<EntityVisibility>("personal");
   const [sealed, setSealed] = useState<boolean>(false);
 
   // Hydrate from detail on first successful fetch.
   useEffect(() => {
-    if (entryId === null) {
-      setDoc(DEMO_DOC);
-      return;
-    }
+    if (entryId === null) return;
     if (detail.status === "ok" && detail.data) {
       const body = detail.data.body;
       try {
