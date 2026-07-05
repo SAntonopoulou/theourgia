@@ -114,7 +114,6 @@ import { Health } from "./routes/Health.js";
 import { Identities } from "./routes/Identities.js";
 import { LineageAdmin } from "./routes/LineageAdmin.js";
 import { Membership } from "./routes/Membership.js";
-import { NewsletterComposer } from "./routes/NewsletterComposer.js";
 import { Oracle } from "./routes/Oracle.js";
 import { Permissions } from "./routes/Permissions.js";
 import { Scheduler } from "./routes/Scheduler.js";
@@ -436,7 +435,6 @@ function ShellRoutes() {
         <Route path="/editor" element={<Editor />} />
         <Route path="/editor/:id" element={<Editor />} />
         <Route path="/book/preview" element={<BookPreview />} />
-        <Route path="/newsletter/compose" element={<NewsletterComposer />} />
         <Route path="/scheduler" element={<Scheduler />} />
         <Route path="/templates" element={<Templates />} />
         <Route path="/federation" element={<Federation />} />
