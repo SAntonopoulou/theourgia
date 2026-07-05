@@ -228,6 +228,40 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     "Add chapter" hits `POST /publications/{id}/chapters` — no more
     ghost chapters. "Open settings" navigates to
     `/publications/{id}/settings` (was a Toast stub).
+  - b108-2dx: **RitualFeed / SandboxDetail live · BundleInstall removed.**
+    RitualFeed was a 1064-line illustrative surface with a fabricated
+    Solstice Vigil, hardcoded UPCOMING array, fake comments + hub
+    members + iCal rail. Replaced with a minimal-honest list against
+    `GET /api/v1/group-rituals` + `POST /:id/respond` for RSVP.
+    SandboxDetail's hardcoded decan cards replaced with a real fetch
+    from `/api/v1/sandbox`; promote/discard hit
+    POST /sandbox/:id/promote and DELETE /sandbox/:id. The 6-step
+    BundleInstall wizard (pinned to a fabricated "Hellenic Theurgy"
+    bundle) was removed entirely — the bundle install flow now goes
+    through the registry-backed plugin store.
+  - b108-2dy: **DivMisc bibliomancy live · Plugin configure schema-aware.**
+    `POST /api/v1/bibliomancy/cast` wired via `onSaveBibliomancy`;
+    pendulum/horary/scrying save callbacks stop claiming "saved" and
+    now say "no data collected" (tone=info) — the panels don't yet
+    capture the fields those backends need. PluginConfiguration
+    reads the plugin's real name + `manifest.config_schema` (added to
+    PluginInstallRead) and shows a truthful "no configurable fields"
+    empty state when the schema is absent — no more hardcoded
+    ephemeris/Planetary Hours example. Identities got a dashed
+    "Preview surface" banner acknowledging the Persona table is Phase
+    02/03.
+  - b108-2dz: **Safety-critical false-green checks removed.**
+    RegistryReviewDetail's four "automatic" verification checks were
+    rendering `ok=true` even though the registry never emits real
+    per-submission audit results — combined with the surface's
+    `allChecksPass = checks.every(c => c.ok)` gate, a maintainer
+    could green-light "Accept official" without any real check.
+    Flipped to `ok=false` with "not yet run" labels. Same class of
+    bug fixed in TierPromotion (auto_signed / auto_no_advisories
+    now `satisfied=false`). Templates.tsx also had fabricated
+    `used 131×` counters — zeroed + hidden when zero, and dropped
+    the divergence-prone `blocks: N` field in favour of
+    `structure.length`.
 
 ### Newly live-wired in this session's continuation
 
@@ -303,6 +337,9 @@ searched for `apiMethods.*` and missed the hook layer.
 | `/api/v1/subscription-tiers/{id}` | DELETE | 204 | soft-deleted |
 | `/api/v1/stripe-connect/account` | GET | 200 | pending onboarding state |
 | `/api/v1/publications` | GET | 200 | own drafts + published |
+| `/api/v1/group-rituals` | GET | 200 | empty for me — expected |
+| `/api/v1/sandbox` | GET | 200 | list surface |
+| `/api/v1/bibliomancy/cast` | POST | 201 | source_text + label |
 
 ---
 
