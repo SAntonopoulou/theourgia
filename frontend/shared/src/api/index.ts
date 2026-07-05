@@ -91,4 +91,6 @@ export type {
   UserLocation,
   VoceRecordWire,
   VoceRecordingRecord,
+  WebauthnCredentialRead,
+  WebauthnCredentialListResponse,
 } from "./types.js";

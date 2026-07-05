@@ -28,7 +28,8 @@ import {
 
 import type { Api } from "../api/endpoints.js";
 import { NotImplementedError, UnauthorizedError } from "../api/index.js";
-import type { Session } from "../api/types.js";
+import type { Session, WebauthnCredentialRead } from "../api/types.js";
+import { runAssertionCeremony, runRegistrationCeremony } from "./webauthn.js";
 
 export type AuthStatus = "idle" | "checking" | "authenticated" | "unauthenticated";
 
@@ -42,9 +43,21 @@ export interface AuthContextValue {
   signOut(): Promise<void>;
   /**
    * PHASE 02 demo signin — opens a session against a find-or-create
-   * development user. Replaced by the WebAuthn flow in a later batch.
+   * development user. Scheduled for removal once every prod user has
+   * enrolled at least one WebAuthn credential.
    */
   signInDemo(input: { magickal_name: string }): Promise<void>;
+  /**
+   * WebAuthn discoverable-flow sign-in. Runs the browser assertion
+   * ceremony, exchanges it with the backend, and flips status to
+   * authenticated on success.
+   */
+  signInWebAuthn(): Promise<void>;
+  /**
+   * Enrol a new WebAuthn credential for the currently-authenticated
+   * user. Runs the browser registration ceremony end-to-end.
+   */
+  enrolWebAuthnCredential(nickname: string): Promise<WebauthnCredentialRead>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -129,14 +142,63 @@ export function AuthProvider({ api, children, skipInitialRefresh = false }: Auth
     [api],
   );
 
+  const signInWebAuthn = useCallback(async () => {
+    setError(null);
+    setStatus("checking");
+    try {
+      const options = (await api.webauthnAssertBegin()) as unknown as Parameters<
+        typeof runAssertionCeremony
+      >[0];
+      const credential = await runAssertionCeremony(options);
+      const next = await api.webauthnAssertFinish({ credential });
+      if (!mounted.current) return;
+      setSession(next);
+      setStatus("authenticated");
+    } catch (e) {
+      if (!mounted.current) return;
+      setError(e instanceof Error ? e : new Error(String(e)));
+      setStatus("unauthenticated");
+      throw e;
+    }
+  }, [api]);
+
+  const enrolWebAuthnCredential = useCallback(
+    async (nickname: string): Promise<WebauthnCredentialRead> => {
+      const options = (await api.webauthnRegisterBegin()) as unknown as Parameters<
+        typeof runRegistrationCeremony
+      >[0];
+      const credential = await runRegistrationCeremony(options);
+      return api.webauthnRegisterFinish({ credential, nickname });
+    },
+    [api],
+  );
+
   useEffect(() => {
     if (skipInitialRefresh) return;
     void refresh();
   }, [skipInitialRefresh, refresh]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, session, error, refresh, signOut, signInDemo }),
-    [status, session, error, refresh, signOut, signInDemo],
+    () => ({
+      status,
+      session,
+      error,
+      refresh,
+      signOut,
+      signInDemo,
+      signInWebAuthn,
+      enrolWebAuthnCredential,
+    }),
+    [
+      status,
+      session,
+      error,
+      refresh,
+      signOut,
+      signInDemo,
+      signInWebAuthn,
+      enrolWebAuthnCredential,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

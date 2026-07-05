@@ -157,6 +157,7 @@ import { AccountDeletionRoute } from "./routes/AccountDeletionRoute.js";
 import { PerUserAuditLogRoute } from "./routes/PerUserAuditLogRoute.js";
 import { SessionsAndDevicesRoute } from "./routes/SessionsAndDevicesRoute.js";
 import { AccessibilityAndMotionRoute } from "./routes/AccessibilityAndMotionRoute.js";
+import { WebAuthnEnrollmentRoute } from "./routes/WebAuthnEnrollmentRoute.js";
 import { SigilStudio } from "./routes/SigilStudio.js";
 import { Talismans } from "./routes/Talismans.js";
 import { Synchronicities } from "./routes/Synchronicities.js";
@@ -466,16 +467,7 @@ function ShellRoutes() {
             />
           }
         />
-        <Route
-          path="/settings/webauthn"
-          element={
-            <Placeholder
-              glyph="key"
-              title="WebAuthn enrolment"
-              body="Hardware-backed sign-in lands when Phase 15's authn wave wires the ceremony."
-            />
-          }
-        />
+        <Route path="/settings/webauthn" element={<WebAuthnEnrollmentRoute />} />
         <Route path="/foundations" element={<Foundations />} />
         <Route
           path="*"

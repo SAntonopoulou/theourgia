@@ -248,6 +248,18 @@ export function Connection() {
             <Button
               size="sm"
               variant="primary"
+              onClick={() => {
+                void auth.signInWebAuthn().catch(() => {
+                  // Error already surfaced onto auth.error
+                });
+              }}
+              disabled={auth.status === "authenticated"}
+            >
+              Sign in with passkey
+            </Button>
+            <Button
+              size="sm"
+              variant="quiet"
               onClick={() => setSigninOpen(true)}
               disabled={auth.status === "authenticated"}
             >

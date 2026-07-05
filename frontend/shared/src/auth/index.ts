@@ -9,3 +9,8 @@ export type {
   AuthProviderProps,
   AuthStatus,
 } from "./AuthContext.js";
+export {
+  isWebauthnSupported,
+  runAssertionCeremony,
+  runRegistrationCeremony,
+} from "./webauthn.js";

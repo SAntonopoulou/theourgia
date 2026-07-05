@@ -94,6 +94,8 @@ import type {
   MyAuditListResponse,
   MyAuditQueryInput,
   MySessionsListResponse,
+  WebauthnCredentialRead,
+  WebauthnCredentialListResponse,
 } from "./types.js";
 
 export class NotImplementedError extends Error {
@@ -131,14 +133,73 @@ export function api(client: ApiClient) {
 
     /**
      * POST /api/v1/auth/demo-signin — find-or-create a demo user and
-     * open a session. PHASE 02 ONLY; replaced by the WebAuthn ceremony
-     * in a later batch.
+     * open a session. PHASE 02 ONLY; superseded by the WebAuthn
+     * ceremony below and scheduled for removal once every prod user
+     * has enrolled at least one authenticator.
      */
     demoSignIn(input: { magickal_name: string }): Promise<Session> {
       return client.request<Session>("/api/v1/auth/demo-signin", {
         method: "POST",
         json: input,
       });
+    },
+
+    // ── WebAuthn (Phase 15) — passkey / hardware-key ceremony ────
+
+    webauthnRegisterBegin(): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/auth/webauthn/register/begin",
+        { method: "POST" },
+      );
+    },
+
+    webauthnRegisterFinish(input: {
+      credential: Record<string, unknown>;
+      nickname?: string;
+    }): Promise<WebauthnCredentialRead> {
+      return client.request<WebauthnCredentialRead>(
+        "/api/v1/auth/webauthn/register/finish",
+        { method: "POST", json: input },
+      );
+    },
+
+    webauthnAssertBegin(): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/auth/webauthn/assert/begin",
+        { method: "POST" },
+      );
+    },
+
+    webauthnAssertFinish(input: {
+      credential: Record<string, unknown>;
+    }): Promise<Session> {
+      return client.request<Session>(
+        "/api/v1/auth/webauthn/assert/finish",
+        { method: "POST", json: input },
+      );
+    },
+
+    listWebauthnCredentials(): Promise<WebauthnCredentialListResponse> {
+      return client.request<WebauthnCredentialListResponse>(
+        "/api/v1/auth/webauthn/credentials",
+      );
+    },
+
+    renameWebauthnCredential(
+      credentialId: string,
+      nickname: string,
+    ): Promise<WebauthnCredentialRead> {
+      return client.request<WebauthnCredentialRead>(
+        `/api/v1/auth/webauthn/credentials/${encodeURIComponent(credentialId)}`,
+        { method: "PATCH", json: { nickname } },
+      );
+    },
+
+    revokeWebauthnCredential(credentialId: string): Promise<void> {
+      return client.request<void>(
+        `/api/v1/auth/webauthn/credentials/${encodeURIComponent(credentialId)}`,
+        { method: "DELETE" },
+      );
     },
 
     // ─── Entries (live as of Batch 10) ───────────────────────────────

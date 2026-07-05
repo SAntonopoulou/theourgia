@@ -1200,3 +1200,18 @@ export interface MySessionRead {
 export interface MySessionsListResponse {
   sessions: MySessionRead[];
 }
+
+// ─── WebAuthn (Phase 15) ────────────────────────────────────────────
+
+export interface WebauthnCredentialRead {
+  id: string;
+  nickname: string;
+  transports: string;
+  sign_count: number;
+  created_at: string;
+  last_used_at: string | null;
+}
+
+export interface WebauthnCredentialListResponse {
+  credentials: WebauthnCredentialRead[];
+}
