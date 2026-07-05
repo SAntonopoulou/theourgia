@@ -26,11 +26,17 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
 
+// Explicitly ``ok: false`` for all four so the surface's
+// ``allChecksPass = checks.every((c) => c.ok)`` gate correctly blocks
+// the "Accept official" affordance until the registry endpoint starts
+// emitting real per-submission verification results. An empty array
+// would satisfy `.every()` vacuously and let a reviewer green-light
+// an unchecked submission — worse than showing "not yet verified".
 const PLACEHOLDER_CHECKS: VerificationCheck[] = [
-  { key: "license", label: "License is SPDX-recognised (rule 42)", ok: true },
-  { key: "signature", label: "Manifest signature present", ok: true },
-  { key: "capabilities", label: "Capability declarations valid", ok: true },
-  { key: "extension_points", label: "No reserved-namespace conflicts", ok: true },
+  { key: "license", label: "License check (automated) — not yet run", ok: false },
+  { key: "signature", label: "Signature check (automated) — not yet run", ok: false },
+  { key: "capabilities", label: "Capability check (automated) — not yet run", ok: false },
+  { key: "extension_points", label: "Extension-point check (automated) — not yet run", ok: false },
 ];
 
 const PLACEHOLDER_DIFF: ReviewDiffEntry[] = [];

@@ -45,7 +45,6 @@ interface Template {
   glyph: string;
   name: string;
   description: string;
-  blocks: number;
   uses: number;
   structure: BlockRow[];
 }
@@ -58,8 +57,7 @@ const TEMPLATES: Template[] = [
     glyph: "▲",
     name: "Evocation to visible appearance",
     description: "Full Goetic-style operation: preparation, circle, conjuration, the dialogue, license to depart.",
-    blocks: 8,
-    uses: 14,
+    uses: 0,
     structure: [
       { glyph: "☉", label: "Election of time & place", type: "meta" },
       { glyph: "▲", label: "The triangle & circle set", type: "note" },
@@ -77,8 +75,7 @@ const TEMPLATES: Template[] = [
     glyph: "✷",
     name: "Daily LBRP record",
     description: "A terse, repeatable log for the Lesser Banishing — for building a clean dataset over months.",
-    blocks: 4,
-    uses: 131,
+    uses: 0,
     structure: [
       { glyph: "☉", label: "Date · hour · moon", type: "meta" },
       { glyph: "✷", label: "Quality of performance", type: "rating" },
@@ -93,8 +90,7 @@ const TEMPLATES: Template[] = [
     glyph: "☽",
     name: "Tarot reading",
     description: "Question, spread, card-by-card, and the synthesis — with a field to revisit the outcome later.",
-    blocks: 6,
-    uses: 47,
+    uses: 0,
     structure: [
       { glyph: "❓", label: "The question, precisely", type: "meta" },
       { glyph: "☽", label: "Spread & cards drawn", type: "divination" },
@@ -110,8 +106,7 @@ const TEMPLATES: Template[] = [
     glyph: "◉",
     name: "Scrying session",
     description: "Skrying log: medium, condition, the vision as it came, and a sober reading after.",
-    blocks: 5,
-    uses: 22,
+    uses: 0,
     structure: [
       { glyph: "◉", label: "Medium & conditions", type: "meta" },
       { glyph: "☽", label: "The vision, unedited", type: "note" },
@@ -126,8 +121,7 @@ const TEMPLATES: Template[] = [
     glyph: "☾",
     name: "Dream record",
     description: "For oneiric work: the dream verbatim before it fades, then symbols and waking links.",
-    blocks: 4,
-    uses: 88,
+    uses: 0,
     structure: [
       { glyph: "☾", label: "The dream, verbatim", type: "note" },
       { glyph: "✶", label: "Symbols & figures", type: "tags" },
@@ -141,8 +135,7 @@ const TEMPLATES: Template[] = [
     glyph: "✦",
     name: "Pathworking",
     description: "Guided-vision record across a Tree path: the gate, the journey, what was given.",
-    blocks: 6,
-    uses: 19,
+    uses: 0,
     structure: [
       { glyph: "✦", label: "Path & gate", type: "meta" },
       { glyph: "☽", label: "The journey", type: "note" },
@@ -199,7 +192,6 @@ function backendTemplateToLocal(w: WireTemplate): Template {
     glyph: w.default_glyph || "❖",
     name: w.name,
     description: w.description || "(no description)",
-    blocks: 0,
     uses: 0,
     structure: [],
   };
@@ -337,9 +329,13 @@ export function Templates() {
                   <div style={{ fontFamily: "var(--font-display)", fontSize: 18, lineHeight: 1.15, color: "var(--ink)", marginBottom: 6 }}>{t.name}</div>
                   <div style={{ fontFamily: "var(--font-ui)", fontSize: 12, lineHeight: 1.45, color: "var(--ink-mute)" }}>{t.description}</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 13, fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--ink-mute)" }}>
-                    <span>{t.blocks} blocks</span>
-                    <span>·</span>
-                    <span>used {t.uses}×</span>
+                    <span>{t.structure.length} blocks</span>
+                    {t.uses > 0 ? (
+                      <>
+                        <span>·</span>
+                        <span>used {t.uses}×</span>
+                      </>
+                    ) : null}
                   </div>
                 </button>
               );
@@ -374,7 +370,7 @@ export function Templates() {
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontFamily: "var(--font-display)", fontSize: 19, lineHeight: 1.1 }}>{sel.name}</div>
                   <div style={{ fontFamily: "var(--font-ui)", fontSize: 11.5, color: "var(--ink-mute)", marginTop: 2 }}>
-                    {sel.category} · {sel.blocks} blocks
+                    {sel.category} · {sel.structure.length} blocks
                   </div>
                 </div>
               </div>

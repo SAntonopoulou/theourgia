@@ -25,18 +25,23 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
 
+// Explicit ``satisfied: false`` for the automatic gates too — the
+// registry doesn't yet emit per-plugin audit status via
+// GET /promotion-candidates/{id}, so a maintainer must not be shown
+// green ticks that no one actually verified. Manual items stay
+// unchecked so the maintainer runs through them by hand.
 const PLACEHOLDER_CHECKLIST: TierPromotionChecklistItem[] = [
   {
     id: "auto_signed",
-    label: "Latest version is signed + manifest verified",
+    label: "Latest version is signed + manifest verified (not yet automated)",
     kind: "automatic",
-    satisfied: true,
+    satisfied: false,
   },
   {
     id: "auto_no_advisories",
-    label: "No open high-severity vulnerability advisories",
+    label: "No open high-severity vulnerability advisories (not yet automated)",
     kind: "automatic",
-    satisfied: true,
+    satisfied: false,
   },
   {
     id: "manual_capabilities",
