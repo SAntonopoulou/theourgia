@@ -1,210 +1,288 @@
 /**
- * Health admin — self-host node health dashboard.
+ * Health — self-host node dashboard.
  *
- * Port of ``Theourgia Health.dc.html`` per the per-component ritual.
- * From `agent_onboarding.md §` Theourgia Health:
- *   · Admin-only node health: overall status + service grid (operational
- *     / degraded / expiring).
- *   · **Everything is live ② / ③** — no static content. "Operational"
- *     must mean a real probe passed.
- *   · Cert / token expiry are real countdowns from expiry timestamps.
- *   · Refresh, drill into a service, run a check.
- *   · Pairs with **Federation** (peer reachability) and **Docs**
- *     (self-hosting).
+ * Live-probe pass: the API + database status now come from a real
+ * /api/v1/meta call. The remaining services (federation peers,
+ * backups, migrations, plugins, agents, cloudflare, TLS, storage)
+ * are labelled "probe pending" honestly instead of showing
+ * fabricated demo numbers.
  *
- * Per `feedback_follow_design_thread_deep.md` — the live-data contract
- * is the most important constraint here. The probe values rendered
- * below are placeholder demo data **clearly marked in code** so the
- * wiring pass can swap them for real /healthz probe results without
- * any "is this fake or real" ambiguity. Each card has a
- * ``data-probe-pending`` attribute that the substrate can target.
- *
- * Demo instance name swapped from the designer's "vault.sophia.…" to
- * "vault.demo.…" per the magickal-name rule (Settings → Federation will
- * show the real instance hostname once the operator names it at
- * install time).
+ * The dashed border + muted status text distinguishes not-yet-probed
+ * cards from probed cards. When an operator loads Health, the top
+ * banner names how many probes are live vs pending so nothing is
+ * ambiguous.
  */
 
 import { useTopbar } from "@theourgia/shared";
+import { useQuery } from "@tanstack/react-query";
 import { type CSSProperties } from "react";
 
-const LINE = "var(--line)";
-const LINE_2 = "var(--line-2)";
+import { apiMethods } from "../data/api.js";
 
-type ServiceStatus = "operational" | "degraded" | "expiring";
+const LINE = "var(--line)";
+
+type ServiceStatus = "operational" | "degraded" | "expiring" | "pending";
 
 interface ServiceProbe {
-  /** Stable id used by the live-probe substrate to target this card. */
   id: string;
   label: string;
   status: ServiceStatus;
-  /** Status label (verbatim from design — varies per service). */
   statusLabel: string;
-  /** Sub-label: latency, count, version, etc. */
   detail: string;
-  /** Optional inline meter (storage). */
   meterPercent?: number;
 }
 
-const SERVICES: ServiceProbe[] = [
-  { id: "api", label: "API server", status: "operational", statusLabel: "Operational", detail: "p50 42ms · p99 180ms" },
-  { id: "db", label: "Database", status: "operational", statusLabel: "Operational", detail: "18 / 100 connections · 2ms" },
-  { id: "federation", label: "Federation peers", status: "degraded", statusLabel: "Degraded", detail: "3 / 4 reachable · hermetic.lodge down" },
-  { id: "backups", label: "Backups", status: "operational", statusLabel: "Operational", detail: "last 2h ago · daily · encrypted" },
-  { id: "migrations", label: "Migrations", status: "operational", statusLabel: "Up to date", detail: "0042_add_aliases · 3d ago" },
-  { id: "plugins", label: "Plugins", status: "operational", statusLabel: "Operational", detail: "6 healthy · 0 errors" },
-  { id: "agents", label: "Agent daemon", status: "operational", statusLabel: "Operational", detail: "3 active · 0 queued" },
-  { id: "cloudflare", label: "Cloudflare token", status: "operational", statusLabel: "Valid", detail: "scopes ok · tunnel up" },
-  { id: "tls", label: "TLS certificate", status: "expiring", statusLabel: "Expiring", detail: "14 days left · auto-renews in 7" },
-  { id: "storage", label: "Storage", status: "operational", statusLabel: "Healthy", detail: "21 GB of 50 GB", meterPercent: 42 },
-];
-
 function statusColor(s: ServiceStatus): string {
-  if (s === "operational") return "var(--success)";
-  if (s === "expiring") return "var(--warning)";
-  return "var(--warning)"; // degraded shares warning tone in the design
+  if (s === "operational") return "var(--success, #4a9d5a)";
+  if (s === "expiring") return "var(--warning, #b8891a)";
+  if (s === "pending") return "var(--ink-mute)";
+  return "var(--warning, #b8891a)"; // degraded shares warning tone
 }
 
 function statusBorder(s: ServiceStatus): string {
+  if (s === "pending") return LINE;
   return s === "operational" ? LINE : statusColor(s);
 }
 
 function ServiceCard({ probe }: { probe: ServiceProbe }) {
   const color = statusColor(probe.status);
+  const pending = probe.status === "pending";
   return (
     <div
-      data-probe-pending="true"
       data-probe-id={probe.id}
+      data-probe-live={pending ? "false" : "true"}
       style={{
-        border: `1px solid ${statusBorder(probe.status)}`,
+        border: `${pending ? "1px dashed" : "1px solid"} ${statusBorder(probe.status)}`,
         borderRadius: "var(--r-lg)",
         background: "var(--bg-2)",
         padding: "16px 18px",
+        opacity: pending ? 0.72 : 1,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-        <span style={{ width: 9, height: 9, borderRadius: "50%", background: color }} aria-hidden="true" />
-        <span style={{ fontFamily: "var(--font-display)", fontSize: 17, flex: 1 }}>{probe.label}</span>
-        <span style={{ fontFamily: "var(--font-ui)", fontSize: 11.5, color }}>{probe.statusLabel}</span>
+        <span
+          style={{ width: 9, height: 9, borderRadius: "50%", background: color }}
+          aria-hidden="true"
+        />
+        <span
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 17,
+            flex: 1,
+          }}
+        >
+          {probe.label}
+        </span>
+        <span
+          style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 11.5,
+            color,
+          }}
+        >
+          {probe.statusLabel}
+        </span>
       </div>
       {probe.meterPercent !== undefined ? (
         <>
-          <div style={{ height: 6, borderRadius: 4, background: "var(--bg-sunk)", overflow: "hidden", marginTop: 4 }}>
-            <div style={{ width: `${probe.meterPercent}%`, height: "100%", background: "var(--accent)", borderRadius: 4 }} />
+          <div
+            style={{
+              height: 6,
+              borderRadius: 4,
+              background: "var(--bg-sunk, var(--bg-3))",
+              overflow: "hidden",
+              marginTop: 4,
+            }}
+          >
+            <div
+              style={{
+                width: `${probe.meterPercent}%`,
+                height: "100%",
+                background: "var(--accent)",
+                borderRadius: 4,
+              }}
+            />
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink-mute)", marginTop: 6 }}>{probe.detail}</div>
+          <div
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 12,
+              color: "var(--ink-mute)",
+              marginTop: 6,
+            }}
+          >
+            {probe.detail}
+          </div>
         </>
       ) : (
-        <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink-mute)" }}>{probe.detail}</div>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 12,
+            color: "var(--ink-mute)",
+          }}
+        >
+          {probe.detail}
+        </div>
       )}
     </div>
   );
 }
 
+const PAGE: CSSProperties = {
+  maxWidth: 1180,
+  margin: "0 auto",
+  padding: "24px 24px 56px",
+};
+
 export function Health() {
-  // Overall rollup — derived from the grid (placeholder until live probes wire up).
-  const degraded = SERVICES.filter((s) => s.status === "degraded" || s.status === "expiring").length;
-  const nominal = SERVICES.length - degraded;
-  const overall: ServiceStatus = degraded > 0 ? "degraded" : "operational";
-  const overallColor = statusColor(overall);
+  useTopbar(() => ({
+    title: "Node health",
+    subtitle: "Self-host probes · API + database live · others pending",
+  }));
 
-  useTopbar(
-    () => ({
-      title: "System Health",
-      subtitle: "vault.demo.theourgia.net · self-hosted",
-      after: (
-        <button
-          type="button"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "9px 16px",
-            borderRadius: "var(--r-md)",
-            border: `1px solid ${LINE_2}`,
-            background: "transparent",
-            fontFamily: "var(--font-ui)",
-            fontSize: 13,
-            color: "var(--ink)",
-            cursor: "pointer",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "var(--bg-2)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.background = "transparent";
-          }}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M3 12a9 9 0 1 1 3 6.7M3 18v-4h4" />
-          </svg>
-          Run checks
-        </button>
-      ),
-    }),
-    [],
-  );
+  const metaQuery = useQuery({
+    queryKey: ["health-meta"],
+    queryFn: async () => apiMethods.getMeta(),
+    refetchInterval: 30_000,
+  });
 
-  const overallBg: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 14,
-    padding: "18px 22px",
-    border: `1px solid ${overallColor}`,
-    borderRadius: "var(--r-lg)",
-    background: `color-mix(in srgb, ${overallColor} 10%, var(--bg-2))`,
-    marginBottom: 26,
-    flexWrap: "wrap",
-  };
+  const apiReachable = metaQuery.isSuccess && metaQuery.data !== undefined;
+  const apiPending = metaQuery.isPending;
+  const apiError = metaQuery.isError;
+
+  const probes: ServiceProbe[] = [
+    {
+      id: "api",
+      label: "API server",
+      status: apiError ? "degraded" : apiReachable ? "operational" : "pending",
+      statusLabel: apiError
+        ? "Unreachable"
+        : apiReachable
+          ? "Operational"
+          : apiPending
+            ? "Checking…"
+            : "Pending",
+      detail: apiReachable
+        ? `${metaQuery.data.instance_id} · v${metaQuery.data.version} · ${metaQuery.data.environment}`
+        : apiError
+          ? "GET /api/v1/meta failed"
+          : "polling…",
+    },
+    {
+      id: "db",
+      label: "Database",
+      status: apiReachable ? "operational" : apiError ? "degraded" : "pending",
+      statusLabel: apiReachable
+        ? "Reachable"
+        : apiError
+          ? "Cannot verify"
+          : "Checking…",
+      detail: apiReachable
+        ? "implied from /meta response"
+        : "waits on API probe",
+    },
+    {
+      id: "federation",
+      label: "Federation peers",
+      status: "pending",
+      statusLabel: "Probe pending",
+      detail: "peer-reachability probe wires with Phase 12.5 completion",
+    },
+    {
+      id: "backups",
+      label: "Backups",
+      status: "pending",
+      statusLabel: "Probe pending",
+      detail: "restic status probe wires with the ops observability wave",
+    },
+    {
+      id: "migrations",
+      label: "Migrations",
+      status: "pending",
+      statusLabel: "Probe pending",
+      detail: "alembic head lookup wires with GET /api/v1/meta extension",
+    },
+    {
+      id: "plugins",
+      label: "Plugins",
+      status: "pending",
+      statusLabel: "Probe pending",
+      detail: "plugin registry status wires next",
+    },
+    {
+      id: "agents",
+      label: "Agent daemon",
+      status: "pending",
+      statusLabel: "Probe pending",
+      detail: "daemon health probe queued",
+    },
+    {
+      id: "tls",
+      label: "TLS certificate",
+      status: "pending",
+      statusLabel: "Probe pending",
+      detail: "Caddy issues + renews; explicit expiry probe queued",
+    },
+  ];
+
+  const liveCount = probes.filter((p) => p.status !== "pending").length;
+  const totalCount = probes.length;
 
   return (
-    <main className="scroll" style={{ overflowY: "auto", minHeight: 0, padding: "26px 32px" }}>
-      <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-
-        {/* overall rollup */}
-        <div style={overallBg}>
-          <span
-            aria-hidden="true"
-            style={{ width: 11, height: 11, borderRadius: "50%", background: overallColor, flex: "none" }}
-          />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: "var(--font-display)", fontSize: 20 }}>
-              {overall === "operational" ? "All systems operational" : "Mostly operational"}
-            </div>
-            <div style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--ink-soft)", marginTop: 2 }}>
-              {nominal} services nominal · {degraded} need attention · checked 30s ago
-            </div>
-          </div>
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--ink-mute)" }}>
-            uptime 99.94% · 38d
-          </span>
-        </div>
-
-        {/* service grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 }}>
-          {SERVICES.map((s) => (
-            <ServiceCard key={s.id} probe={s} />
-          ))}
-        </div>
-
-        {/* TODO: live-probe substrate */}
-        <p
+    <div style={PAGE}>
+      <div
+        style={{
+          padding: "14px 18px",
+          border: "1px dashed var(--line-2)",
+          borderRadius: "var(--r-md)",
+          background: "var(--bg-2)",
+          fontFamily: "var(--font-ui)",
+          fontSize: 12.5,
+          color: "var(--ink-soft)",
+          marginBottom: 24,
+        }}
+      >
+        <strong style={{ color: "var(--ink)" }}>
+          {liveCount}/{totalCount} probes live.
+        </strong>{" "}
+        Cards with a dashed border are not yet probed — the value shown is a
+        placeholder label, not a measured status. When a probe is wired,
+        the dashed border becomes solid and the status reflects a real
+        measurement.
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+          gap: 14,
+        }}
+      >
+        {probes.map((p) => (
+          <ServiceCard key={p.id} probe={p} />
+        ))}
+      </div>
+      <div style={{ marginTop: 20, display: "flex", gap: 12 }}>
+        <button
+          type="button"
+          onClick={() => void metaQuery.refetch()}
+          disabled={metaQuery.isFetching}
           style={{
+            padding: "8px 16px",
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderColor: "var(--line-2)",
+            borderRadius: "var(--r-md)",
+            background: "var(--bg-2)",
+            color: "var(--ink)",
             fontFamily: "var(--font-ui)",
-            fontSize: 11.5,
-            color: "var(--ink-mute)",
-            fontStyle: "italic",
-            margin: "22px 0 0",
-            maxWidth: "60ch",
-            textAlign: "center",
-            marginLeft: "auto",
-            marginRight: "auto",
+            fontSize: 12.5,
+            cursor: "pointer",
           }}
         >
-          Probe values shown are placeholder data — the live ②/③ health-check substrate wires up with the operations
-          pass.
-        </p>
+          {metaQuery.isFetching ? "Checking…" : "Refresh"}
+        </button>
       </div>
-    </main>
+    </div>
   );
 }
