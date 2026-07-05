@@ -1,18 +1,11 @@
 /**
  * NetworkBrowser — admin route at ``/networks/peers``.
  *
- * Renders the H08 §S3 Cluster A surface 2 against fixture data
- * until the Phase 12 federation endpoints land. The fixtures
- * mirror the .dc.html demo state — six rows (1 local + 5 peers
- * across the four handshake states).
- *
- * Wiring deferred to Phase 12 backend:
- *
- *   * /api/v1/federation/peers — replaces PEERS.
- *   * /api/v1/federation/peers/{domain}/handshake — kebab → Refresh.
- *   * /api/v1/federation/peers/{domain}/block — kebab → Block.
- *   * /api/v1/federation/blocklist-subscription — Configure CTA
- *     opens a settings panel (separate surface, design-gated).
+ * Peer-instance federation listing. The backend endpoint
+ * (/api/v1/federation/peers) is not yet built — this route renders
+ * the empty state with an honest "no peers known yet" message
+ * instead of demo fixtures pretending peers exist. When the
+ * backend lands, swap the empty array for a useQuery call.
  */
 
 import {
@@ -21,79 +14,29 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 
-const PEERS: PeerInstance[] = [
-  {
-    domain: "hearth.sophia.example",
-    tradition: "Hellenic · Thelemic",
-    handshake: "successful",
-    heartbeat: "just now",
-    isLocal: true,
-  },
-  {
-    domain: "aurora.example",
-    tradition: "Hermetic",
-    handshake: "successful",
-    heartbeat: "4 minutes ago",
-    isLocal: false,
-  },
-  {
-    domain: "terra.example",
-    tradition: "Folk",
-    handshake: "successful",
-    heartbeat: "11 minutes ago",
-    isLocal: false,
-  },
-  {
-    domain: "thelema.example",
-    tradition: "Thelemic",
-    handshake: "successful",
-    heartbeat: "an hour ago",
-    isLocal: false,
-  },
-  {
-    domain: "newcomer.example",
-    tradition: "Independent",
-    handshake: "pending",
-    heartbeat: "never",
-    isLocal: false,
-  },
-  {
-    domain: "closed.example",
-    tradition: "Unknown",
-    handshake: "refused",
-    heartbeat: "3 days ago",
-    isLocal: false,
-  },
-  {
-    domain: "spam.example",
-    tradition: "Unknown",
-    handshake: "blocked",
-    heartbeat: "never",
-    isLocal: false,
-  },
-];
-
-const TRADITIONS = ["Hellenic", "Thelemic", "Hermetic", "Folk"];
-
 export function NetworkBrowser() {
-  useTopbar(() => ({ title: "Network browser" }));
+  useTopbar(() => ({
+    title: "Network browser",
+    subtitle: "Federated instances your vault has handshaken with",
+  }));
+
+  // Empty until /api/v1/federation/peers ships. The surface renders
+  // its own empty state; we pass no peers instead of pretending.
+  const peers: PeerInstance[] = [];
 
   return (
     <NetworkBrowserSurface
-      peers={PEERS}
-      traditions={TRADITIONS}
+      peers={peers}
+      traditions={[]}
       blocklistSubscribed={false}
       onConfigureBlocklist={() => {
-        // TODO Phase 12 — open the blocklist subscription settings
-        // panel (separate surface, design-gated).
-        // eslint-disable-next-line no-console
-        console.info("[network-browser] configure blocklist");
+        // Blocklist subscription settings surface is a Phase-12
+        // follow-up. Deliberately no-op instead of pretending to
+        // open something.
       }}
-      onPeerAction={(domain) => {
-        // TODO Phase 12 — render the kebab menu (Open / Refresh
-        // handshake / Block instance) per the .dc.html.
-        // eslint-disable-next-line no-console
-        console.info("[network-browser] peer action", domain);
+      onPeerAction={() => {
+        // Peer kebab actions (Open / Refresh handshake / Block)
+        // wire when the peers endpoint lands.
       }}
     />
   );
