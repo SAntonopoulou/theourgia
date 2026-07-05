@@ -106,7 +106,6 @@ import { RegistryReviewDetailRoute } from "./routes/RegistryReviewDetailRoute.js
 import { TierPromotionRoute } from "./routes/TierPromotionRoute.js";
 import { VulnerabilityAdvisorySubmitRoute } from "./routes/VulnerabilityAdvisorySubmitRoute.js";
 import { BookPreview } from "./routes/BookPreview.js";
-import { BundleInstall } from "./routes/BundleInstall.js";
 import { Capture } from "./routes/Capture.js";
 import { Editor } from "./routes/Editor.js";
 import { Federation } from "./routes/Federation.js";
@@ -429,7 +428,6 @@ function ShellRoutes() {
         <Route path="/registry/review/:submissionId" element={<RegistryReviewDetailRoute />} />
         <Route path="/registry/promote/:pluginId" element={<TierPromotionRoute />} />
         <Route path="/registry/advisory" element={<VulnerabilityAdvisorySubmitRoute />} />
-        <Route path="/bundles/install" element={<BundleInstall />} />
         <Route path="/editor" element={<Editor />} />
         <Route path="/editor/:id" element={<Editor />} />
         <Route path="/book/preview" element={<BookPreview />} />
