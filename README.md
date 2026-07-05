@@ -24,7 +24,7 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `c9db780` |
+| **Latest commit** | `88567ce` (deployed to prod 2026-07-05) |
 | **Production** | **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; 8 prod containers, isolated compose project) |
 | **vitest** | 2923 passing · admin tsc clean |
 | **backend** | **2587+ passing** · alembic head **0066** — `/api/v1/agents/*` daemon bridge + `/api/v1/federation/inbox` + `/users/{handle}` AP actor + outbox + collections + `/api/v1/registry/*` author + maintainer signed bridges + `/api/v1/auth/webauthn/*` ceremony endpoints |
@@ -33,7 +33,7 @@ Open source, self-hostable, federated. For working magicians.
 | **Phase 12.5** | federation inbox + delivery worker (retry queue with 60s→24h backoff · DEAD after 6 attempts · Celery beat every minute) |
 | **Phase 13** | ActivityPub bridge — actor JSON-LD · per-actor inbox + outbox · followers (count-private) · following (always-empty by design) · privacy-gated 404 when transport disabled |
 | **H10 surfaces wired live** | **26 of 27** — Cluster A 8/8 ✓ · Cluster B 6/7 (B5 is federation-key rotation; WebAuthn credentials live at /settings/webauthn) · Cluster C 12/12 ✓ |
-| **WebAuthn ceremony** | ✅ end-to-end — backend endpoints + credential table + browser hooks + enrolment surface + `/connection` passkey sign-in button. Config-gated on THEOURGIA_WEBAUTHN_{RP_ID,ORIGIN} (prod .env pending) |
+| **WebAuthn ceremony** | ✅ **LIVE in prod** — backend endpoints + credential table + browser hooks + enrolment surface at `/settings/webauthn` + `/connection` passkey sign-in button. Assert/begin returns a real challenge; awaiting first enrolment. |
 | **Public footer** | ✅ real pages at `/vault` · `/federation` · `/hubs` · `/self-host` (was homepage anchors) |
 | **Perf** | vendor-chunk split lands 36% main-chunk gzip reduction on redeploy; audit at `docs/ops/PERF_AUDIT_2026-07-05.md` |
 | **Identity provisioned** | Author + LEAD maintainer registered in prod registry (`did:vault:theourgia.com/soror-eu-a`); server-side Ed25519 signer wires A2-A8 routes end-to-end |
