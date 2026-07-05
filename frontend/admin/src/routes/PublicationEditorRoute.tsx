@@ -6,6 +6,10 @@
  * PATCH /publications/{id}/chapters/{cid}; other metadata hits
  * PATCH /publications/{id}. Autosave indicator flips saving → saved
  * → idle as the network calls complete.
+ *
+ * If the route is opened without an :id, a new draft publication is
+ * created via POST /publications and the URL is replaced with the
+ * new id.
  */
 
 import {
@@ -23,50 +27,18 @@ import { apiMethods } from "../data/api.js";
 const SAVE_DEBOUNCE_MS = 700;
 const HIDE_AFTER_SAVED_MS = 4000;
 
-function makeFixture(): PublicationEditorRecord {
+function emptyPublication(): PublicationEditorRecord {
   return {
-    id: "demo-publication-editor",
-    title: "Walking the Crossroads",
+    id: "",
+    title: "Untitled",
     kind: "book",
     state: "draft",
     language: "English",
     license: "all-rights-reserved",
-    summary:
-      "A practitioner's record of three years keeping Hekate's lamp at the crossroads.",
-    tags: ["Hekate", "crossroads"],
+    summary: "",
+    tags: [],
     cover_url: null,
-    chapters: [
-      {
-        id: "ch-1",
-        title: "Approaching the Triple Way",
-        body: { type: "doc", content: [{ type: "paragraph" }] },
-        word_count: 420,
-      },
-      {
-        id: "ch-2",
-        title: "The First Year",
-        body: { type: "doc", content: [{ type: "paragraph" }] },
-        word_count: 380,
-      },
-      {
-        id: "ch-3",
-        title: "The Lamp at the Crossroads",
-        body: { type: "doc", content: [{ type: "paragraph" }] },
-        word_count: 550,
-      },
-      {
-        id: "ch-4",
-        title: "On Constancy",
-        body: { type: "doc", content: [{ type: "paragraph" }] },
-        word_count: 295,
-      },
-      {
-        id: "ch-5",
-        title: "What the Keeping Taught",
-        body: { type: "doc", content: [{ type: "paragraph" }] },
-        word_count: 495,
-      },
-    ],
+    chapters: [],
   };
 }
 
@@ -92,17 +64,36 @@ export function PublicationEditorRoute() {
   const navigate = useNavigate();
 
   const [publication, setPublication] = useState<PublicationEditorRecord>(
-    () => makeFixture(),
+    () => emptyPublication(),
   );
-  const [activeChapterId, setActiveChapterId] = useState<string | null>(
-    publication.chapters[0]?.id ?? null,
-  );
+  const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
   const [autosaveState, setAutosaveState] = useState<AutosaveState>("idle");
   const [lastSavedLabel, setLastSavedLabel] = useState<string | null>(null);
   const [, setLoadError] = useState<string | null>(null);
 
-  // Fetch real publication if we have an :id. If none, fall through to
-  // the fixture (dev-mode composition target).
+  // No :id → create a draft, then navigate onto its editor route.
+  useEffect(() => {
+    if (id) return;
+    let cancelled = false;
+    apiMethods
+      .createPublication({ kind: "book", title: "Untitled" })
+      .then((row) => {
+        if (cancelled) return;
+        const newId = String(row.id);
+        navigate(`/publications/${newId}/edit`, { replace: true });
+      })
+      .catch((e) => {
+        Toast.push({
+          tone: "error",
+          title: "Couldn't start a new publication",
+          body: e instanceof Error ? e.message : String(e),
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, navigate]);
+
   useEffect(() => {
     if (!id) return;
     let cancelled = false;
@@ -164,17 +155,7 @@ export function PublicationEditorRoute() {
   >(new Map());
 
   const flushSave = useCallback(async () => {
-    if (!id) {
-      // No id → fixture mode; simulate a successful save so the
-      // autosave indicator still animates.
-      setAutosaveState("saved");
-      setLastSavedLabel(formatTimeOfDay(new Date()));
-      hideRef.current = setTimeout(
-        () => setAutosaveState("idle"),
-        HIDE_AFTER_SAVED_MS,
-      );
-      return;
-    }
+    if (!id) return;
     const pending = { ...pendingRef.current };
     const pendingChapters = new Map(pendingChapterRef.current);
     pendingRef.current = {};
@@ -277,32 +258,38 @@ export function PublicationEditorRoute() {
     [triggerAutosave],
   );
 
-  const handleAddChapter = useCallback(() => {
-    setPublication((prev) => {
-      const newId = `ch-${prev.chapters.length + 1}-${Date.now().toString(36)}`;
-      return {
+  const handleAddChapter = useCallback(async () => {
+    if (!id) return;
+    try {
+      const row = (await apiMethods.createPublicationChapter(id, {
+        title: "New chapter",
+        body: { type: "doc", content: [{ type: "paragraph" }] },
+      })) as unknown as { id: string; title: string; body: Record<string, unknown> };
+      setPublication((prev) => ({
         ...prev,
         chapters: [
           ...prev.chapters,
           {
-            id: newId,
-            title: "New chapter",
-            body: { type: "doc", content: [{ type: "paragraph" }] },
+            id: row.id,
+            title: row.title,
+            body: row.body ?? { type: "doc", content: [{ type: "paragraph" }] },
             word_count: 0,
           },
         ],
-      };
-    });
-    triggerAutosave();
-  }, [triggerAutosave]);
+      }));
+      setActiveChapterId(row.id);
+    } catch (err) {
+      Toast.push({
+        tone: "error",
+        title: "Couldn't add chapter",
+        body: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }, [id]);
 
   const handleOpenSettings = useCallback(() => {
-    Toast.push({
-      tone: "info",
-      title: "Publication Settings",
-      body: "Settings surface ships next in the H07 Cluster B sprint (#6).",
-    });
-  }, []);
+    if (id) navigate(`/publications/${id}/settings`);
+  }, [id, navigate]);
 
   const handleNavigateHome = useCallback(() => {
     navigate("/publications");

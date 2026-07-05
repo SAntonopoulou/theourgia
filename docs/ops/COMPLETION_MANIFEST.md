@@ -210,6 +210,24 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
   - b108-2dp: Media Detail live · Federation honest empty state
   - b108-2dq: Scheduler / Membership / LineageAdmin fixtures emptied
   - b108-2dr: Dead Hubs.tsx removed (unused since MyNetworks landed)
+  - b108-2ds: Hub-admin batch (HubAdminDashboard + HubMemberDashboard live)
+  - b108-2dt: Registry browse/detail/author-profile · live-wired
+  - b108-2du: Bundles honest empty state · NewsletterComposer removed
+  - b108-2dv: PublicationSettings live · Permissions.tsx removed
+  - b108-2dw: **Fixture routes swept.** SubscriptionTiers +
+    PricingDistribution + PublicationEditor + NewsletterEditor —
+    every remaining `makeFixture()` scrubbed. All four now GET on
+    mount, POST/PATCH on interaction, and DELETE where the surface
+    exposes it. Curl-verified end-to-end:
+      · `POST/PATCH/DELETE /newsletter-issues` — 201 / 200 / 204.
+      · `POST/DELETE /subscription-tiers` — 201 / 204.
+      · `GET /stripe-connect/account` — 200 (pending state).
+      · `GET /publications` — 200.
+    Publication Editor now auto-creates a draft when opened without
+    an id (`POST /publications`) and navigates to `/publications/{id}/edit`.
+    "Add chapter" hits `POST /publications/{id}/chapters` — no more
+    ghost chapters. "Open settings" navigates to
+    `/publications/{id}/settings` (was a Toast stub).
 
 ### Newly live-wired in this session's continuation
 
@@ -278,6 +296,13 @@ searched for `apiMethods.*` and missed the hook layer.
 | `/api/v1/circles` | POST | 201 | full round-trip verified |
 | `/api/v1/meta` | GET | 200 | Health page live probe |
 | `/.well-known/webfinger` | GET | 200 or 404 | WebFinger verify surface |
+| `/api/v1/newsletter-issues` | POST | 201 | draft created |
+| `/api/v1/newsletter-issues/{id}` | PATCH | 200 | subject edited |
+| `/api/v1/newsletter-issues/{id}` | DELETE | 204 | soft-deleted |
+| `/api/v1/subscription-tiers` | POST | 201 | tier created |
+| `/api/v1/subscription-tiers/{id}` | DELETE | 204 | soft-deleted |
+| `/api/v1/stripe-connect/account` | GET | 200 | pending onboarding state |
+| `/api/v1/publications` | GET | 200 | own drafts + published |
 
 ---
 
