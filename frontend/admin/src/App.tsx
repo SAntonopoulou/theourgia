@@ -104,7 +104,6 @@ import { RegistryReviewQueueRoute } from "./routes/RegistryReviewQueueRoute.js";
 import { RegistryReviewDetailRoute } from "./routes/RegistryReviewDetailRoute.js";
 import { TierPromotionRoute } from "./routes/TierPromotionRoute.js";
 import { VulnerabilityAdvisorySubmitRoute } from "./routes/VulnerabilityAdvisorySubmitRoute.js";
-import { BookPreview } from "./routes/BookPreview.js";
 import { Capture } from "./routes/Capture.js";
 import { Editor } from "./routes/Editor.js";
 import { Health } from "./routes/Health.js";
@@ -469,7 +468,6 @@ function ShellRoutes() {
         <Route path="/registry/advisory" element={<VulnerabilityAdvisorySubmitRoute />} />
         <Route path="/editor" element={<Editor />} />
         <Route path="/editor/:id" element={<Editor />} />
-        <Route path="/book/preview" element={<BookPreview />} />
         <Route path="/templates" element={<Templates />} />
         <Route path="/health" element={<Health />} />
         <Route path="/workshop" element={<Workshop />} />
