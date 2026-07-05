@@ -198,6 +198,36 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
   - b108-2dd: Deleted 10 legacy/superseded route files
   - b108-2de: Health page live /api/v1/meta probe + honest labelling
   - b108-2df: WebFinger verify · real cross-instance probe
+  - b108-2dg: Divination · all four save flows POST to backend
+  - b108-2dh: Publications / Media / Subscribers · live-wired
+  - b108-2di: Audio / Pilgrimage / Capture · live-wired
+  - b108-2dj: NetworkBrowser · honest empty state (was demo peers)
+
+### Newly live-wired in this session's continuation
+
+  · Tarot (past readings) — `GET /tarot/readings`
+  · I Ching (save) — `POST /iching/cast` (question + method)
+  · Geomancy (save) — `POST /geomancy/cast` (question + method=rng)
+  · Runes (save) — `POST /runes/cast` (elder_futhark/three_rune)
+  · Publications (list + new) — `GET/POST /publications`, navigates
+    to `/publications/{id}/edit`
+  · Media Library (list) — `GET /media`, wire→display mapper
+  · Subscribers (list + stats) — `GET /subscribers` + client-side count
+  · Audio Library (list) — `GET /media?kind=audio`
+  · Pilgrimage Map (list + sealed count) — `GET /pilgrimage-sites`
+  · Capture (drain) — `POST /entries` per queued item
+  · NetworkBrowser — deliberate empty state (backend not yet built)
+
+### Routes discovered to be already live (my earlier grep missed them)
+
+  · MyNetworks — uses `useHubs()` internally
+  · HubDiscovery — uses `useHubs()` internally
+  · Followers — uses `useApFollowers()`, `useApFollowRequests()`
+  · PrivateViewers — uses `usePrivateViewerGrants()`
+  · StudiesIndexRoute — uses `apiClient.request` directly
+
+These custom hooks all call `apiClient` under the hood; my sweep
+searched for `apiMethods.*` and missed the hook layer.
 
 ### Curl-verified end-to-end THIS SESSION (real prod)
 
