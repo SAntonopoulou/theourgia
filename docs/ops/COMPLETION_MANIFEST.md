@@ -263,6 +263,39 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     fetches the hub name from `GET /hubs/:id` instead of hardcoding
     "Crossroads Coven"; recipient count is 0 with an honest tone=info
     toast until the hub-newsletter backend ships.
+  - b108-2ed: **AccountSettings operator + ActivityPub webfinger.**
+    AccountSettings "Operator" label was hardcoded to Sophia's
+    magickal name and would appear on every self-hosted deploy
+    regardless of owner. Now derived from `useAuth().session`
+    (magickal_name → display_name → fallback). ActivityPub Settings
+    webFingerHandle now derives from `useSession()` + browser
+    `window.location.host` — every user sees their real
+    @handle@instance instead of a placeholder.
+  - b108-2ee: **Divination workbench CTAs route to real per-tool pages.**
+    The tabbed /divination surface had disabled Shuffle/Draw/Cast
+    buttons with "engine pending" tooltips — but /divination/tarot
+    · iching · geomancy · runes · more all exist as fully-wired
+    routes. Buttons now show "Open <Tool> →" and navigate to the
+    real per-tool page.
+  - b108-2ef: **Magickal-name leaks scrubbed · Workshop hrefs fixed.**
+    VaultNav footer showed "Aspasia · Adeptus Minor" by default
+    (the shared package's demo fallback) — now takes an `identity`
+    prop from the real session. ActingAsSwitcher was passing the
+    fabricated DEMO_IDENTITIES array; now passes a single-identity
+    list built from the session (multi-identity returns with the
+    Persona table). ActivityPubSettings default display name +
+    bio ("Aspasia of the Crossroads" · "Theurgist. Keeper of a
+    magical record.") wiped to empty. ChartNode placeholder
+    "Natal — Aspasia, 1980-03-14" → generic. Workshop builder
+    hrefs `/sigil` and `/circle` → `/sigils` and `/circles`
+    (both were 404'ing).
+  - b108-2eg: **BookPreview orphan removed.**
+    772-line print-preview surface pinned to a fabricated
+    "Bornless Working · Theophrastos" specimen — chapter opener,
+    index entries, cover byline all invented. Never linked from
+    the admin nav; the real per-publication print preview will
+    live at /publications/:id/print-preview when the print
+    pipeline substrate ships.
   - b108-2ec: **Settings · encryption-per-content-type table removed.**
     The Settings page's Journal=standard / Workings=zero-knowledge /
     Divination=standard / Sigils=zero-knowledge table hardcoded a
