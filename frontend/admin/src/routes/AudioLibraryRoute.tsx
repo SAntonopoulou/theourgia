@@ -1,10 +1,10 @@
 /**
- * Audio Library — admin route wrapping the shared AudioLibrarySurface
- * (H07 §S3 surface 17).
+ * Audio Library — admin route wrapping AudioLibrarySurface.
  *
- * Phase 11 backend is unbuilt — the route holds a fixture set and
- * owns the play / pause / scrub state machine. The actual audio
- * element + waveform peak extraction lands later.
+ * Live-wired: GET /api/v1/media?kind=audio populates the track list.
+ * Play/pause state is owned by this route (the surface is controlled);
+ * the actual HTMLAudioElement wiring for a source URL lands with the
+ * media-serve endpoint (R2 signed URLs).
  */
 
 import {
@@ -12,64 +12,45 @@ import {
   AudioLibrarySurface,
   useTopbar,
 } from "@theourgia/shared";
-import { useCallback, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useCallback, useMemo, useState } from "react";
 
-const FIXTURE_TRACKS: AudioTrack[] = [
-  {
-    id: "brimo",
-    title: "ΒΡΙΜΩ — sounding",
-    meta_label: "voce · linked to Hekate · 15 Jun",
-    category: "voce",
-    duration_label: "0:42",
-    duration_seconds: 42,
-    sealed: false,
-  },
-  {
-    id: "deipnon",
-    title: "Deipnon — full rite",
-    meta_label: "working · 15 Jun",
-    category: "working",
-    duration_label: "12:04",
-    duration_seconds: 724,
-    sealed: false,
-  },
-  {
-    id: "iao",
-    title: "ΙΑΩ — slow articulation",
-    meta_label: "voce · 02 May",
-    category: "voce",
-    duration_label: "0:51",
-    duration_seconds: 51,
-    sealed: false,
-  },
-  {
-    id: "oath",
-    title: "The sealed oath — spoken",
-    meta_label: "working · sealed",
-    category: "working",
-    duration_label: "3:18",
-    duration_seconds: 198,
-    sealed: true,
-  },
-  {
-    id: "lecture",
-    title: "On the planetary hours",
-    meta_label: "lecture · 19 Apr",
-    category: "lecture",
-    duration_label: "31:50",
-    duration_seconds: 1910,
-    sealed: false,
-  },
-  {
-    id: "banish",
-    title: "Evening banishing",
-    meta_label: "working · 12 Apr",
-    category: "working",
-    duration_label: "4:02",
-    duration_seconds: 242,
-    sealed: false,
-  },
-];
+import { apiMethods } from "../data/api.js";
+
+interface WireAudioAsset {
+  id: string;
+  filename: string;
+  duration_seconds?: number;
+  uploaded_at?: string;
+  linked_kind?: string;
+  linked_label?: string;
+  sealed?: boolean;
+}
+
+function toTrack(a: WireAudioAsset): AudioTrack {
+  const seconds = a.duration_seconds ?? 0;
+  const duration = `${Math.floor(seconds / 60)}:${String(
+    Math.round(seconds % 60),
+  ).padStart(2, "0")}`;
+  const date = a.uploaded_at
+    ? new Date(a.uploaded_at).toLocaleDateString(undefined, {
+        day: "2-digit",
+        month: "short",
+      })
+    : "";
+  const category = ((a.linked_kind as AudioTrack["category"]) ?? "working");
+  return {
+    id: a.id,
+    title: a.filename.replace(/\.[^.]+$/, ""),
+    meta_label: `${category}${a.linked_label ? ` · ${a.linked_label}` : ""}${
+      date ? ` · ${date}` : ""
+    }`,
+    category,
+    duration_label: duration,
+    duration_seconds: seconds,
+    sealed: a.sealed ?? false,
+  };
+}
 
 export function AudioLibraryRoute() {
   useTopbar(
@@ -80,7 +61,19 @@ export function AudioLibraryRoute() {
     [],
   );
 
-  const [activeId, setActiveId] = useState<string | null>("brimo");
+  const query = useQuery({
+    queryKey: ["media-audio"],
+    queryFn: async () =>
+      (await apiMethods.listMedia({ kind: "audio" })) as unknown as WireAudioAsset[],
+    staleTime: 30_000,
+  });
+
+  const tracks = useMemo<AudioTrack[]>(
+    () => (query.data ?? []).map(toTrack),
+    [query.data],
+  );
+
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [positionSeconds, setPositionSeconds] = useState(0);
 
@@ -103,7 +96,7 @@ export function AudioLibraryRoute() {
 
   return (
     <AudioLibrarySurface
-      tracks={FIXTURE_TRACKS}
+      tracks={tracks}
       active_id={activeId}
       is_playing={isPlaying}
       position_seconds={positionSeconds}

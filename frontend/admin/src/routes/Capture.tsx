@@ -20,6 +20,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@theourgia/shared";
 
+import { apiMethods } from "../data/api.js";
+
 interface PendingCapture {
   id: string;
   body: string;
@@ -65,17 +67,30 @@ function newId(): string {
 }
 
 /**
- * Best-effort drain of the offline queue. Real backend endpoint lands
- * in the Phase 04 journaling work; until then this just returns ``true``
- * for an empty queue and is a no-op for items. Keeping the structure in
- * place so the wiring pass is a one-line change.
+ * Best-effort drain of the offline queue. Live: each queued capture
+ * becomes an entry via `POST /api/v1/entries`. Failed items stay in
+ * the queue for the next drain attempt (network flap, offline).
  */
 async function drainQueue(): Promise<{ drained: number; remaining: number }> {
   const queue = readQueue();
   if (!queue.length) return { drained: 0, remaining: 0 };
-  // POST /api/v1/captures — placeholder. Phase 04 wires this for real.
-  // For now, leave items in the queue so they're visible in DevTools.
-  return { drained: 0, remaining: queue.length };
+  const remaining: PendingCapture[] = [];
+  let drained = 0;
+  for (const item of queue) {
+    try {
+      await apiMethods.createEntry({
+        title: item.body.slice(0, 64) || "Quick capture",
+        type: "capture",
+        excerpt: item.body,
+        glyph: "feather",
+      });
+      drained += 1;
+    } catch {
+      remaining.push(item);
+    }
+  }
+  writeQueue(remaining);
+  return { drained, remaining: remaining.length };
 }
 
 export function Capture() {

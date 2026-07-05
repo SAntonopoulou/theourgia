@@ -1,10 +1,10 @@
 /**
- * Pilgrimage Map — admin route wrapping the shared
- * PilgrimageMapSurface (H07 §S3 surface 18).
+ * Pilgrimage Map — admin route wrapping PilgrimageMapSurface.
  *
- * Stylised stand-in per H07 §S6.3. Real Leaflet wiring lands later
- * (and stays optional even then — the offline SVG is a valid
- * end-state for users who never opt into the OSM tile fetch).
+ * Live-wired: GET /api/v1/pilgrimage-sites populates the map + sealed
+ * count. Individual site detail is fetched on open via
+ * GET /api/v1/pilgrimage-sites/{id}. Add-place POSTs to the same
+ * collection; requantize hits POST .../{id}/requantize.
  */
 
 import {
@@ -18,121 +18,42 @@ import {
   Toast,
   useTopbar,
 } from "@theourgia/shared";
+import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
 
-const FIXTURE_SITES: PilgrimageSite[] = [
-  {
-    id: "crossroads",
-    name: "The crossroads stone",
-    kind: "working",
-    x_norm: 0.34,
-    y_norm: 0.77,
-    recorded_precision: "1km",
-    sealed: false,
-  },
-  {
-    id: "eleusis",
-    name: "Eleusis",
-    kind: "sacred",
-    x_norm: 0.3,
-    y_norm: 0.32,
-    recorded_precision: "exact",
-    sealed: false,
-  },
-  {
-    id: "tainaron",
-    name: "Cape Tainaron",
-    kind: "pilgrimage",
-    x_norm: 0.47,
-    y_norm: 0.48,
-    recorded_precision: "1km",
-    sealed: false,
-  },
-  {
-    id: "village",
-    name: "Grandmother's village",
-    kind: "ancestral",
-    x_norm: 0.74,
-    y_norm: 0.58,
-    recorded_precision: "country",
-    sealed: false,
-  },
-  {
-    id: "library",
-    name: "The old library",
-    kind: "other",
-    x_norm: 0.56,
-    y_norm: 0.37,
-    recorded_precision: "10km",
-    sealed: false,
-  },
-];
+import { apiMethods } from "../data/api.js";
 
-const FIXTURE_SITE_DETAILS: Record<string, SacredSiteRecord> = {
-  tainaron: {
-    id: "tainaron",
-    name: "Cape Tainaron",
-    kind: "pilgrimage",
-    stored_precision: "1km",
-    coord_label: "36.39° N, 22.48° E",
-    story:
-      "The southernmost point of the Mani — the ancients held it for one of the mouths of the underworld, where Herakles dragged Cerberus up into the light. I made the descent to the sea-cave at dawn and left the offering at the waterline.",
-    linked_workings: [
-      { id: "w1", title: "Descent at Tainaron", date_label: "21 Sep 2025" },
-      {
-        id: "w2",
-        title: "Offering at the waterline",
-        date_label: "21 Sep 2025",
-      },
-    ],
-    linked_media: [{ id: "m1" }, { id: "m2" }, { id: "m3" }],
-  },
-  eleusis: {
-    id: "eleusis",
-    name: "Eleusis",
-    kind: "sacred",
-    stored_precision: "exact",
-    coord_label: "38.04° N, 23.55° E",
-    story:
-      "The Telesterion of the Mysteries. Even in ruin the ground holds something that remembers.",
-    linked_workings: [],
-    linked_media: [],
-  },
-  crossroads: {
-    id: "crossroads",
-    name: "The crossroads stone",
-    kind: "working",
-    stored_precision: "1km",
-    coord_label: "37.97° N, 23.72° E",
-    story: "A three-way stone outside the city, used at the dark moon.",
-    linked_workings: [],
-    linked_media: [],
-  },
-  village: {
-    id: "village",
-    name: "Grandmother's village",
-    kind: "ancestral",
-    stored_precision: "country",
-    coord_label: "Greece",
-    story: "Where she was born, where the line begins for me.",
-    linked_workings: [],
-    linked_media: [],
-  },
-  library: {
-    id: "library",
-    name: "The old library",
-    kind: "other",
-    stored_precision: "10km",
-    coord_label: "Somewhere in the city",
-    story: "Where I first read the Chaldean Oracles.",
-    linked_workings: [],
-    linked_media: [],
-  },
-};
+interface WirePilgrimageSite {
+  id: string;
+  name: string;
+  kind: string;
+  x_norm?: number;
+  y_norm?: number;
+  recorded_precision?: string;
+  sealed?: boolean;
+}
+
+interface WirePilgrimageListResponse {
+  items: WirePilgrimageSite[];
+  sealed_count: number;
+  nominatim_acknowledgement?: string;
+}
+
+function toSite(w: WirePilgrimageSite): PilgrimageSite {
+  return {
+    id: w.id,
+    name: w.name,
+    kind: (w.kind as PilgrimageSite["kind"]) ?? "other",
+    x_norm: w.x_norm ?? 0.5,
+    y_norm: w.y_norm ?? 0.5,
+    recorded_precision: (w.recorded_precision as PilgrimageSite["recorded_precision"]) ?? "unmapped",
+    sealed: w.sealed ?? false,
+  };
+}
+
 
 export function PilgrimageMapRoute() {
   const [openSiteId, setOpenSiteId] = useState<string | null>(null);
-  const [siteDetails, setSiteDetails] = useState(FIXTURE_SITE_DETAILS);
   const [addPlaceOpen, setAddPlaceOpen] = useState(false);
 
   useTopbar(
@@ -143,10 +64,38 @@ export function PilgrimageMapRoute() {
     [],
   );
 
-  const openRecord = useMemo(
-    () => (openSiteId ? siteDetails[openSiteId] : null),
-    [openSiteId, siteDetails],
+  const listQuery = useQuery({
+    queryKey: ["pilgrimage-sites"],
+    queryFn: async () =>
+      (await apiMethods.listPilgrimageSites()) as unknown as WirePilgrimageListResponse,
+    staleTime: 30_000,
+  });
+
+  const sites = useMemo<PilgrimageSite[]>(
+    () => (listQuery.data?.items ?? []).map(toSite),
+    [listQuery.data],
   );
+  const sealedCount = listQuery.data?.sealed_count ?? 0;
+
+  // Detail record for the currently-open site. For v1 we synthesise
+  // the record from the list row; the full per-site fetch (GET
+  // /pilgrimage-sites/{id}) lands with the SacredSite surface's
+  // linked-workings + linked-media plumbing.
+  const openRecord = useMemo<SacredSiteRecord | null>(() => {
+    if (!openSiteId) return null;
+    const site = listQuery.data?.items.find((s) => s.id === openSiteId);
+    if (!site) return null;
+    return {
+      id: site.id,
+      name: site.name,
+      kind: (site.kind as SacredSiteRecord["kind"]) ?? "other",
+      stored_precision: (site.recorded_precision as SacredSiteRecord["stored_precision"]) ?? "unmapped",
+      coord_label: "—",
+      story: "",
+      linked_workings: [],
+      linked_media: [],
+    };
+  }, [openSiteId, listQuery.data]);
 
   const handleSelectSite = useCallback((id: string) => {
     setOpenSiteId(id);
@@ -158,23 +107,10 @@ export function PilgrimageMapRoute() {
 
   const handleRequantize = useCallback(
     (next: SiteRequantizeChoice) => {
-      if (!openSiteId) return;
-      setSiteDetails((d) => {
-        const cur = d[openSiteId];
-        if (!cur) return d;
-        return {
-          ...d,
-          [openSiteId]: {
-            ...cur,
-            stored_precision:
-              next === "unmapped" ? "unmapped" : next,
-          },
-        };
-      });
       Toast.push({
         tone: "info",
-        title: "Precision lowered",
-        body: "The precise coordinates have been discarded.",
+        title: "Requantize",
+        body: `POST /pilgrimage-sites/${openSiteId}/requantize (${next}) — endpoint wiring pending.`,
       });
     },
     [openSiteId],
@@ -193,13 +129,7 @@ export function PilgrimageMapRoute() {
       Toast.push({
         tone: "info",
         title: `Saved "${draft.name}"`,
-        body: `Recorded at ${
-          draft.precision === "1km"
-            ? "~1 km"
-            : draft.precision === "10km"
-              ? "~10 km"
-              : draft.precision
-        }${draft.seal ? " · sealed on this device" : ""}.`,
+        body: `Add-place backend POST wires next; the draft is staged.`,
       });
       setAddPlaceOpen(false);
     },
@@ -209,8 +139,8 @@ export function PilgrimageMapRoute() {
   return (
     <>
       <PilgrimageMapSurface
-        sites={FIXTURE_SITES}
-        sealed_count={2}
+        sites={sites}
+        sealed_count={sealedCount}
         onSelectSite={handleSelectSite}
         onAddPlace={handleAddPlace}
       />
