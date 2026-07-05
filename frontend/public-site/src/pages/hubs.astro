@@ -1,0 +1,171 @@
+---
+/**
+ * Hubs — public-site marketing / doc page.
+ *
+ * Landing target for the footer's Community › "Hubs" link. Explains
+ * what hubs are (magickal networks — orders, covens, sodalities,
+ * study circles), how membership and roles work, and how they relate
+ * to federation (a hub can span multiple instances).
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const MAXW = "820px";
+
+const HUB_KINDS = [
+  {
+    title: "Orders and sodalities",
+    body:
+      "Golden Dawn temples, Thelemic orders, Rosicrucian groups, initiatic bodies with degrees and lineage. Hubs support role hierarchy (admin · officer · moderator · member · observer), lineage attestation with counter-signing, and initiation records that stay sealed to the initiate.",
+  },
+  {
+    title: "Covens and working groups",
+    body:
+      "Small circles, family covens, chaos-magic cells, study groups. Hubs let a group share a calendar of workings, coordinate group rituals with role assignments, and post-mortem after — with an audit log of who did what, so nobody has to remember.",
+  },
+  {
+    title: "Traditions and study communities",
+    body:
+      "Larger networks organized around a tradition or a shared body of practice. Members contribute correspondences, ritual variants, entity attestations, verse renderings; the hub becomes a living tradition file that its members co-author.",
+  },
+];
+
+const HUB_FEATURES = [
+  {
+    title: "Membership policies",
+    body:
+      "Public (anyone joins), open-with-approval (anyone can request, an officer approves), or private/invite-only (the default). Change the policy at any time; existing members stay.",
+  },
+  {
+    title: "Roles and permissions",
+    body:
+      "Five levels, editable per hub. Admins can promote and demote. Officers can approve members and post to the shared calendar. Moderators can hide inappropriate content. Members can contribute. Observers can read what's shared.",
+  },
+  {
+    title: "Group ritual coordination",
+    body:
+      "Schedule a working with role assignments (officiant, scribe, watchers). Members RSVP with their role. Post-ritual, the hub captures who attended, what happened, and any synchronicities members separately noted around the working.",
+  },
+  {
+    title: "Newsletters and lineage attestation",
+    body:
+      "Hubs can publish newsletters to their members. Members can attest lineage claims (\"initiated in this hub, this degree, this date\") with counter-signature from the officiating admin. Lineage is verifiable without being surveillance.",
+  },
+  {
+    title: "Federation-aware",
+    body:
+      "A hub can span multiple Theourgia instances. Members on instance A and instance B see the same shared calendar and newsletters. Each instance's operator owns their share of the data; nobody has veto over the whole.",
+  },
+  {
+    title: "Sealed content",
+    body:
+      "Initiation records, oath texts, sealed workings — content that must not leave the initiate's mind can be marked sealed. Even the hub admin cannot read a member's sealed content. The hub can require sealed content for certain rites; whether the member ever reveals it is their choice alone.",
+  },
+];
+---
+
+<BaseLayout title="Hubs · Theourgia">
+  <main
+    style={`max-width:${MAXW};margin:0 auto;padding:64px clamp(16px,5vw,28px) 80px;display:flex;flex-direction:column;gap:56px`}
+  >
+    <a
+      href="/"
+      style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);text-decoration:none;letter-spacing:.08em;text-transform:uppercase"
+      >← Theourgia</a
+    >
+
+    <header style="display:flex;flex-direction:column;gap:14px">
+      <span
+        style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:.16em"
+      >
+        Networks of practitioners
+      </span>
+      <h1
+        style="margin:0;font-family:var(--font-display);font-size:44px;letter-spacing:-0.01em;color:var(--ink);line-height:1.15"
+      >
+        Hubs
+      </h1>
+      <p
+        style="margin:0;font-family:var(--font-serif);font-size:19px;line-height:1.55;color:var(--ink-soft);max-width:640px"
+      >
+        A hub is a shared namespace for a magickal network — an order, a coven,
+        a sodality, a study circle, or any other group whose members work
+        together and want a place to keep the collective record.
+      </p>
+    </header>
+
+    <section style="display:flex;flex-direction:column;gap:24px">
+      <h2
+        style="margin:0;font-family:var(--font-display);font-size:24px;color:var(--ink);letter-spacing:.01em"
+      >
+        Kinds of hubs
+      </h2>
+      <div style="display:flex;flex-direction:column;gap:22px">
+        {HUB_KINDS.map((k) => (
+          <div>
+            <h3
+              style="margin:0 0 8px 0;font-family:var(--font-display);font-size:18px;color:var(--ink);letter-spacing:.01em"
+            >
+              {k.title}
+            </h3>
+            <p style="margin:0;font-family:var(--font-serif);font-size:15px;line-height:1.6;color:var(--ink-soft)">
+              {k.body}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:22px">
+      <h2
+        style="margin:0;font-family:var(--font-display);font-size:24px;color:var(--ink);letter-spacing:.01em"
+      >
+        What hubs support
+      </h2>
+      <div style="display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+        {HUB_FEATURES.map((f) => (
+          <article
+            style="background-color:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:8px"
+          >
+            <h3
+              style="margin:0;font-family:var(--font-display);font-size:16px;color:var(--ink);letter-spacing:.01em"
+            >
+              {f.title}
+            </h3>
+            <p style="margin:0;font-family:var(--font-serif);font-size:14px;line-height:1.55;color:var(--ink-soft)">
+              {f.body}
+            </p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section
+      style="border-top:1px solid var(--line);padding-top:32px;display:flex;flex-direction:column;gap:12px"
+    >
+      <h2
+        style="margin:0;font-family:var(--font-display);font-size:22px;color:var(--ink);letter-spacing:.01em"
+      >
+        Ready to find or found one
+      </h2>
+      <p
+        style="margin:0;font-family:var(--font-serif);font-size:15px;line-height:1.55;color:var(--ink-soft);max-width:600px"
+      >
+        Discover public hubs, join one whose practice aligns, or found your own.
+        Hubs are one of the two ways practitioners work together in Theourgia —
+        the other being direct federation between individual practitioners.
+      </p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+        <a
+          href="/app/hubs/discover"
+          style="padding:12px 22px;border-radius:9px;background:var(--accent);color:var(--accent-ink);font-family:var(--font-ui);font-weight:600;font-size:14.5px;text-decoration:none"
+          >Discover hubs</a
+        >
+        <a
+          href="/federation"
+          style="padding:12px 22px;border-radius:9px;border:1px solid var(--line-2);color:var(--ink);font-family:var(--font-ui);font-size:14.5px;text-decoration:none"
+          >About federation</a
+        >
+      </div>
+    </section>
+  </main>
+</BaseLayout>

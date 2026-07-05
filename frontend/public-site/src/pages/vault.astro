@@ -1,0 +1,179 @@
+---
+/**
+ * The Vault — public-site marketing / doc page.
+ *
+ * Landing target for the footer's Product › "The Vault" link. Explains
+ * what the vault is (a magician's personal namespace) and how the
+ * platform's data-sovereignty model works. Written for practitioners
+ * arriving cold; no dev jargon.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const MAXW = "820px";
+
+const CAPABILITIES = [
+  {
+    glyph: "journal",
+    title: "The Journal",
+    body:
+      "Freeform + typed entries. Observation, ritual, working, dream, divination, and every magical form has a shape with fields for what actually matters (moon phase, entities present, felt sense, outcome). Nothing is a text box masquerading as a form.",
+  },
+  {
+    glyph: "library",
+    title: "The Library",
+    body:
+      "Your books, essays, correspondences, verses, and quotes — with citations that hold up, cross-references that resolve, and the option to keep any of it sealed to yourself, viewer-scoped, or fully public.",
+  },
+  {
+    glyph: "entity",
+    title: "The Beings",
+    body:
+      "Deities, spirits, ancestors, servitors, egregores, angels, planetary intelligences. Alias-graphed so Hermes and Ἑρμῆς and Mercury and the Emerald Tablet's Thrice-Great One thread as one being while their traditions stay distinct.",
+  },
+  {
+    glyph: "compass",
+    title: "The Practice",
+    body:
+      "A daily-practice tracker that respects breaks. A ritual scheduler that respects election. A synchronicity log that lets you actually count what you notice. Analytics you own and can walk away with.",
+  },
+];
+
+const SOVEREIGNTY = [
+  {
+    title: "Your data lives on your instance",
+    body:
+      "Theourgia is designed to be self-hosted. The theourgia.com host is one instance among many; anyone can run their own. Your journal, entities, and practice records live wherever you (or a trusted operator) chose to run the software.",
+  },
+  {
+    title: "Sealed content is sealed to you",
+    body:
+      "Sensitive content — oaths, initiations, contracts, sealed workings — can be marked \"sealed\" and stored encrypted with a key derived from your passphrase. Even the operator of your instance cannot read it. Sealed content is counted in listings but its contents never surface.",
+  },
+  {
+    title: "Export your entire vault at any time",
+    body:
+      "Settings → Privacy → Export your vault gives you every entry, every entity, every relationship, every calendar event, every cipher, every recording you've made. In an open format that survives us all: JSON now, MBF (Markdown Bundle Folder) once the export pipeline lands.",
+  },
+  {
+    title: "Delete for real",
+    body:
+      "Settings → Account lifecycle → Delete your account starts a 30-day grace. During that window you can reactivate one-tap. After it, the vault reaper genuinely deletes — every row, every sealed blob, every audit event where you were the actor. No shadow copy, no \"suspended\" state.",
+  },
+];
+---
+
+<BaseLayout title="The Vault · Theourgia">
+  <main
+    style={`max-width:${MAXW};margin:0 auto;padding:64px clamp(16px,5vw,28px) 80px;display:flex;flex-direction:column;gap:56px`}
+  >
+    <a
+      href="/"
+      style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);text-decoration:none;letter-spacing:.08em;text-transform:uppercase"
+      >← Theourgia</a
+    >
+
+    <header style="display:flex;flex-direction:column;gap:14px">
+      <span
+        style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:.16em"
+      >
+        The core of the project
+      </span>
+      <h1
+        style="margin:0;font-family:var(--font-display);font-size:44px;letter-spacing:-0.01em;color:var(--ink);line-height:1.15"
+      >
+        The Vault
+      </h1>
+      <p
+        style="margin:0;font-family:var(--font-serif);font-size:19px;line-height:1.55;color:var(--ink-soft);max-width:640px"
+      >
+        A practitioner's environment where the record of the work has a home. Not a
+        wiki, not a notebook app, not a journal with a magical theme — a
+        purpose-built shape for what magicians actually track.
+      </p>
+    </header>
+
+    <section style="display:flex;flex-direction:column;gap:24px">
+      <h2
+        style="margin:0;font-family:var(--font-display);font-size:24px;color:var(--ink);letter-spacing:.01em"
+      >
+        What lives inside
+      </h2>
+      <div style="display:grid;gap:24px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+        {CAPABILITIES.map((c) => (
+          <article
+            style="background-color:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:22px 24px;display:flex;flex-direction:column;gap:10px"
+          >
+            <span
+              style="width:36px;height:36px;border-radius:50%;background:var(--accent-soft,var(--bg-2));border:1px solid var(--accent);color:var(--accent);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0"
+            >
+              <svg width="20" height="20" aria-hidden="true">
+                <use href={`#theo-${c.glyph}`} />
+              </svg>
+            </span>
+            <h3
+              style="margin:0;font-family:var(--font-display);font-size:17px;color:var(--ink);letter-spacing:.01em"
+            >
+              {c.title}
+            </h3>
+            <p style="margin:0;font-family:var(--font-serif);font-size:14.5px;line-height:1.55;color:var(--ink-soft)">
+              {c.body}
+            </p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:28px">
+      <h2
+        style="margin:0;font-family:var(--font-display);font-size:24px;color:var(--ink);letter-spacing:.01em"
+      >
+        What being sovereign means, in practice
+      </h2>
+      <div style="display:flex;flex-direction:column;gap:26px">
+        {SOVEREIGNTY.map((s) => (
+          <div>
+            <h3
+              style="margin:0 0 8px 0;font-family:var(--font-display);font-size:18px;color:var(--ink);letter-spacing:.01em"
+            >
+              {s.title}
+            </h3>
+            <p
+              style="margin:0;font-family:var(--font-serif);font-size:15px;line-height:1.6;color:var(--ink-soft)"
+            >
+              {s.body}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section
+      style="border-top:1px solid var(--line);padding-top:36px;display:flex;flex-direction:column;gap:14px"
+    >
+      <h2
+        style="margin:0;font-family:var(--font-display);font-size:22px;color:var(--ink);letter-spacing:.01em"
+      >
+        Ready to begin
+      </h2>
+      <p
+        style="margin:0;font-family:var(--font-serif);font-size:15px;line-height:1.55;color:var(--ink-soft);max-width:600px"
+      >
+        The vault is the substrate. Everything else — the divination surfaces,
+        the federation network, the plugin ecosystem — is what happens when
+        practitioners have a place to keep the record.
+      </p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+        <a
+          href="/app/connection"
+          style="padding:12px 22px;border-radius:9px;background:var(--accent);color:var(--accent-ink);font-family:var(--font-ui);font-weight:600;font-size:14.5px;text-decoration:none"
+          >Sign in</a
+        >
+        <a
+          href="/self-host"
+          style="padding:12px 22px;border-radius:9px;border:1px solid var(--line-2);color:var(--ink);font-family:var(--font-ui);font-size:14.5px;text-decoration:none"
+          >Or self-host</a
+        >
+      </div>
+    </section>
+  </main>
+</BaseLayout>

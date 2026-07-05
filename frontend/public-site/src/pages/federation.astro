@@ -1,0 +1,178 @@
+---
+/**
+ * Federation — public-site marketing / doc page.
+ *
+ * Landing target for the footer's Product › "Federation" link. Explains
+ * the two-tier federation model: a native protocol between Theourgia
+ * instances, plus an ActivityPub bridge so the whole Fediverse can
+ * follow/reply.
+ *
+ * Rule 41-45 honesty: no engagement metrics, no recommendation
+ * algorithms, no walled garden. State these plainly.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const MAXW = "820px";
+
+const PILLARS = [
+  {
+    title: "A native protocol between instances",
+    body:
+      "Instance-to-instance messages are HTTP-signed and Ed25519-verified. Envelopes carry only what the destination is trusted to see. Followers can be counted or count-private per your setting. There is no central registry, no gatekeeper, no algorithm dictating who sees what.",
+  },
+  {
+    title: "An ActivityPub bridge for the wider Fediverse",
+    body:
+      "Every practitioner has an ActivityPub actor at their instance. Mastodon, Firefish, GoToSocial, Pleroma, Misskey, Bookwyrm, Bonfire — anything that speaks ActivityPub can follow your publications and receive them. The bridge only surfaces content marked Visibility=public; nothing sealed or viewer-scoped ever leaves the vault.",
+  },
+];
+
+const HONESTY_RULES = [
+  {
+    n: 41,
+    title: "No engagement metrics anywhere",
+    body:
+      "No view counts, no play counts, no share counts, no algorithmic trending. You read what you subscribed to, in the order you subscribed. If a piece resonated, you know because you sat with it, not because a number told you it should.",
+  },
+  {
+    n: 42,
+    title: "No recommendation algorithm",
+    body:
+      "The federation surface never suggests who you should follow or what you should read. Discovery happens through explicit human channels: hubs, direct links, lineage attestation. If you want to see something, someone has to point at it.",
+  },
+  {
+    n: 43,
+    title: "Consent-first follows",
+    body:
+      "Follow requests can require approval on any account. Blocks propagate to the ActivityPub bridge. Instance-level defederation is a first-class option — an instance you refuse to interact with never sees a single request from yours.",
+  },
+  {
+    n: 44,
+    title: "Federation isn't a walled garden",
+    body:
+      "Every part of the protocol is documented and open. Your data is exportable in a format that outlives any single implementation. You can migrate to another instance, or fork the code, or run your own — the AGPLv3 license guarantees this in perpetuity.",
+  },
+];
+
+const CROSS_TZ = {
+  title: "Cross-timezone display, honestly",
+  body:
+    "When a distant practitioner posts at 3am their time and 6pm yours, both times are shown. The received-at instant is authoritative for ordering; the origin timezone is visible so readers understand the context (magical timing matters). No opaque \"time ago\" strings that hide the truth.",
+};
+---
+
+<BaseLayout title="Federation · Theourgia">
+  <main
+    style={`max-width:${MAXW};margin:0 auto;padding:64px clamp(16px,5vw,28px) 80px;display:flex;flex-direction:column;gap:56px`}
+  >
+    <a
+      href="/"
+      style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);text-decoration:none;letter-spacing:.08em;text-transform:uppercase"
+      >← Theourgia</a
+    >
+
+    <header style="display:flex;flex-direction:column;gap:14px">
+      <span
+        style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:.16em"
+      >
+        Network without algorithm
+      </span>
+      <h1
+        style="margin:0;font-family:var(--font-display);font-size:44px;letter-spacing:-0.01em;color:var(--ink);line-height:1.15"
+      >
+        Federation
+      </h1>
+      <p
+        style="margin:0;font-family:var(--font-serif);font-size:19px;line-height:1.55;color:var(--ink-soft);max-width:640px"
+      >
+        Theourgia federates. Your work reaches other practitioners and the wider
+        Fediverse — on your terms, at your cadence, without engagement metrics
+        or a recommendation algorithm shaping what anyone sees.
+      </p>
+    </header>
+
+    <section style="display:flex;flex-direction:column;gap:28px">
+      <h2
+        style="margin:0;font-family:var(--font-display);font-size:24px;color:var(--ink);letter-spacing:.01em"
+      >
+        Two layers, one network
+      </h2>
+      <div style="display:grid;gap:22px">
+        {PILLARS.map((p) => (
+          <article
+            style="background-color:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:24px 26px;display:flex;flex-direction:column;gap:10px"
+          >
+            <h3
+              style="margin:0;font-family:var(--font-display);font-size:18px;color:var(--ink);letter-spacing:.01em"
+            >
+              {p.title}
+            </h3>
+            <p
+              style="margin:0;font-family:var(--font-serif);font-size:15px;line-height:1.6;color:var(--ink-soft)"
+            >
+              {p.body}
+            </p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:26px">
+      <h2
+        style="margin:0;font-family:var(--font-display);font-size:24px;color:var(--ink);letter-spacing:.01em"
+      >
+        The honesty rules
+      </h2>
+      <div style="display:flex;flex-direction:column;gap:22px">
+        {HONESTY_RULES.map((r) => (
+          <div style="display:grid;grid-template-columns:40px 1fr;gap:14px;align-items:start">
+            <span
+              style="font-family:var(--font-mono);font-size:12px;color:var(--ink-mute);padding-top:4px;letter-spacing:.06em"
+            >
+              № {r.n}
+            </span>
+            <div>
+              <h3
+                style="margin:0 0 6px 0;font-family:var(--font-display);font-size:16.5px;color:var(--ink);letter-spacing:.01em"
+              >
+                {r.title}
+              </h3>
+              <p style="margin:0;font-family:var(--font-serif);font-size:14.5px;line-height:1.6;color:var(--ink-soft)">
+                {r.body}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <section
+      style="border-top:1px solid var(--line);padding-top:32px;display:flex;flex-direction:column;gap:10px"
+    >
+      <h2
+        style="margin:0;font-family:var(--font-display);font-size:20px;color:var(--ink);letter-spacing:.01em"
+      >
+        {CROSS_TZ.title}
+      </h2>
+      <p style="margin:0;font-family:var(--font-serif);font-size:15px;line-height:1.6;color:var(--ink-soft)">
+        {CROSS_TZ.body}
+      </p>
+    </section>
+
+    <section style="border-top:1px solid var(--line);padding-top:32px">
+      <p
+        style="margin:0;font-family:var(--font-serif);font-size:15px;line-height:1.55;color:var(--ink-soft)"
+      >
+        The full technical specification lives in the project's plan docs at{" "}
+        <a
+          href="https://github.com/SAntonopoulou/theourgia/blob/main/PROJECT_PLAN.md"
+          rel="noopener"
+          style="color:var(--accent)"
+          >PROJECT_PLAN.md</a
+        >{" "}
+        (Phases 12 + 13). The source is AGPLv3; nothing about the protocol is
+        proprietary.
+      </p>
+    </section>
+  </main>
+</BaseLayout>
