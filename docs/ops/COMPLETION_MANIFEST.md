@@ -250,6 +250,25 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     ephemeris/Planetary Hours example. Identities got a dashed
     "Preview surface" banner acknowledging the Persona table is Phase
     02/03.
+  - b108-2ea: **Orphan mockups removed · HubNewsletter live.**
+    Deleted three unlinked route files that were showing fabricated
+    numbers as real data: Membership.tsx (fake "47 Initiates · 3
+    Officers" stats · dead), Scheduler.tsx (573-line visual mockup ·
+    dead), Federation.tsx (fake "vault.demo.theourgia.net" instance +
+    "scriptorium.adeptus.org" pending peer + "node.blacklodge.onion"
+    blocked peer · dead). None of the three appeared in the admin
+    nav; the real functionality lives at /hubs/:id/admin (member
+    admin), Publications (scheduling), NetworkBrowser +
+    FederationAuditLog (federation). HubNewsletterComposer now
+    fetches the hub name from `GET /hubs/:id` instead of hardcoding
+    "Crossroads Coven"; recipient count is 0 with an honest tone=info
+    toast until the hub-newsletter backend ships.
+  - b108-2eb: **Lineage attestations live.**
+    LineageAdmin now fetches `GET /api/v1/attestations` on mount and
+    derives state (verified / self-declared / revoked) from the
+    signature + revoked_at columns. Empty list renders a dashed
+    "declaring requires §10.5 keypair signing (not yet wired)"
+    placeholder instead of a silent zero-row list.
   - b108-2dz: **Safety-critical false-green checks removed.**
     RegistryReviewDetail's four "automatic" verification checks were
     rendering `ok=true` even though the registry never emits real
@@ -340,6 +359,8 @@ searched for `apiMethods.*` and missed the hook layer.
 | `/api/v1/group-rituals` | GET | 200 | empty for me — expected |
 | `/api/v1/sandbox` | GET | 200 | list surface |
 | `/api/v1/bibliomancy/cast` | POST | 201 | source_text + label |
+| `/api/v1/attestations` | GET | 200 | LineageAdmin live |
+| `/api/v1/hubs/{id}` | GET | 200 | HubNewsletter hub-name fetch |
 
 ---
 
