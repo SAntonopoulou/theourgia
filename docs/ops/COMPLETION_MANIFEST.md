@@ -317,6 +317,12 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     brass bell) plus altar fixtures presented as the practitioner's
     real registry. Now fetches GET /tools + GET /altars on mount,
     maps wire → surface, and passes real data. Curl-verified 200/200.
+  - b108-2fa: **Registry extension-point tiles · dead href="#" links removed.**
+    RegistryPublicHomeSurface's "Browse by extension point" tiles
+    rendered as `<a href="#">` — announced as links but jumping to
+    the top of the page. Converted to non-interactive `<div>` tiles;
+    per-category endpoints haven't shipped on the registry yet. When
+    they do, this switches back to real anchors.
   - b108-2ez: **Skip links · WCAG 2.4.1 bypass blocks.**
     Screen-reader / keyboard users on theourgia.com and the admin SPA
     had no way to bypass the header/nav on first Tab. Added a "Skip
