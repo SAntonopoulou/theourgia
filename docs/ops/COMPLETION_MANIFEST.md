@@ -317,6 +317,20 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     brass bell) plus altar fixtures presented as the practitioner's
     real registry. Now fetches GET /tools + GET /altars on mount,
     maps wire → surface, and passes real data. Curl-verified 200/200.
+  - b108-2ep: **Magic squares · display real custom squares.**
+    Surface used to default customSquares to a single fabricated
+    "Square of binding · order 5". Route now fetches
+    GET /api/v1/magic-squares (200), maps MagicSquareRecord →
+    CustomSquareEntry, refreshes on save from both save paths.
+  - b108-2eq: **Pendulum session log demo entries scrubbed.**
+    PendulumPanel seeded its session log with three fabricated
+    Q/A pairs ("Is now the time to send the petition?" ·
+    "Should I add the second sigil?" · "Will Diotima reply
+    before the dark moon?" with fake 14:19/14:24/14:30
+    timestamps) — appearing as if the user's own past
+    consultations. Now defaults to empty with a "No sessions yet"
+    placeholder; new "Ask" clicks still append normally.
+  - b108-2er: **Editor docstring synced with b108-2eh behaviour.**
   - b108-2eo: **Sigil library + surface defaults → empty.**
     SigilLibraryPanel defaulted to twelve fabricated sigils ("Unseen
     Walk", "Saturn Bind", "Venus Draw", "Hermes Road", "Brigid
