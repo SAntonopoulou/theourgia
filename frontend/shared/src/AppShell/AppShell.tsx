@@ -63,6 +63,38 @@ export function AppShell({ topbar, nav, children }: AppShellProps) {
         overflow: "hidden",
       }}
     >
+      {/* Skip link — visible only when focused. WCAG 2.4.1 bypass blocks.
+          Positioned absolutely so it doesn't shift layout when not focused,
+          then slides into view for keyboard users on first Tab. */}
+      <a
+        href="#om-main"
+        className="om-skip-link"
+        style={{
+          position: "absolute",
+          left: 8,
+          top: 8,
+          padding: "8px 16px",
+          background: "var(--accent)",
+          color: "var(--accent-ink)",
+          fontFamily: "var(--font-ui)",
+          fontSize: 13,
+          fontWeight: 700,
+          borderRadius: "var(--r-md, 6px)",
+          zIndex: 1000,
+          textDecoration: "none",
+          transform: "translateY(-200%)",
+          transition: "transform 120ms ease",
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.transform = "translateY(0)";
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.transform = "translateY(-200%)";
+        }}
+      >
+        Skip to main content
+      </a>
+
       {nav}
 
       {nav ? (
@@ -88,6 +120,7 @@ export function AppShell({ topbar, nav, children }: AppShellProps) {
         {wrapTopbarWithToggle(topbar, () => setNavOpen((open) => !open), navOpen)}
 
         <main
+          id="om-main"
           className="scroll"
           style={{
             overflowY: "auto",

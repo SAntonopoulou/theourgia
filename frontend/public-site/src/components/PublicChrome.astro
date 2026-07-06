@@ -45,6 +45,7 @@ const {
 } = Astro.props;
 ---
 
+<a href="#om-main" class="om-skip-link" style="position:absolute;left:8px;top:8px;padding:8px 16px;background:var(--accent);color:var(--accent-ink);font-family:var(--font-ui);font-size:13px;font-weight:700;border-radius:var(--r-md, 6px);z-index:1000;text-decoration:none;transform:translateY(-200%);transition:transform 120ms ease" onfocus="this.style.transform='translateY(0)'" onblur="this.style.transform='translateY(-200%)'">Skip to main content</a>
 <header style="position:sticky;top:0;z-index:50;background:var(--bg);border-bottom:1px solid var(--line)">
   <div class="om-pubwrap" style={`max-width:${maxWidth};margin:0 auto;padding:14px clamp(16px,5vw,28px);display:flex;align-items:center;gap:28px`}>
     <a href="/" style="display:flex;align-items:center;gap:12px;flex:none;text-decoration:none;color:inherit">
