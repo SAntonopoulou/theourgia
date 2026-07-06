@@ -317,6 +317,27 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     brass bell) plus altar fixtures presented as the practitioner's
     real registry. Now fetches GET /tools + GET /altars on mount,
     maps wire → surface, and passes real data. Curl-verified 200/200.
+  - b108-2fb: **Sigil + talisman default text · culture leaks scrubbed.**
+    Five hardcoded Thelemic/Hebrew/Greek defaults ("It is my Will
+    to walk unseen." · "Hekate" · Hebrew+Greek transliteration
+    seeds · "Sigil of the Unseen Walk") pre-filled sigil generator
+    inputs. Talisman's "To increase the means of the household"
+    purpose seed also scrubbed. All → empty.
+  - b108-2fc: **Circle + talisman · Hebrew inscription defaults scrubbed.**
+    "אל אב גבור עולם" (traditional Jewish blessing) pre-filled ring
+    inscription inputs on every fresh magical circle + talisman;
+    swapped to empty defaults. Preview renderings carried the
+    specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
+    · צדקיאל") — swapped to neutral placeholders until per-layer
+    text is threaded through the state model.
+  - b108-2fd: **Topbar names + asana stats · no more fabricated seeds.**
+    MagicalCircle + TalismanDesigner topbar defaults ("Circle of
+    the Sphere of Jupiter" · "Talisman of Jupiter for Increase")
+    → "Untitled circle" / "Untitled talisman". Asana panel's
+    "Siddhāsana" · "1 : 4 : 2" breath ratio · 12:07 paused-timer
+    seed all cleared. Fabricated cumulative practice stats
+    ("41.5 hours cumulative · 88 sessions kept") zeroed — no more
+    pretending the user has a practice history they don't.
   - b108-2fa: **Registry extension-point tiles · dead href="#" links removed.**
     RegistryPublicHomeSurface's "Browse by extension point" tiles
     rendered as `<a href="#">` — announced as links but jumping to
