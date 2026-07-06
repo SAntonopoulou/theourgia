@@ -1,164 +1,59 @@
 ---
 /**
- * Blog — per-identity public blog homepage.
+ * Blog — public blog reader (theourgia.com/blog).
  *
- * Faithful port of ``Theourgia Blog.dc.html``. Per ``agent_onboarding.md``
- * § Blog:
- *   · Route ``/@identity/blog`` · public chrome · page-scroll.
- *   · Type tabs (essays / notes / quotes / links) are real filters.
- *   · Posts belong to an **identity**, not the user — multi-author blogs
- *     show which identity authored each post.
- *   · Loading / empty / error states ship with the live feed.
- *   · For v1 we serve a single demo blog at /blog with static post data;
- *     identity-scoping ships when the Identity model lands.
+ * Rewritten b108-2eu: the previous version rendered six hardcoded
+ * fake posts ("On the discipline of the magical record", "The
+ * kingfisher and reading omens honestly", "Hekate at the crossroads
+ * of three traditions" and three more) as if they were the
+ * practitioner's real published essays. Visitors to production saw
+ * fabricated bylines. Now client-side fetches
+ * `/api/v1/blog/posts`  and shows an honest empty state when the
+ * response is empty.
+ *
+ * Per the backend contract (`api/v1/routers/blog.py`): posts are
+ * Entry rows with type=blog_post + visibility=public + no encryption.
+ * The scheduler holds back rows whose `scheduled_publish_at` is in
+ * the future.
  */
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PublicChrome from "../components/PublicChrome.astro";
 
 const MAXW = "1180px";
-
-type PostType = "essay" | "note" | "quote" | "link";
-interface Post {
-  type: PostType;
-  date: string;
-  title: string;
-  blurb?: string;
-  quoteEl?: string;
-  quoteAttribution?: string;
-  link?: string;
-  readingMin?: number;
-  noteCount?: number;
-}
-
-const featured = {
-  type: "essay" as PostType,
-  date: "18 June 2026",
-  readingMin: 12,
-  title: "On the discipline of the magical record",
-  blurb:
-    "Why the notebook outlasts the working — and what three years of dated entries taught me about my own credulity. A defence of method over mystery, written for the sceptical practitioner.",
-};
-
-const POSTS: Post[] = [
-  {
-    type: "note",
-    date: "14 Jun",
-    title: "The kingfisher, and reading omens honestly",
-    blurb:
-      "On the temptation to interpret first and observe later — and a small rule for keeping the two apart.",
-    readingMin: 5,
-    noteCount: 24,
-  },
-  {
-    type: "quote",
-    date: "11 Jun",
-    title: "All is one",
-    quoteEl: "Ἓν τὸ πᾶν.",
-    quoteAttribution: "All is one. — the maxim of the alchemists, after Kleopatra.",
-  },
-  {
-    type: "essay",
-    date: "6 Jun",
-    title: "Planetary hours for people who don't believe in them",
-    blurb: "A pragmatic case for ritual timing as attention-shaping, not astral mechanics.",
-    readingMin: 9,
-    noteCount: 61,
-  },
-  {
-    type: "link",
-    date: "2 Jun",
-    title: "The Warburg Institute digitises its iconography archive →",
-    link: "warburg.sas.ac.uk/collections",
-  },
-  {
-    type: "note",
-    date: "28 May",
-    title: "A year of Liber Resh, charted",
-    blurb: "What daily solar adorations did and didn't do, with the data to show it.",
-    readingMin: 7,
-    noteCount: 38,
-  },
-  {
-    type: "essay",
-    date: "21 May",
-    title: "Hekate at the crossroads of three traditions",
-    blurb: "Reconciling the PGM, Orphic, and Chaldean Hekate without flattening them into one.",
-    readingMin: 14,
-    noteCount: 92,
-  },
-];
 ---
 
-<BaseLayout title="Theurgist's Notebook — A public notebook, kept in Theourgia">
+<BaseLayout title="Blog — A public notebook, kept in Theourgia">
   <div style="background:var(--bg);color:var(--ink);font-family:var(--font-serif);min-height:100vh">
 
     <PublicChrome active="blog" subscribe="Subscribe" />
 
-    <!-- featured -->
+    <!-- header -->
     <section style="border-bottom:1px solid var(--line)">
       <div style={`max-width:${MAXW};margin:0 auto;padding:52px clamp(16px,5vw,28px) 44px`}>
         <div style="font-family:var(--font-ui);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:18px;display:flex;align-items:center;gap:12px">
           <span style="width:30px;height:1px;background:var(--accent)"></span>
-          {featured.type.charAt(0).toUpperCase() + featured.type.slice(1)} · {featured.date} · {featured.readingMin} min
+          A public notebook · essays, notes, and quotes
         </div>
-        <h1 style="font-family:var(--font-display);font-weight:700;font-size:clamp(34px,5.5vw,58px);line-height:1.05;margin:0 0 18px;max-width:18ch;letter-spacing:-.01em">{featured.title}</h1>
-        <p style="font-size:19px;line-height:1.6;color:var(--ink-soft);max-width:62ch;margin:0 0 24px">{featured.blurb}</p>
-        <a href="/essay" class="pub-cta-link" style="display:inline-flex;align-items:center;gap:8px;font-family:var(--font-ui);font-size:15px;color:var(--accent);text-decoration:none">Read the essay →</a>
+        <h1 style="font-family:var(--font-display);font-weight:700;font-size:clamp(34px,5.5vw,58px);line-height:1.05;margin:0 0 18px;max-width:18ch;letter-spacing:-.01em">Blog</h1>
+        <p style="font-size:19px;line-height:1.6;color:var(--ink-soft);max-width:62ch;margin:0 0 24px">Long-form writing from the practitioner keeping this instance. Published posts appear below as they land.</p>
       </div>
     </section>
 
     <!-- stream -->
     <section>
       <div style={`max-width:${MAXW};margin:0 auto;padding:38px clamp(16px,5vw,28px) 70px`}>
-        <div role="tablist" aria-label="Post type" style="display:flex;align-items:center;gap:6px;margin-bottom:30px;border-bottom:1px solid var(--line);overflow-x:auto">
-          {["all", "essays", "notes", "quotes", "links"].map((tab) => (
-            <button
-              type="button"
-              data-filter={tab}
-              class="blog-tab"
-              role="tab"
-              aria-selected={tab === "all"}
-              style={`padding:12px 16px;font-family:var(--font-ui);font-size:14px;color:${tab === "all" ? "var(--ink)" : "var(--ink-mute)"};background:transparent;border:none;border-bottom:2px solid ${tab === "all" ? "var(--accent)" : "transparent"};margin-bottom:-1px;cursor:pointer;text-transform:capitalize;white-space:nowrap`}
-            >
-              {tab}
-            </button>
-          ))}
+        <div id="blog-loading" style="padding:60px 20px;text-align:center;font-family:var(--font-ui);font-size:14px;color:var(--ink-mute)">Loading…</div>
+
+        <div id="blog-empty" style="display:none;padding:60px 20px;text-align:center;font-family:var(--font-serif);font-size:16px;color:var(--ink-mute);line-height:1.5">
+          <p style="margin:0 0 12px">No public posts yet.</p>
+          <p style="margin:0;font-size:14px">This blog is fresh — the practitioner keeping this instance hasn't published a post yet.</p>
         </div>
 
-        <div class="blog-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden">
-          {POSTS.map((post) => (
-            <article
-              class="blog-card"
-              data-post-type={post.type}
-              style="background:var(--bg);padding:26px 24px;display:flex;flex-direction:column;transition:background-color 0.15s ease"
-            >
-              <div style="font-family:var(--font-ui);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px">
-                {post.type.charAt(0).toUpperCase() + post.type.slice(1)} · {post.date}
-              </div>
-              {post.type === "quote" && post.quoteEl ? (
-                <blockquote style="margin:0;flex:1;border-left:2px solid var(--accent);padding-left:18px">
-                  <div lang="el" style="font-family:var(--font-greek);font-style:italic;font-size:21px;line-height:1.45;color:var(--ink)">{post.quoteEl}</div>
-                  {post.quoteAttribution ? (
-                    <div style="font-size:15px;color:var(--ink-soft);margin-top:8px">{post.quoteAttribution}</div>
-                  ) : null}
-                </blockquote>
-              ) : (
-                <>
-                  <h3 style={`font-family:var(--font-display);font-size:${post.type === "link" ? "21px" : "23px"};line-height:1.2;margin:0 0 10px`}>{post.title}</h3>
-                  {post.blurb ? (
-                    <p style="font-size:15px;line-height:1.55;color:var(--ink-soft);margin:0 0 16px;flex:1">{post.blurb}</p>
-                  ) : null}
-                  {post.link ? (
-                    <div style="border:1px solid var(--line);border-radius:var(--r-md);padding:11px 14px;background:var(--bg-2);font-family:var(--font-mono);font-size:12px;color:var(--ink-mute);margin-top:auto">{post.link}</div>
-                  ) : null}
-                  {post.readingMin ? (
-                    <div style="font-family:var(--font-ui);font-size:12.5px;color:var(--ink-mute)">{post.readingMin} min{post.noteCount ? ` · ${post.noteCount} notes` : ""}</div>
-                  ) : null}
-                </>
-              )}
-            </article>
-          ))}
+        <div id="blog-error" style="display:none;padding:60px 20px;text-align:center;font-family:var(--font-serif);font-size:15px;color:var(--warn);line-height:1.5">
+          <p style="margin:0">Couldn't load posts. Try again shortly.</p>
         </div>
+
+        <div id="blog-grid" style="display:none;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden"></div>
       </div>
     </section>
 
@@ -170,11 +65,11 @@ const POSTS: Post[] = [
           <div style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);margin-top:3px">A public notebook, kept in Theourgia.</div>
         </div>
         <div style="display:flex;gap:12px">
-          <a href="/rss.xml" style="display:flex;align-items:center;gap:7px;padding:9px 15px;border:1px solid var(--line-2);border-radius:var(--r-md);font-family:var(--font-ui);font-size:13px;text-decoration:none;color:inherit">
+          <a href="/api/v1/blog/feed.rss" style="display:flex;align-items:center;gap:7px;padding:9px 15px;border:1px solid var(--line-2);border-radius:var(--r-md);font-family:var(--font-ui);font-size:13px;text-decoration:none;color:inherit">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="6.2" cy="17.8" r="1.6" fill="currentColor" stroke="none"></circle><path d="M5 12a7 7 0 0 1 7 7M5 6a13 13 0 0 1 13 13" stroke-linecap="round"></path></svg>
             RSS
           </a>
-          <a href="#subscribe" style="padding:9px 16px;border-radius:var(--r-md);background:var(--accent);color:var(--accent-ink);font-family:var(--font-ui);font-weight:700;font-size:13px;text-decoration:none">Subscribe by email</a>
+          <a href="/api/v1/blog/feed.xml" style="display:flex;align-items:center;gap:7px;padding:9px 15px;border:1px solid var(--line-2);border-radius:var(--r-md);font-family:var(--font-ui);font-size:13px;text-decoration:none;color:inherit">Atom</a>
         </div>
       </div>
     </footer>
@@ -184,31 +79,74 @@ const POSTS: Post[] = [
 
 <style>
   .blog-card:hover { background: var(--bg-2) !important; }
-  .blog-tab[aria-selected="true"] { color: var(--ink) !important; border-bottom-color: var(--accent) !important; }
-  .pub-cta-link:hover { gap: 12px !important; }
 </style>
 
-<script>
-  // Type-filter — hide cards whose data-post-type doesn't match the active tab.
-  const tabs = document.querySelectorAll<HTMLButtonElement>(".blog-tab");
-  const cards = document.querySelectorAll<HTMLElement>(".blog-card");
-  // Map plural tab labels → singular post types.
-  const FILTER_TO_TYPE: Record<string, string | null> = {
-    all: null,
-    essays: "essay",
-    notes: "note",
-    quotes: "quote",
-    links: "link",
-  };
-  tabs.forEach((tab) => {
-    tab.addEventListener("click", () => {
-      const filter = tab.getAttribute("data-filter") ?? "all";
-      tabs.forEach((t) => t.setAttribute("aria-selected", t === tab ? "true" : "false"));
-      const wanted = FILTER_TO_TYPE[filter];
-      cards.forEach((card) => {
-        const type = card.getAttribute("data-post-type");
-        card.style.display = wanted === null || type === wanted ? "" : "none";
-      });
-    });
-  });
+<script is:inline>
+  (async function () {
+    const loading = document.getElementById("blog-loading");
+    const empty = document.getElementById("blog-empty");
+    const error = document.getElementById("blog-error");
+    const grid = document.getElementById("blog-grid");
+    if (!loading || !empty || !error || !grid) return;
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function formatDate(iso) {
+      if (!iso) return "";
+      try {
+        return new Date(iso).toLocaleDateString(undefined, {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        });
+      } catch {
+        return "";
+      }
+    }
+
+    try {
+      const res = await fetch("/api/v1/blog/posts");
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const body = await res.json();
+      const posts = Array.isArray(body?.posts) ? body.posts : [];
+      loading.style.display = "none";
+      if (posts.length === 0) {
+        empty.style.display = "block";
+        return;
+      }
+      grid.style.display = "grid";
+      grid.innerHTML = posts
+        .map(function (p) {
+          const title = escapeHtml(p.title || "Untitled");
+          const excerpt = escapeHtml(p.excerpt || "");
+          const date = formatDate(p.published_at || p.created_at);
+          return (
+            '<article class="blog-card" style="background:var(--bg);padding:26px 24px;display:flex;flex-direction:column;transition:background-color 0.15s ease">' +
+            '<div style="font-family:var(--font-ui);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px">Essay · ' +
+            date +
+            "</div>" +
+            '<h3 style="font-family:var(--font-display);font-size:23px;line-height:1.2;margin:0 0 10px">' +
+            title +
+            "</h3>" +
+            (excerpt
+              ? '<p style="font-size:15px;line-height:1.55;color:var(--ink-soft);margin:0 0 16px;flex:1">' +
+                excerpt +
+                "</p>"
+              : "") +
+            "</article>"
+          );
+        })
+        .join("");
+    } catch (e) {
+      loading.style.display = "none";
+      error.style.display = "block";
+    }
+  })();
 </script>
