@@ -57,8 +57,8 @@ export const PV_LABEL_EMAIL_HANDLE = "Email or handle";
 export const PV_LABEL_LABEL = "Label";
 export const PV_LABEL_SCOPE = "Access scope";
 export const PV_LABEL_DELIVERY = "Credential delivery";
-export const PV_EMAIL_PLACEHOLDER = "aspasia@example.com";
-export const PV_LABEL_PLACEHOLDER = "Student — Aspasia";
+export const PV_EMAIL_PLACEHOLDER = "name@example.com";
+export const PV_LABEL_PLACEHOLDER = "A private label only you see";
 
 /** Modal footer CTAs. */
 export const PV_CANCEL_CTA = "Cancel";

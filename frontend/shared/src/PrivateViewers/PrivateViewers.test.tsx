@@ -244,7 +244,9 @@ describe("PrivateViewersSurface — new viewer modal", () => {
     fireEvent.click(screen.getByText(PV_ISSUE_CTA));
     expect(onIssueCredential).toHaveBeenCalledWith({
       emailOrHandle: "newviewer@example.com",
-      label: "Student — Aspasia",
+      // Label field defaults to empty (see b108-2et — magickal-name leak
+      // scrub); the user hasn't typed one in this test path.
+      label: "",
       scope: "full",
       delivery: "passphrase",
     });

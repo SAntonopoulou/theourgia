@@ -363,7 +363,7 @@ function NewViewerModal({
   // Default scope is "tag" per the H08 brief — full-vault is the
   // explicit-opt-in path, never default.
   const [emailOrHandle, setEmailOrHandle] = useState("");
-  const [label, setLabel] = useState("Student — Aspasia");
+  const [label, setLabel] = useState("");
   const [scope, setScope] = useState<PrivateViewerScopeKind>("tag");
   const [delivery, setDelivery] =
     useState<PrivateViewerDeliveryKind>("signed-link");
