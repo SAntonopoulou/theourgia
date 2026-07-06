@@ -99,6 +99,16 @@ export function SignInRoute() {
   const navigate = useNavigate();
   const supported = isWebauthnSupported();
 
+  // Demo signin is gated behind an env flag + a URL query param so it
+  // never appears on the production landing page. Set
+  // ``VITE_THEOURGIA_ENABLE_DEMO_SIGNIN=1`` at build time, or visit
+  // ``/signin?demo=1`` to reveal it (useful for local dev + preview
+  // deploys where the operator hasn't enrolled a passkey yet).
+  const demoEnabled =
+    import.meta.env.VITE_THEOURGIA_ENABLE_DEMO_SIGNIN === "1" ||
+    (typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("demo") === "1");
+
   const [showDemo, setShowDemo] = useState(false);
   const [magickalName, setMagickalName] = useState("");
   const [showTotp, setShowTotp] = useState(false);
@@ -291,56 +301,60 @@ export function SignInRoute() {
             Firefox, or Edge over HTTPS.
           </div>
         ) : null}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ flex: 1, height: 1, background: "var(--line)" }} />
-          <span
-            style={{
-              fontFamily: "var(--font-ui)",
-              fontSize: 11,
-              color: "var(--ink-mute)",
-              textTransform: "uppercase",
-              letterSpacing: "0.14em",
-            }}
-          >
-            or
-          </span>
-          <div style={{ flex: 1, height: 1, background: "var(--line)" }} />
-        </div>
-        {showDemo ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <input
-              style={INPUT}
-              value={magickalName}
-              onChange={(e) => setMagickalName(e.target.value)}
-              placeholder="Your magickal name"
-              autoFocus
-              aria-label="Magickal name"
-            />
-            <button
-              type="button"
-              style={PRIMARY_BUTTON}
-              disabled={demoMutation.isPending || !magickalName.trim()}
-              onClick={() => demoMutation.mutate(magickalName.trim())}
-            >
-              {demoMutation.isPending ? "Signing in…" : "Continue"}
-            </button>
-            <button
-              type="button"
-              style={QUIET_BUTTON}
-              onClick={() => setShowDemo(false)}
-            >
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <button
-            type="button"
-            style={QUIET_BUTTON}
-            onClick={() => setShowDemo(true)}
-          >
-            Sign in with magickal name (demo)
-          </button>
-        )}
+        {demoEnabled ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ flex: 1, height: 1, background: "var(--line)" }} />
+              <span
+                style={{
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 11,
+                  color: "var(--ink-mute)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.14em",
+                }}
+              >
+                or
+              </span>
+              <div style={{ flex: 1, height: 1, background: "var(--line)" }} />
+            </div>
+            {showDemo ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <input
+                  style={INPUT}
+                  value={magickalName}
+                  onChange={(e) => setMagickalName(e.target.value)}
+                  placeholder="Your magickal name"
+                  autoFocus
+                  aria-label="Magickal name"
+                />
+                <button
+                  type="button"
+                  style={PRIMARY_BUTTON}
+                  disabled={demoMutation.isPending || !magickalName.trim()}
+                  onClick={() => demoMutation.mutate(magickalName.trim())}
+                >
+                  {demoMutation.isPending ? "Signing in…" : "Continue"}
+                </button>
+                <button
+                  type="button"
+                  style={QUIET_BUTTON}
+                  onClick={() => setShowDemo(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                style={QUIET_BUTTON}
+                onClick={() => setShowDemo(true)}
+              >
+                Sign in with magickal name (demo)
+              </button>
+            )}
+          </>
+        ) : null}
         {error ? (
           <div
             style={{

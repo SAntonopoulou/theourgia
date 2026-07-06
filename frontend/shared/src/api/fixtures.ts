@@ -168,9 +168,8 @@ function todayLedger(): TodayLedger {
       activity: [
         {
           attestation_id: "a1",
-          description:
-            "Initiation as Minerval in the Lyceum tradition.",
-          signer_label: "Frater Lykourgos",
+          description: "Sample attestation for mock-mode preview.",
+          signer_label: "Sample signer",
           role: "witness",
           signed_at: TWO_DAYS_AGO,
         },
