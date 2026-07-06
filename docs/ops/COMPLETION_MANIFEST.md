@@ -317,6 +317,15 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     brass bell) plus altar fixtures presented as the practitioner's
     real registry. Now fetches GET /tools + GET /altars on mount,
     maps wire → surface, and passes real data. Curl-verified 200/200.
+  - b108-2ez: **Skip links · WCAG 2.4.1 bypass blocks.**
+    Screen-reader / keyboard users on theourgia.com and the admin SPA
+    had no way to bypass the header/nav on first Tab. Added a "Skip
+    to main content" affordance that appears only when focused,
+    slides into view, and jumps to #om-main. Admin AppShell tags its
+    main region and renders the skip link. Public site's
+    PublicChrome injects the same; every non-PublicChrome public
+    page got id="om-main" on its <main>. Closes WCAG 2.4.1 gap on
+    both surfaces.
   - b108-2ey: **Demo signin gated · tasks #204 + #208 closed.**
     Demo-signin UI affordance now gated behind
     ``VITE_THEOURGIA_ENABLE_DEMO_SIGNIN=1`` at build time OR
