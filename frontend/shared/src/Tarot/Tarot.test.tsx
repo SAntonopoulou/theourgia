@@ -361,10 +361,11 @@ describe("TarotHistoryRow", () => {
 // ─── TarotSurface ─────────────────────────────────────────────────
 
 describe("TarotSurface", () => {
-  it("renders the default question + spread + draw view by default", () => {
+  it("renders the default (empty) question + Three-card spread by default", () => {
+    // b108-2ff: question seed swapped to empty so the input is
+    // blank until the practitioner types their question.
     render(<TarotSurface />);
-    expect(screen.getByText(TAROT_DEFAULT_QUESTION)).toBeInTheDocument();
-    // Spread picker default = three.
+    expect(TAROT_DEFAULT_QUESTION).toBe("");
     const threeChip = screen.getByText("Three-card").closest("button");
     expect(threeChip?.getAttribute("aria-pressed")).toBe("true");
   });

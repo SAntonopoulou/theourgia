@@ -258,12 +258,10 @@ describe("GeoVerdict", () => {
 // ─── GeomancySurface ────────────────────────────────────────────
 
 describe("GeomancySurface", () => {
-  it("renders the default question + DEFAULT_MOTHERS state", () => {
+  it("renders the DEFAULT_MOTHERS state (question empty per b108-2ff)", () => {
     const { container } = render(<GeomancySurface />);
-    expect(
-      screen.getByText(/lineage petition.*equinox/),
-    ).toBeInTheDocument();
-    // Four Mother cells.
+    // Four Mother cells present; the question seed is now empty so
+    // the field is blank until the practitioner types their own.
     expect(
       container.querySelectorAll("[data-component='mother-cell']"),
     ).toHaveLength(4);

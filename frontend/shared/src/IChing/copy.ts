@@ -43,9 +43,10 @@ export const WILHELM_BAYNES_CITATION =
 export const ICHING_SAVE_CAPTION =
   "The cast, the question, and your reading are kept together.";
 
-/** Default question shown in the mockup (line ~360). */
-export const ICHING_DEFAULT_QUESTION =
-  "Should I bring the working forward to the solstice?";
+/** Empty by default — the practitioner supplies their own question.
+ *  Previously seeded with "Should I bring the working forward to the
+ *  solstice?" which pre-filled every fresh cast. */
+export const ICHING_DEFAULT_QUESTION = "";
 
 /** Line-place names verbatim from `lineName()` (lines 239-243). */
 export const LINE_PLACE_NAMES = [

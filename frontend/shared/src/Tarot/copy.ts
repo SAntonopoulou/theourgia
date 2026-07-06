@@ -11,10 +11,10 @@ import type { SpreadKind } from "../divination/index.js";
  *  cast. Verbatim from line 134. */
 export const TAROT_RITUAL_PROMPT = "Breathe. Hold the question, then draw.";
 
-/** Mockup question default (line 353). Surface lets the practitioner
- *  Edit; this is just the initial value. */
-export const TAROT_DEFAULT_QUESTION =
-  "Should I bring the working forward to the solstice?";
+/** Empty by default — the practitioner supplies their own question.
+ *  Previously seeded with "Should I bring the working forward to
+ *  the solstice?" which pre-filled the field on every fresh draw. */
+export const TAROT_DEFAULT_QUESTION = "";
 
 /** Rider–Waite–Smith citation, verbatim from line 161. Used in the
  *  rail's citation chrome (the ‡ primary badge). */

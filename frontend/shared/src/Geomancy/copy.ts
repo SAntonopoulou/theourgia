@@ -9,8 +9,10 @@
 
 export const GEOMANCY_SUBTITLE = "Mark the points, raise the shield, read the Judge";
 
-export const GEOMANCY_DEFAULT_QUESTION =
-  "Will the lineage petition be granted before the equinox?";
+/** Empty by default — the practitioner supplies their own question.
+ *  Previously seeded with "Will the lineage petition be granted
+ *  before the equinox?" which pre-filled every fresh cast. */
+export const GEOMANCY_DEFAULT_QUESTION = "";
 
 /** The two casting methods. Verbatim from lines 105-106. */
 export const GEO_METHOD_OPTIONS: ReadonlyArray<{

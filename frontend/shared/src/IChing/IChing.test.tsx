@@ -220,9 +220,11 @@ describe("ChangingLinesPanel", () => {
 // ─── IChingSurface ───────────────────────────────────────────────
 
 describe("IChingSurface", () => {
-  it("initial state: shows the default question, coin method, empty result", () => {
+  it("initial state: default question is empty, coin method, empty result (b108-2ff)", () => {
     render(<IChingSurface />);
-    expect(screen.getByText(ICHING_DEFAULT_QUESTION)).toBeInTheDocument();
+    // Question seed swapped to "" so the field is blank until the
+    // practitioner types their own.
+    expect(ICHING_DEFAULT_QUESTION).toBe("");
     expect(screen.getByText(METHOD_NOTES.coin)).toBeInTheDocument();
     expect(screen.getByText(ICHING_EMPTY_BODY)).toBeInTheDocument();
   });

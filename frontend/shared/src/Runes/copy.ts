@@ -8,8 +8,10 @@
 export const RUNES_SUBTITLE =
   "Elder Futhark · draw from the bag and read the staves";
 
-export const RUNES_DEFAULT_QUESTION =
-  "What stands before me, and what walks beside it?";
+/** Empty by default — the practitioner supplies their own question.
+ *  Previously seeded with "What stands before me, and what walks
+ *  beside it?" which pre-filled every fresh draw. */
+export const RUNES_DEFAULT_QUESTION = "";
 
 export const RUNES_DRAW_LABEL = "Draw the runes";
 
