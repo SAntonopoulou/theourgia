@@ -6,13 +6,17 @@ import { BanishingPanel } from "./BanishingPanel.js";
 import {
   ASANA_DEFAULT_LOG,
   ASANA_DEFAULT_NAME,
+  ASANA_DEMO_LOG,
   ASANA_TIMER_DEFAULT_SECONDS,
   BANISH_DEFAULT_LOG,
+  BANISH_DEMO_LOG,
   BANISH_RITE_OPTIONS,
   BANISH_SEAL_HELP_OFF,
   BANISH_SEAL_HELP_ON,
   DREAM_DEFAULT_LOG,
   DREAM_DEFAULT_TEXT,
+  DREAM_DEMO_CHIPS,
+  DREAM_DEMO_LOG,
   DREAM_LUCID_DEFAULT,
   PATH_DEFAULT,
   PRACTICE_LOG_TABS,
@@ -59,11 +63,11 @@ describe("PracticeLogs editorial constants", () => {
     expect(BANISH_SEAL_HELP_ON).toContain("cannot read");
   });
 
-  it("DREAM_DEFAULT_TEXT is the verbatim mockup seeding", () => {
-    expect(DREAM_DEFAULT_TEXT).toContain(
-      "shelves run downward into water",
-    );
-    expect(DREAM_DEFAULT_TEXT).toContain("name her");
+  it("DREAM_DEFAULT_TEXT is empty (b108-2fe)", () => {
+    // Was a specific "shelves run downward into water · woman with a
+    // lamp" mockup — scrubbed to empty so no fabricated dream leaks
+    // as the user's own on every visit.
+    expect(DREAM_DEFAULT_TEXT).toBe("");
   });
 
   it("BANISH_RITE_OPTIONS includes all five mockup rites in order", () => {
@@ -78,7 +82,11 @@ describe("PracticeLogs editorial constants", () => {
     );
   });
 
-  it("PATH_DEFAULT is 25 (Samekh — Tiphareth → Yesod)", () => {
+  it("PATH_DEFAULT is 25 (Samekh — middle-pillar structural default)", () => {
+    // Path 25 = Samekh (Tiphareth ↔ Yesod). Kept as the highlighted
+    // starting path so the Tree diagram isn't blank on first render.
+    // The Tree IS Kabbalistic; picking a middle-pillar default isn't
+    // culture-leak, it's a structural choice.
     expect(PATH_DEFAULT).toBe(25);
   });
 
@@ -139,41 +147,45 @@ describe("DreamPanel", () => {
     expect(textarea).toHaveValue(DREAM_DEFAULT_TEXT);
   });
 
-  it("renders all 5 default chips with kind attribute", () => {
-    render(<DreamPanel />);
+  it("renders each supplied chip with kind attribute", () => {
+    render(<DreamPanel initialChips={DREAM_DEMO_CHIPS} />);
     const chips = document.querySelectorAll("[data-chip]");
-    expect(chips).toHaveLength(5);
+    expect(chips).toHaveLength(DREAM_DEMO_CHIPS.length);
     const figures = document.querySelectorAll(
       "[data-chip-kind='figure']",
     );
-    expect(figures).toHaveLength(2); // lamp-bearer + Hekate?
+    expect(figures).toHaveLength(
+      DREAM_DEMO_CHIPS.filter((c) => c.kind === "figure").length,
+    );
   });
 
-  it("renders the lucid switch on by default", () => {
+  it("renders the lucid switch off by default (b108-2fe)", () => {
     render(<DreamPanel />);
     const sw = screen.getByRole("switch", { name: /Lucid/ });
     expect(sw).toHaveAttribute("aria-checked", String(DREAM_LUCID_DEFAULT));
   });
 
   it("toggling lucid flips aria-checked", () => {
-    render(<DreamPanel />);
+    render(<DreamPanel initialLucid={true} />);
     const sw = screen.getByRole("switch", { name: /Lucid/ });
     fireEvent.click(sw);
     expect(sw).toHaveAttribute("aria-checked", "false");
   });
 
-  it("recent rail shows 3 entries and a lucid pill on the lucid one", () => {
-    render(<DreamPanel />);
+  it("recent rail renders the supplied entries + shows lucid pill on lucid ones", () => {
+    render(<DreamPanel recent={DREAM_DEMO_LOG} />);
     const entries = document.querySelectorAll("[data-recent-entry]");
-    expect(entries).toHaveLength(DREAM_DEFAULT_LOG.length);
+    expect(entries).toHaveLength(DREAM_DEMO_LOG.length);
     const lucidPills = document.querySelectorAll("[data-lucid-pill]");
-    // Only the first recent entry is lucid in the seed.
-    expect(lucidPills).toHaveLength(1);
+    // Only the first demo entry is lucid.
+    expect(lucidPills).toHaveLength(
+      DREAM_DEMO_LOG.filter((e) => e.lucid).length,
+    );
   });
 
   it("save fires onSave with current state", () => {
     const onSave = vi.fn();
-    render(<DreamPanel onSave={onSave} />);
+    render(<DreamPanel initialLucid={true} onSave={onSave} />);
     fireEvent.click(
       screen.getByRole("button", { name: /Save dream/ }),
     );
@@ -293,10 +305,10 @@ describe("AsanaPanel", () => {
     expect(timerText?.textContent).toBe("00:00");
   });
 
-  it("recent rail shows 3 sessions", () => {
-    render(<AsanaPanel />);
+  it("recent rail renders supplied sessions", () => {
+    render(<AsanaPanel recent={ASANA_DEMO_LOG} />);
     const entries = document.querySelectorAll("[data-recent-entry]");
-    expect(entries).toHaveLength(ASANA_DEFAULT_LOG.length);
+    expect(entries).toHaveLength(ASANA_DEMO_LOG.length);
     expect(screen.getByText("Sukhāsana")).toBeInTheDocument();
     expect(screen.getByText("Vajrāsana")).toBeInTheDocument();
   });
@@ -305,11 +317,13 @@ describe("AsanaPanel", () => {
 // ─── BanishingPanel ──────────────────────────────────────────────
 
 describe("BanishingPanel", () => {
-  it("defaults to LBRP, 14:23, seal OFF", () => {
+  it("defaults to first rite, empty time, seal OFF (b108-2fe)", () => {
     render(<BanishingPanel />);
     const rite = screen.getByLabelText("Rite") as HTMLSelectElement;
     expect(rite.value).toBe(BANISH_RITE_OPTIONS[0]);
-    expect(screen.getByLabelText("Time")).toHaveValue("14:23");
+    // Time seed was "14:23"; now empty so no fabricated timestamp
+    // shows on a fresh log.
+    expect(screen.getByLabelText("Time")).toHaveValue("");
     const seal = screen.getByRole("button", { name: /^Seal$/ });
     expect(seal).toHaveAttribute("aria-pressed", "false");
   });
@@ -338,15 +352,15 @@ describe("BanishingPanel", () => {
     expect(sealActive).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("renders 5 recent entries with sealed pills only on sealed ones", () => {
-    render(<BanishingPanel />);
+  it("renders supplied recent entries with sealed pills only on sealed ones", () => {
+    render(<BanishingPanel recent={BANISH_DEMO_LOG} />);
     const entries = document.querySelectorAll("[data-recent-entry]");
-    expect(entries).toHaveLength(BANISH_DEFAULT_LOG.length);
+    expect(entries).toHaveLength(BANISH_DEMO_LOG.length);
     const sealed = document.querySelectorAll(
       "[data-recent-entry][data-sealed='true']",
     );
     expect(sealed).toHaveLength(
-      BANISH_DEFAULT_LOG.filter((e) => e.sealed).length,
+      BANISH_DEMO_LOG.filter((e) => e.sealed).length,
     );
     const pills = document.querySelectorAll("[data-sealed-pill]");
     expect(pills).toHaveLength(sealed.length);
@@ -360,7 +374,8 @@ describe("BanishingPanel", () => {
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(onSave.mock.calls[0]![0]).toMatchObject({
       rite: BANISH_RITE_OPTIONS[0],
-      time: "14:23",
+      // Time seed is now empty per b108-2fe.
+      time: "",
       sealed: true,
     });
   });

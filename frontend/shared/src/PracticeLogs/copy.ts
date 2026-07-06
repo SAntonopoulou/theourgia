@@ -37,16 +37,15 @@ export const PRACTICE_LOG_TABLIST_LABEL = "Log type";
 /* ---------------- Dream panel ---------------- */
 
 export const DREAM_HEADER = "On waking";
-/** Timestamp shown next to the header. Verbatim from .dc.html line 109. */
-export const DREAM_TIMESTAMP = "06:48 · woke just now";
+/** Timestamp shown next to the header. Empty by default — the
+ *  consumer route derives it from the wake-time captured by the
+ *  practitioner (or leaves it blank on a fresh entry). */
+export const DREAM_TIMESTAMP = "";
 
 export const DREAM_TEXTAREA_PLACEHOLDER =
   "Write the dream while it is still close — present tense, no tidying.";
 
-export const DREAM_DEFAULT_TEXT =
-  "I am in the old library, but the shelves run downward into water. " +
-  "A woman with a lamp waits at the foot of the stair and will not " +
-  "speak until I name her.";
+export const DREAM_DEFAULT_TEXT = "";
 
 export const DREAM_CHIPS_LABEL = "Symbols & figures";
 export const DREAM_ADD_CHIP_LABEL = "+ add";
@@ -57,21 +56,25 @@ export interface DreamChip {
   kind: DreamChipKind;
 }
 
-/** Default chip seeding — verbatim from .dc.html lines 311-312. */
-export const DREAM_DEFAULT_CHIPS: readonly DreamChip[] = [
+/** Empty by default — no fabricated dream symbols leak into every
+ *  deploy. Consumers pass real chips from the practitioner's entry. */
+export const DREAM_DEFAULT_CHIPS: readonly DreamChip[] = [];
+
+/** Test/Storybook fixture — a plausible chip set for previewing the
+ *  component. Never used as a runtime default. */
+export const DREAM_DEMO_CHIPS: readonly DreamChip[] = [
   { label: "library", kind: "symbol" },
   { label: "descending water", kind: "symbol" },
   { label: "the lamp-bearer", kind: "figure" },
   { label: "a name withheld", kind: "symbol" },
-  { label: "Hekate?", kind: "figure" },
+  { label: "an unnamed figure", kind: "figure" },
 ];
 
 export const DREAM_FELT_SENSE_LABEL = "Felt sense";
-export const DREAM_FELT_SENSE_DEFAULT =
-  "Held breath; a pull downward, not unwelcome";
+export const DREAM_FELT_SENSE_DEFAULT = "";
 
 export const DREAM_LUCID_LABEL = "Lucid";
-export const DREAM_LUCID_DEFAULT = true;
+export const DREAM_LUCID_DEFAULT = false;
 
 export const DREAM_SAVE_LABEL = "Save dream";
 
@@ -84,19 +87,24 @@ export interface DreamLogEntry {
   snippet: string;
 }
 
-/** Recent dreams seeding — verbatim from .dc.html lines 313-317. */
-export const DREAM_DEFAULT_LOG: readonly DreamLogEntry[] = [
+/** Empty by default — consumer routes thread in the practitioner's
+ *  real past dreams when the aggregated dream endpoint lands. No
+ *  more fabricated "library / mirrors / rope of letters" specimens
+ *  leak as if they were the user's own logs. */
+export const DREAM_DEFAULT_LOG: readonly DreamLogEntry[] = [];
+
+/** Test/Storybook fixture — three plausible past dreams for previewing
+ *  the recent-rail. Never used as a runtime default. */
+export const DREAM_DEMO_LOG: readonly DreamLogEntry[] = [
   {
     date: "20 Jun",
     lucid: true,
-    snippet:
-      "Knew I was dreaming at the threshold; chose to stay and ask.",
+    snippet: "Knew I was dreaming at the threshold; chose to stay and ask.",
   },
   {
     date: "17 Jun",
     lucid: false,
-    snippet:
-      "A market of mirrors; my reflection sold something I could not see.",
+    snippet: "A market of mirrors; my reflection sold something I could not see.",
   },
   {
     date: "14 Jun",
@@ -116,11 +124,13 @@ export const PATH_VISION_PLACEHOLDER =
   "The vision as it unfolded along the path…";
 export const PATH_INTEGRATION_PLACEHOLDER =
   "What it asks of you in waking life…";
-export const PATH_VISION_DEFAULT =
-  "A grey road over still water; the gate at the end was a single " +
-  "letter of light. I was not permitted to pass it, only to read it.";
+export const PATH_VISION_DEFAULT = "";
 export const PATH_SAVE_LABEL = "Save pathworking";
-/** Default selected path. Path 25 = Samekh / Temperance. */
+/** Default selected path. Path 25 = Samekh (middle pillar, Tiphareth
+ *  ↔ Yesod). This is a structural choice — the Tree needs a
+ *  highlighted starting path so the diagram isn't blank on first
+ *  render. Not culture-specific content; the whole tree IS
+ *  Kabbalistic. */
 export const PATH_DEFAULT = 25;
 
 /* ---------------- Āsana panel ---------------- */
@@ -132,8 +142,7 @@ export const ASANA_BREATH_DEFAULT = "";
 export const ASANA_NOTES_LABEL = "After-practice notes";
 export const ASANA_NOTES_PLACEHOLDER =
   "Steadiness, breath, where the mind went…";
-export const ASANA_NOTES_DEFAULT =
-  "Seat held without shifting. Mind quieter by the third round.";
+export const ASANA_NOTES_DEFAULT = "";
 export const ASANA_SAVE_LABEL = "Log session";
 export const ASANA_BEGIN_LABEL = "Begin";
 export const ASANA_PAUSE_LABEL = "Pause";
@@ -156,8 +165,13 @@ export interface AsanaLogEntry {
   dur: string;
 }
 
-/** Recent āsana seeding — verbatim from .dc.html lines 324-328. */
-export const ASANA_DEFAULT_LOG: readonly AsanaLogEntry[] = [
+/** Empty by default — consumer routes thread in real practice
+ *  history when the aggregated practice endpoint lands. */
+export const ASANA_DEFAULT_LOG: readonly AsanaLogEntry[] = [];
+
+/** Test/Storybook fixture — three sample sessions for previewing.
+ *  Never used as a runtime default. */
+export const ASANA_DEMO_LOG: readonly AsanaLogEntry[] = [
   { date: "20 Jun", name: "Siddhāsana", dur: "14:00" },
   { date: "18 Jun", name: "Sukhāsana", dur: "11:30" },
   { date: "15 Jun", name: "Vajrāsana", dur: "09:00" },
@@ -174,7 +188,7 @@ export const BANISH_RITE_OPTIONS: readonly string[] = [
   "Grounding — three breaths to the earth",
 ];
 
-export const BANISH_TIME_DEFAULT = "14:23";
+export const BANISH_TIME_DEFAULT = "";
 export const BANISH_SEAL_LABEL = "Seal";
 export const BANISH_SEAL_ACTIVE_LABEL = "Will seal";
 export const BANISH_LOG_LABEL = "Log it";
@@ -200,8 +214,15 @@ export interface BanishingLogEntry {
   note: string;
 }
 
-/** Recent banishing log seeding — verbatim from .dc.html lines 331-337. */
-export const BANISH_DEFAULT_LOG: readonly BanishingLogEntry[] = [
+/** Empty by default — consumer routes thread in the practitioner's
+ *  real past banishing entries. No more fabricated "LBRP before the
+ *  petition working · Grounding three breaths, garden" specimens
+ *  leaking as if they were the user's own log. */
+export const BANISH_DEFAULT_LOG: readonly BanishingLogEntry[] = [];
+
+/** Test/Storybook fixture — five sample entries for previewing.
+ *  Never used as a runtime default. */
+export const BANISH_DEMO_LOG: readonly BanishingLogEntry[] = [
   {
     when: "Today · 14:23",
     rite: "LBRP",
