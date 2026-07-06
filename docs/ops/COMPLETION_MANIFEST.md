@@ -317,6 +317,19 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     brass bell) plus altar fixtures presented as the practitioner's
     real registry. Now fetches GET /tools + GET /altars on mount,
     maps wire → surface, and passes real data. Curl-verified 200/200.
+  - b108-2es: **Final DEMO_* defaults purged.**
+    AltarsList `altars = DEMO_ALTARS` → `= []`; consumers pass real
+    altars. ElectionPickerModal `elections = DEMO_ELECTIONS` → `= []`
+    with an honest "No saved elections yet" placeholder (Election
+    Finder pipeline queued). Every remaining shared component now
+    defaults to empty; no `DEMO_*` fallback path can leak into a
+    consumer route by accident. 2924 shared vitests pass.
+  - b108-2et: **PrivateViewers · magickal-name leak.**
+    The new-viewer modal's label field initialised to "Student —
+    Aspasia" (Sophia's magickal name pre-filled on every deploy),
+    and the label/email placeholders leaked her name into the
+    chrome. Label default → `""`; placeholders → generic
+    "A private label only you see" / "name@example.com".
   - b108-2ep: **Magic squares · display real custom squares.**
     Surface used to default customSquares to a single fabricated
     "Square of binding · order 5". Route now fetches
