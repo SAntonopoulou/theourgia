@@ -317,6 +317,17 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     brass bell) plus altar fixtures presented as the practitioner's
     real registry. Now fetches GET /tools + GET /altars on mount,
     maps wire → surface, and passes real data. Curl-verified 200/200.
+  - b108-2eo: **Sigil library + surface defaults → empty.**
+    SigilLibraryPanel defaulted to twelve fabricated sigils ("Unseen
+    Walk", "Saturn Bind", "Venus Draw", "Hermes Road", "Brigid
+    Flame", "Threshold", "Quiet Mind", "Open Way", "Dark Moon",
+    "Clear Sight", "Safe Return", "Steady Hand") rendering every
+    time a practitioner opened the library. SigilGeneratorRoute now
+    fetches GET /sigils, maps records into the surface's library
+    prop, and refreshes on save. ToolRegistrySurface tools/altars
+    defaults + VocesMagicaeSurface voces default all switched to
+    `= []` (from DEMO_*) — defence in depth so no future consumer
+    can accidentally leak demo data. 2923 shared vitests pass.
   - b108-2en: **Shared surface demo defaults → empty.**
     Talisman DEMO_ELECTIONS (three Jupiter windows with fabricated
     scores 0.92/0.78/0.69), DEMO_LAYER_SIGILS ("Sigil of Yophiel" +
