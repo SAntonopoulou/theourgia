@@ -317,6 +317,17 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     brass bell) plus altar fixtures presented as the practitioner's
     real registry. Now fetches GET /tools + GET /altars on mount,
     maps wire → surface, and passes real data. Curl-verified 200/200.
+  - b108-2ey: **Demo signin gated · tasks #204 + #208 closed.**
+    Demo-signin UI affordance now gated behind
+    ``VITE_THEOURGIA_ENABLE_DEMO_SIGNIN=1`` at build time OR
+    ``?demo=1`` on the URL. Production shows only the WebAuthn CTA;
+    local dev, preview deploys, and emergency access still work via
+    the flag. Public /vault "Sign in" CTA repointed at /app/signin
+    (was /app/connection dev diagnostic). Fixture attestation
+    "Frater Lykourgos · Minerval in the Lyceum tradition" swapped to
+    generic "Sample signer · Sample attestation for mock-mode
+    preview". Task #204 (retire demo signin) + Task #208 (proper
+    sign-in page) now complete.
   - b108-2ew: **VaultNav default identity → neutral chrome.**
     VaultNav's identity prop default was `{ name: "Aspasia", role:
     "Adeptus Minor" }` — the shared package would leak the demo
