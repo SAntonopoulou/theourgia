@@ -464,10 +464,12 @@ export function VaultNav({
   onNavigate,
   onQuickCapture,
   onSettings,
-  // Magickal-name rule: shared package never uses the user's legal name as
-  // a default. Consumer apps inject the actual logged-in identity; this
-  // placeholder uses one of the demo personae.
-  identity = { name: "Aspasia", role: "Adeptus Minor" },
+  // Magickal-name rule: shared package never uses the user's legal name
+  // (or a demo persona's) as a default. Consumer apps inject the actual
+  // logged-in identity via the ``identity`` prop; when absent, render
+  // neutral chrome ("Practitioner · This vault") rather than leaking a
+  // fake persona into every deploy.
+  identity = { name: "Practitioner", role: "This vault" },
   className,
   style,
 }: VaultNavProps) {
