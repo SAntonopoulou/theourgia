@@ -317,6 +317,29 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     brass bell) plus altar fixtures presented as the practitioner's
     real registry. Now fetches GET /tools + GET /altars on mount,
     maps wire → surface, and passes real data. Curl-verified 200/200.
+  - b108-2eu: **Public /blog · fake Theophrastos posts scrubbed.**
+    theourgia.com/blog rendered six hardcoded fabricated posts as if
+    they were the practitioner's real published essays (featured "On
+    the discipline of the magical record" · "The kingfisher, and
+    reading omens honestly" · Ἓν τὸ πᾶν · "Planetary hours for people
+    who don't believe in them" · "The Warburg Institute digitises its
+    iconography archive" · "A year of Liber Resh, charted" · "Hekate
+    at the crossroads of three traditions"). Now client-side fetches
+    /api/v1/blog/posts and shows honest empty state when 0 posts.
+    RSS/Atom links repointed at backend feed URLs.
+  - b108-2ev: **Public site · orphan demo pages purged.**
+    Deleted eleven fabricated-identity demo pages that were unlinked
+    from the homepage but cross-linked from each other: essay,
+    book, memorial, lineage, profile, ritual, trance, sso,
+    hub/[slug], print/ritual-sheet, print/talisman-sigil. Every
+    one carried invented editorial output attributed to
+    Theophrastos / Aspasia / Demetra / Philon / Diotima /
+    "Sub Rosā Lodge" / "Aurora Lodge". Newsletter page rewritten:
+    17-issue "Theurgist's Almanac by Theophrastos" fabricated
+    archive → honest empty state; subscribe form surfaces the
+    real endpoint-queue status instead of pretending to subscribe.
+    Public-site builds green (9 real pages remain — all either
+    documentation, design references, or honest empty states).
   - b108-2es: **Final DEMO_* defaults purged.**
     AltarsList `altars = DEMO_ALTARS` → `= []`; consumers pass real
     altars. ElectionPickerModal `elections = DEMO_ELECTIONS` → `= []`
