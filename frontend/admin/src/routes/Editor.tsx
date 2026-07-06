@@ -1,15 +1,13 @@
 /**
  * Editor admin — entry composer (Tiptap-based · live).
  *
- * Two modes:
+ *   · `/editor` (no id) — POSTs a fresh draft entry and
+ *     replace-navigates to /editor/:id. The old demo-mode specimen
+ *     ("Invocation of the Agathos Daimon") was scrubbed in b108-2eh.
  *
- *   · `/editor` (no id) — demo mode. Mounts a static seed document
- *     ("Invocation of the Agathos Daimon"). No API calls. Save status
- *     shown as "Demo · not saved".
- *
- *   · `/editor/:id` — live mode. Fetches the entry's detail record
- *     via `getEntryDetail`; mounts `TiptapEditor` with the parsed
- *     body; debounces `updateEntryBody` calls on every editor change
+ *   · `/editor/:id` — fetches the entry's detail record via
+ *     `getEntryDetail`; mounts `TiptapEditor` with the parsed body;
+ *     debounces `updateEntryBody` calls on every editor change
  *     (~1 s). Topbar status indicator reads `Saving…` while the
  *     PATCH is in flight, `Saved · just now` after, or
  *     `Save failed · retry` on error.
