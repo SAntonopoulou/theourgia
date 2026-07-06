@@ -152,8 +152,8 @@ export const FORMULA_RENDER_LABEL = "Render";
 
 export const SPARE_TOGGLE_LABEL = "Show the vowel-stripping step";
 
-export const HEBREW_TRANSLIT_DEFAULT = "walk unseen → לך בלא נראה";
-export const GREEK_TRANSLIT_DEFAULT = "walk unseen → ἀόρατος βαδίζειν";
+export const HEBREW_TRANSLIT_DEFAULT = "";
+export const GREEK_TRANSLIT_DEFAULT = "";
 
 export const HEBREW_STYLES: readonly string[] = [
   "Square Ashurit",
@@ -207,11 +207,11 @@ export const CARRIES_EYEBROW = "What this sigil carries";
 
 export const INTENTION_LABEL = "Intention";
 export const INTENTION_PLACEHOLDER = "State your intent…";
-export const INTENTION_DEFAULT = "It is my Will to walk unseen.";
+export const INTENTION_DEFAULT = "";
 
 export const LINKED_BEING_LABEL = "Linked being";
 export const OPTIONAL_TAG = "· optional";
-export const LINKED_BEING_DEFAULT = "Hekate";
+export const LINKED_BEING_DEFAULT = "";
 export const LINKED_BEING_GLYPH_DEFAULT = "☽";
 
 export const LINKED_WORKING_LABEL = "Linked working";
@@ -239,7 +239,7 @@ export const SAVE_DIALOG_TITLE = "Charge & save";
 export const SAVE_DIALOG_PERMANENCE =
   "A saved sigil is permanent. To change it later you make a new version.";
 export const SAVE_TITLE_LABEL = "Title";
-export const SAVE_TITLE_DEFAULT = "Sigil of the Unseen Walk";
+export const SAVE_TITLE_DEFAULT = "";
 export const SAVE_PURPOSE_LABEL = "Purpose";
 
 export type SigilPurpose = "draft" | "consecrated" | "gift" | "study";

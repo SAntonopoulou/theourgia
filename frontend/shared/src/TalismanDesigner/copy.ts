@@ -71,7 +71,7 @@ export const THIS_TALISMAN_EYEBROW = "This talisman";
 
 export const NAME_LABEL = "Name";
 export const PURPOSE_LABEL = "Purpose";
-export const PURPOSE_DEFAULT = "To increase the means of the household";
+export const PURPOSE_DEFAULT = "";
 
 export const LINKED_ELECTION_LABEL = "Linked election";
 export const LINKED_ELECTION_FOOTER =
