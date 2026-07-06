@@ -317,6 +317,20 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     brass bell) plus altar fixtures presented as the practitioner's
     real registry. Now fetches GET /tools + GET /altars on mount,
     maps wire → surface, and passes real data. Curl-verified 200/200.
+  - b108-2ew: **VaultNav default identity → neutral chrome.**
+    VaultNav's identity prop default was `{ name: "Aspasia", role:
+    "Adeptus Minor" }` — the shared package would leak the demo
+    persona if a consumer forgot to pass the prop. Admin app already
+    passes a real session-derived identity (b108-2ef), so unreachable
+    in production, but the leak sat in the public API. Now
+    `{ name: "Practitioner", role: "This vault" }`.
+  - b108-2ex: **Last magickal-name leaks in placeholders + fixtures.**
+    Four surfaces still had "Soror Ευ. Α." baked in: Connection.tsx
+    PromptDialog placeholder, SignInRoute input placeholder,
+    admin/mocks/today.ts MOCK_IDENTITY export (orphan; removed), and
+    shared/api/fixtures.ts session display_name + magickal_name
+    (opt-in mock mode only). All swapped to neutral "Practitioner" /
+    "Your magickal name". 2924 shared vitests pass.
   - b108-2eu: **Public /blog · fake Theophrastos posts scrubbed.**
     theourgia.com/blog rendered six hardcoded fabricated posts as if
     they were the practitioner's real published essays (featured "On
