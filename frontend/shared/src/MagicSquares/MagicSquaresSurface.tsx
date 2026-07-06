@@ -20,7 +20,6 @@ import {
   BUILD_SAVE_LABEL,
   CUSTOM_NOTE,
   DEMO_CUSTOM_NAME,
-  DEMO_CUSTOM_ORDER,
   META_CONSTANT_PREFIX,
   META_ORDER_PREFIX,
   MODE_BUILD,
@@ -140,13 +139,7 @@ export interface MagicSquaresSurfaceProps {
 export function MagicSquaresSurface({
   initialSquare = "saturn",
   initialCustomId = null,
-  customSquares = [
-    {
-      id: "demo-binding",
-      name: DEMO_CUSTOM_NAME,
-      order: DEMO_CUSTOM_ORDER,
-    },
-  ],
+  customSquares = [],
   onSaveAsSigil,
   onSaveCustomSquare,
   onCreateCustomSquare,

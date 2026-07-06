@@ -13,14 +13,16 @@
  */
 
 import {
+  type CustomSquareEntry,
   type CustomSquarePayload,
+  type MagicSquareRecord,
   CustomSquareBuilderModal,
   MagicSquaresSurface,
   type SquareId,
   Toast,
   useTopbar,
 } from "@theourgia/shared";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
@@ -36,6 +38,30 @@ export function MagicSquaresRoute() {
   const navigate = useNavigate();
 
   const [builderOpen, setBuilderOpen] = useState(false);
+  const [customSquares, setCustomSquares] = useState<MagicSquareRecord[]>([]);
+
+  const loadCustomSquares = useCallback(async () => {
+    try {
+      const rows = await apiMethods.listMagicSquares();
+      setCustomSquares(rows);
+    } catch {
+      // Best-effort.
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadCustomSquares();
+  }, [loadCustomSquares]);
+
+  const surfaceCustomSquares = useMemo<CustomSquareEntry[]>(
+    () =>
+      customSquares.map((row) => ({
+        id: row.id,
+        name: row.name,
+        order: row.order,
+      })),
+    [customSquares],
+  );
 
   const handleSaveAsSigil = useCallback(
     (payload: { squareId: SquareId; cellSequence: number[] }) => {
@@ -83,6 +109,7 @@ export function MagicSquaresRoute() {
               }.`
             : `Saved with honest is_magic=false — sums do not all align. You can refine and re-save.`,
         });
+        await loadCustomSquares();
       } catch (err) {
         Toast.push({
           tone: "error",
@@ -94,7 +121,7 @@ export function MagicSquaresRoute() {
         });
       }
     },
-    [],
+    [loadCustomSquares],
   );
 
   // H07 Cluster A surface 3 — cell-by-cell authoring flow.
@@ -114,6 +141,7 @@ export function MagicSquaresRoute() {
             ? `Order ${row.order} · sums all align to the magic constant.`
             : `Saved with honest is_magic=false — sums do not all align. The square sits in your vault either way.`,
         });
+        await loadCustomSquares();
       } catch (err) {
         Toast.push({
           tone: "error",
@@ -125,12 +153,13 @@ export function MagicSquaresRoute() {
         });
       }
     },
-    [],
+    [loadCustomSquares],
   );
 
   return (
     <>
       <MagicSquaresSurface
+        customSquares={surfaceCustomSquares}
         onSaveAsSigil={handleSaveAsSigil}
         onSaveCustomSquare={handleSaveCustomSquare}
         onCreateCustomSquare={() => setBuilderOpen(true)}
