@@ -93,8 +93,8 @@ const META: Meta = {
 
 const SESSION: Session = {
   user_id: "demo-soror-eva",
-  display_name: "Soror Ευ. Α.",
-  magickal_name: "Soror Ευ. Α.",
+  display_name: "Practitioner",
+  magickal_name: "Practitioner",
   vault_id: "demo-vault",
   expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
 };
@@ -346,7 +346,7 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     if (method === "POST") {
       // Mock mode synthesises a session from the submitted name.
       const input = (body ?? {}) as { magickal_name?: string };
-      const name = input.magickal_name ?? "Soror Ευ. Α.";
+      const name = input.magickal_name ?? "Practitioner";
       return {
         ...SESSION,
         display_name: name,

@@ -281,7 +281,7 @@ export function Connection() {
         open={signinOpen}
         title="Demo signin"
         label="Magickal name"
-        placeholder="Soror Ευ. Α."
+        placeholder="Your magickal name"
         validate={(v) => (v.trim().length < 1 ? "A name is required." : null)}
         confirmLabel="Sign in"
         onSubmit={(value) => {

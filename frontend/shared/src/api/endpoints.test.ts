@@ -27,7 +27,9 @@ describe("endpoints — mock mode", () => {
 
   it("getCurrentSession returns the seeded session", async () => {
     const session = await buildMock().getCurrentSession();
-    expect(session?.display_name).toBe("Soror Ευ. Α.");
+    // Seed session's display_name switched to a neutral "Practitioner"
+    // in b108-2ex (magickal-name leak scrub in fixtures.ts).
+    expect(session?.display_name).toBe("Practitioner");
   });
 
   it("listEntries returns the seeded entries", async () => {

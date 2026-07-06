@@ -34,7 +34,7 @@ describe("AuthContext", () => {
     await waitFor(() => {
       expect(screen.getByTestId("status").textContent).toBe("authenticated");
     });
-    expect(screen.getByTestId("name").textContent).toBe("Soror Ευ. Α.");
+    expect(screen.getByTestId("name").textContent).toBe("Practitioner");
   });
 
   it("resolves to 'unauthenticated' when getCurrentSession returns null", async () => {

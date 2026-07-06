@@ -312,7 +312,7 @@ export function SignInRoute() {
               style={INPUT}
               value={magickalName}
               onChange={(e) => setMagickalName(e.target.value)}
-              placeholder="Soror Ευ. Α."
+              placeholder="Your magickal name"
               autoFocus
               aria-label="Magickal name"
             />

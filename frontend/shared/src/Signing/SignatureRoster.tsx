@@ -26,7 +26,8 @@ export interface SignatureRow {
   /** Stable identifier (uuid / db id). */
   id: string;
   role: SignatureRole;
-  /** Human label for the signer ("Soror Ευ. Α." / "L. Vespera, Lodge Master"). */
+  /** Human label for the signer (a magickal name or role, e.g.
+   *  a Sanctus Order motto or "Lodge Master"). */
   signerLabel: string;
   /** Hex public key (caller-provided; 64 chars for Ed25519). */
   signerPublicKey: string;
