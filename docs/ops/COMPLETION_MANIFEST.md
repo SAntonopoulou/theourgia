@@ -309,6 +309,17 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     it worked. Replaced with tone=info Toasts that explicitly say
     what's not wired. Also swapped the AgentMemoryReader Add file
     `window.prompt` for the shared PromptDialog.
+  - b108-2el: **Scrying / bibliomancy / horary demo content scrubbed.**
+    Three DivinationMisc panels shipped with fabricated defaults
+    rendered on every visit as if they were the user's real past
+    work — three "past scrying" snippets ("A doorway with no lintel",
+    "widdershins lights", "old brass key"), a Chaldean-Oracles fr. 153
+    bibliomancy passage, a five-line Hellenistic horary reading
+    ("Saturn intervenes; a qualified yes") over five hardcoded
+    Sect/Querent/Quesited/Perfection/Reception steps. All three
+    replaced with empty defaults + honest "no past sessions" /
+    "Cast a chart to fill this reading" / "Open a passage first"
+    placeholders. All 2923 shared vitests pass after test updates.
   - b108-2ek: **Native window.confirm/prompt swept.**
     TotpEnrollmentRoute's "Disable TOTP" `window.confirm` replaced
     with ConfirmDialog (tone=destructive). The shared Editor
