@@ -279,7 +279,7 @@ describe("NewVoceModal", () => {
 
 describe("VocesMagicaeSurface", () => {
   it("defaults to All tradition + renders 6 voce rows", () => {
-    render(<VocesMagicaeSurface />);
+    render(<VocesMagicaeSurface voces={DEMO_VOCES} />);
     const surface = document.querySelector(
       "[data-component='voces-magicae-surface']",
     );
@@ -290,7 +290,7 @@ describe("VocesMagicaeSurface", () => {
   });
 
   it("Hekate-tradition filter narrows to the 2 Hekate voces", () => {
-    render(<VocesMagicaeSurface />);
+    render(<VocesMagicaeSurface voces={DEMO_VOCES} />);
     fireEvent.click(
       document.querySelector(
         "[data-tradition-filter='hekate']",
@@ -302,7 +302,7 @@ describe("VocesMagicaeSurface", () => {
   });
 
   it("search input narrows by translit / citation / text", () => {
-    render(<VocesMagicaeSurface />);
+    render(<VocesMagicaeSurface voces={DEMO_VOCES} />);
     const search = document.querySelector(
       "[data-search-input]",
     ) as HTMLInputElement;
@@ -313,7 +313,7 @@ describe("VocesMagicaeSurface", () => {
   });
 
   it("clicking a voce row opens the detail drawer", () => {
-    render(<VocesMagicaeSurface />);
+    render(<VocesMagicaeSurface voces={DEMO_VOCES} />);
     fireEvent.click(
       document.querySelector("[data-voce-row='iao']") as Element,
     );
@@ -323,7 +323,7 @@ describe("VocesMagicaeSurface", () => {
   });
 
   it("New voce button opens the new-voce modal", () => {
-    render(<VocesMagicaeSurface />);
+    render(<VocesMagicaeSurface voces={DEMO_VOCES} />);
     fireEvent.click(
       document.querySelector("[data-action='open-new']") as Element,
     );
@@ -333,7 +333,7 @@ describe("VocesMagicaeSurface", () => {
   });
 
   it("zero --danger anywhere", () => {
-    const { container } = render(<VocesMagicaeSurface />);
+    const { container } = render(<VocesMagicaeSurface voces={DEMO_VOCES} />);
     expect(container.innerHTML).not.toContain("--danger");
   });
 });

@@ -521,11 +521,14 @@ describe("ChargeSaveDialog", () => {
 // ─── SigilLibraryPanel ──────────────────────────────────────────
 
 describe("SigilLibraryPanel", () => {
-  it("renders 12 demo entries when no sigils prop is supplied", () => {
+  it("renders an empty state when no sigils prop is supplied", () => {
     render(<SigilLibraryPanel open onClose={() => {}} />);
     expect(
       document.querySelectorAll("[data-library-entry]"),
-    ).toHaveLength(12);
+    ).toHaveLength(0);
+    expect(
+      screen.getByText(/No sigils saved yet/),
+    ).toBeInTheDocument();
   });
 
   it("renders the count + 'read-only' help text", () => {

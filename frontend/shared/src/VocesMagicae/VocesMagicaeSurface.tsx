@@ -8,7 +8,6 @@
 import { type CSSProperties, useMemo, useState } from "react";
 
 import {
-  DEMO_VOCES,
   TRADITION_FILTERS,
   VM_NEW_BUTTON_LABEL,
   VM_SEARCH_PLACEHOLDER,
@@ -83,7 +82,7 @@ export interface VocesMagicaeSurfaceProps {
 
 export function VocesMagicaeSurface({
   initialTradition = "all",
-  voces = DEMO_VOCES,
+  voces = [],
   onNewVoce,
   onRecordNew,
   className,

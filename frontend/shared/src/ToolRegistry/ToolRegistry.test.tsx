@@ -243,7 +243,7 @@ describe("AltarsList", () => {
 
 describe("ToolRegistrySurface", () => {
   it("defaults to tools view + kind=all", () => {
-    render(<ToolRegistrySurface />);
+    render(<ToolRegistrySurface tools={DEMO_TOOLS} altars={DEMO_ALTARS} />);
     const surface = document.querySelector(
       "[data-component='tool-registry-surface']",
     );
@@ -252,14 +252,14 @@ describe("ToolRegistrySurface", () => {
   });
 
   it("renders all 8 demo tools by default", () => {
-    render(<ToolRegistrySurface />);
+    render(<ToolRegistrySurface tools={DEMO_TOOLS} altars={DEMO_ALTARS} />);
     expect(
       document.querySelectorAll("[data-tool-card]"),
     ).toHaveLength(8);
   });
 
   it("kind filter narrows the grid", () => {
-    render(<ToolRegistrySurface />);
+    render(<ToolRegistrySurface tools={DEMO_TOOLS} altars={DEMO_ALTARS} />);
     fireEvent.click(
       document.querySelector("[data-kind-filter='wand']") as Element,
     );
@@ -272,7 +272,7 @@ describe("ToolRegistrySurface", () => {
   });
 
   it("Altars view hides the kind filter buttons + shows altar rows", () => {
-    render(<ToolRegistrySurface />);
+    render(<ToolRegistrySurface tools={DEMO_TOOLS} altars={DEMO_ALTARS} />);
     fireEvent.click(
       document.querySelector("[data-view-button='altars']") as Element,
     );
@@ -287,7 +287,7 @@ describe("ToolRegistrySurface", () => {
   });
 
   it("clicking a tool card opens the drawer", () => {
-    render(<ToolRegistrySurface />);
+    render(<ToolRegistrySurface tools={DEMO_TOOLS} altars={DEMO_ALTARS} />);
     fireEvent.click(
       document.querySelector(
         "[data-tool-card='athame-hekate']",
@@ -299,7 +299,7 @@ describe("ToolRegistrySurface", () => {
   });
 
   it("search input narrows tools by name OR description", () => {
-    render(<ToolRegistrySurface />);
+    render(<ToolRegistrySurface tools={DEMO_TOOLS} altars={DEMO_ALTARS} />);
     const search = document.querySelector(
       "[data-search-input]",
     ) as HTMLInputElement;
@@ -311,7 +311,7 @@ describe("ToolRegistrySurface", () => {
 
   it("New tool button fires onNew with the active view", () => {
     const onNew = vi.fn();
-    render(<ToolRegistrySurface onNew={onNew} />);
+    render(<ToolRegistrySurface tools={DEMO_TOOLS} altars={DEMO_ALTARS} onNew={onNew} />);
     fireEvent.click(
       document.querySelector("[data-action='new']") as Element,
     );
@@ -319,7 +319,7 @@ describe("ToolRegistrySurface", () => {
   });
 
   it("zero --danger anywhere", () => {
-    const { container } = render(<ToolRegistrySurface />);
+    const { container } = render(<ToolRegistrySurface tools={DEMO_TOOLS} altars={DEMO_ALTARS} />);
     expect(container.innerHTML).not.toContain("--danger");
   });
 });

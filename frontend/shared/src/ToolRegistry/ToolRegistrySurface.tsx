@@ -10,8 +10,6 @@ import { type CSSProperties, useMemo, useState } from "react";
 import { AltarsList } from "./AltarsList.js";
 import {
   ALL_FILTER_LABEL,
-  DEMO_ALTARS,
-  DEMO_TOOLS,
   TOOL_KINDS,
   TR_TOPBAR_SUBTITLE,
   TR_TOPBAR_TITLE,
@@ -119,8 +117,8 @@ export interface ToolRegistrySurfaceProps {
 export function ToolRegistrySurface({
   initialView = "tools",
   initialKindFilter = "all",
-  tools = DEMO_TOOLS,
-  altars = DEMO_ALTARS,
+  tools = [],
+  altars = [],
   onNew,
   onOpenAltar,
   className,

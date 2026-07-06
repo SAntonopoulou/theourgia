@@ -13,14 +13,16 @@
 import {
   SigilGeneratorSurface,
   type PlanetKey,
+  type SigilLibraryEntry,
   type SigilMode,
   type SigilModeWire,
   type SigilPurpose,
   type SigilPurposeWire,
+  type SigilRecord,
   Toast,
   useTopbar,
 } from "@theourgia/shared";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
@@ -96,6 +98,36 @@ export function SigilGeneratorRoute() {
     return { square, cells };
   }, [params]);
 
+  const [library, setLibrary] = useState<SigilLibraryEntry[]>([]);
+  const [libraryBump, setLibraryBump] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiMethods
+      .listSigils()
+      .then((rows: SigilRecord[]) => {
+        if (cancelled) return;
+        setLibrary(
+          rows.map<SigilLibraryEntry>((r) => ({
+            id: r.id,
+            title: r.title,
+            date: r.created_at
+              ? new Date(r.created_at).toLocaleDateString(undefined, {
+                  day: "numeric",
+                  month: "short",
+                })
+              : "",
+          })),
+        );
+      })
+      .catch(() => {
+        // Best-effort — empty library is a fine fallback.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [libraryBump]);
+
   const handleSave = useCallback(
     async (payload: {
       title: string;
@@ -121,6 +153,7 @@ export function SigilGeneratorRoute() {
           title: "Charged & committed",
           body: `“${sigil.title}” saved to your vault.`,
         });
+        setLibraryBump((n) => n + 1);
       } catch (err) {
         Toast.push({
           tone: "error",
@@ -138,6 +171,7 @@ export function SigilGeneratorRoute() {
   return (
     <SigilGeneratorSurface
       onSave={handleSave}
+      library={library}
       initialMode={cross !== null ? "kamea" : undefined}
       initialSquare={cross?.square}
       initialCellSequence={cross?.cells}

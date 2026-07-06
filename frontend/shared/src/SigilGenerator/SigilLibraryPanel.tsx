@@ -8,7 +8,7 @@
 
 import { type CSSProperties } from "react";
 
-import { LIBRARY_DEMO_NAMES, LIBRARY_HEADER, LIBRARY_HELP_TAIL } from "./copy.js";
+import { LIBRARY_HEADER, LIBRARY_HELP_TAIL } from "./copy.js";
 
 export interface SigilLibraryEntry {
   id: string;
@@ -57,13 +57,9 @@ export interface SigilLibraryPanelProps {
   style?: CSSProperties;
 }
 
-function demoEntries(): SigilLibraryEntry[] {
-  return LIBRARY_DEMO_NAMES.map((name, i) => ({
-    id: `demo-${i}`,
-    title: name,
-    date: `${i + 3} Jun`,
-  }));
-}
+/** Consumer-side data source. Empty by default — no more twelve fake
+ *  sigils rendering the first time a practitioner opens the library. */
+const EMPTY_LIBRARY: readonly SigilLibraryEntry[] = [];
 
 export function SigilLibraryPanel({
   open,
@@ -74,7 +70,7 @@ export function SigilLibraryPanel({
   style,
 }: SigilLibraryPanelProps) {
   if (!open) return null;
-  const entries = sigils ?? demoEntries();
+  const entries = sigils ?? EMPTY_LIBRARY;
   return (
     <div
       role="dialog"
@@ -147,6 +143,20 @@ export function SigilLibraryPanel({
           <span style={{ color: "var(--ink-soft)" }}>{entries.length}</span>
           {LIBRARY_HELP_TAIL}
         </p>
+        {entries.length === 0 ? (
+          <div
+            style={{
+              padding: "24px 4px",
+              fontFamily: "var(--font-serif)",
+              fontSize: 13.5,
+              color: "var(--ink-mute)",
+              lineHeight: 1.5,
+              textAlign: "center",
+            }}
+          >
+            No sigils saved yet. Compose one in the workspace and press Save.
+          </div>
+        ) : null}
         <div
           style={{
             display: "grid",
