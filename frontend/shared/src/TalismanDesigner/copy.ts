@@ -109,31 +109,10 @@ export interface ElectionRow {
   score: string;
 }
 
-/** Default election fixtures — verbatim from the mockup's
- *  `electionList`. */
-export const DEMO_ELECTIONS: readonly ElectionRow[] = [
-  {
-    id: "jup-1",
-    when: "24 Jun 2026 · 13:42",
-    detail: "Hour of Jupiter · Moon waxing in Cancer",
-    glyph: "♃",
-    score: "0.92",
-  },
-  {
-    id: "jup-2",
-    when: "01 Jul 2026 · 09:18",
-    detail: "Hour of Jupiter · Moon in Pisces",
-    glyph: "♃",
-    score: "0.78",
-  },
-  {
-    id: "jup-3",
-    when: "08 Jul 2026 · 14:05",
-    detail: "Jupiter rising · Sun in Cancer",
-    glyph: "♃",
-    score: "0.69",
-  },
-];
+/** Real elections come from the ephemeris + Election Finder pipeline;
+ *  empty here so no fabricated Jupiter windows leak into every deploy.
+ *  Consumers pass `elections` on the modal to populate. */
+export const DEMO_ELECTIONS: readonly ElectionRow[] = [];
 
 /* ─── Save dialog ─────────────────────────────────────────────── */
 
@@ -206,10 +185,9 @@ export interface SigilRef {
   scale: number;
 }
 
-export const DEMO_LAYER_SIGILS: readonly SigilRef[] = [
-  { id: "yophiel", name: "Sigil of Yophiel", scale: 70 },
-  { id: "increase", name: "Sigil of Increase", scale: 40 },
-];
+/** Real sigil layers come from the practitioner's Sigil Studio; empty
+ *  here so no "Sigil of Yophiel" specimen leaks into every deploy. */
+export const DEMO_LAYER_SIGILS: readonly SigilRef[] = [];
 
 /** Seed inscriptions for the Inscriptions layer. */
 export interface InscriptionRef {
@@ -219,10 +197,10 @@ export interface InscriptionRef {
   script: string;
 }
 
-export const DEMO_INSCRIPTIONS: readonly InscriptionRef[] = [
-  { id: "latin-1", text: "Increase · multiply", script: "Latin" },
-  { id: "hebrew-1", text: "אמן", script: "Hebrew" },
-];
+/** Empty by default — the practitioner composes their own
+ *  inscriptions in-panel. No specimen "Increase · multiply" leaks
+ *  into every deploy. */
+export const DEMO_INSCRIPTIONS: readonly InscriptionRef[] = [];
 
 /** Helper: build the "Layers · {face}" eyebrow string. */
 export function layersEyebrow(face: TalismanFace): string {

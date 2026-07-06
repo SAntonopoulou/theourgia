@@ -4,19 +4,27 @@
  * source_citation) is enforced server-side; failures surface
  * as a Toast error.
  *
+ * Live-wired: GET /api/v1/voces populates the surface. The default
+ * DEMO_VOCES fixture (which shipped fake ΙΑΩ + ABRASAX + ABLANATHANALBA
+ * specimens) has been replaced by the practitioner's real voces.
+ *
  * Recording capture is still queued — the B34 audio-attachment
  * substrate lands separately; once it does, the recording
- * callback becomes a real POST to
- * /api/v1/voces/{id}/recordings.
+ * callback becomes a real POST to /api/v1/voces/{id}/recordings.
  */
 
 import {
+  type ElementalAssoc,
+  type PlanetaryAssoc,
   type SourceScriptWire,
+  type VoceRecord,
+  type VoceRecordWire,
+  type VoceTradition,
   Toast,
   VocesMagicaeSurface,
   useTopbar,
 } from "@theourgia/shared";
-import { useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { apiMethods } from "../data/api.js";
 
@@ -28,17 +36,62 @@ function mapScript(uiScript: string): SourceScriptWire {
     case "coptic":
       return uiScript;
     default:
-      // The UI's "other" maps to the backend's "custom" enum value.
       return "custom";
   }
 }
 
 function defaultName(text: string): string {
-  // First non-empty line, ≤ 60 chars. The H05 surface deliberately
-  // omits a name field; the admin route synthesises one so the
-  // backend has a non-empty title to index by.
   const firstLine = text.split(/\r?\n/).find((s) => s.trim().length > 0) ?? "Voce";
   return firstLine.trim().slice(0, 60);
+}
+
+const PLANET_KEYS: readonly PlanetaryAssoc[] = [
+  "sun",
+  "moon",
+  "mercury",
+  "venus",
+  "mars",
+  "jupiter",
+  "saturn",
+];
+const ELEMENT_KEYS: readonly ElementalAssoc[] = [
+  "fire",
+  "water",
+  "air",
+  "earth",
+];
+
+function scriptToTradition(script: SourceScriptWire): Exclude<VoceTradition, "all"> {
+  // Best-effort tradition tag until the backend adds an explicit
+  // tradition column. Coptic + Greek → PGM by default (the vast
+  // majority of Greek voces come from the Papyri Graecae Magicae);
+  // Hebrew leans Goetic; anything else lands in "custom".
+  if (script === "greek" || script === "coptic") return "pgm";
+  if (script === "hebrew") return "goetic";
+  return "custom";
+}
+
+function wireToVoce(w: VoceRecordWire): VoceRecord {
+  const planets = (w.planetary_associations ?? []).filter((p): p is PlanetaryAssoc =>
+    (PLANET_KEYS as readonly string[]).includes(p),
+  );
+  const elements = (w.elemental_associations ?? []).filter((e): e is ElementalAssoc =>
+    (ELEMENT_KEYS as readonly string[]).includes(e),
+  );
+  return {
+    id: w.id,
+    text: w.source_text,
+    translit: w.transliteration ?? "",
+    ipa: w.ipa ?? "",
+    citation: w.source_citation,
+    trad: scriptToTradition(w.source_script),
+    builtin: false,
+    planets,
+    elements,
+    entities: [],
+    recs: [],
+    workings: [],
+  };
 }
 
 export function VocesMagicaeRoute() {
@@ -49,6 +102,23 @@ export function VocesMagicaeRoute() {
     }),
     [],
   );
+
+  const [voces, setVoces] = useState<VoceRecordWire[]>([]);
+
+  const loadVoces = useCallback(async () => {
+    try {
+      const rows = await apiMethods.listVoces();
+      setVoces(rows);
+    } catch {
+      // Best-effort — empty list is a fine fallback.
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadVoces();
+  }, [loadVoces]);
+
+  const surfaceVoces = useMemo(() => voces.map(wireToVoce), [voces]);
 
   const handleNewVoce = useCallback(
     async (payload: {
@@ -72,6 +142,7 @@ export function VocesMagicaeRoute() {
           title: `Voce saved · ${row.name}`,
           body: `Citation captured: ${row.source_citation}`,
         });
+        await loadVoces();
       } catch (err) {
         Toast.push({
           tone: "error",
@@ -83,7 +154,7 @@ export function VocesMagicaeRoute() {
         });
       }
     },
-    [],
+    [loadVoces],
   );
 
   const handleRecordNew = useCallback((voceId: string) => {
@@ -96,6 +167,7 @@ export function VocesMagicaeRoute() {
 
   return (
     <VocesMagicaeSurface
+      voces={surfaceVoces}
       onNewVoce={handleNewVoce}
       onRecordNew={handleRecordNew}
     />

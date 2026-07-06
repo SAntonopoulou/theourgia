@@ -53,10 +53,8 @@ describe("TalismanDesigner editorial constants", () => {
     expect(TALISMAN_LAYERS[5]!.key).toBe("image");
   });
 
-  it("DEMO_ELECTIONS has 3 Jupiter windows with scores descending", () => {
-    expect(DEMO_ELECTIONS).toHaveLength(3);
-    const scores = DEMO_ELECTIONS.map((e) => Number(e.score));
-    expect(scores).toEqual([...scores].sort((a, b) => b - a));
+  it("DEMO_ELECTIONS defaults to empty — real windows come from the Election Finder", () => {
+    expect(DEMO_ELECTIONS).toHaveLength(0);
   });
 });
 
@@ -188,9 +186,11 @@ describe("LayerConfig", () => {
     ).toBeGreaterThanOrEqual(2);
   });
 
-  it("sigil variant shows the demo sigil rows + Add a sigil button", () => {
+  it("sigil variant shows the Add-a-sigil affordance (empty by default)", () => {
     render(<LayerConfig layer="sigil" />);
-    expect(document.querySelectorAll("[data-sigil-row]")).toHaveLength(2);
+    // No demo sigils leak into every deploy any more; real sigil
+    // layers come from the practitioner's Sigil Studio picks.
+    expect(document.querySelectorAll("[data-sigil-row]")).toHaveLength(0);
     expect(screen.getByText("+ Add a sigil")).toBeInTheDocument();
   });
 
@@ -245,8 +245,18 @@ describe("ElectionPickerModal", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("renders the 3 demo Jupiter elections in order", () => {
-    render(<ElectionPickerModal open onClose={() => {}} />);
+  it("renders the elections passed on the prop in order", () => {
+    render(
+      <ElectionPickerModal
+        open
+        onClose={() => {}}
+        elections={[
+          { id: "jup-1", when: "24 Jun", detail: "Jupiter", glyph: "♃", score: "0.92" },
+          { id: "jup-2", when: "01 Jul", detail: "Jupiter", glyph: "♃", score: "0.78" },
+          { id: "jup-3", when: "08 Jul", detail: "Jupiter", glyph: "♃", score: "0.69" },
+        ]}
+      />,
+    );
     const rows = document.querySelectorAll("[data-election-id]");
     expect(rows).toHaveLength(3);
     expect(rows[0]).toHaveAttribute("data-election-id", "jup-1");
@@ -256,7 +266,15 @@ describe("ElectionPickerModal", () => {
     const onPick = vi.fn();
     const onClose = vi.fn();
     render(
-      <ElectionPickerModal open onClose={onClose} onPick={onPick} />,
+      <ElectionPickerModal
+        open
+        onClose={onClose}
+        onPick={onPick}
+        elections={[
+          { id: "jup-1", when: "24 Jun", detail: "Jupiter", glyph: "♃", score: "0.92" },
+          { id: "jup-2", when: "01 Jul", detail: "Jupiter", glyph: "♃", score: "0.78" },
+        ]}
+      />,
     );
     fireEvent.click(
       document.querySelector("[data-election-id='jup-2']") as Element,
