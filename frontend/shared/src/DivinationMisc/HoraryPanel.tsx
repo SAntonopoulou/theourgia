@@ -28,7 +28,7 @@ export interface HoraryStepRow {
 }
 
 export interface HoraryPanelProps {
-  /** Cast-moment caption, e.g. "21 June 2026, 14:32 · Athens · ..." */
+  /** Cast-moment caption. Defaults to a placeholder prompt. */
   momentLabel?: string;
   /** Five-step workflow data. Defaults to the mockup's demo cast. */
   steps?: readonly HoraryStepRow[];
@@ -124,6 +124,21 @@ export function HoraryPanel({
           {HORARY_STEPS_EYEBROW}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {steps.length === 0 ? (
+            <div
+              style={{
+                padding: "18px 0",
+                fontFamily: "var(--font-serif)",
+                fontSize: 14,
+                color: "var(--ink-mute)",
+                lineHeight: 1.5,
+              }}
+            >
+              Cast a chart to fill this reading — sect, querent,
+              quesited, perfection, witnesses. The ephemeris engine
+              ships with Phase 06 divination completion.
+            </div>
+          ) : null}
           {steps.map((s, i) => (
             <div
               key={i}

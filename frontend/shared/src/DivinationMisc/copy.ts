@@ -71,7 +71,7 @@ export const BIBLIO_DEFAULT_SOURCES: readonly string[] = [
 
 export const HORARY_MOMENT_EYEBROW = "The moment of the question";
 export const HORARY_MOMENT_DEFAULT =
-  "21 June 2026, 14:32 · Athens · cast at the moment the question was understood";
+  "Pass a moment to cast — the timestamp of your question, your location, your intent.";
 
 export const HORARY_SYSTEM_CAPTION =
   "Hellenistic horary · whole-sign houses";
@@ -83,48 +83,17 @@ export const HORARY_PROVISIONAL_EYEBROW = "Provisional judgement";
 /** Verbatim provisional judgement (line 208) — caller may override
  *  via prop when the backend supplies a real cast. */
 export const HORARY_PROVISIONAL_DEFAULT =
-  "The significators apply to a sextile with mutual reception before the Moon leaves her sign — the matter perfects, though not without a delay marked by the intervening Saturn. A qualified yes.";
+  "The ephemeris + judgement engine will fill in a provisional reading once you cast a chart from a real moment.";
 
 export const HORARY_SAVE_LABEL = "Save chart & reading";
 
-/** Default workflow steps (verbatim from mockup lines 349-355). */
+/** Default workflow steps — empty until an ephemeris cast populates them. */
 export const HORARY_DEFAULT_STEPS: ReadonlyArray<{
   n: string;
   title: string;
   value: string;
   note: string;
-}> = [
-  {
-    n: "1",
-    title: "Sect",
-    value: "Day chart",
-    note: "The Sun is above the horizon; the diurnal planets — Sun, Jupiter, Saturn — carry the most weight in judgement.",
-  },
-  {
-    n: "2",
-    title: "Querent",
-    value: "Mercury, ruler of the Asc",
-    note: "You are signified by Mercury, placed in the third house, applying and unobstructed.",
-  },
-  {
-    n: "3",
-    title: "Quesited",
-    value: "Jupiter, ruler of the 9th",
-    note: "The matter — the lineage petition, a ninth-house affair — is signified by Jupiter in the sixth.",
-  },
-  {
-    n: "4",
-    title: "Perfection",
-    value: "By applying sextile",
-    note: "Mercury applies to a sextile of Jupiter within orb before changing sign: the matter can come together.",
-  },
-  {
-    n: "5",
-    title: "Reception & witnesses",
-    value: "Mutual reception; Saturn intervenes",
-    note: "The two significators receive one another, easing the contact; but Saturn, the day's malefic, marks a delay before completion.",
-  },
-];
+}> = [];
 
 // ─── Scrying copy ───────────────────────────────────────────────
 

@@ -29,10 +29,12 @@ describe("DivMisc editorial constants", () => {
     );
   });
 
-  it("HORARY_PROVISIONAL_DEFAULT contains the load-bearing Hellenistic phrasing", () => {
-    expect(HORARY_PROVISIONAL_DEFAULT).toContain("mutual reception");
-    expect(HORARY_PROVISIONAL_DEFAULT).toContain("Saturn");
-    expect(HORARY_PROVISIONAL_DEFAULT).toContain("qualified yes");
+  it("HORARY_PROVISIONAL_DEFAULT names the pending ephemeris engine honestly", () => {
+    // Previously carried fabricated Hellenistic prose ("mutual
+    // reception", "qualified yes"). The panel now shows a
+    // placeholder until a real cast produces text.
+    expect(HORARY_PROVISIONAL_DEFAULT).toContain("ephemeris");
+    expect(HORARY_PROVISIONAL_DEFAULT).toContain("real moment");
   });
 
   it("HORARY_SYSTEM_CAPTION says 'Hellenistic horary · whole-sign houses'", () => {
@@ -57,15 +59,10 @@ describe("DivMisc editorial constants", () => {
     expect(SCRY_TRANCE_LABEL).toBe("Enter trance mode");
   });
 
-  it("HORARY_DEFAULT_STEPS has all five Hellenistic steps in order", () => {
-    expect(HORARY_DEFAULT_STEPS).toHaveLength(5);
-    expect(HORARY_DEFAULT_STEPS.map((s) => s.title)).toEqual([
-      "Sect",
-      "Querent",
-      "Quesited",
-      "Perfection",
-      "Reception & witnesses",
-    ]);
+  it("HORARY_DEFAULT_STEPS is empty until an ephemeris cast populates it", () => {
+    // The ephemeris engine hasn't shipped yet; the panel renders a
+    // "Cast a chart to fill this reading" placeholder when steps is empty.
+    expect(HORARY_DEFAULT_STEPS).toHaveLength(0);
   });
 });
 
@@ -260,7 +257,7 @@ describe("HoraryPanel", () => {
   it("renders the verbatim moment label + system caption + provisional", () => {
     render(<HoraryPanel />);
     expect(
-      screen.getByText(/21 June 2026, 14:32 · Athens/),
+      screen.getByText(/Pass a moment to cast/),
     ).toBeInTheDocument();
     expect(
       screen.getByText(HORARY_SYSTEM_CAPTION),
@@ -270,10 +267,19 @@ describe("HoraryPanel", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders all five steps with their values + notes", () => {
-    const { container } = render(<HoraryPanel />);
+  it("renders each supplied step as a data-step row", () => {
+    // The default step list is empty (ephemeris cast pending); the
+    // panel accepts a steps prop for tests + future wiring.
+    const { container } = render(
+      <HoraryPanel
+        steps={[
+          { n: "1", title: "Sect", value: "Day chart", note: "The Sun above the horizon." },
+          { n: "2", title: "Querent", value: "Mercury", note: "Ruler of the ascendant." },
+        ]}
+      />,
+    );
     const steps = container.querySelectorAll("[data-step]");
-    expect(steps).toHaveLength(5);
+    expect(steps).toHaveLength(2);
   });
 
   it("Save fires onSave", () => {

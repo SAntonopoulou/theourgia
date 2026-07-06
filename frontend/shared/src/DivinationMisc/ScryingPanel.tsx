@@ -119,28 +119,12 @@ export function ScryingPanel({
   const [medium, setMedium] = useState<ScryMedium>(initialMedium);
   const [vision, setVision] = useState("");
 
-  const sessions =
-    pastSessions ??
-    ([
-      {
-        medium: "mirror" as const,
-        date: "18 Jun",
-        snippet:
-          "A doorway with no lintel; a cold air moving outward, not in.",
-      },
-      {
-        medium: "water" as const,
-        date: "11 Jun",
-        snippet:
-          "Three lights beneath the surface, turning slowly widdershins.",
-      },
-      {
-        medium: "crystal" as const,
-        date: "02 Jun",
-        snippet:
-          "A woman's hand, holding a key the colour of old brass.",
-      },
-    ]);
+  // Real past sessions come from ``GET /api/v1/scrying/sessions``; the
+  // consumer route is expected to pass them in. Empty by default —
+  // NEVER seed with fake "widdershins" specimens that a practitioner
+  // might mistake for their own past readings.
+  const sessions: ReadonlyArray<{ medium: ScryMedium; date: string; snippet: string }> =
+    pastSessions ?? [];
 
   return (
     <div
@@ -385,6 +369,18 @@ export function ScryingPanel({
           {SCRY_PAST_EYEBROW}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {sessions.length === 0 ? (
+            <div
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: 13.5,
+                color: "var(--ink-mute)",
+                lineHeight: 1.5,
+              }}
+            >
+              No past scrying sessions to show yet.
+            </div>
+          ) : null}
           {sessions.map((s, i) => (
             <div key={i} data-past-entry>
               <div

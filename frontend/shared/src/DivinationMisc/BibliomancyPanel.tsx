@@ -76,8 +76,8 @@ const METHOD_CHIP_ON: CSSProperties = {
 
 export function BibliomancyPanel({
   sources = BIBLIO_DEFAULT_SOURCES,
-  initialPassage = "Theurgists fall not, so as to be ranked among the herd.",
-  initialReference = "The Chaldean Oracles, fr. 153",
+  initialPassage = "",
+  initialReference = "",
   onLog,
   className,
   style,
@@ -278,11 +278,11 @@ export function BibliomancyPanel({
             fontSize: 20,
             lineHeight: 1.6,
             fontStyle: "italic",
-            color: "var(--ink)",
+            color: passage ? "var(--ink)" : "var(--ink-mute)",
             margin: 0,
           }}
         >
-          {passage}
+          {passage || "No passage opened yet — pick a source and press “Open at random”."}
         </blockquote>
         <figcaption
           style={{
@@ -295,7 +295,7 @@ export function BibliomancyPanel({
             color: "var(--ink-mute)",
           }}
         >
-          <span>{reference}</span>
+          {reference ? <span>{reference}</span> : <span>—</span>}
           <span style={{ color: "var(--line-2)" }}>·</span>
           <span>{BIBLIO_METHOD_NOTES[method]}</span>
         </figcaption>
