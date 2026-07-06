@@ -225,9 +225,11 @@ export function RegistryPublicHomeSurface({
           }}
         >
           {extensionPoints.map((e) => (
-            <a
+            // Non-interactive tile — the per-category listing endpoint
+            // hasn't shipped yet, so we don't render a link that leads
+            // nowhere. When it does, this switches back to <a>.
+            <div
               key={e.name}
-              href="#"
               style={{
                 display: "block",
                 padding: "14px 15px",
@@ -236,7 +238,6 @@ export function RegistryPublicHomeSurface({
                 borderColor: "var(--line)",
                 borderRadius: "var(--r-md)",
                 background: "var(--bg-2)",
-                textDecoration: "none",
               }}
             >
               <div
@@ -277,7 +278,7 @@ export function RegistryPublicHomeSurface({
               >
                 {e.desc}
               </div>
-            </a>
+            </div>
           ))}
         </div>
       </section>
