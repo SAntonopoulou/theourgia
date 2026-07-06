@@ -213,15 +213,22 @@ describe("ToolDetailDrawer", () => {
 // ─── AltarsList ──────────────────────────────────────────────────
 
 describe("AltarsList", () => {
-  it("renders 2 demo altars by default", () => {
+  it("defaults to empty — consumer routes pass real altars", () => {
     render(<AltarsList />);
     expect(
       document.querySelectorAll("[data-altar-row]"),
-    ).toHaveLength(2);
+    ).toHaveLength(0);
+  });
+
+  it("renders each supplied altar row", () => {
+    render(<AltarsList altars={DEMO_ALTARS} />);
+    expect(
+      document.querySelectorAll("[data-altar-row]"),
+    ).toHaveLength(DEMO_ALTARS.length);
   });
 
   it("permanent altar shows the --care 'permanent' pill", () => {
-    render(<AltarsList />);
+    render(<AltarsList altars={DEMO_ALTARS} />);
     const pill = document.querySelector("[data-pill='permanent']");
     expect(pill).toBeTruthy();
     expect(pill?.textContent).toBe("permanent");
@@ -229,7 +236,7 @@ describe("AltarsList", () => {
 
   it("clicking an altar fires onOpen", () => {
     const onOpen = vi.fn();
-    render(<AltarsList onOpen={onOpen} />);
+    render(<AltarsList altars={DEMO_ALTARS} onOpen={onOpen} />);
     fireEvent.click(
       document.querySelector(
         `[data-altar-row='${DEMO_ALTARS[0]!.id}']`,

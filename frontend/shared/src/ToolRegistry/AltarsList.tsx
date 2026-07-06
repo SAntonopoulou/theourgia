@@ -10,7 +10,6 @@ import { type CSSProperties } from "react";
 
 import {
   ALTAR_PERMANENT_PILL,
-  DEMO_ALTARS,
   type AltarRecord,
 } from "./copy.js";
 
@@ -83,7 +82,7 @@ export interface AltarsListProps {
 }
 
 export function AltarsList({
-  altars = DEMO_ALTARS,
+  altars = [],
   onOpen,
   className,
   style,

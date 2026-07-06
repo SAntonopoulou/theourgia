@@ -11,7 +11,6 @@
 import { type CSSProperties } from "react";
 
 import {
-  DEMO_ELECTIONS,
   ELECTION_MODAL_SUB,
   ELECTION_MODAL_TITLE,
   ELECTION_SEARCH_PLACEHOLDER,
@@ -56,7 +55,7 @@ export interface ElectionPickerModalProps {
 export function ElectionPickerModal({
   open,
   onClose,
-  elections = DEMO_ELECTIONS,
+  elections = [],
   onPick,
 }: ElectionPickerModalProps) {
   if (!open) return null;
@@ -114,6 +113,21 @@ export function ElectionPickerModal({
             gap: 8,
           }}
         >
+          {elections.length === 0 ? (
+            <div
+              style={{
+                padding: "18px 4px",
+                fontFamily: "var(--font-serif)",
+                fontSize: 13.5,
+                color: "var(--ink-mute)",
+                lineHeight: 1.5,
+                textAlign: "center",
+              }}
+            >
+              No saved elections yet. The Election Finder pipeline
+              populates this list once it lands.
+            </div>
+          ) : null}
           {elections.map((e, i) => {
             const top = i === 0;
             return (
