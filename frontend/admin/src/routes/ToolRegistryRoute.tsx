@@ -12,10 +12,14 @@
  */
 
 import {
+  type AltarRecord,
+  type AltarRecordWire,
   type NewAltarModalPayload,
   type NewToolModalPayload,
   type RegistryView,
+  type ToolKind,
   type ToolPickerOption,
+  type ToolRecord,
   type ToolRecordWire,
   NewAltarModal,
   NewToolModal,
@@ -23,9 +27,52 @@ import {
   Toast,
   useTopbar,
 } from "@theourgia/shared";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { apiMethods } from "../data/api.js";
+
+function formatDims(d: Record<string, unknown>): string {
+  const parts: string[] = [];
+  if (typeof d.length_cm === "number") parts.push(`length ${d.length_cm} cm`);
+  if (typeof d.width_cm === "number") parts.push(`width ${d.width_cm} cm`);
+  if (typeof d.height_cm === "number") parts.push(`height ${d.height_cm} cm`);
+  if (typeof d.weight_g === "number") parts.push(`weight ${d.weight_g} g`);
+  return parts.join(" · ");
+}
+
+function wireToToolRecord(w: ToolRecordWire): ToolRecord {
+  return {
+    id: w.id,
+    kind: (w.kind as ToolKind) ?? "other",
+    name: w.name,
+    desc: w.description ?? "",
+    materials: w.materials ?? [],
+    dims: formatDims(w.dimensions ?? {}),
+    prov: w.provenance ?? "",
+    consDate: w.consecration_date
+      ? new Date(w.consecration_date).toLocaleDateString(undefined, {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })
+      : null,
+    consWorking: null,
+    entity: null,
+    tint: "rgba(199,162,76,.10)",
+    location: w.current_location ?? "",
+    history: [],
+  };
+}
+
+function wireToAltarRecord(w: AltarRecordWire): AltarRecord {
+  return {
+    id: w.id,
+    name: w.name,
+    permanent: w.is_permanent,
+    toolCount: (w.tool_ids ?? []).length,
+    workings: w.description ?? "",
+  };
+}
 
 function dimensionsFromPayload(
   d: NewToolModalPayload["dimensions"],
@@ -53,20 +100,39 @@ export function ToolRegistryRoute() {
   const [toolModalOpen, setToolModalOpen] = useState(false);
   const [altarModalOpen, setAltarModalOpen] = useState(false);
   const [tools, setTools] = useState<ToolRecordWire[]>([]);
+  const [altars, setAltars] = useState<AltarRecordWire[]>([]);
 
   const loadTools = useCallback(async () => {
     try {
       const rows = await apiMethods.listTools();
       setTools(rows);
     } catch {
-      // Surface stays usable even if the list fails — the registry
-      // surface itself handles its own empty state.
+      // Surface stays usable even if the list fails.
+    }
+  }, []);
+
+  const loadAltars = useCallback(async () => {
+    try {
+      const rows = await apiMethods.listAltars();
+      setAltars(rows);
+    } catch {
+      // Best-effort.
     }
   }, []);
 
   useEffect(() => {
     void loadTools();
-  }, [loadTools]);
+    void loadAltars();
+  }, [loadTools, loadAltars]);
+
+  const surfaceTools = useMemo(
+    () => tools.map(wireToToolRecord),
+    [tools],
+  );
+  const surfaceAltars = useMemo(
+    () => altars.map(wireToAltarRecord),
+    [altars],
+  );
 
   const handleNew = useCallback((view: RegistryView) => {
     if (view === "tools") setToolModalOpen(true);
@@ -128,6 +194,7 @@ export function ToolRegistryRoute() {
           title: `Altar saved · ${row.name}`,
           body: "Linked workings can be added from the altar's detail view.",
         });
+        await loadAltars();
       } catch (err) {
         Toast.push({
           tone: "error",
@@ -139,7 +206,7 @@ export function ToolRegistryRoute() {
         });
       }
     },
-    [],
+    [loadAltars],
   );
 
   const toolOptions: ToolPickerOption[] = tools.map((t) => ({
@@ -150,7 +217,11 @@ export function ToolRegistryRoute() {
 
   return (
     <>
-      <ToolRegistrySurface onNew={handleNew} />
+      <ToolRegistrySurface
+        tools={surfaceTools}
+        altars={surfaceAltars}
+        onNew={handleNew}
+      />
       <NewToolModal
         open={toolModalOpen}
         onClose={() => setToolModalOpen(false)}
