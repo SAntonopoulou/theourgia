@@ -28,15 +28,15 @@ const CENTRE = 300;
  *  Verbatim from the mockup line 260: 1 → 4 → 8 → 11 → 15 → 2 → 13. */
 const YOPHIEL_SEQUENCE: readonly number[] = [1, 4, 8, 11, 15, 2, 13];
 
-/** Front-face name-ring text (verbatim). */
-const FRONT_RING_TEXT =
-  "אל אב גבור עולם · אדני · אל אב גבור עולם · אדני";
-/** Back-face name-ring text (verbatim). */
-const BACK_RING_TEXT =
-  "יהפיאל · הסמאל · יהפיאל · הסמאל";
-/** Back inner ring (Intelligence + angelic-cycle names). */
-const BACK_INNER_RING_TEXT =
-  "יהפיאל · אל · צדקיאל · יהפיאל · אל · צדקיאל";
+/** Front-face name-ring placeholder. The actual inscription text is
+ *  authored per layer in the LayerConfig panels — this string only
+ *  seeds the ring geometry until real per-layer text is threaded
+ *  through. No cultural specimen leaks into every deploy. */
+const FRONT_RING_TEXT = "· · · front-face inscription · · ·";
+/** Back-face name-ring placeholder. */
+const BACK_RING_TEXT = "· · · back-face inscription · · ·";
+/** Back inner ring placeholder. */
+const BACK_INNER_RING_TEXT = "· · · inner ring · · ·";
 
 export interface TalismanCanvasProps {
   face: TalismanFace;

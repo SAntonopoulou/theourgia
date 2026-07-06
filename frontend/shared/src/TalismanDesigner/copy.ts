@@ -174,8 +174,9 @@ export const UPLOAD_IMAGE_LABEL = "Upload an image";
 export const BACKGROUND_TEXTURE_NOTE =
   "A visual texture only — the actual material is named in the metadata.";
 
-/** Default border inscription (Hebrew, RTL). */
-export const BORDER_INSCRIPTION_DEFAULT = "אל אב גבור עולם";
+/** Empty by default — the practitioner composes their own inscription.
+ *  The Hebrew RTL specimen "אל אב גבור עולם" no longer leaks as a seed. */
+export const BORDER_INSCRIPTION_DEFAULT = "";
 
 /** Seed sigils for the Central-sigil layer. */
 export interface SigilRef {

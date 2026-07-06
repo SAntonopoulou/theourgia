@@ -393,9 +393,12 @@ export function CirclePreview({
         <React.Fragment key={`ring-${i}`}>
           <NameRing
             id={`mc-ins-${i}`}
-            text="אל אב גבור עולם · אדני · אל אב גבור עולם · אדני"
+            // Generic Latin filler until the ring's real text is threaded
+            // through RingState. No cultural inscription leaks as the
+            // default preview.
+            text="Compose the ring inscription in the ring's config panel"
             radius={rr - 12}
-            fontSize={19}
+            fontSize={13}
           />
           <circle
             data-ring-kind="inscription"

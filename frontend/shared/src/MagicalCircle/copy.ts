@@ -82,9 +82,10 @@ export const RING_KINDS: readonly RingKindOption[] = [
 ];
 
 /** Per-kind preview text rendered next to the ring label in the
- *  rail row. Verbatim from the mockup `kindPreview()`. */
+ *  rail row. Uses generic script names so no specific cultural
+ *  formula leaks as the default preview. */
 export const RING_KIND_PREVIEW: Record<RingKind, string> = {
-  inscription: "אל אב גבור עולם",
+  inscription: "(your inscription)",
   glyphs: "☉ ☽ ☿ ♀ ♂ ♃ ♄",
   image: "(uploaded)",
   blank: "—",
@@ -193,7 +194,7 @@ export const LIBRARY_PRESETS: readonly CirclePreset[] = [
 export const INSCRIPTION_TEXT_LABEL = "Text";
 export const INSCRIPTION_SCRIPT_LABEL = "Script";
 export const INSCRIPTION_DIRECTION_LABEL = "Direction";
-export const INSCRIPTION_DEFAULT = "אל אב גבור עולם";
+export const INSCRIPTION_DEFAULT = "";
 export const INSCRIPTION_SCRIPTS: readonly string[] = [
   "Hebrew",
   "Greek",
