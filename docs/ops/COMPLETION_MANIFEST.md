@@ -309,6 +309,22 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     it worked. Replaced with tone=info Toasts that explicitly say
     what's not wired. Also swapped the AgentMemoryReader Add file
     `window.prompt` for the shared PromptDialog.
+  - b108-2em: **ToolRegistry displays real tools + altars.**
+    ToolRegistryRoute mounted the surface without ``tools`` or
+    ``altars`` props, so the shared package's DEMO_TOOLS + DEMO_ALTARS
+    rendered on every deploy — five fabricated tools (Black-handled
+    athame · Olive-wood wand · Bronze chalice · Brass censer · Small
+    brass bell) plus altar fixtures presented as the practitioner's
+    real registry. Now fetches GET /tools + GET /altars on mount,
+    maps wire → surface, and passes real data. Curl-verified 200/200.
+  - b108-2en: **Shared surface demo defaults → empty.**
+    Talisman DEMO_ELECTIONS (three Jupiter windows with fabricated
+    scores 0.92/0.78/0.69), DEMO_LAYER_SIGILS ("Sigil of Yophiel" +
+    "Sigil of Increase"), DEMO_INSCRIPTIONS ("Increase · multiply" +
+    "אמן") all scrubbed to empty. VocesMagicaeRoute now fetches
+    GET /voces and passes real records instead of the default
+    DEMO_VOCES fixture (fabricated ΙΑΩ / ABRASAX / ABLANATHANALBA
+    specimens). 2923 shared vitests all pass after test updates.
   - b108-2el: **Scrying / bibliomancy / horary demo content scrubbed.**
     Three DivinationMisc panels shipped with fabricated defaults
     rendered on every visit as if they were the user's real past
