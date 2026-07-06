@@ -330,6 +330,19 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2fe: **Practice logs · dream/pathwork/asana/banish seeds scrubbed.**
+    PracticeLogs/copy.ts shipped extensive fabricated defaults
+    rendered as if they were the practitioner's own past work: fake
+    wake-time "06:48", a 3-line invented dream ("shelves run downward
+    into water · a woman with a lamp"), five dream symbol chips
+    (library / descending water / lamp-bearer / a name withheld /
+    Hekate?), lucid=true default, three past dream snippets, an
+    invented pathworking vision, Asana notes "Seat held without
+    shifting", three past asana sessions, banishing time "14:23",
+    five past banishing entries. All scrubbed to empty defaults.
+    Kept as DEMO_* exports for Storybook + tests only. PATH_DEFAULT
+    stays 25 (Samekh) as a structural Tree-of-Life default. 45
+    PracticeLogs vitests updated + pass.
   - b108-2fd: **Topbar names + asana stats · no more fabricated seeds.**
     MagicalCircle + TalismanDesigner topbar defaults ("Circle of
     the Sphere of Jupiter" · "Talisman of Jupiter for Increase")
