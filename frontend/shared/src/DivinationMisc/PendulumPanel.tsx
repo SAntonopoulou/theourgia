@@ -84,23 +84,7 @@ export function PendulumPanel({
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<PendulumAnswer>(initialAnswer);
   const [log, setLog] = useState<readonly PendulumLogEntry[]>(
-    initialLog ?? [
-      {
-        answer: initialAnswer,
-        question: "Is now the time to send the petition?",
-        timestamp: "14:30",
-      },
-      {
-        answer: "No",
-        question: "Should I add the second sigil to the working?",
-        timestamp: "14:24",
-      },
-      {
-        answer: "Maybe",
-        question: "Will Diotima reply before the dark moon?",
-        timestamp: "14:19",
-      },
-    ],
+    initialLog ?? [],
   );
 
   const ask = () => {
@@ -330,6 +314,19 @@ export function PendulumPanel({
           {PEND_SESSION_LOG_EYEBROW}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {log.length === 0 ? (
+            <div
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: 13.5,
+                color: "var(--ink-mute)",
+                lineHeight: 1.5,
+              }}
+            >
+              No sessions yet. Ask the pendulum a question above to
+              begin the log.
+            </div>
+          ) : null}
           {log.map((entry, i) => (
             <div
               key={i}
