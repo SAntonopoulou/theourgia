@@ -330,6 +330,14 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2ff: **Divination · default question seeds scrubbed.**
+    Every divination surface (Tarot · IChing · Geomancy · Runes)
+    pre-filled its Question input with a specific mockup phrase that
+    rendered as if it were the user's own: "Should I bring the working
+    forward to the solstice?" (Tarot + IChing) · "Will the lineage
+    petition be granted before the equinox?" (Geomancy) · "What stands
+    before me, and what walks beside it?" (Runes). All → empty. Fresh
+    casts now show a blank question field.
   - b108-2fe: **Practice logs · dream/pathwork/asana/banish seeds scrubbed.**
     PracticeLogs/copy.ts shipped extensive fabricated defaults
     rendered as if they were the practitioner's own past work: fake
