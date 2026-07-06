@@ -21,8 +21,11 @@ import { TalismanDesignerSurface } from "./TalismanDesignerSurface.js";
 // ─── Editorial copy ──────────────────────────────────────────────
 
 describe("TalismanDesigner editorial constants", () => {
-  it("TOPBAR_DEFAULT_NAME is the verbatim demo seed", () => {
-    expect(TOPBAR_DEFAULT_NAME).toBe("Talisman of Jupiter for Increase");
+  it("TOPBAR_DEFAULT_NAME is a neutral untitled seed", () => {
+    // b108-2fd: "Talisman of Jupiter for Increase" swapped for a
+    // neutral untitled placeholder — no cultural naming convention
+    // leaks as the default talisman name.
+    expect(TOPBAR_DEFAULT_NAME).toBe("Untitled talisman");
   });
 
   it("LINKED_ELECTION_FOOTER carries the non-binding promise", () => {

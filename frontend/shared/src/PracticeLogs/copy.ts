@@ -126,9 +126,9 @@ export const PATH_DEFAULT = 25;
 /* ---------------- Āsana panel ---------------- */
 
 export const ASANA_LABEL = "Āsana";
-export const ASANA_DEFAULT_NAME = "Siddhāsana";
+export const ASANA_DEFAULT_NAME = "";
 export const ASANA_BREATH_LABEL = "Breath ratio";
-export const ASANA_BREATH_DEFAULT = "1 : 4 : 2";
+export const ASANA_BREATH_DEFAULT = "";
 export const ASANA_NOTES_LABEL = "After-practice notes";
 export const ASANA_NOTES_PLACEHOLDER =
   "Steadiness, breath, where the mind went…";
@@ -139,13 +139,14 @@ export const ASANA_BEGIN_LABEL = "Begin";
 export const ASANA_PAUSE_LABEL = "Pause";
 export const ASANA_RESET_LABEL = "Reset";
 
-/** Initial timer seconds — verbatim default (.dc.html line 323 paused
- *  branch: 727s = 12:07). */
-export const ASANA_TIMER_DEFAULT_SECONDS = 727;
-/** Quiet stats — never gamified per H04 cross-cutting rule. */
-export const ASANA_STAT_HOURS = "41.5";
+/** Initial timer seconds — zero until the practitioner starts a session. */
+export const ASANA_TIMER_DEFAULT_SECONDS = 0;
+/** Quiet stats — never gamified per H04 cross-cutting rule.  Values
+ *  default to zeros; consumers thread in real totals when the
+ *  aggregated practice endpoint lands. */
+export const ASANA_STAT_HOURS = "0";
 export const ASANA_STAT_HOURS_LABEL = "hours, cumulative";
-export const ASANA_STAT_SESSIONS = "88";
+export const ASANA_STAT_SESSIONS = "0";
 export const ASANA_STAT_SESSIONS_LABEL = "sessions kept";
 export const ASANA_RECENT_EYEBROW = "Recent";
 

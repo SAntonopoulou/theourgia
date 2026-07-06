@@ -82,9 +82,10 @@ describe("PracticeLogs editorial constants", () => {
     expect(PATH_DEFAULT).toBe(25);
   });
 
-  it("ASANA_TIMER_DEFAULT_SECONDS = 727 → '12:07'", () => {
-    expect(ASANA_TIMER_DEFAULT_SECONDS).toBe(727);
-    expect(formatTimerSeconds(ASANA_TIMER_DEFAULT_SECONDS)).toBe("12:07");
+  it("ASANA_TIMER_DEFAULT_SECONDS = 0 (b108-2fd)", () => {
+    expect(ASANA_TIMER_DEFAULT_SECONDS).toBe(0);
+    // Was 727s / '12:07' — now zero until the practitioner starts a
+    // session, honestly reflecting a fresh vault.
   });
 
   it("formatTimerSeconds zero-pads minutes and seconds", () => {
@@ -242,19 +243,18 @@ describe("PathworkingPanel", () => {
 // ─── AsanaPanel ───────────────────────────────────────────────────
 
 describe("AsanaPanel", () => {
-  it("seeds Siddhāsana + 1:4:2 + 12:07 by default", () => {
+  it("has empty defaults for name/breath/timer (b108-2fd)", () => {
+    // Previously seeded with Siddhāsana + 1:4:2 + 12:07; now every
+    // deploy starts from an honest blank slate.
     render(<AsanaPanel />);
-    expect(screen.getByDisplayValue(ASANA_DEFAULT_NAME)).toBeInTheDocument();
-    expect(screen.getByDisplayValue("1 : 4 : 2")).toBeInTheDocument();
+    expect(ASANA_DEFAULT_NAME).toBe("");
     const timerText = document.querySelector("[data-timer-text]");
-    expect(timerText?.textContent).toBe("12:07");
+    expect(timerText?.textContent).toBe("00:00");
   });
 
-  it("displays the quiet stats (41.5 hours / 88 sessions)", () => {
+  it("displays the quiet stats (zero-valued until aggregation endpoint lands)", () => {
     render(<AsanaPanel />);
-    expect(screen.getByText("41.5")).toBeInTheDocument();
     expect(screen.getByText("hours, cumulative")).toBeInTheDocument();
-    expect(screen.getByText("88")).toBeInTheDocument();
     expect(screen.getByText("sessions kept")).toBeInTheDocument();
   });
 
@@ -278,8 +278,8 @@ describe("AsanaPanel", () => {
       vi.advanceTimersByTime(3000);
     });
     const timerText = document.querySelector("[data-timer-text]");
-    // 727 + 3 = 730 → 12:10
-    expect(timerText?.textContent).toBe("12:10");
+    // 0 + 3 = 3 → 00:03 (default is now zero per b108-2fd)
+    expect(timerText?.textContent).toBe("00:03");
     vi.useRealTimers();
   });
 
@@ -290,7 +290,7 @@ describe("AsanaPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /Reset/ }));
     expect(toggle).toHaveTextContent("Begin");
     const timerText = document.querySelector("[data-timer-text]");
-    expect(timerText?.textContent).toBe("12:07");
+    expect(timerText?.textContent).toBe("00:00");
   });
 
   it("recent rail shows 3 sessions", () => {

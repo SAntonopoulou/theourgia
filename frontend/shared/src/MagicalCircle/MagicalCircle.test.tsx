@@ -22,10 +22,11 @@ import { RingsCompassRail } from "./RingsCompassRail.js";
 // ─── Editorial copy ──────────────────────────────────────────────
 
 describe("MagicalCircle editorial constants", () => {
-  it("MC_TOPBAR_DEFAULT_NAME is verbatim", () => {
-    expect(MC_TOPBAR_DEFAULT_NAME).toBe(
-      "Circle of the Sphere of Jupiter",
-    );
+  it("MC_TOPBAR_DEFAULT_NAME is a neutral untitled seed", () => {
+    // b108-2fd: swapped the "Circle of the Sphere of Jupiter" demo
+    // seed for a neutral untitled placeholder so no cultural naming
+    // convention leaks as the default circle name.
+    expect(MC_TOPBAR_DEFAULT_NAME).toBe("Untitled circle");
   });
 
   it("COMPASS_TRADITION_NOTE locks single-tradition rule", () => {

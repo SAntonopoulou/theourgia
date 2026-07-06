@@ -39,7 +39,7 @@ export type CentreElement =
   | "square"
   | "blank";
 
-export const MC_TOPBAR_DEFAULT_NAME = "Circle of the Sphere of Jupiter";
+export const MC_TOPBAR_DEFAULT_NAME = "Untitled circle";
 
 export const DIAMETER_LABEL = "Diameter";
 /** Default diameter in metres. */

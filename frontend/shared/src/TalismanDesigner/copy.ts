@@ -45,7 +45,7 @@ export const TALISMAN_LAYERS: readonly TalismanLayerDef[] = [
 
 /* ─── Topbar + face tabs ───────────────────────────────────────── */
 
-export const TOPBAR_DEFAULT_NAME = "Talisman of Jupiter for Increase";
+export const TOPBAR_DEFAULT_NAME = "Untitled talisman";
 
 export const FACE_TABLIST_LABEL = "Face";
 export const FACE_FRONT_LABEL = "Front";
