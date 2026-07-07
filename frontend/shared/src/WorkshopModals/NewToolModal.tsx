@@ -26,6 +26,7 @@ import {
   useState,
 } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { ToolKindIcon } from "../ToolRegistry/ToolKindIcon.js";
 
 import {
@@ -185,6 +186,9 @@ export function NewToolModal({ open, onClose, onSave }: NewToolModalProps) {
   const [provenance, setProvenance] = useState("");
   const [acquired, setAcquired] = useState("");
   const [location, setLocation] = useState("");
+
+  // Escape closes the modal (b108-2fy a11y sweep).
+  useEscapeToClose(open, onClose);
 
   const saveDisabled = useMemo(
     () => name.trim() === "" || kind === null,

@@ -11,6 +11,7 @@
 import * as React from "react";
 import { type CSSProperties } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import {
   ELEMENTAL_COLOUR,
   ELEMENTAL_GLYPH,
@@ -203,6 +204,9 @@ export function VoceDetailDrawer({
   className,
   style,
 }: VoceDetailDrawerProps) {
+  // Escape closes the drawer (b108-2fy a11y sweep).
+  useEscapeToClose(open, onClose);
+
   if (!open || !voce) return null;
   const hasRecordings = voce.recs.length > 0;
   return (

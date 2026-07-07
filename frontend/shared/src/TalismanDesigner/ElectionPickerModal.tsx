@@ -10,6 +10,7 @@
 
 import { type CSSProperties } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import {
   ELECTION_MODAL_SUB,
   ELECTION_MODAL_TITLE,
@@ -58,6 +59,9 @@ export function ElectionPickerModal({
   elections = [],
   onPick,
 }: ElectionPickerModalProps) {
+  // Escape closes the modal (b108-2fy a11y sweep).
+  useEscapeToClose(open, onClose);
+
   if (!open) return null;
   return (
     <div

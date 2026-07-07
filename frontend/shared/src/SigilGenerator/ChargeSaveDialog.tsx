@@ -7,6 +7,7 @@
 
 import { type CSSProperties, useState } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import {
   SAVE_CANCEL,
   SAVE_COMMIT,
@@ -95,6 +96,9 @@ export function ChargeSaveDialog({
 }: ChargeSaveDialogProps) {
   const [title, setTitle] = useState(initialTitle);
   const [purpose, setPurpose] = useState<SigilPurpose>(initialPurpose);
+
+  // Escape closes the dialog (b108-2fy a11y sweep).
+  useEscapeToClose(open, onClose);
 
   if (!open) return null;
 

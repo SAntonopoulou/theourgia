@@ -8,6 +8,7 @@
 
 import { type CSSProperties, useState } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import {
   OWNED_DECK_CANCEL,
   OWNED_DECK_CONFIRM,
@@ -88,6 +89,10 @@ export function OwnedDeckOverlay({
 }: OwnedDeckOverlayProps) {
   const [owned, setOwned] = useState(true);
   const [fileName, setFileName] = useState<string | null>(null);
+
+  // Escape closes the overlay (b108-2fy a11y sweep).
+  useEscapeToClose(open, onClose);
+
   if (!open) return null;
   return (
     <div

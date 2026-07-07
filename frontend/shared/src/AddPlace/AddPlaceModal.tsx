@@ -30,6 +30,7 @@ import {
   useState,
 } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import type { SiteKind } from "../PilgrimageMap/PilgrimageMapSurface.js";
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -164,6 +165,9 @@ export function AddPlaceModal({
   );
   const [story, setStory] = useState(initial?.story ?? "");
   const [seal, setSeal] = useState(initial?.seal ?? false);
+
+  // Escape closes the modal (b108-2fy a11y sweep).
+  useEscapeToClose(open, onClose);
 
   // Reset on close so a re-open never leaks the prior session.
   useEffect(() => {

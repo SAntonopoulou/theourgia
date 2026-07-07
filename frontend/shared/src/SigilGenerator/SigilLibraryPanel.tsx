@@ -8,6 +8,7 @@
 
 import { type CSSProperties } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { LIBRARY_HEADER, LIBRARY_HELP_TAIL } from "./copy.js";
 
 export interface SigilLibraryEntry {
@@ -69,6 +70,9 @@ export function SigilLibraryPanel({
   className,
   style,
 }: SigilLibraryPanelProps) {
+  // Escape closes the drawer (b108-2fy a11y sweep).
+  useEscapeToClose(open, onClose);
+
   if (!open) return null;
   const entries = sigils ?? EMPTY_LIBRARY;
   return (

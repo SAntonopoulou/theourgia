@@ -13,7 +13,7 @@
  * keyboard-trapped + ESC-dismissed at the AppShell layer.
  */
 
-import { type CSSProperties, type ReactNode, useState } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useState } from "react";
 
 import {
   CADENCE_OPTIONS,
@@ -206,6 +206,16 @@ export function DefinePracticeDrawer({
   const [alsoSchedule, setAlsoSchedule] = useState(
     initial?.alsoScheduleOffering ?? false,
   );
+
+  // Escape closes the drawer (b108-2fy a11y sweep).
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
 
   if (!open) return null;
 

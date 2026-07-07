@@ -112,6 +112,7 @@ export function PluginUpdateDiffModal({
       <div
         role="dialog"
         aria-modal="true"
+        aria-labelledby="plugin-update-diff-title"
         className={className}
         data-modal="plugin-update-diff"
         style={{
@@ -138,6 +139,7 @@ export function PluginUpdateDiffModal({
           }}
         >
           <h2
+            id="plugin-update-diff-title"
             data-field="title"
             style={{
               fontFamily: "var(--font-display)",

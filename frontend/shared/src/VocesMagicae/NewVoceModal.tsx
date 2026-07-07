@@ -8,7 +8,7 @@
  * citation." sits below the buttons whenever Save is disabled.
  */
 
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 
 import {
   ELEMENTAL_COLOUR,
@@ -122,6 +122,16 @@ export function NewVoceModal({
   const [translit, setTranslit] = useState(initialTranslit);
   const [ipa, setIpa] = useState("");
   const [citation, setCitation] = useState("");
+
+  // Escape closes the modal (b108-2fy a11y sweep).
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
 
   if (!open) return null;
 

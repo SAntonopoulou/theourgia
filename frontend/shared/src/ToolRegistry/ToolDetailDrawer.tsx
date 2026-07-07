@@ -17,6 +17,7 @@
 
 import { type CSSProperties } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import {
   TR_CONSECRATED_ON_PREFIX,
   TR_CONSECRATION_EYEBROW,
@@ -101,6 +102,9 @@ export function ToolDetailDrawer({
   className,
   style,
 }: ToolDetailDrawerProps) {
+  // Escape closes the drawer (b108-2fy a11y sweep).
+  useEscapeToClose(open, onClose);
+
   if (!open || !tool) return null;
   const consecrated = !!tool.consDate;
   const consBg = consecrated ? "var(--care-soft)" : "var(--bg-2)";

@@ -33,6 +33,8 @@ import {
   useState,
 } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+
 // ── Types ──────────────────────────────────────────────────────────
 
 import type {
@@ -229,6 +231,9 @@ export function SacredSiteSurface({
   const [chosen, setChosen] = useState<
     SiteRequantizeChoice | "exact" | null
   >(null);
+
+  // Escape closes the modal (b108-2fy a11y sweep).
+  useEscapeToClose(open, onClose);
 
   const options = useMemo(
     () => lowerOptions(record.stored_precision),

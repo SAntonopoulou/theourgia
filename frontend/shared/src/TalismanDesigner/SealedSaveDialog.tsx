@@ -9,6 +9,7 @@
 
 import { type CSSProperties, useState } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import {
   TL_SAVE_CANCEL,
   TL_SAVE_CONFIRM,
@@ -87,6 +88,9 @@ export function SealedSaveDialog({
   const [title, setTitle] = useState(initialTitle);
   const [sealed, setSealed] = useState(initiationLinked);
   const [passphrase, setPassphrase] = useState("");
+
+  // Escape closes the dialog (b108-2fy a11y sweep).
+  useEscapeToClose(open, onClose);
 
   if (!open) return null;
 

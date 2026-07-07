@@ -23,6 +23,7 @@ import {
   useState,
 } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { magicConstant } from "../workshop/magicSquares.js";
 
 import {
@@ -219,6 +220,9 @@ export function CustomSquareBuilderModal({
     buildEmptyCells(initialOrder),
   );
   const [attribution, setAttribution] = useState("");
+
+  // Escape closes the modal (b108-2fy a11y sweep).
+  useEscapeToClose(open, onClose);
 
   const saveDisabled = useMemo(() => name.trim() === "", [name]);
 

@@ -6,6 +6,7 @@
 
 import { type CSSProperties } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import {
   LIBRARY_MODAL_SUB,
   LIBRARY_MODAL_TITLE,
@@ -56,6 +57,9 @@ export function PresetCircleLibrary({
   presets = LIBRARY_PRESETS,
   onLoad,
 }: PresetCircleLibraryProps) {
+  // Escape closes the modal (b108-2fy a11y sweep).
+  useEscapeToClose(open, onClose);
+
   if (!open) return null;
   return (
     <div

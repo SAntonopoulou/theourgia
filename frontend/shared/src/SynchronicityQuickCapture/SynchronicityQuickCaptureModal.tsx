@@ -30,6 +30,8 @@ import {
   useState,
 } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+
 // ── Types ──────────────────────────────────────────────────────────
 
 export type SyncCategory =
@@ -215,6 +217,9 @@ export function SynchronicityQuickCaptureModal({
   const [structuredValue, setStructuredValue] = useState("");
   const [activeContextIds, setActiveContextIds] = useState<string[]>([]);
   const [detailsOpen, setDetailsOpen] = useState(false);
+
+  // Escape closes the modal (b108-2fy a11y sweep).
+  useEscapeToClose(open, onClose);
 
   // Reset state on open.
   useEffect(() => {

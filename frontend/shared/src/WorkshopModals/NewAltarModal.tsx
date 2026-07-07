@@ -24,6 +24,7 @@ import {
   useState,
 } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import {
   NA_DESCRIPTION_LABEL,
   NA_DESCRIPTION_PLACEHOLDER,
@@ -154,6 +155,9 @@ export function NewAltarModal({
   const [diagramSvg, setDiagramSvg] = useState<string | null>(null);
   const [diagramError, setDiagramError] = useState<string | null>(null);
   const [diagramFilename, setDiagramFilename] = useState<string | null>(null);
+
+  // Escape closes the modal (b108-2fy a11y sweep).
+  useEscapeToClose(open, onClose);
 
   const saveDisabled = useMemo(() => name.trim() === "", [name]);
 

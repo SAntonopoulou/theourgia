@@ -6,4 +6,5 @@ export type {
 } from "./useApiCall.js";
 export { useCelestial, ZODIAC_GLYPH } from "./useCelestial.js";
 export type { CelestialState, UseCelestialInput, ZodiacSign } from "./useCelestial.js";
+export { useEscapeToClose } from "./useEscapeToClose.js";
 export { useMediaQuery } from "./useMediaQuery.js";
