@@ -69,6 +69,22 @@ select:focus-visible {
   color: var(--ink);
 }
 
+/* ── prefers-reduced-motion safety net (WCAG 2.3.3 · b108-2g9) ────────────
+ * Individual animations already opt in per-class above; this rule catches
+ * every remaining transition/animation across the whole tree. Keeps a
+ * 0.01ms residual so state changes still fire (React relies on transition
+ * events in a few places) but the perceived motion is eliminated. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ── Scroll class (custom-styled webkit scrollbar) ───────────────────────── */
 .scroll {
   scrollbar-width: thin;
