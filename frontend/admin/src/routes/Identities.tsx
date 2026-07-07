@@ -670,9 +670,88 @@ function DetailRail({
   );
 }
 
+/**
+ * The identities backend model (Persona table · Option D) is deferred to
+ * Phase 02/03. Until then, the fabricated demo identities (Aspasia,
+ * Theophrastos, Frater Sub Rosā, null.priest, V.) MUST NOT display as if
+ * they were the practitioner's real identities. The default view is the
+ * honest empty state; the fabricated preview only renders behind an
+ * explicit env flag or ?demo=1 query — same gating pattern as SignInRoute
+ * (b108-2ey).
+ */
+function useDemoEnabled(): boolean {
+  if (import.meta.env.VITE_THEOURGIA_ENABLE_DEMO_IDENTITIES === "1") return true;
+  if (typeof window === "undefined") return false;
+  return new URLSearchParams(window.location.search).get("demo") === "1";
+}
+
+function IdentitiesEmptyState(): ReactNode {
+  return (
+    <main
+      className="scroll"
+      style={{
+        overflowY: "auto",
+        overflowX: "hidden",
+        minHeight: 0,
+        padding: "48px 28px",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 620,
+          margin: "0 auto",
+          padding: "32px 28px",
+          border: `1px solid ${LINE}`,
+          borderRadius: "var(--r-lg)",
+          background: "var(--bg-2)",
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 23,
+            margin: "0 0 12px",
+          }}
+        >
+          Identities are not built yet.
+        </h2>
+        <p
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: 14.5,
+            lineHeight: 1.55,
+            color: "var(--ink-soft)",
+            margin: "0 0 14px",
+          }}
+        >
+          The Persona table (Option D, per the resolved-decisions memory)
+          is queued for a later phase. When it lands, this surface will
+          show your author identities — one person, many masks — each
+          with its own signing key and per-surface defaults.
+        </p>
+        <p
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: 14.5,
+            lineHeight: 1.55,
+            color: "var(--ink-soft)",
+            margin: "0 0 14px",
+          }}
+        >
+          Nothing is being persisted here yet — the CLI actions do not
+          hit any backend. To preview the finished design, append{" "}
+          <code style={{ fontFamily: "var(--font-mono)", fontSize: 13 }}>?demo=1</code>{" "}
+          to the URL.
+        </p>
+      </div>
+    </main>
+  );
+}
+
 export function Identities() {
   const acting = useActingAs();
   const setActing = useSetActingAs();
+  const demoEnabled = useDemoEnabled();
   const [selectedId, setSelectedId] = useState<string>(DEMO_IDENTITIES[0]?.id ?? "");
   const [archiveTarget, setArchiveTarget] = useState<Identity | null>(null);
 
@@ -683,7 +762,9 @@ export function Identities() {
   useTopbar(
     () => ({
       title: "Identities",
-      subtitle: `${nonArchived} author ${nonArchived === 1 ? "identity" : "identities"} · ${archived} archived · ${signing} signing keys`,
+      subtitle: demoEnabled
+        ? `${nonArchived} author ${nonArchived === 1 ? "identity" : "identities"} · ${archived} archived · ${signing} signing keys · demo preview`
+        : "backend not built yet",
       after: (
         <button
           type="button"
@@ -716,8 +797,10 @@ export function Identities() {
         </button>
       ),
     }),
-    [nonArchived, archived, signing],
+    [nonArchived, archived, signing, demoEnabled],
   );
+
+  if (!demoEnabled) return <IdentitiesEmptyState />;
 
   const selected = DEMO_IDENTITIES.find((i) => i.id === selectedId) ?? DEMO_IDENTITIES[0];
   if (!selected) return null;
