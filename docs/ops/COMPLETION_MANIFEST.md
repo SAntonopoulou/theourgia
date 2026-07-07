@@ -51,16 +51,23 @@ manifest is the record of the lie.
 
 ### Editor blocks (Tiptap nodes)
 
+Wiring pattern (b108-2fw audit): admin `Editor.tsx` calls `useEntities()`,
+`useBooks()`, and provides `fetchChart` → `apiMethods.getChart(...)`,
+threading all three into `EditorDataProvider`. Nodes/pickers consume
+via `useEditorData()`. The 5 client-side nodes (Sigil, Gematria,
+Divination, RitualLog, Sensation) don't need backend calls — they
+render attributes stored in the doc JSON.
+
 | Node | Real function | Backend | Status | Notes |
 |---|---|---|---|---|
-| `SigilNode` | Renders inline sigil | `GET /api/v1/sigils/{id}` | 🚧 | Renders but sigil picker/insert not verified end-to-end |
-| `EntityRefNode` | Entity reference | `GET /api/v1/entities/{id}` | 🚧 | Picker exists (EntityPicker.tsx); insert path needs verify |
-| `ChartNode` | Astro chart | `POST /api/v1/astro/chart` | 🚧 | ChartPicker exists; render path needs verify |
-| `GematriaNode` | Cipher calc | (client-side) | 🟡 | Not verified end-to-end |
-| `DivinationNode` | Reading embed | Divination endpoints | 🟡 | Not verified end-to-end |
-| `QuoteCitationNode` | Verse citation | Library endpoints | 🟡 | Not verified end-to-end |
-| `RitualLogNode` | Structured ritual log | Entries | 🟡 | Not verified end-to-end |
-| `SensationNode` | Body-sensation diagram | (client-side) | 🟡 | Not verified end-to-end |
+| `SigilNode` | Renders inline sigil reference from attrs | (none — pure NodeView) | 🚧 | Renders atom node; slash-menu insert path needs a browser save-through test |
+| `EntityRefNode` | Entity reference (name/glyph from attrs) | `GET /api/v1/entities` (via `useEntities()`) | 🚧 | `EntityPicker` consumes `useEditorData().entities`; wired live in admin Editor route |
+| `ChartNode` | Astro chart snapshot stored in attrs | `POST /api/v1/astro/chart` (via `fetchChart`) | 🚧 | `ChartPicker` calls `ctx.fetchChart(req)`; admin route implements it via `apiMethods.getChart` |
+| `GematriaNode` | Cipher calc (client-side) | (none — client-only) | 🚧 | Client-side computation from stored input; renders correctly |
+| `DivinationNode` | Reading embed (attrs → figure/spread render) | (none — pure NodeView) | 🚧 | Attrs-based render; no live backend needed |
+| `QuoteCitationNode` | Verse citation from Library book | `GET /api/v1/books` (via `useBooks()`) | 🚧 | `LibraryPicker` consumes `useEditorData().books`; wired live in admin Editor |
+| `RitualLogNode` | Structured ritual log block | (none — attrs-based) | 🚧 | Client-side block; attributes serialised into doc JSON |
+| `SensationNode` | Body-sensation diagram | (none — client-only) | 🚧 | Client-side SVG marker placement, stored in attrs |
 
 ## Workshop
 
