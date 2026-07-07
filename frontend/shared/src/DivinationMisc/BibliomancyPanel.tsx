@@ -121,6 +121,7 @@ export function BibliomancyPanel({
               value={source}
               onChange={(e) => setSource(e.target.value)}
               data-source-select
+              disabled={sources.length === 0}
               style={{
                 width: "100%",
                 padding: "11px 13px",
@@ -129,17 +130,21 @@ export function BibliomancyPanel({
                 borderColor: "var(--line-2)",
                 borderRadius: "var(--r-md)",
                 background: "var(--bg-2)",
-                color: "var(--ink)",
+                color: sources.length === 0 ? "var(--ink-mute)" : "var(--ink)",
                 fontFamily: "var(--font-ui)",
                 fontSize: 14,
                 appearance: "none",
               }}
             >
-              {sources.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
+              {sources.length === 0 ? (
+                <option value="">Your Library is empty — add a book first</option>
+              ) : (
+                sources.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))
+              )}
             </select>
             <span
               aria-hidden="true"

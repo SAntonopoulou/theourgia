@@ -59,8 +59,14 @@ export const BIBLIO_QUESTION_PLACEHOLDER =
 export const BIBLIO_OPEN_LABEL = "Open at random";
 export const BIBLIO_LOG_LABEL = "Log question & passage";
 
-/** Default sources listed in the mockup (line 155). */
-export const BIBLIO_DEFAULT_SOURCES: readonly string[] = [
+/** Empty by default — the sources list is the practitioner's own
+ *  Library. Rendering these four specific texts as if they were the
+ *  user's library was misleading (b108-2fj). Use ``BIBLIO_DEMO_SOURCES``
+ *  in stories + tests instead. */
+export const BIBLIO_DEFAULT_SOURCES: readonly string[] = [];
+
+/** Demo library used only by Storybook and unit tests. */
+export const BIBLIO_DEMO_SOURCES: readonly string[] = [
   "The Chaldean Oracles",
   "Liber AL vel Legis",
   "The Picatrix",
