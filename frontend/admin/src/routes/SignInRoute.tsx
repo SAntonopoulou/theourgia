@@ -99,15 +99,12 @@ export function SignInRoute() {
   const navigate = useNavigate();
   const supported = isWebauthnSupported();
 
-  // Demo signin is gated behind an env flag + a URL query param so it
-  // never appears on the production landing page. Set
-  // ``VITE_THEOURGIA_ENABLE_DEMO_SIGNIN=1`` at build time, or visit
-  // ``/signin?demo=1`` to reveal it (useful for local dev + preview
-  // deploys where the operator hasn't enrolled a passkey yet).
-  const demoEnabled =
-    import.meta.env.VITE_THEOURGIA_ENABLE_DEMO_SIGNIN === "1" ||
-    (typeof window !== "undefined" &&
-      new URLSearchParams(window.location.search).get("demo") === "1");
+  // Magickal-name sign-in is the primary path for operators without
+  // hardware WebAuthn: pair it with TOTP 2FA at /settings/totp and the
+  // security model is (something-they-typed) + (something-their-phone-has).
+  // Always shown; the passkey button above is still there for operators
+  // with hardware keys.
+  const magickalNameEnabled = true;
 
   const [showDemo, setShowDemo] = useState(false);
   const [magickalName, setMagickalName] = useState("");
@@ -301,7 +298,7 @@ export function SignInRoute() {
             Firefox, or Edge over HTTPS.
           </div>
         ) : null}
-        {demoEnabled ? (
+        {magickalNameEnabled ? (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ flex: 1, height: 1, background: "var(--line)" }} />
@@ -350,7 +347,7 @@ export function SignInRoute() {
                 style={QUIET_BUTTON}
                 onClick={() => setShowDemo(true)}
               >
-                Sign in with magickal name (demo)
+                Sign in with magickal name
               </button>
             )}
           </>
