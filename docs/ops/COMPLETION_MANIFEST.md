@@ -46,7 +46,7 @@ manifest is the record of the lie.
 | `/app/journal` | `GET /api/v1/entries` | ✅ | b108-2cx · timeline + row click → editor |
 | `/app/editor/:id` | `GET /api/v1/entries/{id}` + `PATCH .../body` | 🚧 | Tiptap loads + auto-saves; editor blocks status below |
 | `/app/library` | `GET /api/v1/books` | 🚧 | Lists real books; add/edit flow partially wired |
-| `/app/capture` | `POST /api/v1/entries` | 🟡 | Quick-capture; should navigate to editor after save |
+| `/app/capture` | `POST /api/v1/entries` | 🚧 | b108-2fx audit: offline-first — appends to `localStorage.theourgia.queue`, drains via `apiMethods.createEntry` on mount + save. Handles offline with pending-count indicator. Navigate-to-editor-after-save is a UX enhancement wish, not a bug. |
 | `/app/today` (`/`) | `GET /api/v1/today/ledger` | ✅ | Real ledger; sub-cards vary |
 
 ### Editor blocks (Tiptap nodes)
