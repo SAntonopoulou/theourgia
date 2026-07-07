@@ -330,6 +330,22 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2fi: **Connection · Demo signin button gated.**
+    /app/connection is the public-site hero-CTA target. Its "Demo
+    signin" button sat next to "Sign in with passkey" by default —
+    end users landing here saw a magickal-name-only bypass they
+    weren't meant to see. Gated with the same
+    VITE_THEOURGIA_ENABLE_DEMO_SIGNIN + ?demo=1 pair used on the
+    dedicated SignInRoute (b108-2ey).
+  - b108-2fh: **Identities route · fabricated DEMO_IDENTITIES gated
+    behind ?demo=1.** The five demo identities (Aspasia,
+    Theophrastos, Frater Sub Rosā V°, null.priest, V.) rendered as
+    if they were the practitioner's real author identities on
+    /app/identities/. Now default view is an honest empty state
+    ("Identities are not built yet.") with copy explaining the
+    Persona table is deferred to a later phase. The fabricated
+    preview only renders behind VITE_THEOURGIA_ENABLE_DEMO_IDENTITIES=1
+    or ?demo=1 — same pattern as SignInRoute.
   - b108-2fg: **Gematria + voce + magical-circle seeds scrubbed.**
     Three more pre-filled cultural specimens: GC_DEFAULT_INPUT
     "ἀγαθοδαίμων" (Greek "good spirit") pre-filled the gematria
