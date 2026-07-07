@@ -107,6 +107,13 @@ export function Connection() {
   const auth = useAuth();
   const [signinOpen, setSigninOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
+  // Demo signin is gated behind the same env flag + URL query as the
+  // dedicated SignInRoute (b108-2ey) so that end users landing here from
+  // the public-site hero CTA see only the passkey option in production.
+  const demoEnabled =
+    import.meta.env.VITE_THEOURGIA_ENABLE_DEMO_SIGNIN === "1" ||
+    (typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("demo") === "1");
 
   return (
     <div
@@ -257,14 +264,16 @@ export function Connection() {
             >
               Sign in with passkey
             </Button>
-            <Button
-              size="sm"
-              variant="quiet"
-              onClick={() => setSigninOpen(true)}
-              disabled={auth.status === "authenticated"}
-            >
-              Demo signin
-            </Button>
+            {demoEnabled ? (
+              <Button
+                size="sm"
+                variant="quiet"
+                onClick={() => setSigninOpen(true)}
+                disabled={auth.status === "authenticated"}
+              >
+                Demo signin
+              </Button>
+            ) : null}
             <Button
               size="sm"
               variant="secondary"
