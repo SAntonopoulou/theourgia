@@ -336,6 +336,20 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2fy: **a11y sweep · Escape closes 17 modals/drawers + 1
+    labelling fix.** Task #209 substantive attack. 22 shared modals
+    rendered `role="dialog"` without any Escape-key close handler —
+    a violation of the standard modal a11y pattern. Introduced a
+    small `hooks/useEscapeToClose(open, onClose)` hook and wired
+    it into 17 modals (all those with a matching open/onClose
+    prop pair). Also fixed `PluginUpdateDiffModal` which had
+    `role="dialog"` + `aria-modal` but no accessible label — added
+    `aria-labelledby` pointing at the h2 title. Six surfaces
+    skipped as follow-ups: their `role="dialog"` sits on an inline
+    sub-modal whose parent owns the open state internally
+    (NewsletterEditor/Composer, AgentCapabilityReview,
+    QueryBuilder, PrivateViewers, GematriaCalculator) — fix
+    requires component extraction.
   - b108-2fu: **WebFingerVerify · Sophia's magickal-name handle scrubbed
     + manifest correction.** initialHandle="@soror-eu-a@theourgia.com"
     pre-filled the verify surface with Sophia's identity on every
