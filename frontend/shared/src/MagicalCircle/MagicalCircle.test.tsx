@@ -388,14 +388,14 @@ describe("PresetCircleLibrary", () => {
 // ─── MagicalCircleSurface ────────────────────────────────────────
 
 describe("MagicalCircleSurface", () => {
-  it("defaults to 3 rings · archangels compass · hexagram centre", () => {
+  it("defaults post-b108-2fp scrub · 1 blank ring · custom compass · blank centre", () => {
     render(<MagicalCircleSurface />);
     const surface = document.querySelector(
       "[data-component='magical-circle-surface']",
     );
-    expect(surface).toHaveAttribute("data-ring-count", "3");
-    expect(surface).toHaveAttribute("data-compass", "archangels");
-    expect(surface).toHaveAttribute("data-centre", "hexagram");
+    expect(surface).toHaveAttribute("data-ring-count", "1");
+    expect(surface).toHaveAttribute("data-compass", "custom");
+    expect(surface).toHaveAttribute("data-centre", "blank");
   });
 
   it("adding a ring increases the count up to 6", () => {
@@ -477,7 +477,12 @@ describe("MagicalCircleSurface", () => {
   });
 
   it("picking a ring kind updates that ring", () => {
-    render(<MagicalCircleSurface />);
+    render(
+      <MagicalCircleSurface
+        initialRings={["glyphs", "glyphs", "inscription"]}
+        initialActiveRing={2}
+      />,
+    );
     fireEvent.click(
       document.querySelector("[data-kind='blank']") as Element,
     );

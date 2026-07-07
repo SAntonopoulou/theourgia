@@ -107,10 +107,16 @@ export interface MagicalCircleSurfaceProps {
 
 export function MagicalCircleSurface({
   initialName = MC_TOPBAR_DEFAULT_NAME,
-  initialRings = ["glyphs", "glyphs", "inscription"],
-  initialActiveRing = 2,
-  initialCompass = "archangels",
-  initialCentre = "hexagram",
+  // Empty structural default — a single blank ring, no compass
+  // tradition assigned, blank centre. The mockup seeded three rings
+  // (glyphs · glyphs · inscription), archangel cardinals, and a
+  // hexagram centre so every fresh circle looked like a fully-built
+  // composition. That leaked as if the practitioner had already
+  // started designing.
+  initialRings = ["blank"],
+  initialActiveRing = 0,
+  initialCompass = "custom",
+  initialCentre = "blank",
   usedInCount = 3,
   onSave,
   onLoadPreset,
