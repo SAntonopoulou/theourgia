@@ -56,8 +56,10 @@ export interface PendulumLogEntry {
 }
 
 export interface PendulumPanelProps {
-  /** Initial answer to show on the dial. */
-  initialAnswer?: PendulumAnswer;
+  /** Initial answer to show on the dial. Pass ``null`` (default) for
+   *  the honest "not yet asked" state; the dial + label render in
+   *  --ink-mute until the practitioner clicks Ask. */
+  initialAnswer?: PendulumAnswer | null;
   /** Initial log entries. */
   initialLog?: readonly PendulumLogEntry[];
   /** Optional injected random source. */
@@ -75,14 +77,14 @@ const EYEBROW: CSSProperties = {
 };
 
 export function PendulumPanel({
-  initialAnswer = "Yes",
+  initialAnswer = null,
   initialLog,
   random = Math.random,
   className,
   style,
 }: PendulumPanelProps) {
   const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState<PendulumAnswer>(initialAnswer);
+  const [answer, setAnswer] = useState<PendulumAnswer | null>(initialAnswer);
   const [log, setLog] = useState<readonly PendulumLogEntry[]>(
     initialLog ?? [],
   );
@@ -274,11 +276,11 @@ export function PendulumPanel({
               style={{
                 fontFamily: "var(--font-display)",
                 fontSize: 30,
-                color: "var(--accent)",
+                color: answer === null ? "var(--ink-mute)" : "var(--accent)",
                 lineHeight: 1,
               }}
             >
-              {answer}
+              {answer ?? "—"}
             </div>
             <div
               style={{
@@ -288,7 +290,9 @@ export function PendulumPanel({
                 marginTop: 4,
               }}
             >
-              {PEND_DEFAULT_NOTE}
+              {answer === null
+                ? "Ask a question above to see the pendulum's answer."
+                : PEND_DEFAULT_NOTE}
             </div>
           </div>
         </div>

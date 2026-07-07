@@ -17,7 +17,10 @@ const ANGLE_FOR: Record<PendulumAnswer, number> = {
 };
 
 export interface PendulumDialProps {
-  answer: PendulumAnswer;
+  /** ``null`` renders the dial at rest in --ink-mute — the honest
+   *  "not yet asked" state, added in b108-2fr to stop the panel from
+   *  looking like the pendulum had already answered "Yes" on load. */
+  answer: PendulumAnswer | null;
   className?: string;
   style?: CSSProperties;
 }
@@ -27,16 +30,22 @@ export function PendulumDial({
   className,
   style,
 }: PendulumDialProps) {
-  const angle = ANGLE_FOR[answer];
+  const resting = answer === null;
+  const angle = resting ? 0 : ANGLE_FOR[answer];
+  const bobColor = resting ? "var(--ink-mute)" : "var(--accent)";
   return (
     <svg
       width={120}
       height={150}
       viewBox="0 0 120 150"
       role="img"
-      aria-label={`Pendulum answering ${answer}`}
+      aria-label={
+        resting
+          ? "Pendulum at rest — no answer yet"
+          : `Pendulum answering ${answer}`
+      }
       data-component="pendulum-dial"
-      data-answer={answer}
+      data-answer={resting ? "" : answer}
       className={className}
       style={style}
     >
@@ -50,7 +59,7 @@ export function PendulumDial({
           stroke="var(--line-2)"
           strokeWidth={1.5}
         />
-        <circle cx="60" cy="126" r="11" fill="var(--accent)" />
+        <circle cx="60" cy="126" r="11" fill={bobColor} />
       </g>
       <path
         d="M30 138h60"
