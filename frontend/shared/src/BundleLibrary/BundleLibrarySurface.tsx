@@ -131,7 +131,7 @@ export function BundleLibrarySurface({
         </button>
       </header>
 
-      <main
+      <div
         className="scroll"
         style={{
           overflowY: "auto",
@@ -213,7 +213,7 @@ export function BundleLibrarySurface({
             </div>
           )}
         </div>
-      </main>
+      </div>
     </section>
   );
 }

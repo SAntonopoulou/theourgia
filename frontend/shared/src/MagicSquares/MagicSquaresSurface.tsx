@@ -277,7 +277,7 @@ export function MagicSquaresSurface({
           onNew={handleNew}
         />
 
-        <main className="scroll" style={MAIN_STYLE}>
+        <div className="scroll" style={MAIN_STYLE}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <div style={TOOLBAR_STYLE}>
               <div role="group" aria-label="Mode" style={SEGMENT_GROUP_STYLE}>
@@ -585,7 +585,7 @@ export function MagicSquaresSurface({
               </div>
             ) : null}
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );

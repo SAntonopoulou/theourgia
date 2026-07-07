@@ -371,7 +371,7 @@ export function StudiesIndexSurface({
         </div>
       </header>
 
-      <main
+      <div
         className="scroll"
         style={{ overflowY: "auto", minHeight: 0, padding: "20px 26px 50px" }}
       >
@@ -616,7 +616,7 @@ export function StudiesIndexSurface({
             ))}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

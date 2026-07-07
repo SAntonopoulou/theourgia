@@ -401,7 +401,7 @@ export function HubDiscoverySurface({
         </div>
       </header>
 
-      <main className="scroll" style={MAIN}>
+      <div className="scroll" style={MAIN}>
         <div style={INNER}>
           <div style={SEARCH_WRAP}>
             <span
@@ -548,7 +548,7 @@ export function HubDiscoverySurface({
             </div>
           )}
         </div>
-      </main>
+      </div>
     </section>
   );
 }

@@ -258,7 +258,7 @@ export function VocesMagicaeSurface({
         </button>
       </div>
 
-      <main
+      <div
         className="scroll"
         style={{
           overflowY: "auto",
@@ -294,7 +294,7 @@ export function VocesMagicaeSurface({
             </p>
           ) : null}
         </div>
-      </main>
+      </div>
 
       <VoceDetailDrawer
         open={openVoce !== null}

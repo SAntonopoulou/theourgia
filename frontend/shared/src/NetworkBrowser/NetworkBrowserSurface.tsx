@@ -457,7 +457,7 @@ export function NetworkBrowserSurface({
         </aside>
 
         {/* Peer list */}
-        <main className="scroll" style={MAIN}>
+        <div className="scroll" style={MAIN}>
           <div
             style={{
               display: "flex",
@@ -581,7 +581,7 @@ export function NetworkBrowserSurface({
               {NB_TRUST_CTA}
             </button>
           </div>
-        </main>
+        </div>
       </div>
     </section>
   );

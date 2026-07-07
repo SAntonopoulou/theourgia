@@ -422,7 +422,7 @@ export function MyNetworksSurface({
         </button>
       </header>
 
-      <main className="scroll" style={MAIN}>
+      <div className="scroll" style={MAIN}>
         <div style={INNER}>
           {isEmpty ? (
             <EmptyState onDiscover={onDiscover} />
@@ -563,7 +563,7 @@ export function MyNetworksSurface({
             </>
           )}
         </div>
-      </main>
+      </div>
     </section>
   );
 }

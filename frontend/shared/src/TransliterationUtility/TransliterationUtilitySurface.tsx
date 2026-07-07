@@ -403,7 +403,7 @@ export function TransliterationUtilitySurface({
         </aside>
 
         {/* CENTRE: source input */}
-        <main
+        <div
           className="scroll"
           style={{
             flex: "1 1 auto",
@@ -488,7 +488,7 @@ export function TransliterationUtilitySurface({
           >
             Characters outside the source script are passed through unchanged.
           </div>
-        </main>
+        </div>
 
         {/* RIGHT: scheme results */}
         <aside

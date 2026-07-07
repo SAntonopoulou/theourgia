@@ -476,7 +476,7 @@ export function PricingDistributionSurface({
         ...style,
       }}
     >
-      <main className="scroll" style={{ overflowY: "auto" }}>
+      <div className="scroll" style={{ overflowY: "auto" }}>
         <div style={FORM_WRAP}>
           <h1 style={H1}>Pricing &amp; distribution</h1>
           <p style={SUB}>
@@ -886,7 +886,7 @@ export function PricingDistributionSurface({
             </label>
           </section>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -278,7 +278,7 @@ export function RolesPermissionsEditorSurface({
         </div>
       </header>
 
-      <main className="scroll" style={MAIN}>
+      <div className="scroll" style={MAIN}>
         <div style={INNER}>
           <div
             style={{
@@ -317,7 +317,7 @@ export function RolesPermissionsEditorSurface({
 
           {denied ? <DeniedBanner denied={denied} /> : null}
         </div>
-      </main>
+      </div>
     </section>
   );
 }

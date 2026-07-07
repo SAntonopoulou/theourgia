@@ -202,7 +202,7 @@ export function LineageAdmin() {
   );
 
   return (
-    <main className="scroll" style={{ overflowY: "auto", minHeight: 0, padding: "24px 28px 60px" }}>
+    <div className="scroll" style={{ overflowY: "auto", minHeight: 0, padding: "24px 28px 60px" }}>
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
         <p
           style={{
@@ -347,6 +347,6 @@ export function LineageAdmin() {
         onConfirm={() => setRelinquishTarget(null)}
         onCancel={() => setRelinquishTarget(null)}
       />
-    </main>
+    </div>
   );
 }

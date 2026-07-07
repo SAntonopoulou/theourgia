@@ -732,7 +732,7 @@ export function Settings() {
   return (
     <div style={{ margin: "0 -28px", display: "flex", minHeight: 0 }}>
       <Subnav active={section} onChange={setSection} />
-      <main
+      <div
         className="scroll"
         style={{
           flex: 1,
@@ -744,7 +744,7 @@ export function Settings() {
         }}
       >
         {section === "appearance" ? <AppearanceSection /> : <StubSection section={section} />}
-      </main>
+      </div>
     </div>
   );
 }

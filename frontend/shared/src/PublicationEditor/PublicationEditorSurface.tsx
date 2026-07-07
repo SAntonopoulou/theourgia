@@ -619,7 +619,7 @@ export function PublicationEditorSurface({
         ) : null}
 
         {/* Editor centre */}
-        <main className="scroll" style={MAIN_STYLE}>
+        <div className="scroll" style={MAIN_STYLE}>
           <div style={{ maxWidth: 720, margin: "0 auto" }}>
             {isBook && activeChapter ? (
               <>
@@ -695,7 +695,7 @@ export function PublicationEditorSurface({
               />
             </div>
           </div>
-        </main>
+        </div>
 
         {/* Metadata rail */}
         <aside

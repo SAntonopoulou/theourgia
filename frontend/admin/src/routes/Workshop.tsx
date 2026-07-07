@@ -524,7 +524,7 @@ export function Workshop() {
   );
 
   return (
-    <main className="scroll" style={{ overflowY: "auto", minHeight: 0, padding: "26px 28px 60px" }}>
+    <div className="scroll" style={{ overflowY: "auto", minHeight: 0, padding: "26px 28px 60px" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
 
         {/* Builders */}
@@ -566,6 +566,6 @@ export function Workshop() {
           <SortesCard />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

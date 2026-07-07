@@ -166,7 +166,7 @@ export function SubscriptionTiersSurface({
         ...style,
       }}
     >
-      <main className="scroll" style={{ overflowY: "auto" }}>
+      <div className="scroll" style={{ overflowY: "auto" }}>
         <div style={MAIN_WRAP}>
           <h1 style={H1}>Subscription tiers</h1>
           <p style={SUB}>
@@ -556,7 +556,7 @@ export function SubscriptionTiersSurface({
             </span>
           </label>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

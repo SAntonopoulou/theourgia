@@ -541,7 +541,7 @@ export function VocesLibrarySurface({
         </div>
       </header>
 
-      <main
+      <div
         className="scroll"
         style={{ overflowY: "auto", minHeight: 0, padding: 0 }}
       >
@@ -770,7 +770,7 @@ export function VocesLibrarySurface({
             ))}
           </div>
         )}
-      </main>
+      </div>
 
       {drawerOpen && selected ? (
         <VoceDetailDrawer

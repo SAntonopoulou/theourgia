@@ -266,7 +266,7 @@ export function PluginDetailSurface({
         </div>
       </header>
 
-      <main className="scroll" style={MAIN}>
+      <div className="scroll" style={MAIN}>
         <div
           style={{
             maxWidth: 640,
@@ -474,7 +474,7 @@ export function PluginDetailSurface({
             <PluginKindIcon kind={kind} />
           </span>
         </div>
-      </main>
+      </div>
 
       <footer
         style={{

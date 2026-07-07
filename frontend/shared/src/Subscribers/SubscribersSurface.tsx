@@ -228,7 +228,7 @@ export function SubscribersSurface({
         ...style,
       }}
     >
-      <main className="scroll" style={{ overflowY: "auto" }}>
+      <div className="scroll" style={{ overflowY: "auto" }}>
         <div style={MAIN_WRAP}>
           <h1 style={H1}>Subscribers</h1>
           <p style={SUB}>
@@ -559,7 +559,7 @@ export function SubscribersSurface({
             not retain payment data beyond webhook events.
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

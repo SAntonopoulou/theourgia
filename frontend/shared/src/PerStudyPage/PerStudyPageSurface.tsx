@@ -449,7 +449,7 @@ export function PerStudyPageSurface({
           overflow: "hidden",
         }}
       >
-        <main
+        <div
           className="scroll"
           style={{
             flex: "1 1 auto",
@@ -766,7 +766,7 @@ export function PerStudyPageSurface({
               </>
             ) : null}
           </article>
-        </main>
+        </div>
 
         {/* Re-run rail */}
         <aside

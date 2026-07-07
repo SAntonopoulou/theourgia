@@ -288,7 +288,7 @@ export function TalismanDesignerSurface({
           }}
         />
 
-        <main style={MAIN_STYLE}>
+        <div style={MAIN_STYLE}>
           <div
             style={{
               flex: 1,
@@ -407,7 +407,7 @@ export function TalismanDesignerSurface({
               {SNAP_GUIDES_CAPTION}
             </span>
           </div>
-        </main>
+        </div>
 
         <aside
           data-component="talisman-metadata-rail"

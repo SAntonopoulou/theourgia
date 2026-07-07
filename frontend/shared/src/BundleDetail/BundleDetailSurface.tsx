@@ -130,7 +130,7 @@ export function BundleDetailSurface({
         </div>
       </header>
 
-      <main
+      <div
         className="scroll"
         style={{
           overflowY: "auto",
@@ -376,7 +376,7 @@ export function BundleDetailSurface({
             </div>
           </section>
         </div>
-      </main>
+      </div>
 
       <footer
         style={{

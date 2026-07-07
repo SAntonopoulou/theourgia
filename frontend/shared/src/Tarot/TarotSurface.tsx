@@ -250,7 +250,7 @@ export function TarotSurface({
         </div>
       </div>
 
-      <main
+      <div
         className="scroll"
         style={{
           overflowY: "auto",
@@ -475,7 +475,7 @@ export function TarotSurface({
             </div>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

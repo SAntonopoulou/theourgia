@@ -230,7 +230,7 @@ export function GroupRitualCoordinationSurface({
       data-status={status}
       style={{ ...ROOT, ...style }}
     >
-      <main style={MAIN}>
+      <div style={MAIN}>
         {/* Header */}
         <header style={{ textAlign: "center", marginBottom: 18 }}>
           <div
@@ -443,7 +443,7 @@ export function GroupRitualCoordinationSurface({
             ))}
           </div>
         </section>
-      </main>
+      </div>
 
       {/* Sticky footer — input + "Mark me as completed" */}
       {canPost ? (

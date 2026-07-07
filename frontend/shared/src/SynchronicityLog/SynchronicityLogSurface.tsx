@@ -405,7 +405,7 @@ export function SynchronicityLogSurface({
         </aside>
 
         {/* Main log */}
-        <main
+        <div
           className="scroll"
           style={{
             flex: "1 1 auto",
@@ -701,7 +701,7 @@ export function SynchronicityLogSurface({
               />
             </div>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );

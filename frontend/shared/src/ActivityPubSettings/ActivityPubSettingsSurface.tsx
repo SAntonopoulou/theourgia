@@ -217,7 +217,7 @@ export function ActivityPubSettingsSurface({
         </div>
       </header>
 
-      <main className="scroll" style={MAIN}>
+      <div className="scroll" style={MAIN}>
         <div style={{ maxWidth: 720, margin: "0 auto" }}>
           <p
             data-field="intro"
@@ -326,7 +326,7 @@ export function ActivityPubSettingsSurface({
             </button>
           </div>
         </div>
-      </main>
+      </div>
 
       {confirmOpen ? (
         <FirstActivationConfirm

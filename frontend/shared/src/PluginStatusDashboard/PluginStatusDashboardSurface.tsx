@@ -139,7 +139,7 @@ export function PluginStatusDashboardSurface({
         </div>
       </header>
 
-      <main
+      <div
         className="scroll"
         style={{
           overflowY: "auto",
@@ -467,7 +467,7 @@ export function PluginStatusDashboardSurface({
             </div>
           </section>
         </div>
-      </main>
+      </div>
     </section>
   );
 }

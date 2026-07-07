@@ -344,7 +344,7 @@ export function HubMemberDashboardSurface({
         })}
       </nav>
 
-      <main className="scroll" style={MAIN}>
+      <div className="scroll" style={MAIN}>
         <div style={INNER}>
           {activeTab === "feed" ? <FeedTab feedDays={feedDays} /> : null}
           {activeTab === "subs" ? (
@@ -360,7 +360,7 @@ export function HubMemberDashboardSurface({
             />
           ) : null}
         </div>
-      </main>
+      </div>
     </section>
   );
 }

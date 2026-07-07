@@ -521,7 +521,7 @@ export function MediaLibrarySurface({
         </div>
       </div>
 
-      <main className="scroll" style={MAIN}>
+      <div className="scroll" style={MAIN}>
         {visible.length === 0 && !showSealedCard ? (
           <div
             data-ml-empty
@@ -723,7 +723,7 @@ export function MediaLibrarySurface({
             ) : null}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

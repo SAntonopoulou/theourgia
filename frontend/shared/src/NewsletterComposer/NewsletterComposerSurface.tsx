@@ -412,7 +412,7 @@ export function NewsletterComposerSurface({
           </div>
         </aside>
 
-        <main className="scroll" style={MAIN}>
+        <div className="scroll" style={MAIN}>
           <div style={INNER}>
             <div
               style={{
@@ -647,7 +647,7 @@ export function NewsletterComposerSurface({
               {NNC_FOOTER_DISCLAIMER}
             </div>
           </div>
-        </main>
+        </div>
       </div>
 
       {confirmOpen ? (

@@ -666,7 +666,7 @@ export function QueryBuilderSurface({
         </aside>
 
         {/* CENTRE: preview + results */}
-        <main
+        <div
           className="scroll"
           style={{
             flex: "1 1 auto",
@@ -924,7 +924,7 @@ export function QueryBuilderSurface({
               </p>
             </div>
           )}
-        </main>
+        </div>
       </div>
 
       {/* Save modal */}

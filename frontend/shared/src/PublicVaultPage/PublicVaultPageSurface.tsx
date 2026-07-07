@@ -345,7 +345,7 @@ export function PublicVaultPageSurface({
         })}
       </nav>
 
-      <main style={MAIN}>
+      <div style={MAIN}>
         {tab === "publications" ? (
           <div data-tab-content="publications">
             <div
@@ -803,7 +803,7 @@ export function PublicVaultPageSurface({
             ) : null}
           </div>
         ) : null}
-      </main>
+      </div>
 
       {/* Footer */}
       <footer data-vault-footer style={FOOTER}>

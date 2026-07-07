@@ -139,7 +139,7 @@ export function GeomancySurface({
       className={className}
       style={style}
     >
-      <main
+      <div
         className="scroll"
         style={{
           overflowY: "auto",
@@ -402,7 +402,7 @@ export function GeomancySurface({
             />
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

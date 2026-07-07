@@ -296,7 +296,7 @@ export function Oracle() {
   );
 
   return (
-    <main
+    <div
       className="oracle-root scroll"
       style={{
         overflowY: "auto",
@@ -559,6 +559,6 @@ export function Oracle() {
           </span>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

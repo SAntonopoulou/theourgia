@@ -48,7 +48,7 @@ export function PracticeLogsSurface({
       className={className}
       style={style}
     >
-      <main
+      <div
         className="scroll"
         style={{
           overflowY: "auto",
@@ -76,7 +76,7 @@ export function PracticeLogsSurface({
             <BanishingPanel onSave={forward("banish")} />
           ) : null}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

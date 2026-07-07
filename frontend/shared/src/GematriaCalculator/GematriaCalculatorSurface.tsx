@@ -719,7 +719,7 @@ export function GematriaCalculatorSurface({
         </aside>
 
         {/* CENTRE: input + results */}
-        <main className="scroll" style={MAIN_STYLE}>
+        <div className="scroll" style={MAIN_STYLE}>
           <div style={{ maxWidth: 720, margin: "0 auto" }}>
             <label htmlFor="gc-text-input" style={INPUT_LABEL}>
               {GC_TEXT_INPUT_LABEL}
@@ -956,7 +956,7 @@ export function GematriaCalculatorSurface({
               </div>
             )}
           </div>
-        </main>
+        </div>
       </div>
 
       {customOpen ? (

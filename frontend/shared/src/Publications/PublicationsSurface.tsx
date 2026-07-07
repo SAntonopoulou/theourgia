@@ -490,7 +490,7 @@ export function PublicationsSurface({
         })}
       </div>
 
-      <main className="scroll" style={MAIN_STYLE}>
+      <div className="scroll" style={MAIN_STYLE}>
         {isEmpty ? (
           <div
             data-pubs-empty
@@ -735,7 +735,7 @@ export function PublicationsSurface({
             })}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

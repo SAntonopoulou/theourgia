@@ -215,7 +215,7 @@ export function NewsletterEditorSurface({
     >
       <div style={PANES}>
         {/* Editor centre */}
-        <main className="scroll" style={MAIN_STYLE}>
+        <div className="scroll" style={MAIN_STYLE}>
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <input
               type="text"
@@ -246,7 +246,7 @@ export function NewsletterEditorSurface({
               />
             </div>
           </div>
-        </main>
+        </div>
 
         {/* Metadata rail */}
         <aside

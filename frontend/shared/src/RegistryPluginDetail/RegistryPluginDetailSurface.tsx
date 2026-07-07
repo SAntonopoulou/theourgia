@@ -196,7 +196,7 @@ export function RegistryPluginDetailSurface({
         </button>
       </header>
 
-      <main
+      <div
         className="scroll"
         style={{
           overflowY: "auto",
@@ -648,7 +648,7 @@ export function RegistryPluginDetailSurface({
             {RPD_VIEW_AUTHOR_CTA}
           </button>
         </div>
-      </main>
+      </div>
     </section>
   );
 }

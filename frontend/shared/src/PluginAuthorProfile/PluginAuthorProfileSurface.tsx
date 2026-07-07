@@ -106,7 +106,7 @@ export function PluginAuthorProfileSurface({
         </div>
       </header>
 
-      <main
+      <div
         className="scroll"
         style={{
           overflowY: "auto",
@@ -337,7 +337,7 @@ export function PluginAuthorProfileSurface({
             </div>
           </section>
         </div>
-      </main>
+      </div>
     </section>
   );
 }

@@ -201,7 +201,7 @@ export function PrivateViewersSurface({
         </button>
       </header>
 
-      <main className="scroll" style={MAIN}>
+      <div className="scroll" style={MAIN}>
         <div style={INNER}>
           {viewers.map((v) => (
             <div
@@ -337,7 +337,7 @@ export function PrivateViewersSurface({
             </div>
           ))}
         </div>
-      </main>
+      </div>
 
       {modalOpen ? (
         <NewViewerModal

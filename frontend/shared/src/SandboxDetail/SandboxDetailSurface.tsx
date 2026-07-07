@@ -209,7 +209,7 @@ export function SandboxDetailSurface({
         </span>
       </div>
 
-      <main
+      <div
         className="scroll"
         style={{
           overflowY: "auto",
@@ -365,7 +365,7 @@ export function SandboxDetailSurface({
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </section>
   );
 }

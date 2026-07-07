@@ -221,7 +221,7 @@ export function Wellbeing() {
   };
 
   return (
-    <main className="scroll" style={{ overflowY: "auto", minHeight: 0, padding: "30px 28px" }}>
+    <div className="scroll" style={{ overflowY: "auto", minHeight: 0, padding: "30px 28px" }}>
       <div style={{ maxWidth: 1080, margin: "0 auto", display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: 30 }}>
 
         {/* LEFT — settings */}
@@ -858,6 +858,6 @@ export function Wellbeing() {
         @keyframes wbpop { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes wbdrawer { from { opacity: 0; } to { opacity: 1; } }
       `}</style>
-    </main>
+    </div>
   );
 }

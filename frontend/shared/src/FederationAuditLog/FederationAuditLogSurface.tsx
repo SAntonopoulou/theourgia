@@ -423,7 +423,7 @@ export function FederationAuditLogSurface({
           </label>
         </aside>
 
-        <main className="scroll" style={MAIN}>
+        <div className="scroll" style={MAIN}>
           <div
             style={{
               display: "flex",
@@ -596,7 +596,7 @@ export function FederationAuditLogSurface({
               {FAL_EXPORT_CTA}
             </button>
           </div>
-        </main>
+        </div>
       </div>
     </section>
   );

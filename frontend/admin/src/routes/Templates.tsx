@@ -263,7 +263,7 @@ export function Templates() {
   const sel = allTemplates.find((t) => t.id === selectedId) ?? allTemplates[0]!;
 
   return (
-    <main className="scroll" style={{ overflowY: "auto", minHeight: 0, padding: "24px 28px 60px" }}>
+    <div className="scroll" style={{ overflowY: "auto", minHeight: 0, padding: "24px 28px 60px" }}>
       <div style={{ maxWidth: 1140, margin: "0 auto", display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: 26 }}>
 
         {/* LEFT — gallery */}
@@ -474,6 +474,6 @@ export function Templates() {
           </p>
         </aside>
       </div>
-    </main>
+    </div>
   );
 }

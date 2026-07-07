@@ -195,7 +195,7 @@ export function InstalledPluginsSurface({
         </button>
       </header>
 
-      <main className="scroll" style={MAIN}>
+      <div className="scroll" style={MAIN}>
         <div style={{ maxWidth: 860, margin: "0 auto" }}>
           <div
             data-field="count-label"
@@ -237,7 +237,7 @@ export function InstalledPluginsSurface({
             </div>
           )}
         </div>
-      </main>
+      </div>
     </section>
   );
 }

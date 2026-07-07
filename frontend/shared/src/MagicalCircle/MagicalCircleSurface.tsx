@@ -346,14 +346,14 @@ export function MagicalCircleSurface({
           onPickCompass={setCompass}
         />
 
-        <main style={MAIN_STYLE}>
+        <div style={MAIN_STYLE}>
           <CirclePreview
             rings={rings.map((kind) => ({ kind }))}
             compass={compass}
             centre={centre}
             printTile={printTile}
           />
-        </main>
+        </div>
 
         <aside
           data-component="magical-circle-right-rail"

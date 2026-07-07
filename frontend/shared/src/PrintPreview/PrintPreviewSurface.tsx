@@ -537,7 +537,7 @@ export function PrintPreviewSurface({
 
       {/* Spread + rail */}
       <div style={PANES}>
-        <main className="scroll" style={MAIN_STYLE}>
+        <div className="scroll" style={MAIN_STYLE}>
           <div
             data-spread-label
             style={{
@@ -572,7 +572,7 @@ export function PrintPreviewSurface({
               />
             ) : null}
           </div>
-        </main>
+        </div>
 
         <aside className="scroll" aria-label="Typography" style={RAIL_STYLE}>
           {/* Body font */}

@@ -165,7 +165,7 @@ export function PluginConfigurationSurface({
         </div>
       </header>
 
-      <main
+      <div
         className="scroll"
         style={{
           overflowY: "auto",
@@ -204,7 +204,7 @@ export function PluginConfigurationSurface({
             />
           ))}
         </div>
-      </main>
+      </div>
 
       <footer
         style={{

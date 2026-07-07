@@ -341,7 +341,7 @@ export function HubAdminDashboardSurface({
         })}
       </nav>
 
-      <main className="scroll" style={MAIN}>
+      <div className="scroll" style={MAIN}>
         <div style={INNER}>
           {activeTab === "members" ? (
             <MembersTab
@@ -370,7 +370,7 @@ export function HubAdminDashboardSurface({
             />
           ) : null}
         </div>
-      </main>
+      </div>
     </section>
   );
 }

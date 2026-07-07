@@ -428,7 +428,7 @@ export function HubPublicFaceSurface({
         </div>
       </header>
 
-      <main style={MAIN}>
+      <div style={MAIN}>
         <section style={{ marginBottom: 34 }} data-block="about">
           <div style={EYEBROW}>{HPF_ABOUT}</div>
           <p style={ABOUT_BODY} data-field="about">
@@ -526,7 +526,7 @@ export function HubPublicFaceSurface({
             {HPF_AGPL_CREDIT}
           </div>
         </footer>
-      </main>
+      </div>
     </article>
   );
 }

@@ -687,7 +687,7 @@ function useDemoEnabled(): boolean {
 
 function IdentitiesEmptyState(): ReactNode {
   return (
-    <main
+    <div
       className="scroll"
       style={{
         overflowY: "auto",
@@ -744,7 +744,7 @@ function IdentitiesEmptyState(): ReactNode {
           to the URL.
         </p>
       </div>
-    </main>
+    </div>
   );
 }
 
@@ -806,7 +806,7 @@ export function Identities() {
   if (!selected) return null;
 
   return (
-    <main
+    <div
       className="scroll"
       style={{ overflowY: "auto", overflowX: "hidden", minHeight: 0, padding: "24px 28px" }}
     >
@@ -1062,6 +1062,6 @@ export function Identities() {
         }}
         onCancel={() => setArchiveTarget(null)}
       />
-    </main>
+    </div>
   );
 }

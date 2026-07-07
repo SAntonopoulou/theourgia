@@ -224,7 +224,7 @@ export function GroupRitualPostMortemSurface({
       data-surface="group-ritual-post-mortem"
       style={{ ...ROOT, ...style }}
     >
-      <main style={MAIN}>
+      <div style={MAIN}>
         {/* Header */}
         <header style={{ textAlign: "center", marginBottom: 18 }}>
           <div
@@ -604,7 +604,7 @@ export function GroupRitualPostMortemSurface({
             {GRPM_OPEN_AS_ENTRY}
           </button>
         </div>
-      </main>
+      </div>
     </article>
   );
 }

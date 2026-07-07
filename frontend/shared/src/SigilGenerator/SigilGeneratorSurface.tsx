@@ -355,7 +355,7 @@ export function SigilGeneratorSurface({
       <div className="sg-panes" style={PANES_STYLE}>
         <ModeRail value={mode} onChange={setMode} />
 
-        <main className="scroll" style={MAIN_STYLE}>
+        <div className="scroll" style={MAIN_STYLE}>
           <div style={{ maxWidth: 640, margin: "0 auto" }}>
             <div style={CONFIG_CARD}>
               <ConfigPanel
@@ -401,7 +401,7 @@ export function SigilGeneratorSurface({
               onMirror={() => setMirror((v) => !v)}
             />
           </div>
-        </main>
+        </div>
 
         <CarriesPanel
           intention={intention}

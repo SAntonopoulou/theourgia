@@ -141,7 +141,7 @@ export function SandboxBrowserSurface({
         </span>
       </div>
 
-      <main
+      <div
         className="scroll"
         style={{
           overflowY: "auto",
@@ -369,7 +369,7 @@ export function SandboxBrowserSurface({
             </>
           )}
         </div>
-      </main>
+      </div>
     </section>
   );
 }

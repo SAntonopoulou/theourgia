@@ -588,7 +588,7 @@ export function MediaDetailSurface({
         }}
       >
         {/* Viewer */}
-        <main
+        <div
           className="scroll"
           style={{
             flex: "1 1 auto",
@@ -674,7 +674,7 @@ export function MediaDetailSurface({
               </button>
             ) : null}
           </div>
-        </main>
+        </div>
 
         {/* Metadata rail */}
         <aside

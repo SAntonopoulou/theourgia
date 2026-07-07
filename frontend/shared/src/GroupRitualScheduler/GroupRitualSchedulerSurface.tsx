@@ -440,7 +440,7 @@ export function GroupRitualSchedulerSurface(
         </div>
       </header>
 
-      <main className="scroll" style={MAIN}>
+      <div className="scroll" style={MAIN}>
         <div style={INNER}>
           {/* S1 Basics */}
           <section data-section="basics">
@@ -832,7 +832,7 @@ export function GroupRitualSchedulerSurface(
             </button>
           </div>
         </div>
-      </main>
+      </div>
     </section>
   );
 }

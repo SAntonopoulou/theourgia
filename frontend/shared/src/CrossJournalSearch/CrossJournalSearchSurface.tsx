@@ -287,7 +287,7 @@ export function CrossJournalSearchSurface({
         </div>
       </header>
 
-      <main
+      <div
         className="scroll"
         style={{ overflowY: "auto", minHeight: 0, padding: 0 }}
       >
@@ -1185,7 +1185,7 @@ export function CrossJournalSearchSurface({
             </aside>
           ) : null}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

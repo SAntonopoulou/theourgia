@@ -295,7 +295,7 @@ export function AudioLibrarySurface({
         })}
       </div>
 
-      <main
+      <div
         className="scroll"
         style={{ overflowY: "auto", minHeight: 0, padding: "14px 24px 30px" }}
       >
@@ -427,7 +427,7 @@ export function AudioLibrarySurface({
             })
           )}
         </div>
-      </main>
+      </div>
 
       {/* Persistent mini-player */}
       <footer

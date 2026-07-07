@@ -396,7 +396,7 @@ export function AnalyticsDashboardSurface({
           overflow: "hidden",
         }}
       >
-        <main
+        <div
           className="scroll"
           style={{
             flex: "1 1 auto",
@@ -862,7 +862,7 @@ export function AnalyticsDashboardSurface({
               )}
             </section>
           </div>
-        </main>
+        </div>
 
         {/* Saved studies rail */}
         <aside

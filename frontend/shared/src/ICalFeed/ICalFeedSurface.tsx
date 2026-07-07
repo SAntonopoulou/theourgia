@@ -278,7 +278,7 @@ export function ICalFeedSurface({
         </div>
       </header>
 
-      <main
+      <div
         className="scroll"
         style={{ overflowY: "auto", minHeight: 0, padding: "30px 26px 60px" }}
       >
@@ -558,7 +558,7 @@ export function ICalFeedSurface({
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

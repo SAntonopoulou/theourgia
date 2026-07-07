@@ -211,7 +211,7 @@ export function WebFingerVerifySurface({
         </div>
       </header>
 
-      <main className="scroll" style={MAIN}>
+      <div className="scroll" style={MAIN}>
         <div style={{ maxWidth: 560, margin: "0 auto" }}>
           <p
             data-field="intro"
@@ -364,7 +364,7 @@ export function WebFingerVerifySurface({
             </div>
           </Step>
         </div>
-      </main>
+      </div>
     </section>
   );
 }

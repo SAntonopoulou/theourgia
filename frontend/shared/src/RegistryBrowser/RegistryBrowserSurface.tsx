@@ -157,7 +157,7 @@ export function RegistryBrowserSurface({
         </div>
       </header>
 
-      <main
+      <div
         className="scroll"
         style={{
           overflowY: "auto",
@@ -468,7 +468,7 @@ export function RegistryBrowserSurface({
             </div>
           )}
         </div>
-      </main>
+      </div>
     </section>
   );
 }

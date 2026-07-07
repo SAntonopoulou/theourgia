@@ -383,7 +383,7 @@ export function PublicationSettingsSurface({
         ...style,
       }}
     >
-      <main className="scroll" style={{ overflowY: "auto" }}>
+      <div className="scroll" style={{ overflowY: "auto" }}>
         <div style={FORM_WRAP}>
           <h1
             style={{
@@ -1092,7 +1092,7 @@ export function PublicationSettingsSurface({
             </div>
           </section>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

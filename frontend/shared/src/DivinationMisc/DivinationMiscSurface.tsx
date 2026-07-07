@@ -51,7 +51,7 @@ export function DivinationMiscSurface({
       className={className}
       style={style}
     >
-      <main
+      <div
         className="scroll"
         style={{
           overflowY: "auto",
@@ -75,7 +75,7 @@ export function DivinationMiscSurface({
             <ScryingPanel onSave={onSaveScrying} tranceHref={tranceHref} />
           ) : null}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

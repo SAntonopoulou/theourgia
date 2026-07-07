@@ -341,7 +341,7 @@ export function ToolRegistrySurface({
         </button>
       </div>
 
-      <main
+      <div
         className="scroll"
         style={{
           overflowY: "auto",
@@ -381,7 +381,7 @@ export function ToolRegistrySurface({
         ) : (
           <AltarsList altars={altars} onOpen={onOpenAltar} />
         )}
-      </main>
+      </div>
 
       <ToolDetailDrawer
         open={openTool !== null}

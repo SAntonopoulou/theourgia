@@ -101,7 +101,7 @@ export function RunesSurface({
       className={className}
       style={style}
     >
-      <main
+      <div
         className="scroll"
         style={{
           overflowY: "auto",
@@ -320,7 +320,7 @@ export function RunesSurface({
             </span>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

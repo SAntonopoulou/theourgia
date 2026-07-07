@@ -204,7 +204,7 @@ export function FollowersPaneSurface({
         </div>
       </header>
 
-      <main className="scroll" style={MAIN}>
+      <div className="scroll" style={MAIN}>
         <div style={{ maxWidth: 860, margin: "0 auto" }}>
           <div
             role="tablist"
@@ -246,7 +246,7 @@ export function FollowersPaneSurface({
             />
           )}
         </div>
-      </main>
+      </div>
     </section>
   );
 }
