@@ -330,6 +330,25 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2fu: **WebFingerVerify · Sophia's magickal-name handle scrubbed
+    + manifest correction.** initialHandle="@soror-eu-a@theourgia.com"
+    pre-filled the verify surface with Sophia's identity on every
+    fresh open. Scrubbed to empty; the existing placeholder
+    "@you@instance.tld" carries the guidance. Also corrected the
+    manifest table: the route was flagged 🔴 "TODO Phase 13 — never
+    actually verifies" but the code already implements the full
+    verification chain (WebFinger → self-link → actor JSON-LD →
+    SHA-256 key fingerprint) with honest partial-success handling
+    for cross-instance CORS. Status → 🚧.
+  - b108-2ft: **/app/circles wire-mapping audited; endpoint verified.**
+    The circles row was flagged 🔴 with "Payload shape mismatch — 422
+    on save" but the same manifest's curl-verified section already
+    showed /api/v1/circles POST → 201. Audit resolved: mapRingKind
+    (glyphs → glyph_row, multi → multi_glyph), mapCompass (winds →
+    greek_winds, dikpalas → vedic_dikpalas), mapCentre (solomonic →
+    solomonic_seal, square → kamea_trace) all produce backend-valid
+    enum values. Status → 🚧 (browser end-to-end still needs a save
+    through the UI; endpoint itself is proven live).
   - b108-2fs: **PilgrimageMap default precision now ~1km, not exact.**
     The surface defaulted `initial_precision='exact'`, rendering
     every pin at raw recorded coordinates on the first paint. H07
