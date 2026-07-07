@@ -71,7 +71,7 @@ manifest is the record of the lie.
 | `/app/talismans` | `/api/v1/talismans` | 🟡 | Route calls apiMethods; end-to-end unverified |
 | `/app/talismans/legacy` | — | ⛔ | Superseded |
 | `/app/magic-squares` | `/api/v1/magic-squares` | 🟡 | Route calls apiMethods; end-to-end unverified |
-| `/app/circles` | `/api/v1/circles` | 🔴 | Payload shape mismatch — 422 on save |
+| `/app/circles` | `/api/v1/circles` | 🚧 | Route wire-mapping audited b108-2ft: all three helpers (`mapRingKind`, `mapCentre`, `mapCompass`) produce backend-valid enum values. Endpoint itself POST 201 curl-verified (see curl table below). Browser end-to-end still needs a real save. |
 | `/app/circle` (legacy) | — | ⛔ | Superseded |
 | `/app/tools` | `/api/v1/tools` | 🟡 | Route calls apiMethods; end-to-end unverified |
 
