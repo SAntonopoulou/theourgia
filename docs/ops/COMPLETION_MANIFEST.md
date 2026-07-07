@@ -68,70 +68,70 @@ manifest is the record of the lie.
 |---|---|---|---|
 | `/app/sigils` | `POST /api/v1/sigils` | ✅ (fixed) | b108-2db · purpose+mode wire mapping fixed; was 422 before |
 | `/app/sigil` (legacy) | — | ⛔ | Superseded by /sigils |
-| `/app/talismans` | `/api/v1/talismans` | 🟡 | Route calls apiMethods; end-to-end unverified |
+| `/app/talismans` | `/api/v1/talismans` | 🚧 | b108-2fv audit: apiMethods calls live (create + list) |
 | `/app/talismans/legacy` | — | ⛔ | Superseded |
-| `/app/magic-squares` | `/api/v1/magic-squares` | 🟡 | Route calls apiMethods; end-to-end unverified |
+| `/app/magic-squares` | `/api/v1/magic-squares` | 🚧 | b108-2fv audit: apiMethods calls live |
 | `/app/circles` | `/api/v1/circles` | 🚧 | Route wire-mapping audited b108-2ft: all three helpers (`mapRingKind`, `mapCentre`, `mapCompass`) produce backend-valid enum values. Endpoint itself POST 201 curl-verified (see curl table below). Browser end-to-end still needs a real save. |
 | `/app/circle` (legacy) | — | ⛔ | Superseded |
-| `/app/tools` | `/api/v1/tools` | 🟡 | Route calls apiMethods; end-to-end unverified |
+| `/app/tools` | `/api/v1/tools` | 🚧 | b108-2fv audit: apiMethods calls live for tools + altars |
 
 ## Divination
 
 | Route | Backend | Status | Notes |
 |---|---|---|---|
 | `/app/divination` (hub) | — | 🟡 | Landing page; sub-routes below |
-| `/app/divination/tarot` | Tarot endpoints | 🟡 | Static — no api calls detected in the sweep |
-| `/app/divination/iching` | I Ching endpoints | 🟡 | Static |
-| `/app/divination/geomancy` | Geomancy endpoints | 🟡 | Static |
-| `/app/divination/runes` | Runes endpoints | 🟡 | Static |
-| `/app/divination/more` | Misc endpoints | 🟡 | Static |
+| `/app/divination/tarot` | `GET /tarot/readings` + `POST /tarot/cast` | 🚧 | b108-2fv audit: History reads real backend; save Toast-only (surface needs to expose drawn seed for full round-trip) |
+| `/app/divination/iching` | `POST /iching/cast` | 🚧 | b108-2fv audit: calls apiMethods.castIching on save with question + method |
+| `/app/divination/geomancy` | `POST /geomancy/cast` | 🚧 | b108-2fv audit: calls apiMethods.castGeomancy on save; server casts fresh figure set (drawn-seed round-trip queued) |
+| `/app/divination/runes` | `POST /runes/cast` | 🚧 | b108-2fv audit: calls apiMethods.castRunes on save |
+| `/app/divination/more` | `POST /bibliomancy/cast` | 🚧 | b108-2fv audit: Bibliomancy live-wired; pendulum/horary/scrying show honest "no data collected" toast |
 
 ## Linguistic
 
 | Route | Backend | Status | Notes |
 |---|---|---|---|
-| `/app/gematria` | `/api/v1/gematria/*` | 🟡 | Route static; needs verify |
-| `/app/transliterations` | `/api/v1/transliteration/*` | 🟡 | Marks lang but no Tiptap integration |
-| `/app/voces` | `/api/v1/voces` | 🟡 | Static — no api calls detected |
+| `/app/gematria` | `/api/v1/gematria/*` | 🚧 | b108-2fv audit: apiMethods calls live |
+| `/app/transliterations` | `/api/v1/transliteration/*` | 🚧 | b108-2fv audit: apiClient hits /schemes + /schemes/{slug}; Tiptap insertion still deferred (b108-2fk moved sample-text to placeholder) |
+| `/app/voces` | `/api/v1/voces` | 🚧 | b108-2fv audit: apiMethods.listVoces + createVoce live |
 | `/app/voces-library` | `/api/v1/voces/bundled` | ✅ | b108-2ce · real listing |
 
 ## Analytics & synchronicity
 
 | Route | Backend | Status | Notes |
 |---|---|---|---|
-| `/app/analytics` | `/api/v1/analytics/*` | 🟡 | Static — no api calls detected |
+| `/app/analytics` | `/api/v1/analytics/*` (today, timeseries, heatmap) | 🚧 | b108-2fv audit: apiClient calls to /today + /timeseries × 2 + /heatmap × 2 + /studies live |
 | `/app/analytics/legacy` | — | ⛔ | Superseded |
-| `/app/synchronicities` | `/api/v1/synchronicities` | 🟡 | Route static |
-| `/app/query` | `/api/v1/analytics/query` | 🟡 | Route static |
-| `/app/studies` | `/api/v1/studies` | 🟡 | Route static |
+| `/app/synchronicities` | `/api/v1/synchronicities` | 🚧 | b108-2fv audit: apiClient calls live |
+| `/app/query` | `/api/v1/analytics/query` | 🚧 | b108-2fv audit: apiClient calls live |
+| `/app/studies` | `/api/v1/studies` | 🚧 | b108-2fv audit: apiClient fetches study list |
 
 ## Publishing
 
 | Route | Backend | Status | Notes |
 |---|---|---|---|
-| `/app/publications` | `/api/v1/publications` | 🟡 | Route static |
-| `/app/publication-editor` | `/api/v1/publications` | 🟡 | Route static |
-| `/app/subscribers` | `/api/v1/subscribers` | 🟡 | Route static |
+| `/app/publications` | `/api/v1/publications` | 🚧 | b108-2fv audit: 6 apiMethods calls live |
+| `/app/publication-editor` | `/api/v1/publications` | 🚧 | b108-2fv audit: 6 apiMethods calls live (auto-save + fetch) |
+| `/app/subscribers` | `/api/v1/subscribers` | 🚧 | b108-2fv audit: 4 apiMethods calls live |
 
 ## Media
 
 | Route | Backend | Status | Notes |
 |---|---|---|---|
-| `/app/media` | `/api/v1/media` | 🟡 | Route static |
-| `/app/media/:id` | `/api/v1/media/{id}` | 🟡 | Route static; Tiptap picker follow-up B108-3 |
-| `/app/audio` | `/api/v1/media?kind=audio` | 🟡 | Route static |
-| `/app/pilgrimage` | `/api/v1/pilgrimage/*` | 🟡 | Route static |
-| `/app/icalfeed` | `/api/v1/ical/*` | 🟡 | Route static |
+| `/app/media` | `/api/v1/media` | 🚧 | b108-2fv audit: 4 apiMethods calls live |
+| `/app/media/:id` | `/api/v1/media/{id}` | 🚧 | b108-2fv audit: 3 apiMethods calls live; Tiptap picker follow-up B108-3 |
+| `/app/audio` | `/api/v1/media?kind=audio` | 🚧 | b108-2fv audit: 4 apiMethods calls live |
+| `/app/pilgrimage` | `/api/v1/pilgrimage/*` | 🚧 | b108-2fv audit: 4 apiMethods calls live (b108-2fs also flipped default precision to ~1km) |
+| `/app/icalfeed` | `/api/v1/ical/*` | 🚧 | b108-2fv audit: 7 apiMethods calls live |
 
 ## Network
 
 | Route | Backend | Status | Notes |
 |---|---|---|---|
-| `/app/networks` | `/api/v1/hubs` | 🟡 | Route static |
-| `/app/networks/peers` | `/api/v1/hubs/peers` | 🟡 | Route static |
-| `/app/networks/discover` | `/api/v1/hubs/discover` | 🟡 | Route static |
-| `/app/followers` | `/api/v1/followers` | 🟡 | Route static |
-| `/app/private-viewers` | `/api/v1/private-viewers` | 🟡 | Route static |
+| `/app/networks` | `/api/v1/hubs` | 🚧 | b108-2fv audit: uses `useHubs()` hook (indirect wiring through ../lib/hubs) |
+| `/app/networks/peers` | `/api/v1/hubs/peers` | 🚧 | b108-2fv audit: 1 apiClient call live |
+| `/app/networks/discover` | `/api/v1/hubs` | 🚧 | b108-2fv audit: uses `useHubs()` hook |
+| `/app/followers` | `/api/v1/followers` | 🚧 | b108-2fv audit: uses hook-based wiring through ../lib/ |
+| `/app/private-viewers` | `/api/v1/private-viewers` | 🚧 | b108-2fv audit: uses hook-based wiring through ../lib/ |
 | `/app/verify` | `/.well-known/webfinger` | 🚧 | Route hits real WebFinger + actor JSON-LD; follows self-link, computes SHA-256 key fingerprint, reports honest pass/fail (b108-2fu audit). Cross-instance CORS may still block key-fetch step — handled honestly with a partial-success message. Sophia's magickal-name handle seed also scrubbed to empty. |
 
 ## Registry (H10 A-cluster)
@@ -147,11 +147,11 @@ All 12 C-cluster routes: **✅** — verified with real agent-daemon.
 
 | Route | Backend | Status | Notes |
 |---|---|---|---|
-| `/app/identities` | `/api/v1/identities` | 🟡 | Local state only |
-| `/app/lineage` | `/api/v1/lineage` | 🟡 | Local state only |
-| `/app/membership` | `/api/v1/membership` | 🟡 | Local state only |
+| `/app/identities` | (Persona table Phase 02/03) | 🚧 | b108-2fh gated: fabricated DEMO_IDENTITIES only render behind `?demo=1` or env flag; default view is honest empty state until Persona table lands |
+| `/app/lineage` | `/api/v1/attestations` | 🚧 | b108-2fv audit: apiClient hits attestations endpoint live |
+| `/app/membership` | `/api/v1/membership` | 🟡 | Route deleted b108-2eg (was fabricated 573-line file) |
 | `/app/permissions` | `/api/v1/permissions` | 🟡 | Local state only |
-| `/app/health` | `/healthz`, `/readyz` | 🔴 | TODO live-probe substrate |
+| `/app/health` | `/healthz`, `/readyz` | 🚧 | b108-2fv audit: apiMethods calls to /healthz + /readyz + /meta live via Connection route pattern |
 | `/app/wellbeing` | (no backend intended) | 🟡 | Local state; "Sacred Well Directory" placeholder |
 
 ## Superseded routes (to be deleted)
