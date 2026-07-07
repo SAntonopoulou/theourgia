@@ -336,6 +336,15 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2g0: **a11y sweep · aria-hidden on 8 ICON_PROPS
+    decorative-SVG spread objects.** Decorative icons inside
+    tablists / nav rails were being announced by screen readers
+    redundantly with their surrounding text labels. Added
+    `"aria-hidden": true` to the shared `*_PROPS` object in each of
+    BeingsTabs · MethodTablist · ScryingPanel (MEDIUM) ·
+    AnalyticsTabs · VaultNav · LinguisticTabs · OracleTabs ·
+    LogTypeTablist. Each object fans out to ~5-8 icon SVGs → ~50-60
+    redundant announcements silenced across the tab surfaces.
   - b108-2fz: **a11y sweep · Escape closes the final 6 modals.**
     Continuation of b108-2fy — the six surfaces whose `role="dialog"`
     sat on inline sub-modals without matching open/onClose at the
