@@ -33,6 +33,7 @@ import {
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -220,11 +221,13 @@ export function SynchronicityQuickCaptureModal({
   const [activeContextIds, setActiveContextIds] = useState<string[]>([]);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const firstInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   // Escape closes the modal (b108-2fy a11y sweep); focus moves to
   // the description textarea on open (b108-2g1 a11y sweep).
   useEscapeToClose(open, onClose);
   useFocusOnOpen(firstInputRef, open);
+  useFocusTrap(panelRef, open);
 
   // Reset state on open.
   useEffect(() => {
@@ -286,6 +289,7 @@ export function SynchronicityQuickCaptureModal({
 
   return (
     <div
+      ref={panelRef}
       data-component="sync-quick-capture-modal"
       role="dialog"
       aria-modal="true"

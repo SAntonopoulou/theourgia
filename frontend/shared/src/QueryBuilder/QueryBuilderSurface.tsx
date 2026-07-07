@@ -25,10 +25,12 @@ import {
   type ReactElement,
   useCallback,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -233,10 +235,12 @@ export function QueryBuilderSurface({
   const [saveName, setSaveName] = useState("");
   const [saveDesc, setSaveDesc] = useState("");
   const [materialiseDaily, setMaterialiseDaily] = useState(false);
+  const savePanelRef = useRef<HTMLDivElement | null>(null);
 
   // Escape closes the Save-query modal (b108-2fz a11y sweep).
   const closeSave = useCallback(() => setSaveOpen(false), []);
   useEscapeToClose(saveOpen, closeSave);
+  useFocusTrap(savePanelRef, saveOpen);
 
   const axesByField = useMemo(() => {
     const m = new Map<string, QBAxis>();
@@ -930,6 +934,7 @@ export function QueryBuilderSurface({
       {/* Save modal */}
       {saveOpen ? (
         <div
+          ref={savePanelRef}
           role="dialog"
           aria-modal="true"
           aria-label="Save query"

@@ -15,8 +15,9 @@
  *     the new caps only.
  */
 
-import { type CSSProperties, type ReactNode, useEffect } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useRef } from "react";
 
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import {
   CapabilityRow,
   type CapabilityRowData,
@@ -68,6 +69,9 @@ export function PluginUpdateDiffModal({
   className,
   style,
 }: PluginUpdateDiffModalProps) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  useFocusTrap(panelRef, true);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancel();
@@ -110,6 +114,7 @@ export function PluginUpdateDiffModal({
       }}
     >
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="plugin-update-diff-title"

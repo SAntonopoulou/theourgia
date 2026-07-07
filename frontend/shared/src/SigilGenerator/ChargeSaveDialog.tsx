@@ -9,6 +9,7 @@ import { type CSSProperties, useRef, useState } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import {
   SAVE_CANCEL,
   SAVE_COMMIT,
@@ -98,11 +99,13 @@ export function ChargeSaveDialog({
   const [title, setTitle] = useState(initialTitle);
   const [purpose, setPurpose] = useState<SigilPurpose>(initialPurpose);
   const firstInputRef = useRef<HTMLInputElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   // Escape closes the dialog (b108-2fy a11y sweep); focus moves to
   // the Title field on open (b108-2g1 a11y sweep).
   useEscapeToClose(open, onClose);
   useFocusOnOpen(firstInputRef, open);
+  useFocusTrap(panelRef, open);
 
   if (!open) return null;
 
@@ -113,6 +116,7 @@ export function ChargeSaveDialog({
 
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-label="Charge and save sigil"

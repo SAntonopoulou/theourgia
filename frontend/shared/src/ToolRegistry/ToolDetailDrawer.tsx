@@ -19,6 +19,7 @@ import { type CSSProperties, useRef } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import {
   TR_CONSECRATED_ON_PREFIX,
   TR_CONSECRATION_EYEBROW,
@@ -108,6 +109,7 @@ export function ToolDetailDrawer({
   useEscapeToClose(open, onClose);
   const panelRef = useRef<HTMLDivElement | null>(null);
   useFocusOnOpen(panelRef, open);
+  useFocusTrap(panelRef, open);
 
   if (!open || !tool) return null;
   const consecrated = !!tool.consDate;

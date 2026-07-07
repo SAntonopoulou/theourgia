@@ -24,10 +24,12 @@
 import {
   type CSSProperties,
   useId,
+  useRef,
   useState,
 } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import {
   PV_CANCEL_CTA,
   PV_DELIVERY_LABELS,
@@ -368,12 +370,15 @@ function NewViewerModal({
   const [scope, setScope] = useState<PrivateViewerScopeKind>("tag");
   const [delivery, setDelivery] =
     useState<PrivateViewerDeliveryKind>("signed-link");
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   // Escape cancels the modal (b108-2fz a11y sweep).
   useEscapeToClose(true, onCancel);
+  useFocusTrap(panelRef, true);
 
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-label={PV_MODAL_TITLE}

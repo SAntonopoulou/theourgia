@@ -12,6 +12,7 @@ import { type CSSProperties, useRef } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import {
   ELECTION_MODAL_SUB,
   ELECTION_MODAL_TITLE,
@@ -61,15 +62,18 @@ export function ElectionPickerModal({
   onPick,
 }: ElectionPickerModalProps) {
   const firstInputRef = useRef<HTMLInputElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   // Escape closes the modal (b108-2fy a11y sweep); focus moves to
   // the search input on open (b108-2g1 a11y sweep).
   useEscapeToClose(open, onClose);
   useFocusOnOpen(firstInputRef, open);
+  useFocusTrap(panelRef, open);
 
   if (!open) return null;
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-label="Linked election"

@@ -21,10 +21,12 @@
 import {
   type CSSProperties,
   useCallback,
+  useRef,
   useState,
 } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import { TiptapEditor } from "../Editor/TiptapEditor.js";
 import { type BookRecord, type EntityRecord } from "../api/types.js";
 
@@ -187,10 +189,12 @@ export function NewsletterEditorSurface({
   style,
 }: NewsletterEditorSurfaceProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const confirmPanelRef = useRef<HTMLDivElement | null>(null);
 
   // Escape closes the confirm-send modal (b108-2fz a11y sweep).
   const closeConfirm = useCallback(() => setConfirmOpen(false), []);
   useEscapeToClose(confirmOpen, closeConfirm);
+  useFocusTrap(confirmPanelRef, confirmOpen);
 
   const handleSendModeClick = useCallback(
     (mode: NewsletterSendMode) => {
@@ -492,6 +496,7 @@ export function NewsletterEditorSurface({
       {/* Confirm modal */}
       {confirmOpen ? (
         <div
+          ref={confirmPanelRef}
           role="dialog"
           aria-modal="true"
           aria-label="Confirm send"

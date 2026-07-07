@@ -36,6 +36,7 @@ import {
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -239,6 +240,7 @@ export function SacredSiteSurface({
   useEscapeToClose(open, onClose);
   const panelRef = useRef<HTMLElement | null>(null);
   useFocusOnOpen(panelRef, open);
+  useFocusTrap(panelRef, open);
 
   const options = useMemo(
     () => lowerOptions(record.stored_precision),

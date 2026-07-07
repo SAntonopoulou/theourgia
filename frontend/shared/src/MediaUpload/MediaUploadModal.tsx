@@ -37,6 +37,7 @@ import {
 } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -390,9 +391,11 @@ export function MediaUploadModal({
   );
   const [progress, setProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   // Escape to close (b108-2fy a11y sweep).
   useEscapeToClose(open, onClose);
+  useFocusTrap(panelRef, open);
 
   const totalBytes = useMemo(
     () => files.reduce((acc, f) => acc + f.size_bytes, 0),
@@ -462,6 +465,7 @@ export function MediaUploadModal({
 
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-label="Upload media"

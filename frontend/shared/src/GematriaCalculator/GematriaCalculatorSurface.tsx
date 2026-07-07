@@ -22,6 +22,7 @@ import {
   type CSSProperties,
   type ReactElement,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -34,6 +35,7 @@ import {
   groupCiphersByLanguage,
 } from "../gematria/index.js";
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 
 import {
   GC_COPY_TABLE_LABEL,
@@ -990,9 +992,11 @@ interface CustomCipherModalProps {
 }
 
 function CustomCipherModal({ onClose, onSave }: CustomCipherModalProps) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
   // Escape closes the modal (b108-2fz a11y sweep — inline dialogs
   // whose parent owns the mount decision get `open=true` here).
   useEscapeToClose(true, onClose);
+  useFocusTrap(panelRef, true);
   const [name, setName] = useState(GC_CUSTOM_NAME_DEFAULT);
   const [language, setLanguage] = useState<string>("english");
   const [citation, setCitation] = useState("");
@@ -1021,6 +1025,7 @@ function CustomCipherModal({ onClose, onSave }: CustomCipherModalProps) {
 
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-label={GC_CUSTOM_TITLE}
@@ -1315,10 +1320,13 @@ function InsertIntoDraftModal({
   onClose,
   onConfirm,
 }: InsertIntoDraftModalProps) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
   // Escape closes the modal (b108-2fz a11y sweep).
   useEscapeToClose(true, onClose);
+  useFocusTrap(panelRef, true);
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-label={GC_INSERT_TITLE}

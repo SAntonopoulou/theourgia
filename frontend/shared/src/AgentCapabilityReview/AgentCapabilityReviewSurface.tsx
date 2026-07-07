@@ -8,9 +8,10 @@
  * gates the Approve button.
  */
 
-import { useCallback, type CSSProperties } from "react";
+import { useCallback, useRef, type CSSProperties } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import { useScrollGate } from "../PluginCapabilityReview/ScrollGate.js";
 
 import {
@@ -95,10 +96,13 @@ export function AgentCapabilityReviewSurface({
   const handleEsc = useCallback(() => {
     onCancel?.();
   }, [onCancel]);
+  const panelRef = useRef<HTMLDivElement | null>(null);
   useEscapeToClose(true, handleEsc);
+  useFocusTrap(panelRef, true);
 
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-labelledby="cr-title"

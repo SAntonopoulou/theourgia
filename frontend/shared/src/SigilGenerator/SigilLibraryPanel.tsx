@@ -6,9 +6,10 @@
  * implementing the H05 §S2.1 committed-make rule.
  */
 
-import { type CSSProperties } from "react";
+import { type CSSProperties, useRef } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import { LIBRARY_HEADER, LIBRARY_HELP_TAIL } from "./copy.js";
 
 export interface SigilLibraryEntry {
@@ -70,13 +71,17 @@ export function SigilLibraryPanel({
   className,
   style,
 }: SigilLibraryPanelProps) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
   // Escape closes the drawer (b108-2fy a11y sweep).
   useEscapeToClose(open, onClose);
+  useFocusTrap(panelRef, open);
 
   if (!open) return null;
   const entries = sigils ?? EMPTY_LIBRARY;
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-label="Sigil library"

@@ -4,9 +4,10 @@
  * honesty + the modal sub-text).
  */
 
-import { type CSSProperties } from "react";
+import { type CSSProperties, useRef } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import {
   LIBRARY_MODAL_SUB,
   LIBRARY_MODAL_TITLE,
@@ -57,12 +58,16 @@ export function PresetCircleLibrary({
   presets = LIBRARY_PRESETS,
   onLoad,
 }: PresetCircleLibraryProps) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
   // Escape closes the modal (b108-2fy a11y sweep).
   useEscapeToClose(open, onClose);
+  useFocusTrap(panelRef, open);
 
   if (!open) return null;
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-label="Preset circles"

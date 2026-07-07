@@ -33,10 +33,12 @@ import {
   type CSSProperties,
   type ReactNode,
   useId,
+  useRef,
   useState,
 } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import {
   NNC_CONFIRM_HEADER_PREFIX,
   NNC_CONFIRM_HEADER_SUFFIX,
@@ -685,10 +687,13 @@ function ConfirmSendModal({
   onCancel: () => void;
   onConfirm: () => void;
 }): ReactNode {
+  const panelRef = useRef<HTMLDivElement | null>(null);
   // Escape cancels the confirm-send modal (b108-2fz a11y sweep).
   useEscapeToClose(true, onCancel);
+  useFocusTrap(panelRef, true);
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-label="Confirm send"

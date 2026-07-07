@@ -27,6 +27,7 @@ import {
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import {
   NA_DESCRIPTION_LABEL,
   NA_DESCRIPTION_PLACEHOLDER,
@@ -158,10 +159,12 @@ export function NewAltarModal({
   const [diagramError, setDiagramError] = useState<string | null>(null);
   const [diagramFilename, setDiagramFilename] = useState<string | null>(null);
   const firstInputRef = useRef<HTMLInputElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   // Escape closes; focus moves to the Name field on open (b108-2fy/2g1 a11y sweep).
   useEscapeToClose(open, onClose);
   useFocusOnOpen(firstInputRef, open);
+  useFocusTrap(panelRef, open);
 
   const saveDisabled = useMemo(() => name.trim() === "", [name]);
 
@@ -218,6 +221,7 @@ export function NewAltarModal({
 
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-label={NA_TITLE}

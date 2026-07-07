@@ -20,10 +20,12 @@ import {
   type CSSProperties,
   type KeyboardEvent,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import { magicConstant } from "../workshop/magicSquares.js";
 
 import {
@@ -220,9 +222,11 @@ export function CustomSquareBuilderModal({
     buildEmptyCells(initialOrder),
   );
   const [attribution, setAttribution] = useState("");
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   // Escape closes the modal (b108-2fy a11y sweep).
   useEscapeToClose(open, onClose);
+  useFocusTrap(panelRef, open);
 
   const saveDisabled = useMemo(() => name.trim() === "", [name]);
 
@@ -298,6 +302,7 @@ export function CustomSquareBuilderModal({
 
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-label={CSB_TITLE}

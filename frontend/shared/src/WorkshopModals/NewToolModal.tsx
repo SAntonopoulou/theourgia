@@ -29,6 +29,7 @@ import {
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import { ToolKindIcon } from "../ToolRegistry/ToolKindIcon.js";
 
 import {
@@ -189,10 +190,12 @@ export function NewToolModal({ open, onClose, onSave }: NewToolModalProps) {
   const [acquired, setAcquired] = useState("");
   const [location, setLocation] = useState("");
   const firstInputRef = useRef<HTMLInputElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   // Escape closes; focus moves to the Name field on open (b108-2fy/2g1 a11y sweep).
   useEscapeToClose(open, onClose);
   useFocusOnOpen(firstInputRef, open);
+  useFocusTrap(panelRef, open);
 
   const saveDisabled = useMemo(
     () => name.trim() === "" || kind === null,
@@ -251,6 +254,7 @@ export function NewToolModal({ open, onClose, onSave }: NewToolModalProps) {
 
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-label={NT_TITLE}

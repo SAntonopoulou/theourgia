@@ -17,6 +17,7 @@ import { type CSSProperties, type ReactNode, useRef, useState } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import {
   CADENCE_OPTIONS,
   type CadenceOption,
@@ -209,10 +210,12 @@ export function DefinePracticeDrawer({
     initial?.alsoScheduleOffering ?? false,
   );
   const firstInputRef = useRef<HTMLInputElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   // Escape closes; focus enters the Name field on open (b108-2fy/2g1 a11y sweep).
   useEscapeToClose(open, onClose);
   useFocusOnOpen(firstInputRef, open);
+  useFocusTrap(panelRef, open);
 
   if (!open) return null;
 
@@ -230,6 +233,7 @@ export function DefinePracticeDrawer({
 
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-label="Define a practice"

@@ -12,6 +12,7 @@ import { type CSSProperties, useRef, useState } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 
 import {
   ELEMENTAL_COLOUR,
@@ -126,10 +127,12 @@ export function NewVoceModal({
   const [ipa, setIpa] = useState("");
   const [citation, setCitation] = useState("");
   const firstInputRef = useRef<HTMLInputElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   // Escape closes; focus moves to the Voce-text field on open (b108-2fy/2g1 a11y sweep).
   useEscapeToClose(open, onClose);
   useFocusOnOpen(firstInputRef, open);
+  useFocusTrap(panelRef, open);
 
   if (!open) return null;
 
@@ -144,6 +147,7 @@ export function NewVoceModal({
 
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-label="New voce"

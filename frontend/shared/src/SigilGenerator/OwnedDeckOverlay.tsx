@@ -6,9 +6,10 @@
  * load-bearing — it stays exactly as written.
  */
 
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import {
   OWNED_DECK_CANCEL,
   OWNED_DECK_CONFIRM,
@@ -89,13 +90,16 @@ export function OwnedDeckOverlay({
 }: OwnedDeckOverlayProps) {
   const [owned, setOwned] = useState(true);
   const [fileName, setFileName] = useState<string | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
 
   // Escape closes the overlay (b108-2fy a11y sweep).
   useEscapeToClose(open, onClose);
+  useFocusTrap(panelRef, open);
 
   if (!open) return null;
   return (
     <div
+      ref={panelRef}
       role="dialog"
       aria-modal="true"
       aria-label="Owned-deck overlay"

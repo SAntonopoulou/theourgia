@@ -13,6 +13,7 @@ import { type CSSProperties, useRef } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
+import { useFocusTrap } from "../hooks/useFocusTrap.js";
 import {
   ELEMENTAL_COLOUR,
   ELEMENTAL_GLYPH,
@@ -211,6 +212,7 @@ export function VoceDetailDrawer({
   // itself so the caret enters the drawer (b108-2g2 a11y sweep).
   const panelRef = useRef<HTMLDivElement | null>(null);
   useFocusOnOpen(panelRef, open);
+  useFocusTrap(panelRef, open);
 
   if (!open || !voce) return null;
   const hasRecordings = voce.recs.length > 0;
