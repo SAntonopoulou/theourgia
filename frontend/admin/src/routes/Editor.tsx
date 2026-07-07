@@ -253,6 +253,10 @@ function SaveStatusIndicator({ status }: { status: SaveStatus }) {
           : "var(--ink-mute)";
   return (
     <span
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+      aria-label={`Autosave status: ${text}`}
       style={{
         display: "flex",
         alignItems: "center",

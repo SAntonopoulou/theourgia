@@ -971,7 +971,14 @@ export function PublicationEditorSurface({
           </span>
         ) : null}
         {lastSavedLabel ? (
-          <span data-last-saved>Last saved {lastSavedLabel}</span>
+          <span
+            data-last-saved
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            Last saved {lastSavedLabel}
+          </span>
         ) : null}
         <span
           data-state-chip={publication.state}
