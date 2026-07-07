@@ -160,17 +160,14 @@ All 12 C-cluster routes: **✅** — verified with real agent-daemon.
 | `/app/health` | `/healthz`, `/readyz` | 🚧 | b108-2fv audit: apiMethods calls to /healthz + /readyz + /meta live via Connection route pattern |
 | `/app/wellbeing` | (no backend intended) | 🟡 | Local state; "Sacred Well Directory" placeholder |
 
-## Superseded routes (to be deleted)
+## Superseded routes
 
-- `/app/sigil` → `/app/sigils`
-- `/app/circle` → `/app/circles`
-- `/app/talismans/legacy` → `/app/talismans`
-- `/app/synchronicities/legacy` → `/app/synchronicities`
-- `/app/analytics/legacy` → `/app/analytics`
-- `/app/agents` → `/app/agents-home`
-- `/app/sandbox` → `/app/sandbox-browser`
-- `/app/account` → `/app/settings`
-- `/app/bundles` (old) → `/app/bundles` (new)
+Audit b108-2gd: all superseded routes previously listed here have
+been fully removed from `frontend/admin/src/App.tsx`. No stale
+`.tsx` files remain in `frontend/admin/src/routes/`. Nav-active
+`startsWith("/sigil")` / `startsWith("/circle")` detection is
+retained for backward-compat with any deep-linked stale URLs; the
+routes themselves no longer resolve. Section retired.
 
 ## Backend endpoints (independent status)
 
