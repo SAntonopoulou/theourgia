@@ -75,13 +75,23 @@
     # responded with a MIME type of text/html"). Split by matcher:
     #   · Paths with a file extension MUST resolve to a real file or 404.
     #   · Extension-less paths are client-side routes → serve index.html.
+    #
+    # b108-2gp: sw.js MUST NOT be cached — otherwise a bumped SW VERSION
+    # can hide behind the HTTP cache for up to 24 hours. index.html also
+    # gets no-cache so cache-busting hashed assets are always current.
     handle_path /app/* {
         root * /srv/admin
+        @spa_meta path /sw.js /index.html /manifest.webmanifest
+        handle @spa_meta {
+            header Cache-Control "no-cache, no-store, must-revalidate"
+            file_server
+        }
         @asset path_regexp \.(js|mjs|css|map|json|txt|xml|woff2?|ttf|otf|eot|svg|png|jpg|jpeg|gif|webp|avif|ico|wasm|webmanifest)$
         handle @asset {
             file_server
         }
         handle {
+            header Cache-Control "no-cache, no-store, must-revalidate"
             try_files {path} /index.html
             file_server
         }

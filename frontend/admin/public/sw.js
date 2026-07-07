@@ -18,7 +18,12 @@
  * handler clears the old caches.
  */
 
-const VERSION = "v1";
+// Bumped from "v1" (b108-2gp): the old version kept the theo-shell-v1
+// cache forever across deploys, so browsers served a stale index.html
+// referencing hashed JS chunks that no longer exist and hit a strict-
+// MIME error. Every future deploy MUST bump this string (or replace it
+// with a build-time hash) or the same class of bug recurs.
+const VERSION = "v2-2026-07-08";
 const SHELL_CACHE = `theo-shell-${VERSION}`;
 const RUNTIME_CACHE = `theo-runtime-${VERSION}`;
 

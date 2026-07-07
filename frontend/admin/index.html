@@ -46,12 +46,30 @@
         root.setAttribute("dir", RTL[locale] ? "rtl" : "ltr");
       })();
       // Service worker registration — runs after first paint so it never
-      // blocks the shell. Only registers in production (Vite dev server's
-      // module fetch URLs don't match SW cache rules).
+      // blocks the shell. Only registers in production.
+      //
+      // b108-2gp fixes: `updateViaCache: 'none'` forces the browser to
+      // always fetch sw.js fresh from the network (bypasses HTTP cache),
+      // so a bumped VERSION string in sw.js is picked up on the next
+      // load instead of hiding behind a 24-hour cache TTL. `.update()`
+      // + reload-on-controller-change means a stale service worker
+      // stuck with pre-deploy hashes forces one clean reload to the
+      // new build.
       if ("serviceWorker" in navigator && location.pathname.startsWith("/app/")) {
         window.addEventListener("load", function () {
-          navigator.serviceWorker.register("/app/sw.js", { scope: "/app/" }).catch(function () {
-            // Best-effort — failing SW registration shouldn't break the app.
+          navigator.serviceWorker
+            .register("/app/sw.js", { scope: "/app/", updateViaCache: "none" })
+            .then(function (reg) {
+              reg.update().catch(function () {});
+            })
+            .catch(function () {
+              // Best-effort — failing SW registration shouldn't break the app.
+            });
+          var reloadedOnce = false;
+          navigator.serviceWorker.addEventListener("controllerchange", function () {
+            if (reloadedOnce) return;
+            reloadedOnce = true;
+            location.reload();
           });
         });
       }
