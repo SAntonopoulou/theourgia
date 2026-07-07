@@ -330,6 +330,14 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2fg: **Gematria + voce + magical-circle seeds scrubbed.**
+    Three more pre-filled cultural specimens: GC_DEFAULT_INPUT
+    "ἀγαθοδαίμων" (Greek "good spirit") pre-filled the gematria
+    calculator input; VM_NEW_DEFAULT_TEXT "ΦΩΡ ΦΩΡΒΑ" (PGM magical
+    name) + its transliteration "phōr phōrba" pre-filled the New
+    Voce modal; MULTI_DEMO_SEQUENCE "☉ ☽ ♃ ♀ ☿" rendered as if it
+    were the user's composed multi-glyph ring sequence. All →
+    empty / honest placeholder. Tests updated.
   - b108-2ff: **Divination · default question seeds scrubbed.**
     Every divination surface (Tarot · IChing · Geomancy · Runes)
     pre-filled its Question input with a specific mockup phrase that
