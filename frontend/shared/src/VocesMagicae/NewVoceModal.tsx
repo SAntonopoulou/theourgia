@@ -8,7 +8,10 @@
  * citation." sits below the buttons whenever Save is disabled.
  */
 
-import { type CSSProperties, useEffect, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
+
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
 
 import {
   ELEMENTAL_COLOUR,
@@ -122,16 +125,11 @@ export function NewVoceModal({
   const [translit, setTranslit] = useState(initialTranslit);
   const [ipa, setIpa] = useState("");
   const [citation, setCitation] = useState("");
+  const firstInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Escape closes the modal (b108-2fy a11y sweep).
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  // Escape closes; focus moves to the Voce-text field on open (b108-2fy/2g1 a11y sweep).
+  useEscapeToClose(open, onClose);
+  useFocusOnOpen(firstInputRef, open);
 
   if (!open) return null;
 
@@ -195,6 +193,7 @@ export function NewVoceModal({
 
         <label style={FIELD_LABEL}>{VM_VOCE_TEXT_LABEL}</label>
         <input
+          ref={firstInputRef}
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}

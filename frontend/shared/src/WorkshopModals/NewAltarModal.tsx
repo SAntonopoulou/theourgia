@@ -21,10 +21,12 @@ import {
   type CSSProperties,
   type ChangeEvent,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
 import {
   NA_DESCRIPTION_LABEL,
   NA_DESCRIPTION_PLACEHOLDER,
@@ -155,9 +157,11 @@ export function NewAltarModal({
   const [diagramSvg, setDiagramSvg] = useState<string | null>(null);
   const [diagramError, setDiagramError] = useState<string | null>(null);
   const [diagramFilename, setDiagramFilename] = useState<string | null>(null);
+  const firstInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Escape closes the modal (b108-2fy a11y sweep).
+  // Escape closes; focus moves to the Name field on open (b108-2fy/2g1 a11y sweep).
   useEscapeToClose(open, onClose);
+  useFocusOnOpen(firstInputRef, open);
 
   const saveDisabled = useMemo(() => name.trim() === "", [name]);
 
@@ -230,6 +234,7 @@ export function NewAltarModal({
             {NA_NAME_LABEL}
           </label>
           <input
+            ref={firstInputRef}
             id="na-name"
             type="text"
             value={name}

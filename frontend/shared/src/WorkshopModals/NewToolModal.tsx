@@ -23,10 +23,12 @@ import {
   type CSSProperties,
   type KeyboardEvent,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
 import { ToolKindIcon } from "../ToolRegistry/ToolKindIcon.js";
 
 import {
@@ -186,9 +188,11 @@ export function NewToolModal({ open, onClose, onSave }: NewToolModalProps) {
   const [provenance, setProvenance] = useState("");
   const [acquired, setAcquired] = useState("");
   const [location, setLocation] = useState("");
+  const firstInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Escape closes the modal (b108-2fy a11y sweep).
+  // Escape closes; focus moves to the Name field on open (b108-2fy/2g1 a11y sweep).
   useEscapeToClose(open, onClose);
+  useFocusOnOpen(firstInputRef, open);
 
   const saveDisabled = useMemo(
     () => name.trim() === "" || kind === null,
@@ -263,6 +267,7 @@ export function NewToolModal({ open, onClose, onSave }: NewToolModalProps) {
             {NT_NAME_LABEL}
           </label>
           <input
+            ref={firstInputRef}
             id="nt-name"
             type="text"
             value={name}

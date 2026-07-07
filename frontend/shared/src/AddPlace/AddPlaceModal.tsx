@@ -27,10 +27,12 @@ import {
   type ReactElement,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
 import type { SiteKind } from "../PilgrimageMap/PilgrimageMapSurface.js";
 
 // ── Types ──────────────────────────────────────────────────────────
@@ -165,9 +167,11 @@ export function AddPlaceModal({
   );
   const [story, setStory] = useState(initial?.story ?? "");
   const [seal, setSeal] = useState(initial?.seal ?? false);
+  const firstInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Escape closes the modal (b108-2fy a11y sweep).
+  // Escape closes; focus moves to the place-search field on open (b108-2fy/2g1 a11y sweep).
   useEscapeToClose(open, onClose);
+  useFocusOnOpen(firstInputRef, open);
 
   // Reset on close so a re-open never leaks the prior session.
   useEffect(() => {
@@ -345,6 +349,7 @@ export function AddPlaceModal({
                 <SearchIcon />
               </span>
               <input
+                ref={firstInputRef}
                 type="text"
                 data-add-place-search
                 placeholder="Search a place…"
