@@ -91,7 +91,7 @@ const INPUT: CSSProperties = {
 
 export function SignInRoute() {
   useTopbar(() => ({
-    title: "Sign in",
+    title: "Sign in or create your vault",
     subtitle: "θεουργία — the working of divine things",
   }));
 
@@ -258,7 +258,7 @@ export function SignInRoute() {
             marginBottom: 6,
           }}
         >
-          Enter the vault
+          Enter or open the vault
         </div>
         <div
           style={{
@@ -266,12 +266,26 @@ export function SignInRoute() {
             fontStyle: "italic",
             fontSize: 15,
             color: "var(--accent)",
+            marginBottom: 12,
           }}
         >
           <span lang="el" style={{ fontFamily: "var(--font-greek, var(--font-serif))" }}>
             θεουργία
           </span>{" "}
           — the working of divine things
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: 14,
+            color: "var(--ink-soft)",
+            lineHeight: 1.55,
+            maxWidth: 42 * 8,
+          }}
+        >
+          If your magickal name is already in this vault, you'll sign in.
+          If it isn't, this creates the vault under that name. Add a second
+          factor at <em>Settings → Two-factor codes</em> once you're in.
         </div>
       </div>
 
@@ -347,7 +361,7 @@ export function SignInRoute() {
                 style={QUIET_BUTTON}
                 onClick={() => setShowDemo(true)}
               >
-                Sign in with magickal name
+                Continue with magickal name
               </button>
             )}
           </>

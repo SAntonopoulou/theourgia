@@ -67,10 +67,24 @@
     # Admin SPA — anything under /app/* serves the admin shell with
     # client-side routing. `handle_path` strips the /app prefix before
     # resolving against /srv/admin so /app/assets/foo.js → /srv/admin/assets/foo.js.
+    #
+    # SPA + hashed-asset split (b108-2go): a plain
+    # `try_files {path} /index.html` falls back to index.html for missing
+    # assets, which returns text/html and triggers a browser strict-MIME
+    # error ("Expected a JavaScript-or-Wasm module script but the server
+    # responded with a MIME type of text/html"). Split by matcher:
+    #   · Paths with a file extension MUST resolve to a real file or 404.
+    #   · Extension-less paths are client-side routes → serve index.html.
     handle_path /app/* {
         root * /srv/admin
-        try_files {path} /index.html
-        file_server
+        @asset path_regexp \.(js|mjs|css|map|json|txt|xml|woff2?|ttf|otf|eot|svg|png|jpg|jpeg|gif|webp|avif|ico|wasm|webmanifest)$
+        handle @asset {
+            file_server
+        }
+        handle {
+            try_files {path} /index.html
+            file_server
+        }
     }
     # /app itself (no trailing slash) → the SPA's index.html
     handle /app {
