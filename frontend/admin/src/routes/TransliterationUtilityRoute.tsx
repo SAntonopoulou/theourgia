@@ -48,13 +48,16 @@ const SCRIPTS: SourceScript[] = [
   "latin",
 ];
 
-const DEFAULT_INPUT_BY_SCRIPT: Record<SourceScript, string> = {
-  greek: "ἀγαθὸς δαίμων",
-  hebrew: "שלום",
-  sanskrit: "अग्नि",
-  arabic: "كتاب",
-  coptic: "ⲁⲗⲫⲁ",
-  latin: "lux",
+/** Sample text per script — shown as the textarea *placeholder* only
+ *  (not pre-filled into the field), so the user can start typing their
+ *  own text without first having to clear a fabricated specimen. */
+const SAMPLE_PLACEHOLDER_BY_SCRIPT: Record<SourceScript, string> = {
+  greek: "e.g. ἀγαθὸς δαίμων",
+  hebrew: "e.g. שלום",
+  sanskrit: "e.g. अग्नि",
+  arabic: "e.g. كتاب",
+  coptic: "e.g. ⲁⲗⲫⲁ",
+  latin: "e.g. lux",
 };
 
 function applyMapping(text: string, mapping: Record<string, string>): string {
@@ -81,9 +84,7 @@ export function TransliterationUtilityRoute() {
   );
 
   const [activeScript, setActiveScript] = useState<SourceScript>("greek");
-  const [inputText, setInputText] = useState<string>(
-    DEFAULT_INPUT_BY_SCRIPT.greek,
-  );
+  const [inputText, setInputText] = useState<string>("");
   const [details, setDetails] = useState<readonly ApiSchemeDetail[]>([]);
 
   // Fetch schemes whenever the source script changes.
@@ -142,7 +143,7 @@ export function TransliterationUtilityRoute() {
 
   const handleScriptChange = useCallback((next: SourceScript) => {
     setActiveScript(next);
-    setInputText(DEFAULT_INPUT_BY_SCRIPT[next]);
+    setInputText("");
   }, []);
 
   const handlePasteSource = useCallback(() => {
@@ -182,6 +183,7 @@ export function TransliterationUtilityRoute() {
       scripts={SCRIPTS}
       active_script={activeScript}
       input_text={inputText}
+      input_placeholder={SAMPLE_PLACEHOLDER_BY_SCRIPT[activeScript]}
       schemes={schemes}
       onScriptChange={handleScriptChange}
       onInputChange={setInputText}

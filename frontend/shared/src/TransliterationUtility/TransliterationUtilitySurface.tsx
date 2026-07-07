@@ -64,6 +64,10 @@ export interface TransliterationUtilitySurfaceProps {
   onRoundTripCheck?: () => void;
   onInsertIntoDraft?: () => void;
   onPasteSource?: () => void;
+  /** Optional placeholder shown when input_text is empty. Used to
+   *  hint at a sample without pre-filling the field as if it were the
+   *  user's own text (b108-2fk). */
+  input_placeholder?: string;
   className?: string;
   style?: CSSProperties;
 }
@@ -224,6 +228,7 @@ export function TransliterationUtilitySurface({
   onRoundTripCheck,
   onInsertIntoDraft,
   onPasteSource,
+  input_placeholder,
   className,
   style,
 }: TransliterationUtilitySurfaceProps) {
@@ -457,6 +462,7 @@ export function TransliterationUtilitySurface({
             rows={5}
             dir={srcMeta.dir}
             value={input_text}
+            placeholder={input_placeholder}
             onChange={(e) => onInputChange?.(e.target.value)}
             style={{
               width: "100%",
