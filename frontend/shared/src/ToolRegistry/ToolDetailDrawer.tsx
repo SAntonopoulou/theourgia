@@ -15,9 +15,10 @@
  * No --danger anywhere; consecrated state uses --care*.
  */
 
-import { type CSSProperties } from "react";
+import { type CSSProperties, useRef } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
 import {
   TR_CONSECRATED_ON_PREFIX,
   TR_CONSECRATION_EYEBROW,
@@ -102,8 +103,11 @@ export function ToolDetailDrawer({
   className,
   style,
 }: ToolDetailDrawerProps) {
-  // Escape closes the drawer (b108-2fy a11y sweep).
+  // Escape closes the drawer (b108-2fy); focus enters the panel on
+  // open via tabIndex={-1} + ref (b108-2g2 detail-drawer pattern).
   useEscapeToClose(open, onClose);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  useFocusOnOpen(panelRef, open);
 
   if (!open || !tool) return null;
   const consecrated = !!tool.consDate;
@@ -121,7 +125,12 @@ export function ToolDetailDrawer({
       style={{ ...SCRIM_WRAP, ...style }}
     >
       <div onClick={onClose} style={SCRIM_BG} aria-hidden="true" />
-      <div className="scroll" style={PANEL_STYLE}>
+      <div
+        ref={panelRef}
+        tabIndex={-1}
+        className="scroll"
+        style={{ ...PANEL_STYLE, outline: "none" }}
+      >
         <div style={HEADER_STYLE}>
           <div>
             <div

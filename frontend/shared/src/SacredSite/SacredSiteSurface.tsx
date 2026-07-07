@@ -30,10 +30,12 @@ import {
   type CSSProperties,
   type ReactElement,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -232,8 +234,11 @@ export function SacredSiteSurface({
     SiteRequantizeChoice | "exact" | null
   >(null);
 
-  // Escape closes the modal (b108-2fy a11y sweep).
+  // Escape closes the modal (b108-2fy); detail-drawer focus enters
+  // the aside via tabIndex={-1} + ref on open (b108-2g2 pattern).
   useEscapeToClose(open, onClose);
+  const panelRef = useRef<HTMLElement | null>(null);
+  useFocusOnOpen(panelRef, open);
 
   const options = useMemo(
     () => lowerOptions(record.stored_precision),
@@ -253,11 +258,14 @@ export function SacredSiteSurface({
 
   return (
     <aside
+      ref={panelRef}
+      tabIndex={-1}
       role="dialog"
       aria-label={`Site detail: ${record.name}`}
       data-component="sacred-site-surface"
       className={className}
       style={{
+        outline: "none",
         position: "fixed",
         top: 0,
         right: 0,

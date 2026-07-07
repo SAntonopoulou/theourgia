@@ -9,9 +9,10 @@
  */
 
 import * as React from "react";
-import { type CSSProperties } from "react";
+import { type CSSProperties, useRef } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
 import {
   ELEMENTAL_COLOUR,
   ELEMENTAL_GLYPH,
@@ -206,6 +207,10 @@ export function VoceDetailDrawer({
 }: VoceDetailDrawerProps) {
   // Escape closes the drawer (b108-2fy a11y sweep).
   useEscapeToClose(open, onClose);
+  // Detail drawer has no primary form input; focus the drawer container
+  // itself so the caret enters the drawer (b108-2g2 a11y sweep).
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  useFocusOnOpen(panelRef, open);
 
   if (!open || !voce) return null;
   const hasRecordings = voce.recs.length > 0;
@@ -220,7 +225,12 @@ export function VoceDetailDrawer({
       style={{ ...SCRIM_WRAP, ...style }}
     >
       <div onClick={onClose} style={SCRIM_BG} aria-hidden="true" />
-      <div className="scroll" style={PANEL_STYLE}>
+      <div
+        ref={panelRef}
+        tabIndex={-1}
+        className="scroll"
+        style={{ ...PANEL_STYLE, outline: "none" }}
+      >
         <div style={HEADER_STYLE}>
           <button
             type="button"
