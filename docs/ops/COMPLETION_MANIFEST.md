@@ -132,7 +132,7 @@ manifest is the record of the lie.
 | `/app/networks/discover` | `/api/v1/hubs/discover` | 🟡 | Route static |
 | `/app/followers` | `/api/v1/followers` | 🟡 | Route static |
 | `/app/private-viewers` | `/api/v1/private-viewers` | 🟡 | Route static |
-| `/app/verify` | `/.well-known/webfinger` | 🔴 | TODO Phase 13 — never actually verifies |
+| `/app/verify` | `/.well-known/webfinger` | 🚧 | Route hits real WebFinger + actor JSON-LD; follows self-link, computes SHA-256 key fingerprint, reports honest pass/fail (b108-2fu audit). Cross-instance CORS may still block key-fetch step — handled honestly with a partial-success message. Sophia's magickal-name handle seed also scrubbed to empty. |
 
 ## Registry (H10 A-cluster)
 

@@ -58,7 +58,11 @@ export function WebFingerVerify() {
 
   return (
     <WebFingerVerifySurface
-      initialHandle="@soror-eu-a@theourgia.com"
+      // Empty by default — the practitioner types their own handle.
+      // Previously seeded with Sophia's magickal-name handle
+      // ("@soror-eu-a@theourgia.com") which pre-filled every fresh
+      // verify surface with her identity on other operators' deploys.
+      initialHandle=""
       onRunCheck={async (raw): Promise<WfvResult> => {
         const parsed = parseHandle(raw);
         if (!parsed) {
