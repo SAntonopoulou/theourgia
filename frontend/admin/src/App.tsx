@@ -26,6 +26,7 @@ import {
   VaultTopbar,
 } from "@theourgia/shared";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { Suspense, lazy } from "react";
 import {
   BrowserRouter,
   NavLink,
@@ -37,115 +38,507 @@ import {
 
 import { apiMethods } from "./data/api.js";
 import { queryClient } from "./lib/queryClient.js";
-import { Connection } from "./routes/Connection.js";
-import { DailyPracticeRoute } from "./routes/DailyPracticeRoute.js";
-import { GematriaCalculatorRoute } from "./routes/GematriaCalculatorRoute.js";
-import { NewsletterEditorRoute } from "./routes/NewsletterEditorRoute.js";
-import { PricingDistributionRoute } from "./routes/PricingDistributionRoute.js";
-import { PublicationEditorRoute } from "./routes/PublicationEditorRoute.js";
-import { PublicationSettingsRoute } from "./routes/PublicationSettingsRoute.js";
-import { PublicationsRoute } from "./routes/PublicationsRoute.js";
-import { SubscribersRoute } from "./routes/SubscribersRoute.js";
-import { SubscriptionTiersRoute } from "./routes/SubscriptionTiersRoute.js";
-import { VocesLibraryRoute } from "./routes/VocesLibraryRoute.js";
-import { Divination } from "./routes/Divination.js";
-import { DivinationMiscRoute } from "./routes/DivinationMiscRoute.js";
-import { GeomancyRoute } from "./routes/GeomancyRoute.js";
-import { IChingRoute } from "./routes/IChingRoute.js";
-import { RunesRoute } from "./routes/RunesRoute.js";
-import { TarotRoute } from "./routes/TarotRoute.js";
-import { Entities } from "./routes/Entities.js";
-import { Foundations } from "./routes/Foundations.js";
-import { GroupRitualCoordination } from "./routes/GroupRitualCoordination.js";
-import { GroupRitualPostMortem } from "./routes/GroupRitualPostMortem.js";
-import { GroupRitualScheduler } from "./routes/GroupRitualScheduler.js";
-import { HubAdminDashboard } from "./routes/HubAdminDashboard.js";
-import { HubDiscovery } from "./routes/HubDiscovery.js";
-import { HubMemberDashboard } from "./routes/HubMemberDashboard.js";
-import { HubNewsletterComposer } from "./routes/HubNewsletterComposer.js";
-import { HubPublicFace } from "./routes/HubPublicFace.js";
-import { MyNetworks } from "./routes/MyNetworks.js";
-import { NetworkBrowser } from "./routes/NetworkBrowser.js";
-import { PrivateViewers } from "./routes/PrivateViewers.js";
-import { RolesPermissionsEditor } from "./routes/RolesPermissionsEditor.js";
-import { FederationAuditLog } from "./routes/FederationAuditLog.js";
-import { ActivityPubSettings } from "./routes/ActivityPubSettings.js";
-import { Followers } from "./routes/Followers.js";
-import { WebFingerVerify } from "./routes/WebFingerVerify.js";
-import { InstalledPlugins } from "./routes/InstalledPlugins.js";
-import { PluginDetail } from "./routes/PluginDetail.js";
-import { PluginConfiguration } from "./routes/PluginConfiguration.js";
-import { PluginStatus } from "./routes/PluginStatus.js";
-import { RegistryBrowser as RegistryBrowserRoute } from "./routes/RegistryBrowser.js";
-import { RegistryPluginDetail } from "./routes/RegistryPluginDetail.js";
-import { PluginAuthorProfile } from "./routes/PluginAuthorProfile.js";
-import { BundleLibrary } from "./routes/BundleLibrary.js";
-import { BundleDetail } from "./routes/BundleDetail.js";
-import { SandboxBrowser as SandboxBrowserRoute } from "./routes/SandboxBrowser.js";
-import { SandboxDetail } from "./routes/SandboxDetail.js";
-import { AgentsHomeRoute } from "./routes/AgentsHomeRoute.js";
-import { AgentRunMonitorRoute } from "./routes/AgentRunMonitorRoute.js";
-import { AgentActivityLogRoute } from "./routes/AgentActivityLogRoute.js";
-import { AgentCostDashboardRoute } from "./routes/AgentCostDashboardRoute.js";
-import { AgentTaskComposerRoute } from "./routes/AgentTaskComposerRoute.js";
-import { AgentTranscriptViewerRoute } from "./routes/AgentTranscriptViewerRoute.js";
-import { AgentMarketplaceRoute } from "./routes/AgentMarketplaceRoute.js";
-import { RegistryPublicHomeRoute } from "./routes/RegistryPublicHomeRoute.js";
-import { AgentInstallRoute } from "./routes/AgentInstallRoute.js";
-import { AgentTrustReviewRoute } from "./routes/AgentTrustReviewRoute.js";
-import { AgentCapabilityReviewRoute } from "./routes/AgentCapabilityReviewRoute.js";
-import { AgentByoKeySettingsRoute } from "./routes/AgentByoKeySettingsRoute.js";
-import { AgentMemoryReaderRoute } from "./routes/AgentMemoryReaderRoute.js";
-import { PluginSubmissionFormRoute } from "./routes/PluginSubmissionFormRoute.js";
-import { PluginSubmissionListRoute } from "./routes/PluginSubmissionListRoute.js";
-import { PluginSubmissionDetailRoute } from "./routes/PluginSubmissionDetailRoute.js";
-import { RegistryReviewQueueRoute } from "./routes/RegistryReviewQueueRoute.js";
-import { RegistryReviewDetailRoute } from "./routes/RegistryReviewDetailRoute.js";
-import { TierPromotionRoute } from "./routes/TierPromotionRoute.js";
-import { VulnerabilityAdvisorySubmitRoute } from "./routes/VulnerabilityAdvisorySubmitRoute.js";
+import { SurfaceSkeleton } from "./lib/SurfaceSkeleton.js";
+
+// Eager: home route (/), auth surface, and PWA start_url. Flashing a
+// spinner on any of these three would hurt UX; everything else is
+// lazy-loaded so Vite can code-split each route into its own chunk
+// (b108-2ge — follow-up to the vendor-chunk split in b108-2cp).
 import { Capture } from "./routes/Capture.js";
-import { Editor } from "./routes/Editor.js";
-import { Health } from "./routes/Health.js";
-import { Identities } from "./routes/Identities.js";
-import { LineageAdmin } from "./routes/LineageAdmin.js";
-import { Oracle } from "./routes/Oracle.js";
-import { Templates } from "./routes/Templates.js";
-import { Wellbeing } from "./routes/Wellbeing.js";
-import { Workshop } from "./routes/Workshop.js";
-import { Journal } from "./routes/Journal.js";
-import { Library } from "./routes/Library.js";
-import { MagicalCircleRoute } from "./routes/MagicalCircleRoute.js";
-import { MagicSquaresRoute } from "./routes/MagicSquaresRoute.js";
-import { AnalyticsDashboardRoute } from "./routes/AnalyticsDashboardRoute.js";
-import { AudioLibraryRoute } from "./routes/AudioLibraryRoute.js";
-import { CrossJournalSearchRoute } from "./routes/CrossJournalSearchRoute.js";
-import { PerStudyPageRoute } from "./routes/PerStudyPageRoute.js";
-import { QueryBuilderRoute } from "./routes/QueryBuilderRoute.js";
-import { StudiesIndexRoute } from "./routes/StudiesIndexRoute.js";
-import { SynchronicityLogRoute } from "./routes/SynchronicityLogRoute.js";
-import { TransliterationUtilityRoute } from "./routes/TransliterationUtilityRoute.js";
-import { ICalFeedRoute } from "./routes/ICalFeedRoute.js";
-import { MediaDetailRoute } from "./routes/MediaDetailRoute.js";
-import { MediaLibraryRoute } from "./routes/MediaLibraryRoute.js";
-import { PilgrimageMapRoute } from "./routes/PilgrimageMapRoute.js";
-import { TalismanDesignerRoute } from "./routes/TalismanDesignerRoute.js";
-import { ToolRegistryRoute } from "./routes/ToolRegistryRoute.js";
-import { VocesMagicaeRoute } from "./routes/VocesMagicaeRoute.js";
-import { Placeholder } from "./routes/Placeholder.js";
-import { PracticeLogsRoute } from "./routes/PracticeLogsRoute.js";
-import { SigilGeneratorRoute } from "./routes/SigilGeneratorRoute.js";
-import { RitualFeed } from "./routes/RitualFeed.js";
-import { Settings } from "./routes/Settings.js";
-import { AccountSettingsRoute } from "./routes/AccountSettingsRoute.js";
-import { DataExportRequestRoute } from "./routes/DataExportRequestRoute.js";
-import { AccountDeletionRoute } from "./routes/AccountDeletionRoute.js";
-import { PerUserAuditLogRoute } from "./routes/PerUserAuditLogRoute.js";
-import { SessionsAndDevicesRoute } from "./routes/SessionsAndDevicesRoute.js";
-import { AccessibilityAndMotionRoute } from "./routes/AccessibilityAndMotionRoute.js";
-import { WebAuthnEnrollmentRoute } from "./routes/WebAuthnEnrollmentRoute.js";
-import { TotpEnrollmentRoute } from "./routes/TotpEnrollmentRoute.js";
 import { SignInRoute } from "./routes/SignInRoute.js";
 import { Today } from "./routes/Today.js";
+
+// Lazy: every other surface. Route modules use NAMED exports, so the
+// `.then((m) => ({ default: m.RouteName }))` shim adapts them to
+// React.lazy's default-export contract.
+const Connection = lazy(() =>
+  import("./routes/Connection.js").then((m) => ({ default: m.Connection })),
+);
+const DailyPracticeRoute = lazy(() =>
+  import("./routes/DailyPracticeRoute.js").then((m) => ({
+    default: m.DailyPracticeRoute,
+  })),
+);
+const GematriaCalculatorRoute = lazy(() =>
+  import("./routes/GematriaCalculatorRoute.js").then((m) => ({
+    default: m.GematriaCalculatorRoute,
+  })),
+);
+const NewsletterEditorRoute = lazy(() =>
+  import("./routes/NewsletterEditorRoute.js").then((m) => ({
+    default: m.NewsletterEditorRoute,
+  })),
+);
+const PricingDistributionRoute = lazy(() =>
+  import("./routes/PricingDistributionRoute.js").then((m) => ({
+    default: m.PricingDistributionRoute,
+  })),
+);
+const PublicationEditorRoute = lazy(() =>
+  import("./routes/PublicationEditorRoute.js").then((m) => ({
+    default: m.PublicationEditorRoute,
+  })),
+);
+const PublicationSettingsRoute = lazy(() =>
+  import("./routes/PublicationSettingsRoute.js").then((m) => ({
+    default: m.PublicationSettingsRoute,
+  })),
+);
+const PublicationsRoute = lazy(() =>
+  import("./routes/PublicationsRoute.js").then((m) => ({
+    default: m.PublicationsRoute,
+  })),
+);
+const SubscribersRoute = lazy(() =>
+  import("./routes/SubscribersRoute.js").then((m) => ({
+    default: m.SubscribersRoute,
+  })),
+);
+const SubscriptionTiersRoute = lazy(() =>
+  import("./routes/SubscriptionTiersRoute.js").then((m) => ({
+    default: m.SubscriptionTiersRoute,
+  })),
+);
+const VocesLibraryRoute = lazy(() =>
+  import("./routes/VocesLibraryRoute.js").then((m) => ({
+    default: m.VocesLibraryRoute,
+  })),
+);
+const Divination = lazy(() =>
+  import("./routes/Divination.js").then((m) => ({ default: m.Divination })),
+);
+const DivinationMiscRoute = lazy(() =>
+  import("./routes/DivinationMiscRoute.js").then((m) => ({
+    default: m.DivinationMiscRoute,
+  })),
+);
+const GeomancyRoute = lazy(() =>
+  import("./routes/GeomancyRoute.js").then((m) => ({
+    default: m.GeomancyRoute,
+  })),
+);
+const IChingRoute = lazy(() =>
+  import("./routes/IChingRoute.js").then((m) => ({ default: m.IChingRoute })),
+);
+const RunesRoute = lazy(() =>
+  import("./routes/RunesRoute.js").then((m) => ({ default: m.RunesRoute })),
+);
+const TarotRoute = lazy(() =>
+  import("./routes/TarotRoute.js").then((m) => ({ default: m.TarotRoute })),
+);
+const Entities = lazy(() =>
+  import("./routes/Entities.js").then((m) => ({ default: m.Entities })),
+);
+const Foundations = lazy(() =>
+  import("./routes/Foundations.js").then((m) => ({ default: m.Foundations })),
+);
+const GroupRitualCoordination = lazy(() =>
+  import("./routes/GroupRitualCoordination.js").then((m) => ({
+    default: m.GroupRitualCoordination,
+  })),
+);
+const GroupRitualPostMortem = lazy(() =>
+  import("./routes/GroupRitualPostMortem.js").then((m) => ({
+    default: m.GroupRitualPostMortem,
+  })),
+);
+const GroupRitualScheduler = lazy(() =>
+  import("./routes/GroupRitualScheduler.js").then((m) => ({
+    default: m.GroupRitualScheduler,
+  })),
+);
+const HubAdminDashboard = lazy(() =>
+  import("./routes/HubAdminDashboard.js").then((m) => ({
+    default: m.HubAdminDashboard,
+  })),
+);
+const HubDiscovery = lazy(() =>
+  import("./routes/HubDiscovery.js").then((m) => ({
+    default: m.HubDiscovery,
+  })),
+);
+const HubMemberDashboard = lazy(() =>
+  import("./routes/HubMemberDashboard.js").then((m) => ({
+    default: m.HubMemberDashboard,
+  })),
+);
+const HubNewsletterComposer = lazy(() =>
+  import("./routes/HubNewsletterComposer.js").then((m) => ({
+    default: m.HubNewsletterComposer,
+  })),
+);
+const HubPublicFace = lazy(() =>
+  import("./routes/HubPublicFace.js").then((m) => ({
+    default: m.HubPublicFace,
+  })),
+);
+const MyNetworks = lazy(() =>
+  import("./routes/MyNetworks.js").then((m) => ({ default: m.MyNetworks })),
+);
+const NetworkBrowser = lazy(() =>
+  import("./routes/NetworkBrowser.js").then((m) => ({
+    default: m.NetworkBrowser,
+  })),
+);
+const PrivateViewers = lazy(() =>
+  import("./routes/PrivateViewers.js").then((m) => ({
+    default: m.PrivateViewers,
+  })),
+);
+const RolesPermissionsEditor = lazy(() =>
+  import("./routes/RolesPermissionsEditor.js").then((m) => ({
+    default: m.RolesPermissionsEditor,
+  })),
+);
+const FederationAuditLog = lazy(() =>
+  import("./routes/FederationAuditLog.js").then((m) => ({
+    default: m.FederationAuditLog,
+  })),
+);
+const ActivityPubSettings = lazy(() =>
+  import("./routes/ActivityPubSettings.js").then((m) => ({
+    default: m.ActivityPubSettings,
+  })),
+);
+const Followers = lazy(() =>
+  import("./routes/Followers.js").then((m) => ({ default: m.Followers })),
+);
+const WebFingerVerify = lazy(() =>
+  import("./routes/WebFingerVerify.js").then((m) => ({
+    default: m.WebFingerVerify,
+  })),
+);
+const InstalledPlugins = lazy(() =>
+  import("./routes/InstalledPlugins.js").then((m) => ({
+    default: m.InstalledPlugins,
+  })),
+);
+const PluginDetail = lazy(() =>
+  import("./routes/PluginDetail.js").then((m) => ({
+    default: m.PluginDetail,
+  })),
+);
+const PluginConfiguration = lazy(() =>
+  import("./routes/PluginConfiguration.js").then((m) => ({
+    default: m.PluginConfiguration,
+  })),
+);
+const PluginStatus = lazy(() =>
+  import("./routes/PluginStatus.js").then((m) => ({
+    default: m.PluginStatus,
+  })),
+);
+const RegistryBrowserRoute = lazy(() =>
+  import("./routes/RegistryBrowser.js").then((m) => ({
+    default: m.RegistryBrowser,
+  })),
+);
+const RegistryPluginDetail = lazy(() =>
+  import("./routes/RegistryPluginDetail.js").then((m) => ({
+    default: m.RegistryPluginDetail,
+  })),
+);
+const PluginAuthorProfile = lazy(() =>
+  import("./routes/PluginAuthorProfile.js").then((m) => ({
+    default: m.PluginAuthorProfile,
+  })),
+);
+const BundleLibrary = lazy(() =>
+  import("./routes/BundleLibrary.js").then((m) => ({
+    default: m.BundleLibrary,
+  })),
+);
+const BundleDetail = lazy(() =>
+  import("./routes/BundleDetail.js").then((m) => ({
+    default: m.BundleDetail,
+  })),
+);
+const SandboxBrowserRoute = lazy(() =>
+  import("./routes/SandboxBrowser.js").then((m) => ({
+    default: m.SandboxBrowser,
+  })),
+);
+const SandboxDetail = lazy(() =>
+  import("./routes/SandboxDetail.js").then((m) => ({
+    default: m.SandboxDetail,
+  })),
+);
+const AgentsHomeRoute = lazy(() =>
+  import("./routes/AgentsHomeRoute.js").then((m) => ({
+    default: m.AgentsHomeRoute,
+  })),
+);
+const AgentRunMonitorRoute = lazy(() =>
+  import("./routes/AgentRunMonitorRoute.js").then((m) => ({
+    default: m.AgentRunMonitorRoute,
+  })),
+);
+const AgentActivityLogRoute = lazy(() =>
+  import("./routes/AgentActivityLogRoute.js").then((m) => ({
+    default: m.AgentActivityLogRoute,
+  })),
+);
+const AgentCostDashboardRoute = lazy(() =>
+  import("./routes/AgentCostDashboardRoute.js").then((m) => ({
+    default: m.AgentCostDashboardRoute,
+  })),
+);
+const AgentTaskComposerRoute = lazy(() =>
+  import("./routes/AgentTaskComposerRoute.js").then((m) => ({
+    default: m.AgentTaskComposerRoute,
+  })),
+);
+const AgentTranscriptViewerRoute = lazy(() =>
+  import("./routes/AgentTranscriptViewerRoute.js").then((m) => ({
+    default: m.AgentTranscriptViewerRoute,
+  })),
+);
+const AgentMarketplaceRoute = lazy(() =>
+  import("./routes/AgentMarketplaceRoute.js").then((m) => ({
+    default: m.AgentMarketplaceRoute,
+  })),
+);
+const RegistryPublicHomeRoute = lazy(() =>
+  import("./routes/RegistryPublicHomeRoute.js").then((m) => ({
+    default: m.RegistryPublicHomeRoute,
+  })),
+);
+const AgentInstallRoute = lazy(() =>
+  import("./routes/AgentInstallRoute.js").then((m) => ({
+    default: m.AgentInstallRoute,
+  })),
+);
+const AgentTrustReviewRoute = lazy(() =>
+  import("./routes/AgentTrustReviewRoute.js").then((m) => ({
+    default: m.AgentTrustReviewRoute,
+  })),
+);
+const AgentCapabilityReviewRoute = lazy(() =>
+  import("./routes/AgentCapabilityReviewRoute.js").then((m) => ({
+    default: m.AgentCapabilityReviewRoute,
+  })),
+);
+const AgentByoKeySettingsRoute = lazy(() =>
+  import("./routes/AgentByoKeySettingsRoute.js").then((m) => ({
+    default: m.AgentByoKeySettingsRoute,
+  })),
+);
+const AgentMemoryReaderRoute = lazy(() =>
+  import("./routes/AgentMemoryReaderRoute.js").then((m) => ({
+    default: m.AgentMemoryReaderRoute,
+  })),
+);
+const PluginSubmissionFormRoute = lazy(() =>
+  import("./routes/PluginSubmissionFormRoute.js").then((m) => ({
+    default: m.PluginSubmissionFormRoute,
+  })),
+);
+const PluginSubmissionListRoute = lazy(() =>
+  import("./routes/PluginSubmissionListRoute.js").then((m) => ({
+    default: m.PluginSubmissionListRoute,
+  })),
+);
+const PluginSubmissionDetailRoute = lazy(() =>
+  import("./routes/PluginSubmissionDetailRoute.js").then((m) => ({
+    default: m.PluginSubmissionDetailRoute,
+  })),
+);
+const RegistryReviewQueueRoute = lazy(() =>
+  import("./routes/RegistryReviewQueueRoute.js").then((m) => ({
+    default: m.RegistryReviewQueueRoute,
+  })),
+);
+const RegistryReviewDetailRoute = lazy(() =>
+  import("./routes/RegistryReviewDetailRoute.js").then((m) => ({
+    default: m.RegistryReviewDetailRoute,
+  })),
+);
+const TierPromotionRoute = lazy(() =>
+  import("./routes/TierPromotionRoute.js").then((m) => ({
+    default: m.TierPromotionRoute,
+  })),
+);
+const VulnerabilityAdvisorySubmitRoute = lazy(() =>
+  import("./routes/VulnerabilityAdvisorySubmitRoute.js").then((m) => ({
+    default: m.VulnerabilityAdvisorySubmitRoute,
+  })),
+);
+const Editor = lazy(() =>
+  import("./routes/Editor.js").then((m) => ({ default: m.Editor })),
+);
+const Health = lazy(() =>
+  import("./routes/Health.js").then((m) => ({ default: m.Health })),
+);
+const Identities = lazy(() =>
+  import("./routes/Identities.js").then((m) => ({ default: m.Identities })),
+);
+const LineageAdmin = lazy(() =>
+  import("./routes/LineageAdmin.js").then((m) => ({
+    default: m.LineageAdmin,
+  })),
+);
+const Oracle = lazy(() =>
+  import("./routes/Oracle.js").then((m) => ({ default: m.Oracle })),
+);
+const Templates = lazy(() =>
+  import("./routes/Templates.js").then((m) => ({ default: m.Templates })),
+);
+const Wellbeing = lazy(() =>
+  import("./routes/Wellbeing.js").then((m) => ({ default: m.Wellbeing })),
+);
+const Workshop = lazy(() =>
+  import("./routes/Workshop.js").then((m) => ({ default: m.Workshop })),
+);
+const Journal = lazy(() =>
+  import("./routes/Journal.js").then((m) => ({ default: m.Journal })),
+);
+const Library = lazy(() =>
+  import("./routes/Library.js").then((m) => ({ default: m.Library })),
+);
+const MagicalCircleRoute = lazy(() =>
+  import("./routes/MagicalCircleRoute.js").then((m) => ({
+    default: m.MagicalCircleRoute,
+  })),
+);
+const MagicSquaresRoute = lazy(() =>
+  import("./routes/MagicSquaresRoute.js").then((m) => ({
+    default: m.MagicSquaresRoute,
+  })),
+);
+const AnalyticsDashboardRoute = lazy(() =>
+  import("./routes/AnalyticsDashboardRoute.js").then((m) => ({
+    default: m.AnalyticsDashboardRoute,
+  })),
+);
+const AudioLibraryRoute = lazy(() =>
+  import("./routes/AudioLibraryRoute.js").then((m) => ({
+    default: m.AudioLibraryRoute,
+  })),
+);
+const CrossJournalSearchRoute = lazy(() =>
+  import("./routes/CrossJournalSearchRoute.js").then((m) => ({
+    default: m.CrossJournalSearchRoute,
+  })),
+);
+const PerStudyPageRoute = lazy(() =>
+  import("./routes/PerStudyPageRoute.js").then((m) => ({
+    default: m.PerStudyPageRoute,
+  })),
+);
+const QueryBuilderRoute = lazy(() =>
+  import("./routes/QueryBuilderRoute.js").then((m) => ({
+    default: m.QueryBuilderRoute,
+  })),
+);
+const StudiesIndexRoute = lazy(() =>
+  import("./routes/StudiesIndexRoute.js").then((m) => ({
+    default: m.StudiesIndexRoute,
+  })),
+);
+const SynchronicityLogRoute = lazy(() =>
+  import("./routes/SynchronicityLogRoute.js").then((m) => ({
+    default: m.SynchronicityLogRoute,
+  })),
+);
+const TransliterationUtilityRoute = lazy(() =>
+  import("./routes/TransliterationUtilityRoute.js").then((m) => ({
+    default: m.TransliterationUtilityRoute,
+  })),
+);
+const ICalFeedRoute = lazy(() =>
+  import("./routes/ICalFeedRoute.js").then((m) => ({
+    default: m.ICalFeedRoute,
+  })),
+);
+const MediaDetailRoute = lazy(() =>
+  import("./routes/MediaDetailRoute.js").then((m) => ({
+    default: m.MediaDetailRoute,
+  })),
+);
+const MediaLibraryRoute = lazy(() =>
+  import("./routes/MediaLibraryRoute.js").then((m) => ({
+    default: m.MediaLibraryRoute,
+  })),
+);
+const PilgrimageMapRoute = lazy(() =>
+  import("./routes/PilgrimageMapRoute.js").then((m) => ({
+    default: m.PilgrimageMapRoute,
+  })),
+);
+const TalismanDesignerRoute = lazy(() =>
+  import("./routes/TalismanDesignerRoute.js").then((m) => ({
+    default: m.TalismanDesignerRoute,
+  })),
+);
+const ToolRegistryRoute = lazy(() =>
+  import("./routes/ToolRegistryRoute.js").then((m) => ({
+    default: m.ToolRegistryRoute,
+  })),
+);
+const VocesMagicaeRoute = lazy(() =>
+  import("./routes/VocesMagicaeRoute.js").then((m) => ({
+    default: m.VocesMagicaeRoute,
+  })),
+);
+const Placeholder = lazy(() =>
+  import("./routes/Placeholder.js").then((m) => ({ default: m.Placeholder })),
+);
+const PracticeLogsRoute = lazy(() =>
+  import("./routes/PracticeLogsRoute.js").then((m) => ({
+    default: m.PracticeLogsRoute,
+  })),
+);
+const SigilGeneratorRoute = lazy(() =>
+  import("./routes/SigilGeneratorRoute.js").then((m) => ({
+    default: m.SigilGeneratorRoute,
+  })),
+);
+const RitualFeed = lazy(() =>
+  import("./routes/RitualFeed.js").then((m) => ({ default: m.RitualFeed })),
+);
+const Settings = lazy(() =>
+  import("./routes/Settings.js").then((m) => ({ default: m.Settings })),
+);
+const AccountSettingsRoute = lazy(() =>
+  import("./routes/AccountSettingsRoute.js").then((m) => ({
+    default: m.AccountSettingsRoute,
+  })),
+);
+const DataExportRequestRoute = lazy(() =>
+  import("./routes/DataExportRequestRoute.js").then((m) => ({
+    default: m.DataExportRequestRoute,
+  })),
+);
+const AccountDeletionRoute = lazy(() =>
+  import("./routes/AccountDeletionRoute.js").then((m) => ({
+    default: m.AccountDeletionRoute,
+  })),
+);
+const PerUserAuditLogRoute = lazy(() =>
+  import("./routes/PerUserAuditLogRoute.js").then((m) => ({
+    default: m.PerUserAuditLogRoute,
+  })),
+);
+const SessionsAndDevicesRoute = lazy(() =>
+  import("./routes/SessionsAndDevicesRoute.js").then((m) => ({
+    default: m.SessionsAndDevicesRoute,
+  })),
+);
+const AccessibilityAndMotionRoute = lazy(() =>
+  import("./routes/AccessibilityAndMotionRoute.js").then((m) => ({
+    default: m.AccessibilityAndMotionRoute,
+  })),
+);
+const WebAuthnEnrollmentRoute = lazy(() =>
+  import("./routes/WebAuthnEnrollmentRoute.js").then((m) => ({
+    default: m.WebAuthnEnrollmentRoute,
+  })),
+);
+const TotpEnrollmentRoute = lazy(() =>
+  import("./routes/TotpEnrollmentRoute.js").then((m) => ({
+    default: m.TotpEnrollmentRoute,
+  })),
+);
 
 // Vite's BASE_URL: "/" in dev, "/app/" in prod. BrowserRouter
 // basename wants no trailing slash; trim it.
@@ -288,222 +681,224 @@ function Shell({ children }: { children: React.ReactNode }) {
 function ShellRoutes() {
   return (
     <Shell>
-      <Routes>
-        <Route path="/" element={<Today />} />
-        <Route path="/connection" element={<Connection />} />
-        <Route path="/journal" element={<Journal />} />
-        <Route path="/library" element={<Library />} />
-        <Route path="/synchronicities" element={<SynchronicityLogRoute />} />
-        <Route path="/daily-practice" element={<DailyPracticeRoute />} />
-        <Route path="/practice-logs" element={<PracticeLogsRoute />} />
-        <Route path="/entities" element={<Entities />} />
-        <Route
-          path="/calendar"
-          element={
-            <Placeholder
-              glyph="moon"
-              title="Calendar"
-              body="Multi-tradition calendar — feasts, planetary days, lunation arc. The dedicated .dc.html for this surface hasn't shipped from the design hand-off yet; Scheduler covers content publishing, not the magickal calendar."
-            />
-          }
-        />
-        <Route path="/divination" element={<Divination />} />
-        <Route path="/divination/tarot" element={<TarotRoute />} />
-        <Route path="/divination/iching" element={<IChingRoute />} />
-        <Route path="/divination/geomancy" element={<GeomancyRoute />} />
-        <Route path="/divination/runes" element={<RunesRoute />} />
-        <Route path="/divination/more" element={<DivinationMiscRoute />} />
-        <Route path="/sigils" element={<SigilGeneratorRoute />} />
-        <Route path="/magic-squares" element={<MagicSquaresRoute />} />
-        <Route path="/circles" element={<MagicalCircleRoute />} />
-        <Route path="/talismans" element={<TalismanDesignerRoute />} />
-        <Route path="/tools" element={<ToolRegistryRoute />} />
-        <Route path="/voces" element={<VocesMagicaeRoute />} />
-        <Route path="/gematria" element={<GematriaCalculatorRoute />} />
-        <Route
-          path="/gematria/search"
-          element={<CrossJournalSearchRoute />}
-        />
-        <Route path="/studies" element={<StudiesIndexRoute />} />
-        <Route path="/studies/:id" element={<PerStudyPageRoute />} />
-        <Route path="/query" element={<QueryBuilderRoute />} />
-        <Route path="/voces-library" element={<VocesLibraryRoute />} />
-        <Route path="/publications" element={<PublicationsRoute />} />
-        <Route
-          path="/publications/:id/edit"
-          element={<PublicationEditorRoute />}
-        />
-        <Route path="/publication-editor" element={<PublicationEditorRoute />} />
-        <Route
-          path="/publications/:id/settings"
-          element={<PublicationSettingsRoute />}
-        />
-        <Route
-          path="/publication-settings"
-          element={<PublicationSettingsRoute />}
-        />
-        <Route
-          path="/publications/:id/pricing"
-          element={<PricingDistributionRoute />}
-        />
-        <Route
-          path="/pricing-distribution"
-          element={<PricingDistributionRoute />}
-        />
-        <Route
-          path="/subscription-tiers"
-          element={<SubscriptionTiersRoute />}
-        />
-        <Route path="/subscribers" element={<SubscribersRoute />} />
-        <Route
-          path="/newsletter-editor"
-          element={<NewsletterEditorRoute />}
-        />
-        <Route
-          path="/newsletters/:id/edit"
-          element={<NewsletterEditorRoute />}
-        />
-        <Route path="/audio" element={<AudioLibraryRoute />} />
-        <Route path="/icalfeed" element={<ICalFeedRoute />} />
-        <Route path="/pilgrimage" element={<PilgrimageMapRoute />} />
-        <Route path="/media" element={<MediaLibraryRoute />} />
-        <Route path="/media/:id" element={<MediaDetailRoute />} />
-        <Route path="/analytics" element={<AnalyticsDashboardRoute />} />
-        <Route path="/feed" element={<RitualFeed />} />
-        {/* H08 — Network section routes. Cluster A surfaces land one per
-            batch; My Networks is in. The legacy `/hubs` URL still
-            resolves (now to the same surface) so any external bookmarks
-            stay alive while the rest of Cluster A ships. */}
-        <Route path="/networks" element={<MyNetworks />} />
-        <Route path="/networks/peers" element={<NetworkBrowser />} />
-        <Route path="/networks/discover" element={<HubDiscovery />} />
-        <Route path="/hubs" element={<MyNetworks />} />
-        <Route
-          path="/hubs/:hubId/admin"
-          element={<HubAdminDashboard />}
-        />
-        <Route
-          path="/hubs/:hubId/admin/roles"
-          element={<RolesPermissionsEditor />}
-        />
-        <Route
-          path="/hubs/:hubId/admin/audit"
-          element={<FederationAuditLog />}
-        />
-        <Route
-          path="/hubs/:hubId/newsletter"
-          element={<HubNewsletterComposer />}
-        />
-        <Route
-          path="/hubs/:hubId"
-          element={<HubMemberDashboard />}
-        />
-        <Route path="/hub/:slug" element={<HubPublicFace />} />
-        <Route path="/private-viewers" element={<PrivateViewers />} />
-        <Route
-          path="/settings/activitypub"
-          element={<ActivityPubSettings />}
-        />
-        <Route path="/followers" element={<Followers />} />
-        <Route path="/verify" element={<WebFingerVerify />} />
-        {/* H09 — Platform section */}
-        <Route path="/plugins" element={<InstalledPlugins />} />
-        <Route path="/plugins/status" element={<PluginStatus />} />
-        <Route
-          path="/plugins/registry"
-          element={<RegistryBrowserRoute />}
-        />
-        <Route
-          path="/plugins/registry/:id"
-          element={<RegistryPluginDetail />}
-        />
-        <Route
-          path="/plugins/authors/:did"
-          element={<PluginAuthorProfile />}
-        />
-        <Route
-          path="/plugins/:id/configure"
-          element={<PluginConfiguration />}
-        />
-        <Route path="/plugins/:id" element={<PluginDetail />} />
-        <Route path="/bundles" element={<BundleLibrary />} />
-        <Route path="/bundles/:id" element={<BundleDetail />} />
-        <Route path="/sandbox" element={<SandboxBrowserRoute />} />
-        <Route path="/sandbox/:id" element={<SandboxDetail />} />
-        <Route
-          path="/group-rituals/:id/run"
-          element={<GroupRitualCoordination />}
-        />
-        <Route
-          path="/group-rituals/new"
-          element={<GroupRitualScheduler />}
-        />
-        <Route
-          path="/group-rituals/:id"
-          element={<GroupRitualPostMortem />}
-        />
-        <Route path="/identities" element={<Identities />} />
-        <Route path="/lineage" element={<LineageAdmin />} />
-        <Route path="/wellbeing" element={<Wellbeing />} />
-        <Route path="/agents-home" element={<AgentsHomeRoute />} />
-        <Route path="/agents/runs/:runId" element={<AgentRunMonitorRoute />} />
-        <Route path="/agents-activity" element={<AgentActivityLogRoute />} />
-        <Route path="/agents-cost" element={<AgentCostDashboardRoute />} />
-        <Route path="/agents/:installId/compose" element={<AgentTaskComposerRoute />} />
-        <Route path="/agents/runs/:runId/transcript" element={<AgentTranscriptViewerRoute />} />
-        <Route path="/agents-marketplace" element={<AgentMarketplaceRoute />} />
-        <Route path="/registry" element={<RegistryPublicHomeRoute />} />
-        <Route path="/agents-marketplace/:agentSlug" element={<AgentInstallRoute />} />
-        <Route path="/agents/:installId/trust" element={<AgentTrustReviewRoute />} />
-        <Route path="/agents/:installId/capabilities" element={<AgentCapabilityReviewRoute />} />
-        <Route path="/agents-keys" element={<AgentByoKeySettingsRoute />} />
-        <Route path="/agents/:installId/memory" element={<AgentMemoryReaderRoute />} />
-        <Route path="/registry/submit" element={<PluginSubmissionFormRoute />} />
-        <Route path="/registry/submissions" element={<PluginSubmissionListRoute />} />
-        <Route path="/registry/submissions/:submissionId" element={<PluginSubmissionDetailRoute />} />
-        <Route path="/registry/review" element={<RegistryReviewQueueRoute />} />
-        <Route path="/registry/review/:submissionId" element={<RegistryReviewDetailRoute />} />
-        <Route path="/registry/promote/:pluginId" element={<TierPromotionRoute />} />
-        <Route path="/registry/advisory" element={<VulnerabilityAdvisorySubmitRoute />} />
-        <Route path="/editor" element={<Editor />} />
-        <Route path="/editor/:id" element={<Editor />} />
-        <Route path="/templates" element={<Templates />} />
-        <Route path="/health" element={<Health />} />
-        <Route path="/workshop" element={<Workshop />} />
-        <Route path="/oracle" element={<Oracle />} />
-        <Route path="/transliterations" element={<TransliterationUtilityRoute />} />
-        <Route path="/settings" element={<AccountSettingsRoute />} />
-        <Route path="/settings/data-export" element={<DataExportRequestRoute />} />
-        <Route path="/settings/delete-account" element={<AccountDeletionRoute />} />
-        <Route path="/settings/audit" element={<PerUserAuditLogRoute />} />
-        <Route path="/settings/sessions" element={<SessionsAndDevicesRoute />} />
-        <Route path="/settings/accessibility" element={<AccessibilityAndMotionRoute />} />
-        <Route path="/settings/preferences" element={<Settings />} />
-        <Route
-          path="/settings/keys"
-          element={
-            <Placeholder
-              glyph="key"
-              title="Federation signing keys"
-              body="Rotates the Ed25519 keypair that signs your outbound federation envelopes and appears in your DID document. Passkey sign-in has moved to Passkeys & hardware keys under Settings → Security. Federation key rotation lands in a follow-up batch alongside the envelope-resigning worker."
-            />
-          }
-        />
-        <Route path="/settings/webauthn" element={<WebAuthnEnrollmentRoute />} />
-        <Route path="/settings/totp" element={<TotpEnrollmentRoute />} />
-        <Route path="/signin" element={<SignInRoute />} />
-        <Route path="/foundations" element={<Foundations />} />
-        <Route
-          path="*"
-          element={
-            <Placeholder
-              glyph="compass"
-              title="Lost"
-              body="This route does not exist yet. Use the navigation to find your way back."
-            />
-          }
-        />
-      </Routes>
+      <Suspense fallback={<SurfaceSkeleton rowCount={4} />}>
+        <Routes>
+          <Route path="/" element={<Today />} />
+          <Route path="/connection" element={<Connection />} />
+          <Route path="/journal" element={<Journal />} />
+          <Route path="/library" element={<Library />} />
+          <Route path="/synchronicities" element={<SynchronicityLogRoute />} />
+          <Route path="/daily-practice" element={<DailyPracticeRoute />} />
+          <Route path="/practice-logs" element={<PracticeLogsRoute />} />
+          <Route path="/entities" element={<Entities />} />
+          <Route
+            path="/calendar"
+            element={
+              <Placeholder
+                glyph="moon"
+                title="Calendar"
+                body="Multi-tradition calendar — feasts, planetary days, lunation arc. The dedicated .dc.html for this surface hasn't shipped from the design hand-off yet; Scheduler covers content publishing, not the magickal calendar."
+              />
+            }
+          />
+          <Route path="/divination" element={<Divination />} />
+          <Route path="/divination/tarot" element={<TarotRoute />} />
+          <Route path="/divination/iching" element={<IChingRoute />} />
+          <Route path="/divination/geomancy" element={<GeomancyRoute />} />
+          <Route path="/divination/runes" element={<RunesRoute />} />
+          <Route path="/divination/more" element={<DivinationMiscRoute />} />
+          <Route path="/sigils" element={<SigilGeneratorRoute />} />
+          <Route path="/magic-squares" element={<MagicSquaresRoute />} />
+          <Route path="/circles" element={<MagicalCircleRoute />} />
+          <Route path="/talismans" element={<TalismanDesignerRoute />} />
+          <Route path="/tools" element={<ToolRegistryRoute />} />
+          <Route path="/voces" element={<VocesMagicaeRoute />} />
+          <Route path="/gematria" element={<GematriaCalculatorRoute />} />
+          <Route
+            path="/gematria/search"
+            element={<CrossJournalSearchRoute />}
+          />
+          <Route path="/studies" element={<StudiesIndexRoute />} />
+          <Route path="/studies/:id" element={<PerStudyPageRoute />} />
+          <Route path="/query" element={<QueryBuilderRoute />} />
+          <Route path="/voces-library" element={<VocesLibraryRoute />} />
+          <Route path="/publications" element={<PublicationsRoute />} />
+          <Route
+            path="/publications/:id/edit"
+            element={<PublicationEditorRoute />}
+          />
+          <Route path="/publication-editor" element={<PublicationEditorRoute />} />
+          <Route
+            path="/publications/:id/settings"
+            element={<PublicationSettingsRoute />}
+          />
+          <Route
+            path="/publication-settings"
+            element={<PublicationSettingsRoute />}
+          />
+          <Route
+            path="/publications/:id/pricing"
+            element={<PricingDistributionRoute />}
+          />
+          <Route
+            path="/pricing-distribution"
+            element={<PricingDistributionRoute />}
+          />
+          <Route
+            path="/subscription-tiers"
+            element={<SubscriptionTiersRoute />}
+          />
+          <Route path="/subscribers" element={<SubscribersRoute />} />
+          <Route
+            path="/newsletter-editor"
+            element={<NewsletterEditorRoute />}
+          />
+          <Route
+            path="/newsletters/:id/edit"
+            element={<NewsletterEditorRoute />}
+          />
+          <Route path="/audio" element={<AudioLibraryRoute />} />
+          <Route path="/icalfeed" element={<ICalFeedRoute />} />
+          <Route path="/pilgrimage" element={<PilgrimageMapRoute />} />
+          <Route path="/media" element={<MediaLibraryRoute />} />
+          <Route path="/media/:id" element={<MediaDetailRoute />} />
+          <Route path="/analytics" element={<AnalyticsDashboardRoute />} />
+          <Route path="/feed" element={<RitualFeed />} />
+          {/* H08 — Network section routes. Cluster A surfaces land one per
+              batch; My Networks is in. The legacy `/hubs` URL still
+              resolves (now to the same surface) so any external bookmarks
+              stay alive while the rest of Cluster A ships. */}
+          <Route path="/networks" element={<MyNetworks />} />
+          <Route path="/networks/peers" element={<NetworkBrowser />} />
+          <Route path="/networks/discover" element={<HubDiscovery />} />
+          <Route path="/hubs" element={<MyNetworks />} />
+          <Route
+            path="/hubs/:hubId/admin"
+            element={<HubAdminDashboard />}
+          />
+          <Route
+            path="/hubs/:hubId/admin/roles"
+            element={<RolesPermissionsEditor />}
+          />
+          <Route
+            path="/hubs/:hubId/admin/audit"
+            element={<FederationAuditLog />}
+          />
+          <Route
+            path="/hubs/:hubId/newsletter"
+            element={<HubNewsletterComposer />}
+          />
+          <Route
+            path="/hubs/:hubId"
+            element={<HubMemberDashboard />}
+          />
+          <Route path="/hub/:slug" element={<HubPublicFace />} />
+          <Route path="/private-viewers" element={<PrivateViewers />} />
+          <Route
+            path="/settings/activitypub"
+            element={<ActivityPubSettings />}
+          />
+          <Route path="/followers" element={<Followers />} />
+          <Route path="/verify" element={<WebFingerVerify />} />
+          {/* H09 — Platform section */}
+          <Route path="/plugins" element={<InstalledPlugins />} />
+          <Route path="/plugins/status" element={<PluginStatus />} />
+          <Route
+            path="/plugins/registry"
+            element={<RegistryBrowserRoute />}
+          />
+          <Route
+            path="/plugins/registry/:id"
+            element={<RegistryPluginDetail />}
+          />
+          <Route
+            path="/plugins/authors/:did"
+            element={<PluginAuthorProfile />}
+          />
+          <Route
+            path="/plugins/:id/configure"
+            element={<PluginConfiguration />}
+          />
+          <Route path="/plugins/:id" element={<PluginDetail />} />
+          <Route path="/bundles" element={<BundleLibrary />} />
+          <Route path="/bundles/:id" element={<BundleDetail />} />
+          <Route path="/sandbox" element={<SandboxBrowserRoute />} />
+          <Route path="/sandbox/:id" element={<SandboxDetail />} />
+          <Route
+            path="/group-rituals/:id/run"
+            element={<GroupRitualCoordination />}
+          />
+          <Route
+            path="/group-rituals/new"
+            element={<GroupRitualScheduler />}
+          />
+          <Route
+            path="/group-rituals/:id"
+            element={<GroupRitualPostMortem />}
+          />
+          <Route path="/identities" element={<Identities />} />
+          <Route path="/lineage" element={<LineageAdmin />} />
+          <Route path="/wellbeing" element={<Wellbeing />} />
+          <Route path="/agents-home" element={<AgentsHomeRoute />} />
+          <Route path="/agents/runs/:runId" element={<AgentRunMonitorRoute />} />
+          <Route path="/agents-activity" element={<AgentActivityLogRoute />} />
+          <Route path="/agents-cost" element={<AgentCostDashboardRoute />} />
+          <Route path="/agents/:installId/compose" element={<AgentTaskComposerRoute />} />
+          <Route path="/agents/runs/:runId/transcript" element={<AgentTranscriptViewerRoute />} />
+          <Route path="/agents-marketplace" element={<AgentMarketplaceRoute />} />
+          <Route path="/registry" element={<RegistryPublicHomeRoute />} />
+          <Route path="/agents-marketplace/:agentSlug" element={<AgentInstallRoute />} />
+          <Route path="/agents/:installId/trust" element={<AgentTrustReviewRoute />} />
+          <Route path="/agents/:installId/capabilities" element={<AgentCapabilityReviewRoute />} />
+          <Route path="/agents-keys" element={<AgentByoKeySettingsRoute />} />
+          <Route path="/agents/:installId/memory" element={<AgentMemoryReaderRoute />} />
+          <Route path="/registry/submit" element={<PluginSubmissionFormRoute />} />
+          <Route path="/registry/submissions" element={<PluginSubmissionListRoute />} />
+          <Route path="/registry/submissions/:submissionId" element={<PluginSubmissionDetailRoute />} />
+          <Route path="/registry/review" element={<RegistryReviewQueueRoute />} />
+          <Route path="/registry/review/:submissionId" element={<RegistryReviewDetailRoute />} />
+          <Route path="/registry/promote/:pluginId" element={<TierPromotionRoute />} />
+          <Route path="/registry/advisory" element={<VulnerabilityAdvisorySubmitRoute />} />
+          <Route path="/editor" element={<Editor />} />
+          <Route path="/editor/:id" element={<Editor />} />
+          <Route path="/templates" element={<Templates />} />
+          <Route path="/health" element={<Health />} />
+          <Route path="/workshop" element={<Workshop />} />
+          <Route path="/oracle" element={<Oracle />} />
+          <Route path="/transliterations" element={<TransliterationUtilityRoute />} />
+          <Route path="/settings" element={<AccountSettingsRoute />} />
+          <Route path="/settings/data-export" element={<DataExportRequestRoute />} />
+          <Route path="/settings/delete-account" element={<AccountDeletionRoute />} />
+          <Route path="/settings/audit" element={<PerUserAuditLogRoute />} />
+          <Route path="/settings/sessions" element={<SessionsAndDevicesRoute />} />
+          <Route path="/settings/accessibility" element={<AccessibilityAndMotionRoute />} />
+          <Route path="/settings/preferences" element={<Settings />} />
+          <Route
+            path="/settings/keys"
+            element={
+              <Placeholder
+                glyph="key"
+                title="Federation signing keys"
+                body="Rotates the Ed25519 keypair that signs your outbound federation envelopes and appears in your DID document. Passkey sign-in has moved to Passkeys & hardware keys under Settings → Security. Federation key rotation lands in a follow-up batch alongside the envelope-resigning worker."
+              />
+            }
+          />
+          <Route path="/settings/webauthn" element={<WebAuthnEnrollmentRoute />} />
+          <Route path="/settings/totp" element={<TotpEnrollmentRoute />} />
+          <Route path="/signin" element={<SignInRoute />} />
+          <Route path="/foundations" element={<Foundations />} />
+          <Route
+            path="*"
+            element={
+              <Placeholder
+                glyph="compass"
+                title="Lost"
+                body="This route does not exist yet. Use the navigation to find your way back."
+              />
+            }
+          />
+        </Routes>
+      </Suspense>
     </Shell>
   );
 }
