@@ -336,6 +336,17 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2fz: **a11y sweep · Escape closes the final 6 modals.**
+    Continuation of b108-2fy — the six surfaces whose `role="dialog"`
+    sat on inline sub-modals without matching open/onClose at the
+    top-level component. Handled each in place: GematriaCalculator's
+    two inline modals · AgentCapabilityReviewSurface (onCancel is
+    optional — wrapped) · NewsletterEditorSurface confirm modal ·
+    NewsletterComposerSurface ConfirmSendModal ·
+    PrivateViewersSurface NewViewerModal · QueryBuilderSurface save
+    modal. **Task #209: 22 of 22 shared modals with `role="dialog"`
+    now support Escape-to-close.** Zero remaining a11y gaps of this
+    class.
   - b108-2fy: **a11y sweep · Escape closes 17 modals/drawers + 1
     labelling fix.** Task #209 substantive attack. 22 shared modals
     rendered `role="dialog"` without any Escape-key close handler —
