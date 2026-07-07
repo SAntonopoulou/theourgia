@@ -24,9 +24,9 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `d580f50` (a11y sweep 2fy→2gc: 22/22 modals Escape·12 focus-on-open·5 tablists arrow-nav·68 surfaces single-main·prefers-reduced-motion) |
+| **Latest commit** | `aa3f249` (b108-2gd→2gm: superseded routes retired · route-level lazy · focus-return + focus trap · /settings/keys wired · weather substrate for H11 · HubAdmin PATCH actions · reference plugin · route-mount smoke suite) |
 | **Production** | **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; 8 prod containers, isolated compose project) |
-| **vitest** | 2924 passing · admin tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
+| **vitest** | 2924 shared + 32 admin route-mount smoke + 2608 backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
 | **backend** | **2587+ passing** · alembic head **0066** — `/api/v1/agents/*` daemon bridge + `/api/v1/federation/inbox` + `/users/{handle}` AP actor + outbox + collections + `/api/v1/registry/*` author + maintainer signed bridges + `/api/v1/auth/webauthn/*` ceremony endpoints |
 | **agent-daemon** | **198 passing** · alembic head **0002** — MCP + JSON-RPC + SSE + launcher + subprocess runner + cost-cap hard halt + audit emission · DB-backed (sinks + repos) · bwrap filesystem sandbox (rule 59 enforced) · install lifecycle CRUD · memory dir read/write with rule-59 path-safety |
 | **registry** | 34 passing · alembic head **0001** — DID + Ed25519 auth · author submission lifecycle · maintainer queue/decide/promote · advisory filing |

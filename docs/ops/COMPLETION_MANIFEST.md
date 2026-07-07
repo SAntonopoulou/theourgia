@@ -333,6 +333,56 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2gm: **Admin route-mount smoke suite (task #232).**
+    32 tests covering every 🚧 admin route. Renders without throwing
+    under jsdom inside the real provider stack. Fourth verification
+    layer atop curl (1), b108-2fv wiring audit (2), b108-2ge build (3).
+    32/32 pass in 12.4s. Devdeps: @testing-library/react, jest-dom,
+    jsdom.
+  - b108-2gl: **Reference plugin · example-cipher (task #237).**
+    First shipping reference plugin proves Phase 14 substrate works
+    end-to-end. plugin.toml + pyproject.toml + activate(ctx)
+    registering CIPHER extension point + 7 backend tests. Zero
+    core plugin infrastructure changed. Backend 2601 → 2608.
+  - b108-2gk: **HubAdmin member actions live-wired (task #236).**
+    Kebab opens MemberActionDialog with Promote / Demote / Remove
+    wired to POST /hubs/{id}/members/{user_id}/role + DELETE
+    /hubs/{id}/members/{user_id}. Mutations invalidate the members
+    query on success.
+  - b108-2gj: **A11y · focus trap wired into 22 modals (task #235).**
+    hooks/useFocusTrap(containerRef, open) reuses Overlay/focusTrap
+    primitives. All 22 shared modals now meet full WAI-ARIA modal
+    a11y contract: role=dialog + aria-modal + accessible name +
+    Escape closes + focus enters on open + focus returns on close
+    + focus trapped inside.
+  - b108-2gi: **shared tsc cleanup.** 34 pre-existing tsc errors
+    across 14 story/test files. Storybook 8 stricter args on Meta
+    (5 files) + arr[0]! non-null assertions (7 files) + 2
+    bad-import fixes. Shared tsc: 0 errors.
+  - b108-2gh: **Weather substrate for H11 (task #234).**
+    OpenMeteoWeatherProvider (sync, matches WeatherProvider
+    Protocol) + GET /api/v1/weather/current endpoint + 17 tests.
+    WMO 4677 code → label mapping · km/h → m/s conversion · 5s
+    httpx timeout · returns None on failure (never 5xx). Frontend
+    types + getWeatherCurrent api method. Backend 2584 → 2601.
+  - b108-2gg: **/settings/keys · KeyRotationRoute wired (task #233).**
+    Fetches actor publicKey from /users/{handle} + SHA-256 fingerprint
+    client-side + renders shared KeyRotationSurface. Begin-rotation
+    Toasts honestly (envelope-resign worker still queued; CLI interim).
+  - b108-2gf: **useFocusOnOpen restores focus on close (task #231).**
+    Captures document.activeElement at open time as previousActiveRef;
+    on cleanup restores focus to captured trigger (guarded by
+    document.contains). All 12 modals wired with useFocusOnOpen now
+    also return focus to trigger on close.
+  - b108-2ge: **Route-level React.lazy() code splitting (task #230).**
+    100 admin routes eager → lazy with single Suspense wrap.
+    Kept eager: Today (/) · SignInRoute · Capture. First-paint payload
+    is now main + vendor-react + vendor-query + landed route chunk.
+    Largest per-route chunks (gzipped): SigilGeneratorRoute 11.78 kB
+    · TotpEnrollmentRoute 12.30 kB · TiptapEditor 14.20 kB.
+  - b108-2gd: **Superseded routes section retired (task #229).**
+    Audit vs App.tsx + routes/ showed all previously-listed superseded
+    routes already removed. Section retired.
   - b108-2ga: **a11y sweep · lang='el' on Greek Foundations sample.**
     Small polish fix — the Foundations typography-sample list tagged
     Hebrew · Arabic · Devanagari · Coptic with their lang code but
