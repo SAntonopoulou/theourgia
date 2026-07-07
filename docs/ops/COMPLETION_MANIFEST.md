@@ -330,6 +330,15 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2fs: **PilgrimageMap default precision now ~1km, not exact.**
+    The surface defaulted `initial_precision='exact'`, rendering
+    every pin at raw recorded coordinates on the first paint. H07
+    Cluster C locked "precision default ~1km not exact" as a
+    location-honesty rule; the surface must never reveal raw
+    coordinates by default. Default flipped to '1km'; callers opt
+    into 'exact' only when practitioner has explicitly recorded
+    at that level. Rail-rows test updated to pass 'exact'
+    explicitly.
   - b108-2fr: **PendulumPanel opens with 'not yet asked' state.**
     The Pendulum panel opened with initialAnswer='Yes' shown on the
     dial and as a big --accent label — reading as if the pendulum
