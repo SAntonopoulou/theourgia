@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.billing.stripe_client import (
     StripeError,
     get_default_client,
@@ -60,10 +60,8 @@ class OnboardingLinkRead(BaseModel):
 )
 async def create_connect_account(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> OnboardingLinkRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     client = get_default_client()
 
     # Find or create the local row first; rolling back the Stripe
@@ -114,10 +112,8 @@ async def create_connect_account(
 )
 async def get_connect_account(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> AccountRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = (
         await db.execute(
             select(StripeConnectAccount).where(
@@ -147,10 +143,8 @@ async def get_connect_account(
 )
 async def refresh_onboarding_link(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> OnboardingLinkRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = (
         await db.execute(
             select(StripeConnectAccount).where(
@@ -184,10 +178,8 @@ async def refresh_onboarding_link(
 )
 async def disconnect_account(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = (
         await db.execute(
             select(StripeConnectAccount).where(

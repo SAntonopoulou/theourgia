@@ -24,7 +24,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.entries import EncryptionMode
 from theourgia.models.oaths import Oath, OathKind, OathStatus
 
@@ -119,11 +119,15 @@ def _to_read(row: Oath) -> OathRead:
 @router.get("/oaths", response_model=list[OathRead], tags=["oaths"])
 async def list_oaths(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     kind: OathKindLiteral | None = None,
     oath_status: OathStatusLiteral | None = None,
     limit: int = 100,
 ) -> list[OathRead]:
-    stmt = select(Oath).where(Oath.deleted_at.is_(None))
+    stmt = select(Oath).where(
+        Oath.deleted_at.is_(None),
+        Oath.owner_id == current_user.id,
+    )
     if kind is not None:
         stmt = stmt.where(Oath.kind == OathKind(kind))
     if oath_status is not None:
@@ -142,7 +146,7 @@ async def list_oaths(
 async def create_oath(
     payload: OathCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> OathRead:
     mode = EncryptionMode(payload.encryption_mode)
     # When sealed, the plaintext ``text`` is dropped and the body must
@@ -166,7 +170,7 @@ async def create_oath(
         renewal_cadence=payload.renewal_cadence,
         status=OathStatus(payload.status),
         accountability_checkpoints=payload.accountability_checkpoints,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -178,9 +182,12 @@ async def create_oath(
 async def get_oath(
     oath_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> OathRead:
     row = await db.get(Oath, oath_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Oath not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Oath not found.")
     return _to_read(row)
 
@@ -190,9 +197,12 @@ async def update_oath(
     oath_id: UUID,
     payload: OathUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> OathRead:
     row = await db.get(Oath, oath_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Oath not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Oath not found.")
     data = payload.model_dump(exclude_unset=True)
     if "status" in data and data["status"] is not None:
@@ -216,9 +226,12 @@ async def update_oath(
 async def delete_oath(
     oath_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(Oath, oath_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Oath not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Oath not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()

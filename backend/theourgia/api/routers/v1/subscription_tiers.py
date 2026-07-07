@@ -26,7 +26,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.subscription_tier import SubscriptionTier
 
 __all__ = ["router"]
@@ -119,11 +119,9 @@ async def _load_owned(
 )
 async def list_tiers(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     limit: int = 100,
 ) -> list[TierRead]:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     stmt = (
         select(SubscriptionTier)
         .where(SubscriptionTier.owner_id == current_user.id)
@@ -144,10 +142,8 @@ async def list_tiers(
 async def create_tier(
     payload: TierCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> TierRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = SubscriptionTier(
         owner_id=current_user.id,
         name=payload.name,
@@ -170,10 +166,8 @@ async def create_tier(
 async def get_tier(
     tier_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> TierRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, tier_id, current_user.id)
     return _to_tier_read(row)
 
@@ -187,10 +181,8 @@ async def update_tier(
     tier_id: UUID,
     payload: TierUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> TierRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, tier_id, current_user.id)
     data = payload.model_dump(exclude_unset=True)
     for k, v in data.items():
@@ -208,10 +200,8 @@ async def update_tier(
 async def delete_tier(
     tier_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, tier_id, current_user.id)
     row.deleted_at = datetime.now(tz=row.created_at.tzinfo)
     await db.commit()

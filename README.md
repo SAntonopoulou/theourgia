@@ -24,10 +24,10 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `aa3f249` (b108-2gd→2gm: superseded routes retired · route-level lazy · focus-return + focus trap · /settings/keys wired · weather substrate for H11 · HubAdmin PATCH actions · reference plugin · route-mount smoke suite) |
+| **Latest commit** | `b108-2gt` (auth lockdown · every write endpoint + owned read now requires session; SPA shell redirects to /signin without one; landing IA gains "This vault · Soror Ευ. Α." strip above hero) |
 | **Production** | **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; 8 prod containers, isolated compose project) |
-| **vitest** | 2924 shared + 32 admin route-mount smoke + 2608 backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
-| **backend** | **2587+ passing** · alembic head **0066** — `/api/v1/agents/*` daemon bridge + `/api/v1/federation/inbox` + `/users/{handle}` AP actor + outbox + collections + `/api/v1/registry/*` author + maintainer signed bridges + `/api/v1/auth/webauthn/*` ceremony endpoints |
+| **vitest** | 2924 shared + 32 admin route-mount smoke + **2670** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
+| **backend** | **2670 passing** · alembic head **0066** — 51 v1 routers migrated to CurrentUser (writes + owned reads); public endpoints (subscribe · public reader · webhooks · webfinger · iCal token · public identity face) preserved; **+58 auth-required tests** |
 | **agent-daemon** | **198 passing** · alembic head **0002** — MCP + JSON-RPC + SSE + launcher + subprocess runner + cost-cap hard halt + audit emission · DB-backed (sinks + repos) · bwrap filesystem sandbox (rule 59 enforced) · install lifecycle CRUD · memory dir read/write with rule-59 path-safety |
 | **registry** | 34 passing · alembic head **0001** — DID + Ed25519 auth · author submission lifecycle · maintainer queue/decide/promote · advisory filing |
 | **Phase 12.5** | federation inbox + delivery worker (retry queue with 60s→24h backoff · DEAD after 6 attempts · Celery beat every minute) |

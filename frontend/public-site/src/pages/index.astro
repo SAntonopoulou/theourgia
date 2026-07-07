@@ -33,20 +33,42 @@ const LANDING_NAV = [
 
     <PublicChrome nav={LANDING_NAV} />
 
+    <main id="om-main">
+
+    <!-- VAULT FACE — this page is both an operator's personal vault
+         and the product landing for the toolkit that powers it. The
+         top strip identifies the vault. The rest of the sections
+         below describe Theourgia as software. -->
+    <section id="this-vault" style={`max-width:${MAXW};margin:0 auto;padding:clamp(28px,3.5vw,44px) clamp(16px,5vw,28px) clamp(20px,2.5vw,28px)`}>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:center;border:1px solid var(--line);border-radius:var(--r-lg);padding:22px 26px;background:var(--bg-2)">
+        <div>
+          <div style="font-family:var(--font-ui);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:8px">This vault</div>
+          <h2 style="font-family:var(--font-display);font-weight:700;font-size:clamp(22px,2.4vw,30px);line-height:1.15;margin:0 0 8px;color:var(--ink)">Soror <span lang="el" style="font-family:var(--font-greek)">Ευ. Α.</span></h2>
+          <p style="font-family:var(--font-serif);font-size:15px;line-height:1.55;color:var(--ink-soft);margin:0;max-width:56ch">One practitioner keeping the record. The pages below describe Theourgia — the open-source, self-hostable, federated toolkit that powers this vault. Everyone else runs their own.</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:stretch;min-width:180px">
+          <a href="/blog" style="padding:9px 14px;border-radius:var(--r-md);background:var(--accent);color:var(--accent-ink);font-family:var(--font-ui);font-weight:700;font-size:13px;text-decoration:none;text-align:center">Read the blog →</a>
+          <div style="display:flex;gap:8px;font-family:var(--font-ui);font-size:12px">
+            <a href="/api/v1/blog/feed.rss" style="flex:1;padding:7px 10px;border:1px solid var(--line-2);border-radius:var(--r-md);color:var(--ink-soft);text-decoration:none;text-align:center">RSS</a>
+            <a href="/api/v1/blog/feed.atom" style="flex:1;padding:7px 10px;border:1px solid var(--line-2);border-radius:var(--r-md);color:var(--ink-soft);text-decoration:none;text-align:center">Atom</a>
+            <a href="/newsletter" style="flex:1;padding:7px 10px;border:1px solid var(--line-2);border-radius:var(--r-md);color:var(--ink-soft);text-decoration:none;text-align:center">Email</a>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- HERO -->
-    <main id="om-main">
-    <section id="top" style={`max-width:${MAXW};margin:0 auto;padding:clamp(56px,8vw,104px) clamp(16px,5vw,28px) clamp(40px,5vw,72px);display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center`}>
+    <section id="top" style={`max-width:${MAXW};margin:0 auto;padding:clamp(28px,4vw,56px) clamp(16px,5vw,28px) clamp(40px,5vw,72px);display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center`}>
       <div>
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:26px">
           <span style="width:40px;height:1px;background:var(--accent);opacity:.7"></span>
-          <span style="font-family:var(--font-ui);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-mute)">A journal for the Great Work</span>
+          <span style="font-family:var(--font-ui);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--ink-mute)">The toolkit</span>
         </div>
         <h1 style="font-family:var(--font-display);font-weight:700;font-size:clamp(44px,6vw,76px);line-height:1.02;letter-spacing:-.01em;margin:0 0 8px;color:var(--ink)">Keep the record<br>the work deserves.</h1>
         <p style="font-family:var(--font-serif);font-style:italic;font-size:clamp(19px,2.2vw,24px);color:var(--accent);margin:0 0 24px"><span lang="el" style="font-family:var(--font-greek)">θεουργία</span> — the working of divine things.</p>
         <p style="font-size:18px;line-height:1.62;color:var(--ink-soft);max-width:50ch;margin:0 0 32px">A magickal journal and full practitioner's toolkit — open source, self-hostable, federated. Built with the seriousness of a primary source and the rigour of scientific illuminism, for Thelemites, theurgists, witches, Hermeticists, and chaotes alike.</p>
         <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:26px">
-          <a href="/app/signin" class="pub-cta-primary" style="padding:13px 26px;border-radius:9px;background:var(--accent);color:var(--accent-ink);font-family:var(--font-ui);font-weight:700;font-size:15px;letter-spacing:.01em;text-decoration:none">Begin the work →</a>
+          <a href="/self-host" class="pub-cta-primary" style="padding:13px 26px;border-radius:9px;background:var(--accent);color:var(--accent-ink);font-family:var(--font-ui);font-weight:700;font-size:15px;letter-spacing:.01em;text-decoration:none">Start your own instance →</a>
           <a href="#manifesto" class="pub-cta-secondary" style="padding:13px 22px;border-radius:9px;border:1px solid var(--line-2);color:var(--ink);font-family:var(--font-ui);font-size:15px;text-decoration:none">Read the manifesto</a>
         </div>
         <div style="display:flex;gap:18px;flex-wrap:wrap;font-family:var(--font-ui);font-size:12.5px;letter-spacing:.04em;color:var(--ink-mute)">

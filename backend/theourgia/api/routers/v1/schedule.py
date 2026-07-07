@@ -19,7 +19,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.api.routers.v1.entries import EntryRead, _to_read
 from theourgia.models.entries import Entry
 
@@ -41,7 +41,7 @@ class UpcomingResponse(BaseModel):
 )
 async def upcoming_releases(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> UpcomingResponse:
     """Entries with a future ``scheduled_publish_at`` — what the
     scheduler will promote on its next ticks.
@@ -55,14 +55,9 @@ async def upcoming_releases(
         .where(Entry.deleted_at.is_(None))
         .where(Entry.scheduled_publish_at.is_not(None))
         .where(Entry.scheduled_publish_at > now)
+        .where(Entry.owner_id == current_user.id)
         .order_by(Entry.scheduled_publish_at.asc())
     )
-    if current_user is not None:
-        stmt = stmt.where(Entry.owner_id == current_user.id)
-    else:
-        # Anonymous callers see nothing.
-        return UpcomingResponse(upcoming=[])
-
     rows = (await session.execute(stmt)).scalars().all()
     return UpcomingResponse(upcoming=[_to_read(row) for row in rows])
 
@@ -75,14 +70,14 @@ async def upcoming_releases(
 async def cancel_scheduled_release(
     entry_id: UUID,
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ):
     from fastapi import Response
 
     row = await session.get(Entry, entry_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Entry not found.")
-    if current_user is None or row.owner_id != current_user.id:
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not authorised.")
     if row.scheduled_publish_at is None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Entry is not scheduled.")

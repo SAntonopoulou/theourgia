@@ -36,7 +36,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.entries import EncryptionMode, Entry
 from theourgia.models.magic_squares import MagicSquare
 from theourgia.models.sigils import Sigil
@@ -235,13 +235,9 @@ def _ensure_not_consecrated_locked(row: Talisman) -> None:
         )
 
 
-def _owner_check(row: Talisman, current_user_id: UUID | None) -> None:
+def _owner_check(row: Talisman, current_user_id: UUID) -> None:
     """Raise 404 if the caller is not the row's owner."""
-    if (
-        current_user_id is not None
-        and row.owner_id is not None
-        and row.owner_id != current_user_id
-    ):
+    if row.owner_id != current_user_id:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND, "Talisman not found.",
         )
@@ -255,13 +251,14 @@ def _owner_check(row: Talisman, current_user_id: UUID | None) -> None:
 )
 async def list_talismans(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     sealed: bool | None = None,
     limit: int = 100,
 ) -> list[TalismanRead]:
-    stmt = select(Talisman).where(Talisman.deleted_at.is_(None))
-    if current_user is not None:
-        stmt = stmt.where(Talisman.owner_id == current_user.id)
+    stmt = select(Talisman).where(
+        Talisman.deleted_at.is_(None),
+        Talisman.owner_id == current_user.id,
+    )
     if sealed is True:
         stmt = stmt.where(Talisman.encryption_mode == EncryptionMode.SEALED)
     elif sealed is False:
@@ -280,9 +277,9 @@ async def list_talismans(
 async def create_talisman(
     payload: TalismanCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> TalismanRead:
-    owner_id = current_user.id if current_user is not None else None
+    owner_id = current_user.id
     await _validate_component_refs(payload.components, db, owner_id)
     await _validate_consecration_link(
         payload.linked_consecration_working_id, db, owner_id,
@@ -316,12 +313,12 @@ async def create_talisman(
 async def get_talisman(
     talisman_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> TalismanRead:
     row = await db.get(Talisman, talisman_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Talisman not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     return _to_read(row)
 
 
@@ -334,12 +331,12 @@ async def update_talisman(
     talisman_id: UUID,
     payload: TalismanUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> TalismanRead:
     row = await db.get(Talisman, talisman_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Talisman not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     _ensure_not_consecrated_locked(row)
 
     data = payload.model_dump(exclude_unset=True)
@@ -364,12 +361,12 @@ async def update_talisman(
 async def delete_talisman(
     talisman_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(Talisman, talisman_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Talisman not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     row.deleted_at = datetime.now(tz=row.created_at.tzinfo)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -384,7 +381,7 @@ async def seal_talisman(
     talisman_id: UUID,
     payload: TalismanSealPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> TalismanRead:
     """Switch a talisman into sealed (Mode B) mode.
 
@@ -399,7 +396,7 @@ async def seal_talisman(
     row = await db.get(Talisman, talisman_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Talisman not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
 
     try:
         ciphertext = b64decode(payload.encrypted_payload_b64, validate=True)
@@ -430,14 +427,14 @@ async def seal_talisman(
 async def unseal_talisman(
     talisman_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> TalismanUnsealResponse:
     """Return the ciphertext + IV so the client can decrypt in
     memory. The row stays sealed — this is read-only."""
     row = await db.get(Talisman, talisman_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Talisman not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     if (
         row.encryption_mode != EncryptionMode.SEALED
         or row.encrypted_payload is None
@@ -463,7 +460,7 @@ async def fork_talisman(
     talisman_id: UUID,
     payload: TalismanForkPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> TalismanRead:
     """Fork a new version with ``parent_talisman_id`` set.
 
@@ -478,11 +475,11 @@ async def fork_talisman(
     parent = await db.get(Talisman, talisman_id)
     if parent is None or parent.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Talisman not found.")
-    _owner_check(parent, current_user.id if current_user else None)
+    _owner_check(parent, current_user.id)
 
     name = payload.name or f"{parent.name} — new version"
     child = Talisman(
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
         name=name,
         purpose=parent.purpose,
         front_svg=parent.front_svg,

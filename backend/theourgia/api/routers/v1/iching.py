@@ -22,7 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.divination.iching import (
     CastMethod,
     CastResult,
@@ -299,7 +299,7 @@ def _reading_to_read(row: IChingReading, cast: CastResult | None = None) -> Read
 async def cast(
     payload: CastRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ReadingRead:
     now = datetime.now(tz=UTC)
     seed = payload.seed or make_seed(
@@ -319,7 +319,7 @@ async def cast(
         entry_id=payload.entry_id,
         entity_id=payload.entity_id,
         working_id=payload.working_id,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -330,10 +330,14 @@ async def cast(
 @router.get("/iching/readings", response_model=list[ReadingRead], tags=["iching"])
 async def list_readings(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     entity_id: UUID | None = None,
     limit: int = 100,
 ) -> list[ReadingRead]:
-    stmt = select(IChingReading).where(IChingReading.deleted_at.is_(None))
+    stmt = select(IChingReading).where(
+        IChingReading.deleted_at.is_(None),
+        IChingReading.owner_id == current_user.id,
+    )
     if entity_id is not None:
         stmt = stmt.where(IChingReading.entity_id == entity_id)
     stmt = stmt.order_by(IChingReading.drawn_at.desc()).limit(min(limit, 500))
@@ -349,9 +353,12 @@ async def list_readings(
 async def get_reading(
     reading_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ReadingRead:
     row = await db.get(IChingReading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     return _reading_to_read(row)
 
@@ -365,9 +372,12 @@ async def update_reading(
     reading_id: UUID,
     payload: ReadingUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ReadingRead:
     row = await db.get(IChingReading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(row, k, v)
@@ -384,9 +394,12 @@ async def update_reading(
 async def delete_reading(
     reading_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(IChingReading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()

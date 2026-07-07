@@ -24,7 +24,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.divination_lite import (
     PendulumOutcome,
     PendulumReading,
@@ -115,7 +115,7 @@ def _to_read(row: PendulumReading) -> ReadingRead:
 async def create_reading(
     payload: ReadingCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ReadingRead:
     row = PendulumReading(
         question=payload.question,
@@ -127,7 +127,7 @@ async def create_reading(
         notes=payload.notes,
         entry_id=payload.entry_id,
         entity_id=payload.entity_id,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -142,10 +142,14 @@ async def create_reading(
 )
 async def list_readings(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     outcome: OutcomeLiteral | None = None,
     limit: int = 100,
 ) -> list[ReadingRead]:
-    stmt = select(PendulumReading).where(PendulumReading.deleted_at.is_(None))
+    stmt = select(PendulumReading).where(
+        PendulumReading.deleted_at.is_(None),
+        PendulumReading.owner_id == current_user.id,
+    )
     if outcome is not None:
         stmt = stmt.where(PendulumReading.outcome == PendulumOutcome(outcome))
     stmt = stmt.order_by(PendulumReading.asked_at.desc()).limit(min(limit, 500))
@@ -161,9 +165,12 @@ async def list_readings(
 async def get_reading(
     reading_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ReadingRead:
     row = await db.get(PendulumReading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     return _to_read(row)
 
@@ -177,9 +184,12 @@ async def update_reading(
     reading_id: UUID,
     payload: ReadingUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ReadingRead:
     row = await db.get(PendulumReading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     data = payload.model_dump(exclude_unset=True)
     # When the user marks calibration but doesn't supply a timestamp,
@@ -202,9 +212,12 @@ async def update_reading(
 async def delete_reading(
     reading_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(PendulumReading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()
@@ -237,7 +250,7 @@ class CalibrationSummary(BaseModel):
 )
 async def calibration_summary(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> CalibrationSummary:
     """Per-user accuracy tally over all calibrated pendulum reads.
 
@@ -245,9 +258,10 @@ async def calibration_summary(
     they can verify the outcome against reality; the summary tallies
     them so the user gets a sense of their personal calibration.
     """
-    stmt = select(PendulumReading).where(PendulumReading.deleted_at.is_(None))
-    if current_user is not None:
-        stmt = stmt.where(PendulumReading.owner_id == current_user.id)
+    stmt = select(PendulumReading).where(
+        PendulumReading.deleted_at.is_(None),
+        PendulumReading.owner_id == current_user.id,
+    )
     rows = (await db.execute(stmt)).scalars().all()
 
     total = len(rows)

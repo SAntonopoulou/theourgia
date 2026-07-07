@@ -31,7 +31,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.entities import EntityAlias, EntityAliasKind, EntityView
 
 __all__ = ["router"]
@@ -89,6 +89,7 @@ def _alias_to_read(row: EntityAlias) -> EntityAliasRead:
 )
 async def list_entity_aliases(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     source_id: UUID | None = None,
     target_id: UUID | None = None,
     kind: EntityAliasKindLiteral | None = None,
@@ -100,7 +101,10 @@ async def list_entity_aliases(
     entity" (matches source OR target), used by the aggregate endpoint
     to find all neighbours.
     """
-    stmt = select(EntityAlias).where(EntityAlias.deleted_at.is_(None))
+    stmt = select(EntityAlias).where(
+        EntityAlias.deleted_at.is_(None),
+        EntityAlias.owner_id == current_user.id,
+    )
     if source_id is not None:
         stmt = stmt.where(EntityAlias.source_entity_id == source_id)
     if target_id is not None:
@@ -128,7 +132,7 @@ async def list_entity_aliases(
 async def create_entity_alias(
     payload: EntityAliasCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> EntityAliasRead:
     if payload.source_entity_id == payload.target_entity_id:
         raise HTTPException(
@@ -140,7 +144,7 @@ async def create_entity_alias(
         target_entity_id=payload.target_entity_id,
         kind=EntityAliasKind(payload.kind),
         notes=payload.notes,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -156,9 +160,12 @@ async def create_entity_alias(
 async def get_entity_alias(
     alias_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> EntityAliasRead:
     row = await db.get(EntityAlias, alias_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Alias not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Alias not found.")
     return _alias_to_read(row)
 
@@ -171,9 +178,12 @@ async def get_entity_alias(
 async def delete_entity_alias(
     alias_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(EntityAlias, alias_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Alias not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Alias not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()
@@ -230,10 +240,14 @@ def _view_to_read(row: EntityView) -> EntityViewRead:
 )
 async def list_entity_views(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> list[EntityViewRead]:
     stmt = (
         select(EntityView)
-        .where(EntityView.deleted_at.is_(None))
+        .where(
+            EntityView.deleted_at.is_(None),
+            EntityView.owner_id == current_user.id,
+        )
         .order_by(EntityView.name.asc())
     )
     rows = (await db.execute(stmt)).scalars().all()
@@ -249,13 +263,13 @@ async def list_entity_views(
 async def create_entity_view(
     payload: EntityViewCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> EntityViewRead:
     row = EntityView(
         name=payload.name,
         member_entity_ids=payload.member_entity_ids,
         description=payload.description,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -271,9 +285,12 @@ async def create_entity_view(
 async def get_entity_view(
     view_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> EntityViewRead:
     row = await db.get(EntityView, view_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Entity view not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Entity view not found.")
     return _view_to_read(row)
 
@@ -287,9 +304,12 @@ async def update_entity_view(
     view_id: UUID,
     payload: EntityViewUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> EntityViewRead:
     row = await db.get(EntityView, view_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Entity view not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Entity view not found.")
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(row, k, v)
@@ -306,9 +326,12 @@ async def update_entity_view(
 async def delete_entity_view(
     view_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(EntityView, view_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Entity view not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Entity view not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()

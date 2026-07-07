@@ -21,7 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.library import Book
 
 __all__ = ["router"]
@@ -82,10 +82,14 @@ def _to_read(row: Book) -> BookRead:
 @router.get("/books", summary="List books", response_model=list[BookRead])
 async def list_books(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     tradition: str | None = None,
     limit: int = 100,
 ) -> list[BookRead]:
-    stmt = select(Book).where(Book.deleted_at.is_(None))
+    stmt = select(Book).where(
+        Book.deleted_at.is_(None),
+        Book.owner_id == current_user.id,
+    )
     if tradition:
         stmt = stmt.where(Book.tradition == tradition)
     stmt = stmt.order_by(Book.title.asc()).limit(min(limit, 500))
@@ -102,7 +106,7 @@ async def list_books(
 async def create_book(
     payload: BookCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> BookRead:
     row = Book(
         title=payload.title,
@@ -111,7 +115,7 @@ async def create_book(
         isbn=payload.isbn,
         tradition=payload.tradition,
         notes=payload.notes,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -123,8 +127,13 @@ async def create_book(
 async def get_book(
     book_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> BookRead:
-    stmt = select(Book).where(Book.id == book_id, Book.deleted_at.is_(None))
+    stmt = select(Book).where(
+        Book.id == book_id,
+        Book.deleted_at.is_(None),
+        Book.owner_id == current_user.id,
+    )
     row = (await db.execute(stmt)).scalar_one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail=f"Book {book_id} not found")
@@ -140,8 +149,13 @@ async def update_book(
     book_id: UUID,
     payload: BookUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> BookRead:
-    stmt = select(Book).where(Book.id == book_id, Book.deleted_at.is_(None))
+    stmt = select(Book).where(
+        Book.id == book_id,
+        Book.deleted_at.is_(None),
+        Book.owner_id == current_user.id,
+    )
     row = (await db.execute(stmt)).scalar_one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail=f"Book {book_id} not found")
@@ -161,8 +175,13 @@ async def update_book(
 async def archive_book(
     book_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
-    stmt = select(Book).where(Book.id == book_id, Book.deleted_at.is_(None))
+    stmt = select(Book).where(
+        Book.id == book_id,
+        Book.deleted_at.is_(None),
+        Book.owner_id == current_user.id,
+    )
     row = (await db.execute(stmt)).scalar_one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail=f"Book {book_id} not found")

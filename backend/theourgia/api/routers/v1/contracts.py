@@ -25,7 +25,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.contracts import (
     BindingKind,
     Contract,
@@ -142,11 +142,15 @@ def _to_read(row: Contract) -> ContractRead:
 @router.get("/contracts", response_model=list[ContractRead], tags=["contracts"])
 async def list_contracts(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     entity_id: UUID | None = None,
     contract_status: ContractStatusLiteral | None = None,
     limit: int = 100,
 ) -> list[ContractRead]:
-    stmt = select(Contract).where(Contract.deleted_at.is_(None))
+    stmt = select(Contract).where(
+        Contract.deleted_at.is_(None),
+        Contract.owner_id == current_user.id,
+    )
     if entity_id is not None:
         stmt = stmt.where(Contract.entity_id == entity_id)
     if contract_status is not None:
@@ -165,7 +169,7 @@ async def list_contracts(
 async def create_contract(
     payload: ContractCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ContractRead:
     row = Contract(
         entity_id=payload.entity_id,
@@ -180,7 +184,7 @@ async def create_contract(
         binding_kind=BindingKind(payload.binding_kind),
         witness_entity_ids=payload.witness_entity_ids,
         dissolution_ritual_id=payload.dissolution_ritual_id,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -192,9 +196,12 @@ async def create_contract(
 async def get_contract(
     contract_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ContractRead:
     row = await db.get(Contract, contract_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Contract not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Contract not found.")
     return _to_read(row)
 
@@ -204,9 +211,12 @@ async def update_contract(
     contract_id: UUID,
     payload: ContractUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ContractRead:
     row = await db.get(Contract, contract_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Contract not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Contract not found.")
     data = payload.model_dump(exclude_unset=True)
     if "status" in data and data["status"] is not None:
@@ -228,9 +238,12 @@ async def update_contract(
 async def delete_contract(
     contract_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(Contract, contract_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Contract not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Contract not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()
@@ -271,6 +284,7 @@ async def fulfill_obligation(
     contract_id: UUID,
     payload: FulfillObligationRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ContractRead:
     """Flip a single obligation to ``fulfilled`` (or any
     :class:`ObligationStatus`).
@@ -281,6 +295,8 @@ async def fulfill_obligation(
     """
     row = await db.get(Contract, contract_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Contract not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Contract not found.")
 
     field = "our_obligations" if payload.side == "ours" else "their_obligations"

@@ -24,7 +24,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.analytics.aggregates import (
     CORRELATION_MIN_SAMPLE,
     CorrelationResponse,
@@ -95,13 +95,11 @@ class CorrelationPayload(BaseModel):
 async def analytics_query(
     payload: dict,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> QueryExecutionResult:
     """Run a query against the caller's vault and return the result
     without persisting a snapshot. Use ``POST /studies/{id}/run`` to
     persist."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     try:
         parsed = parse_query(payload)
     except DSLValidationError as exc:
@@ -131,10 +129,8 @@ async def analytics_query(
 async def analytics_timeseries(
     payload: TimeseriesPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> TimeseriesResponse:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     return await compute_timeseries(
         db=db,
         owner_id=current_user.id,
@@ -156,10 +152,8 @@ async def analytics_timeseries(
 async def analytics_heatmap(
     payload: HeatmapPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> HeatmapResponse:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     return await compute_heatmap(
         db=db,
         owner_id=current_user.id,
@@ -181,14 +175,12 @@ async def analytics_heatmap(
 async def analytics_correlation(
     payload: CorrelationPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> CorrelationResponse:
     """Pearson + Spearman matrix over a fixed set of numeric axes
     on the synchronicity subject. v1 ships only intensity +
     weekday_num; future revisions extend the axis catalog as new
     numeric columns are materialised."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
 
     from sqlalchemy import select
     from theourgia.models.synchronicities import Synchronicity
@@ -245,11 +237,9 @@ async def analytics_correlation(
 )
 async def analytics_today(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> TodayResponse:
     """Counts for the calendar day. The H06 Analytics Dashboard's
     hero strip wants these three numbers; the route caps the
     sample window at the current calendar day in UTC."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     return await compute_today(db=db, owner_id=current_user.id)

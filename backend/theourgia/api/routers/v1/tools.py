@@ -28,7 +28,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.entries import Entry
 from theourgia.models.tools import Tool, ToolKind
 
@@ -130,12 +130,8 @@ def _to_read(row: Tool) -> ToolRead:
     )
 
 
-def _owner_check(row: Tool, current_user_id: UUID | None) -> None:
-    if (
-        current_user_id is not None
-        and row.owner_id is not None
-        and row.owner_id != current_user_id
-    ):
+def _owner_check(row: Tool, current_user_id: UUID) -> None:
+    if row.owner_id != current_user_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tool not found.")
 
 
@@ -164,14 +160,15 @@ async def _validate_working_entry(
 @router.get("/tools", response_model=list[ToolRead], tags=["tools"])
 async def list_tools(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     kind: ToolKind | None = None,
     consecrated: bool | None = None,
     limit: int = 100,
 ) -> list[ToolRead]:
-    stmt = select(Tool).where(Tool.deleted_at.is_(None))
-    if current_user is not None:
-        stmt = stmt.where(Tool.owner_id == current_user.id)
+    stmt = select(Tool).where(
+        Tool.deleted_at.is_(None),
+        Tool.owner_id == current_user.id,
+    )
     if kind is not None:
         stmt = stmt.where(Tool.kind == kind)
     if consecrated is True:
@@ -192,9 +189,9 @@ async def list_tools(
 async def create_tool(
     payload: ToolCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ToolRead:
-    owner_id = current_user.id if current_user is not None else None
+    owner_id = current_user.id
     row = Tool(
         owner_id=owner_id,
         name=payload.name,
@@ -219,12 +216,12 @@ async def create_tool(
 async def get_tool(
     tool_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ToolRead:
     row = await db.get(Tool, tool_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tool not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     return _to_read(row)
 
 
@@ -235,12 +232,12 @@ async def update_tool(
     tool_id: UUID,
     payload: ToolUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ToolRead:
     row = await db.get(Tool, tool_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tool not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(row, k, v)
     await db.commit()
@@ -256,12 +253,12 @@ async def update_tool(
 async def delete_tool(
     tool_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(Tool, tool_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tool not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     row.deleted_at = datetime.now(tz=row.created_at.tzinfo)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -276,12 +273,12 @@ async def consecrate_tool(
     tool_id: UUID,
     payload: ToolConsecratePayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ToolRead:
     row = await db.get(Tool, tool_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tool not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     if row.consecration_working_entry_id is not None:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
@@ -308,14 +305,14 @@ async def consecrate_tool(
 async def unconsecrate_tool(
     tool_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ToolRead:
     """Null both consecration fields. The H05 honesty rule: errors
     can be corrected; the audit log preserves the timeline."""
     row = await db.get(Tool, tool_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tool not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     row.consecration_working_entry_id = None
     row.consecration_date = None
     await db.commit()
@@ -332,12 +329,12 @@ async def add_tool_photo(
     tool_id: UUID,
     payload: ToolPhotoPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ToolRead:
     row = await db.get(Tool, tool_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tool not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     photos = list(row.photo_upload_ids or [])
     upload_id_str = str(payload.upload_id)
     if upload_id_str not in photos:
@@ -357,12 +354,12 @@ async def remove_tool_photo(
     tool_id: UUID,
     upload_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(Tool, tool_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Tool not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     upload_id_str = str(upload_id)
     photos = [p for p in (row.photo_upload_ids or []) if str(p) != upload_id_str]
     row.photo_upload_ids = photos

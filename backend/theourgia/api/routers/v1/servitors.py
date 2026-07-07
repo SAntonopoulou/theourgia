@@ -28,7 +28,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.servitors import (
     Servitor,
     ServitorKind,
@@ -134,11 +134,15 @@ def _servitor_to_read(row: Servitor) -> ServitorRead:
 @router.get("/servitors", response_model=list[ServitorRead], tags=["servitors"])
 async def list_servitors(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     kind: ServitorKindLiteral | None = None,
     servitor_status: ServitorStatusLiteral | None = None,
     limit: int = 100,
 ) -> list[ServitorRead]:
-    stmt = select(Servitor).where(Servitor.deleted_at.is_(None))
+    stmt = select(Servitor).where(
+        Servitor.deleted_at.is_(None),
+        Servitor.owner_id == current_user.id,
+    )
     if kind is not None:
         stmt = stmt.where(Servitor.kind == ServitorKind(kind))
     if servitor_status is not None:
@@ -157,7 +161,7 @@ async def list_servitors(
 async def create_servitor(
     payload: ServitorCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ServitorRead:
     row = Servitor(
         name=payload.name,
@@ -170,7 +174,7 @@ async def create_servitor(
         lifespan_limit=payload.lifespan_limit,
         status=ServitorStatus(payload.status),
         members=payload.members,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -182,9 +186,12 @@ async def create_servitor(
 async def get_servitor(
     servitor_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ServitorRead:
     row = await db.get(Servitor, servitor_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servitor not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Servitor not found.")
     return _servitor_to_read(row)
 
@@ -198,9 +205,12 @@ async def update_servitor(
     servitor_id: UUID,
     payload: ServitorUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ServitorRead:
     row = await db.get(Servitor, servitor_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servitor not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Servitor not found.")
     data = payload.model_dump(exclude_unset=True)
     if "status" in data and data["status"] is not None:
@@ -220,9 +230,12 @@ async def update_servitor(
 async def delete_servitor(
     servitor_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(Servitor, servitor_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servitor not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Servitor not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()
@@ -238,6 +251,7 @@ async def record_feeding(
     servitor_id: UUID,
     payload: FeedRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ServitorRead:
     """Record a feeding event. Updates ``last_fed_at``.
 
@@ -246,6 +260,8 @@ async def record_feeding(
     """
     row = await db.get(Servitor, servitor_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servitor not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Servitor not found.")
     row.last_fed_at = payload.fed_at or datetime.now(tz=UTC)
     await db.commit()
@@ -313,8 +329,14 @@ def _task_to_read(row: ServitorTask) -> ServitorTaskRead:
 async def list_servitor_tasks(
     servitor_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     task_status: ServitorTaskStatusLiteral | None = None,
 ) -> list[ServitorTaskRead]:
+    servitor = await db.get(Servitor, servitor_id)
+    if servitor is None or servitor.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servitor not found.")
+    if servitor.owner_id != current_user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servitor not found.")
     stmt = (
         select(ServitorTask)
         .where(
@@ -339,9 +361,12 @@ async def create_servitor_task(
     servitor_id: UUID,
     payload: ServitorTaskCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ServitorTaskRead:
     servitor = await db.get(Servitor, servitor_id)
     if servitor is None or servitor.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Servitor not found.")
+    if servitor.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Servitor not found.")
     row = ServitorTask(
         servitor_id=servitor_id,
@@ -365,9 +390,13 @@ async def update_servitor_task(
     task_id: UUID,
     payload: ServitorTaskUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ServitorTaskRead:
     row = await db.get(ServitorTask, task_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Task not found.")
+    servitor = await db.get(Servitor, row.servitor_id)
+    if servitor is None or servitor.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Task not found.")
     data = payload.model_dump(exclude_unset=True)
     if "status" in data and data["status"] is not None:
@@ -387,9 +416,13 @@ async def update_servitor_task(
 async def delete_servitor_task(
     task_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(ServitorTask, task_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Task not found.")
+    servitor = await db.get(Servitor, row.servitor_id)
+    if servitor is None or servitor.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Task not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()

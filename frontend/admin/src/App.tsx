@@ -29,6 +29,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Suspense, lazy } from "react";
 import {
   BrowserRouter,
+  Navigate,
   NavLink,
   Route,
   Routes,
@@ -678,17 +679,55 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 /**
+ * Session gate. The public `/signin` route stays reachable; every other
+ * route requires an authenticated session. Belt + suspenders vs. the
+ * backend 401 sweep — if the API is compromised, the shell still won't
+ * render owned data to a stranger.
+ */
+function RequireSession({ children }: { children: React.ReactNode }) {
+  const { status } = useAuth();
+  const location = useLocation();
+  if (status === "idle" || status === "checking") {
+    return <SurfaceSkeleton rowCount={4} />;
+  }
+  if (status === "unauthenticated") {
+    return (
+      <Navigate
+        to="/signin"
+        replace
+        state={{ from: location.pathname + location.search }}
+      />
+    );
+  }
+  return <>{children}</>;
+}
+
+/**
  * Inside-the-shell routes: every surface that renders within VaultNav +
  * VaultTopbar. The quick-capture route lives outside this (and outside
  * `<Shell>`) so the PWA start_url opens straight into a full-viewport
  * compose field without the chrome.
  */
 function ShellRoutes() {
-  return (
-    <Shell>
+  const location = useLocation();
+  // `/signin` renders without the shell chrome so a signed-out visitor
+  // sees the sign-in surface directly. Every other route requires a
+  // real session — see RequireSession.
+  if (location.pathname === "/signin") {
+    return (
       <Suspense fallback={<SurfaceSkeleton rowCount={4} />}>
         <Routes>
-          <Route path="/" element={<Today />} />
+          <Route path="/signin" element={<SignInRoute />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+  return (
+    <RequireSession>
+      <Shell>
+        <Suspense fallback={<SurfaceSkeleton rowCount={4} />}>
+          <Routes>
+            <Route path="/" element={<Today />} />
           <Route path="/connection" element={<Connection />} />
           <Route path="/journal" element={<Journal />} />
           <Route path="/library" element={<Library />} />
@@ -881,7 +920,6 @@ function ShellRoutes() {
           <Route path="/settings/keys" element={<KeyRotationRoute />} />
           <Route path="/settings/webauthn" element={<WebAuthnEnrollmentRoute />} />
           <Route path="/settings/totp" element={<TotpEnrollmentRoute />} />
-          <Route path="/signin" element={<SignInRoute />} />
           <Route path="/foundations" element={<Foundations />} />
           <Route
             path="*"
@@ -893,9 +931,10 @@ function ShellRoutes() {
               />
             }
           />
-        </Routes>
-      </Suspense>
-    </Shell>
+          </Routes>
+        </Suspense>
+      </Shell>
+    </RequireSession>
   );
 }
 

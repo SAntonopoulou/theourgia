@@ -18,7 +18,7 @@ import httpx
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from theourgia.api.deps import get_optional_user_from_cookie
+from theourgia.api.deps import get_current_user
 from theourgia.api.routers.v1.weather import get_weather_provider
 from theourgia.core.weather.open_meteo import (
     OPEN_METEO_ENDPOINT,
@@ -253,7 +253,7 @@ async def test_endpoint_returns_401_without_auth(app: Any) -> None:
 async def test_endpoint_returns_snapshot_when_provider_succeeds(
     app: Any,
 ) -> None:
-    app.dependency_overrides[get_optional_user_from_cookie] = lambda: _FakeUser()
+    app.dependency_overrides[get_current_user] = lambda: _FakeUser()
     app.dependency_overrides[get_weather_provider] = _sunny_provider
     try:
         async with AsyncClient(
@@ -264,7 +264,7 @@ async def test_endpoint_returns_snapshot_when_provider_succeeds(
                 params={"lat": 37.9838, "lng": 23.7275},
             )
     finally:
-        app.dependency_overrides.pop(get_optional_user_from_cookie, None)
+        app.dependency_overrides.pop(get_current_user, None)
         app.dependency_overrides.pop(get_weather_provider, None)
 
     assert response.status_code == 200
@@ -281,7 +281,7 @@ async def test_endpoint_returns_snapshot_when_provider_succeeds(
 async def test_endpoint_returns_200_with_null_snapshot_on_provider_failure(
     app: Any,
 ) -> None:
-    app.dependency_overrides[get_optional_user_from_cookie] = lambda: _FakeUser()
+    app.dependency_overrides[get_current_user] = lambda: _FakeUser()
     app.dependency_overrides[get_weather_provider] = _null_provider
     try:
         async with AsyncClient(
@@ -292,7 +292,7 @@ async def test_endpoint_returns_200_with_null_snapshot_on_provider_failure(
                 params={"lat": 51.5, "lng": 0.0},
             )
     finally:
-        app.dependency_overrides.pop(get_optional_user_from_cookie, None)
+        app.dependency_overrides.pop(get_current_user, None)
         app.dependency_overrides.pop(get_weather_provider, None)
 
     # Provider failure must NEVER become 5xx — the banner should render
@@ -307,7 +307,7 @@ async def test_endpoint_returns_200_with_null_snapshot_on_provider_failure(
 
 @pytest.mark.asyncio
 async def test_endpoint_rejects_out_of_range_coordinates(app: Any) -> None:
-    app.dependency_overrides[get_optional_user_from_cookie] = lambda: _FakeUser()
+    app.dependency_overrides[get_current_user] = lambda: _FakeUser()
     try:
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://testserver"
@@ -317,7 +317,7 @@ async def test_endpoint_rejects_out_of_range_coordinates(app: Any) -> None:
                 params={"lat": 100.0, "lng": 0.0},
             )
     finally:
-        app.dependency_overrides.pop(get_optional_user_from_cookie, None)
+        app.dependency_overrides.pop(get_current_user, None)
 
     assert response.status_code == 422
 

@@ -28,7 +28,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.ciphers import Cipher
 from theourgia.models.entries import EncryptionMode, Entry
 from theourgia.models.gematria_index import GematriaIndex
@@ -122,10 +122,8 @@ def _match_predicate(
 async def search_gematria(
     payload: GematriaSearchPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> GematriaSearchResponse:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     owner_id = current_user.id
 
     stmt = (
@@ -230,11 +228,9 @@ async def search_gematria(
 async def search_gematria_csv(
     payload: GematriaSearchPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> StreamingResponse:
     """CSV export of the same search results."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     # Reuse the JSON search path; we just re-render its rows as CSV.
     response = await search_gematria(payload, db, current_user)
     buf = io.StringIO()

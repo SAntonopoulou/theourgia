@@ -31,7 +31,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.federation.signing import (
     canonical_attestation_bytes,
     sign_bytes,
@@ -248,6 +248,7 @@ async def _load_signatures(
 )
 async def list_attestations(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     subject_user_id: UUID | None = None,
     kind: AttestationKindLiteral | None = None,
     visibility: AttestationVisibilityLiteral | None = None,
@@ -277,6 +278,7 @@ async def list_attestations(
 async def get_attestation(
     attestation_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> AttestationRead:
     row = await db.get(Attestation, attestation_id)
     if row is None or row.deleted_at is not None:
@@ -297,7 +299,7 @@ async def get_attestation(
 async def create_attestation(
     payload: AttestationCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> AttestationRead:
     """Create an attestation and persist its self-signature.
 
@@ -359,7 +361,7 @@ async def create_attestation(
 
     sig = AttestationSignature(
         attestation_id=row.id,
-        signer_user_id=current_user.id if current_user is not None else None,
+        signer_user_id=current_user.id,
         signer_label=payload.signer_label,
         signer_public_key=payload.signer_public_key,
         signature=signature,
@@ -387,7 +389,7 @@ async def add_signature(
     attestation_id: UUID,
     payload: CounterSignCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> AttestationRead:
     row = await db.get(Attestation, attestation_id)
     if row is None or row.deleted_at is not None:
@@ -414,7 +416,7 @@ async def add_signature(
     now = datetime.now(tz=UTC)
     sig = AttestationSignature(
         attestation_id=row.id,
-        signer_user_id=current_user.id if current_user is not None else None,
+        signer_user_id=current_user.id,
         signer_label=payload.signer_label,
         signer_public_key=payload.signer_public_key,
         signature=payload.signature,
@@ -443,6 +445,7 @@ async def add_signature(
 async def verify_attestation(
     attestation_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> VerifyResponse:
     """Verify every signature on this attestation.
 

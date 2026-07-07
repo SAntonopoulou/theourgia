@@ -42,7 +42,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.entries import EncryptionMode, Entry
 from theourgia.models.publications import (
     Publication,
@@ -324,14 +324,12 @@ async def _reject_sealed_embeds(
 )
 async def list_publications(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     state: PublicationState | None = None,
     kind: PublicationKind | None = None,
     limit: int = 100,
     offset: int = 0,
 ) -> list[PublicationRead]:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     stmt = (
         select(Publication)
         .where(Publication.owner_id == current_user.id)
@@ -360,10 +358,8 @@ async def list_publications(
 async def create_publication(
     payload: PublicationCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PublicationRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     slug = await _unique_slug(
         db, current_user.id, payload.slug, payload.title,
     )
@@ -396,10 +392,8 @@ async def create_publication(
 async def get_publication(
     publication_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PublicationRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, publication_id, current_user.id)
     chapters = await _chapters_for(db, publication_id)
     return _to_publication_read(row, chapters)
@@ -414,10 +408,8 @@ async def update_publication(
     publication_id: UUID,
     payload: PublicationUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PublicationRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, publication_id, current_user.id)
     data = payload.model_dump(exclude_unset=True)
     if "slug" in data and data["slug"] is not None:
@@ -440,17 +432,15 @@ async def update_publication(
 async def delete_publication(
     publication_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, publication_id, current_user.id)
     row.deleted_at = datetime.now(tz=row.created_at.tzinfo)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-# ── Lifecycle ────────────────────────────────────────────────────
+    # ── Lifecycle ────────────────────────────────────────────────────
 
 
 def _now_utc(row: Publication) -> datetime:
@@ -465,14 +455,12 @@ def _now_utc(row: Publication) -> datetime:
 async def publish_publication(
     publication_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PublicationRead:
     """Flip DRAFT/SCHEDULED → LIVE.
 
     Honesty rule: rejects when the body references a sealed entry.
     """
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, publication_id, current_user.id)
     if row.state not in (PublicationState.DRAFT, PublicationState.SCHEDULED):
         raise HTTPException(
@@ -498,10 +486,8 @@ async def schedule_publication(
     publication_id: UUID,
     payload: SchedulePayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PublicationRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, publication_id, current_user.id)
     if row.state not in (PublicationState.DRAFT, PublicationState.SCHEDULED):
         raise HTTPException(
@@ -524,10 +510,8 @@ async def schedule_publication(
 async def withdraw_publication(
     publication_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PublicationRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, publication_id, current_user.id)
     if row.state != PublicationState.LIVE:
         raise HTTPException(
@@ -550,14 +534,12 @@ async def withdraw_publication(
 async def republish_publication(
     publication_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PublicationRead:
     """WITHDRAWN → LIVE — the H07 "publish a new version" affordance.
 
     Bumps ``published_at`` so the feed sees it as fresh.
     """
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, publication_id, current_user.id)
     if row.state != PublicationState.WITHDRAWN:
         raise HTTPException(
@@ -574,7 +556,7 @@ async def republish_publication(
     return _to_publication_read(row, chapters)
 
 
-# ── Chapters (book kind only) ───────────────────────────────────
+    # ── Chapters (book kind only) ───────────────────────────────────
 
 
 @router.post(
@@ -587,10 +569,8 @@ async def append_chapter(
     publication_id: UUID,
     payload: ChapterCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ChapterRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, publication_id, current_user.id)
     if row.kind != PublicationKind.BOOK:
         raise HTTPException(
@@ -621,10 +601,8 @@ async def update_chapter(
     chapter_id: UUID,
     payload: ChapterUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ChapterRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     await _load_owned(db, publication_id, current_user.id)
     chapter = await db.get(PublicationChapter, chapter_id)
     if chapter is None or chapter.publication_id != publication_id:
@@ -648,10 +626,8 @@ async def remove_chapter(
     publication_id: UUID,
     chapter_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     await _load_owned(db, publication_id, current_user.id)
     chapter = await db.get(PublicationChapter, chapter_id)
     if chapter is None or chapter.publication_id != publication_id:
@@ -672,10 +648,8 @@ async def reorder_chapters(
     publication_id: UUID,
     payload: ReorderPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> list[ChapterRead]:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     await _load_owned(db, publication_id, current_user.id)
     existing = await _chapters_for(db, publication_id)
     existing_ids = {c.id for c in existing}

@@ -30,7 +30,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.analytics.autotag import (
     AstroProvider,
     CalendarProvider,
@@ -285,7 +285,7 @@ def _validate_precision(precision: str) -> None:
 )
 async def list_synchronicities(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     from_: datetime | None = None,
     to: datetime | None = None,
     category: SynchronicityCategory | None = None,
@@ -293,8 +293,6 @@ async def list_synchronicities(
     limit: int = 100,
     offset: int = 0,
 ) -> list[SyncRead]:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     stmt = (
         select(Synchronicity)
         .where(Synchronicity.owner_id == current_user.id)
@@ -326,10 +324,8 @@ async def list_synchronicities(
 async def create_synchronicity(
     payload: SyncCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> SyncRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     _validate_precision(payload.location_precision)
     await _validate_linked_entries(
         payload.linked_entry_ids, db, current_user.id,
@@ -386,10 +382,8 @@ async def create_synchronicity(
 async def get_synchronicity(
     sync_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> SyncRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await db.get(Synchronicity, sync_id)
     if (
         row is None
@@ -411,10 +405,8 @@ async def update_synchronicity(
     sync_id: UUID,
     payload: SyncUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> SyncRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await db.get(Synchronicity, sync_id)
     if (
         row is None
@@ -476,10 +468,8 @@ async def update_synchronicity(
 async def delete_synchronicity(
     sync_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await db.get(Synchronicity, sync_id)
     if (
         row is None
@@ -502,7 +492,7 @@ async def delete_synchronicity(
 async def retag_synchronicity(
     sync_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> SyncRead:
     """Re-run the auto-tag pipeline.
 
@@ -510,8 +500,6 @@ async def retag_synchronicity(
     again; the resulting snapshots replace any existing ones tagged
     ``source: "auto"``. Practitioner-edited snapshots (``source:
     "manual"``) are PRESERVED."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await db.get(Synchronicity, sync_id)
     if (
         row is None

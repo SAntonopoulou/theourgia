@@ -36,7 +36,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.entities import Entity
 from theourgia.models.practices import (
     CompletionStatus,
@@ -302,7 +302,7 @@ async def _load_entity(
 @router.get("/practices", response_model=list[PracticeRead], tags=["practices"])
 async def list_practices(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     archived: bool = Query(
         default=False,
         description="Include archived practices in the response.",
@@ -315,9 +315,8 @@ async def list_practices(
     """
     stmt = select(CustomPractice).where(
         CustomPractice.deleted_at.is_(None),  # type: ignore[union-attr]
+        CustomPractice.owner_id == current_user.id,
     )
-    if current_user is not None:
-        stmt = stmt.where(CustomPractice.owner_id == current_user.id)
     if not archived:
         stmt = stmt.where(CustomPractice.archived_at.is_(None))  # type: ignore[union-attr]
     stmt = stmt.order_by(CustomPractice.created_at.asc())
@@ -340,7 +339,7 @@ async def list_practices(
 async def create_practice(
     payload: PracticeCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PracticeRead:
     """Create a new custom practice."""
     if payload.cadence == "custom" and not payload.cadence_custom:
@@ -358,7 +357,7 @@ async def create_practice(
         linked_entity_id=payload.linked_entity_id,
         preferred_anchor=payload.preferred_anchor,
         streak_label=payload.streak_label,
-        owner_id=current_user.id if current_user else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -374,7 +373,7 @@ async def create_practice(
 )
 async def practices_today(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     tz: str = Query(
         default="UTC",
         description="IANA timezone for the practitioner's civil day.",
@@ -399,11 +398,8 @@ async def practices_today(
     practices_stmt = select(CustomPractice).where(
         CustomPractice.deleted_at.is_(None),  # type: ignore[union-attr]
         CustomPractice.archived_at.is_(None),  # type: ignore[union-attr]
+        CustomPractice.owner_id == current_user.id,
     )
-    if current_user is not None:
-        practices_stmt = practices_stmt.where(
-            CustomPractice.owner_id == current_user.id
-        )
     practices_stmt = practices_stmt.order_by(CustomPractice.created_at.asc())
 
     result = await db.execute(practices_stmt)
@@ -471,7 +467,7 @@ async def practices_today(
 async def _get_owned_practice(
     db: AsyncSession,
     practice_id: UUID,
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> CustomPractice:
     row = await db.get(CustomPractice, practice_id)
     if row is None or row.deleted_at is not None:
@@ -479,7 +475,7 @@ async def _get_owned_practice(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Practice not found",
         )
-    if current_user is not None and row.owner_id not in (None, current_user.id):
+    if row.owner_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Practice not found",
@@ -495,7 +491,7 @@ async def _get_owned_practice(
 async def get_practice(
     practice_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PracticeRead:
     row = await _get_owned_practice(db, practice_id, current_user)
     entity = await _load_entity(db, row.linked_entity_id)
@@ -511,7 +507,7 @@ async def update_practice(
     practice_id: UUID,
     payload: PracticeUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PracticeRead:
     row = await _get_owned_practice(db, practice_id, current_user)
     data = payload.model_dump(exclude_unset=True)
@@ -547,7 +543,7 @@ async def update_practice(
 async def delete_practice(
     practice_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
     row = await _get_owned_practice(db, practice_id, current_user)
     row.deleted_at = datetime.now(UTC)
@@ -563,7 +559,7 @@ async def delete_practice(
 async def archive_practice(
     practice_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PracticeRead:
     row = await _get_owned_practice(db, practice_id, current_user)
     row.archived_at = datetime.now(UTC)
@@ -581,7 +577,7 @@ async def archive_practice(
 async def unarchive_practice(
     practice_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PracticeRead:
     row = await _get_owned_practice(db, practice_id, current_user)
     row.archived_at = None
@@ -638,7 +634,7 @@ async def _record_completion(
 async def complete_practice(
     practice_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     payload: CompletionCreate | None = None,
     tz: str = Query(default="UTC"),
 ) -> Response:
@@ -666,7 +662,7 @@ async def complete_practice(
 async def skip_practice(
     practice_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     payload: CompletionCreate | None = None,
     tz: str = Query(default="UTC"),
 ) -> Response:
@@ -699,7 +695,7 @@ async def skip_practice(
 async def undo_today(
     practice_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     tz: str = Query(default="UTC"),
     on_date: date_cls | None = Query(
         default=None,

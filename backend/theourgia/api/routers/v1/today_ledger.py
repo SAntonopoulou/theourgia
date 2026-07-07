@@ -29,7 +29,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.tasks.phase05 import _feeding_overdue
 from theourgia.models.attestations import (
     Attestation,
@@ -361,11 +361,11 @@ async def _gather_attestation_activity(
 )
 async def today_ledger(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> TodayLedger:
     """The four Phase-05 Today cards in one round-trip."""
     now = datetime.now(tz=UTC)
-    owner_id = current_user.id if current_user is not None else None
+    owner_id = current_user.id
 
     return TodayLedger(
         active_practices=await _gather_active_practices(db, now, owner_id),

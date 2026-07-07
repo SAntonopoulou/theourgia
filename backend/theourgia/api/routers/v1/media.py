@@ -35,7 +35,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.media import ExifPolicy, MediaAsset, MediaKind, MediaLink
 
 __all__ = ["router"]
@@ -274,15 +274,13 @@ async def _recompute_link_count(
 )
 async def list_media(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     kind: MediaKind | None = None,
     limit: int = 100,
     offset: int = 0,
 ) -> MediaListResponse:
     """List the caller's media. Sealed assets surface as a count
     only (per the H07 Media Library rule)."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
 
     base = (
         select(MediaAsset)
@@ -326,12 +324,10 @@ async def list_media(
 )
 async def sealed_count(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> SealedCountResponse:
     """Standalone sealed-asset count. The H07 Media Library card
     pulls this on its own without paging the list."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     n = (
         await db.execute(
             select(func.count())
@@ -356,10 +352,8 @@ async def sealed_count(
 async def create_media(
     payload: MediaCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> MediaAssetRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
 
     # If the policy is STRIPPED, the metadata must be empty. The
     # B133 upload pipeline strips before the row is written; this
@@ -402,10 +396,8 @@ async def create_media(
 async def read_media(
     media_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> MediaAssetRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await db.get(MediaAsset, media_id)
     if (
         row is None
@@ -425,10 +417,8 @@ async def update_media(
     media_id: UUID,
     payload: MediaUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> MediaAssetRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await db.get(MediaAsset, media_id)
     if (
         row is None
@@ -473,12 +463,10 @@ async def update_media(
 async def delete_media(
     media_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
     """Soft delete. The R2 lifecycle policy (B133) reclaims bytes
     after 30 days; until then the row is restorable."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await db.get(MediaAsset, media_id)
     if (
         row is None
@@ -504,10 +492,8 @@ async def create_link(
     media_id: UUID,
     payload: MediaLinkCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> MediaLinkRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await db.get(MediaAsset, media_id)
     if (
         row is None
@@ -551,10 +537,8 @@ async def delete_link(
     media_id: UUID,
     link_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     asset = await db.get(MediaAsset, media_id)
     if (
         asset is None

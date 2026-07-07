@@ -28,7 +28,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.workshop.planetary_squares import PLANETARY_SQUARES
 from theourgia.core.workshop.preset_circles import PRESET_CIRCLES
 from theourgia.models.circles import Circle, CompassTradition
@@ -230,12 +230,8 @@ def _to_read(row: Circle) -> CircleRead:
     )
 
 
-def _owner_check(row: Circle, current_user_id: UUID | None) -> None:
-    if (
-        current_user_id is not None
-        and row.owner_id is not None
-        and row.owner_id != current_user_id
-    ):
+def _owner_check(row: Circle, current_user_id: UUID) -> None:
+    if row.owner_id != current_user_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Circle not found.")
 
 
@@ -271,12 +267,13 @@ async def list_preset_circles() -> list[PresetCircleRead]:
 )
 async def list_circles(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     limit: int = 100,
 ) -> list[CircleRead]:
-    stmt = select(Circle).where(Circle.deleted_at.is_(None))
-    if current_user is not None:
-        stmt = stmt.where(Circle.owner_id == current_user.id)
+    stmt = select(Circle).where(
+        Circle.deleted_at.is_(None),
+        Circle.owner_id == current_user.id,
+    )
     stmt = stmt.order_by(Circle.created_at.desc()).limit(min(limit, 500))
     rows = (await db.execute(stmt)).scalars().all()
     return [_to_read(row) for row in rows]
@@ -291,11 +288,11 @@ async def list_circles(
 async def create_circle(
     payload: CircleCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> CircleRead:
     _validate_rings(payload.rings)
     _validate_centre_kind(payload.centre_element)
-    owner_id = current_user.id if current_user is not None else None
+    owner_id = current_user.id
     await _validate_centre_refs(payload.centre_element, db, owner_id)
 
     row = Circle(
@@ -321,12 +318,12 @@ async def create_circle(
 async def get_circle(
     circle_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> CircleRead:
     row = await db.get(Circle, circle_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Circle not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     return _to_read(row)
 
 
@@ -337,12 +334,12 @@ async def update_circle(
     circle_id: UUID,
     payload: CircleUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> CircleRead:
     row = await db.get(Circle, circle_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Circle not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
 
     data = payload.model_dump(exclude_unset=True)
     if "rings" in data and data["rings"] is not None:
@@ -365,12 +362,12 @@ async def update_circle(
 async def delete_circle(
     circle_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(Circle, circle_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Circle not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     row.deleted_at = datetime.now(tz=row.created_at.tzinfo)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -386,16 +383,16 @@ async def fork_circle(
     circle_id: UUID,
     payload: CircleForkPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> CircleRead:
     parent = await db.get(Circle, circle_id)
     if parent is None or parent.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Circle not found.")
-    _owner_check(parent, current_user.id if current_user else None)
+    _owner_check(parent, current_user.id)
 
     name = payload.name or f"{parent.name} — new version"
     child = Circle(
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
         name=name,
         purpose=parent.purpose,
         diameter_m=parent.diameter_m,

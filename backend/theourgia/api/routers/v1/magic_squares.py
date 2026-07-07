@@ -35,7 +35,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.workshop.planetary_squares import (
     PLANETARY_SQUARES,
     is_valid_magic_square,
@@ -166,12 +166,13 @@ async def list_planetary_squares() -> list[PlanetarySquareRead]:
 )
 async def list_magic_squares(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     limit: int = 100,
 ) -> list[MagicSquareRead]:
-    stmt = select(MagicSquare).where(MagicSquare.deleted_at.is_(None))
-    if current_user is not None:
-        stmt = stmt.where(MagicSquare.owner_id == current_user.id)
+    stmt = select(MagicSquare).where(
+        MagicSquare.deleted_at.is_(None),
+        MagicSquare.owner_id == current_user.id,
+    )
     stmt = stmt.order_by(MagicSquare.created_at.desc()).limit(
         min(limit, 500)
     )
@@ -188,13 +189,13 @@ async def list_magic_squares(
 async def create_magic_square(
     payload: MagicSquareCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> MagicSquareRead:
     _validate_cells_shape(payload.cells, payload.order)
     is_magic = is_valid_magic_square(payload.cells)
 
     row = MagicSquare(
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
         name=payload.name,
         order=payload.order,
         cells=payload.cells,
@@ -215,18 +216,14 @@ async def create_magic_square(
 async def get_magic_square(
     square_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> MagicSquareRead:
     row = await db.get(MagicSquare, square_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND, "Magic square not found.",
         )
-    if (
-        current_user is not None
-        and row.owner_id is not None
-        and row.owner_id != current_user.id
-    ):
+    if row.owner_id != current_user.id:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND, "Magic square not found.",
         )
@@ -242,18 +239,14 @@ async def update_magic_square(
     square_id: UUID,
     payload: MagicSquareUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> MagicSquareRead:
     row = await db.get(MagicSquare, square_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND, "Magic square not found.",
         )
-    if (
-        current_user is not None
-        and row.owner_id is not None
-        and row.owner_id != current_user.id
-    ):
+    if row.owner_id != current_user.id:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND, "Magic square not found.",
         )
@@ -277,18 +270,14 @@ async def update_magic_square(
 async def delete_magic_square(
     square_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(MagicSquare, square_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND, "Magic square not found.",
         )
-    if (
-        current_user is not None
-        and row.owner_id is not None
-        and row.owner_id != current_user.id
-    ):
+    if row.owner_id != current_user.id:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND, "Magic square not found.",
         )

@@ -27,7 +27,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, OptionalCookieUser, get_db_session
 from theourgia.core.billing.stripe_client import (
     StripeError,
     get_default_client,
@@ -280,7 +280,7 @@ async def download_purchase(
 async def refund_link(
     purchase_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> RefundLinkResult:
     """Returns the publisher's Stripe Customer Portal URL.
 
@@ -288,8 +288,6 @@ async def refund_link(
     refund API. The publisher follows the link and processes the
     refund through Stripe's portal. The ``charge.refunded``
     webhook eventually flips ``Purchase.refunded_at``."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     purchase = await db.get(Purchase, purchase_id)
     if purchase is None:
         raise HTTPException(

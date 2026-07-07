@@ -44,7 +44,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.subscriber import Subscriber, SubscriberStatus
 
 __all__ = [
@@ -151,13 +151,11 @@ def _to_subscriber_read(row: Subscriber) -> SubscriberRead:
 )
 async def list_subscribers(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     status_filter: SubscriberStatus | None = None,
     limit: int = 100,
     offset: int = 0,
 ) -> list[SubscriberRead]:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     stmt = (
         select(Subscriber)
         .where(Subscriber.owner_id == current_user.id)
@@ -181,12 +179,10 @@ async def list_subscribers(
 async def resend_confirmation(
     subscriber_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> SubscriberRead:
     """Re-send the double-opt-in email. Rate-limited 1/min per
     subscriber to dodge accidental double-clicks."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await db.get(Subscriber, subscriber_id)
     if row is None or row.owner_id != current_user.id:
         raise HTTPException(
@@ -222,12 +218,10 @@ async def resend_confirmation(
 async def admin_unsubscribe(
     subscriber_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
     """Publisher-side unsubscribe. The row STAYS for audit;
     status flips to UNSUBSCRIBED."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await db.get(Subscriber, subscriber_id)
     if row is None or row.owner_id != current_user.id:
         raise HTTPException(

@@ -25,7 +25,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.entries import Entry
 from theourgia.models.tools import Altar, Tool
 
@@ -102,12 +102,8 @@ def _to_read(row: Altar) -> AltarRead:
     )
 
 
-def _owner_check(row: Altar, current_user_id: UUID | None) -> None:
-    if (
-        current_user_id is not None
-        and row.owner_id is not None
-        and row.owner_id != current_user_id
-    ):
+def _owner_check(row: Altar, current_user_id: UUID) -> None:
+    if row.owner_id != current_user_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Altar not found.")
 
 
@@ -149,13 +145,14 @@ async def _validate_entry_ids(
 @router.get("/altars", response_model=list[AltarRead], tags=["altars"])
 async def list_altars(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     is_permanent: bool | None = None,
     limit: int = 100,
 ) -> list[AltarRead]:
-    stmt = select(Altar).where(Altar.deleted_at.is_(None))
-    if current_user is not None:
-        stmt = stmt.where(Altar.owner_id == current_user.id)
+    stmt = select(Altar).where(
+        Altar.deleted_at.is_(None),
+        Altar.owner_id == current_user.id,
+    )
     if is_permanent is not None:
         stmt = stmt.where(Altar.is_permanent == is_permanent)
     stmt = stmt.order_by(Altar.created_at.desc()).limit(min(limit, 500))
@@ -172,9 +169,9 @@ async def list_altars(
 async def create_altar(
     payload: AltarCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> AltarRead:
-    owner_id = current_user.id if current_user is not None else None
+    owner_id = current_user.id
     await _validate_tool_ids(payload.tool_ids, db, owner_id)
     await _validate_entry_ids(payload.linked_working_entry_ids, db, owner_id)
 
@@ -202,12 +199,12 @@ async def create_altar(
 async def get_altar(
     altar_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> AltarRead:
     row = await db.get(Altar, altar_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Altar not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     return _to_read(row)
 
 
@@ -218,12 +215,12 @@ async def update_altar(
     altar_id: UUID,
     payload: AltarUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> AltarRead:
     row = await db.get(Altar, altar_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Altar not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
 
     data = payload.model_dump(exclude_unset=True)
     if "tool_ids" in data and data["tool_ids"] is not None:
@@ -254,12 +251,12 @@ async def update_altar(
 async def delete_altar(
     altar_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(Altar, altar_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Altar not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     row.deleted_at = datetime.now(tz=row.created_at.tzinfo)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -274,12 +271,12 @@ async def add_altar_photo(
     altar_id: UUID,
     payload: AltarPhotoPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> AltarRead:
     row = await db.get(Altar, altar_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Altar not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     photos = list(row.photo_upload_ids or [])
     upload_id_str = str(payload.upload_id)
     if upload_id_str not in photos:

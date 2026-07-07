@@ -23,7 +23,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.entries import EncryptionMode
 from theourgia.models.initiations import Initiation, InitiationStatus
 
@@ -85,11 +85,15 @@ def _to_read(row: Initiation) -> InitiationRead:
 @router.get("/initiations", response_model=list[InitiationRead], tags=["initiations"])
 async def list_initiations(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     tradition: str | None = None,
     init_status: InitiationStatusLiteral | None = None,
     limit: int = 100,
 ) -> list[InitiationRead]:
-    stmt = select(Initiation).where(Initiation.deleted_at.is_(None))
+    stmt = select(Initiation).where(
+        Initiation.deleted_at.is_(None),
+        Initiation.owner_id == current_user.id,
+    )
     if tradition is not None:
         stmt = stmt.where(Initiation.tradition == tradition)
     if init_status is not None:
@@ -108,7 +112,7 @@ async def list_initiations(
 async def create_initiation(
     payload: InitiationCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> InitiationRead:
     # The Pydantic `Literal["sealed"]` on the input already enforces
     # this; double-check at runtime for defence in depth in case the
@@ -129,7 +133,7 @@ async def create_initiation(
         encryption_mode=EncryptionMode.SEALED,
         encrypted_payload=payload.encrypted_payload,
         publicly_disclosed_at=payload.publicly_disclosed_at,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -141,9 +145,12 @@ async def create_initiation(
 async def get_initiation(
     init_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> InitiationRead:
     row = await db.get(Initiation, init_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Initiation not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Initiation not found.")
     return _to_read(row)
 
@@ -157,9 +164,12 @@ async def update_initiation(
     init_id: UUID,
     payload: InitiationUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> InitiationRead:
     row = await db.get(Initiation, init_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Initiation not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Initiation not found.")
     data = payload.model_dump(exclude_unset=True)
     if "status" in data and data["status"] is not None:
@@ -179,9 +189,12 @@ async def update_initiation(
 async def delete_initiation(
     init_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(Initiation, init_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Initiation not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Initiation not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()

@@ -31,7 +31,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.studies import (
     Study,
     StudyKind,
@@ -132,12 +132,8 @@ def _to_snapshot_read(row: StudySnapshot) -> StudySnapshotRead:
     )
 
 
-def _owner_check(row: Study, current_user_id: UUID | None) -> None:
-    if (
-        current_user_id is not None
-        and row.owner_id is not None
-        and row.owner_id != current_user_id
-    ):
+def _owner_check(row: Study, current_user_id: UUID) -> None:
+    if row.owner_id != current_user_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Study not found.")
 
 
@@ -149,14 +145,15 @@ def _owner_check(row: Study, current_user_id: UUID | None) -> None:
 )
 async def list_studies(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     kind: StudyKind | None = None,
     limit: int = 25,
     offset: int = 0,
 ) -> list[StudyRead]:
-    stmt = select(Study).where(Study.deleted_at.is_(None))
-    if current_user is not None:
-        stmt = stmt.where(Study.owner_id == current_user.id)
+    stmt = select(Study).where(
+        Study.deleted_at.is_(None),
+        Study.owner_id == current_user.id,
+    )
     if kind is not None:
         stmt = stmt.where(Study.kind == kind)
     stmt = (
@@ -177,9 +174,9 @@ async def list_studies(
 async def create_study(
     payload: StudyCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> StudyRead:
-    owner_id = current_user.id if current_user is not None else None
+    owner_id = current_user.id
     row = Study(
         owner_id=owner_id,
         name=payload.name,
@@ -200,12 +197,12 @@ async def create_study(
 async def get_study(
     study_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> StudyRead:
     row = await db.get(Study, study_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Study not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     return _to_study_read(row)
 
 
@@ -216,12 +213,12 @@ async def update_study(
     study_id: UUID,
     payload: StudyUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> StudyRead:
     row = await db.get(Study, study_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Study not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     data = payload.model_dump(exclude_unset=True)
     for k, v in data.items():
         setattr(row, k, v)
@@ -238,12 +235,12 @@ async def update_study(
 async def delete_study(
     study_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(Study, study_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Study not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     row.deleted_at = datetime.now(tz=row.created_at.tzinfo)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -258,7 +255,7 @@ async def delete_study(
 async def run_study(
     study_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> StudySnapshotRead:
     """Execute the study's query and record a frozen snapshot.
 
@@ -272,12 +269,7 @@ async def run_study(
     row = await db.get(Study, study_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Study not found.")
-    _owner_check(row, current_user.id if current_user else None)
-
-    if current_user is None:
-        raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED, "Auth required to run a study."
-        )
+    _owner_check(row, current_user.id)
 
     if row.kind == StudyKind.GEMATRIA_SEARCH:
         # Re-build the search payload from the stored query + run.
@@ -391,12 +383,12 @@ async def run_study(
 async def list_snapshots(
     study_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> list[StudySnapshotRead]:
     study = await db.get(Study, study_id)
     if study is None or study.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Study not found.")
-    _owner_check(study, current_user.id if current_user else None)
+    _owner_check(study, current_user.id)
     stmt = (
         select(StudySnapshot)
         .where(StudySnapshot.study_id == study_id)
@@ -415,12 +407,12 @@ async def get_snapshot(
     study_id: UUID,
     snapshot_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> StudySnapshotRead:
     study = await db.get(Study, study_id)
     if study is None or study.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Study not found.")
-    _owner_check(study, current_user.id if current_user else None)
+    _owner_check(study, current_user.id)
     snap = await db.get(StudySnapshot, snapshot_id)
     if snap is None or snap.study_id != study_id:
         raise HTTPException(
@@ -439,14 +431,14 @@ async def annotate_snapshot(
     snapshot_id: UUID,
     payload: StudySnapshotUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> StudySnapshotRead:
     """Edit a snapshot's notes. ``results`` is frozen — only
     ``notes`` is editable here (the schema enforces this)."""
     study = await db.get(Study, study_id)
     if study is None or study.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Study not found.")
-    _owner_check(study, current_user.id if current_user else None)
+    _owner_check(study, current_user.id)
     snap = await db.get(StudySnapshot, snapshot_id)
     if snap is None or snap.study_id != study_id:
         raise HTTPException(

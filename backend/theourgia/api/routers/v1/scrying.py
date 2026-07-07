@@ -27,7 +27,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.divination_lite import ScryingMode, ScryingSession
 
 __all__ = ["router"]
@@ -135,7 +135,7 @@ def _to_read(row: ScryingSession) -> SessionRead:
 async def start_session(
     payload: SessionStart,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> SessionRead:
     row = ScryingSession(
         mode=ScryingMode(payload.mode),
@@ -144,7 +144,7 @@ async def start_session(
         preparation_notes=payload.preparation_notes,
         entity_id=payload.entity_id,
         planetary_hour=payload.planetary_hour,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -161,9 +161,12 @@ async def end_session(
     session_id: UUID,
     payload: SessionEnd,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> SessionRead:
     row = await db.get(ScryingSession, session_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found.")
     if row.ended_at is not None:
         raise HTTPException(
@@ -197,11 +200,15 @@ async def end_session(
 )
 async def list_sessions(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     mode: ModeLiteral | None = None,
     entity_id: UUID | None = None,
     limit: int = 100,
 ) -> list[SessionRead]:
-    stmt = select(ScryingSession).where(ScryingSession.deleted_at.is_(None))
+    stmt = select(ScryingSession).where(
+        ScryingSession.deleted_at.is_(None),
+        ScryingSession.owner_id == current_user.id,
+    )
     if mode is not None:
         stmt = stmt.where(ScryingSession.mode == ScryingMode(mode))
     if entity_id is not None:
@@ -219,9 +226,12 @@ async def list_sessions(
 async def get_session(
     session_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> SessionRead:
     row = await db.get(ScryingSession, session_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found.")
     return _to_read(row)
 
@@ -235,9 +245,12 @@ async def update_session(
     session_id: UUID,
     payload: SessionUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> SessionRead:
     row = await db.get(ScryingSession, session_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found.")
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(row, k, v)
@@ -254,9 +267,12 @@ async def update_session(
 async def delete_session(
     session_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(ScryingSession, session_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()
@@ -281,15 +297,16 @@ class SymbolEntry(BaseModel):
 )
 async def symbol_index(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> list[SymbolEntry]:
     """All symbols extracted across the caller's scrying sessions,
     most-frequent first. Powers the cross-session "where else has
     this symbol appeared?" lookup that's shared with the Phase 04
     dream-symbol index."""
-    stmt = select(ScryingSession).where(ScryingSession.deleted_at.is_(None))
-    if current_user is not None:
-        stmt = stmt.where(ScryingSession.owner_id == current_user.id)
+    stmt = select(ScryingSession).where(
+        ScryingSession.deleted_at.is_(None),
+        ScryingSession.owner_id == current_user.id,
+    )
     rows = (await db.execute(stmt)).scalars().all()
 
     by_symbol: dict[str, list[str]] = defaultdict(list)

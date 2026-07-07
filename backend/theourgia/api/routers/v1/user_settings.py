@@ -20,7 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.api.errors import UnauthorizedError
 from theourgia.models.usersettings import UserSetting
 
@@ -99,7 +99,7 @@ async def _upsert_value(db: AsyncSession, user_id, key: str, value: float) -> No
 )
 async def get_my_location(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> LocationRead:
     if current_user is None:
         raise UnauthorizedError("location requires authentication")
@@ -119,7 +119,7 @@ async def get_my_location(
 async def put_my_location(
     payload: LocationWrite,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> LocationRead:
     if current_user is None:
         raise UnauthorizedError("location requires authentication")

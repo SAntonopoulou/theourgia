@@ -35,7 +35,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, OptionalCookieUser, get_db_session
 from theourgia.core.calendar import build_vcalendar, walk_feed_data
 from theourgia.models.ical_feed import ICalFeed
 
@@ -161,10 +161,8 @@ async def _get_or_create_feed(
 )
 async def get_feed(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ICalFeedRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _get_or_create_feed(db, current_user.id)
     return _to_read(row)
 
@@ -177,10 +175,8 @@ async def get_feed(
 async def update_feed(
     payload: ICalFeedUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ICalFeedRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _get_or_create_feed(db, current_user.id)
 
     data = payload.model_dump(exclude_unset=True)
@@ -220,11 +216,9 @@ async def update_feed(
 )
 async def regenerate_feed_token(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> RegenerateResponse:
     """Rotate the url_token. The OLD URL stops working immediately."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _get_or_create_feed(db, current_user.id)
     row.url_token = _new_token()
     row.last_regenerated_at = datetime.now(tz=timezone.utc)

@@ -23,7 +23,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, OptionalCookieUser, get_db_session
 from theourgia.models.persona import Persona, PersonaKind
 
 __all__ = ["router"]
@@ -64,11 +64,9 @@ def _to_read(row: Persona) -> IdentityRead:
 )
 async def list_identities(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> list[IdentityRead]:
-    """List the authenticated user's personas. Empty list for anonymous."""
-    if current_user is None:
-        return []
+    """List the authenticated user's personas."""
     stmt = (
         select(Persona)
         .where(Persona.user_id == current_user.id)
@@ -109,13 +107,11 @@ async def get_identity(
 )
 async def get_default_identity(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> IdentityRead:
     """The caller's default persona — the editor's fallback author
     when no persona is explicitly picked.
     """
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated.")
     stmt = (
         select(Persona)
         .where(Persona.user_id == current_user.id)

@@ -30,7 +30,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.divination.tarot import (
     DrawnCard,
     make_seed,
@@ -248,7 +248,7 @@ async def get_deck(
 async def create_deck(
     payload: DeckCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> DeckDetail:
     positions = [c.position for c in payload.cards]
     if len(set(positions)) != len(positions):
@@ -268,7 +268,7 @@ async def create_deck(
         art_set=payload.art_set,
         description=payload.description,
         is_builtin=False,  # user decks are never built-in
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(deck)
     await db.flush()
@@ -304,6 +304,7 @@ async def update_deck(
     deck_id: UUID,
     payload: DeckUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> DeckRead:
     row = await db.get(Deck, deck_id)
     if row is None or row.deleted_at is not None:
@@ -313,6 +314,8 @@ async def update_deck(
             status.HTTP_403_FORBIDDEN,
             "Built-in decks cannot be edited.",
         )
+    if row.owner_id != current_user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Deck not found.")
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(row, k, v)
     await db.commit()
@@ -328,6 +331,7 @@ async def update_deck(
 async def delete_deck(
     deck_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(Deck, deck_id)
     if row is None or row.deleted_at is not None:
@@ -337,6 +341,8 @@ async def delete_deck(
             status.HTTP_403_FORBIDDEN,
             "Built-in decks cannot be deleted.",
         )
+    if row.owner_id != current_user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Deck not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -410,7 +416,7 @@ async def list_spreads(
 async def create_spread(
     payload: SpreadCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> SpreadRead:
     row = Spread(
         name=payload.name,
@@ -420,7 +426,7 @@ async def create_spread(
         positions=payload.positions,
         layout_json=payload.layout_json,
         is_builtin=False,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -436,6 +442,7 @@ async def create_spread(
 async def delete_spread(
     spread_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(Spread, spread_id)
     if row is None or row.deleted_at is not None:
@@ -445,6 +452,8 @@ async def delete_spread(
             status.HTTP_403_FORBIDDEN,
             "Built-in spreads cannot be deleted.",
         )
+    if row.owner_id != current_user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Spread not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -585,7 +594,7 @@ def _materialise_drawn(drawn: list[DrawnCard]) -> list[dict[str, object]]:
 async def cast(
     payload: CastRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ReadingRead:
     deck = await db.get(Deck, payload.deck_id)
     if deck is None or deck.deleted_at is not None:
@@ -640,7 +649,7 @@ async def cast(
         drawn_cards=_materialise_drawn(drawn),
         entity_id=payload.entity_id,
         working_id=payload.working_id,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(reading)
     await db.commit()
@@ -686,10 +695,14 @@ async def _expand_for_persisted(
 @router.get("/tarot/readings", response_model=list[ReadingRead], tags=["tarot"])
 async def list_readings(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     entity_id: UUID | None = None,
     limit: int = 100,
 ) -> list[ReadingRead]:
-    stmt = select(Reading).where(Reading.deleted_at.is_(None))
+    stmt = select(Reading).where(
+        Reading.deleted_at.is_(None),
+        Reading.owner_id == current_user.id,
+    )
     if entity_id is not None:
         stmt = stmt.where(Reading.entity_id == entity_id)
     stmt = stmt.order_by(Reading.drawn_at.desc()).limit(min(limit, 500))
@@ -704,9 +717,12 @@ async def list_readings(
 async def get_reading(
     reading_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ReadingRead:
     row = await db.get(Reading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     return _reading_to_read(row, await _expand_for_persisted(db, row))
 
@@ -716,9 +732,12 @@ async def update_reading(
     reading_id: UUID,
     payload: ReadingUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ReadingRead:
     row = await db.get(Reading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(row, k, v)
@@ -735,9 +754,12 @@ async def update_reading(
 async def delete_reading(
     reading_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(Reading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()

@@ -27,7 +27,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.divination.runes import (
     DrawnRune,
     RuneOrientation,
@@ -332,7 +332,7 @@ def _materialise_drawn(drawn: list[DrawnRune]) -> list[dict[str, object]]:
 async def cast(
     payload: CastRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ReadingRead:
     try:
         bundled_set = runeset_by_value(payload.rune_set)
@@ -373,7 +373,7 @@ async def cast(
         entry_id=payload.entry_id,
         entity_id=payload.entity_id,
         working_id=payload.working_id,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -388,10 +388,14 @@ async def cast(
 @router.get("/runes/readings", response_model=list[ReadingRead], tags=["runes"])
 async def list_readings(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     rune_set: RuneSetLiteral | None = None,
     limit: int = 100,
 ) -> list[ReadingRead]:
-    stmt = select(RuneReading).where(RuneReading.deleted_at.is_(None))
+    stmt = select(RuneReading).where(
+        RuneReading.deleted_at.is_(None),
+        RuneReading.owner_id == current_user.id,
+    )
     if rune_set is not None:
         stmt = stmt.where(RuneReading.rune_set == RuneSetModel(rune_set))
     stmt = stmt.order_by(RuneReading.drawn_at.desc()).limit(min(limit, 500))
@@ -414,9 +418,12 @@ async def list_readings(
 async def get_reading(
     reading_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ReadingRead:
     row = await db.get(RuneReading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     bundled_set = runeset_by_value(row.rune_set)
     return _reading_to_read(row, _expand_persisted(row, bundled_set))
@@ -431,9 +438,12 @@ async def update_reading(
     reading_id: UUID,
     payload: ReadingUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ReadingRead:
     row = await db.get(RuneReading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(row, k, v)
@@ -451,9 +461,12 @@ async def update_reading(
 async def delete_reading(
     reading_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(RuneReading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()

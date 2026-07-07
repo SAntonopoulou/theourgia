@@ -27,7 +27,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.linguistic.bundled_ciphers import (
     BUNDLED_CIPHERS,
     bundled_by_slug,
@@ -120,15 +120,11 @@ def _is_bundled(row: Cipher) -> bool:
     return row.bundled_slug is not None and row.owner_id is None
 
 
-def _owner_check(row: Cipher, current_user_id: UUID | None) -> None:
+def _owner_check(row: Cipher, current_user_id: UUID) -> None:
     # Bundled rows are world-readable.
     if _is_bundled(row):
         return
-    if (
-        current_user_id is not None
-        and row.owner_id is not None
-        and row.owner_id != current_user_id
-    ):
+    if row.owner_id != current_user_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cipher not found.")
 
 
@@ -159,7 +155,7 @@ async def list_bundled_ciphers() -> list[BundledCipherRead]:
 )
 async def list_ciphers(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     language: CipherLanguage | None = None,
     include_personal: bool = True,
     limit: int = 100,
@@ -168,18 +164,14 @@ async def list_ciphers(
     stmt = select(Cipher).where(Cipher.deleted_at.is_(None))
     if language is not None:
         stmt = stmt.where(Cipher.language == language)
-    if current_user is not None:
-        if include_personal:
-            # Caller's personal + every bundled row.
-            stmt = stmt.where(
-                (Cipher.owner_id == current_user.id)
-                | (Cipher.bundled_slug.is_not(None))
-            )
-        else:
-            # Bundled only.
-            stmt = stmt.where(Cipher.bundled_slug.is_not(None))
+    if include_personal:
+        # Caller's personal + every bundled row.
+        stmt = stmt.where(
+            (Cipher.owner_id == current_user.id)
+            | (Cipher.bundled_slug.is_not(None))
+        )
     else:
-        # Unauthenticated: bundled only.
+        # Bundled only.
         stmt = stmt.where(Cipher.bundled_slug.is_not(None))
     stmt = stmt.order_by(Cipher.created_at.asc()).limit(min(limit, 500))
     rows = (await db.execute(stmt)).scalars().all()
@@ -195,7 +187,7 @@ async def list_ciphers(
 async def create_cipher(
     payload: CipherCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> CipherRead:
     """Create a per-vault cipher.
 
@@ -205,7 +197,7 @@ async def create_cipher(
     citation_text = (payload.source_citation or "").strip()
     personal = citation_text == ""
     row = Cipher(
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
         name=payload.name,
         language=payload.language,
         mapping=dict(payload.mapping),
@@ -228,12 +220,12 @@ async def create_cipher(
 async def get_cipher(
     cipher_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> CipherRead:
     row = await db.get(Cipher, cipher_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cipher not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     return _to_cipher_read(row)
 
 
@@ -246,12 +238,12 @@ async def update_cipher(
     cipher_id: UUID,
     payload: CipherUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> CipherRead:
     row = await db.get(Cipher, cipher_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cipher not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     if _is_bundled(row):
         raise HTTPException(
             status.HTTP_409_CONFLICT,
@@ -279,12 +271,12 @@ async def update_cipher(
 async def delete_cipher(
     cipher_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(Cipher, cipher_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Cipher not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     if _is_bundled(row):
         raise HTTPException(
             status.HTTP_409_CONFLICT,

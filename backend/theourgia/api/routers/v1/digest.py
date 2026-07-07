@@ -28,7 +28,7 @@ from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.analytics.aggregates import compute_today
 from theourgia.core.analytics.digest_builder import (
     AnalyticsSnapshot,
@@ -230,12 +230,10 @@ async def _build_and_persist_digest(
 )
 async def get_weekly_digest(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> DigestRead:
     """Return the most-recent week's digest. Builds + persists one
     if none exists yet."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     period_start, period_end = _week_window()
     stmt = (
         select(Digest)
@@ -261,10 +259,8 @@ async def get_weekly_digest(
 async def get_digest_for_week(
     period_start: datetime,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> DigestRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     stmt = (
         select(Digest)
         .where(Digest.owner_id == current_user.id)
@@ -288,10 +284,8 @@ async def update_digest_item(
     item_id: UUID,
     payload: DigestItemUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> DigestItemRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await db.get(DigestItem, item_id)
     if row is None:
         raise HTTPException(
@@ -318,15 +312,13 @@ async def update_digest_item(
 )
 async def rebuild_weekly_digest(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> DigestRead:
     """Force a rebuild of the current-week digest.
 
     Replaces the existing digest for the current week (cascading
     delete to its items). Other weeks' history is preserved.
     """
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     period_start, period_end = _week_window()
     digest = await _build_and_persist_digest(
         db=db,

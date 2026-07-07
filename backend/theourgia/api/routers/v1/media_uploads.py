@@ -49,7 +49,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.media import (
     EXIF_STRIPPABLE_MIME_TYPES,
     ExifStripper,
@@ -239,10 +239,8 @@ def _effective_exif_policy(
 async def begin_upload(
     payload: BeginUploadPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> BeginUploadResponse:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
 
     # Sealed + strip is an explicit rejection — encrypted bytes are
     # unreadable to the server. The client must pre-strip before
@@ -317,10 +315,8 @@ async def complete_upload(
     upload_id: UUID,
     payload: CompleteUploadPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> CompleteUploadResponse:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     session = await db.get(MediaUploadSession, upload_id)
     if session is None or session.owner_id != current_user.id:
         raise HTTPException(
@@ -427,13 +423,11 @@ async def complete_upload(
 async def cancel_upload(
     upload_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
     """Cancel an in-flight upload. Idempotent on already-CANCELLED.
     Refuses to cancel an already-COMPLETED upload (409) — use
     DELETE /media/{id} to soft-delete a completed asset."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     session = await db.get(MediaUploadSession, upload_id)
     if session is None or session.owner_id != current_user.id:
         raise HTTPException(

@@ -35,7 +35,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.analytics.autotag import apply_precision_floor
 from theourgia.models.entries import Entry
 from theourgia.models.pilgrimage_sites import (
@@ -247,15 +247,13 @@ def _to_card(row: PilgrimageSite) -> PilgrimageSiteCard:
 )
 async def list_sites(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     kind: SiteKind | None = None,
     limit: int = 200,
     offset: int = 0,
 ) -> ListResponse:
     """Map data list. Sealed sites are STRIPPED here — they appear
     only as the count via ``/sealed-cluster``."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     sealed_total = (
         await db.execute(
             select(func.count())
@@ -297,13 +295,11 @@ async def list_sites(
 async def sealed_cluster_count(
     payload: SealedClusterPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> SealedClusterResponse:
     """Count-only endpoint. Returns ONLY the number of sealed sites
     in the requested map bounds (no ids, no coords). The H07
     Pilgrimage Map's sealed-badge data source."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     stmt = (
         select(func.count())
         .select_from(PilgrimageSite)
@@ -326,7 +322,7 @@ async def sealed_cluster_count(
     return SealedClusterResponse(sealed_count=int(n or 0))
 
 
-# ── CRUD ─────────────────────────────────────────────────────────
+    # ── CRUD ─────────────────────────────────────────────────────────
 
 
 @router.post(
@@ -338,10 +334,8 @@ async def sealed_cluster_count(
 async def create_site(
     payload: PilgrimageSiteCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PilgrimageSiteRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     _validate_precision(payload.location_precision)
     await _validate_linked_workings(
         db, current_user.id, payload.linked_working_ids,
@@ -380,10 +374,8 @@ async def create_site(
 async def read_site(
     site_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PilgrimageSiteRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await db.get(PilgrimageSite, site_id)
     if (
         row is None
@@ -403,13 +395,11 @@ async def update_site(
     site_id: UUID,
     payload: PilgrimageSiteUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PilgrimageSiteRead:
     """PATCH does NOT touch location or precision — only name /
     story / linked_working_ids. The schema doesn't even expose the
     location fields."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await db.get(PilgrimageSite, site_id)
     if (
         row is None
@@ -440,10 +430,8 @@ async def update_site(
 async def delete_site(
     site_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await db.get(PilgrimageSite, site_id)
     if (
         row is None
@@ -456,7 +444,7 @@ async def delete_site(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-# ── Re-quantize (one-way: lower only) ────────────────────────────
+    # ── Re-quantize (one-way: lower only) ────────────────────────────
 
 
 @router.post(
@@ -468,15 +456,13 @@ async def requantize_site(
     site_id: UUID,
     payload: RequantizePayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PilgrimageSiteRead:
     """Lower the site's precision floor.
 
     REJECTS any transition that would make precision FINER. The
     previous lat/lng are overwritten with the new quantized values
     — the finer precision is irreversibly lost (the whole point)."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await db.get(PilgrimageSite, site_id)
     if (
         row is None
@@ -509,7 +495,7 @@ async def requantize_site(
     return _to_read(row)
 
 
-# ── Seal / unseal ────────────────────────────────────────────────
+    # ── Seal / unseal ────────────────────────────────────────────────
 
 
 @router.post(
@@ -520,14 +506,12 @@ async def requantize_site(
 async def seal_site(
     site_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PilgrimageSiteRead:
     """Flip ``sealed=True``. The site stops appearing on map data
     immediately. Unseal happens via the Mode B vault crypto path
     (B108) on the client; the server endpoint trusts the client
     state."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await db.get(PilgrimageSite, site_id)
     if (
         row is None

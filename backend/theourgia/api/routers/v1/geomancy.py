@@ -23,7 +23,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.divination.geomancy import (
     Chart,
     Figure,
@@ -284,7 +284,7 @@ def _rederive_chart(row: GeomancyReading) -> Chart:
 async def cast(
     payload: CastRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ReadingRead:
     if payload.method == "manual":
         raise HTTPException(
@@ -307,7 +307,7 @@ async def cast(
         entry_id=payload.entry_id,
         entity_id=payload.entity_id,
         working_id=payload.working_id,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -324,7 +324,7 @@ async def cast(
 async def cast_manual(
     payload: ManualCastRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ReadingRead:
     now = datetime.now(tz=UTC)
     mothers = tuple(figure_by_name(name) for name in payload.mothers)
@@ -343,7 +343,7 @@ async def cast_manual(
         entry_id=payload.entry_id,
         entity_id=payload.entity_id,
         working_id=payload.working_id,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -358,11 +358,15 @@ async def cast_manual(
 )
 async def list_readings(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     judge: FigureNameLiteral | None = None,
     entity_id: UUID | None = None,
     limit: int = 100,
 ) -> list[ReadingRead]:
-    stmt = select(GeomancyReading).where(GeomancyReading.deleted_at.is_(None))
+    stmt = select(GeomancyReading).where(
+        GeomancyReading.deleted_at.is_(None),
+        GeomancyReading.owner_id == current_user.id,
+    )
     if judge is not None:
         stmt = stmt.where(GeomancyReading.judge_figure == judge)
     if entity_id is not None:
@@ -380,9 +384,12 @@ async def list_readings(
 async def get_reading(
     reading_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ReadingRead:
     row = await db.get(GeomancyReading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     return _reading_to_read(row, _rederive_chart(row))
 
@@ -396,9 +403,12 @@ async def update_reading(
     reading_id: UUID,
     payload: ReadingUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ReadingRead:
     row = await db.get(GeomancyReading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(row, k, v)
@@ -415,9 +425,12 @@ async def update_reading(
 async def delete_reading(
     reading_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(GeomancyReading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()

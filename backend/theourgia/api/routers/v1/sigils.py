@@ -29,7 +29,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.entries import Entry
 from theourgia.models.sigils import Sigil, SigilMode, SigilPurpose
 
@@ -181,15 +181,16 @@ async def _validate_consecrated(
 @router.get("/sigils", response_model=list[SigilRead], tags=["sigils"])
 async def list_sigils(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     mode: SigilModeLiteral | None = None,
     purpose: SigilPurposeLiteral | None = None,
     linked_entity_id: UUID | None = None,
     limit: int = 100,
 ) -> list[SigilRead]:
-    stmt = select(Sigil).where(Sigil.deleted_at.is_(None))
-    if current_user is not None:
-        stmt = stmt.where(Sigil.owner_id == current_user.id)
+    stmt = select(Sigil).where(
+        Sigil.deleted_at.is_(None),
+        Sigil.owner_id == current_user.id,
+    )
     if mode is not None:
         stmt = stmt.where(Sigil.mode == SigilMode(mode))
     if purpose is not None:
@@ -210,10 +211,10 @@ async def list_sigils(
 async def create_sigil(
     payload: SigilCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> SigilRead:
     purpose = SigilPurpose(payload.purpose)
-    owner_id = current_user.id if current_user is not None else None
+    owner_id = current_user.id
     await _validate_consecrated(
         purpose, payload.linked_working_entry_id, db, owner_id,
     )
@@ -244,16 +245,12 @@ async def create_sigil(
 async def get_sigil(
     sigil_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> SigilRead:
     row = await db.get(Sigil, sigil_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Sigil not found.")
-    if (
-        current_user is not None
-        and row.owner_id is not None
-        and row.owner_id != current_user.id
-    ):
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Sigil not found.")
     return _to_read(row)
 
@@ -265,16 +262,12 @@ async def update_sigil(
     sigil_id: UUID,
     payload: SigilUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> SigilRead:
     row = await db.get(Sigil, sigil_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Sigil not found.")
-    if (
-        current_user is not None
-        and row.owner_id is not None
-        and row.owner_id != current_user.id
-    ):
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Sigil not found.")
 
     data = payload.model_dump(exclude_unset=True)
@@ -313,16 +306,12 @@ async def update_sigil(
 async def delete_sigil(
     sigil_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(Sigil, sigil_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Sigil not found.")
-    if (
-        current_user is not None
-        and row.owner_id is not None
-        and row.owner_id != current_user.id
-    ):
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Sigil not found.")
     row.deleted_at = datetime.now(tz=row.created_at.tzinfo)
     await db.commit()
@@ -339,7 +328,7 @@ async def fork_sigil(
     sigil_id: UUID,
     payload: SigilForkPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> SigilRead:
     """Fork an existing sigil: creates a new row with
     ``parent_sigil_id = source.id``. The parent is unaffected.
@@ -352,16 +341,12 @@ async def fork_sigil(
     parent = await db.get(Sigil, sigil_id)
     if parent is None or parent.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Sigil not found.")
-    if (
-        current_user is not None
-        and parent.owner_id is not None
-        and parent.owner_id != current_user.id
-    ):
+    if parent.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Sigil not found.")
 
     title = payload.title or f"{parent.title} — new version"
     child = Sigil(
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
         title=title,
         intention=parent.intention,
         mode=parent.mode,

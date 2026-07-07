@@ -23,7 +23,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.resh import (
     AdorationLog,
     Transition,
@@ -114,7 +114,7 @@ def _to_read(row: AdorationModel) -> AdorationRead:
 @router.get("/resh/today", response_model=ReshToday, tags=["resh"])
 async def today(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     lat: float = Query(..., ge=-90, le=90),
     lng: float = Query(..., ge=-180, le=180),
     on_date: date_cls | None = Query(
@@ -149,9 +149,8 @@ async def today(
         select(AdorationModel)
         .where(AdorationModel.deleted_at.is_(None))
         .where(AdorationModel.civil_date == on_date)
+        .where(AdorationModel.owner_id == current_user.id)
     )
-    if current_user is not None:
-        stmt = stmt.where(AdorationModel.owner_id == current_user.id)
     observed_rows = (await db.execute(stmt)).scalars().all()
     by_transition = {row.transition: row for row in observed_rows}
 
@@ -177,11 +176,8 @@ async def today(
         select(AdorationModel)
         .where(AdorationModel.deleted_at.is_(None))
         .where(AdorationModel.civil_date >= on_date - timedelta(days=60))
+        .where(AdorationModel.owner_id == current_user.id)
     )
-    if current_user is not None:
-        streak_log_stmt = streak_log_stmt.where(
-            AdorationModel.owner_id == current_user.id,
-        )
     streak_rows = (await db.execute(streak_log_stmt)).scalars().all()
     streak_log = [
         AdorationLog(
@@ -206,7 +202,7 @@ async def today(
 async def create_adoration(
     payload: AdorationCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> AdorationRead:
     now = datetime.now(tz=UTC)
     civil_date = payload.civil_date or now.date()
@@ -217,7 +213,7 @@ async def create_adoration(
         note=payload.note,
         location_label=payload.location_label,
         entry_id=payload.entry_id,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -228,12 +224,16 @@ async def create_adoration(
 @router.get("/resh/adorations", response_model=list[AdorationRead], tags=["resh"])
 async def list_adorations(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     since: date_cls | None = None,
     until: date_cls | None = None,
     transition: TransitionLiteral | None = None,
     limit: int = 200,
 ) -> list[AdorationRead]:
-    stmt = select(AdorationModel).where(AdorationModel.deleted_at.is_(None))
+    stmt = select(AdorationModel).where(
+        AdorationModel.deleted_at.is_(None),
+        AdorationModel.owner_id == current_user.id,
+    )
     if since is not None:
         stmt = stmt.where(AdorationModel.civil_date >= since)
     if until is not None:
@@ -253,9 +253,12 @@ async def list_adorations(
 async def delete_adoration(
     adoration_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(AdorationModel, adoration_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Adoration not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Adoration not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()

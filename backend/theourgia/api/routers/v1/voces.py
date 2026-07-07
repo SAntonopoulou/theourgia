@@ -28,7 +28,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.workshop.bundled_voces import (
     BUNDLED_VOCES,
     bundled_by_id,
@@ -204,12 +204,8 @@ def _to_voce_read(
     )
 
 
-def _owner_check(row: VoceMagicae, current_user_id: UUID | None) -> None:
-    if (
-        current_user_id is not None
-        and row.owner_id is not None
-        and row.owner_id != current_user_id
-    ):
+def _owner_check(row: VoceMagicae, current_user_id: UUID) -> None:
+    if row.owner_id != current_user_id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Voce not found.")
 
 
@@ -272,14 +268,15 @@ async def list_bundled_voces() -> list[BundledVoceRead]:
 )
 async def list_voces(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     source_script: SourceScript | None = None,
     limit: int = 100,
     include_hidden: bool = False,
 ) -> list[VoceMagicaeRead]:
-    stmt = select(VoceMagicae).where(VoceMagicae.deleted_at.is_(None))
-    if current_user is not None:
-        stmt = stmt.where(VoceMagicae.owner_id == current_user.id)
+    stmt = select(VoceMagicae).where(
+        VoceMagicae.deleted_at.is_(None),
+        VoceMagicae.owner_id == current_user.id,
+    )
     if source_script is not None:
         stmt = stmt.where(VoceMagicae.source_script == source_script)
     stmt = stmt.order_by(VoceMagicae.created_at.desc()).limit(
@@ -289,7 +286,7 @@ async def list_voces(
 
     # B114: filter out voces the caller has marked hidden in their
     # per-vault state, unless explicitly opted in via include_hidden.
-    if not include_hidden and current_user is not None and rows:
+    if not include_hidden and rows:
         hidden_stmt = (
             select(VocePerVaultState.voce_id)
             .where(VocePerVaultState.owner_id == current_user.id)
@@ -313,9 +310,9 @@ async def list_voces(
 async def create_voce(
     payload: VoceMagicaeCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> VoceMagicaeRead:
-    owner_id = current_user.id if current_user is not None else None
+    owner_id = current_user.id
     await _validate_entity_ids(payload.linked_entity_ids, db, owner_id)
     row = VoceMagicae(
         owner_id=owner_id,
@@ -341,12 +338,12 @@ async def create_voce(
 async def get_voce(
     voce_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> VoceMagicaeRead:
     row = await db.get(VoceMagicae, voce_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Voce not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     recordings = await _fetch_recordings(voce_id, db)
     return _to_voce_read(row, recordings)
 
@@ -358,12 +355,12 @@ async def update_voce(
     voce_id: UUID,
     payload: VoceMagicaeUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> VoceMagicaeRead:
     row = await db.get(VoceMagicae, voce_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Voce not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
 
     data = payload.model_dump(exclude_unset=True)
     if (
@@ -392,12 +389,12 @@ async def update_voce(
 async def delete_voce(
     voce_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(VoceMagicae, voce_id)
     if row is None or row.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Voce not found.")
-    _owner_check(row, current_user.id if current_user else None)
+    _owner_check(row, current_user.id)
     row.deleted_at = datetime.now(tz=row.created_at.tzinfo)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -412,7 +409,7 @@ async def delete_voce(
 async def fork_bundled_voce(
     payload: VoceForkBundledPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> VoceMagicaeRead:
     """Fork a bundled fixture into the practitioner's vault.
 
@@ -437,7 +434,7 @@ async def fork_bundled_voce(
         )
 
     row = VoceMagicae(
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
         name=bundled.name,
         source_text=bundled.source_text,
         source_script=script,
@@ -465,12 +462,12 @@ async def add_voce_recording(
     voce_id: UUID,
     payload: VoceRecordingCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> VoceRecordingRead:
     voce = await db.get(VoceMagicae, voce_id)
     if voce is None or voce.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Voce not found.")
-    _owner_check(voce, current_user.id if current_user else None)
+    _owner_check(voce, current_user.id)
 
     audio = await db.get(AudioAttachment, payload.audio_attachment_id)
     if audio is None or audio.deleted_at is not None:
@@ -509,12 +506,12 @@ async def remove_voce_recording(
     voce_id: UUID,
     recording_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
     voce = await db.get(VoceMagicae, voce_id)
     if voce is None or voce.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Voce not found.")
-    _owner_check(voce, current_user.id if current_user else None)
+    _owner_check(voce, current_user.id)
 
     rec = await db.get(VoceRecording, recording_id)
     if rec is None or rec.deleted_at is not None or rec.voce_id != voce_id:
@@ -537,7 +534,7 @@ async def remove_voce_recording(
 async def get_voce_per_vault_state(
     voce_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> VocePerVaultRead:
     """Return the calling owner's per-vault state for this voce.
 
@@ -545,10 +542,6 @@ async def get_voce_per_vault_state(
     hidden: false }`` is returned. Unauthenticated callers get a
     401.
     """
-    if current_user is None:
-        raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED, "Auth required.",
-        )
     voce = await db.get(VoceMagicae, voce_id)
     if voce is None or voce.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Voce not found.")
@@ -584,17 +577,13 @@ async def upsert_voce_per_vault_state(
     voce_id: UUID,
     payload: VocePerVaultUpsert,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> VocePerVaultRead:
     """Upsert the calling owner's per-vault state.
 
     Idempotent: PUT twice → one row, not two (uniqueness enforced
     by ``uq_voce_per_vault``). Absent fields in the payload do NOT
     overwrite existing values."""
-    if current_user is None:
-        raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED, "Auth required.",
-        )
     voce = await db.get(VoceMagicae, voce_id)
     if voce is None or voce.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Voce not found.")

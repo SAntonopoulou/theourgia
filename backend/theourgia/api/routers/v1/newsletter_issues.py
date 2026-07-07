@@ -31,7 +31,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.publishing.delivery import (
     RenderedIssue,
     begin_delivery,
@@ -180,12 +180,10 @@ async def _load_owned(
 )
 async def list_issues(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     status_filter: NewsletterIssueStatus | None = None,
     limit: int = 100,
 ) -> list[NewsletterIssueRead]:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     stmt = (
         select(NewsletterIssue)
         .where(NewsletterIssue.owner_id == current_user.id)
@@ -210,10 +208,8 @@ async def list_issues(
 async def create_issue(
     payload: NewsletterIssueCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> NewsletterIssueRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = NewsletterIssue(
         owner_id=current_user.id,
         subject=payload.subject,
@@ -237,10 +233,8 @@ async def create_issue(
 async def get_issue(
     issue_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> NewsletterIssueRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, issue_id, current_user.id)
     return _to_issue_read(row)
 
@@ -254,10 +248,8 @@ async def update_issue(
     issue_id: UUID,
     payload: NewsletterIssueUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> NewsletterIssueRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, issue_id, current_user.id)
     if row.status != NewsletterIssueStatus.DRAFT:
         raise HTTPException(
@@ -285,10 +277,8 @@ async def update_issue(
 async def delete_issue(
     issue_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, issue_id, current_user.id)
     if row.status != NewsletterIssueStatus.DRAFT:
         raise HTTPException(
@@ -301,7 +291,7 @@ async def delete_issue(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-# ── Lifecycle ──────────────────────────────────────────────────
+    # ── Lifecycle ──────────────────────────────────────────────────
 
 
 @router.post(
@@ -313,12 +303,10 @@ async def preview_issue(
     issue_id: UUID,
     payload: PreviewPayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> PreviewResult:
     """Render the issue to a single recipient. NEVER touches the
     issue's status, recipient_count, or sent_at."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, issue_id, current_user.id)
     # Build a synthetic Subscriber so the render path stays
     # identical to the real send. The token is a stand-in marker.
@@ -346,7 +334,7 @@ async def preview_issue(
 async def send_now(
     issue_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> SendNowResult:
     """Flip DRAFT → SENDING + dispatch the delivery task.
 
@@ -355,8 +343,6 @@ async def send_now(
     --warn-soft confirm modal before the practitioner reaches
     this endpoint. The route itself is matter-of-fact; the
     confirmation is enforced surface-side."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, issue_id, current_user.id)
     if row.status != NewsletterIssueStatus.DRAFT:
         raise HTTPException(
@@ -384,10 +370,8 @@ async def schedule_issue(
     issue_id: UUID,
     payload: SchedulePayload,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> NewsletterIssueRead:
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, issue_id, current_user.id)
     if row.status not in (
         NewsletterIssueStatus.DRAFT, NewsletterIssueStatus.SCHEDULED,
@@ -411,12 +395,10 @@ async def schedule_issue(
 async def cancel_issue(
     issue_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> NewsletterIssueRead:
     """Cancel a SCHEDULED issue. CANCELLED is terminal; cloning is
     the affordance for re-using the body."""
-    if current_user is None:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Auth required.")
     row = await _load_owned(db, issue_id, current_user.id)
     if row.status != NewsletterIssueStatus.SCHEDULED:
         raise HTTPException(

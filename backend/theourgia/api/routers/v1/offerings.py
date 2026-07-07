@@ -26,7 +26,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.offerings import (
     Offering,
     OfferingReception,
@@ -120,11 +120,15 @@ def _offering_to_read(row: Offering) -> OfferingRead:
 @router.get("/offerings", response_model=list[OfferingRead], tags=["offerings"])
 async def list_offerings(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     entity_id: UUID | None = None,
     working_id: UUID | None = None,
     limit: int = 100,
 ) -> list[OfferingRead]:
-    stmt = select(Offering).where(Offering.deleted_at.is_(None))
+    stmt = select(Offering).where(
+        Offering.deleted_at.is_(None),
+        Offering.owner_id == current_user.id,
+    )
     if entity_id is not None:
         stmt = stmt.where(Offering.entity_id == entity_id)
     if working_id is not None:
@@ -143,7 +147,7 @@ async def list_offerings(
 async def create_offering(
     payload: OfferingCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> OfferingRead:
     row = Offering(
         entity_id=payload.entity_id,
@@ -162,7 +166,7 @@ async def create_offering(
         outcome_notes=payload.outcome_notes,
         astro_snapshot=payload.astro_snapshot,
         calendar_snapshot=payload.calendar_snapshot,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -174,9 +178,12 @@ async def create_offering(
 async def get_offering(
     offering_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> OfferingRead:
     row = await db.get(Offering, offering_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Offering not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Offering not found.")
     return _offering_to_read(row)
 
@@ -186,9 +193,12 @@ async def update_offering(
     offering_id: UUID,
     payload: OfferingUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> OfferingRead:
     row = await db.get(Offering, offering_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Offering not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Offering not found.")
     data = payload.model_dump(exclude_unset=True)
     if "reception_perceived" in data and data["reception_perceived"] is not None:
@@ -208,9 +218,12 @@ async def update_offering(
 async def delete_offering(
     offering_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(Offering, offering_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Offering not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Offering not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()
@@ -278,10 +291,14 @@ def _recurring_to_read(row: RecurringOffering) -> RecurringOfferingRead:
 )
 async def list_recurring_offerings(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     entity_id: UUID | None = None,
     is_active: bool | None = None,
 ) -> list[RecurringOfferingRead]:
-    stmt = select(RecurringOffering).where(RecurringOffering.deleted_at.is_(None))
+    stmt = select(RecurringOffering).where(
+        RecurringOffering.deleted_at.is_(None),
+        RecurringOffering.owner_id == current_user.id,
+    )
     if entity_id is not None:
         stmt = stmt.where(RecurringOffering.entity_id == entity_id)
     if is_active is not None:
@@ -300,7 +317,7 @@ async def list_recurring_offerings(
 async def create_recurring_offering(
     payload: RecurringOfferingCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> RecurringOfferingRead:
     row = RecurringOffering(
         entity_id=payload.entity_id,
@@ -309,7 +326,7 @@ async def create_recurring_offering(
         items_template=payload.items_template,
         next_due_at=payload.next_due_at,
         is_active=payload.is_active,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -325,9 +342,12 @@ async def create_recurring_offering(
 async def get_recurring_offering(
     rec_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> RecurringOfferingRead:
     row = await db.get(RecurringOffering, rec_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Recurring offering not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Recurring offering not found.")
     return _recurring_to_read(row)
 
@@ -341,9 +361,12 @@ async def update_recurring_offering(
     rec_id: UUID,
     payload: RecurringOfferingUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> RecurringOfferingRead:
     row = await db.get(RecurringOffering, rec_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Recurring offering not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Recurring offering not found.")
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(row, k, v)
@@ -360,9 +383,12 @@ async def update_recurring_offering(
 async def delete_recurring_offering(
     rec_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(RecurringOffering, rec_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Recurring offering not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Recurring offering not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()

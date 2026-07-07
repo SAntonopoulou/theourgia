@@ -17,7 +17,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.api.routers.v1.entries import EntryTypeLiteral
 from theourgia.models.entries import EntryType
 from theourgia.models.templates import EntryTemplate, TemplateScope
@@ -102,7 +102,7 @@ def _to_read(row: EntryTemplate) -> TemplateRead:
 )
 async def list_templates(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     scope: TemplateScopeLiteral | None = None,
     kind: EntryTypeLiteral | None = None,
 ) -> list[TemplateRead]:
@@ -122,20 +122,13 @@ async def list_templates(
 
     # Per-user filtering: caller sees built-ins + their own personal +
     # all vault-shared / publishable.
-    if current_user is not None:
-        stmt = stmt.where(
-            (EntryTemplate.owner_id.is_(None))  # built-ins
-            | (EntryTemplate.owner_id == current_user.id)
-            | (EntryTemplate.scope.in_([
-                TemplateScope.VAULT_SHARED, TemplateScope.PUBLISHABLE,
-            ]))
-        )
-    else:
-        # Anonymous callers see only built-ins + publishable.
-        stmt = stmt.where(
-            (EntryTemplate.owner_id.is_(None))
-            | (EntryTemplate.scope == TemplateScope.PUBLISHABLE)
-        )
+    stmt = stmt.where(
+        (EntryTemplate.owner_id.is_(None))  # built-ins
+        | (EntryTemplate.owner_id == current_user.id)
+        | (EntryTemplate.scope.in_([
+            TemplateScope.VAULT_SHARED, TemplateScope.PUBLISHABLE,
+        ]))
+    )
 
     stmt = stmt.order_by(EntryTemplate.created_at)
     rows = (await session.execute(stmt)).scalars().all()
@@ -150,7 +143,7 @@ async def list_templates(
 async def get_template(
     template_id: UUID,
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> TemplateRead:
     row = await session.get(EntryTemplate, template_id)
     if row is None or row.deleted_at is not None:
@@ -158,7 +151,7 @@ async def get_template(
     # Auth: caller must own it, or it must be built-in / publishable.
     if (
         row.owner_id is not None
-        and (current_user is None or row.owner_id != current_user.id)
+        and row.owner_id != current_user.id
         and row.scope not in (TemplateScope.VAULT_SHARED, TemplateScope.PUBLISHABLE)
     ):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Template not found.")
@@ -174,7 +167,7 @@ async def get_template(
 async def create_template(
     payload: TemplateCreate,
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> TemplateRead:
     row = EntryTemplate(
         name=payload.name,
@@ -184,7 +177,7 @@ async def create_template(
         body_template=payload.body_template,
         default_title_pattern=payload.default_title_pattern,
         default_glyph=payload.default_glyph,
-        owner_id=current_user.id if current_user else None,
+        owner_id=current_user.id,
         tradition=payload.tradition,
         license=payload.license,
     )
@@ -203,7 +196,7 @@ async def update_template(
     template_id: UUID,
     payload: TemplateUpdate,
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> TemplateRead:
     row = await session.get(EntryTemplate, template_id)
     if row is None or row.deleted_at is not None:
@@ -212,7 +205,7 @@ async def update_template(
     # require admin (deferred — built-ins are application-level).
     if row.owner_id is None:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Built-in templates are not editable.")
-    if current_user is None or row.owner_id != current_user.id:
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not authorised.")
 
     if payload.name is not None:
@@ -246,7 +239,7 @@ async def update_template(
 async def delete_template(
     template_id: UUID,
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> Response:
     from datetime import UTC, datetime
 
@@ -255,7 +248,7 @@ async def delete_template(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Template not found.")
     if row.owner_id is None:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Built-in templates are not deletable.")
-    if current_user is None or row.owner_id != current_user.id:
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not authorised.")
     row.deleted_at = datetime.now(tz=UTC)
     session.add(row)

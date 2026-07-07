@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.api.routers.v1.entries import EntryRead, _to_read
 from theourgia.core.search import SearchRequest, search_entries
 from theourgia.models.entries import EntryType, EntryVisibility
@@ -45,7 +45,7 @@ class SearchResponse(BaseModel):
 )
 async def search(
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     q: str | None = Query(default=None, max_length=512),
     kind: list[str] | None = Query(default=None),
     visibility: list[str] | None = Query(default=None),
@@ -66,7 +66,7 @@ async def search(
         query=q,
         kinds=kinds_typed,
         visibilities=vis_typed,
-        owner_id=current_user.id if current_user else None,
+        owner_id=current_user.id,
         occurred_after=since,
         occurred_before=until,
         limit=limit,

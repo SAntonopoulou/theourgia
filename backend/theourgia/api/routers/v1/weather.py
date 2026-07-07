@@ -23,8 +23,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, ConfigDict, Field
 
-from theourgia.api.deps import OptionalCookieUser
-from theourgia.api.errors import UnauthorizedError
+from theourgia.api.deps import CurrentUser
 from theourgia.core.weather import (
     OpenMeteoWeatherProvider,
     get_default_provider,
@@ -86,16 +85,13 @@ def get_weather_provider() -> OpenMeteoWeatherProvider:
     response_model=WeatherCurrentResponse,
 )
 async def get_current_weather(
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     provider: Annotated[
         OpenMeteoWeatherProvider, Depends(get_weather_provider)
     ],
     lat: Annotated[float, Query(ge=-90, le=90)],
     lng: Annotated[float, Query(ge=-180, le=180)],
 ) -> WeatherCurrentResponse:
-    if current_user is None:
-        raise UnauthorizedError("weather requires authentication")
-
     snapshot_dict = provider.snapshot_at(
         datetime.now(tz=UTC),
         latitude=lat,

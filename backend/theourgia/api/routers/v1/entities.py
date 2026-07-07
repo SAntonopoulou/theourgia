@@ -31,7 +31,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.entities import (
     Entity,
     EntityAlias,
@@ -178,13 +178,17 @@ def _to_read(row: Entity) -> EntityRead:
 @router.get("/entities", summary="List entities", response_model=list[EntityRead])
 async def list_entities(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     kind: EntityKindLiteral | None = None,
     tradition: str | None = None,
     relationship_status: EntityRelationshipStatusLiteral | None = None,
     visibility: EntityVisibilityLiteral | None = None,
     limit: int = 100,
 ) -> list[EntityRead]:
-    stmt = select(Entity).where(Entity.deleted_at.is_(None))
+    stmt = select(Entity).where(
+        Entity.deleted_at.is_(None),
+        Entity.owner_id == current_user.id,
+    )
     if kind is not None:
         stmt = stmt.where(Entity.kind == EntityKind(kind))
     if tradition:
@@ -209,7 +213,7 @@ async def list_entities(
 async def create_entity(
     payload: EntityCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> EntityRead:
     row = Entity(
         name=payload.name,
@@ -233,7 +237,7 @@ async def create_entity(
         notes_shareable=payload.notes_shareable,
         visibility=EntityVisibility(payload.visibility),
         origin=payload.origin,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -245,8 +249,13 @@ async def create_entity(
 async def get_entity(
     entity_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> EntityRead:
-    stmt = select(Entity).where(Entity.id == entity_id, Entity.deleted_at.is_(None))
+    stmt = select(Entity).where(
+        Entity.id == entity_id,
+        Entity.deleted_at.is_(None),
+        Entity.owner_id == current_user.id,
+    )
     row = (await db.execute(stmt)).scalar_one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail=f"Entity {entity_id} not found")
@@ -262,8 +271,13 @@ async def update_entity(
     entity_id: UUID,
     payload: EntityUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> EntityRead:
-    stmt = select(Entity).where(Entity.id == entity_id, Entity.deleted_at.is_(None))
+    stmt = select(Entity).where(
+        Entity.id == entity_id,
+        Entity.deleted_at.is_(None),
+        Entity.owner_id == current_user.id,
+    )
     row = (await db.execute(stmt)).scalar_one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail=f"Entity {entity_id} not found")
@@ -289,8 +303,13 @@ async def update_entity(
 async def archive_entity(
     entity_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
-    stmt = select(Entity).where(Entity.id == entity_id, Entity.deleted_at.is_(None))
+    stmt = select(Entity).where(
+        Entity.id == entity_id,
+        Entity.deleted_at.is_(None),
+        Entity.owner_id == current_user.id,
+    )
     row = (await db.execute(stmt)).scalar_one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail=f"Entity {entity_id} not found")
@@ -358,9 +377,12 @@ _GRAPH_KINDS_TO_INCLUDE: frozenset[EntityAliasKind] = frozenset(
 async def aggregate_entity(
     entity_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> EntityAggregate:
     focus = await db.get(Entity, entity_id)
     if focus is None or focus.deleted_at is not None:
+        raise HTTPException(status_code=404, detail=f"Entity {entity_id} not found")
+    if focus.owner_id != current_user.id:
         raise HTTPException(status_code=404, detail=f"Entity {entity_id} not found")
 
     edges = (

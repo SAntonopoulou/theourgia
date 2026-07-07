@@ -34,7 +34,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.practice import (
     TREE_PATHS,
     TreeOfLifePath,
@@ -187,7 +187,7 @@ def _body_to_read(row: BodyPracticeSession) -> BodyRead:
 async def create_body_session(
     payload: BodyCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> BodyRead:
     row = BodyPracticeSession(
         kind=BodyPracticeKind(payload.kind),
@@ -198,7 +198,7 @@ async def create_body_session(
         observation_notes=payload.observation_notes,
         body_snapshot_id=payload.body_snapshot_id,
         entry_id=payload.entry_id,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -213,11 +213,15 @@ async def create_body_session(
 )
 async def list_body_sessions(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     kind: BodyKindLiteral | None = None,
     posture: str | None = None,
     limit: int = 100,
 ) -> list[BodyRead]:
-    stmt = select(BodyPracticeSession).where(BodyPracticeSession.deleted_at.is_(None))
+    stmt = select(BodyPracticeSession).where(
+        BodyPracticeSession.deleted_at.is_(None),
+        BodyPracticeSession.owner_id == current_user.id,
+    )
     if kind is not None:
         stmt = stmt.where(BodyPracticeSession.kind == BodyPracticeKind(kind))
     if posture is not None:
@@ -233,14 +237,15 @@ async def list_body_sessions(
 )
 async def body_totals(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> list[dict[str, object]]:
     """Cumulative duration per posture/pattern across this user's
     sessions. Liber-E-style — practitioners track total time per
     posture as a measure of practice depth."""
-    stmt = select(BodyPracticeSession).where(BodyPracticeSession.deleted_at.is_(None))
-    if current_user is not None:
-        stmt = stmt.where(BodyPracticeSession.owner_id == current_user.id)
+    stmt = select(BodyPracticeSession).where(
+        BodyPracticeSession.deleted_at.is_(None),
+        BodyPracticeSession.owner_id == current_user.id,
+    )
     rows = (await db.execute(stmt)).scalars().all()
 
     totals: dict[tuple[str, str], dict[str, int]] = defaultdict(
@@ -274,9 +279,12 @@ async def body_totals(
 async def get_body_session(
     session_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> BodyRead:
     row = await db.get(BodyPracticeSession, session_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found.")
     return _body_to_read(row)
 
@@ -290,9 +298,12 @@ async def update_body_session(
     session_id: UUID,
     payload: BodyUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> BodyRead:
     row = await db.get(BodyPracticeSession, session_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found.")
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(row, k, v)
@@ -309,9 +320,12 @@ async def update_body_session(
 async def delete_body_session(
     session_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(BodyPracticeSession, session_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()
@@ -392,7 +406,7 @@ def _banishing_to_read(row: BanishingLog) -> BanishingRead:
 async def create_banishing(
     payload: BanishingCreate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> BanishingRead:
     row = BanishingLog(
         method=BanishingMethod(payload.method),
@@ -404,7 +418,7 @@ async def create_banishing(
         notes=payload.notes,
         correspondences=payload.correspondences,
         entry_id=payload.entry_id,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -419,10 +433,14 @@ async def create_banishing(
 )
 async def list_banishings(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     method: BanishingMethodLiteral | None = None,
     limit: int = 100,
 ) -> list[BanishingRead]:
-    stmt = select(BanishingLog).where(BanishingLog.deleted_at.is_(None))
+    stmt = select(BanishingLog).where(
+        BanishingLog.deleted_at.is_(None),
+        BanishingLog.owner_id == current_user.id,
+    )
     if method is not None:
         stmt = stmt.where(BanishingLog.method == BanishingMethod(method))
     stmt = stmt.order_by(BanishingLog.performed_at.desc()).limit(min(limit, 500))
@@ -448,7 +466,7 @@ class BanishingCadence(BaseModel):
 )
 async def banishing_cadence(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
     window_days: int = 30,
 ) -> BanishingCadence:
     """Banishing frequency over the last ``window_days`` days.
@@ -467,9 +485,8 @@ async def banishing_cadence(
         select(BanishingLog)
         .where(BanishingLog.deleted_at.is_(None))
         .where(BanishingLog.performed_at >= cutoff)
+        .where(BanishingLog.owner_id == current_user.id)
     )
-    if current_user is not None:
-        stmt = stmt.where(BanishingLog.owner_id == current_user.id)
     rows = (await db.execute(stmt)).scalars().all()
 
     total = len(rows)
@@ -491,9 +508,12 @@ async def banishing_cadence(
 async def get_banishing(
     log_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> BanishingRead:
     row = await db.get(BanishingLog, log_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Banishing log not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Banishing log not found.")
     return _banishing_to_read(row)
 
@@ -507,9 +527,12 @@ async def update_banishing(
     log_id: UUID,
     payload: BanishingUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> BanishingRead:
     row = await db.get(BanishingLog, log_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Banishing log not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Banishing log not found.")
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(row, k, v)
@@ -526,9 +549,12 @@ async def update_banishing(
 async def delete_banishing(
     log_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(BanishingLog, log_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Banishing log not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Banishing log not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()

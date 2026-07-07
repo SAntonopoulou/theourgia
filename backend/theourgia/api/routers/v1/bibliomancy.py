@@ -25,7 +25,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.divination.bibliomancy import (
     Passage,
     PassageKind,
@@ -120,7 +120,7 @@ def _to_read(row: BibliomancyReading) -> ReadingRead:
 async def cast(
     payload: CastRequest,
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> ReadingRead:
     # Validate the book FK if supplied — the source label can still
     # be free-form, but if `book_id` is provided it must point to a
@@ -158,7 +158,7 @@ async def cast(
         passage_index=passage.index,
         total_passages=passage.total,
         entry_id=payload.entry_id,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
     )
     db.add(row)
     await db.commit()
@@ -173,10 +173,14 @@ async def cast(
 )
 async def list_readings(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     book_id: UUID | None = None,
     limit: int = 100,
 ) -> list[ReadingRead]:
-    stmt = select(BibliomancyReading).where(BibliomancyReading.deleted_at.is_(None))
+    stmt = select(BibliomancyReading).where(
+        BibliomancyReading.deleted_at.is_(None),
+        BibliomancyReading.owner_id == current_user.id,
+    )
     if book_id is not None:
         stmt = stmt.where(BibliomancyReading.book_id == book_id)
     stmt = stmt.order_by(BibliomancyReading.drawn_at.desc()).limit(min(limit, 500))
@@ -192,9 +196,12 @@ async def list_readings(
 async def get_reading(
     reading_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ReadingRead:
     row = await db.get(BibliomancyReading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     return _to_read(row)
 
@@ -208,9 +215,12 @@ async def update_reading(
     reading_id: UUID,
     payload: ReadingUpdate,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> ReadingRead:
     row = await db.get(BibliomancyReading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(row, k, v)
@@ -227,9 +237,12 @@ async def update_reading(
 async def delete_reading(
     reading_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     row = await db.get(BibliomancyReading, reading_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
+    if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Reading not found.")
     row.deleted_at = datetime.now(tz=UTC)
     await db.commit()

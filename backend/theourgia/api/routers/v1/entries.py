@@ -22,7 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import OptionalCookieUser, get_db_session
+from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.entries import (
     EncryptionMode,
     Entry,
@@ -188,10 +188,14 @@ def _empty_by_type() -> dict[EntryTypeLiteral, int]:
 )
 async def list_entries(
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     type: EntryTypeLiteral | None = None,
     limit: int = 50,
 ) -> list[EntryRead]:
-    stmt = select(Entry).where(Entry.deleted_at.is_(None))
+    stmt = select(Entry).where(
+        Entry.deleted_at.is_(None),
+        Entry.owner_id == current_user.id,
+    )
     if type is not None:
         stmt = stmt.where(Entry.type == EntryType(type))
     stmt = stmt.order_by(Entry.created_at.desc()).limit(min(limit, 200))
@@ -211,6 +215,7 @@ async def list_entries(
 )
 async def get_entry_stats(
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> EntryStats:
     now = datetime.now(tz=UTC)
     week_ago = now - timedelta(days=7)
@@ -219,7 +224,10 @@ async def get_entry_stats(
     async def _counts(since: datetime | None = None, until: datetime | None = None) -> EntryWindowCounts:
         stmt = (
             select(Entry.type, func.count(Entry.id))
-            .where(Entry.deleted_at.is_(None))
+            .where(
+                Entry.deleted_at.is_(None),
+                Entry.owner_id == current_user.id,
+            )
             .group_by(Entry.type)
         )
         if since is not None:
@@ -261,7 +269,7 @@ async def get_entry_stats(
 async def create_entry(
     payload: EntryCreate,
     session: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: OptionalCookieUser,
+    current_user: CurrentUser,
 ) -> EntryRead:
     row = Entry(
         title=payload.title,
@@ -269,7 +277,7 @@ async def create_entry(
         excerpt=payload.excerpt,
         glyph=payload.glyph,
         body=payload.body,
-        owner_id=current_user.id if current_user is not None else None,
+        owner_id=current_user.id,
         # Phase 04 extras. All optional; Entry defaults handle absent values.
         visibility=EntryVisibility(payload.visibility),
         occurred_at=payload.occurred_at,
@@ -301,8 +309,13 @@ async def create_entry(
 async def get_entry(
     entry_id: UUID,
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> EntryRead:
-    stmt = select(Entry).where(Entry.id == entry_id, Entry.deleted_at.is_(None))
+    stmt = select(Entry).where(
+        Entry.id == entry_id,
+        Entry.deleted_at.is_(None),
+        Entry.owner_id == current_user.id,
+    )
     result = await session.execute(stmt)
     row = result.scalar_one_or_none()
     if row is None:
@@ -335,8 +348,13 @@ async def update_entry(
     entry_id: UUID,
     payload: EntryUpdate,
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> EntryRead:
-    stmt = select(Entry).where(Entry.id == entry_id, Entry.deleted_at.is_(None))
+    stmt = select(Entry).where(
+        Entry.id == entry_id,
+        Entry.deleted_at.is_(None),
+        Entry.owner_id == current_user.id,
+    )
     result = await session.execute(stmt)
     row = result.scalar_one_or_none()
     if row is None:
@@ -365,9 +383,14 @@ async def update_entry(
 async def archive_entry(
     entry_id: UUID,
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> Response:
     from datetime import UTC, datetime as _dt
-    stmt = select(Entry).where(Entry.id == entry_id, Entry.deleted_at.is_(None))
+    stmt = select(Entry).where(
+        Entry.id == entry_id,
+        Entry.deleted_at.is_(None),
+        Entry.owner_id == current_user.id,
+    )
     result = await session.execute(stmt)
     row = result.scalar_one_or_none()
     if row is None:
