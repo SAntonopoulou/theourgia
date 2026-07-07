@@ -278,7 +278,9 @@ function seedValues(
       seed[f.key] = null;
       continue;
     }
-    if ("defaultValue" in f) seed[f.key] = (f as any).defaultValue;
+    if ("defaultValue" in f) {
+      seed[f.key] = (f as { defaultValue?: unknown }).defaultValue;
+    }
   }
   return seed;
 }
