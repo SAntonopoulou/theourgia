@@ -29,6 +29,7 @@ const ICON_PROPS = {
   strokeWidth: 1.5,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
+  "aria-hidden": true,
 };
 
 const LINGUISTIC_ICONS = {

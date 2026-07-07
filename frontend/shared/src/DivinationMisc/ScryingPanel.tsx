@@ -30,6 +30,7 @@ const MEDIUM_ICON_PROPS = {
   strokeWidth: 1.5,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
+  "aria-hidden": true,
 };
 
 const MEDIUM_ICONS: Record<ScryMedium, React.ReactNode> = {
