@@ -33,14 +33,18 @@ export interface TalismanLayerDef {
 
 /** Layer kinds in **draw / z-order** (bottom-first). The rail
  *  renders them in REVERSE so the practitioner reads top-most last
- *  drawn at the top. */
+ *  drawn at the top. Summaries here are "empty" for every layer;
+ *  the surface overrides once the practitioner picks options.
+ *  (Previously seeded "parchment · names of God · ♃ Jupiter · 2
+ *  sigils · 2 · none" which read like a real composition already
+ *  built by the user.) */
 export const TALISMAN_LAYERS: readonly TalismanLayerDef[] = [
-  { key: "background", label: "Background", summary: "parchment" },
-  { key: "border", label: "Border", summary: "names of God" },
-  { key: "square", label: "Magic square", summary: "♃ Jupiter" },
-  { key: "sigil", label: "Central sigil", summary: "2 sigils" },
-  { key: "inscriptions", label: "Inscriptions", summary: "2" },
-  { key: "image", label: "Charged image", summary: "none" },
+  { key: "background", label: "Background", summary: "empty" },
+  { key: "border", label: "Border", summary: "empty" },
+  { key: "square", label: "Magic square", summary: "empty" },
+  { key: "sigil", label: "Central sigil", summary: "empty" },
+  { key: "inscriptions", label: "Inscriptions", summary: "empty" },
+  { key: "image", label: "Charged image", summary: "empty" },
 ];
 
 /* ─── Topbar + face tabs ───────────────────────────────────────── */
@@ -77,10 +81,13 @@ export const LINKED_ELECTION_LABEL = "Linked election";
 export const LINKED_ELECTION_FOOTER =
   "A non-binding link — the talisman exists whether or not it is " +
   "finally consecrated.";
-/** Default linked election preview — Jupiter hour. */
-export const ELECTION_PREVIEW_WHEN = "24 Jun 2026 · 13:42";
-export const ELECTION_PREVIEW_DETAIL = "Hour of Jupiter · Hellenic";
-export const ELECTION_PREVIEW_GLYPH = "♃";
+/** Preview shown when no election is linked. Rendered as an unfilled
+ *  slot in --ink-mute rather than a fabricated Jupiter hour (which
+ *  previously seeded every fresh talisman as if the user had already
+ *  picked one). */
+export const ELECTION_PREVIEW_WHEN = "No election linked yet";
+export const ELECTION_PREVIEW_DETAIL = "Choose one from the Election Finder";
+export const ELECTION_PREVIEW_GLYPH = "";
 
 export const TL_LINKED_WORKING_LABEL = "Linked consecration working";
 export const LINKED_WORKING_CTA = "Link a working entry…";
@@ -88,8 +95,10 @@ export const LINKED_WORKING_CTA = "Link a working entry…";
 export const MATERIALS_LABEL = "Materials notes";
 export const MATERIALS_PLACEHOLDER =
   "Tin, engraved in the day & hour of Jupiter…";
-export const MATERIALS_DEFAULT =
-  "Cast in tin; the obverse engraved, the reverse stamped.";
+/** Empty by default — MATERIALS_PLACEHOLDER carries the example.
+ *  Previously seeded with "Cast in tin; the obverse engraved, the
+ *  reverse stamped." as if the practitioner had already written it. */
+export const MATERIALS_DEFAULT = "";
 
 export const SAVE_TALISMAN_BUTTON = "Save talisman";
 
