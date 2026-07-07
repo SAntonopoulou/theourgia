@@ -75,6 +75,16 @@ services:
       THEOURGIA_AGENT_DAEMON_URL: ${THEOURGIA_AGENT_DAEMON_URL:-http://agent-daemon:8002}
       THEOURGIA_AGENT_DAEMON_CONTROL_TOKEN: ${THEOURGIA_AGENT_CONTROL_TOKEN}
       THEOURGIA_REGISTRY_URL: ${THEOURGIA_REGISTRY_URL:-http://registry:8003}
+      # Author + maintainer signing identities (Ed25519 keypair for
+      # signed federation envelopes + plugin registry submissions).
+      THEOURGIA_AUTHOR_DID: ${THEOURGIA_AUTHOR_DID:-}
+      THEOURGIA_AUTHOR_PRIVATE_KEY_PATH: ${THEOURGIA_AUTHOR_PRIVATE_KEY_PATH:-}
+      THEOURGIA_MAINTAINER_DID: ${THEOURGIA_MAINTAINER_DID:-}
+      THEOURGIA_MAINTAINER_PRIVATE_KEY_PATH: ${THEOURGIA_MAINTAINER_PRIVATE_KEY_PATH:-}
+      # WebAuthn relying-party configuration for hardware-key sign-in.
+      THEOURGIA_WEBAUTHN_RP_ID: ${THEOURGIA_WEBAUTHN_RP_ID:-}
+      THEOURGIA_WEBAUTHN_RP_NAME: ${THEOURGIA_WEBAUTHN_RP_NAME:-Theourgia}
+      THEOURGIA_WEBAUTHN_ORIGIN: ${THEOURGIA_WEBAUTHN_ORIGIN:-}
       # b108-2gq: R2 (or any S3-compatible) storage backend. Defaults keep
       # the local filesystem backend for fresh dev bring-ups; production
       # sets THEOURGIA_STORAGE_BACKEND=s3 in .env with the R2 endpoint +
