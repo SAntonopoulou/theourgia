@@ -12,7 +12,6 @@
  */
 
 import {
-  ACTING_AS_DEFAULT_ID,
   ActingAsProvider,
   ActingAsSwitcher,
   AppShell,
@@ -514,7 +513,12 @@ export function App() {
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
         <AuthProvider api={apiMethods}>
-          <ActingAsProvider initial={ACTING_AS_DEFAULT_ID}>
+          {/* No `initial` prop — the fabricated "aspasia" default from
+              ACTING_AS_DEFAULT_ID never matched a real identity; the
+              ActingAsSwitcher falls back to the first authorable
+              identity (built from the current session) when acting
+              is null. */}
+          <ActingAsProvider>
             <ToastProvider />
             <BrowserRouter basename={ROUTER_BASENAME}>
               <TopbarProvider>
