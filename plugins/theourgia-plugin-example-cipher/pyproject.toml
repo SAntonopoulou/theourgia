@@ -1,0 +1,39 @@
+# Reference plugin — packaged as a standard PEP 517 project so that
+# ``pip install -e plugins/theourgia-plugin-example-cipher`` (or the
+# equivalent uv workflow) is a one-liner during development.
+
+[build-system]
+requires = ["setuptools >= 68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "theourgia-plugin-example-cipher"
+version = "0.1.0"
+description = "Reference plugin: a tiny example cipher demonstrating the SDK. Not for practical use."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "AGPL-3.0-only" }
+authors = [
+    { name = "Theourgia core team" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Religion",
+    "Typing :: Typed",
+]
+# Runtime dep on Theourgia core (installed alongside in the same venv
+# during development; unpinned here so the reference stays lightweight).
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/SAntonopoulou/theourgia"
+Source = "https://github.com/SAntonopoulou/theourgia/tree/main/plugins/theourgia-plugin-example-cipher"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+theourgia_plugin_example_cipher = ["../../plugin.toml"]

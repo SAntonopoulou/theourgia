@@ -1,0 +1,25 @@
+# Reference plugin — smallest end-to-end demonstration of the Theourgia
+# plugin SDK. Registers a single trivial cipher at the
+# ``linguistic.cipher`` extension point. Not for practical use.
+
+[plugin]
+name = "theourgia-plugin-example-cipher"
+version = "0.1.0"
+author = "Theourgia core team"
+license = "AGPL-3.0-only"
+description = "Reference plugin: a tiny example cipher demonstrating the SDK. Not for practical use."
+homepage = "https://github.com/SAntonopoulou/theourgia"
+theourgia-version = ">=0.1.0"
+
+[plugin.entrypoint]
+backend = "theourgia_plugin_example_cipher.plugin:activate"
+
+[plugin.capabilities]
+# No capabilities requested — pure data contribution.
+capabilities = []
+
+[plugin.extension_points]
+implemented = ["linguistic.cipher"]
+
+[plugin.allowed_hosts]
+hosts = []
