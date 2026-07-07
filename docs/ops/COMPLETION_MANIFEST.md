@@ -330,6 +330,21 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2fp: **MagicalCircle initial defaults scrubbed.**
+    The surface opened with a fully-composed circle every time:
+    3 rings (glyphs · glyphs · inscription), archangel compass
+    (Uriel · Raphael · Michael · Gabriel), and a hexagram centre —
+    read as if the practitioner had already begun designing.
+    Scrubbed to structural minimum: `initialRings=['blank']` ·
+    `initialActiveRing=0` · `initialCompass='custom'` (cardinals
+    "North · East · South · West") · `initialCentre='blank'`.
+  - b108-2fo: **DefinePracticeDrawer · pre-fills scrubbed.**
+    The 'Define a practice' drawer pre-filled three fields from the
+    H04 mockup state on every fresh open: name "Evening banishing"
+    · cadence "before-sleep" · intention "Clear the room before
+    rest." — read as if the practitioner had already begun
+    composing a specific evening banishing practice. Now all →
+    empty, cadence → neutral canonical "daily".
   - b108-2fn: **GematriaCalculator · custom-cipher Name field scrubbed.**
     The 'Define a custom cipher' modal pre-filled its Name field with
     "My English cipher" — the possessive 'My' read as if the
