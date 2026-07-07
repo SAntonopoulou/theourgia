@@ -330,6 +330,21 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2fk: **Transliteration utility · sample text moved to placeholder.**
+    Pre-filled the input textarea with a per-script cultural
+    specimen (ἀγαθὸς δαίμων · שלום · अग्नि · كتاب · ⲁⲗⲫⲁ · lux)
+    and swapped in a fresh one on script change. Now the input
+    starts empty; the sample only appears as a greyed
+    ``placeholder="e.g. …"`` hint. Surface accepts a new
+    `input_placeholder` prop that threads through cleanly.
+  - b108-2fj: **Bibliomancy · default library scrubbed.**
+    The 'source · from your library' dropdown defaulted to four
+    fabricated texts (Chaldean Oracles · Liber AL vel Legis ·
+    Picatrix · Marcus Aurelius) as if they were the practitioner's
+    Library holdings. Scrubbed BIBLIO_DEFAULT_SOURCES to []; added
+    BIBLIO_DEMO_SOURCES for stories + tests. Empty state disables
+    the select and shows "Your Library is empty — add a book first"
+    as the placeholder option.
   - b108-2fi: **Connection · Demo signin button gated.**
     /app/connection is the public-site hero-CTA target. Its "Demo
     signin" button sat next to "Sign in with passkey" by default —
