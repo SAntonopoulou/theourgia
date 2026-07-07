@@ -24,7 +24,6 @@ import {
   INSCRIPTION_SCRIPTS,
   INSCRIPTION_SCRIPT_LABEL,
   INSCRIPTION_TEXT_LABEL,
-  MULTI_DEMO_SEQUENCE,
   MULTI_EDIT_LABEL,
   MULTI_SEQUENCE_LABEL,
   ROTATION_LABEL,
@@ -223,12 +222,12 @@ function renderConfig(kind: RingKind): React.ReactElement {
             style={{
               fontFamily: "var(--font-glyph)",
               fontSize: 18,
-              color: "var(--ink)",
+              color: "var(--ink-mute)",
               padding: "6px 0",
               letterSpacing: "0.18em",
             }}
           >
-            {MULTI_DEMO_SEQUENCE}
+            (empty — press Edit to compose your sequence)
           </div>
           <button
             type="button"

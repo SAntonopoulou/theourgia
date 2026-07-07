@@ -32,9 +32,10 @@ describe("GematriaCalculatorSurface", () => {
     expect(pressed.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("computes a result for ἀγαθοδαίμων under both default ciphers", () => {
-    const { container } = render(<GematriaCalculatorSurface />);
-    const results = container.querySelectorAll("[data-gc-results] [style]");
+  it("computes a result for a supplied input under both default ciphers", () => {
+    const { container } = render(
+      <GematriaCalculatorSurface initialInput="ἀγαθοδαίμων" />,
+    );
     expect(container.querySelector("[data-gc-results]")).toBeTruthy();
   });
 
@@ -69,7 +70,9 @@ describe("GematriaCalculatorSurface", () => {
   });
 
   it("renders the citation glyph (‡) for cited ciphers", () => {
-    const { container } = render(<GematriaCalculatorSurface />);
+    const { container } = render(
+      <GematriaCalculatorSurface initialInput="ἀγαθοδαίμων" />,
+    );
     const citations = container.querySelectorAll("[title^='Sefer Yetzirah']");
     expect(citations.length).toBeGreaterThan(0);
   });
@@ -77,7 +80,10 @@ describe("GematriaCalculatorSurface", () => {
   it("fires onSaveStudy with the current input + cipher ids when CTA is clicked", () => {
     const onSaveStudy = vi.fn();
     const { container } = render(
-      <GematriaCalculatorSurface onSaveStudy={onSaveStudy} />,
+      <GematriaCalculatorSurface
+        initialInput="ἀγαθοδαίμων"
+        onSaveStudy={onSaveStudy}
+      />,
     );
     const cta = container.querySelector(
       "[data-action='save-as-study']",

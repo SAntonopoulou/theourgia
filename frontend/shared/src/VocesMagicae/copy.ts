@@ -100,10 +100,12 @@ export const VM_NEW_SAVE_LABEL = "Save voce";
 export const VM_CITATION_REQUIRED_NOTE =
   "A voce cannot be saved without its source citation.";
 
-/* ─── Default modal seeds (verbatim from the mockup) ────────── */
+/* ─── Default modal seeds ─────────────────────────────────── */
 
-export const VM_NEW_DEFAULT_TEXT = "ΦΩΡ ΦΩΡΒΑ";
-export const VM_NEW_DEFAULT_TRANSLIT = "phōr phōrba";
+/** Empty by default — the practitioner types their own voce.
+ *  Previously seeded with "ΦΩΡ ΦΩΡΒΑ" (a specific PGM magical name). */
+export const VM_NEW_DEFAULT_TEXT = "";
+export const VM_NEW_DEFAULT_TRANSLIT = "";
 
 export interface ScriptOption {
   key: VoceScript;

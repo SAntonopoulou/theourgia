@@ -12,7 +12,10 @@ export const GC_TOPBAR_SUBTITLE =
 
 export const GC_TEXT_INPUT_LABEL = "Text to compute";
 export const GC_TEXT_INPUT_PLACEHOLDER = "Type or paste a word or phrase…";
-export const GC_DEFAULT_INPUT = "ἀγαθοδαίμων";
+/** Empty by default — the placeholder text prompts the practitioner.
+ *  Previously seeded with "ἀγαθοδαίμων" (Greek "good spirit") which
+ *  pre-filled the field on every open. */
+export const GC_DEFAULT_INPUT = "";
 
 export const GC_FILTER_PLACEHOLDER = "Filter ciphers…";
 export const GC_CUSTOM_CTA = "Define custom cipher";
