@@ -272,7 +272,7 @@ function TypeSection() {
     dir?: "rtl";
     lang?: string;
   }[] = [
-    { sample: "Γνῶθι σαυτόν", note: "Greek · Cardo / GFS Didot", font: "var(--font-display, var(--font-serif))" },
+    { sample: "Γνῶθι σαυτόν", note: "Greek · Cardo / GFS Didot", font: "var(--font-display, var(--font-serif))", lang: "el" },
     { sample: "אהיה אשר אהיה", note: "Hebrew · Frank Ruhl Libre", font: "var(--font-hebrew, var(--font-serif))", dir: "rtl", lang: "he" },
     { sample: "بسم الله", note: "Arabic · Noto Naskh", font: "var(--font-arabic, var(--font-serif))", dir: "rtl", lang: "ar" },
     { sample: "ॐ नमः", note: "Devanagari · Noto Serif", font: "var(--font-deva, var(--font-serif))", lang: "hi" },
