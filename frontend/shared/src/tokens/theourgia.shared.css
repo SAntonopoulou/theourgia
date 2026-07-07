@@ -53,6 +53,17 @@ button {
   outline-offset: 2px;
   border-radius: 2px;
 }
+/* Form inputs that opt out of outline via inline `outline: none` still
+ * need a visible focus indicator (b108-2g4 a11y sweep). The
+ * accent-soft ring lands on top of the input's own border. Applies
+ * only to keyboard focus (`:focus-visible`), not mouse click. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
 ::selection {
   background: var(--accent-soft);
   color: var(--ink);
