@@ -36,6 +36,7 @@ import {
   useState,
 } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import {
   NNC_CONFIRM_HEADER_PREFIX,
   NNC_CONFIRM_HEADER_SUFFIX,
@@ -684,6 +685,8 @@ function ConfirmSendModal({
   onCancel: () => void;
   onConfirm: () => void;
 }): ReactNode {
+  // Escape cancels the confirm-send modal (b108-2fz a11y sweep).
+  useEscapeToClose(true, onCancel);
   return (
     <div
       role="dialog"

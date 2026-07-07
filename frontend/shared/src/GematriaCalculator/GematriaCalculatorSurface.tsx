@@ -33,6 +33,7 @@ import {
   findResonances,
   groupCiphersByLanguage,
 } from "../gematria/index.js";
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 
 import {
   GC_COPY_TABLE_LABEL,
@@ -989,6 +990,9 @@ interface CustomCipherModalProps {
 }
 
 function CustomCipherModal({ onClose, onSave }: CustomCipherModalProps) {
+  // Escape closes the modal (b108-2fz a11y sweep — inline dialogs
+  // whose parent owns the mount decision get `open=true` here).
+  useEscapeToClose(true, onClose);
   const [name, setName] = useState(GC_CUSTOM_NAME_DEFAULT);
   const [language, setLanguage] = useState<string>("english");
   const [citation, setCitation] = useState("");
@@ -1311,6 +1315,8 @@ function InsertIntoDraftModal({
   onClose,
   onConfirm,
 }: InsertIntoDraftModalProps) {
+  // Escape closes the modal (b108-2fz a11y sweep).
+  useEscapeToClose(true, onClose);
   return (
     <div
       role="dialog"

@@ -8,8 +8,9 @@
  * gates the Approve button.
  */
 
-import type { CSSProperties } from "react";
+import { useCallback, type CSSProperties } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { useScrollGate } from "../PluginCapabilityReview/ScrollGate.js";
 
 import {
@@ -89,6 +90,12 @@ export function AgentCapabilityReviewSurface({
 }: AgentCapabilityReviewSurfaceProps) {
   const { open: scrolledEnd, containerProps } = useScrollGate();
   const isUpdate = scenario === "update";
+
+  // Escape cancels the review (b108-2fz a11y sweep).
+  const handleEsc = useCallback(() => {
+    onCancel?.();
+  }, [onCancel]);
+  useEscapeToClose(true, handleEsc);
 
   return (
     <div

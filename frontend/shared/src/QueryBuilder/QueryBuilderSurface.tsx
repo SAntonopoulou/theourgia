@@ -28,6 +28,8 @@ import {
   useState,
 } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+
 // ── Types ──────────────────────────────────────────────────────────
 
 export type QBSubject =
@@ -231,6 +233,10 @@ export function QueryBuilderSurface({
   const [saveName, setSaveName] = useState("");
   const [saveDesc, setSaveDesc] = useState("");
   const [materialiseDaily, setMaterialiseDaily] = useState(false);
+
+  // Escape closes the Save-query modal (b108-2fz a11y sweep).
+  const closeSave = useCallback(() => setSaveOpen(false), []);
+  useEscapeToClose(saveOpen, closeSave);
 
   const axesByField = useMemo(() => {
     const m = new Map<string, QBAxis>();

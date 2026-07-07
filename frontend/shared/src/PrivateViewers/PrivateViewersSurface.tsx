@@ -27,6 +27,7 @@ import {
   useState,
 } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import {
   PV_CANCEL_CTA,
   PV_DELIVERY_LABELS,
@@ -367,6 +368,9 @@ function NewViewerModal({
   const [scope, setScope] = useState<PrivateViewerScopeKind>("tag");
   const [delivery, setDelivery] =
     useState<PrivateViewerDeliveryKind>("signed-link");
+
+  // Escape cancels the modal (b108-2fz a11y sweep).
+  useEscapeToClose(true, onCancel);
 
   return (
     <div

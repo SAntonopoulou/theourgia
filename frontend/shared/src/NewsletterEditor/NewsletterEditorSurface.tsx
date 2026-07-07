@@ -24,6 +24,7 @@ import {
   useState,
 } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { TiptapEditor } from "../Editor/TiptapEditor.js";
 import { type BookRecord, type EntityRecord } from "../api/types.js";
 
@@ -186,6 +187,10 @@ export function NewsletterEditorSurface({
   style,
 }: NewsletterEditorSurfaceProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // Escape closes the confirm-send modal (b108-2fz a11y sweep).
+  const closeConfirm = useCallback(() => setConfirmOpen(false), []);
+  useEscapeToClose(confirmOpen, closeConfirm);
 
   const handleSendModeClick = useCallback(
     (mode: NewsletterSendMode) => {
