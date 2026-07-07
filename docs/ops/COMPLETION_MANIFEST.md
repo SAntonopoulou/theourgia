@@ -25,7 +25,7 @@ manifest is the record of the lie.
 | `/app/connection` | (developer debug surface) | 🟡 | Kept for developer diagnostics; not primary entry |
 | `/app/settings/webauthn` | `/api/v1/auth/webauthn/*` | ✅ | b108-2cn; list + enrol + revoke |
 | `/app/settings/totp` | `/api/v1/auth/totp/*` | ✅ | b108-2da; QR + verify + backup codes + disable |
-| `/app/settings/keys` | (none — federation key rotation) | 🟡 | Placeholder pending envelope-resign worker |
+| `/app/settings/keys` | Actor JSON-LD publicKey PEM | 🚧 | b108-2gg wired: KeyRotationRoute fetches /users/{handle} + computes SHA-256 fingerprint client-side; renders shared KeyRotationSurface. Rotation itself Toasts an honest status (envelope-resign worker still queued; CLI is interim). |
 
 ## Settings
 
