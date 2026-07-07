@@ -76,7 +76,10 @@ export const SELECTED_CELL_PREFIX = "cell";
 export const META_ORDER_PREFIX = "order ";
 export const META_CONSTANT_PREFIX = " · magic constant ";
 
-/** Demo custom-square fixture for first-run + storybook. The real
- *  vault stores custom rows via the API; this is the placeholder. */
-export const DEMO_CUSTOM_NAME = "Square of binding";
+/** Fallback name shown when the surface can't match a custom square by
+ *  id. Empty-vault deployments used to see "Square of binding" as if
+ *  it were an existing user creation; now the fallback is a neutral
+ *  "Untitled custom square" placeholder. The real vault populates the
+ *  name from the /custom-squares API. */
+export const DEMO_CUSTOM_NAME = "Untitled custom square";
 export const DEMO_CUSTOM_ORDER = 5;

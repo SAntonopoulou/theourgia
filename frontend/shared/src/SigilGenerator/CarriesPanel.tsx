@@ -157,20 +157,22 @@ export function CarriesPanel({
           aria-label={LINKED_BEING_LABEL}
           style={INPUT_STYLE}
         />
-        <span
-          aria-hidden="true"
-          style={{
-            position: "absolute",
-            right: 11,
-            top: "50%",
-            transform: "translateY(-50%)",
-            fontFamily: "var(--font-glyph)",
-            color: "var(--accent)",
-            pointerEvents: "none",
-          }}
-        >
-          {linkedBeingGlyph}
-        </span>
+        {linkedBeing && linkedBeingGlyph ? (
+          <span
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              right: 11,
+              top: "50%",
+              transform: "translateY(-50%)",
+              fontFamily: "var(--font-glyph)",
+              color: "var(--accent)",
+              pointerEvents: "none",
+            }}
+          >
+            {linkedBeingGlyph}
+          </span>
+        ) : null}
       </div>
 
       <label style={FIELD_LABEL}>
