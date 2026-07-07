@@ -8,9 +8,10 @@
  * note in the right rail — this modal only deals with picking.
  */
 
-import { type CSSProperties } from "react";
+import { type CSSProperties, useRef } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
 import {
   ELECTION_MODAL_SUB,
   ELECTION_MODAL_TITLE,
@@ -59,8 +60,12 @@ export function ElectionPickerModal({
   elections = [],
   onPick,
 }: ElectionPickerModalProps) {
-  // Escape closes the modal (b108-2fy a11y sweep).
+  const firstInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Escape closes the modal (b108-2fy a11y sweep); focus moves to
+  // the search input on open (b108-2g1 a11y sweep).
   useEscapeToClose(open, onClose);
+  useFocusOnOpen(firstInputRef, open);
 
   if (!open) return null;
   return (
@@ -93,6 +98,7 @@ export function ElectionPickerModal({
           {ELECTION_MODAL_SUB}
         </p>
         <input
+          ref={firstInputRef}
           type="text"
           placeholder={ELECTION_SEARCH_PLACEHOLDER}
           aria-label="Search elections"

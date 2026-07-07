@@ -7,9 +7,10 @@
  * ciphertext.
  */
 
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
 import {
   TL_SAVE_CANCEL,
   TL_SAVE_CONFIRM,
@@ -88,9 +89,12 @@ export function SealedSaveDialog({
   const [title, setTitle] = useState(initialTitle);
   const [sealed, setSealed] = useState(initiationLinked);
   const [passphrase, setPassphrase] = useState("");
+  const firstInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Escape closes the dialog (b108-2fy a11y sweep).
+  // Escape closes the dialog (b108-2fy a11y sweep); focus moves to
+  // the Title field on open (b108-2g1 a11y sweep).
   useEscapeToClose(open, onClose);
+  useFocusOnOpen(firstInputRef, open);
 
   if (!open) return null;
 
@@ -142,6 +146,7 @@ export function SealedSaveDialog({
 
         <label style={FIELD_LABEL}>{TL_SAVE_TITLE_LABEL}</label>
         <input
+          ref={firstInputRef}
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}

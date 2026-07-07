@@ -5,9 +5,10 @@
  * permanent. To change it later you make a new version."
  */
 
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useRef, useState } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
 import {
   SAVE_CANCEL,
   SAVE_COMMIT,
@@ -96,9 +97,12 @@ export function ChargeSaveDialog({
 }: ChargeSaveDialogProps) {
   const [title, setTitle] = useState(initialTitle);
   const [purpose, setPurpose] = useState<SigilPurpose>(initialPurpose);
+  const firstInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Escape closes the dialog (b108-2fy a11y sweep).
+  // Escape closes the dialog (b108-2fy a11y sweep); focus moves to
+  // the Title field on open (b108-2g1 a11y sweep).
   useEscapeToClose(open, onClose);
+  useFocusOnOpen(firstInputRef, open);
 
   if (!open) return null;
 
@@ -139,6 +143,7 @@ export function ChargeSaveDialog({
 
         <label style={FIELD_LABEL}>{SAVE_TITLE_LABEL}</label>
         <input
+          ref={firstInputRef}
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}

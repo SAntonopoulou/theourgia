@@ -27,10 +27,12 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
+import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -217,9 +219,12 @@ export function SynchronicityQuickCaptureModal({
   const [structuredValue, setStructuredValue] = useState("");
   const [activeContextIds, setActiveContextIds] = useState<string[]>([]);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const firstInputRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // Escape closes the modal (b108-2fy a11y sweep).
+  // Escape closes the modal (b108-2fy a11y sweep); focus moves to
+  // the description textarea on open (b108-2g1 a11y sweep).
   useEscapeToClose(open, onClose);
+  useFocusOnOpen(firstInputRef, open);
 
   // Reset state on open.
   useEffect(() => {
@@ -362,6 +367,7 @@ export function SynchronicityQuickCaptureModal({
           {/* Description */}
           <div>
             <textarea
+              ref={firstInputRef}
               data-description
               autoFocus
               rows={3}

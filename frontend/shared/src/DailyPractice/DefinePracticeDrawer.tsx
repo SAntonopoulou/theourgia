@@ -13,8 +13,9 @@
  * keyboard-trapped + ESC-dismissed at the AppShell layer.
  */
 
-import { type CSSProperties, type ReactNode, useEffect, useState } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 
+import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
 import {
   CADENCE_OPTIONS,
   type CadenceOption,
@@ -206,8 +207,10 @@ export function DefinePracticeDrawer({
   const [alsoSchedule, setAlsoSchedule] = useState(
     initial?.alsoScheduleOffering ?? false,
   );
+  const firstInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Escape closes the drawer (b108-2fy a11y sweep).
+  // Escape closes the drawer (b108-2fy a11y sweep); focus moves to
+  // the Name field on open (b108-2g1 a11y sweep).
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -216,6 +219,7 @@ export function DefinePracticeDrawer({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+  useFocusOnOpen(firstInputRef, open);
 
   if (!open) return null;
 
@@ -316,6 +320,7 @@ export function DefinePracticeDrawer({
           Name
         </label>
         <input
+          ref={firstInputRef}
           id="dp-name"
           type="text"
           value={name}
