@@ -31,11 +31,12 @@ import {
   type DragEvent,
   type ReactElement,
   useCallback,
-  useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
+
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -391,14 +392,7 @@ export function MediaUploadModal({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Escape to close (b108-2fy a11y sweep).
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  useEscapeToClose(open, onClose);
 
   const totalBytes = useMemo(
     () => files.reduce((acc, f) => acc + f.size_bytes, 0),

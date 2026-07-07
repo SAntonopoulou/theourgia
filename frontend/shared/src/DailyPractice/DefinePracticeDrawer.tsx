@@ -13,8 +13,9 @@
  * keyboard-trapped + ESC-dismissed at the AppShell layer.
  */
 
-import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
+import { type CSSProperties, type ReactNode, useRef, useState } from "react";
 
+import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
 import {
   CADENCE_OPTIONS,
@@ -209,16 +210,8 @@ export function DefinePracticeDrawer({
   );
   const firstInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Escape closes the drawer (b108-2fy a11y sweep); focus moves to
-  // the Name field on open (b108-2g1 a11y sweep).
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
+  // Escape closes; focus enters the Name field on open (b108-2fy/2g1 a11y sweep).
+  useEscapeToClose(open, onClose);
   useFocusOnOpen(firstInputRef, open);
 
   if (!open) return null;
