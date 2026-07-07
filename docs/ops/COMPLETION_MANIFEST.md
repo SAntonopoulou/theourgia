@@ -336,6 +336,29 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2ga: **a11y sweep · lang='el' on Greek Foundations sample.**
+    Small polish fix — the Foundations typography-sample list tagged
+    Hebrew · Arabic · Devanagari · Coptic with their lang code but
+    the Greek row was missing lang='el'. Screen-reader Greek voice
+    profiles need the lang hint.
+  - b108-2g9: **a11y sweep · global prefers-reduced-motion safety
+    net.** WCAG 2.3.3. Individual animations opted in per-class
+    (nowdot, om-aside, sigil-line) but many inline-styled
+    transitions had no fallback. Added a catch-all
+    `@media (prefers-reduced-motion: reduce) { *,*::before,*::after
+    { animation-duration: 0.01ms; transition-duration: 0.01ms;
+    scroll-behavior: auto; } }` after the targeted rules. 0.01ms
+    residual preserves transition-end events some React libraries
+    depend on.
+  - b108-2g8: **a11y sweep · single-<main> landmark uniqueness.**
+    WCAG 1.3.1 + WAI-ARIA. AppShell already wrapped every admin
+    route in `<main id="om-main">` but 68 surface components each
+    rendered their own inner `<main>`, creating duplicate landmarks
+    that confused screen-reader landmark navigation. Converted to
+    `<div>` across 61 shared surfaces + 7 admin routes (Identities ·
+    LineageAdmin · Oracle · Settings · Templates · Wellbeing ·
+    Workshop). AppShell.tsx + Capture.tsx (mounts outside Shell)
+    kept legitimately.
   - b108-2g7: **a11y sweep · arrow-key nav on 5 tablists.**
     None of the shared `role="tablist"` components had arrow-key
     navigation (WAI-ARIA tablist pattern requires Left/Right or
