@@ -146,8 +146,15 @@ describe("PilgrimageMapSurface", () => {
   });
 
   it("rail rows reflect the effective (quantized) precision", () => {
+    // Explicit initial_precision="exact" — the surface default is now
+    // "1km" per the H07 Cluster C honesty rule; this test still
+    // checks that Eleusis renders at Exact when the caller opts in.
     const { container } = render(
-      <PilgrimageMapSurface sites={SITES} sealed_count={0} />,
+      <PilgrimageMapSurface
+        sites={SITES}
+        sealed_count={0}
+        initial_precision="exact"
+      />,
     );
     const eleusis = container.querySelector(
       "[data-site-id='eleusis']",

@@ -284,7 +284,12 @@ function ChevronDown(): ReactElement {
 export function PilgrimageMapSurface({
   sites,
   sealed_count,
-  initial_precision = "exact",
+  // ~1km is the honesty-first default per the H07 Cluster C
+  // "precision default ~1km not exact" rule. Callers can override
+  // to "exact" only when the practitioner has explicitly opted
+  // into recording sites at that level; the surface's initial
+  // render never reveals raw coordinates by default.
+  initial_precision = "1km",
   onSelectSite,
   onAddPlace,
   className,
