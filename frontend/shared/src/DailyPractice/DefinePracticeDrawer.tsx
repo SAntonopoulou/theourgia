@@ -191,14 +191,15 @@ export function DefinePracticeDrawer({
   beings = [],
   initial,
 }: DefinePracticeDrawerProps) {
-  // Default values mirror the mockup (line 222 etc).
-  const [name, setName] = useState(initial?.name ?? "Evening banishing");
+  // Empty defaults — the drawer used to pre-fill "Evening banishing" /
+  // "Clear the room before rest." / cadence "before-sleep" from the
+  // mockup state, which read like the practitioner had already begun
+  // composing a practice.
+  const [name, setName] = useState(initial?.name ?? "");
   const [cadence, setCadence] = useState<CadenceOption>(
-    initial?.cadence ?? "before-sleep",
+    initial?.cadence ?? "daily",
   );
-  const [intention, setIntention] = useState(
-    initial?.intention ?? "Clear the room before rest.",
-  );
+  const [intention, setIntention] = useState(initial?.intention ?? "");
   const [linkedBeing, setLinkedBeing] = useState<string | null>(
     initial?.linkedBeing ?? null,
   );

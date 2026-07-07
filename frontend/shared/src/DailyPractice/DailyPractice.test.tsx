@@ -384,14 +384,14 @@ describe("DefinePracticeDrawer", () => {
     ).toBeTruthy();
   });
 
-  it("default cadence is 'before-sleep' (the mockup default)", () => {
+  it("default cadence is 'daily' (post-b108-2fo scrub)", () => {
     const { container } = render(
       <DefinePracticeDrawer open onClose={() => {}} />,
     );
-    const beforeSleep = container.querySelector(
-      '[data-cadence="before-sleep"]',
+    const daily = container.querySelector(
+      '[data-cadence="daily"]',
     ) as HTMLElement;
-    expect(beforeSleep.getAttribute("aria-pressed")).toBe("true");
+    expect(daily.getAttribute("aria-pressed")).toBe("true");
   });
 
   it("calls onClose when the close button is clicked", () => {
@@ -401,7 +401,7 @@ describe("DefinePracticeDrawer", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("calls onSave with the draft and verbatim copy", () => {
+  it("calls onSave with the current draft (empty defaults post-scrub)", () => {
     const onSave = vi.fn();
     render(
       <DefinePracticeDrawer
@@ -413,9 +413,9 @@ describe("DefinePracticeDrawer", () => {
     fireEvent.click(screen.getByText("Save practice"));
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
-        name: "Evening banishing",
-        cadence: "before-sleep",
-        intention: "Clear the room before rest.",
+        name: "",
+        cadence: "daily",
+        intention: "",
         alsoScheduleOffering: false,
       }),
     );
