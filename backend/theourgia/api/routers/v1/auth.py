@@ -32,7 +32,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Cookie, Depends, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,6 +40,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from theourgia.api.deps import get_db_session
 from theourgia.api.errors import UnauthorizedError
 from theourgia.core.auth.tokens import generate_token, hash_token
+from theourgia.core.config import get_settings
 from theourgia.models.identity import Session as SessionRow
 from theourgia.models.identity import User
 
@@ -163,6 +164,25 @@ async def demo_signin(
     user_stmt = select(User).where(User.email == email)
     user = (await db.execute(user_stmt)).scalar_one_or_none()
     if user is None:
+        # b108-2gs single-operator gate. When THEOURGIA_ALLOWED_MAGICKAL_NAMES
+        # is set (production), refuse to CREATE accounts for names not on
+        # the allowlist. Existing users still sign in fine (the check only
+        # runs when the User row doesn't exist yet). Empty allowlist means
+        # open enrollment — the dev / self-hosting-first-run default.
+        settings = get_settings()
+        allowlist = settings.allowed_magickal_names_set
+        if allowlist and payload.magickal_name.casefold() not in allowlist:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=(
+                    "This is a single-operator vault; new accounts are not "
+                    "accepted here. To use the Theourgia toolkit, self-host "
+                    "your own instance: https://github.com/SAntonopoulou/"
+                    "theourgia — the AGPL-3.0 source runs on a single "
+                    "cheap VPS. Federated content sharing between instances "
+                    "is a first-class feature."
+                ),
+            )
         user = User(email=email)
         db.add(user)
         await db.flush()  # populate user.id

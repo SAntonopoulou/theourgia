@@ -283,9 +283,16 @@ export function SignInRoute() {
             maxWidth: 42 * 8,
           }}
         >
-          If your magickal name is already in this vault, you'll sign in.
-          If it isn't, this creates the vault under that name. Add a second
-          factor at <em>Settings → Two-factor codes</em> once you're in.
+          This is a single-operator personal vault. If your magickal name
+          is already in it, you'll sign in. New accounts are only accepted
+          for the operator's allowlist — everyone else must{" "}
+          <a
+            href="https://github.com/SAntonopoulou/theourgia"
+            style={{ color: "var(--accent)" }}
+          >
+            self-host their own instance
+          </a>
+          . Instances can federate to share published content.
         </div>
       </div>
 

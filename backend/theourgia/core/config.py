@@ -46,6 +46,31 @@ class Settings(BaseSettings):
     base_url: str = Field(default="https://theourgia.example.com", alias="THEOURGIA_BASE_URL")
     instance_id: str = Field(default="theourgia.example.com", alias="THEOURGIA_INSTANCE_ID")
 
+    # ── Single-operator vault gating (b108-2gs) ─────────────────────────────
+    # Comma-separated list of magickal names permitted to CREATE a new
+    # account on this instance. Empty list = open enrollment (dev default).
+    # Non-empty = only these names may sign up; any other name is refused
+    # with a 403 pointing the visitor at the self-hosting guide.
+    #
+    # Existing users can still sign in regardless of this list — the gate
+    # only applies at find-or-create time. This is what makes theourgia.com
+    # a "single-operator personal vault" instead of a SaaS.
+    allowed_magickal_names: str = Field(
+        default="", alias="THEOURGIA_ALLOWED_MAGICKAL_NAMES"
+    )
+
+    @property
+    def allowed_magickal_names_set(self) -> frozenset[str]:
+        """Normalise the comma-separated allowlist to a frozenset of
+        case-folded names. Empty string → empty set (= open enrollment)."""
+        if not self.allowed_magickal_names.strip():
+            return frozenset()
+        return frozenset(
+            n.strip().casefold()
+            for n in self.allowed_magickal_names.split(",")
+            if n.strip()
+        )
+
     # ── Cryptography ──────────────────────────────────────────────────────
     # Required in non-test environments. Generate with: openssl rand -base64 64
     secret_key: SecretStr = Field(default=SecretStr(""), alias="THEOURGIA_SECRET_KEY")

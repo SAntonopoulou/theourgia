@@ -75,6 +75,11 @@ services:
       THEOURGIA_AGENT_DAEMON_URL: ${THEOURGIA_AGENT_DAEMON_URL:-http://agent-daemon:8002}
       THEOURGIA_AGENT_DAEMON_CONTROL_TOKEN: ${THEOURGIA_AGENT_CONTROL_TOKEN}
       THEOURGIA_REGISTRY_URL: ${THEOURGIA_REGISTRY_URL:-http://registry:8003}
+      # b108-2gs: single-operator vault gate. Empty = open enrollment
+      # (dev default). Non-empty comma-separated list of magickal names
+      # = only listed names may CREATE accounts on this instance;
+      # everyone else gets 403 with a pointer to self-host.
+      THEOURGIA_ALLOWED_MAGICKAL_NAMES: ${THEOURGIA_ALLOWED_MAGICKAL_NAMES:-}
       # Author + maintainer signing identities (Ed25519 keypair for
       # signed federation envelopes + plugin registry submissions).
       THEOURGIA_AUTHOR_DID: ${THEOURGIA_AUTHOR_DID:-}
