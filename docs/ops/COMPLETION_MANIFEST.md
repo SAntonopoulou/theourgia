@@ -156,8 +156,7 @@ All 12 C-cluster routes: **✅** — verified with real agent-daemon.
 |---|---|---|---|
 | `/app/identities` | (Persona table Phase 02/03) | 🚧 | b108-2fh gated: fabricated DEMO_IDENTITIES only render behind `?demo=1` or env flag; default view is honest empty state until Persona table lands |
 | `/app/lineage` | `/api/v1/attestations` | 🚧 | b108-2fv audit: apiClient hits attestations endpoint live |
-| `/app/membership` | `/api/v1/membership` | 🟡 | Route deleted b108-2eg (was fabricated 573-line file) |
-| `/app/permissions` | `/api/v1/permissions` | 🟡 | Local state only |
+| `/app/permissions` | `/api/v1/permissions` | 🟡 | Local state only — backend not built |
 | `/app/health` | `/healthz`, `/readyz` | 🚧 | b108-2fv audit: apiMethods calls to /healthz + /readyz + /meta live via Connection route pattern |
 | `/app/wellbeing` | (no backend intended) | 🟡 | Local state; "Sacred Well Directory" placeholder |
 
