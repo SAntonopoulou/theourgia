@@ -96,7 +96,7 @@ describe("InstalledPluginsSurface — chrome", () => {
   });
 
   it("singular count label for one plugin", () => {
-    renderIp({ plugins: [PLUGINS[0]] });
+    renderIp({ plugins: [PLUGINS[0]!] });
     expect(
       document.querySelector("[data-field='count-label']")?.textContent,
     ).toBe("1 plugin · most recently installed first");

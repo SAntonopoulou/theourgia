@@ -5,8 +5,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 
-import { AgentMemoryReaderSurface } from "./AgentMemoryReaderSurface.js";
-import type { MemoryFileMeta } from "./copy.ts";
+import {
+  AgentMemoryReaderSurface,
+  type MemoryFileMeta,
+} from "./AgentMemoryReaderSurface.js";
 
 const FILES = [
   { name: "recurring-symbols.md", meta: "2.1 KB · 2 hours ago" },

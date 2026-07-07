@@ -209,7 +209,7 @@ describe("SignatureRoster", () => {
       <SignatureRoster
         signatures={[
           {
-            ...sigs[0],
+            ...sigs[0]!,
             verify: "fail",
           },
         ]}

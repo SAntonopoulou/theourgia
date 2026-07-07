@@ -67,6 +67,7 @@ import type {
   TodayLedger,
   UpdatePracticeInput,
   UserLocation,
+  WeatherCurrentResponse,
   AgentAuditQueryResponse,
   AgentRunCostSampleInput,
   AgentRunCostSnapshot,
@@ -680,6 +681,19 @@ export function api(client: ApiClient) {
         method: "PUT",
         json: location,
       });
+    },
+
+    // ─── Weather (H11 auto-context banner) ───────────────────────────
+
+    getWeatherCurrent(
+      params: { lat: number; lng: number },
+      opts?: { signal?: AbortSignal },
+    ): Promise<WeatherCurrentResponse> {
+      const qs = `?lat=${encodeURIComponent(params.lat)}&lng=${encodeURIComponent(params.lng)}`;
+      return client.request<WeatherCurrentResponse>(
+        `/api/v1/weather/current${qs}`,
+        { signal: opts?.signal },
+      );
     },
 
     // ─── Library ─────────────────────────────────────────────────────

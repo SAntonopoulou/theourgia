@@ -12,6 +12,10 @@ const meta = {
   component: ReceptionSelector,
   tags: ["autodocs"],
   parameters: { layout: "padded" },
+  args: {
+    value: "none" as const,
+    onChange: () => {},
+  },
   argTypes: {
     value: {
       control: "select",
@@ -59,10 +63,10 @@ export const OverwhelmingSelected: Story = {
 };
 
 export const WithoutHint: Story = {
-  args: { value: "clear" },
+  args: { value: "clear" as const, onChange: () => {} },
   render: (args) => (
     <Frame>
-      <ReceptionSelector {...args} onChange={() => {}} />
+      <ReceptionSelector {...args} />
     </Frame>
   ),
 };

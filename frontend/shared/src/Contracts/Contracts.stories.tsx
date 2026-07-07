@@ -4,7 +4,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
 
-import { BindingKindIcon } from "../BindingKindIcon/index.js";
+import { type BindingKind, BindingKindIcon } from "../BindingKindIcon/index.js";
 import { ContractListItem } from "./ContractListItem.js";
 import {
   CONTRACT_STATUS_ORDER,
@@ -61,7 +61,7 @@ const Selectable = ({
   initial,
   status,
 }: {
-  initial: { title: string; entity: string; binding: "verbal" | "written" | "blood" | "signed" | "sworn" };
+  initial: { title: string; entity: string; binding: BindingKind };
   status: ContractStatus;
 }) => {
   const [active, setActive] = useState(false);
@@ -119,7 +119,7 @@ export const ListItem_Dissolved: Story = {
       initial={{
         title: "Old crossroads pact",
         entity: "Hekate",
-        binding: "sworn",
+        binding: "name-bound",
       }}
       status="dissolved"
     />

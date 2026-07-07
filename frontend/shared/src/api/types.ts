@@ -189,6 +189,36 @@ export interface UserLocation {
   lng: number;
 }
 
+/** Normalised current-weather snapshot returned by the H11 auto-context
+ *  banner. Shape mirrors ``theourgia.api.routers.v1.weather.WeatherSnapshot``
+ *  — see :mod:`theourgia.core.weather.open_meteo` for units + WMO code
+ *  documentation. */
+export interface WeatherSnapshot {
+  source: string;
+  observed_at: string;
+  temperature_c: number;
+  apparent_c: number;
+  humidity_pct: number;
+  precipitation_mm: number;
+  wind_speed_ms: number;
+  wind_direction_deg: number;
+  cloud_cover_pct: number;
+  weather_code: number;
+  weather_label: string;
+  is_day: boolean;
+  pressure_msl_hpa: number;
+}
+
+/** Response of ``GET /api/v1/weather/current``. ``snapshot`` is null
+ *  when the upstream fetch fails or coordinates are out of coverage —
+ *  the banner should render "weather unavailable" gracefully. */
+export interface WeatherCurrentResponse {
+  snapshot: WeatherSnapshot | null;
+  provider: string;
+  requested_lat: number;
+  requested_lng: number;
+}
+
 /** Backend ``EntityKind`` enum (theourgia/models/entities.py). Phase
  *  02 legacy values (DEITY..OTHER) plus the Phase 05 expansions per
  *  `plan/05-magical-beings.md` §1 — 17 kinds total. The Entities

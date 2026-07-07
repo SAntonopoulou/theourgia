@@ -54,9 +54,9 @@ describe("ObligationTable", () => {
 
   it("status pills carry the right --ob-* tokens", () => {
     render(<ObligationTable ours={ours} theirs={theirs} onFulfill={vi.fn()} />);
-    const overdue = screen.getAllByText("Overdue")[0].closest("span")!;
+    const overdue = screen.getAllByText("Overdue")[0]!.closest("span")!;
     expect(overdue.dataset.status).toBe("overdue");
-    const fulfilled = screen.getAllByText("Fulfilled")[0].closest("span")!;
+    const fulfilled = screen.getAllByText("Fulfilled")[0]!.closest("span")!;
     expect(fulfilled.dataset.status).toBe("fulfilled");
   });
 
@@ -93,7 +93,7 @@ describe("ObligationTable", () => {
     render(<ObligationTable ours={ours} theirs={theirs} onFulfill={vi.fn()} />);
     const user = userEvent.setup();
     const buttons = screen.getAllByText("Mark fulfilled");
-    await user.click(buttons[0]);
+    await user.click(buttons[0]!);
     expect(screen.getByText("Mark fulfilled?")).toBeInTheDocument();
     expect(screen.getByLabelText("Fulfilled at")).toBeInTheDocument();
     expect(screen.getByLabelText("Notes")).toBeInTheDocument();
@@ -112,11 +112,11 @@ describe("ObligationTable", () => {
     );
     const user = userEvent.setup();
     const buttons = screen.getAllByText("Mark fulfilled");
-    await user.click(buttons[0]); // ours[0] = id "o1"
+    await user.click(buttons[0]!); // ours[0] = id "o1"
     await user.type(screen.getByLabelText("Notes"), "Done at noon.");
     await user.click(screen.getByText("Confirm"));
     expect(onFulfill).toHaveBeenCalledTimes(1);
-    const [side, id, payload] = onFulfill.mock.calls[0];
+    const [side, id, payload] = onFulfill.mock.calls[0]!;
     expect(side).toBe("ours");
     expect(id).toBe("o1");
     expect(payload.notes).toBe("Done at noon.");
@@ -129,7 +129,7 @@ describe("ObligationTable", () => {
       <ObligationTable ours={ours} theirs={theirs} onFulfill={onFulfill} />,
     );
     const user = userEvent.setup();
-    await user.click(screen.getAllByText("Mark fulfilled")[0]);
+    await user.click(screen.getAllByText("Mark fulfilled")[0]!);
     await user.click(screen.getByText("Cancel"));
     expect(onFulfill).not.toHaveBeenCalled();
     expect(screen.queryByText("Mark fulfilled?")).toBeNull();

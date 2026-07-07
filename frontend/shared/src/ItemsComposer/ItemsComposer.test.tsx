@@ -37,7 +37,7 @@ describe("ItemsComposer", () => {
   it("clicking an already-on chip removes it", async () => {
     render(<Harness initial={[{ k: "wine", qty: "", unit: "" }]} />);
     const user = userEvent.setup();
-    const wineChip = screen.getAllByText("Wine")[0].closest("button")!;
+    const wineChip = screen.getAllByText("Wine")[0]!.closest("button")!;
     expect(wineChip.getAttribute("aria-pressed")).toBe("true");
     await user.click(wineChip);
     // After removal, the chosen-list disappears (no items left).

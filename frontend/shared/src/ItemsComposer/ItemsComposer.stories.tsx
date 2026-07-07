@@ -9,6 +9,10 @@ const meta = {
   component: ItemsComposer,
   tags: ["autodocs"],
   parameters: { layout: "padded" },
+  args: {
+    value: [] as ChosenItem[],
+    onChange: () => {},
+  },
 } satisfies Meta<typeof ItemsComposer>;
 
 export default meta;

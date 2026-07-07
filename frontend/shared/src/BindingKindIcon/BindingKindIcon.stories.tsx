@@ -8,6 +8,9 @@ const meta = {
   component: BindingKindIcon,
   tags: ["autodocs"],
   parameters: { layout: "padded" },
+  args: {
+    kind: "verbal" as const,
+  },
   argTypes: {
     kind: {
       control: "select",

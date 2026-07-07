@@ -14,6 +14,12 @@ const meta = {
   component: SealUnlock,
   tags: ["autodocs"],
   parameters: { layout: "fullscreen" },
+  args: {
+    open: false,
+    policy: "session" as const,
+    onUnlock: () => {},
+    onCancel: () => {},
+  },
 } satisfies Meta<typeof SealUnlock>;
 
 export default meta;

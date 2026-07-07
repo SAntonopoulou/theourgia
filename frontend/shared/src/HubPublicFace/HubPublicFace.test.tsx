@@ -17,11 +17,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
+import type { MembershipPolicy } from "./copy.js";
 import {
   type HubFeaturedItem,
   HubPublicFaceSurface,
   type HubViewerState,
-  type MembershipPolicy,
 } from "./HubPublicFaceSurface.js";
 import {
   HPF_AGPL_CREDIT,

@@ -288,7 +288,7 @@ describe("ActivityPubSettingsSurface — save flow", () => {
     renderAps({ initial: { enabled: true }, onSave });
     fireEvent.click(screen.getByText(APS_SAVE_CTA));
     expect(onSave).toHaveBeenCalledTimes(1);
-    const draft = onSave.mock.calls[0][0];
+    const draft = onSave.mock.calls[0]![0];
     expect(draft.enabled).toBe(true);
     expect(draft.approval).toBe("manual");
     expect(draft.outbound.delete).toBe(false);
@@ -304,7 +304,7 @@ describe("ActivityPubSettingsSurface — save flow", () => {
       ) as HTMLElement,
     );
     fireEvent.click(screen.getByText(APS_SAVE_CTA));
-    expect(onSave.mock.calls[0][0].approval).toBe("auto");
+    expect(onSave.mock.calls[0]![0].approval).toBe("auto");
   });
 });
 

@@ -112,7 +112,7 @@ describe("FederationAuditLogSurface — chrome", () => {
   });
 
   it("count label pluralises correctly", () => {
-    renderLog({ rows: [ROWS[0]] });
+    renderLog({ rows: [ROWS[0]!] });
     expect(
       document.querySelector("[data-field='count-label']")?.textContent,
     ).toBe("1 event");
@@ -153,7 +153,7 @@ describe("FederationAuditLogSurface — signed envelope", () => {
       "[data-field='row-envelope']",
     ) as HTMLElement;
     expect(envelope).not.toBeNull();
-    expect(envelope.textContent).toBe(ROWS[0].envelopeJson);
+    expect(envelope.textContent).toBe(ROWS[0]!.envelopeJson);
     expect(envelope.style.fontFamily).toContain("font-mono");
   });
 
@@ -306,7 +306,7 @@ describe("FederationAuditLogSurface — empty + export", () => {
     );
     fireEvent.click(screen.getByText(FAL_EXPORT_CTA));
     expect(onExportCsv).toHaveBeenCalledTimes(1);
-    expect(onExportCsv.mock.calls[0][0]).toMatchObject({
+    expect(onExportCsv.mock.calls[0]![0]).toMatchObject({
       actor: "all",
       event: "Accept",
       timeRange: "Last 30 days",

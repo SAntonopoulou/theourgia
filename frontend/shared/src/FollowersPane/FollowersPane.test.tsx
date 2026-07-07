@@ -100,7 +100,7 @@ describe("FollowersPaneSurface — chrome", () => {
   });
 
   it("singular 'follower' when count is 1", () => {
-    renderFp({ followers: [FOLLOWERS[0]] });
+    renderFp({ followers: [FOLLOWERS[0]!] });
     expect(
       document.querySelector("[data-field='count-label']")?.textContent,
     ).toBe("1 follower");

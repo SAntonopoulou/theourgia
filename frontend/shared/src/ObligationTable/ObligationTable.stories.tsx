@@ -8,6 +8,11 @@ const meta = {
   component: ObligationTable,
   tags: ["autodocs"],
   parameters: { layout: "padded" },
+  args: {
+    ours: [] as Obligation[],
+    theirs: [] as Obligation[],
+    onFulfill: () => {},
+  },
 } satisfies Meta<typeof ObligationTable>;
 
 export default meta;

@@ -228,7 +228,7 @@ describe("RolesPermissionsEditorSurface — save semantics", () => {
     fireEvent.click(
       document.querySelector("[data-action='save']") as HTMLElement,
     );
-    const payload = onSave.mock.calls[0][0];
+    const payload = onSave.mock.calls[0]![0];
     const moderator = payload.find(
       (r: HubRoleRow) => r.key === "moderator",
     ) as HubRoleRow;
@@ -325,7 +325,7 @@ describe("RolesPermissionsEditorSurface — preview-as", () => {
     fireEvent.click(
       document.querySelector("[data-action='save']") as HTMLElement,
     );
-    const payload = onSave.mock.calls[0][0];
+    const payload = onSave.mock.calls[0]![0];
     const observer = payload.find(
       (r: HubRoleRow) => r.key === "observer",
     ) as HubRoleRow;
