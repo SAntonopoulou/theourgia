@@ -330,6 +330,34 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2fn: **GematriaCalculator · custom-cipher Name field scrubbed.**
+    The 'Define a custom cipher' modal pre-filled its Name field with
+    "My English cipher" — the possessive 'My' read as if the
+    practitioner had already named it. Scrubbed to empty;
+    GC_CUSTOM_NAME_PLACEHOLDER carries the example as a placeholder
+    attribute; GC_CUSTOM_NAME_FALLBACK ("Untitled custom cipher")
+    only triggers if Save is pressed with the field blank.
+  - b108-2fm: **MagicSquares fallback name + SigilGenerator glyph
+    decoration cleaned.** DEMO_CUSTOM_NAME "Square of binding" —
+    the fallback shown when the surface couldn't match a custom
+    square by id — read like a real user creation on empty-vault
+    deploys. Now "Untitled custom square". SigilGenerator
+    CarriesPanel showed LINKED_BEING_GLYPH_DEFAULT '☽' as a
+    right-aligned decoration next to the empty Linked-being input;
+    the glyph now renders only when both name AND glyph are set.
+  - b108-2fl: **Talisman Designer · fabricated Jupiter-hour seeds
+    scrubbed.** Three misleading pre-fills on every fresh talisman:
+    MATERIALS_DEFAULT seeded 'Cast in tin; the obverse engraved,
+    the reverse stamped.' into the materials-notes textarea as if
+    the practitioner had written it (→ empty; MATERIALS_PLACEHOLDER
+    carries the example); ELECTION_PREVIEW_WHEN/DETAIL/GLYPH
+    ('24 Jun 2026 · 13:42' / 'Hour of Jupiter · Hellenic' / '♃')
+    rendered as if a Jupiter-hour election were already linked
+    (→ honest "No election linked yet" / "Choose one from the
+    Election Finder" / '' in --ink-mute); TALISMAN_LAYERS layer-row
+    summaries seeded a full composition ('parchment · names of God
+    · ♃ Jupiter · 2 sigils · 2 · none') as if the practitioner had
+    already built the talisman (→ all "empty" by default).
   - b108-2fk: **Transliteration utility · sample text moved to placeholder.**
     Pre-filled the input textarea with a per-script cultural
     specimen (ἀγαθὸς δαίμων · שלום · अग्नि · كتاب · ⲁⲗⲫⲁ · lux)
