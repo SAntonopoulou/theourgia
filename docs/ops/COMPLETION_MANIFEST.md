@@ -336,6 +336,24 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2g2: **a11y sweep · focus enters 3 detail drawers on open.**
+    Detail drawers (VoceDetailDrawer, ToolDetailDrawer,
+    SacredSiteSurface) have no primary form input to focus — they're
+    read-mostly panels. WAI-ARIA still requires focus to enter the
+    modal. Pattern: focus the drawer container itself via
+    tabIndex={-1} + ref + useFocusOnOpen. outline: none prevents
+    the visible focus ring on the non-interactive container while
+    preserving DOM focus.
+  - b108-2g1b: **a11y sweep · focus-on-open into 5 more modals.**
+    DefinePracticeDrawer · SealedSaveDialog · ChargeSaveDialog ·
+    SynchronicityQuickCaptureModal · ElectionPickerModal all now
+    receive keyboard focus on their primary input when opened.
+  - b108-2g1: **a11y sweep · focus-on-open hook + 4 modals wired.**
+    WAI-ARIA modal contract: focus MUST move into the modal on
+    open. Added `hooks/useFocusOnOpen(ref, open)` which uses
+    `requestAnimationFrame` to defer the `ref.current?.focus()`
+    call until after the modal DOM is laid out. Wired into
+    NewVoceModal · NewToolModal · NewAltarModal · AddPlaceModal.
   - b108-2g0: **a11y sweep · aria-hidden on 8 ICON_PROPS
     decorative-SVG spread objects.** Decorative icons inside
     tablists / nav rails were being announced by screen readers
