@@ -24,9 +24,9 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `88567ce` (deployed to prod 2026-07-05) |
+| **Latest commit** | `d580f50` (a11y sweep 2fy→2gc: 22/22 modals Escape·12 focus-on-open·5 tablists arrow-nav·68 surfaces single-main·prefers-reduced-motion) |
 | **Production** | **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; 8 prod containers, isolated compose project) |
-| **vitest** | 2923 passing · admin tsc clean |
+| **vitest** | 2924 passing · admin tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
 | **backend** | **2587+ passing** · alembic head **0066** — `/api/v1/agents/*` daemon bridge + `/api/v1/federation/inbox` + `/users/{handle}` AP actor + outbox + collections + `/api/v1/registry/*` author + maintainer signed bridges + `/api/v1/auth/webauthn/*` ceremony endpoints |
 | **agent-daemon** | **198 passing** · alembic head **0002** — MCP + JSON-RPC + SSE + launcher + subprocess runner + cost-cap hard halt + audit emission · DB-backed (sinks + repos) · bwrap filesystem sandbox (rule 59 enforced) · install lifecycle CRUD · memory dir read/write with rule-59 path-safety |
 | **registry** | 34 passing · alembic head **0001** — DID + Ed25519 auth · author submission lifecycle · maintainer queue/decide/promote · advisory filing |
