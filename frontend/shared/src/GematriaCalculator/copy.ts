@@ -43,7 +43,13 @@ export const GC_EMPTY_BODY =
 // Custom cipher modal copy.
 export const GC_CUSTOM_TITLE = "Define a custom cipher";
 export const GC_CUSTOM_NAME_LABEL = "Name";
-export const GC_CUSTOM_NAME_DEFAULT = "My English cipher";
+/** Empty by default. Previously seeded "My English cipher" into the
+ *  Name input — read like the user had already named the cipher. */
+export const GC_CUSTOM_NAME_DEFAULT = "";
+export const GC_CUSTOM_NAME_PLACEHOLDER = "e.g. My English cipher";
+/** Fallback used only when the practitioner clicks Save with an empty
+ *  Name — the record gets stored under this neutral label. */
+export const GC_CUSTOM_NAME_FALLBACK = "Untitled custom cipher";
 export const GC_CUSTOM_LANGUAGE_LABEL = "Language";
 export const GC_CUSTOM_CITATION_LABEL_PREFIX = "Source citation";
 export const GC_CUSTOM_CITATION_LABEL_TAIL = "· optional";

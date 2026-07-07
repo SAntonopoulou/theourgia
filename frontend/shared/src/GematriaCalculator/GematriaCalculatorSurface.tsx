@@ -47,6 +47,8 @@ import {
   GC_CUSTOM_MAPPING_LABEL_PREFIX,
   GC_CUSTOM_MAPPING_LABEL_TAIL,
   GC_CUSTOM_NAME_DEFAULT,
+  GC_CUSTOM_NAME_FALLBACK,
+  GC_CUSTOM_NAME_PLACEHOLDER,
   GC_CUSTOM_NAME_LABEL,
   GC_CUSTOM_SAVE,
   GC_CUSTOM_TITLE,
@@ -1005,7 +1007,7 @@ function CustomCipherModal({ onClose, onSave }: CustomCipherModalProps) {
   const handleSave = () => {
     onSave({
       id: `custom-${Date.now().toString(36)}`,
-      name: name.trim() || GC_CUSTOM_NAME_DEFAULT,
+      name: name.trim() || GC_CUSTOM_NAME_FALLBACK,
       language: language as Cipher["language"],
       citation: citation.trim(),
       personal: citation.trim().length === 0,
@@ -1050,6 +1052,7 @@ function CustomCipherModal({ onClose, onSave }: CustomCipherModalProps) {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              placeholder={GC_CUSTOM_NAME_PLACEHOLDER}
               style={{
                 width: "100%",
                 padding: "10px 12px",
