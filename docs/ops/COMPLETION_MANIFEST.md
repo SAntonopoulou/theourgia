@@ -330,6 +330,17 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2fq: **App.tsx · ActingAsProvider no longer seeds 'aspasia'.**
+    App.tsx wrapped its providers with
+    `<ActingAsProvider initial={ACTING_AS_DEFAULT_ID}>`. The constant
+    value was "aspasia" — a fabricated identity from DEMO_IDENTITIES.
+    Since actingIdentities is now built from real auth.session,
+    "aspasia" never matched a real id, but the string still landed
+    in localStorage on first mount, keeping the leak alive across
+    reloads. Dropped the initial prop entirely — the provider now
+    falls through to null, and the switcher's existing
+    `authorable.find(...) ?? authorable[0]` fallback selects the
+    session's own identity naturally.
   - b108-2fp: **MagicalCircle initial defaults scrubbed.**
     The surface opened with a fully-composed circle every time:
     3 rings (glyphs · glyphs · inscription), archangel compass
