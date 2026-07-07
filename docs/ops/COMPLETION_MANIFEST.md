@@ -336,6 +336,36 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2g7: **a11y sweep · arrow-key nav on 5 tablists.**
+    None of the shared `role="tablist"` components had arrow-key
+    navigation (WAI-ARIA tablist pattern requires Left/Right or
+    Up/Down to move focus, Home/End for first/last, roving
+    tabIndex). Added `hooks/useTablistKeys(keys, active, setActive,
+    orientation)` and wired into LogTypeTablist · MethodTablist ·
+    FollowersPaneSurface · FaceTablist · ModeRail (vertical).
+    All 5 non-doc tablists now covered.
+  - b108-2g6: **public-site · a11y sweep · heading hierarchy on
+    blog.astro.** WCAG 2.4.6 (no skipped levels). Audit found 7/8
+    astro pages already respected the hierarchy; only blog.astro's
+    dynamically-injected card titles used `<h3>` under `<h1>` with
+    no intervening `<h2>`. Corrected to `<h2>`. Sizes are
+    inline-styled so no visual change.
+  - b108-2g5: **shared · a11y sweep · visually-hidden captions on 2
+    tables.** WAI-ARIA best practice: every `<table>` should have a
+    `<caption>`. Added visually-hidden captions to ChartLegend
+    ("Chart placements…") and RolesPermissionsEditor
+    ("Role capability matrix…").
+  - b108-2g4: **shared · a11y sweep · visible focus ring on form
+    fields.** WCAG 2.4.7. Shared `Field/*` primitives + many admin
+    inputs set `outline: none` inline but never wired a replacement.
+    Added `input/textarea/select:focus-visible { border-color:
+    var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }` to
+    the shared token CSS. Applies only to keyboard focus.
+  - b108-2g3: **a11y sweep · aria-live regions on autosave + status
+    surfaces.** Editor SaveStatusIndicator + PublicationEditor
+    "Last saved" + public-site newsletter subscribe status <p> all
+    lacked `role="status"` / `aria-live="polite"` — dynamic text
+    was updating silently. All three now announced.
   - b108-2g2: **a11y sweep · focus enters 3 detail drawers on open.**
     Detail drawers (VoceDetailDrawer, ToolDetailDrawer,
     SacredSiteSurface) have no primary form input to focus — they're
