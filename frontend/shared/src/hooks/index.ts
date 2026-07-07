@@ -9,3 +9,5 @@ export type { CelestialState, UseCelestialInput, ZodiacSign } from "./useCelesti
 export { useEscapeToClose } from "./useEscapeToClose.js";
 export { useFocusOnOpen } from "./useFocusOnOpen.js";
 export { useMediaQuery } from "./useMediaQuery.js";
+export { useTablistKeys } from "./useTablistKeys.js";
+export type { UseTablistKeys } from "./useTablistKeys.js";

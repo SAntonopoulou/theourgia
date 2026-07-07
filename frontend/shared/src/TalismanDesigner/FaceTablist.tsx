@@ -3,8 +3,9 @@
  * topbar. Identical chrome to the other in-page tablists.
  */
 
-import { type CSSProperties } from "react";
+import { type CSSProperties, useMemo } from "react";
 
+import { useTablistKeys } from "../hooks/useTablistKeys.js";
 import {
   FACE_BACK_LABEL,
   FACE_FRONT_LABEL,
@@ -56,18 +57,25 @@ export function FaceTablist({
   className,
   style,
 }: FaceTablistProps) {
+  const keys = useMemo<readonly TalismanFace[]>(
+    () => ["front", "back"],
+    [],
+  );
+  const { onKeyDown, tabIndexFor } = useTablistKeys(keys, value, onChange);
   return (
     <div
       role="tablist"
       aria-label={FACE_TABLIST_LABEL}
       data-component="talisman-face-tablist"
       className={className}
+      onKeyDown={onKeyDown}
       style={{ ...GROUP_STYLE, ...style }}
     >
       <button
         role="tab"
         type="button"
         aria-selected={value === "front"}
+        tabIndex={tabIndexFor("front")}
         data-face="front"
         onClick={() => onChange("front")}
         style={value === "front" ? TAB_ON : TAB_BASE}
@@ -78,6 +86,7 @@ export function FaceTablist({
         role="tab"
         type="button"
         aria-selected={value === "back"}
+        tabIndex={tabIndexFor("back")}
         data-face="back"
         onClick={() => onChange("back")}
         style={value === "back" ? TAB_ON : TAB_BASE}

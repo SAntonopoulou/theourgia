@@ -7,8 +7,9 @@
  * engraving glyph. Active tab paints --accent-soft + --accent border.
  */
 
-import { type CSSProperties } from "react";
+import { type CSSProperties, useMemo } from "react";
 
+import { useTablistKeys } from "../hooks/useTablistKeys.js";
 import {
   PRACTICE_LOG_TABLIST_LABEL,
   PRACTICE_LOG_TABS,
@@ -93,12 +94,18 @@ export function LogTypeTablist({
   className,
   style,
 }: LogTypeTablistProps) {
+  const keys = useMemo(
+    () => PRACTICE_LOG_TABS.map((t) => t.key),
+    [],
+  );
+  const { onKeyDown, tabIndexFor } = useTablistKeys(keys, value, onChange);
   return (
     <div
       role="tablist"
       aria-label={PRACTICE_LOG_TABLIST_LABEL}
       data-component="practice-logs-tablist"
       className={className}
+      onKeyDown={onKeyDown}
       style={{
         display: "flex",
         gap: 8,
@@ -114,6 +121,7 @@ export function LogTypeTablist({
             type="button"
             role="tab"
             aria-selected={on}
+            tabIndex={tabIndexFor(tab.key)}
             data-tab={tab.key}
             onClick={() => onChange(tab.key)}
             style={on ? TAB_ON : TAB_BASE}

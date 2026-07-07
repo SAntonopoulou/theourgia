@@ -7,8 +7,9 @@
  * label.
  */
 
-import { type CSSProperties } from "react";
+import { type CSSProperties, useMemo } from "react";
 
+import { useTablistKeys } from "../hooks/useTablistKeys.js";
 import { MODE_RAIL_EYEBROW, SIGIL_MODES, type SigilMode } from "./copy.js";
 
 const RAIL_STYLE: CSSProperties = {
@@ -76,6 +77,13 @@ export function ModeRail({
   className,
   style,
 }: ModeRailProps) {
+  const keys = useMemo(() => SIGIL_MODES.map((m) => m.key), []);
+  const { onKeyDown, tabIndexFor } = useTablistKeys(
+    keys,
+    value,
+    onChange,
+    "vertical",
+  );
   return (
     <aside
       className={`scroll sg-side ${className ?? ""}`}
@@ -83,7 +91,12 @@ export function ModeRail({
       style={{ ...RAIL_STYLE, ...style }}
     >
       <div style={EYEBROW_STYLE}>{MODE_RAIL_EYEBROW}</div>
-      <div role="tablist" aria-label={MODE_RAIL_EYEBROW} style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <div
+        role="tablist"
+        aria-label={MODE_RAIL_EYEBROW}
+        onKeyDown={onKeyDown}
+        style={{ display: "flex", flexDirection: "column", gap: 3 }}
+      >
         {SIGIL_MODES.map((mode) => {
           const on = value === mode.key;
           return (
@@ -92,6 +105,7 @@ export function ModeRail({
               type="button"
               role="tab"
               aria-selected={on}
+              tabIndex={tabIndexFor(mode.key)}
               data-mode={mode.key}
               onClick={() => onChange(mode.key)}
               style={on ? BUTTON_ON : BUTTON_BASE}

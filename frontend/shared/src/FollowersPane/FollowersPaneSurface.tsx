@@ -28,9 +28,11 @@ import {
   type CSSProperties,
   type ReactNode,
   useId,
+  useMemo,
   useState,
 } from "react";
 
+import { useTablistKeys } from "../hooks/useTablistKeys.js";
 import {
   FP_APPROVE_CTA,
   FP_COUNT_SUFFIX,
@@ -142,6 +144,15 @@ export function FollowersPaneSurface({
   const [tab, setTab] = useState<"followers" | "pending">(
     "followers",
   );
+  const tabKeys = useMemo<readonly ("followers" | "pending")[]>(
+    () => ["followers", "pending"],
+    [],
+  );
+  const { onKeyDown: onTablistKeyDown, tabIndexFor } = useTablistKeys(
+    tabKeys,
+    tab,
+    setTab,
+  );
 
   const countLabel = `${followers.length}${
     followers.length === 1 ? FP_COUNT_SUFFIX_ONE : FP_COUNT_SUFFIX
@@ -197,6 +208,7 @@ export function FollowersPaneSurface({
         <div style={{ maxWidth: 860, margin: "0 auto" }}>
           <div
             role="tablist"
+            onKeyDown={onTablistKeyDown}
             style={{
               display: "flex",
               gap: 4,
@@ -209,6 +221,7 @@ export function FollowersPaneSurface({
               selected={tab === "followers"}
               onClick={() => setTab("followers")}
               dataValue="followers"
+              tabIndex={tabIndexFor("followers")}
             />
             <TabButton
               label={FP_TAB_PENDING}
@@ -216,6 +229,7 @@ export function FollowersPaneSurface({
               onClick={() => setTab("pending")}
               dataValue="pending"
               pendingCount={pending.length}
+              tabIndex={tabIndexFor("pending")}
             />
           </div>
 
@@ -245,12 +259,14 @@ function TabButton({
   onClick,
   dataValue,
   pendingCount,
+  tabIndex,
 }: {
   label: string;
   selected: boolean;
   onClick: () => void;
   dataValue: string;
   pendingCount?: number;
+  tabIndex?: number;
 }) {
   const showChip = pendingCount !== undefined && pendingCount > 0;
   return (
@@ -258,6 +274,7 @@ function TabButton({
       type="button"
       role="tab"
       aria-selected={selected}
+      tabIndex={tabIndex}
       onClick={onClick}
       data-tab={dataValue}
       data-selected={selected}

@@ -7,8 +7,9 @@
  * border.
  */
 
-import { type CSSProperties } from "react";
+import { type CSSProperties, useMemo } from "react";
 
+import { useTablistKeys } from "../hooks/useTablistKeys.js";
 import {
   DIVMISC_METHOD_OPTIONS,
   type DivMiscMethod,
@@ -92,12 +93,18 @@ export function MethodTablist({
   className,
   style,
 }: MethodTablistProps) {
+  const keys = useMemo(
+    () => DIVMISC_METHOD_OPTIONS.map((o) => o.key),
+    [],
+  );
+  const { onKeyDown, tabIndexFor } = useTablistKeys(keys, value, onChange);
   return (
     <div
       role="tablist"
       aria-label="Method"
       data-component="divmisc-method-tablist"
       className={className}
+      onKeyDown={onKeyDown}
       style={{
         display: "flex",
         gap: 8,
@@ -113,6 +120,7 @@ export function MethodTablist({
             type="button"
             role="tab"
             aria-selected={on}
+            tabIndex={tabIndexFor(opt.key)}
             data-method={opt.key}
             onClick={() => onChange(opt.key)}
             style={on ? TAB_ON : TAB_BASE}
