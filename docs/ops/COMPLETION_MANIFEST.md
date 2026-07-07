@@ -330,6 +330,15 @@ Backend health: **2575 tests passing** · alembic 0066 · prod deployed.
     specific angelic invocations ("יהפיאל · הסמאל" · "יהפיאל · אל
     · צדקיאל") — swapped to neutral placeholders until per-layer
     text is threaded through the state model.
+  - b108-2fr: **PendulumPanel opens with 'not yet asked' state.**
+    The Pendulum panel opened with initialAnswer='Yes' shown on the
+    dial and as a big --accent label — reading as if the pendulum
+    had already answered Yes on every fresh open. Now
+    initialAnswer defaults to null; the type widens to
+    `PendulumAnswer | null`. The dial renders at rest (angle 0,
+    bob in --ink-mute, aria-label 'Pendulum at rest — no answer
+    yet'). The answer text renders as '—' in --ink-mute; the note
+    swaps to 'Ask a question above to see the pendulum's answer.'
   - b108-2fq: **App.tsx · ActingAsProvider no longer seeds 'aspasia'.**
     App.tsx wrapped its providers with
     `<ActingAsProvider initial={ACTING_AS_DEFAULT_ID}>`. The constant
