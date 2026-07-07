@@ -539,6 +539,11 @@ const TotpEnrollmentRoute = lazy(() =>
     default: m.TotpEnrollmentRoute,
   })),
 );
+const KeyRotationRoute = lazy(() =>
+  import("./routes/KeyRotationRoute.js").then((m) => ({
+    default: m.KeyRotationRoute,
+  })),
+);
 
 // Vite's BASE_URL: "/" in dev, "/app/" in prod. BrowserRouter
 // basename wants no trailing slash; trim it.
@@ -873,16 +878,7 @@ function ShellRoutes() {
           <Route path="/settings/sessions" element={<SessionsAndDevicesRoute />} />
           <Route path="/settings/accessibility" element={<AccessibilityAndMotionRoute />} />
           <Route path="/settings/preferences" element={<Settings />} />
-          <Route
-            path="/settings/keys"
-            element={
-              <Placeholder
-                glyph="key"
-                title="Federation signing keys"
-                body="Rotates the Ed25519 keypair that signs your outbound federation envelopes and appears in your DID document. Passkey sign-in has moved to Passkeys & hardware keys under Settings → Security. Federation key rotation lands in a follow-up batch alongside the envelope-resigning worker."
-              />
-            }
-          />
+          <Route path="/settings/keys" element={<KeyRotationRoute />} />
           <Route path="/settings/webauthn" element={<WebAuthnEnrollmentRoute />} />
           <Route path="/settings/totp" element={<TotpEnrollmentRoute />} />
           <Route path="/signin" element={<SignInRoute />} />
