@@ -106,6 +106,7 @@ from theourgia.api.routers.v1 import comments as v1_comments
 from theourgia.api.routers.v1 import pilgrimage_routes as v1_pilgrimage_routes
 from theourgia.api.routers.v1 import recipes as v1_recipes
 from theourgia.api.routers.v1 import first_run as v1_first_run
+from theourgia.api.routers.v1 import memorial as v1_memorial
 from theourgia.api.routers import feeds as app_feeds
 
 __all__ = ["register_routers"]
@@ -204,6 +205,8 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_recipes.router, tags=["recipes"])
     # First-run wizard (b108-2hf) — public endpoint
     v1.include_router(v1_first_run.router, tags=["setup"])
+    # Memorial mode / digital inheritance (b108-2hg)
+    v1.include_router(v1_memorial.router, tags=["memorial"])
     # Phase 11 Media (B132+)
     v1.include_router(v1_media.router, tags=["media"])
     v1.include_router(v1_media_uploads.router, tags=["media"])

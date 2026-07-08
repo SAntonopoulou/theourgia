@@ -156,6 +156,11 @@ const PilgrimageRoutesRoute = lazy(() =>
     default: m.PilgrimageRoutesRoute,
   })),
 );
+const MemorialModeRoute = lazy(() =>
+  import("./routes/MemorialModeRoute.js").then((m) => ({
+    default: m.MemorialModeRoute,
+  })),
+);
 const Foundations = lazy(() =>
   import("./routes/Foundations.js").then((m) => ({ default: m.Foundations })),
 );
@@ -774,6 +779,7 @@ function ShellRoutes() {
           <Route path="/deck-designer" element={<DeckDesignerRoute />} />
           <Route path="/recipes" element={<RecipesRoute />} />
           <Route path="/pilgrimage-routes" element={<PilgrimageRoutesRoute />} />
+          <Route path="/memorial-mode" element={<MemorialModeRoute />} />
           <Route
             path="/calendar"
             element={

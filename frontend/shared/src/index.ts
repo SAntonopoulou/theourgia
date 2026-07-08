@@ -40,6 +40,7 @@ export * from "./Contracts/index.js";
 export * from "./CrossJournalSearch/index.js";
 export * from "./DailyPractice/index.js";
 export * from "./DeckDesigner/index.js";
+export * from "./Memorial/index.js";
 export * from "./PilgrimageRoutes/index.js";
 export * from "./Recipes/index.js";
 export * from "./Dialog/index.js";

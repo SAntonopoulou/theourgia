@@ -327,6 +327,44 @@ export function api(client: ApiClient) {
       );
     },
 
+    // ── Memorial mode / digital inheritance (b108-2hg) ───────────
+
+    getMemorialConfig(): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/memorial/config",
+      );
+    },
+
+    updateMemorialConfig(
+      patch: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/memorial/config",
+        { method: "PATCH", json: patch },
+      );
+    },
+
+    memorialCheckIn(): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/memorial/check-in",
+        { method: "POST" },
+      );
+    },
+
+    memorialTrigger(): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/memorial/trigger",
+        { method: "POST" },
+      );
+    },
+
+    memorialReactivate(): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/memorial/reactivate",
+        { method: "POST" },
+      );
+    },
+
     // ── Pilgrimage routes (b108-2gx backend, b108-2he frontend) ───
 
     listPilgrimageRoutes(): Promise<Array<Record<string, unknown>>> {

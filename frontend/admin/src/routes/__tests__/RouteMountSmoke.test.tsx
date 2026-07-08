@@ -126,6 +126,7 @@ const ROUTES: ReadonlyArray<[string, () => Promise<{ Component: React.ComponentT
   ["RecipesRoute", () => import("../RecipesRoute.js").then((m) => ({ Component: m.RecipesRoute }))],
   ["PilgrimageRoutesRoute", () => import("../PilgrimageRoutesRoute.js").then((m) => ({ Component: m.PilgrimageRoutesRoute }))],
   ["SetupWizardRoute", () => import("../SetupWizardRoute.js").then((m) => ({ Component: m.SetupWizardRoute }))],
+  ["MemorialModeRoute", () => import("../MemorialModeRoute.js").then((m) => ({ Component: m.MemorialModeRoute }))],
   ["Library", () => import("../Library.js").then((m) => ({ Component: m.Library }))],
   ["LineageAdmin", () => import("../LineageAdmin.js").then((m) => ({ Component: m.LineageAdmin }))],
   ["Health", () => import("../Health.js").then((m) => ({ Component: m.Health }))],

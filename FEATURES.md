@@ -598,10 +598,10 @@ Implementation phase: **[00 — Foundations](plan/00-foundations.md)** + **[01 �
 - [ ] **DR runbook** in admin docs
 
 ### Digital inheritance / memorial mode
-- [ ] **Designated digital executor** — encrypted key-share with named person, time-locked unlock
-- [ ] **Memorial mode** — vault becomes read-only after trigger; public content stays accessible; private content remains sealed; clear "in memoriam" framing
-- [ ] **Check-in mechanic** — "if I don't log in for N months, contact [person]"; configurable triggers
-- [ ] **Posthumous publication** — entries scheduled to release after the memorial trigger fires
+- [~] **Designated digital executor** — encrypted key-share with named person, time-locked unlock — b108-2hg shipped the executor contact field; cryptographic key-share via Shamir/threshold lands in a follow-up batch (needs threat-model review).
+- [x] **Memorial mode** — vault becomes read-only after trigger; public content stays accessible; private content remains sealed; clear "in memoriam" framing — b108-2hg shipped `memorial_config` table + `/api/v1/memorial/{config,check-in,trigger,reactivate}` endpoints + admin `/memorial-mode` route with state-tracking status card.
+- [x] **Check-in mechanic** — "if I don't log in for N months, contact [person]"; configurable triggers — b108-2hg shipped configurable cadence + warning window; state (active/warning/pending) computed from timestamps. Automatic Celery-beat trigger on missed check-in is a follow-up batch.
+- [~] **Posthumous publication** — entries scheduled to release after the memorial trigger fires — b108-2hg shipped the `posthumous_publications_enabled` opt-in toggle; the per-entry "publish on death" flag + release job land in a follow-up batch.
 
 ### Network exposure invariants
 - [ ] **Redis & Postgres never externally bound** — internal-only; reference compose enforces; CI test verifies
