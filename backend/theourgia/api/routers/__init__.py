@@ -103,6 +103,7 @@ from theourgia.api.routers.v1 import registry_maintainer as v1_registry_maintain
 from theourgia.api.routers.v1 import webauthn as v1_webauthn
 from theourgia.api.routers.v1 import totp as v1_totp
 from theourgia.api.routers.v1 import comments as v1_comments
+from theourgia.api.routers.v1 import pilgrimage_routes as v1_pilgrimage_routes
 from theourgia.api.routers import feeds as app_feeds
 
 __all__ = ["register_routers"]
@@ -195,6 +196,9 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_public_reader.router, tags=["public-reader"])
     v1.include_router(v1_public_vault.router, tags=["public-vault"])
     v1.include_router(v1_comments.router, tags=["comments"])
+    v1.include_router(
+        v1_pilgrimage_routes.router, tags=["pilgrimage-routes"],
+    )
     # Phase 11 Media (B132+)
     v1.include_router(v1_media.router, tags=["media"])
     v1.include_router(v1_media_uploads.router, tags=["media"])

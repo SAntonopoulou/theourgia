@@ -24,10 +24,10 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `b108-2gw` (comments with moderation · comment table + honeypot spam gate · per-target opt-in on Publication + Entry · CommentsSurface + ModerationQueueSurface primitives · admin `/comments-moderation` route · alembic 0069 · FEATURES §2 + §12 `[ ]` → `[x]`) |
+| **Latest commit** | `b108-2gx` (pilgrimage routes backend · pilgrimage_route + pilgrimage_route_stop tables · CRUD + reorder endpoints · alembic 0070 · FEATURES §13 `[ ]` → `[~]`, frontend polyline queued) |
 | **Production** | **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; 8 prod containers, isolated compose project) |
-| **vitest** | **2937** shared + 32 admin route-mount smoke + **2681** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
-| **backend** | **2681 passing** · alembic head **0069** — comment table + comments_enabled + content_format + file_url; every write endpoint + owned read now `CurrentUser` |
+| **vitest** | **2937** shared + 32 admin route-mount smoke + **2688** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
+| **backend** | **2688 passing** · alembic head **0070** — pilgrimage_route + comment + content_format; every write endpoint + owned read now `CurrentUser` |
 | **backend** | **2670 passing** · alembic head **0066** — 51 v1 routers migrated to CurrentUser (writes + owned reads); public endpoints (subscribe · public reader · webhooks · webfinger · iCal token · public identity face) preserved; **+58 auth-required tests** |
 | **agent-daemon** | **198 passing** · alembic head **0002** — MCP + JSON-RPC + SSE + launcher + subprocess runner + cost-cap hard halt + audit emission · DB-backed (sinks + repos) · bwrap filesystem sandbox (rule 59 enforced) · install lifecycle CRUD · memory dir read/write with rule-59 path-safety |
 | **registry** | 34 passing · alembic head **0001** — DID + Ed25519 auth · author submission lifecycle · maintainer queue/decide/promote · advisory filing |

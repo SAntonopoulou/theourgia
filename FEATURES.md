@@ -421,7 +421,7 @@ Implementation phase: **[11 — Media Library](plan/11-media-library.md)**
 - [ ] **Per-video captions/subtitles** + chapter markers
 - [ ] **Pilgrimage / sacred site log** — map (Leaflet + OSM), per-site with location-precision controls (exact/neighborhood/region), visited_at multi-entry, deity associations
 - [ ] **Privacy-aware map rendering** — jittered coords on `network`, city-level only on `public`, exact only on `personal` / `viewer`
-- [ ] **Pilgrimage routes** — ordered sequences with notes (e.g., "Eleusis route")
+- [~] **Pilgrimage routes** — ordered sequences with notes (e.g., "Eleusis route") — b108-2gx ships backend (pilgrimage_route + pilgrimage_route_stop tables · CRUD + reorder endpoints · alembic 0070). Frontend polyline rendering + admin editor land in a follow-up commit.
 - [ ] **iCal / WebCal feed exports** — per-vault subscribable feeds for planetary hours, festivals, working windows
 - [ ] **Network group ritual feed** — per-hub iCal export of scheduled group rituals, with per-participant timezone-localized planetary-hour metadata
 - [ ] **Subscribable from any iCal client** — Apple Calendar, Google Calendar, Outlook, Fastmail, Thunderbird
