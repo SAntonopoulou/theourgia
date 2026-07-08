@@ -124,7 +124,7 @@ Implementation phase: **[04 — Journaling](plan/04-journaling.md)** (with blog 
 - [ ] **Per-post status**: draft / scheduled / published / archived
 - [ ] **Multi-author** (when multiple identities are in use on one vault)
 - [ ] **RSS/Atom/JSON Feed** for the blog stream
-- [ ] **Comments with moderation** (per-post opt-in)
+- [x] **Comments with moderation** (per-post opt-in) — b108-2gw · comment table (pending / approved / rejected / spam) · per-target `comments_enabled` opt-in on Publication + Entry · honeypot on submit form · admin queue at `/comments-moderation` · alembic 0069
 
 ### Time-released content
 - [ ] **Scheduled publication** for any entry / blog post / publication / newsletter issue
@@ -408,7 +408,7 @@ Implementation phase: **[10 — Publishing & Monetization](plan/10-publishing-an
 - [ ] **Newsletter delivery backends** — SMTP / Postmark / SES / Resend / Mailgun (plugin slots)
 - [ ] **Newsletter web archive** for subscribers
 - [ ] **RSS / Atom / JSON Feed** — per-vault, per-hub, per-newsletter
-- [ ] **Comments with moderation** — per-publication opt-in
+- [x] **Comments with moderation** — per-publication opt-in · b108-2gw shares the same substrate as the blog/entry comments
 - [ ] **Per-vault public face** — customizable homepage + sections + theming within design-system constraints
 
 ## 13. Media Library, Calendar Feeds & Maps

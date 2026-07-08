@@ -76,6 +76,7 @@ def _pub_row(
         content_format=PublicationContentFormat.HTML,
         file_url=None,
         file_size_bytes=None,
+        comments_enabled=False,
         created_at=None,
         updated_at=None,
         deleted_at=None,

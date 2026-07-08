@@ -297,6 +297,11 @@ class Entry(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
         sa_column_kwargs={"nullable": True, "index": True},
     )
 
+    # b108-2gw — per-entry comments opt-in. Same substrate as the
+    # publication comments; only comments on entries with
+    # visibility="public" and comments_enabled=True are surfaced.
+    comments_enabled: bool = Field(default=False, nullable=False)
+
 
 class EntryRevision(IDMixin, TimestampMixin, table=True):
     """One revision in the history of an :class:`Entry`.

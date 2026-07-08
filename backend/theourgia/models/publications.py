@@ -187,6 +187,12 @@ class Publication(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     file_url: Optional[str] = Field(default=None, max_length=1024)
     file_size_bytes: Optional[int] = Field(default=None, ge=0)
 
+    # b108-2gw — per-publication comments opt-in. Every visitor
+    # comment starts in a moderation queue; only APPROVED comments
+    # render in the public reader. Owner (auth-required) transitions
+    # the row. FEATURES §12 · "Comments with moderation".
+    comments_enabled: bool = Field(default=False, nullable=False)
+
 
 class PublicationChapter(IDMixin, TimestampMixin, table=True):
     """A chapter inside a book-kind publication."""

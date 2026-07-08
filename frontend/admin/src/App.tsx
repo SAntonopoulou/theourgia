@@ -60,6 +60,11 @@ const DailyPracticeRoute = lazy(() =>
     default: m.DailyPracticeRoute,
   })),
 );
+const CommentModerationRoute = lazy(() =>
+  import("./routes/CommentModerationRoute.js").then((m) => ({
+    default: m.CommentModerationRoute,
+  })),
+);
 const GematriaCalculatorRoute = lazy(() =>
   import("./routes/GematriaCalculatorRoute.js").then((m) => ({
     default: m.GematriaCalculatorRoute,
@@ -917,6 +922,7 @@ function ShellRoutes() {
           <Route path="/settings/sessions" element={<SessionsAndDevicesRoute />} />
           <Route path="/settings/accessibility" element={<AccessibilityAndMotionRoute />} />
           <Route path="/settings/preferences" element={<Settings />} />
+          <Route path="/comments-moderation" element={<CommentModerationRoute />} />
           <Route path="/settings/keys" element={<KeyRotationRoute />} />
           <Route path="/settings/webauthn" element={<WebAuthnEnrollmentRoute />} />
           <Route path="/settings/totp" element={<TotpEnrollmentRoute />} />

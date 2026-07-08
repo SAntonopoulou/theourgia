@@ -81,6 +81,8 @@ class ReaderResponse(BaseModel):
     content_format: Literal["html", "pdf", "epub"] = "html"
     file_url: str | None = None
     file_size_bytes: int | None = None
+    # b108-2gw — per-publication comments opt-in flag.
+    comments_enabled: bool = False
 
 
 # ── Helpers ────────────────────────────────────────────────────
@@ -240,4 +242,5 @@ async def read_publication(
         # file stays gated exactly like `body` does.
         file_url=pub.file_url if paywall == "none" else None,
         file_size_bytes=pub.file_size_bytes if paywall == "none" else None,
+        comments_enabled=pub.comments_enabled,
     )
