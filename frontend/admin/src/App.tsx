@@ -140,6 +140,11 @@ const FamilyTreeRoute = lazy(() =>
     default: m.FamilyTreeRoute,
   })),
 );
+const DeckDesignerRoute = lazy(() =>
+  import("./routes/DeckDesignerRoute.js").then((m) => ({
+    default: m.DeckDesignerRoute,
+  })),
+);
 const Foundations = lazy(() =>
   import("./routes/Foundations.js").then((m) => ({ default: m.Foundations })),
 );
@@ -746,6 +751,7 @@ function ShellRoutes() {
           <Route path="/practice-logs" element={<PracticeLogsRoute />} />
           <Route path="/entities" element={<Entities />} />
           <Route path="/family-tree" element={<FamilyTreeRoute />} />
+          <Route path="/deck-designer" element={<DeckDesignerRoute />} />
           <Route
             path="/calendar"
             element={

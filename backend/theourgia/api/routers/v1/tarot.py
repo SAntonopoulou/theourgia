@@ -5,9 +5,14 @@
 ``POST   /api/v1/tarot/decks``                   — create a user deck (auto seeds card rows from ``cards`` payload)
 ``PATCH  /api/v1/tarot/decks/{id}``              — update user deck metadata
 ``DELETE /api/v1/tarot/decks/{id}``              — soft delete user deck
+``POST   /api/v1/tarot/decks/{id}/cards``        — add one card to a user deck (b108-2hc)
+``PATCH  /api/v1/tarot/cards/{card_id}``         — edit one card (b108-2hc)
+``DELETE /api/v1/tarot/cards/{card_id}``         — delete one card (b108-2hc)
 
 ``GET    /api/v1/tarot/spreads``                 — list spreads (filter ``?is_builtin=``)
+``GET    /api/v1/tarot/spreads/{id}``            — fetch one spread (b108-2hc)
 ``POST   /api/v1/tarot/spreads``                 — create custom spread
+``PATCH  /api/v1/tarot/spreads/{id}``            — edit user spread (b108-2hc)
 ``DELETE /api/v1/tarot/spreads/{id}``            — soft delete user spread
 
 ``POST   /api/v1/tarot/cast``                    — deterministic cast (engine + persisted Reading)
@@ -169,6 +174,23 @@ class DeckUpdate(BaseModel):
     reversal_convention: bool | None = None
     art_set: str | None = Field(default=None, max_length=64)
     description: str | None = None
+
+
+class CardUpdate(BaseModel):
+    """PATCH one card. All fields optional. b108-2hc."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    position: int | None = Field(default=None, ge=0)
+    slug: str | None = Field(default=None, min_length=1, max_length=128)
+    name: str | None = Field(default=None, min_length=1, max_length=128)
+    suit: SuitLiteral | None = None
+    arcana_number: int | None = None
+    upright_meaning: str | None = None
+    reversed_meaning: str | None = None
+    correspondences: dict[str, object] | None = None
+    name_translations: dict[str, str] | None = None
+    image_upload_id: UUID | None = None
 
 
 def _deck_to_read(row: Deck, card_count: int) -> DeckRead:
@@ -348,6 +370,118 @@ async def delete_deck(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+# ───── Cards CRUD (b108-2hc) ─────────────────────────────────────────
+#
+# The bulk-create above seeds cards at deck-birth; these three
+# endpoints exist so the deck designer surface can add / edit /
+# remove cards after the deck exists. Built-in decks reject writes
+# defence-in-depth on top of the SPA gate.
+
+
+async def _owned_editable_deck(
+    db: AsyncSession, deck_id: UUID, current_user_id: UUID
+) -> Deck:
+    deck = await db.get(Deck, deck_id)
+    if deck is None or deck.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Deck not found.")
+    if deck.is_builtin:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Built-in decks cannot be edited.",
+        )
+    if deck.owner_id != current_user_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Deck not found.")
+    return deck
+
+
+@router.post(
+    "/tarot/decks/{deck_id}/cards",
+    response_model=CardRead,
+    status_code=status.HTTP_201_CREATED,
+    tags=["tarot"],
+)
+async def add_card(
+    deck_id: UUID,
+    payload: CardCreate,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> CardRead:
+    deck = await _owned_editable_deck(db, deck_id, current_user.id)
+    # Uniqueness on (deck_id, position) — surface a friendly 400.
+    stmt = select(Card).where(
+        Card.deck_id == deck.id,
+        Card.position == payload.position,
+        Card.deleted_at.is_(None),
+    )
+    existing = (await db.execute(stmt)).scalar_one_or_none()
+    if existing is not None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"A card at position {payload.position} already exists.",
+        )
+    card = Card(
+        deck_id=deck.id,
+        position=payload.position,
+        slug=payload.slug,
+        name=payload.name,
+        suit=Suit(payload.suit),
+        arcana_number=payload.arcana_number,
+        upright_meaning=payload.upright_meaning,
+        reversed_meaning=payload.reversed_meaning,
+        correspondences=payload.correspondences,
+        name_translations=payload.name_translations,
+    )
+    db.add(card)
+    await db.commit()
+    await db.refresh(card)
+    return _card_to_read(card)
+
+
+@router.patch(
+    "/tarot/cards/{card_id}",
+    response_model=CardRead,
+    tags=["tarot"],
+)
+async def update_card(
+    card_id: UUID,
+    payload: CardUpdate,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> CardRead:
+    card = await db.get(Card, card_id)
+    if card is None or card.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Card not found.")
+    # Ownership check runs through the deck.
+    await _owned_editable_deck(db, card.deck_id, current_user.id)
+    data = payload.model_dump(exclude_unset=True)
+    if "suit" in data and data["suit"] is not None:
+        data["suit"] = Suit(data["suit"])
+    for k, v in data.items():
+        setattr(card, k, v)
+    await db.commit()
+    await db.refresh(card)
+    return _card_to_read(card)
+
+
+@router.delete(
+    "/tarot/cards/{card_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["tarot"],
+)
+async def delete_card(
+    card_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> Response:
+    card = await db.get(Card, card_id)
+    if card is None or card.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Card not found.")
+    await _owned_editable_deck(db, card.deck_id, current_user.id)
+    card.deleted_at = datetime.now(tz=UTC)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 # ───── Spread ────────────────────────────────────────────────────────
 
 
@@ -376,6 +510,17 @@ class SpreadCreate(BaseModel):
     description: str | None = None
     positions: list[dict[str, object]] = Field(min_length=1)
     layout_json: dict[str, object] = Field(default_factory=dict)
+
+
+class SpreadUpdate(BaseModel):
+    """PATCH one spread. All fields optional. b108-2hc."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str | None = Field(default=None, min_length=1, max_length=128)
+    description: str | None = None
+    positions: list[dict[str, object]] | None = Field(default=None, min_length=1)
+    layout_json: dict[str, object] | None = None
 
 
 def _spread_to_read(row: Spread) -> SpreadRead:
@@ -407,6 +552,26 @@ async def list_spreads(
     return [_spread_to_read(row) for row in rows]
 
 
+@router.get(
+    "/tarot/spreads/{spread_id}",
+    response_model=SpreadRead,
+    tags=["tarot"],
+)
+async def get_spread(
+    spread_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> SpreadRead:
+    row = await db.get(Spread, spread_id)
+    if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Spread not found.")
+    # Built-in spreads are visible to everyone (are they a catalogue).
+    # User spreads only visible to their owner.
+    if not row.is_builtin and row.owner_id != current_user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Spread not found.")
+    return _spread_to_read(row)
+
+
 @router.post(
     "/tarot/spreads",
     response_model=SpreadRead,
@@ -429,6 +594,34 @@ async def create_spread(
         owner_id=current_user.id,
     )
     db.add(row)
+    await db.commit()
+    await db.refresh(row)
+    return _spread_to_read(row)
+
+
+@router.patch(
+    "/tarot/spreads/{spread_id}",
+    response_model=SpreadRead,
+    tags=["tarot"],
+)
+async def update_spread(
+    spread_id: UUID,
+    payload: SpreadUpdate,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> SpreadRead:
+    row = await db.get(Spread, spread_id)
+    if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Spread not found.")
+    if row.is_builtin:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Built-in spreads cannot be edited.",
+        )
+    if row.owner_id != current_user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Spread not found.")
+    for k, v in payload.model_dump(exclude_unset=True).items():
+        setattr(row, k, v)
     await db.commit()
     await db.refresh(row)
     return _spread_to_read(row)

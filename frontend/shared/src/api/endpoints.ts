@@ -266,9 +266,102 @@ export function api(client: ApiClient) {
       );
     },
 
+    getTarotDeck(id: string): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/tarot/decks/${id}`,
+      );
+    },
+
+    createTarotDeck(
+      input: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/tarot/decks",
+        { method: "POST", json: input },
+      );
+    },
+
+    updateTarotDeck(
+      id: string,
+      patch: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/tarot/decks/${id}`,
+        { method: "PATCH", json: patch },
+      );
+    },
+
+    deleteTarotDeck(id: string): Promise<void> {
+      return client.request<void>(
+        `/api/v1/tarot/decks/${id}`,
+        { method: "DELETE" },
+      );
+    },
+
+    // Card CRUD (b108-2hc)
+
+    addTarotCard(
+      deckId: string,
+      input: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/tarot/decks/${deckId}/cards`,
+        { method: "POST", json: input },
+      );
+    },
+
+    updateTarotCard(
+      cardId: string,
+      patch: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/tarot/cards/${cardId}`,
+        { method: "PATCH", json: patch },
+      );
+    },
+
+    deleteTarotCard(cardId: string): Promise<void> {
+      return client.request<void>(
+        `/api/v1/tarot/cards/${cardId}`,
+        { method: "DELETE" },
+      );
+    },
+
     listTarotSpreads(): Promise<Array<Record<string, unknown>>> {
       return client.request<Array<Record<string, unknown>>>(
         "/api/v1/tarot/spreads",
+      );
+    },
+
+    getTarotSpread(id: string): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/tarot/spreads/${id}`,
+      );
+    },
+
+    createTarotSpread(
+      input: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/tarot/spreads",
+        { method: "POST", json: input },
+      );
+    },
+
+    updateTarotSpread(
+      id: string,
+      patch: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/tarot/spreads/${id}`,
+        { method: "PATCH", json: patch },
+      );
+    },
+
+    deleteTarotSpread(id: string): Promise<void> {
+      return client.request<void>(
+        `/api/v1/tarot/spreads/${id}`,
+        { method: "DELETE" },
       );
     },
 

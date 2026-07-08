@@ -194,10 +194,10 @@ Implementation phase: **[06 — Divination & Practice Logs](plan/06-divination-a
 ### Tarot
 - [ ] **Bundled public-domain decks**: Rider-Waite-Smith, Marseille (multiple historical), Etteilla, Sola Busca
 - [ ] **Per-card data** — deck, position, suit/arcana, name (per-language), traditional meaning, upright/reversed (user-editable), correspondences (planetary, elemental, decan, Hebrew letter, Tree-of-Life path)
-- [ ] **Custom deck creation** — user-built decks with uploaded art, per-card editor with all meaning fields, preview
+- [x] **Custom deck creation** — user-built decks with uploaded art, per-card editor with all meaning fields, preview
 - [ ] **Community deck sharing** — within networks, or publicly (with explicit copyright affirmation)
 - [ ] **Built-in spreads** — single card, three-card, Celtic Cross, Tree of Life, Year Ahead, etc.
-- [ ] **Custom spread designer** — drag-and-drop card positions on canvas, per-position meaning
+- [x] **Custom spread designer** — drag-and-drop card positions on canvas, per-position meaning
 - [ ] **Reading sessions** — question, querent, deck, spread, draw method (mental shuffle / physical / hash-of-question / browser RNG), drawn cards with reversals, interpretation, retrospective outcome rating
 - [ ] **Readings linkable** to entries, entities, workings
 - [ ] **Personal owned-deck helper** — private mode for layering hand-traced art from decks the user owns; not shareable, not exportable, explicit owned-copy confirmation
