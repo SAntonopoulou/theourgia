@@ -96,7 +96,7 @@ Implementation phase: **[04 — Journaling](plan/04-journaling.md)** (with blog 
 - [x] **Custom magical blocks**: `ritualLog` · `quoteCitation` · `gematria` · `sensation` · `entityRef` · `sigil` · `chart` · `divination` (B97 + B99a) · `correspondence` · `calendarStamp` · `voxMagicae` · `voiceRecording` (b108-2gu)
 - [~] **Inline foreign-script marks**: `lang` mark with `el` · `he` · `en` scripts shipped (LangMark · B97); `latin` · `sanskrit` · `arabic` · `coptic` are font-token aliases of the same mark
 - [x] **Slash commands**: `/sigil` · `/quote` · `/gematria` · `/entity` · `/sensation` · `/ritual` · `/chart` · `/tarot` · `/iching` (B97 + B99a) · `/geomancy` · `/runes` · `/voce` · `/correspondence` · `/calendar` · `/voice` (b108-2gu)
-- [ ] **Multi-language input methods** — software keyboard for polytonic Greek, Hebrew with niqud, IAST Sanskrit; romanization-to-script autocompletion
+- [x] **Multi-language input methods** — b108-2gz ships `LanguagePalette` (polytonic Greek breathings + accents + iota subscript · Hebrew letters + sofit + niqud + cantillation · IAST Sanskrit + devanagari reference row) and `transliterateIast` (romanization → Unicode IAST: `.rgveda` → ṛgveda · `Kri.s.na` → Kriṣṇa · `Raama` → Rāma · `OM` → oṁ)
 
 ### Templates
 - [ ] **Built-in templates** — Magical Record, Ritual Log, Dream, Divination, Synchronicity, Liber Resh, Banishing, Invocation, Scrying, Tarot Reading, Pathworking, Astrology Reading
@@ -290,7 +290,7 @@ Implementation phase: **[08 — Linguistic Tools](plan/08-linguistic-tools.md)**
 - [ ] **Community contribution** to voces library — submission, review, vetting
 - [ ] **Pronunciation guides** — IPA-based + simplified Anglo-phonetic + audio recordings (community-rateable)
 - [ ] **UI i18n framework** — full string extraction, RTL handling, polytonic Greek, Hebrew with niqud, Arabic shaping verified
-- [ ] **Input methods** — character palette for non-Latin scripts, romanization-to-script autocompletion
+- [x] **Input methods** — character palette + IAST transducer shared with §2 (b108-2gz)
 
 ## 8. Body & State
 
