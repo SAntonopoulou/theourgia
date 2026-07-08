@@ -4,16 +4,18 @@
  * Inline reference to a divination reading. The result is **stored as
  * static attrs on the node** so the entry is a self-contained
  * historical record — design decision per B99 (parametric over
- * reference). Currently supports tarot and i-ching; geomancy / runes /
- * pendulum follow in B99b alongside their pickers.
+ * reference). Supports tarot · i-ching · geomancy · runes.
  *
  * Persisted attrs:
- *   - kind:     "tarot" | "iching"
+ *   - kind:     "tarot" | "iching" | "geomancy" | "runes"
  *   - seed:     number (deterministic source for the engine)
  *   - question: string (optional, displayed verbatim)
  *   - spread:   SpreadKind (tarot only)
  *   - cards:    DrawnCard[] (tarot only — cached snapshot)
  *   - lines:    LineValue[] (iching only — six cast lines)
+ *   - mothers:  GeoFigure[4] (geomancy only — shield derives from these)
+ *   - runes:    RuneDrawn[] (runes only — 1/3/5 drawn runes)
+ *   - runeSize: RuneDrawSize (runes only — draw size)
  */
 
 import { Node, mergeAttributes } from "@tiptap/core";
@@ -21,9 +23,16 @@ import { ReactNodeViewRenderer, NodeViewWrapper, type NodeViewProps } from "@tip
 
 import {
   type DrawnCard,
+  type GeoFigure,
+  type GeoLine,
   type LineValue,
+  type RuneDrawn,
+  type RuneDrawSize,
   type SpreadKind,
+  deriveShield,
+  drawRunes,
   drawSpread,
+  figureName,
   hexagramName,
   hexagramNumber,
   isYang,
@@ -31,7 +40,7 @@ import {
 
 const LINE = "var(--line)";
 
-export type DivinationKind = "tarot" | "iching";
+export type DivinationKind = "tarot" | "iching" | "geomancy" | "runes";
 
 function pickTarotSnapshot(spread: SpreadKind, seed: number): DrawnCard[] {
   return drawSpread(spread, seed);
@@ -43,6 +52,28 @@ function deterministicLineValue(rng: () => number): LineValue {
   if (v < 0.5) return 7; // young yang
   if (v < 0.9375) return 8; // young yin
   return 9; // old yang
+}
+
+function pickGeomancySnapshot(seed: number): [GeoFigure, GeoFigure, GeoFigure, GeoFigure] {
+  let s = seed >>> 0;
+  const rng = () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const line = (): GeoLine => (rng() < 0.5 ? 1 : 2);
+  return [
+    [line(), line(), line(), line()],
+    [line(), line(), line(), line()],
+    [line(), line(), line(), line()],
+    [line(), line(), line(), line()],
+  ];
+}
+
+function pickRunesSnapshot(size: RuneDrawSize, seed: number): RuneDrawn[] {
+  return drawRunes(size, seed);
 }
 
 function pickIchingSnapshot(seed: number): LineValue[] {
@@ -73,6 +104,9 @@ function DivinationView({ node }: NodeViewProps) {
     spread?: SpreadKind;
     cards?: DrawnCard[];
     lines?: LineValue[];
+    mothers?: [GeoFigure, GeoFigure, GeoFigure, GeoFigure];
+    runes?: RuneDrawn[];
+    runeSize?: RuneDrawSize;
   };
   const kind = (attrs.kind ?? "tarot") as DivinationKind;
   const seed = typeof attrs.seed === "number" ? attrs.seed : 0;
@@ -119,7 +153,13 @@ function DivinationView({ node }: NodeViewProps) {
             color: "var(--ink-mute)",
           }}
         >
-          {kind === "tarot" ? "Tarot reading" : "I Ching cast"}
+          {kind === "tarot"
+            ? "Tarot reading"
+            : kind === "iching"
+              ? "I Ching cast"
+              : kind === "geomancy"
+                ? "Geomancy cast"
+                : "Rune cast"}
         </span>
         <span
           style={{
@@ -149,8 +189,12 @@ function DivinationView({ node }: NodeViewProps) {
       )}
       {kind === "tarot" ? (
         <TarotBody cards={attrs.cards ?? []} />
-      ) : (
+      ) : kind === "iching" ? (
         <IchingBody lines={attrs.lines ?? []} />
+      ) : kind === "geomancy" ? (
+        <GeomancyBody mothers={attrs.mothers ?? undefined} />
+      ) : (
+        <RunesBody runes={attrs.runes ?? []} />
       )}
     </NodeViewWrapper>
   );
@@ -282,6 +326,183 @@ function IchingBody({ lines }: { lines: LineValue[] }) {
   );
 }
 
+function GeoFigureGlyph({ figure, label }: { figure: GeoFigure; label?: string }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+      <svg width="18" height="42" viewBox="0 0 18 42" aria-hidden="true">
+        {figure.map((line, i) => {
+          const y = 4 + i * 10;
+          return line === 1 ? (
+            <circle key={i} cx="9" cy={y + 2} r="2" fill="var(--ink)" />
+          ) : (
+            <g key={i} fill="var(--ink)">
+              <circle cx="3" cy={y + 2} r="2" />
+              <circle cx="15" cy={y + 2} r="2" />
+            </g>
+          );
+        })}
+      </svg>
+      {label && (
+        <span
+          style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 10,
+            letterSpacing: "0.06em",
+            color: "var(--ink-mute)",
+            textAlign: "center",
+          }}
+        >
+          {label}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function GeomancyBody({
+  mothers,
+}: {
+  mothers?: [GeoFigure, GeoFigure, GeoFigure, GeoFigure];
+}) {
+  if (!mothers) {
+    return (
+      <div
+        style={{
+          padding: "14px 16px",
+          fontFamily: "var(--font-ui)",
+          fontSize: 12,
+          color: "var(--ink-mute)",
+          fontStyle: "italic",
+        }}
+      >
+        No cast yet.
+      </div>
+    );
+  }
+  const shield = deriveShield(mothers);
+  return (
+    <div
+      style={{
+        padding: "14px 16px",
+        display: "flex",
+        gap: 22,
+        alignItems: "center",
+        flexWrap: "wrap",
+      }}
+    >
+      <div style={{ display: "flex", gap: 10 }}>
+        {shield.mothers.map((f, i) => (
+          <GeoFigureGlyph
+            key={`m-${i}`}
+            figure={f}
+            label={`M${i + 1} · ${figureName(f) ?? "?"}`}
+          />
+        ))}
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 6,
+          borderLeft: `1px solid ${LINE}`,
+          paddingLeft: 22,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 10,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: "var(--ink-mute)",
+          }}
+        >
+          Judge
+        </span>
+        <GeoFigureGlyph figure={shield.judge} label={figureName(shield.judge) ?? "?"} />
+      </div>
+    </div>
+  );
+}
+
+function RunesBody({ runes }: { runes: RuneDrawn[] }) {
+  if (runes.length === 0) {
+    return (
+      <div
+        style={{
+          padding: "14px 16px",
+          fontFamily: "var(--font-ui)",
+          fontSize: 12,
+          color: "var(--ink-mute)",
+          fontStyle: "italic",
+        }}
+      >
+        No cast yet.
+      </div>
+    );
+  }
+  return (
+    <div
+      style={{
+        padding: "14px 16px",
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 14,
+      }}
+    >
+      {runes.map((r, i) => (
+        <div
+          key={`r-${i}-${r.rune.name}`}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 6,
+            minWidth: 92,
+            padding: "10px 12px",
+            border: `1px solid ${LINE}`,
+            borderRadius: "var(--r-md)",
+            background: "var(--bg)",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-rune, var(--font-serif))",
+              fontSize: 26,
+              color: "var(--ink)",
+              transform: r.merkstave ? "rotate(180deg)" : undefined,
+            }}
+            aria-label={`${r.rune.name}${r.merkstave ? " merkstave" : ""}`}
+          >
+            {r.rune.glyph}
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-ui)",
+              fontSize: 11,
+              color: "var(--ink-soft)",
+              textAlign: "center",
+            }}
+          >
+            {r.rune.name}
+          </span>
+          {r.merkstave && (
+            <span
+              style={{
+                fontFamily: "var(--font-ui)",
+                fontSize: 10,
+                color: "var(--ink-mute)",
+              }}
+            >
+              merkstave
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export const DivinationNode = Node.create({
   name: "divination",
   group: "block",
@@ -326,6 +547,47 @@ export const DivinationNode = Node.create({
           "data-lines": JSON.stringify(attrs.lines ?? []),
         }),
       },
+      mothers: {
+        default: null,
+        parseHTML: (el: HTMLElement) => {
+          const raw = el.getAttribute("data-mothers");
+          if (!raw) return null;
+          try {
+            return JSON.parse(raw);
+          } catch {
+            return null;
+          }
+        },
+        renderHTML: (attrs: {
+          mothers: [GeoFigure, GeoFigure, GeoFigure, GeoFigure] | null;
+        }) => (attrs.mothers ? { "data-mothers": JSON.stringify(attrs.mothers) } : {}),
+      },
+      runes: {
+        default: [],
+        parseHTML: (el: HTMLElement) => {
+          const raw = el.getAttribute("data-runes");
+          if (!raw) return [];
+          try {
+            return JSON.parse(raw);
+          } catch {
+            return [];
+          }
+        },
+        renderHTML: (attrs: { runes: RuneDrawn[] }) => ({
+          "data-runes": JSON.stringify(attrs.runes ?? []),
+        }),
+      },
+      runeSize: {
+        default: 3,
+        parseHTML: (el: HTMLElement) => {
+          const raw = el.getAttribute("data-rune-size");
+          const n = raw ? Number.parseInt(raw, 10) : 3;
+          return n === 1 || n === 5 ? n : 3;
+        },
+        renderHTML: (attrs: { runeSize: RuneDrawSize }) => ({
+          "data-rune-size": String(attrs.runeSize ?? 3),
+        }),
+      },
     };
   },
 
@@ -342,4 +604,4 @@ export const DivinationNode = Node.create({
   },
 });
 
-export { pickTarotSnapshot, pickIchingSnapshot };
+export { pickTarotSnapshot, pickIchingSnapshot, pickGeomancySnapshot, pickRunesSnapshot };

@@ -19,7 +19,9 @@ import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 
 import { LANG_FONT, type LangScript } from "./lang.js";
+import { CalendarStampNode } from "./nodes/CalendarStampNode.js";
 import { ChartNode } from "./nodes/ChartNode.js";
+import { CorrespondenceNode } from "./nodes/CorrespondenceNode.js";
 import { DivinationNode } from "./nodes/DivinationNode.js";
 import { RitualLogNode } from "./nodes/RitualLogNode.js";
 import { QuoteCitationNode } from "./nodes/QuoteCitationNode.js";
@@ -27,6 +29,8 @@ import { GematriaNode } from "./nodes/GematriaNode.js";
 import { SensationNode } from "./nodes/SensationNode.js";
 import { EntityRefNode } from "./nodes/EntityRefNode.js";
 import { SigilNode } from "./nodes/SigilNode.js";
+import { VoxMagicaeNode } from "./nodes/VoxMagicaeNode.js";
+import { VoiceRecordingNode } from "./nodes/VoiceRecordingNode.js";
 
 export { LANG_FONT, type LangScript };
 
@@ -121,5 +125,9 @@ export function buildExtensions(opts: BuildExtensionsOptions = {}) {
     SigilNode,
     ChartNode,
     DivinationNode,
+    CorrespondenceNode,
+    CalendarStampNode,
+    VoxMagicaeNode,
+    VoiceRecordingNode,
   ];
 }

@@ -93,9 +93,9 @@ Implementation phase: **[04 — Journaling](plan/04-journaling.md)** (with blog 
 - [ ] **Magical Record (Crowley structured)** as a first-class built-in template
 
 ### Editor (Tiptap)
-- [~] **Custom magical blocks**: `ritualLog` · `quoteCitation` · `gematria` · `sensation` · `entityRef` · `sigil` · `chart` · `divination` shipped live (B97 + B99a); `correspondence` · `calendarStamp` · `voiceRecording` · `voxMagicae` queued (B99b + later substrate batches)
+- [x] **Custom magical blocks**: `ritualLog` · `quoteCitation` · `gematria` · `sensation` · `entityRef` · `sigil` · `chart` · `divination` (B97 + B99a) · `correspondence` · `calendarStamp` · `voxMagicae` · `voiceRecording` (b108-2gu)
 - [~] **Inline foreign-script marks**: `lang` mark with `el` · `he` · `en` scripts shipped (LangMark · B97); `latin` · `sanskrit` · `arabic` · `coptic` are font-token aliases of the same mark
-- [~] **Slash commands**: `/sigil` · `/quote` · `/gematria` · `/entity` · `/sensation` · `/ritual` · `/chart` · `/tarot` · `/iching` shipped (B97 + B99a); `/voce` · `/geomancy` · `/runes` queued
+- [x] **Slash commands**: `/sigil` · `/quote` · `/gematria` · `/entity` · `/sensation` · `/ritual` · `/chart` · `/tarot` · `/iching` (B97 + B99a) · `/geomancy` · `/runes` · `/voce` · `/correspondence` · `/calendar` · `/voice` (b108-2gu)
 - [ ] **Multi-language input methods** — software keyboard for polytonic Greek, Hebrew with niqud, IAST Sanskrit; romanization-to-script autocompletion
 
 ### Templates

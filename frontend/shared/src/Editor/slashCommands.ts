@@ -9,7 +9,9 @@
 import type { Editor } from "@tiptap/core";
 
 import {
+  pickGeomancySnapshot,
   pickIchingSnapshot,
+  pickRunesSnapshot,
   pickTarotSnapshot,
 } from "./nodes/DivinationNode.js";
 
@@ -187,6 +189,141 @@ export const SLASH_COMMANDS: SlashCommand[] = [
         .insertContent({
           type: "divination",
           attrs: { kind: "iching", seed, question: "", spread: "three", cards: [], lines },
+        })
+        .run();
+    },
+  },
+  {
+    key: "geomancy",
+    command: "/geomancy",
+    title: "Geomancy cast",
+    description: "Four mothers → shield → judge",
+    iconColor: "var(--c-divination)",
+    iconPath: "M6 5h2M14 5h2M6 9h2M14 9h2M6 13h2M14 13h2M6 17h2M14 17h2",
+    run: (editor, range) => {
+      const seed = Math.floor(Math.random() * 2 ** 31);
+      const mothers = pickGeomancySnapshot(seed);
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent({
+          type: "divination",
+          attrs: { kind: "geomancy", seed, question: "", mothers },
+        })
+        .run();
+    },
+  },
+  {
+    key: "runes",
+    command: "/runes",
+    title: "Rune cast",
+    description: "Elder Futhark three-rune draw",
+    iconColor: "var(--c-divination)",
+    iconPath: "M5 4v16M8 4l4 6-4 6M16 4v16M14 12h4",
+    run: (editor, range) => {
+      const seed = Math.floor(Math.random() * 2 ** 31);
+      const runes = pickRunesSnapshot(3, seed);
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent({
+          type: "divination",
+          attrs: { kind: "runes", seed, question: "", runes, runeSize: 3 },
+        })
+        .run();
+    },
+  },
+  {
+    key: "voce",
+    command: "/voce",
+    title: "Vox magica",
+    description: "Embed an utterance with transliteration",
+    iconColor: "var(--c-working)",
+    iconPath: "M12 4v16M8 8v8M16 8v8M4 11v2M20 11v2",
+    run: (editor, range) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent({
+          type: "voxMagicae",
+          attrs: {
+            voceId: null,
+            text: "",
+            script: "grc",
+            transliteration: "",
+            ipa: "",
+            citation: "",
+          },
+        })
+        .run();
+    },
+  },
+  {
+    key: "correspondence",
+    command: "/correspondence",
+    title: "Correspondence table",
+    description: "Planetary · elemental · decan attributions",
+    iconColor: "var(--accent)",
+    iconPath: "M4 6h16M4 12h16M4 18h16",
+    run: (editor, range) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent({
+          type: "correspondence",
+          attrs: { subject: "", rows: [] },
+        })
+        .run();
+    },
+  },
+  {
+    key: "calendar-stamp",
+    command: "/calendar",
+    title: "Calendar stamp",
+    description: "Multi-calendar snapshot of a moment",
+    iconColor: "var(--c-synchronicity)",
+    iconPath: "M4 6h16v14H4z M4 10h16 M9 4v4 M15 4v4",
+    run: (editor, range) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent({
+          type: "calendarStamp",
+          attrs: {
+            at: new Date().toISOString(),
+            note: "",
+            calendars: ["gregorian", "hebrew", "thelemic"],
+          },
+        })
+        .run();
+    },
+  },
+  {
+    key: "voice",
+    command: "/voice",
+    title: "Voice recording",
+    description: "Audio embed with caption + transcript",
+    iconColor: "var(--accent)",
+    iconPath: "M9 4h6v12H9z M6 12v2a6 6 0 0 0 12 0v-2 M12 20v1",
+    run: (editor, range) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent({
+          type: "voiceRecording",
+          attrs: {
+            assetId: null,
+            url: "",
+            caption: "",
+            transcript: "",
+            duration: null,
+          },
         })
         .run();
     },

@@ -16,7 +16,9 @@ import { filterSlashCommands, SLASH_COMMANDS } from "./slashCommands.js";
 import { buildExtensions } from "./extensions.js";
 import { gematriaBreakdown, gematriaSum } from "./nodes/GematriaNode.js";
 import {
+  pickGeomancySnapshot,
   pickIchingSnapshot,
+  pickRunesSnapshot,
   pickTarotSnapshot,
 } from "./nodes/DivinationNode.js";
 import { formatCitation } from "./LibraryPicker.js";
@@ -29,8 +31,8 @@ function mountHeadless(content: unknown = { type: "doc", content: [{ type: "para
 }
 
 describe("Editor — slash command catalog", () => {
-  it("ships 9 commands at B99a (six + chart + tarot + iching)", () => {
-    expect(SLASH_COMMANDS).toHaveLength(9);
+  it("ships 15 commands at b108-2gu (b99a nine + geomancy + runes + voce + correspondence + calendar + voice)", () => {
+    expect(SLASH_COMMANDS).toHaveLength(15);
     const keys = SLASH_COMMANDS.map((c) => c.key);
     expect(keys).toEqual(
       expect.arrayContaining([
@@ -43,6 +45,12 @@ describe("Editor — slash command catalog", () => {
         "chart",
         "tarot",
         "iching",
+        "geomancy",
+        "runes",
+        "voce",
+        "correspondence",
+        "calendar-stamp",
+        "voice",
       ]),
     );
   });
@@ -54,12 +62,12 @@ describe("Editor — slash command catalog", () => {
   });
 
   it("returns the full list when query is empty", () => {
-    expect(filterSlashCommands("")).toHaveLength(9);
+    expect(filterSlashCommands("")).toHaveLength(15);
   });
 });
 
 describe("Editor — extensions wiring", () => {
-  it("registers the 8 custom block nodes in the schema (6 B97 + chart + divination)", () => {
+  it("registers all 12 custom block nodes in the schema (8 B97-B99 + 4 b108-2gu)", () => {
     const editor = mountHeadless();
     const schema = editor.schema;
     expect(schema.nodes.ritualLog).toBeDefined();
@@ -70,6 +78,10 @@ describe("Editor — extensions wiring", () => {
     expect(schema.nodes.sigil).toBeDefined();
     expect(schema.nodes.chart).toBeDefined();
     expect(schema.nodes.divination).toBeDefined();
+    expect(schema.nodes.correspondence).toBeDefined();
+    expect(schema.nodes.calendarStamp).toBeDefined();
+    expect(schema.nodes.voxMagicae).toBeDefined();
+    expect(schema.nodes.voiceRecording).toBeDefined();
     editor.destroy();
   });
 
@@ -107,6 +119,12 @@ describe("Editor — slash command insertion", () => {
       chart: "chart",
       tarot: "divination",
       iching: "divination",
+      geomancy: "divination",
+      runes: "divination",
+      voce: "voxMagicae",
+      correspondence: "correspondence",
+      "calendar-stamp": "calendarStamp",
+      voice: "voiceRecording",
     };
     for (const cmd of SLASH_COMMANDS) {
       const editor = mountHeadless();
@@ -117,6 +135,148 @@ describe("Editor — slash command insertion", () => {
       expect(types).toContain(COMMAND_TO_NODE_TYPE[cmd.key]);
       editor.destroy();
     }
+  });
+});
+
+describe("Editor — b108-2gu divination extensions (geomancy + runes)", () => {
+  it("pickGeomancySnapshot is deterministic for a given seed", () => {
+    const a = pickGeomancySnapshot(42);
+    const b = pickGeomancySnapshot(42);
+    expect(a).toEqual(b);
+    expect(a).toHaveLength(4);
+    for (const mother of a) {
+      expect(mother).toHaveLength(4);
+      for (const line of mother) {
+        expect(line === 1 || line === 2).toBe(true);
+      }
+    }
+  });
+
+  it("pickRunesSnapshot draws the requested number of runes", () => {
+    expect(pickRunesSnapshot(1, 1)).toHaveLength(1);
+    expect(pickRunesSnapshot(3, 1)).toHaveLength(3);
+    expect(pickRunesSnapshot(5, 1)).toHaveLength(5);
+  });
+
+  it("pickRunesSnapshot is deterministic for a given (size, seed)", () => {
+    const a = pickRunesSnapshot(3, 99);
+    const b = pickRunesSnapshot(3, 99);
+    expect(a.map((r) => r.rune.name)).toEqual(b.map((r) => r.rune.name));
+  });
+
+  it("geomancy divination round-trips through the schema", () => {
+    const mothers = pickGeomancySnapshot(7);
+    const doc = {
+      type: "doc",
+      content: [
+        {
+          type: "divination",
+          attrs: {
+            kind: "geomancy",
+            seed: 7,
+            question: "test",
+            mothers,
+          },
+        },
+      ],
+    };
+    const editor = mountHeadless(doc);
+    const roundTripped = editor.getJSON();
+    const block = (roundTripped.content ?? [])[0] as {
+      type: string;
+      attrs: { kind: string; mothers: unknown };
+    };
+    expect(block.type).toBe("divination");
+    expect(block.attrs.kind).toBe("geomancy");
+    expect(block.attrs.mothers).toEqual(mothers);
+    editor.destroy();
+  });
+});
+
+describe("Editor — b108-2gu new block nodes", () => {
+  it("correspondence node persists rows via data-rows JSON", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        {
+          type: "correspondence",
+          attrs: {
+            subject: "Saturn · Binah",
+            rows: [
+              { key: "Planet", value: "Saturn" },
+              { key: "Sphere", value: "Binah" },
+              { key: "Colour", value: "Indigo" },
+            ],
+          },
+        },
+      ],
+    };
+    const editor = mountHeadless(doc);
+    const rt = editor.getJSON();
+    const block = (rt.content ?? [])[0] as {
+      type: string;
+      attrs: { subject: string; rows: { key: string; value: string }[] };
+    };
+    expect(block.type).toBe("correspondence");
+    expect(block.attrs.subject).toBe("Saturn · Binah");
+    expect(block.attrs.rows).toHaveLength(3);
+    expect(block.attrs.rows[0].key).toBe("Planet");
+    editor.destroy();
+  });
+
+  it("calendarStamp defaults to gregorian+hebrew+thelemic", () => {
+    const editor = mountHeadless();
+    const cmd = SLASH_COMMANDS.find((c) => c.key === "calendar-stamp")!;
+    cmd.run(editor, { from: 1, to: editor.state.selection.to });
+    const block = (editor.getJSON().content ?? []).find(
+      (b: { type: string }) => b.type === "calendarStamp",
+    ) as { attrs: { calendars: string[]; at: string } };
+    expect(block).toBeDefined();
+    expect(block.attrs.calendars).toEqual(["gregorian", "hebrew", "thelemic"]);
+    expect(typeof block.attrs.at).toBe("string");
+    editor.destroy();
+  });
+
+  it("voxMagicae carries script + text + optional citation", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        {
+          type: "voxMagicae",
+          attrs: {
+            voceId: null,
+            text: "ΙΑΩ ΣΑΒΑΩΘ ΑΔΩΝΑΙ",
+            script: "grc",
+            transliteration: "iaō sabaōth adōnai",
+            ipa: "iaɔː sabaɔːtʰ adoːnaj",
+            citation: "PGM IV.930",
+          },
+        },
+      ],
+    };
+    const editor = mountHeadless(doc);
+    const block = (editor.getJSON().content ?? [])[0] as {
+      type: string;
+      attrs: { text: string; script: string; citation: string };
+    };
+    expect(block.type).toBe("voxMagicae");
+    expect(block.attrs.text).toBe("ΙΑΩ ΣΑΒΑΩΘ ΑΔΩΝΑΙ");
+    expect(block.attrs.script).toBe("grc");
+    expect(block.attrs.citation).toBe("PGM IV.930");
+    editor.destroy();
+  });
+
+  it("voiceRecording has default null duration + empty url", () => {
+    const editor = mountHeadless();
+    const cmd = SLASH_COMMANDS.find((c) => c.key === "voice")!;
+    cmd.run(editor, { from: 1, to: editor.state.selection.to });
+    const block = (editor.getJSON().content ?? []).find(
+      (b: { type: string }) => b.type === "voiceRecording",
+    ) as { attrs: { duration: number | null; url: string } };
+    expect(block).toBeDefined();
+    expect(block.attrs.duration).toBeNull();
+    expect(block.attrs.url).toBe("");
+    editor.destroy();
   });
 });
 
