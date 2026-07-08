@@ -574,7 +574,7 @@ Implementation phase: **[00 — Foundations](plan/00-foundations.md)** + **[01 �
 
 ### Deployment
 - [ ] **One-command deploy** — bootstrap installer (`curl ... | bash` or small TUI) for fresh hosts; sets up Docker, secrets, initial config
-- [ ] **Web-based first-run wizard** — magical name, tradition(s), location, calendars enabled, encryption preference, 2FA setup, optional library import
+- [x] **Web-based first-run wizard** — magical name, tradition(s), location, calendars enabled, encryption preference, 2FA setup, optional library import — b108-2hf shipped `/api/v1/setup/status` (public) + admin `/setup` route with 5-step wizard (welcome · magickal name · tradition · calendars · review). Encryption preference + 2FA + library import are still opt-in via `/settings/*` after signup.
 - [ ] **Docker Compose primary** — production-grade defaults
 - [ ] **Caddy reference config** (host-level shared Caddy supported via `Caddyfile.d/` snippets for multi-tenant boxes)
 - [ ] **Traefik supported** as alternative

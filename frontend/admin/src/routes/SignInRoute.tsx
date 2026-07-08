@@ -19,10 +19,10 @@ import {
 } from "@theourgia/shared";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import type { CSSProperties } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { apiMethods } from "../data/api.js";
+import { apiClient, apiMethods } from "../data/api.js";
 
 const PAGE: CSSProperties = {
   maxWidth: 460,
@@ -98,6 +98,30 @@ export function SignInRoute() {
   const auth = useAuth();
   const navigate = useNavigate();
   const supported = isWebauthnSupported();
+
+  // b108-2hf: fresh install detection. When the vault has no users
+  // yet, the wizard at /setup owns the account-creation flow and
+  // this surface only exists for returning operators. Redirect.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const resp = await apiClient.request<{
+          state: "empty" | "provisioned";
+        }>("/api/v1/setup/status");
+        if (!cancelled && resp.state === "empty") {
+          navigate("/setup", { replace: true });
+        }
+      } catch {
+        // If setup status is unreachable, silently stay on /signin —
+        // no reason to make the sign-in surface unusable because of
+        // a transient network error.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
 
   // Magickal-name sign-in is the primary path for operators without
   // hardware WebAuthn: pair it with TOTP 2FA at /settings/totp and the

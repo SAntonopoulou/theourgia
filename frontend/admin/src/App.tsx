@@ -47,6 +47,7 @@ import { SurfaceSkeleton } from "./lib/SurfaceSkeleton.js";
 // (b108-2ge — follow-up to the vendor-chunk split in b108-2cp).
 import { Capture } from "./routes/Capture.js";
 import { SignInRoute } from "./routes/SignInRoute.js";
+import { SetupWizardRoute } from "./routes/SetupWizardRoute.js";
 import { Today } from "./routes/Today.js";
 
 // Lazy: every other surface. Route modules use NAMED exports, so the
@@ -743,6 +744,15 @@ function ShellRoutes() {
       <Suspense fallback={<SurfaceSkeleton rowCount={4} />}>
         <Routes>
           <Route path="/signin" element={<SignInRoute />} />
+        </Routes>
+      </Suspense>
+    );
+  }
+  if (location.pathname === "/setup") {
+    return (
+      <Suspense fallback={<SurfaceSkeleton rowCount={4} />}>
+        <Routes>
+          <Route path="/setup" element={<SetupWizardRoute />} />
         </Routes>
       </Suspense>
     );

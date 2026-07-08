@@ -24,10 +24,10 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `b108-2he` (frontend follow-ups #4 + #5 · `RecipesSurface` + `PilgrimageRoutesSurface` primitives + admin `/recipes` + `/pilgrimage-routes` routes · SVG polyline preview over normalised site coordinates · shared PromptDialog/ConfirmDialog throughout · FEATURES §10 + §13 `[~]` → `[x]`) |
+| **Latest commit** | `b108-2hf` (web-based first-run wizard · public `GET /api/v1/setup/status` returns empty/provisioned · admin `/setup` route with 5-step wizard (welcome → magickal name → tradition → calendars → review) · SignInRoute auto-redirects to `/setup` on fresh installs · FEATURES §12 first-run wizard `[ ]` → `[x]`) |
 | **Production** | **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; 8 prod containers, isolated compose project) |
-| **vitest** | **2979** shared + **36** admin route-mount smoke + **2735** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
-| **backend** | **2735 passing** · alembic head **0072** — family-tree kinship enum + ancestor_profile column; recipe + pilgrimage_route + comment + content_format; every write endpoint + owned read on `CurrentUser` |
+| **vitest** | **2979** shared + **37** admin route-mount smoke + **2740** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
+| **backend** | **2740 passing** · alembic head **0072** — family-tree kinship enum + ancestor_profile column; recipe + pilgrimage_route + comment + content_format; every write endpoint + owned read on `CurrentUser` |
 | **backend** | **2670 passing** · alembic head **0066** — 51 v1 routers migrated to CurrentUser (writes + owned reads); public endpoints (subscribe · public reader · webhooks · webfinger · iCal token · public identity face) preserved; **+58 auth-required tests** |
 | **agent-daemon** | **198 passing** · alembic head **0002** — MCP + JSON-RPC + SSE + launcher + subprocess runner + cost-cap hard halt + audit emission · DB-backed (sinks + repos) · bwrap filesystem sandbox (rule 59 enforced) · install lifecycle CRUD · memory dir read/write with rule-59 path-safety |
 | **registry** | 34 passing · alembic head **0001** — DID + Ed25519 auth · author submission lifecycle · maintainer queue/decide/promote · advisory filing |
