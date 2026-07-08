@@ -24,9 +24,10 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `b108-2gu` (editor blocks · slash commands · four new Tiptap nodes: correspondence · calendarStamp · voxMagicae · voiceRecording + /geomancy /runes /voce /correspondence /calendar /voice — FEATURES §2 `[~]` → `[x]`) |
+| **Latest commit** | `b108-2gv` (publications · in-browser PDF viewer + EPUB reader wired via lazy pdf.js + epub.js in ReaderSurface; `content_format` + `file_url` + `file_size_bytes` on Publication · alembic 0068 · FEATURES §12 `[ ]` → `[x]`) |
 | **Production** | **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; 8 prod containers, isolated compose project) |
-| **vitest** | **2932** shared + 32 admin route-mount smoke + **2670** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
+| **vitest** | **2932** shared + 32 admin route-mount smoke + **2672** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
+| **backend** | **2672 passing** · alembic head **0068** — publication.content_format + file_url; every write endpoint + owned read now `CurrentUser` |
 | **backend** | **2670 passing** · alembic head **0066** — 51 v1 routers migrated to CurrentUser (writes + owned reads); public endpoints (subscribe · public reader · webhooks · webfinger · iCal token · public identity face) preserved; **+58 auth-required tests** |
 | **agent-daemon** | **198 passing** · alembic head **0002** — MCP + JSON-RPC + SSE + launcher + subprocess runner + cost-cap hard halt + audit emission · DB-backed (sinks + repos) · bwrap filesystem sandbox (rule 59 enforced) · install lifecycle CRUD · memory dir read/write with rule-59 path-safety |
 | **registry** | 34 passing · alembic head **0001** — DID + Ed25519 auth · author submission lifecycle · maintainer queue/decide/promote · advisory filing |

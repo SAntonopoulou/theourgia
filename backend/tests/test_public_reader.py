@@ -51,6 +51,8 @@ def _pub_row(
         PublicationState,
     )
 
+    from theourgia.models.publications import PublicationContentFormat
+
     return SimpleNamespace(
         id=uuid4(),
         owner_id=uuid4(),
@@ -71,6 +73,9 @@ def _pub_row(
         currency="usd",
         watermark_enabled=False,
         cited=False,
+        content_format=PublicationContentFormat.HTML,
+        file_url=None,
+        file_size_bytes=None,
         created_at=None,
         updated_at=None,
         deleted_at=None,
@@ -288,3 +293,59 @@ def test_feeds_router_mounted_at_app_level_not_v1() -> None:
     # (Negative-look: we can't easily prove absence with substring,
     # but the positive-look is sufficient — moving it would change
     # the assertion above.)
+
+
+# ── b108-2gv content_format + file_url ─────────────────────
+
+
+def test_reader_response_defaults_content_format_html() -> None:
+    r = ReaderResponse(
+        id="p1",
+        slug="w",
+        title="T",
+        summary=None,
+        cover_url=None,
+        language="en",
+        license="cc0",
+        published_at=None,
+        pricing_model="free",
+        one_time_amount_cents=None,
+        currency="usd",
+        body={"type": "doc", "content": []},
+        chapters=[],
+        paywall_kind="none",
+        purchase_url=None,
+        subscribe_url=None,
+    )
+    assert r.content_format == "html"
+    assert r.file_url is None
+    assert r.file_size_bytes is None
+
+
+def test_reader_response_accepts_pdf_epub_content_format() -> None:
+    r = ReaderResponse(
+        id="p1",
+        slug="w",
+        title="T",
+        summary=None,
+        cover_url=None,
+        language="en",
+        license="cc0",
+        published_at=None,
+        pricing_model="free",
+        one_time_amount_cents=None,
+        currency="usd",
+        body=None,
+        chapters=[],
+        paywall_kind="none",
+        purchase_url=None,
+        subscribe_url=None,
+        content_format="pdf",
+        file_url="https://r2/pub.pdf",
+        file_size_bytes=1_234_567,
+    )
+    assert r.content_format == "pdf"
+    assert r.file_url == "https://r2/pub.pdf"
+
+    r2 = r.model_copy(update={"content_format": "epub", "file_url": "https://r2/pub.epub"})
+    assert r2.content_format == "epub"

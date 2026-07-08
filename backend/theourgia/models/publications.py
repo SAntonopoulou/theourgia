@@ -48,6 +48,7 @@ __all__ = [
     "PublicationKind",
     "PublicationLicense",
     "PublicationState",
+    "PublicationContentFormat",
 ]
 
 
@@ -63,6 +64,19 @@ class PublicationState(str, enum.Enum):
     SCHEDULED = "scheduled"
     LIVE = "live"
     WITHDRAWN = "withdrawn"
+
+
+class PublicationContentFormat(str, enum.Enum):
+    """How the reader renders the publication body.
+
+    - HTML: sanitised Tiptap-rendered HTML (existing behaviour).
+    - PDF: PDF file served from R2; reader inlines a pdf.js viewer.
+    - EPUB: EPUB file served from R2; reader inlines epub.js.
+    """
+
+    HTML = "html"
+    PDF = "pdf"
+    EPUB = "epub"
 
 
 class PublicationLicense(str, enum.Enum):
@@ -154,6 +168,24 @@ class Publication(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
 
     watermark_enabled: bool = Field(default=False, nullable=False)
     cited: bool = Field(default=False, nullable=False)
+
+    # b108-2gv — inline PDF / EPUB reader support.
+    # HTML is the default and existing behaviour. PDF / EPUB carry a
+    # file_url (R2 object URL) that the reader passes to pdf.js / epub.js.
+    content_format: PublicationContentFormat = Field(
+        default=PublicationContentFormat.HTML,
+        sa_column=Column(
+            SQLEnum(
+                PublicationContentFormat,
+                name="publication_content_format",
+                values_callable=lambda obj: [m.value for m in obj],
+            ),
+            nullable=False,
+            server_default=PublicationContentFormat.HTML.value,
+        ),
+    )
+    file_url: Optional[str] = Field(default=None, max_length=1024)
+    file_size_bytes: Optional[int] = Field(default=None, ge=0)
 
 
 class PublicationChapter(IDMixin, TimestampMixin, table=True):

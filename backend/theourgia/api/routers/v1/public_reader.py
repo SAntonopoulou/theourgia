@@ -77,6 +77,10 @@ class ReaderResponse(BaseModel):
     paywall_kind: PaywallKind
     purchase_url: str | None
     subscribe_url: str | None
+    # b108-2gv — inline PDF / EPUB reader hooks.
+    content_format: Literal["html", "pdf", "epub"] = "html"
+    file_url: str | None = None
+    file_size_bytes: int | None = None
 
 
 # ── Helpers ────────────────────────────────────────────────────
@@ -230,4 +234,10 @@ async def read_publication(
         paywall_kind=paywall,
         purchase_url=_purchase_url(pub) if paywall == "purchase" else None,
         subscribe_url=_subscribe_url(pub) if paywall == "subscribe" else None,
+        content_format=pub.content_format.value,
+        # PDF / EPUB file_url only exposed publicly when the reader can
+        # already see the body (no active paywall). Behind a paywall the
+        # file stays gated exactly like `body` does.
+        file_url=pub.file_url if paywall == "none" else None,
+        file_size_bytes=pub.file_size_bytes if paywall == "none" else None,
     )

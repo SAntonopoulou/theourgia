@@ -220,7 +220,7 @@ describe("Editor — b108-2gu new block nodes", () => {
     expect(block.type).toBe("correspondence");
     expect(block.attrs.subject).toBe("Saturn · Binah");
     expect(block.attrs.rows).toHaveLength(3);
-    expect(block.attrs.rows[0].key).toBe("Planet");
+    expect(block.attrs.rows[0]?.key).toBe("Planet");
     editor.destroy();
   });
 
@@ -228,12 +228,18 @@ describe("Editor — b108-2gu new block nodes", () => {
     const editor = mountHeadless();
     const cmd = SLASH_COMMANDS.find((c) => c.key === "calendar-stamp")!;
     cmd.run(editor, { from: 1, to: editor.state.selection.to });
-    const block = (editor.getJSON().content ?? []).find(
-      (b: { type: string }) => b.type === "calendarStamp",
-    ) as { attrs: { calendars: string[]; at: string } };
+    const content = (editor.getJSON().content ?? []) as {
+      type: string;
+      attrs?: { calendars?: string[]; at?: string };
+    }[];
+    const block = content.find((b) => b.type === "calendarStamp");
     expect(block).toBeDefined();
-    expect(block.attrs.calendars).toEqual(["gregorian", "hebrew", "thelemic"]);
-    expect(typeof block.attrs.at).toBe("string");
+    expect(block?.attrs?.calendars).toEqual([
+      "gregorian",
+      "hebrew",
+      "thelemic",
+    ]);
+    expect(typeof block?.attrs?.at).toBe("string");
     editor.destroy();
   });
 
@@ -270,12 +276,14 @@ describe("Editor — b108-2gu new block nodes", () => {
     const editor = mountHeadless();
     const cmd = SLASH_COMMANDS.find((c) => c.key === "voice")!;
     cmd.run(editor, { from: 1, to: editor.state.selection.to });
-    const block = (editor.getJSON().content ?? []).find(
-      (b: { type: string }) => b.type === "voiceRecording",
-    ) as { attrs: { duration: number | null; url: string } };
+    const content = (editor.getJSON().content ?? []) as {
+      type: string;
+      attrs?: { duration?: number | null; url?: string };
+    }[];
+    const block = content.find((b) => b.type === "voiceRecording");
     expect(block).toBeDefined();
-    expect(block.attrs.duration).toBeNull();
-    expect(block.attrs.url).toBe("");
+    expect(block?.attrs?.duration).toBeNull();
+    expect(block?.attrs?.url).toBe("");
     editor.destroy();
   });
 });

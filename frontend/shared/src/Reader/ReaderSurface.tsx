@@ -26,7 +26,23 @@ import {
   type CSSProperties,
   type ReactElement,
   type ReactNode,
+  Suspense,
+  lazy,
 } from "react";
+
+// pdf.js + epub.js are heavy client-only libraries that reference
+// browser-only globals (DOMMatrix, DOMParser). Lazy-load them so the
+// jsdom route-mount smoke tests can import ReaderSurface without
+// blowing up at module time — and so publications rendered as HTML
+// don't pay the ~500KB cost.
+const PdfViewer = lazy(async () => {
+  const mod = await import("./PdfViewer.js");
+  return { default: mod.PdfViewer };
+});
+const EpubViewer = lazy(async () => {
+  const mod = await import("./EpubViewer.js");
+  return { default: mod.EpubViewer };
+});
 
 export type ReaderPurchaseState =
   | { kind: "free" }
@@ -63,6 +79,11 @@ export interface ReaderPublicationRecord {
    *  `body_html` (the common shape from the Phase-10 renderer) or
    *  via the `children` prop for advanced consumers (e.g. tests). */
   body_html?: string;
+  /** Content format. `"html"` renders body_html (default); `"pdf"` /
+   *  `"epub"` render the corresponding inline viewer using file_url. */
+  content_format?: "html" | "pdf" | "epub";
+  /** URL to the PDF / EPUB byte stream when content_format is set. */
+  file_url?: string | null;
 }
 
 export interface ReaderSurfaceProps {
@@ -155,6 +176,27 @@ function DownloadIcon(): ReactElement {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────
+
+function ReaderLoadingFallback(): ReactElement {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        padding: 40,
+        border: "1px solid var(--line)",
+        borderRadius: "var(--r-lg)",
+        background: "var(--bg-2)",
+        fontFamily: "var(--font-ui)",
+        fontSize: 13,
+        color: "var(--ink-mute)",
+        textAlign: "center",
+      }}
+    >
+      Loading reader…
+    </div>
+  );
+}
 
 function purchaseButtonCopy(state: ReaderPurchaseState): {
   label: string;
@@ -301,6 +343,26 @@ export function ReaderSurface({
 
           {children ? (
             <div data-reader-body>{children}</div>
+          ) : publication.content_format === "pdf" && publication.file_url ? (
+            <div data-reader-body data-reader-format="pdf">
+              <Suspense fallback={<ReaderLoadingFallback />}>
+                <PdfViewer
+                  url={publication.file_url}
+                  watermark={publication.watermark_email ?? null}
+                  downloadUrl={publication.file_url}
+                />
+              </Suspense>
+            </div>
+          ) : publication.content_format === "epub" && publication.file_url ? (
+            <div data-reader-body data-reader-format="epub">
+              <Suspense fallback={<ReaderLoadingFallback />}>
+                <EpubViewer
+                  url={publication.file_url}
+                  watermark={publication.watermark_email ?? null}
+                  downloadUrl={publication.file_url}
+                />
+              </Suspense>
+            </div>
           ) : publication.body_html ? (
             <div
               data-reader-body
