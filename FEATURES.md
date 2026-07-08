@@ -320,7 +320,7 @@ Implementation phase: distributed across **[04 — Journaling](plan/04-journalin
 
 - [ ] **Personal correspondence tables** — user-created, not pre-filled; CSV import supported for existing systems
 - [ ] **Personal grimoire** — writings, spells, rituals, formulae (entry-kind specialization)
-- [~] **Recipe builder** — incense, oils, washes, philtres — b108-2gy ships backend (recipe table with kind enum · ingredients / steps / correspondences JSONB · library_source_ids + entity_ids links · CRUD endpoints · alembic 0071). Frontend form + list surface land in a follow-up.
+- [x] **Recipe builder** — incense, oils, washes, philtres — b108-2gy shipped backend (recipe table with kind enum · ingredients / steps / correspondences JSONB · library_source_ids + entity_ids links · CRUD endpoints · alembic 0071). b108-2he shipped frontend (`RecipesSurface` + admin `/recipes` route with kind chips + ingredients / steps editors).
 - [ ] **Personal materia databases** — herbs, stones, incense, colors, sounds (what's in the cabinet)
 
 ## 11. Bundles, Sharing & Magickal Knowledge Distribution
@@ -421,7 +421,7 @@ Implementation phase: **[11 — Media Library](plan/11-media-library.md)**
 - [ ] **Per-video captions/subtitles** + chapter markers
 - [ ] **Pilgrimage / sacred site log** — map (Leaflet + OSM), per-site with location-precision controls (exact/neighborhood/region), visited_at multi-entry, deity associations
 - [ ] **Privacy-aware map rendering** — jittered coords on `network`, city-level only on `public`, exact only on `personal` / `viewer`
-- [~] **Pilgrimage routes** — ordered sequences with notes (e.g., "Eleusis route") — b108-2gx ships backend (pilgrimage_route + pilgrimage_route_stop tables · CRUD + reorder endpoints · alembic 0070). Frontend polyline rendering + admin editor land in a follow-up commit.
+- [x] **Pilgrimage routes** — ordered sequences with notes (e.g., "Eleusis route") — b108-2gx shipped backend (pilgrimage_route + pilgrimage_route_stop tables · CRUD + reorder endpoints · alembic 0070). b108-2he shipped frontend (`PilgrimageRoutesSurface` + admin `/pilgrimage-routes` route with SVG polyline preview + stops editor with up/down reorder).
 - [ ] **iCal / WebCal feed exports** — per-vault subscribable feeds for planetary hours, festivals, working windows
 - [ ] **Network group ritual feed** — per-hub iCal export of scheduled group rituals, with per-participant timezone-localized planetary-hour metadata
 - [ ] **Subscribable from any iCal client** — Apple Calendar, Google Calendar, Outlook, Fastmail, Thunderbird

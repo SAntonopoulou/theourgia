@@ -123,6 +123,8 @@ const ROUTES: ReadonlyArray<[string, () => Promise<{ Component: React.ComponentT
   ["Journal", () => import("../Journal.js").then((m) => ({ Component: m.Journal }))],
   ["FamilyTreeRoute", () => import("../FamilyTreeRoute.js").then((m) => ({ Component: m.FamilyTreeRoute }))],
   ["DeckDesignerRoute", () => import("../DeckDesignerRoute.js").then((m) => ({ Component: m.DeckDesignerRoute }))],
+  ["RecipesRoute", () => import("../RecipesRoute.js").then((m) => ({ Component: m.RecipesRoute }))],
+  ["PilgrimageRoutesRoute", () => import("../PilgrimageRoutesRoute.js").then((m) => ({ Component: m.PilgrimageRoutesRoute }))],
   ["Library", () => import("../Library.js").then((m) => ({ Component: m.Library }))],
   ["LineageAdmin", () => import("../LineageAdmin.js").then((m) => ({ Component: m.LineageAdmin }))],
   ["Health", () => import("../Health.js").then((m) => ({ Component: m.Health }))],

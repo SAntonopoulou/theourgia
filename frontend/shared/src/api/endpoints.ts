@@ -327,6 +327,119 @@ export function api(client: ApiClient) {
       );
     },
 
+    // ── Pilgrimage routes (b108-2gx backend, b108-2he frontend) ───
+
+    listPilgrimageRoutes(): Promise<Array<Record<string, unknown>>> {
+      return client.request<Array<Record<string, unknown>>>(
+        "/api/v1/pilgrimage-routes",
+      );
+    },
+
+    getPilgrimageRoute(id: string): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/pilgrimage-routes/${id}`,
+      );
+    },
+
+    createPilgrimageRoute(
+      input: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/pilgrimage-routes",
+        { method: "POST", json: input },
+      );
+    },
+
+    updatePilgrimageRoute(
+      id: string,
+      patch: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/pilgrimage-routes/${id}`,
+        { method: "PATCH", json: patch },
+      );
+    },
+
+    deletePilgrimageRoute(id: string): Promise<void> {
+      return client.request<void>(
+        `/api/v1/pilgrimage-routes/${id}`,
+        { method: "DELETE" },
+      );
+    },
+
+    addPilgrimageRouteStop(
+      routeId: string,
+      input: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/pilgrimage-routes/${routeId}/stops`,
+        { method: "POST", json: input },
+      );
+    },
+
+    deletePilgrimageRouteStop(
+      routeId: string,
+      stopId: string,
+    ): Promise<void> {
+      return client.request<void>(
+        `/api/v1/pilgrimage-routes/${routeId}/stops/${stopId}`,
+        { method: "DELETE" },
+      );
+    },
+
+    reorderPilgrimageRouteStops(
+      routeId: string,
+      stopIds: string[],
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/pilgrimage-routes/${routeId}/reorder`,
+        { method: "POST", json: { stop_ids: stopIds } },
+      );
+    },
+
+    // ── Recipes (b108-2gy backend, b108-2he frontend) ────────────
+
+    listRecipes(
+      kind?: string,
+    ): Promise<Array<Record<string, unknown>>> {
+      const qs = kind ? `?kind=${encodeURIComponent(kind)}` : "";
+      return client.request<Array<Record<string, unknown>>>(
+        `/api/v1/recipes${qs}`,
+      );
+    },
+
+    getRecipe(id: string): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/recipes/${id}`,
+      );
+    },
+
+    createRecipe(
+      input: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        "/api/v1/recipes",
+        { method: "POST", json: input },
+      );
+    },
+
+    updateRecipe(
+      id: string,
+      patch: Record<string, unknown>,
+    ): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/recipes/${id}`,
+        { method: "PATCH", json: patch },
+      );
+    },
+
+    deleteRecipe(id: string): Promise<void> {
+      return client.request<void>(
+        `/api/v1/recipes/${id}`,
+        { method: "DELETE" },
+      );
+    },
+
     listTarotSpreads(): Promise<Array<Record<string, unknown>>> {
       return client.request<Array<Record<string, unknown>>>(
         "/api/v1/tarot/spreads",
