@@ -297,6 +297,16 @@ class Entry(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
         sa_column_kwargs={"nullable": True, "index": True},
     )
 
+    # — Publish state (b108-2hm) ————————————————————————
+    # Timestamp of when the entry was published — separate from
+    # ``visibility`` (which can flip Personal → Public without a
+    # publish action) so the editor can display "Published on X".
+    published_at: Optional[datetime] = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"nullable": True, "index": True},
+    )
+
     # b108-2gw — per-entry comments opt-in. Same substrate as the
     # publication comments; only comments on entries with
     # visibility="public" and comments_enabled=True are surfaced.

@@ -24,10 +24,10 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `b108-2hl` (**SECURITY FIX: password required at sign-in**) · `demo_signin` now verifies `password_hash` when set — before this commit anyone who typed the magickal name got the account's session · `GET /api/v1/auth/password` returns `{has_password}` · `PUT /api/v1/auth/password` sets/changes with current-password check + 8-char minimum · SignInRoute adds a password field · `/settings/password` admin route with prominent banner when no password is set |
+| **Latest commit** | `b108-2hm` (fix: publish button + auto-save broken · adds `entry.published_at` column + alembic 0075 · `POST /api/v1/entries/{id}/publish` (idempotent · refuses sealed) · `PATCH /api/v1/entries/{id}/body` (Editor auto-save target · 2MB cap · refuses sealed) · `EntryRead` now includes `published_at` + `sealed` derived from `encryption_mode`) |
 | **Production** | **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; 8 prod containers, isolated compose project) |
-| **vitest** | **2987** shared + **39** admin route-mount smoke + **2832** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
-| **backend** | **2832 passing** · alembic head **0074** — tea_leaf_reading table; memorial_config; family-tree kinship enum + ancestor_profile column; recipe + pilgrimage_route + comment + content_format; every write endpoint + owned read on `CurrentUser` |
+| **vitest** | **2987** shared + **39** admin route-mount smoke + **2840** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
+| **backend** | **2840 passing** · alembic head **0075** — entry.published_at column; tea_leaf_reading; memorial_config; family-tree kinship enum + ancestor_profile column; recipe + pilgrimage_route + comment + content_format; every write endpoint + owned read on `CurrentUser` |
 | **backend** | **2670 passing** · alembic head **0066** — 51 v1 routers migrated to CurrentUser (writes + owned reads); public endpoints (subscribe · public reader · webhooks · webfinger · iCal token · public identity face) preserved; **+58 auth-required tests** |
 | **agent-daemon** | **198 passing** · alembic head **0002** — MCP + JSON-RPC + SSE + launcher + subprocess runner + cost-cap hard halt + audit emission · DB-backed (sinks + repos) · bwrap filesystem sandbox (rule 59 enforced) · install lifecycle CRUD · memory dir read/write with rule-59 path-safety |
 | **registry** | 34 passing · alembic head **0001** — DID + Ed25519 auth · author submission lifecycle · maintainer queue/decide/promote · advisory filing |

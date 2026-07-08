@@ -93,8 +93,11 @@ class EntryRead(BaseModel):
     health_notes: str | None = None
     parent_id: str | None = None
     scheduled_publish_at: datetime | None = None
+    published_at: datetime | None = None
     # Multi-identity authoring (Batch 32).
     authored_by_persona_id: str | None = None
+    # b108-2hm — expose to the editor so the "Published" chip renders.
+    sealed: bool = False
 
 
 class EntryCreate(BaseModel):
@@ -168,11 +171,13 @@ def _to_read(row: Entry) -> EntryRead:
         health_notes=row.health_notes,
         parent_id=str(row.parent_id) if row.parent_id else None,
         scheduled_publish_at=row.scheduled_publish_at,
+        published_at=row.published_at,
         authored_by_persona_id=(
             str(row.authored_by_persona_id)
             if row.authored_by_persona_id
             else None
         ),
+        sealed=row.encryption_mode == EncryptionMode.SEALED,
     )
 
 
@@ -371,6 +376,103 @@ async def update_entry(
         row.body = payload.body
     await session.commit()
     await session.refresh(row)
+    return _to_read(row)
+
+
+# ── b108-2hm: body PATCH (Editor auto-save target) ───────────────
+
+
+class EntryBodyUpdate(BaseModel):
+    """PATCH body only — used by the Tiptap auto-save loop."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    body: str = Field(max_length=2_000_000)
+
+
+@router.patch(
+    "/entries/{entry_id}/body",
+    summary="Update entry body (auto-save target)",
+    response_model=EntryRead,
+)
+async def update_entry_body(
+    entry_id: UUID,
+    payload: EntryBodyUpdate,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> EntryRead:
+    """Just the Tiptap body — used by the debounced auto-save.
+
+    Separate endpoint from the general PATCH so the auto-save
+    loop can send small payloads without dragging every editable
+    field across the wire.
+    """
+    stmt = select(Entry).where(
+        Entry.id == entry_id,
+        Entry.deleted_at.is_(None),
+        Entry.owner_id == current_user.id,
+    )
+    row = (await session.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Entry {entry_id} not found")
+    if row.encryption_mode == EncryptionMode.SEALED:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "This entry is sealed. Sealed bodies cannot be updated "
+                "server-side — the client must re-seal and use the "
+                "encrypted payload endpoint."
+            ),
+        )
+    row.body = payload.body
+    await session.commit()
+    await session.refresh(row)
+    return _to_read(row)
+
+
+# ── b108-2hm: publish ────────────────────────────────────────────
+
+
+@router.post(
+    "/entries/{entry_id}/publish",
+    summary="Publish an entry",
+    description=(
+        "Sets published_at to the current time. Fails if the entry is "
+        "sealed (defence in depth — sealed content never goes public)."
+    ),
+    response_model=EntryRead,
+)
+async def publish_entry(
+    entry_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> EntryRead:
+    from datetime import UTC, datetime as _dt
+
+    stmt = select(Entry).where(
+        Entry.id == entry_id,
+        Entry.deleted_at.is_(None),
+        Entry.owner_id == current_user.id,
+    )
+    row = (await session.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Entry {entry_id} not found")
+    if row.encryption_mode == EncryptionMode.SEALED:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Sealed entries cannot be published. Sealed content is "
+                "opaque to the server; unsealing before publish would "
+                "defeat the whole point of the seal."
+            ),
+        )
+    # Idempotent — publishing an already-published entry keeps the
+    # original timestamp so "when was this published" doesn't drift
+    # on repeated clicks.
+    if row.published_at is None:
+        row.published_at = _dt.now(tz=UTC)
+        await session.commit()
+        await session.refresh(row)
     return _to_read(row)
 
 
