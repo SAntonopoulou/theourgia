@@ -554,7 +554,7 @@ Implementation phase: **[14 — Plugin Ecosystem](plan/14-plugin-ecosystem.md)**
   - [ ] Day One journal importer
   - [x] Obsidian markdown exporter — b108-2hi: `/api/v1/exports/obsidian` streams a ZIP of `.md` files with YAML frontmatter (title · type · glyph · visibility · timestamps · tags) + Tiptap→markdown renderer (paragraphs · headings · lists · code · blockquotes · bold/italic/link marks · custom nodes preserved as YAML fences). Sealed entries filtered in SQL — regression guard test.
   - [ ] Matrix notification channel
-  - [ ] Tea-leaf reading log (demonstrates non-mechanical divination plugin)
+  - [x] Tea-leaf reading log (demonstrates non-mechanical divination plugin) — b108-2hj: `tea_leaf_reading` table + 41-symbol tasseography dictionary (upright + inverted meanings · position notes · glyph-shape hints from Anglo-Irish tradition) + `/api/v1/reference/tea-leaf-symbols` + full `/api/v1/divination/tea-leaves` CRUD with symbols_observed JSONB (key/position/orientation/notes per symbol). Alembic 0074.
 
 ### Theourgia Official Registry
 - [ ] **Official Theourgia-hosted registry** at `registry.theourgia.com` (or similar)
