@@ -46,6 +46,8 @@ def test_entity_alias_kind_values() -> None:
     assert {k.value for k in EntityAliasKind} == {
         "same-as", "aspect-of", "aspect-includes",
         "syncretic-with", "epithet-of",
+        # kinship (b108-2ha)
+        "parent-of", "sibling-of", "spouse-of",
     }
 
 

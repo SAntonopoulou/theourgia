@@ -33,6 +33,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.entities import (
+    KINSHIP_ALIAS_KINDS,
     Entity,
     EntityAlias,
     EntityAliasKind,
@@ -60,7 +61,9 @@ EntityRelationshipStatusLiteral = Literal[
 EntityVisibilityLiteral = Literal["personal", "viewer", "hub", "public"]
 EntityAliasKindLiteral = Literal[
     "same-as", "aspect-of", "aspect-includes", "syncretic-with", "epithet-of",
+    "parent-of", "sibling-of", "spouse-of",
 ]
+KinshipAliasKindLiteral = Literal["parent-of", "sibling-of", "spouse-of"]
 
 
 class EntityRead(BaseModel):
@@ -89,6 +92,7 @@ class EntityRead(BaseModel):
     visibility: EntityVisibilityLiteral
     origin: str | None
     owner_id: str | None
+    ancestor_profile: dict[str, object] = Field(default_factory=dict)
     created_at: datetime
     updated_at: datetime
 
@@ -117,6 +121,7 @@ class EntityCreate(BaseModel):
     notes_shareable: str | None = None
     visibility: EntityVisibilityLiteral = "personal"
     origin: str | None = Field(default=None, max_length=256)
+    ancestor_profile: dict[str, object] = Field(default_factory=dict)
 
 
 class EntityUpdate(BaseModel):
@@ -143,6 +148,7 @@ class EntityUpdate(BaseModel):
     notes_shareable: str | None = None
     visibility: EntityVisibilityLiteral | None = None
     origin: str | None = Field(default=None, max_length=256)
+    ancestor_profile: dict[str, object] | None = None
 
 
 def _to_read(row: Entity) -> EntityRead:
@@ -170,6 +176,7 @@ def _to_read(row: Entity) -> EntityRead:
         visibility=row.visibility.value,
         origin=row.origin,
         owner_id=str(row.owner_id) if row.owner_id else None,
+        ancestor_profile=dict(row.ancestor_profile) if row.ancestor_profile else {},
         created_at=row.created_at,
         updated_at=row.updated_at,
     )
@@ -237,6 +244,7 @@ async def create_entity(
         notes_shareable=payload.notes_shareable,
         visibility=EntityVisibility(payload.visibility),
         origin=payload.origin,
+        ancestor_profile=payload.ancestor_profile,
         owner_id=current_user.id,
     )
     db.add(row)
@@ -435,4 +443,252 @@ async def aggregate_entity(
         neighbours=neighbours,
         member_entity_ids=sorted(member_ids),
         views=relevant_view_ids,
+    )
+
+
+# ───── Family tree (kinship graph) ─────────────────────────────────────
+
+
+class KinshipCreate(BaseModel):
+    """Add one kinship edge between two owned entities."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    target_entity_id: UUID
+    kind: KinshipAliasKindLiteral
+    notes: str | None = Field(default=None, max_length=1024)
+
+
+class KinshipRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    source_entity_id: str
+    target_entity_id: str
+    kind: KinshipAliasKindLiteral
+    notes: str | None
+
+
+class FamilyTreeNode(BaseModel):
+    """One entity node in the tree with its generation offset from the probe.
+
+    Generation 0 is the probe, -1 is one generation up (parent),
+    +1 is one generation down (child). Siblings + spouses share
+    generation with their kinship counterpart.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    name: str
+    kind: EntityKindLiteral
+    generation: int
+    ancestor_profile: dict[str, object] = Field(default_factory=dict)
+
+
+class FamilyTreeEdge(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    source_entity_id: str
+    target_entity_id: str
+    kind: KinshipAliasKindLiteral
+
+
+class FamilyTree(BaseModel):
+    """Kinship graph reachable from a probe entity, bounded by generation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    probe_id: str
+    nodes: list[FamilyTreeNode]
+    edges: list[FamilyTreeEdge]
+
+
+def _kinship_to_read(row: EntityAlias) -> KinshipRead:
+    return KinshipRead(
+        id=str(row.id),
+        source_entity_id=str(row.source_entity_id),
+        target_entity_id=str(row.target_entity_id),
+        kind=row.kind.value,  # type: ignore[arg-type]
+        notes=row.notes,
+    )
+
+
+@router.post(
+    "/entities/{entity_id}/kinship",
+    response_model=KinshipRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add one kinship edge (parent-of / sibling-of / spouse-of)",
+)
+async def create_kinship(
+    entity_id: UUID,
+    payload: KinshipCreate,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> KinshipRead:
+    """Kinship both entities must be owned by the caller."""
+    if payload.target_entity_id == entity_id:
+        raise HTTPException(status_code=400, detail="Cannot relate an entity to itself.")
+    source = await db.get(Entity, entity_id)
+    target = await db.get(Entity, payload.target_entity_id)
+    if source is None or source.deleted_at is not None or source.owner_id != current_user.id:
+        raise HTTPException(status_code=404, detail=f"Entity {entity_id} not found")
+    if target is None or target.deleted_at is not None or target.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Entity {payload.target_entity_id} not found",
+        )
+    row = EntityAlias(
+        source_entity_id=entity_id,
+        target_entity_id=payload.target_entity_id,
+        kind=EntityAliasKind(payload.kind),
+        notes=payload.notes,
+        owner_id=current_user.id,
+    )
+    db.add(row)
+    await db.commit()
+    await db.refresh(row)
+    return _kinship_to_read(row)
+
+
+@router.delete(
+    "/entities/kinship/{alias_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Remove one kinship edge",
+)
+async def delete_kinship(
+    alias_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> Response:
+    row = await db.get(EntityAlias, alias_id)
+    if (
+        row is None
+        or row.deleted_at is not None
+        or row.owner_id != current_user.id
+        or row.kind not in KINSHIP_ALIAS_KINDS
+    ):
+        raise HTTPException(status_code=404, detail=f"Kinship {alias_id} not found")
+    row.deleted_at = datetime.now(tz=UTC)
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get(
+    "/entities/{entity_id}/family-tree",
+    response_model=FamilyTree,
+    summary="Kinship graph reachable from an entity within N generations",
+)
+async def family_tree(
+    entity_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+    generations: int = 3,
+) -> FamilyTree:
+    """BFS the kinship graph.
+
+    `generations` is a soft bound in both directions from the probe
+    (1 = probe + parents/children/siblings/spouses; 3 = default and
+    the practical max — great-grandparents / great-grandchildren).
+    Clamped to [1, 6].
+    """
+    generations = max(1, min(int(generations), 6))
+    probe = await db.get(Entity, entity_id)
+    if probe is None or probe.deleted_at is not None or probe.owner_id != current_user.id:
+        raise HTTPException(status_code=404, detail=f"Entity {entity_id} not found")
+
+    all_edges = (
+        await db.execute(
+            select(EntityAlias).where(
+                EntityAlias.deleted_at.is_(None),
+                EntityAlias.owner_id == current_user.id,
+                EntityAlias.kind.in_(list(KINSHIP_ALIAS_KINDS)),
+            )
+        )
+    ).scalars().all()
+
+    # index edges by touched entity for BFS
+    from collections import defaultdict, deque
+
+    adjacency: dict[UUID, list[EntityAlias]] = defaultdict(list)
+    for e in all_edges:
+        adjacency[e.source_entity_id].append(e)
+        adjacency[e.target_entity_id].append(e)
+
+    generation_of: dict[UUID, int] = {entity_id: 0}
+    frontier: deque[UUID] = deque([entity_id])
+    reached_edges: dict[UUID, EntityAlias] = {}
+    while frontier:
+        current = frontier.popleft()
+        current_gen = generation_of[current]
+        if abs(current_gen) >= generations:
+            continue
+        for edge in adjacency[current]:
+            other = (
+                edge.target_entity_id
+                if edge.source_entity_id == current
+                else edge.source_entity_id
+            )
+            if edge.kind == EntityAliasKind.PARENT_OF:
+                # directed: source is parent of target
+                if edge.source_entity_id == current:
+                    other_gen = current_gen + 1  # target is one gen down
+                else:
+                    other_gen = current_gen - 1  # source is one gen up
+            else:
+                # symmetric (sibling, spouse) — same generation
+                other_gen = current_gen
+            if abs(other_gen) > generations:
+                continue
+            reached_edges[edge.id] = edge
+            if other not in generation_of:
+                generation_of[other] = other_gen
+                frontier.append(other)
+
+    # fetch node rows for every id we reached
+    node_ids = list(generation_of.keys())
+    if node_ids:
+        node_rows = (
+            await db.execute(
+                select(Entity).where(
+                    Entity.id.in_(node_ids),
+                    Entity.deleted_at.is_(None),
+                    Entity.owner_id == current_user.id,
+                )
+            )
+        ).scalars().all()
+    else:
+        node_rows = []
+
+    # cause_of_death_private is stripped even for the owner in the
+    # tree viz — the tree is a display surface, not a detail view.
+    def _sanitised_profile(row: Entity) -> dict[str, object]:
+        profile = dict(row.ancestor_profile) if row.ancestor_profile else {}
+        profile.pop("cause_of_death_private", None)
+        return profile
+
+    nodes = [
+        FamilyTreeNode(
+            id=str(r.id),
+            name=r.name,
+            kind=r.kind.value,  # type: ignore[arg-type]
+            generation=generation_of[r.id],
+            ancestor_profile=_sanitised_profile(r),
+        )
+        for r in node_rows
+    ]
+    edges = [
+        FamilyTreeEdge(
+            id=str(e.id),
+            source_entity_id=str(e.source_entity_id),
+            target_entity_id=str(e.target_entity_id),
+            kind=e.kind.value,  # type: ignore[arg-type]
+        )
+        for e in reached_edges.values()
+    ]
+    return FamilyTree(
+        probe_id=str(entity_id),
+        nodes=nodes,
+        edges=edges,
     )

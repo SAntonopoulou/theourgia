@@ -171,9 +171,9 @@ Implementation phase: **[05 — Magical Beings](plan/05-magical-beings.md)**
 - [ ] **Initiation / grade tracker** — tradition, grade, received_at, location, initiator, oaths taken, experience notes; **default sealed; UI hard-prevents publishing**
 
 ### Ancestor / beloved-dead registry
-- [ ] **Per-ancestor profile** — name, dates lived, relationship, cause of death (private), burial place, photo
+- [x] **Per-ancestor profile** — name, dates lived, relationship, cause of death (private), burial place, photo
 - [ ] **Communication log** — special divination/scrying entries for ancestor contact (Greek folk necromantic practice)
-- [ ] **Lightweight family tree visualization** (no integration with genealogy services for privacy)
+- [x] **Lightweight family tree visualization** (no integration with genealogy services for privacy)
 
 ### Servitors and egregores
 - [ ] **Servitor lifecycle** — birth (linked to creation ritual), naming, feeding cadence, feeding method, tasks (with status), lifespan limit, status (active/dormant/retired/decommissioned)

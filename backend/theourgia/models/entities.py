@@ -113,9 +113,15 @@ class EntityAliasKind(str, enum.Enum):
     """How two entities relate. The full set documented in plan/05 §11.
 
     The relationship is **directed**: ``source`` → ``target``. For
-    symmetric kinds (`same-as`, `syncretic-with`) the application
-    treats them as bidirectional at query time; for asymmetric kinds
-    (`aspect-of`, `epithet-of`) the direction is meaningful.
+    symmetric kinds (`same-as`, `syncretic-with`, `sibling-of`,
+    `spouse-of`) the application treats them as bidirectional at
+    query time; for asymmetric kinds (`aspect-of`, `epithet-of`,
+    `parent-of`) the direction is meaningful.
+
+    The `parent-of` / `sibling-of` / `spouse-of` kinds are the
+    kinship graph for the ancestor / beloved-dead registry
+    (FEATURES §3). No genealogy-service integration — this is
+    entirely local.
     """
 
     SAME_AS = "same-as"  # User considers the two entities identical.
@@ -123,6 +129,20 @@ class EntityAliasKind(str, enum.Enum):
     ASPECT_INCLUDES = "aspect-includes"  # source includes target as aspect.
     SYNCRETIC_WITH = "syncretic-with"  # Related but distinct; spoken to as one in some rites.
     EPITHET_OF = "epithet-of"  # source is an epithet attached to target.
+    # Kinship (family-tree) kinds. Adopted / step / chosen-family all
+    # collapse into these three with a ``notes`` string.
+    PARENT_OF = "parent-of"  # source is a parent of target.
+    SIBLING_OF = "sibling-of"  # symmetric.
+    SPOUSE_OF = "spouse-of"  # symmetric; covers partners of any form.
+
+
+KINSHIP_ALIAS_KINDS: frozenset[EntityAliasKind] = frozenset(
+    {
+        EntityAliasKind.PARENT_OF,
+        EntityAliasKind.SIBLING_OF,
+        EntityAliasKind.SPOUSE_OF,
+    }
+)
 
 
 class Entity(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
@@ -275,6 +295,27 @@ class Entity(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
         default=None,
         sa_type=DateTime(timezone=True),
         sa_column_kwargs={"nullable": True, "index": True},
+    )
+
+    # — Ancestor / beloved-dead profile ————————————————————
+    # Populated when kind IN (ancestor, beloved_dead). The whole
+    # blob is owner-only; ``cause_of_death_private`` is doubly
+    # protected — never surfaced through any GET even to the owner
+    # when the request path is public, and never rendered in any
+    # tree viz. Keys are the ones on FEATURES.md §3:
+    #   dates_lived_from, dates_lived_until (ISO strings or free)
+    #   relationship_to_owner (string)
+    #   cause_of_death_private (string; owner-only)
+    #   burial_place (string)
+    #   photo_upload_id (uuid string)
+    ancestor_profile: dict[str, object] = Field(
+        default_factory=dict,
+        sa_column=Column(JSONB, nullable=False, server_default="{}"),
+        description=(
+            "Per-ancestor profile fields for kind=ancestor/beloved_dead. "
+            "Empty on non-ancestor entities. Field cause_of_death_private "
+            "is stripped from any non-owner read path."
+        ),
     )
 
     # — Notes ————————————————————————————————————————

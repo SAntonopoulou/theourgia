@@ -763,6 +763,64 @@ export function api(client: ApiClient) {
       return client.request<void>(`/api/v1/entities/${id}`, { method: "DELETE" });
     },
 
+    // ─── Family tree kinship (b108-2ha) ─────────────────────────────
+
+    getFamilyTree(
+      entityId: string,
+      opts?: { signal?: AbortSignal; generations?: number },
+    ): Promise<{
+      probe_id: string;
+      nodes: Array<{
+        id: string;
+        name: string;
+        kind: string;
+        generation: number;
+        ancestor_profile: Record<string, unknown>;
+      }>;
+      edges: Array<{
+        id: string;
+        source_entity_id: string;
+        target_entity_id: string;
+        kind: "parent-of" | "sibling-of" | "spouse-of";
+      }>;
+    }> {
+      const params = new URLSearchParams();
+      if (opts?.generations !== undefined) {
+        params.set("generations", String(opts.generations));
+      }
+      const qs = params.toString();
+      return client.request(
+        `/api/v1/entities/${entityId}/family-tree${qs ? `?${qs}` : ""}`,
+        { signal: opts?.signal },
+      );
+    },
+
+    addKinship(
+      entityId: string,
+      input: {
+        target_entity_id: string;
+        kind: "parent-of" | "sibling-of" | "spouse-of";
+        notes?: string | null;
+      },
+    ): Promise<{
+      id: string;
+      source_entity_id: string;
+      target_entity_id: string;
+      kind: "parent-of" | "sibling-of" | "spouse-of";
+      notes: string | null;
+    }> {
+      return client.request(`/api/v1/entities/${entityId}/kinship`, {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    removeKinship(aliasId: string): Promise<void> {
+      return client.request<void>(`/api/v1/entities/kinship/${aliasId}`, {
+        method: "DELETE",
+      });
+    },
+
     // ─── Today ledger (Phase 05 rail aggregator) ─────────────────────
 
     getTodayLedger(opts?: { signal?: AbortSignal }): Promise<TodayLedger> {

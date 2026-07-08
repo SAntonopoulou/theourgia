@@ -121,6 +121,7 @@ const ROUTES: ReadonlyArray<[string, () => Promise<{ Component: React.ComponentT
   ["Followers", () => import("../Followers.js").then((m) => ({ Component: m.Followers }))],
   ["PrivateViewers", () => import("../PrivateViewers.js").then((m) => ({ Component: m.PrivateViewers }))],
   ["Journal", () => import("../Journal.js").then((m) => ({ Component: m.Journal }))],
+  ["FamilyTreeRoute", () => import("../FamilyTreeRoute.js").then((m) => ({ Component: m.FamilyTreeRoute }))],
   ["Library", () => import("../Library.js").then((m) => ({ Component: m.Library }))],
   ["LineageAdmin", () => import("../LineageAdmin.js").then((m) => ({ Component: m.LineageAdmin }))],
   ["Health", () => import("../Health.js").then((m) => ({ Component: m.Health }))],

@@ -135,6 +135,11 @@ const TarotRoute = lazy(() =>
 const Entities = lazy(() =>
   import("./routes/Entities.js").then((m) => ({ default: m.Entities })),
 );
+const FamilyTreeRoute = lazy(() =>
+  import("./routes/FamilyTreeRoute.js").then((m) => ({
+    default: m.FamilyTreeRoute,
+  })),
+);
 const Foundations = lazy(() =>
   import("./routes/Foundations.js").then((m) => ({ default: m.Foundations })),
 );
@@ -740,6 +745,7 @@ function ShellRoutes() {
           <Route path="/daily-practice" element={<DailyPracticeRoute />} />
           <Route path="/practice-logs" element={<PracticeLogsRoute />} />
           <Route path="/entities" element={<Entities />} />
+          <Route path="/family-tree" element={<FamilyTreeRoute />} />
           <Route
             path="/calendar"
             element={
