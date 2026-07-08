@@ -547,14 +547,14 @@ Implementation phase: **[14 — Plugin Ecosystem](plan/14-plugin-ecosystem.md)**
 - [ ] **Extension points** — calendars, astrology techniques, divination systems, ciphers, correspondence tables, sigil modes, editor blocks, entry kinds, dashboard widgets, analytics charts, notification channels, exporters, importers, federation message types, AP object types, auth providers, storage backends, email backends
 - [ ] **Capability-based sandbox** — plugins declare needed capabilities at manifest; user reviews at install (browser-extension-style)
 - [ ] **Signed releases** — Ed25519 signatures verified on install
-- [ ] **Reference plugins shipped**:
-  - Norse runes extended (Younger Futhark, Anglo-Saxon Futhorc, bind-rune designer)
-  - Egyptian decans
-  - 777-style correspondences importer (where text rights permit)
-  - Day One journal importer
-  - Obsidian markdown exporter
-  - Matrix notification channel
-  - Tea-leaf reading log (demonstrates non-mechanical divination plugin)
+- [~] **Reference plugins shipped**:
+  - [ ] Norse runes extended (Younger Futhark, Anglo-Saxon Futhorc, bind-rune designer)
+  - [x] Egyptian decans — b108-2hh: 36-decan reference table (Chaldean-order rulers · PGM references where documented) + `/api/v1/reference/egyptian-decans` endpoint
+  - [x] 777-style correspondences importer (where text rights permit) — b108-2hh: Liber 777 32-row reference table (10 sephiroth + 22 paths · Hebrew letter · Divine name · Archangel · Order of Angels · King-scale color) + `/api/v1/reference/correspondences-777` endpoint (PD text under AGPL-3.0 code license)
+  - [ ] Day One journal importer
+  - [ ] Obsidian markdown exporter
+  - [ ] Matrix notification channel
+  - [ ] Tea-leaf reading log (demonstrates non-mechanical divination plugin)
 
 ### Theourgia Official Registry
 - [ ] **Official Theourgia-hosted registry** at `registry.theourgia.com` (or similar)
