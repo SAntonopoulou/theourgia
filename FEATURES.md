@@ -548,7 +548,7 @@ Implementation phase: **[14 — Plugin Ecosystem](plan/14-plugin-ecosystem.md)**
 - [ ] **Capability-based sandbox** — plugins declare needed capabilities at manifest; user reviews at install (browser-extension-style)
 - [ ] **Signed releases** — Ed25519 signatures verified on install
 - [~] **Reference plugins shipped**:
-  - [ ] Norse runes extended (Younger Futhark, Anglo-Saxon Futhorc, bind-rune designer)
+  - [~] Norse runes extended (Younger Futhark, Anglo-Saxon Futhorc, bind-rune designer) — b108-2ho shipped Younger Futhark (16 runes, Long Branch variant, c. 800-1100 CE) with diacritics preserved (Þurs · Ísa · Sól · Týr · Ýr etc.) + Unicode Runic block glyphs (U+16A0-U+16FF) + 3-aett distribution (6+5+5). Anglo-Saxon Futhorc + Armanen + Northumbrian follow in later batches; bind-rune designer is a separate frontend surface.
   - [x] Egyptian decans — b108-2hh: 36-decan reference table (Chaldean-order rulers · PGM references where documented) + `/api/v1/reference/egyptian-decans` endpoint
   - [x] 777-style correspondences importer (where text rights permit) — b108-2hh: Liber 777 32-row reference table (10 sephiroth + 22 paths · Hebrew letter · Divine name · Archangel · Order of Angels · King-scale color) + `/api/v1/reference/correspondences-777` endpoint (PD text under AGPL-3.0 code license)
   - [x] Day One journal importer — b108-2hk: `POST /api/v1/imports/day-one` accepts the Day One JSON export, creates one Entry per row with title derived from the first non-empty body line (markdown hashes stripped), tags preserved, source uuid captured, media counts noted in body without importing files, location's human name captured but **raw lat/lng dropped** (honesty rule — precision floor applies to imports too).

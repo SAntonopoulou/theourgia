@@ -361,7 +361,17 @@ ELDER_FUTHARK: BuiltinRuneSet = BuiltinRuneSet(
 )
 
 
-BUILTIN_RUNE_SETS: tuple[BuiltinRuneSet, ...] = (ELDER_FUTHARK,)
+def _extended_sets() -> tuple[BuiltinRuneSet, ...]:
+    """Late import so ``bundles_extended`` can depend on this module
+    without creating a circular import."""
+    from theourgia.core.divination.runes import bundles_extended as _e
+
+    return (_e.YOUNGER_FUTHARK,)
+
+
+BUILTIN_RUNE_SETS: tuple[BuiltinRuneSet, ...] = (
+    ELDER_FUTHARK,
+) + _extended_sets()
 
 
 def runeset_by_value(value: RuneSet | str) -> BuiltinRuneSet:

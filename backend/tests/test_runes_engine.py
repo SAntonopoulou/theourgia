@@ -209,7 +209,9 @@ def test_runeset_by_value_lookup() -> None:
 
 def test_runeset_by_value_unknown_raises() -> None:
     with pytest.raises(KeyError):
-        runeset_by_value(RuneSet.YOUNGER_FUTHARK)  # not yet bundled
+        # ARMANEN is the next not-yet-bundled set — YOUNGER_FUTHARK
+        # became bundled in b108-2ho.
+        runeset_by_value(RuneSet.ARMANEN)
 
 
 # ───── Integration with bundle ───────────────────────────────────────
