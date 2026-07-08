@@ -110,6 +110,7 @@ from theourgia.api.routers.v1 import memorial as v1_memorial
 from theourgia.api.routers.v1 import reference as v1_reference
 from theourgia.api.routers.v1 import exports_obsidian as v1_exports_obsidian
 from theourgia.api.routers.v1 import tea_leaves as v1_tea_leaves
+from theourgia.api.routers.v1 import imports_day_one as v1_imports_day_one
 from theourgia.api.routers import feeds as app_feeds
 
 __all__ = ["register_routers"]
@@ -216,6 +217,8 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_exports_obsidian.router, tags=["exports"])
     # Tea-leaf reading log (b108-2hj)
     v1.include_router(v1_tea_leaves.router, tags=["divination"])
+    # Day One journal importer (b108-2hk)
+    v1.include_router(v1_imports_day_one.router, tags=["imports"])
     # Phase 11 Media (B132+)
     v1.include_router(v1_media.router, tags=["media"])
     v1.include_router(v1_media_uploads.router, tags=["media"])

@@ -24,10 +24,10 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `b108-2hj` (tea-leaf (tasseography) reading log · `tea_leaf_reading` table + alembic 0074 · 41-symbol dictionary (upright + inverted meanings · position notes · shape hints) at `/api/v1/reference/tea-leaf-symbols` · full CRUD at `/api/v1/divination/tea-leaves` with symbols_observed JSONB (key · position rim/middle/bottom/handle · orientation upright/inverted · notes) · FEATURES §13 4 of 7 reference plugins shipped) |
+| **Latest commit** | `b108-2hk` (Day One journal importer · `POST /api/v1/imports/day-one` accepts Day One JSON export · title derived from first non-empty body line (markdown hashes stripped) · tags preserved · source uuid captured · media counts noted in body without importing files · location's human name captured but raw lat/lng dropped (honesty: precision floor applies to imports too) · lenient parser (schema-drift friendly) · FEATURES §13 5 of 7 reference plugins shipped) |
 | **Production** | **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; 8 prod containers, isolated compose project) |
-| **vitest** | **2987** shared + **38** admin route-mount smoke + **2806** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
-| **backend** | **2806 passing** · alembic head **0074** — tea_leaf_reading table; memorial_config; family-tree kinship enum + ancestor_profile column; recipe + pilgrimage_route + comment + content_format; every write endpoint + owned read on `CurrentUser` |
+| **vitest** | **2987** shared + **38** admin route-mount smoke + **2821** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
+| **backend** | **2821 passing** · alembic head **0074** — tea_leaf_reading table; memorial_config; family-tree kinship enum + ancestor_profile column; recipe + pilgrimage_route + comment + content_format; every write endpoint + owned read on `CurrentUser` |
 | **backend** | **2670 passing** · alembic head **0066** — 51 v1 routers migrated to CurrentUser (writes + owned reads); public endpoints (subscribe · public reader · webhooks · webfinger · iCal token · public identity face) preserved; **+58 auth-required tests** |
 | **agent-daemon** | **198 passing** · alembic head **0002** — MCP + JSON-RPC + SSE + launcher + subprocess runner + cost-cap hard halt + audit emission · DB-backed (sinks + repos) · bwrap filesystem sandbox (rule 59 enforced) · install lifecycle CRUD · memory dir read/write with rule-59 path-safety |
 | **registry** | 34 passing · alembic head **0001** — DID + Ed25519 auth · author submission lifecycle · maintainer queue/decide/promote · advisory filing |
