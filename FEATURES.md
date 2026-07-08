@@ -320,7 +320,7 @@ Implementation phase: distributed across **[04 — Journaling](plan/04-journalin
 
 - [ ] **Personal correspondence tables** — user-created, not pre-filled; CSV import supported for existing systems
 - [ ] **Personal grimoire** — writings, spells, rituals, formulae (entry-kind specialization)
-- [ ] **Recipe builder** — incense, oils, washes, philtres
+- [~] **Recipe builder** — incense, oils, washes, philtres — b108-2gy ships backend (recipe table with kind enum · ingredients / steps / correspondences JSONB · library_source_ids + entity_ids links · CRUD endpoints · alembic 0071). Frontend form + list surface land in a follow-up.
 - [ ] **Personal materia databases** — herbs, stones, incense, colors, sounds (what's in the cabinet)
 
 ## 11. Bundles, Sharing & Magickal Knowledge Distribution
