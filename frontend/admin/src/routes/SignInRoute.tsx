@@ -132,6 +132,7 @@ export function SignInRoute() {
 
   const [showDemo, setShowDemo] = useState(false);
   const [magickalName, setMagickalName] = useState("");
+  const [password, setPassword] = useState("");
   const [showTotp, setShowTotp] = useState(false);
   const [totpCode, setTotpCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -160,8 +161,11 @@ export function SignInRoute() {
   });
 
   const demoMutation = useMutation({
-    mutationFn: async (name: string) =>
-      apiMethods.demoSignIn({ magickal_name: name }),
+    mutationFn: async (args: { name: string; password: string }) =>
+      apiMethods.demoSignIn({
+        magickal_name: args.name,
+        ...(args.password ? { password: args.password } : {}),
+      }),
     onSuccess: async () => {
       setError(null);
       await auth.refresh();
@@ -368,13 +372,28 @@ export function SignInRoute() {
                   onChange={(e) => setMagickalName(e.target.value)}
                   placeholder="Your magickal name"
                   autoFocus
+                  autoComplete="username"
                   aria-label="Magickal name"
+                />
+                <input
+                  style={INPUT}
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Password (if you have set one)"
+                  autoComplete="current-password"
+                  aria-label="Password"
                 />
                 <button
                   type="button"
                   style={PRIMARY_BUTTON}
                   disabled={demoMutation.isPending || !magickalName.trim()}
-                  onClick={() => demoMutation.mutate(magickalName.trim())}
+                  onClick={() =>
+                    demoMutation.mutate({
+                      name: magickalName.trim(),
+                      password: password,
+                    })
+                  }
                 >
                   {demoMutation.isPending ? "Signing in…" : "Continue"}
                 </button>

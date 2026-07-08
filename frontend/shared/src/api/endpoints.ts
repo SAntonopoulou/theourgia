@@ -138,7 +138,10 @@ export function api(client: ApiClient) {
      * ceremony below and scheduled for removal once every prod user
      * has enrolled at least one authenticator.
      */
-    demoSignIn(input: { magickal_name: string }): Promise<Session> {
+    demoSignIn(input: {
+      magickal_name: string;
+      password?: string;
+    }): Promise<Session> {
       return client.request<Session>("/api/v1/auth/demo-signin", {
         method: "POST",
         json: input,
@@ -324,6 +327,23 @@ export function api(client: ApiClient) {
       return client.request<void>(
         `/api/v1/tarot/cards/${cardId}`,
         { method: "DELETE" },
+      );
+    },
+
+    // ── Account password (b108-2hl SECURITY) ─────────────────────
+
+    getPasswordStatus(): Promise<{ has_password: boolean }> {
+      return client.request<{ has_password: boolean }>(
+        "/api/v1/auth/password",
+      );
+    },
+
+    setPassword(
+      input: { new_password: string; current_password?: string | null },
+    ): Promise<{ has_password: boolean }> {
+      return client.request<{ has_password: boolean }>(
+        "/api/v1/auth/password",
+        { method: "PUT", json: input },
       );
     },
 

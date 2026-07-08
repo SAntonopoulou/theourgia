@@ -57,6 +57,7 @@ class DemoSignInInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     magickal_name: str = Field(min_length=1, max_length=128)
+    password: str | None = Field(default=None, min_length=1, max_length=256)
 
 
 class SessionRead(BaseModel):
@@ -186,6 +187,30 @@ async def demo_signin(
         user = User(email=email)
         db.add(user)
         await db.flush()  # populate user.id
+    else:
+        # b108-2hl SECURITY FIX: existing users must present their
+        # password when one is set. Before this batch anyone who typed
+        # the magickal name at /signin got the account's session
+        # unconditionally.
+        #
+        # The password_hash column has always been on User but this
+        # signin path never checked it — that's the hole.
+        if user.password_hash is not None:
+            from theourgia.core.auth.passwords import verify_password
+
+            if not payload.password:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=(
+                        "Password required for this account. Enter the "
+                        "password you set at your last sign-in."
+                    ),
+                )
+            if not verify_password(payload.password, user.password_hash):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Incorrect password.",
+                )
 
     now = datetime.now(tz=UTC)
     expires_at = now + SESSION_LIFETIME
@@ -219,6 +244,86 @@ async def get_session(
     if row is None:
         raise UnauthorizedError("missing or invalid session")
     return await _session_to_read(row, db)
+
+
+# ── Set / change password (b108-2hl SECURITY) ────────────────────
+
+
+class SetPasswordInput(BaseModel):
+    """New password + (when already set) the current one to authorise."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    new_password: str = Field(min_length=8, max_length=256)
+    current_password: str | None = Field(default=None, max_length=256)
+
+
+class PasswordStatusRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    has_password: bool
+
+
+@router.get(
+    "/auth/password",
+    response_model=PasswordStatusRead,
+    summary="Whether a password is set for the current account",
+)
+async def get_password_status(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    theourgia_session: Annotated[str | None, Cookie()] = None,
+) -> PasswordStatusRead:
+    row = await _resolve_session(theourgia_session, db)
+    if row is None:
+        raise UnauthorizedError("missing or invalid session")
+    stmt = select(User).where(User.id == row.user_id)
+    user = (await db.execute(stmt)).scalar_one_or_none()
+    if user is None:
+        raise UnauthorizedError("user record missing")
+    return PasswordStatusRead(has_password=user.password_hash is not None)
+
+
+@router.put(
+    "/auth/password",
+    response_model=PasswordStatusRead,
+    summary="Set or change the account password",
+    description=(
+        "Sets an Argon2id password hash. If a password is already set, "
+        "``current_password`` must verify against the stored hash. New "
+        "passwords must be at least 8 characters."
+    ),
+)
+async def set_password(
+    payload: SetPasswordInput,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    theourgia_session: Annotated[str | None, Cookie()] = None,
+) -> PasswordStatusRead:
+    row = await _resolve_session(theourgia_session, db)
+    if row is None:
+        raise UnauthorizedError("missing or invalid session")
+    stmt = select(User).where(User.id == row.user_id)
+    user = (await db.execute(stmt)).scalar_one_or_none()
+    if user is None:
+        raise UnauthorizedError("user record missing")
+
+    from theourgia.core.auth.passwords import hash_password, verify_password
+
+    if user.password_hash is not None:
+        # Changing an existing password requires the current one.
+        if not payload.current_password or not verify_password(
+            payload.current_password, user.password_hash,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=(
+                    "Current password required and must match to change "
+                    "your password."
+                ),
+            )
+
+    user.password_hash = hash_password(payload.new_password)
+    await db.commit()
+    return PasswordStatusRead(has_password=True)
 
 
 @router.delete(

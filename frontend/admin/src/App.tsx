@@ -161,6 +161,11 @@ const MemorialModeRoute = lazy(() =>
     default: m.MemorialModeRoute,
   })),
 );
+const AccountPasswordRoute = lazy(() =>
+  import("./routes/AccountPasswordRoute.js").then((m) => ({
+    default: m.AccountPasswordRoute,
+  })),
+);
 const Foundations = lazy(() =>
   import("./routes/Foundations.js").then((m) => ({ default: m.Foundations })),
 );
@@ -780,6 +785,7 @@ function ShellRoutes() {
           <Route path="/recipes" element={<RecipesRoute />} />
           <Route path="/pilgrimage-routes" element={<PilgrimageRoutesRoute />} />
           <Route path="/memorial-mode" element={<MemorialModeRoute />} />
+          <Route path="/settings/password" element={<AccountPasswordRoute />} />
           <Route
             path="/calendar"
             element={
