@@ -24,6 +24,7 @@ from typing import Sequence, Union
 
 import sqlalchemy as sa
 from alembic import op
+from sqlalchemy.dialects import postgresql
 
 revision: str = "0069"
 down_revision: Union[str, None] = "0068"
@@ -31,24 +32,33 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
-def _enum(name: str, *values: str, existing: bool = False) -> sa.Enum:
-    return sa.Enum(
-        *values,
-        name=name,
-        create_type=not existing,
-    )
-
-
 def upgrade() -> None:
-    # Create the enums up-front (idempotent) then reuse them with
-    # `create_type=False` on the column defs so `op.create_table`
-    # doesn't try to CREATE TYPE a second time and hit
-    # DuplicateObjectError. See the b108-2gw migration notes.
-    _enum("comment_target_kind", "entry", "publication").create(
-        op.get_bind(), checkfirst=True,
+    # Create the enums explicitly with IF NOT EXISTS via raw SQL so
+    # re-runs against a partially-migrated DB don't hit
+    # DuplicateObjectError. The column defs use `create_type=False`
+    # so op.create_table doesn't re-emit CREATE TYPE.
+    op.execute(
+        "DO $$ BEGIN "
+        "IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'comment_target_kind') THEN "
+        "CREATE TYPE comment_target_kind AS ENUM ('entry', 'publication'); "
+        "END IF; END $$;"
     )
-    _enum("comment_state", "pending", "approved", "rejected", "spam").create(
-        op.get_bind(), checkfirst=True,
+    op.execute(
+        "DO $$ BEGIN "
+        "IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'comment_state') THEN "
+        "CREATE TYPE comment_state AS ENUM ('pending', 'approved', 'rejected', 'spam'); "
+        "END IF; END $$;"
+    )
+
+    target_kind_ref = postgresql.ENUM(
+        "entry", "publication",
+        name="comment_target_kind",
+        create_type=False,
+    )
+    state_ref = postgresql.ENUM(
+        "pending", "approved", "rejected", "spam",
+        name="comment_state",
+        create_type=False,
     )
 
     op.create_table(
@@ -67,11 +77,7 @@ def upgrade() -> None:
             server_default=sa.text("now()"),
         ),
         sa.Column("deleted_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column(
-            "target_kind",
-            _enum("comment_target_kind", "entry", "publication", existing=True),
-            nullable=False,
-        ),
+        sa.Column("target_kind", target_kind_ref, nullable=False),
         sa.Column("target_id", sa.UUID(), nullable=False),
         sa.Column(
             "owner_id",
@@ -85,11 +91,7 @@ def upgrade() -> None:
         sa.Column("body", sa.Text(), nullable=False),
         sa.Column(
             "state",
-            _enum(
-                "comment_state",
-                "pending", "approved", "rejected", "spam",
-                existing=True,
-            ),
+            state_ref,
             nullable=False,
             server_default="pending",
         ),
@@ -129,5 +131,5 @@ def downgrade() -> None:
     op.drop_index("ix_comment_owner_state", table_name="comment")
     op.drop_index("ix_comment_target", table_name="comment")
     op.drop_table("comment")
-    _enum("comment_state", existing=True).drop(op.get_bind(), checkfirst=True)
-    _enum("comment_target_kind", existing=True).drop(op.get_bind(), checkfirst=True)
+    op.execute("DROP TYPE IF EXISTS comment_state")
+    op.execute("DROP TYPE IF EXISTS comment_target_kind")
