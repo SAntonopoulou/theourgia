@@ -400,7 +400,7 @@ Implementation phase: **[10 — Publishing & Monetization](plan/10-publishing-an
 
 - [ ] **Publication catalog** — books, essays, articles, with metadata, cover art, edition, license, price (per-vault Stripe Connect)
 - [x] **In-browser PDF viewer** + **EPUB reader** — b108-2gv wires pdf.js + epub.js as lazy-loaded viewers inside ReaderSurface; `publication.content_format` = `"html" | "pdf" | "epub"` + `file_url` on the read endpoint; alembic 0068 adds the columns · file_url is gated behind the paywall same as body
-- [ ] **DRM-free always** — optional watermarking with buyer email
+- [x] **DRM-free always** — optional watermarking with buyer email
 - [ ] **Stripe Connect (standard accounts)** — magician's sales go to magician's Stripe; Theourgia takes no cut; tax handling via Stripe Tax (opt-in)
 - [ ] **Sales dashboard** per vault
 - [ ] **Subscription billing** — recurring Stripe products for paid newsletters and patron tiers

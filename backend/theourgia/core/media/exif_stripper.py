@@ -135,8 +135,11 @@ class PillowExifStripper:
         # ``exif`` arg explicitly omitted on save; Pillow's default
         # save path includes EXIF when present. We construct a new
         # Image with the same pixels but no metadata to be safe.
+        # Pillow 12 deprecated getdata()/putdata() in favour of the
+        # paste()-based copy path which preserves the pixel buffer
+        # without carrying metadata forward.
         clean = Image.new(img.mode, img.size)
-        clean.putdata(list(img.getdata()))
+        clean.paste(img)
         clean.save(buf, format=out_format)
         out = buf.getvalue()
         return ExifStripResult(

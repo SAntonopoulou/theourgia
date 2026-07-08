@@ -22,7 +22,9 @@ from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -32,9 +34,11 @@ from theourgia.core.billing.stripe_client import (
     StripeError,
     get_default_client,
 )
+from theourgia.core.pdf_watermark import apply_email_watermark
 from theourgia.models.entries import EncryptionMode, Entry
 from theourgia.models.publications import (
     Publication,
+    PublicationContentFormat,
     PublicationState,
 )
 from theourgia.models.purchase import Purchase
@@ -261,11 +265,104 @@ async def download_purchase(
 
     return DownloadResult(
         asset_url=(
-            f"https://theourgia.app/reader-asset/{purchase.id}/"
-            f"download.pdf?t={purchase.download_token}"
+            f"/api/v1/purchases/{purchase.id}/asset"
+            f"?t={purchase.download_token}"
         ),
         download_count=purchase.download_count,
         download_count_limit=purchase.download_count_limit,
+    )
+
+
+# ── /purchases/{id}/asset ──────────────────────────────────────
+#
+# The actual streaming endpoint. Fetches the publication file from
+# storage, applies the buyer-email watermark when the publication
+# has ``watermark_enabled=True`` AND the format is PDF (EPUB /
+# HTML never get watermarked here — HTML is served through the
+# public reader with visible attribution, EPUB metadata is fragile).
+
+
+async def _fetch_publication_bytes(file_url: str) -> bytes:
+    """Fetch a publication asset. Isolated for monkeypatch in tests."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.get(file_url, follow_redirects=True)
+        resp.raise_for_status()
+        return resp.content
+
+
+@router.get(
+    "/purchases/{purchase_id}/asset",
+    tags=["purchases"],
+    responses={
+        200: {"content": {"application/pdf": {}, "application/epub+zip": {}}},
+        404: {"description": "Purchase or file not found"},
+        410: {"description": "Refunded or token expired"},
+    },
+)
+async def download_purchase_asset(
+    purchase_id: UUID,
+    t: str,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> Response:
+    """Stream the purchased file to the client.
+
+    Token-gated. Applies the watermark inline when the publication
+    opted in. The download_count bump happened at ``/download`` —
+    the asset endpoint accepts any request whose token still matches
+    and hasn't expired.
+    """
+    purchase = await db.get(Purchase, purchase_id)
+    if purchase is None or purchase.download_token != t:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Purchase not found.")
+    if purchase.refunded_at is not None:
+        raise HTTPException(
+            status.HTTP_410_GONE,
+            "This purchase was refunded; downloads are no longer available.",
+        )
+    now = datetime.now(tz=timezone.utc)
+    if purchase.download_token_expires_at <= now:
+        raise HTTPException(status.HTTP_410_GONE, "Download token has expired.")
+
+    pub = await db.get(Publication, purchase.publication_id)
+    if pub is None or pub.deleted_at is not None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Publication no longer available.",
+        )
+    if not pub.file_url:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            "Publication has no downloadable file.",
+        )
+
+    source_bytes = await _fetch_publication_bytes(pub.file_url)
+
+    watermarked = (
+        pub.watermark_enabled
+        and pub.content_format == PublicationContentFormat.PDF
+    )
+    if watermarked:
+        source_bytes = apply_email_watermark(source_bytes, purchase.buyer_email)
+
+    if pub.content_format == PublicationContentFormat.EPUB:
+        media_type = "application/epub+zip"
+        extension = "epub"
+    else:
+        media_type = "application/pdf"
+        extension = "pdf"
+
+    safe_slug = "".join(
+        ch for ch in pub.slug if ch.isalnum() or ch in "-_"
+    ) or "publication"
+    filename = f"{safe_slug}.{extension}"
+
+    return Response(
+        content=source_bytes,
+        media_type=media_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "private, no-store",
+            "X-Watermarked": "1" if watermarked else "0",
+        },
     )
 
 

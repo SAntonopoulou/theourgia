@@ -62,6 +62,10 @@ dependencies = [
     "structlog >=24.1,<27.0",
     "prometheus-client >=0.21,<1.0",
     "babel >=2.13,<3.0",
+
+    # PDF processing (Phase 10 watermark — b108-2hb)
+    "pypdf >=5.1,<6.0",
+    "reportlab >=4.2,<5.0",
 ]
 
 [project.optional-dependencies]

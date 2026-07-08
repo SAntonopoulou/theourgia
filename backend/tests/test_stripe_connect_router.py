@@ -73,6 +73,7 @@ def test_checkout_router_registers_three_routes() -> None:
     expected = {
         ("/publications/{publication_id}/checkout", "POST"),
         ("/purchases/{purchase_id}/download", "GET"),
+        ("/purchases/{purchase_id}/asset", "GET"),
         ("/purchases/{purchase_id}/refund-link", "POST"),
     }
     assert expected.issubset(paths_methods)
