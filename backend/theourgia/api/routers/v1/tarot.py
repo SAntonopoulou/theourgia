@@ -32,7 +32,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import CurrentUser, get_db_session
@@ -230,10 +230,20 @@ async def _load_cards(db: AsyncSession, deck_id: UUID) -> list[Card]:
 @router.get("/tarot/decks", response_model=list[DeckRead], tags=["tarot"])
 async def list_decks(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     tradition: DeckTraditionLiteral | None = None,
     is_builtin: bool | None = None,
 ) -> list[DeckRead]:
-    stmt = select(Deck).where(Deck.deleted_at.is_(None))
+    """List built-in decks + the caller's own decks.
+
+    Before b108-2hd this endpoint was public and un-filtered — an
+    anonymous request could enumerate every user's custom decks.
+    Now: auth required + rows scoped to (built-in OR owned).
+    """
+    stmt = select(Deck).where(
+        Deck.deleted_at.is_(None),
+        or_(Deck.is_builtin.is_(True), Deck.owner_id == current_user.id),
+    )
     if tradition is not None:
         stmt = stmt.where(Deck.tradition == DeckTradition(tradition))
     if is_builtin is not None:
@@ -250,9 +260,18 @@ async def list_decks(
 async def get_deck(
     deck_id: UUID,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
 ) -> DeckDetail:
+    """Fetch one deck.
+
+    Built-in decks are visible to every authed user; user decks are
+    visible only to their owner. Anonymous callers 401 before they
+    reach the ownership check.
+    """
     row = await db.get(Deck, deck_id)
     if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Deck not found.")
+    if not row.is_builtin and row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Deck not found.")
     cards = await _load_cards(db, row.id)
     return DeckDetail(
@@ -542,9 +561,21 @@ def _spread_to_read(row: Spread) -> SpreadRead:
 @router.get("/tarot/spreads", response_model=list[SpreadRead], tags=["tarot"])
 async def list_spreads(
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
     is_builtin: bool | None = None,
 ) -> list[SpreadRead]:
-    stmt = select(Spread).where(Spread.deleted_at.is_(None))
+    """List built-in spreads + the caller's own spreads.
+
+    Auth required + rows scoped to (built-in OR owned) — same
+    treatment as list_decks (b108-2hd).
+    """
+    stmt = select(Spread).where(
+        Spread.deleted_at.is_(None),
+        or_(
+            Spread.is_builtin.is_(True),
+            Spread.owner_id == current_user.id,
+        ),
+    )
     if is_builtin is not None:
         stmt = stmt.where(Spread.is_builtin == is_builtin)
     stmt = stmt.order_by(Spread.name.asc())
@@ -792,8 +823,12 @@ async def cast(
     deck = await db.get(Deck, payload.deck_id)
     if deck is None or deck.deleted_at is not None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Deck not found.")
+    if not deck.is_builtin and deck.owner_id != current_user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Deck not found.")
     spread = await db.get(Spread, payload.spread_id)
     if spread is None or spread.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Spread not found.")
+    if not spread.is_builtin and spread.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Spread not found.")
 
     cards = await _load_cards(db, deck.id)

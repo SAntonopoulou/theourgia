@@ -36,13 +36,17 @@ def test_new_router_paths_present() -> None:
 
 def test_every_new_route_requires_auth() -> None:
     """Post-b108-2gt sweep: every write endpoint must depend on
-    ``get_current_user``."""
+    ``get_current_user``. b108-2hd tightens the list + get endpoints
+    too — anonymous callers can no longer enumerate user decks."""
     from theourgia.api.deps import get_current_user
 
     protected_paths = {
+        ("/tarot/decks", "GET"),
+        ("/tarot/decks/{deck_id}", "GET"),
         ("/tarot/decks/{deck_id}/cards", "POST"),
         ("/tarot/cards/{card_id}", "PATCH"),
         ("/tarot/cards/{card_id}", "DELETE"),
+        ("/tarot/spreads", "GET"),
         ("/tarot/spreads/{spread_id}", "GET"),
         ("/tarot/spreads/{spread_id}", "PATCH"),
     }
@@ -62,6 +66,51 @@ def test_every_new_route_requires_auth() -> None:
                     get_current_user in calls
                     or "get_current_user" in sub_names
                 ), f"{route.path} does not require auth"
+
+
+def test_list_decks_filters_via_or_clause() -> None:
+    """The b108-2hd tightening: list_decks WHERE clause must include
+    (is_builtin OR owner_id=current_user.id). Regression guard so a
+    future refactor can't silently remove the scoping."""
+    from inspect import getsource
+
+    src = getsource(tarot_module.list_decks)
+    assert "or_(" in src
+    assert "Deck.is_builtin" in src
+    assert "Deck.owner_id == current_user.id" in src
+
+
+def test_list_spreads_filters_via_or_clause() -> None:
+    from inspect import getsource
+
+    src = getsource(tarot_module.list_spreads)
+    assert "or_(" in src
+    assert "Spread.is_builtin" in src
+    assert "Spread.owner_id == current_user.id" in src
+
+
+def test_get_deck_gates_non_builtin_by_owner() -> None:
+    """Regression guard for b108-2hd. Anyone who guesses a UUID
+    used to be able to fetch any deck; now a non-owned non-builtin
+    deck 404s."""
+    from inspect import getsource
+
+    src = getsource(tarot_module.get_deck)
+    assert "row.is_builtin" in src
+    assert "row.owner_id != current_user.id" in src
+
+
+def test_cast_gates_deck_and_spread_by_owner_or_builtin() -> None:
+    """Same regression guard applied to the /tarot/cast endpoint —
+    callers can only cast with decks + spreads that are built-in
+    or that they own."""
+    from inspect import getsource
+
+    src = getsource(tarot_module.cast)
+    assert "deck.is_builtin" in src
+    assert "deck.owner_id != current_user.id" in src
+    assert "spread.is_builtin" in src
+    assert "spread.owner_id != current_user.id" in src
 
 
 # ── Schema validation ────────────────────────────────────────────
