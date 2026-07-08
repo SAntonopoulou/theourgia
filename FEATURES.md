@@ -552,7 +552,7 @@ Implementation phase: **[14 — Plugin Ecosystem](plan/14-plugin-ecosystem.md)**
   - [x] Egyptian decans — b108-2hh: 36-decan reference table (Chaldean-order rulers · PGM references where documented) + `/api/v1/reference/egyptian-decans` endpoint
   - [x] 777-style correspondences importer (where text rights permit) — b108-2hh: Liber 777 32-row reference table (10 sephiroth + 22 paths · Hebrew letter · Divine name · Archangel · Order of Angels · King-scale color) + `/api/v1/reference/correspondences-777` endpoint (PD text under AGPL-3.0 code license)
   - [ ] Day One journal importer
-  - [ ] Obsidian markdown exporter
+  - [x] Obsidian markdown exporter — b108-2hi: `/api/v1/exports/obsidian` streams a ZIP of `.md` files with YAML frontmatter (title · type · glyph · visibility · timestamps · tags) + Tiptap→markdown renderer (paragraphs · headings · lists · code · blockquotes · bold/italic/link marks · custom nodes preserved as YAML fences). Sealed entries filtered in SQL — regression guard test.
   - [ ] Matrix notification channel
   - [ ] Tea-leaf reading log (demonstrates non-mechanical divination plugin)
 

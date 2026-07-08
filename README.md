@@ -24,10 +24,10 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `b108-2hh` (reference-plugin data · 36-decan Egyptian zodiac + 32-row Liber 777 correspondences shipped as built-in reference tables (Chaldean-order rulers · PGM refs where documented · sephira + path taxonomy · Hebrew letter · Divine name · Archangel · Order of Angels · King-scale color) · `/api/v1/reference/{egyptian-decans,correspondences-777}` endpoints · FEATURES §13 2 of 7 reference plugins shipped) |
+| **Latest commit** | `b108-2hi` (Obsidian markdown exporter · `/api/v1/exports/obsidian` streams ZIP of `.md` files with YAML frontmatter + Tiptap→markdown renderer (paragraphs · headings · lists · code · blockquotes · marks · custom nodes as YAML fences) · sealed entries filtered in SQL — regression guard · README embedded in ZIP explaining sealed exclusion · FEATURES §13 3 of 7 reference plugins shipped) |
 | **Production** | **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; 8 prod containers, isolated compose project) |
-| **vitest** | **2987** shared + **38** admin route-mount smoke + **2771** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
-| **backend** | **2771 passing** · alembic head **0073** — memorial_config table; family-tree kinship enum + ancestor_profile column; recipe + pilgrimage_route + comment + content_format; every write endpoint + owned read on `CurrentUser` |
+| **vitest** | **2987** shared + **38** admin route-mount smoke + **2791** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
+| **backend** | **2791 passing** · alembic head **0073** — memorial_config table; family-tree kinship enum + ancestor_profile column; recipe + pilgrimage_route + comment + content_format; every write endpoint + owned read on `CurrentUser` |
 | **backend** | **2670 passing** · alembic head **0066** — 51 v1 routers migrated to CurrentUser (writes + owned reads); public endpoints (subscribe · public reader · webhooks · webfinger · iCal token · public identity face) preserved; **+58 auth-required tests** |
 | **agent-daemon** | **198 passing** · alembic head **0002** — MCP + JSON-RPC + SSE + launcher + subprocess runner + cost-cap hard halt + audit emission · DB-backed (sinks + repos) · bwrap filesystem sandbox (rule 59 enforced) · install lifecycle CRUD · memory dir read/write with rule-59 path-safety |
 | **registry** | 34 passing · alembic head **0001** — DID + Ed25519 auth · author submission lifecycle · maintainer queue/decide/promote · advisory filing |
