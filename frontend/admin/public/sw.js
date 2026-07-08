@@ -4,34 +4,47 @@
  * Minimum-viable offline shell so the admin SPA stays openable without
  * the network. Two caches:
  *
- *   theo-shell — the index.html + entrypoint assets (cache-first)
+ *   theo-shell — the index.html + entrypoint assets (cache-first offline)
  *   theo-runtime — same-origin GETs to other resources (stale-while-revalidate)
  *
- * Per ``feedback_mcp_first.md`` + ``feedback_quality_over_speed.md`` — no
- * background sync, no push notifications, no analytics. The worker
- * exists *only* so the practitioner who opens the app on the train,
- * subway, or in a basement temple can still write down what just
- * happened. Captured entries persist to localStorage and replay on next
- * online visit (handled by the route, not the worker).
+ * NAVIGATION IS NETWORK-FIRST (b108-2hn fix)
+ * ------------------------------------------
+ * Before b108-2hn the SW served the cached ``/app/index.html`` on every
+ * navigation, which pinned the app to whichever chunk hashes existed
+ * at first install. Every deploy then broke sessions with a stale-chunk
+ * 404 (e.g. ``Placeholder-Dk3fNKXU.js`` not found) until the user
+ * manually cleared storage.
  *
- * Cache invalidation: bump VERSION on each deploy and the activate
- * handler clears the old caches.
+ * Fix: navigations go to network first; only fall back to the cached
+ * shell when the network fails (true offline). Asset requests still
+ * use stale-while-revalidate so bounded chunk 404s recover on the
+ * next online visit.
+ *
+ * Also: install now waits for skipWaiting so a new SW activates as
+ * soon as the browser fires ``updatefound`` — the client no longer
+ * has to close every tab to pick up a deploy.
  */
 
-// Bumped from "v1" (b108-2gp): the old version kept the theo-shell-v1
-// cache forever across deploys, so browsers served a stale index.html
-// referencing hashed JS chunks that no longer exist and hit a strict-
-// MIME error. Every future deploy MUST bump this string (or replace it
-// with a build-time hash) or the same class of bug recurs.
-const VERSION = "v2-2026-07-08";
+// Version is a wall-clock date bumped on every deploy that touches the
+// SW. The activate handler clears any prior caches whose keys don't
+// end in this string, so a stale shell can't linger past one visit.
+const VERSION = "v3-2026-07-09";
 const SHELL_CACHE = `theo-shell-${VERSION}`;
 const RUNTIME_CACHE = `theo-runtime-${VERSION}`;
 
-const SHELL_ASSETS = ["/app/", "/app/index.html", "/app/manifest.webmanifest", "/app/icon.svg"];
+const SHELL_ASSETS = [
+  "/app/",
+  "/app/index.html",
+  "/app/manifest.webmanifest",
+  "/app/icon.svg",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(SHELL_CACHE).then((cache) => cache.addAll(SHELL_ASSETS)).then(() => self.skipWaiting()),
+    caches
+      .open(SHELL_CACHE)
+      .then((cache) => cache.addAll(SHELL_ASSETS))
+      .then(() => self.skipWaiting()),
   );
 });
 
@@ -42,12 +55,24 @@ self.addEventListener("activate", (event) => {
       .then((keys) =>
         Promise.all(
           keys
-            .filter((k) => k !== SHELL_CACHE && k !== RUNTIME_CACHE && k.startsWith("theo-"))
+            .filter(
+              (k) =>
+                k !== SHELL_CACHE
+                && k !== RUNTIME_CACHE
+                && k.startsWith("theo-"),
+            )
             .map((k) => caches.delete(k)),
         ),
       )
       .then(() => self.clients.claim()),
   );
+});
+
+// Allow the page to prompt an immediate takeover after a deploy.
+self.addEventListener("message", (event) => {
+  if (event.data === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("fetch", (event) => {
@@ -57,30 +82,49 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Navigation requests — serve the cached shell so offline boot works.
+  // Navigation requests — network-first so fresh index.html always
+  // wins over a stale cached one. Fall back to the cached shell
+  // ONLY when the network is unreachable (offline mode).
   if (request.mode === "navigate") {
     event.respondWith(
-      caches.match("/app/index.html").then(
-        (cached) =>
-          cached ??
-          fetch(request).catch(
-            () =>
-              new Response("<h1>Offline</h1><p>The shell hasn't cached yet — visit once online to install.</p>", {
-                headers: { "Content-Type": "text/html; charset=utf-8" },
-              }),
+      fetch(request)
+        .then((response) => {
+          // Refresh the cached shell so an eventual offline visit
+          // gets the latest index.html the practitioner saw online.
+          if (response.ok && response.type === "basic") {
+            const clone = response.clone();
+            caches.open(SHELL_CACHE).then((cache) => {
+              cache.put("/app/index.html", clone);
+            });
+          }
+          return response;
+        })
+        .catch(() =>
+          caches.match("/app/index.html").then(
+            (cached) =>
+              cached
+              ?? new Response(
+                "<h1>Offline</h1>"
+                  + "<p>The shell hasn't cached yet — visit once online to install.</p>",
+                {
+                  headers: { "Content-Type": "text/html; charset=utf-8" },
+                },
+              ),
           ),
-      ),
+        ),
     );
     return;
   }
 
-  // Same-origin asset — stale-while-revalidate.
+  // Same-origin asset — stale-while-revalidate. If we serve a stale
+  // response but the network returns a 404 (chunk was deleted in a
+  // newer build), the browser will fail the module import; the
+  // navigation-first path above already covers the next reload.
   event.respondWith(
     caches.open(RUNTIME_CACHE).then((cache) =>
       cache.match(request).then((cached) => {
         const networkFetch = fetch(request)
           .then((response) => {
-            // Only cache successful, basic responses.
             if (response.ok && response.type === "basic") {
               cache.put(request, response.clone());
             }
