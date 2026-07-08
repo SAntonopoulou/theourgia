@@ -21,7 +21,7 @@ from theourgia.core.divination.runes.bundles import (
 )
 from theourgia.core.divination.runes.engine import RuneSet
 
-__all__ = ["YOUNGER_FUTHARK"]
+__all__ = ["ANGLO_SAXON_FUTHORC", "YOUNGER_FUTHARK"]
 
 
 # ───── Younger Futhark (Long Branch variant) ────────────────────────
@@ -292,4 +292,233 @@ YOUNGER_FUTHARK: BuiltinRuneSet = BuiltinRuneSet(
         "rune often carries several sounds. Long Branch (Danish) forms."
     ),
     runes=_YOUNGER_LONG_BRANCH,
+)
+
+
+# ───── Anglo-Saxon Futhorc ──────────────────────────────────────────
+#
+# The 33-rune Anglo-Saxon alphabet, c. 5th-11th centuries. Extends
+# Elder Futhark with runes for Old English phonology (Ac, Æsc, Yr,
+# Ior, Ear) and later adds regional variants for the Northumbrian
+# expansion (Cweorð, Calc, Stan, Gar) — those latter four also
+# appear in the separate NORTHUMBRIAN bundle when it lands.
+#
+# Meanings for the first 24 track Elder Futhark closely but with
+# Old English names and specifically Anglo-Saxon associations
+# recorded in the *Rune Poem* (c. 8th-10th c.).
+
+_FUTHORC = (
+    BuiltinRune(
+        index=0, name="Feoh", transliteration="F", glyph="ᚠ", aett=1,
+        element="fire", symmetric=False,
+        upright_meaning="Wealth / cattle; prosperity is a comfort to all — but must be shared with kin.",
+        reversed_meaning="Wealth hoarded, prosperity that isolates, gain that corrupts.",
+    ),
+    BuiltinRune(
+        index=1, name="Ur", transliteration="U", glyph="ᚢ", aett=1,
+        element="earth", symmetric=False,
+        upright_meaning="Aurochs; primal strength, wild endurance, the untamed vitality.",
+        reversed_meaning="Brute force misapplied, wildness turning against itself.",
+    ),
+    BuiltinRune(
+        index=2, name="Þorn", transliteration="Th", glyph="ᚦ", aett=1,
+        element="fire", symmetric=False,
+        upright_meaning="Thorn; defensive force, breakthrough by piercing, the chthonic guardian.",
+        reversed_meaning="Malice unbound, harm unguarded, defence turned against the self.",
+    ),
+    BuiltinRune(
+        index=3, name="Os", transliteration="O", glyph="ᚩ", aett=1,
+        element="air", symmetric=False,
+        upright_meaning="Mouth / god; sacred speech, wisdom given by the gods, oration.",
+        reversed_meaning="False counsel, silence at the moment for speech, oaths broken.",
+    ),
+    BuiltinRune(
+        index=4, name="Rad", transliteration="R", glyph="ᚱ", aett=1,
+        element="air", symmetric=False,
+        upright_meaning="Riding / journey; movement toward a destination, right procession.",
+        reversed_meaning="Stagnation, missed departure, journey without direction.",
+    ),
+    BuiltinRune(
+        index=5, name="Cen", transliteration="C", glyph="ᚳ", aett=1,
+        element="fire", symmetric=False,
+        upright_meaning="Torch; illumination, knowledge revealed, warmth kept alight.",
+        reversed_meaning="Light withdrawn, confusion, teachings forgotten.",
+    ),
+    BuiltinRune(
+        index=6, name="Gyfu", transliteration="G", glyph="ᚷ", aett=1,
+        element="air", symmetric=True,
+        upright_meaning="Gift; exchange, sacred reciprocity, partnership sealed by giving.",
+        reversed_meaning="(symmetric rune — no reversed reading)",
+    ),
+    BuiltinRune(
+        index=7, name="Wynn", transliteration="W", glyph="ᚹ", aett=1,
+        element="air", symmetric=False,
+        upright_meaning="Joy; contentment, kinship-happiness, the settled hearth.",
+        reversed_meaning="Discontent, isolation from kin, joy withheld.",
+    ),
+    BuiltinRune(
+        index=8, name="Hægl", transliteration="H", glyph="ᚻ", aett=2,
+        element="ice", symmetric=True,
+        upright_meaning="Hail; sudden disruption, ordeal that reshapes, the storm that clears.",
+        reversed_meaning="(symmetric rune — no reversed reading)",
+    ),
+    BuiltinRune(
+        index=9, name="Nyd", transliteration="N", glyph="ᚾ", aett=2,
+        element="fire", symmetric=False,
+        upright_meaning="Need; the fire kindled by necessity, endurance under constraint.",
+        reversed_meaning="Wants unmet, want as identity, refusal of constraint.",
+    ),
+    BuiltinRune(
+        index=10, name="Is", transliteration="I", glyph="ᛁ", aett=2,
+        element="ice", symmetric=True,
+        upright_meaning="Ice; stillness, the pause that clarifies, held space.",
+        reversed_meaning="(symmetric rune — no reversed reading)",
+    ),
+    BuiltinRune(
+        index=11, name="Ger", transliteration="J", glyph="ᛄ", aett=2,
+        element="earth", symmetric=False,
+        upright_meaning="Year / harvest; cyclical completion, patient yield, the wheel turning.",
+        reversed_meaning="Blighted crop, patience unrewarded, cycle broken.",
+    ),
+    BuiltinRune(
+        index=12, name="Eoh", transliteration="Ï", glyph="ᛇ", aett=2,
+        element="water", symmetric=False,
+        upright_meaning="Yew; endurance, ancestral bow, the tree that guards the threshold between worlds.",
+        reversed_meaning="Rot at the root, the guardian gone, ancestral tie cut.",
+    ),
+    BuiltinRune(
+        index=13, name="Peorð", transliteration="P", glyph="ᛈ", aett=2,
+        element="water", symmetric=False,
+        upright_meaning="Dice-cup / mystery; hidden knowledge, chance revealed, the game of fate.",
+        reversed_meaning="Hidden knowledge that stays hidden, chance turned against you.",
+    ),
+    BuiltinRune(
+        index=14, name="Eolh", transliteration="X", glyph="ᛉ", aett=2,
+        element="air", symmetric=False,
+        upright_meaning="Elk-sedge; protection, the warding hand, divine defence.",
+        reversed_meaning="Protection withdrawn, defence breached, exposure to harm.",
+    ),
+    BuiltinRune(
+        index=15, name="Sigel", transliteration="S", glyph="ᛋ", aett=2,
+        element="fire", symmetric=False,
+        upright_meaning="Sun; victory, guiding light, the wheel of the sky.",
+        reversed_meaning="Sun clouded, victory delayed, guidance lost.",
+    ),
+    BuiltinRune(
+        index=16, name="Tir", transliteration="T", glyph="ᛏ", aett=3,
+        element="air", symmetric=False,
+        upright_meaning="Tir (Týr); sworn oath kept at cost, honour, sacrifice for justice.",
+        reversed_meaning="Oath broken, honour spent, justice miscarried.",
+    ),
+    BuiltinRune(
+        index=17, name="Beorc", transliteration="B", glyph="ᛒ", aett=3,
+        element="earth", symmetric=False,
+        upright_meaning="Birch; regeneration, motherhood, the return of spring.",
+        reversed_meaning="Barrenness, growth checked, protection withdrawn.",
+    ),
+    BuiltinRune(
+        index=18, name="Eh", transliteration="E", glyph="ᛖ", aett=3,
+        element="earth", symmetric=False,
+        upright_meaning="Horse; loyal partnership, the sworn companion, teamwork.",
+        reversed_meaning="Trust broken, the partner failing, isolation.",
+    ),
+    BuiltinRune(
+        index=19, name="Mann", transliteration="M", glyph="ᛗ", aett=3,
+        element="air", symmetric=True,
+        upright_meaning="Man / humanity; kinship, right relation to others, acknowledgement of mortality.",
+        reversed_meaning="(symmetric rune — no reversed reading)",
+    ),
+    BuiltinRune(
+        index=20, name="Lagu", transliteration="L", glyph="ᛚ", aett=3,
+        element="water", symmetric=False,
+        upright_meaning="Water / lake; flow, the deep unconscious, currents that carry when trusted.",
+        reversed_meaning="Drowning, currents opposed, the water that will not bear you.",
+    ),
+    BuiltinRune(
+        index=21, name="Ing", transliteration="Ng", glyph="ᛝ", aett=3,
+        element="earth", symmetric=True,
+        upright_meaning="Ing (Ing-Frey); fertility, generative completion, the sacred marriage.",
+        reversed_meaning="(symmetric rune — no reversed reading)",
+    ),
+    BuiltinRune(
+        index=22, name="Eðel", transliteration="Œ", glyph="ᛟ", aett=3,
+        element="earth", symmetric=False,
+        upright_meaning="Inherited estate; ancestral land, sacred homeland, lineage held.",
+        reversed_meaning="Lineage cut, ancestral disinheritance, loss of belonging.",
+    ),
+    BuiltinRune(
+        index=23, name="Dæg", transliteration="D", glyph="ᛞ", aett=3,
+        element="fire", symmetric=True,
+        upright_meaning="Day; breakthrough, transformation, the threshold crossed at dawn.",
+        reversed_meaning="(symmetric rune — no reversed reading)",
+    ),
+    # ── Anglo-Saxon additions (aett 4) ─────────────────────────────
+    BuiltinRune(
+        index=24, name="Ac", transliteration="A", glyph="ᚪ", aett=4,
+        element="earth", symmetric=False,
+        upright_meaning="Oak; deep-rooted strength, the boat-timber, endurance across generations.",
+        reversed_meaning="Rigidity that breaks; strength ossified into stubbornness.",
+    ),
+    BuiltinRune(
+        index=25, name="Æsc", transliteration="Æ", glyph="ᚫ", aett=4,
+        element="air", symmetric=False,
+        upright_meaning="Ash; the world-tree, spear-shaft, sacred connection between realms.",
+        reversed_meaning="Connection severed, the tree fallen, isolation between worlds.",
+    ),
+    BuiltinRune(
+        index=26, name="Yr", transliteration="Y", glyph="ᚣ", aett=4,
+        element="air", symmetric=False,
+        upright_meaning="Bow; skilled aim, practised craft, weapon that follows will.",
+        reversed_meaning="Aim gone wide, craft neglected, weapon that misfires.",
+    ),
+    BuiltinRune(
+        index=27, name="Ior", transliteration="Io", glyph="ᛡ", aett=4,
+        element="water", symmetric=False,
+        upright_meaning="Beaver / serpent-of-waters; adaptability between elements, dual-realm dweller.",
+        reversed_meaning="Refusing the water OR refusing the land — stuck at neither shore.",
+    ),
+    BuiltinRune(
+        index=28, name="Ear", transliteration="Ea", glyph="ᛠ", aett=4,
+        element="earth", symmetric=False,
+        upright_meaning="Earth / grave; endings that fertilise beginnings, the compost of memory.",
+        reversed_meaning="Refusing endings, decomposition denied, ancestors ignored.",
+    ),
+    BuiltinRune(
+        index=29, name="Cweorð", transliteration="Cw", glyph="ᛢ", aett=4,
+        element="fire", symmetric=False,
+        upright_meaning="Fire-drill; kindling by friction, ceremonial ignition, effortful beginnings.",
+        reversed_meaning="Friction without spark; ceremony that fails to light.",
+    ),
+    BuiltinRune(
+        index=30, name="Calc", transliteration="K", glyph="ᛣ", aett=4,
+        element="water", symmetric=False,
+        upright_meaning="Chalice / sacred vessel; ritual offering, the cup that catches.",
+        reversed_meaning="Cup spilled, offering refused, sacred vessel broken.",
+    ),
+    BuiltinRune(
+        index=31, name="Stan", transliteration="St", glyph="ᛥ", aett=4,
+        element="earth", symmetric=False,
+        upright_meaning="Stone; foundation, boundary marker, the immovable witness.",
+        reversed_meaning="Foundation cracked, boundary crossed, the witness turned away.",
+    ),
+    BuiltinRune(
+        index=32, name="Gar", transliteration="G", glyph="ᚸ", aett=4,
+        element="air", symmetric=False,
+        upright_meaning="Spear (Odin's / Gungnir); decisive strike, sworn commitment, the point that never turns aside.",
+        reversed_meaning="Commitment withdrawn, the strike deflected, sworn purpose lost.",
+    ),
+)
+
+
+ANGLO_SAXON_FUTHORC: BuiltinRuneSet = BuiltinRuneSet(
+    set_id=RuneSet.ANGLO_SAXON_FUTHORC,
+    name="Anglo-Saxon Futhorc",
+    description=(
+        "The 33-rune Anglo-Saxon alphabet, c. 5th-11th centuries. "
+        "Extends Elder Futhark with runes for Old English phonology "
+        "(Ac, Æsc, Yr, Ior, Ear) and later Northumbrian additions "
+        "(Cweorð, Calc, Stan, Gar). Meanings track the Anglo-Saxon "
+        "Rune Poem (c. 8th-10th c.)."
+    ),
+    runes=_FUTHORC,
 )
