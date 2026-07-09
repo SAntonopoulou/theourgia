@@ -142,4 +142,70 @@ export class ApiClient {
     if (text.length === 0) return null as T;
     return JSON.parse(text) as T;
   }
+
+  /** Fetch a binary payload (PDF, ZIP, etc.) with the same auth +
+   *  timeout + error semantics as ``request``. Returned as a Blob so
+   *  the caller can download or preview it. */
+  async requestBlob(path: string, opts: ApiRequestOptions = {}): Promise<Blob> {
+    const { json, signal: callerSignal, timeoutMs, headers: callerHeaders, ...rest } = opts;
+    const headers = new Headers(callerHeaders);
+    if (json !== undefined) headers.set("Content-Type", "application/json");
+    if (this.authToken) headers.set("Authorization", `Bearer ${this.authToken}`);
+    if (!headers.has("Accept")) headers.set("Accept", "*/*");
+
+    const init: RequestInit = {
+      ...rest,
+      headers,
+      body: json !== undefined ? JSON.stringify(json) : undefined,
+    };
+
+    if (this.mock) {
+      const fixture = this.fixtureFor?.(path, init);
+      if (fixture instanceof Error) throw fixture;
+      if (fixture instanceof Blob) return fixture;
+      return new Blob([JSON.stringify(fixture ?? null)]);
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(
+      () => controller.abort(new Error("timeout")),
+      timeoutMs ?? this.timeoutMs,
+    );
+    if (callerSignal) {
+      if (callerSignal.aborted) controller.abort(callerSignal.reason);
+      else
+        callerSignal.addEventListener("abort", () => controller.abort(callerSignal.reason), {
+          once: true,
+        });
+    }
+    init.signal = controller.signal;
+
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, init);
+    } catch (cause) {
+      clearTimeout(timeout);
+      throw new NetworkError(
+        cause instanceof Error ? cause.message : "Network request failed",
+        cause,
+      );
+    }
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      let problem: Problem;
+      try {
+        problem = (await response.json()) as Problem;
+      } catch {
+        problem = {
+          type: "about:blank",
+          title: response.statusText || "Request failed",
+          status: response.status,
+        };
+      }
+      throw errorFromResponse(response.status, problem);
+    }
+
+    return response.blob();
+  }
 }

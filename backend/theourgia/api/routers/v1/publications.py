@@ -43,7 +43,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import CurrentUser, get_db_session
+from theourgia.core.publishing.book_pdf import (
+    BookPdfInput,
+    PublicationChapterInput,
+    render_book_pdf,
+)
 from theourgia.models.entries import EncryptionMode, Entry
+from theourgia.models.persona import Persona, PersonaKind
 from theourgia.models.publications import (
     Publication,
     PublicationChapter,
@@ -51,6 +57,40 @@ from theourgia.models.publications import (
     PublicationLicense,
     PublicationState,
 )
+
+
+_LICENSE_NOTICES: dict[PublicationLicense, str] = {
+    PublicationLicense.ALL_RIGHTS_RESERVED: "All rights reserved.",
+    PublicationLicense.CC_BY: (
+        "Licensed under Creative Commons Attribution 4.0 (CC BY 4.0)."
+    ),
+    PublicationLicense.CC_BY_SA: (
+        "Licensed under Creative Commons Attribution-ShareAlike 4.0 "
+        "(CC BY-SA 4.0)."
+    ),
+    PublicationLicense.CC_BY_NC: (
+        "Licensed under Creative Commons Attribution-NonCommercial 4.0 "
+        "(CC BY-NC 4.0)."
+    ),
+    PublicationLicense.CC_BY_NC_SA: (
+        "Licensed under Creative Commons "
+        "Attribution-NonCommercial-ShareAlike 4.0 (CC BY-NC-SA 4.0)."
+    ),
+    PublicationLicense.CC_BY_NC_ND: (
+        "Licensed under Creative Commons "
+        "Attribution-NonCommercial-NoDerivatives 4.0 (CC BY-NC-ND 4.0)."
+    ),
+    PublicationLicense.CC_BY_ND: (
+        "Licensed under Creative Commons Attribution-NoDerivatives 4.0 "
+        "(CC BY-ND 4.0)."
+    ),
+    PublicationLicense.CC0: (
+        "Dedicated to the public domain via CC0 1.0 Universal."
+    ),
+    PublicationLicense.PUBLIC_DOMAIN: (
+        "This work is in the public domain."
+    ),
+}
 
 __all__ = ["router"]
 
@@ -669,3 +709,67 @@ async def reorder_chapters(
     await db.commit()
     refreshed = await _chapters_for(db, publication_id)
     return [_to_chapter_read(c) for c in refreshed]
+
+
+@router.get(
+    "/publications/{publication_id}/book-pdf",
+    tags=["publications"],
+    responses={
+        200: {
+            "content": {"application/pdf": {}},
+            "description": "Book-quality PDF export.",
+        },
+    },
+)
+async def export_book_pdf(
+    publication_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> Response:
+    """Render the publication + chapters to a print-quality PDF.
+
+    Owner-only. Front matter (title / copyright / TOC) + Nisan-order
+    body composition. Chapters open on right-hand pages by trade-book
+    convention. Widow/orphan control + justified text with hyphenation.
+    """
+    row = await _load_owned(db, publication_id, current_user.id)
+    chapters = await _chapters_for(db, publication_id)
+
+    persona_stmt = (
+        select(Persona)
+        .where(Persona.user_id == current_user.id)
+        .where(Persona.kind == PersonaKind.DEFAULT)
+        .where(Persona.is_active.is_(True))
+    )
+    persona = (await db.execute(persona_stmt)).scalars().first()
+    author = persona.display_name if persona else ""
+    license_notice = _LICENSE_NOTICES.get(row.license)
+
+    payload = BookPdfInput(
+        title=row.title,
+        author=author,
+        body=dict(row.body or {}),
+        chapters=[
+            PublicationChapterInput(
+                order_index=c.order_index,
+                title=c.title,
+                body=dict(c.body or {}),
+            )
+            for c in chapters
+        ],
+        summary=row.summary,
+        license_notice=license_notice,
+        language=row.language,
+    )
+    data = render_book_pdf(payload)
+    filename = f"{row.slug or 'publication'}.pdf"
+    return Response(
+        content=data,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{filename}"'
+            ),
+            "Cache-Control": "private, no-store",
+        },
+    )

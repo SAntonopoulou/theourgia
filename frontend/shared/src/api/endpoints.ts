@@ -677,6 +677,15 @@ export function api(client: ApiClient) {
       );
     },
 
+    /** Download the print-quality book PDF for a publication (b108-2ia).
+     *  Owner-only. Returns a Blob suitable for triggering a browser
+     *  download or piping into pdf.js for in-browser preview. */
+    downloadPublicationBookPdf(pubId: string): Promise<Blob> {
+      return client.requestBlob(
+        `/api/v1/publications/${encodeURIComponent(pubId)}/book-pdf`,
+      );
+    },
+
     listSubscribers(): Promise<Array<Record<string, unknown>>> {
       return client.request<Array<Record<string, unknown>>>(
         "/api/v1/subscribers",

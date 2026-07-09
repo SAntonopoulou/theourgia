@@ -110,6 +110,7 @@ const ROUTES: ReadonlyArray<[string, () => Promise<{ Component: React.ComponentT
   ["QueryBuilderRoute", () => import("../QueryBuilderRoute.js").then((m) => ({ Component: m.QueryBuilderRoute }))],
   ["StudiesIndexRoute", () => import("../StudiesIndexRoute.js").then((m) => ({ Component: m.StudiesIndexRoute }))],
   ["PublicationsRoute", () => import("../PublicationsRoute.js").then((m) => ({ Component: m.PublicationsRoute }))],
+  ["PublicationPrintPreviewRoute", () => import("../PublicationPrintPreviewRoute.js").then((m) => ({ Component: m.PublicationPrintPreviewRoute }))],
   ["SubscribersRoute", () => import("../SubscribersRoute.js").then((m) => ({ Component: m.SubscribersRoute }))],
   ["MediaLibraryRoute", () => import("../MediaLibraryRoute.js").then((m) => ({ Component: m.MediaLibraryRoute }))],
   ["AudioLibraryRoute", () => import("../AudioLibraryRoute.js").then((m) => ({ Component: m.AudioLibraryRoute }))],

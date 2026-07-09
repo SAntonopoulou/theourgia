@@ -86,6 +86,11 @@ const PublicationEditorRoute = lazy(() =>
     default: m.PublicationEditorRoute,
   })),
 );
+const PublicationPrintPreviewRoute = lazy(() =>
+  import("./routes/PublicationPrintPreviewRoute.js").then((m) => ({
+    default: m.PublicationPrintPreviewRoute,
+  })),
+);
 const PublicationSettingsRoute = lazy(() =>
   import("./routes/PublicationSettingsRoute.js").then((m) => ({
     default: m.PublicationSettingsRoute,
@@ -830,6 +835,10 @@ function ShellRoutes() {
           <Route
             path="/publication-settings"
             element={<PublicationSettingsRoute />}
+          />
+          <Route
+            path="/publications/:id/print-preview"
+            element={<PublicationPrintPreviewRoute />}
           />
           <Route
             path="/publications/:id/pricing"

@@ -123,6 +123,11 @@ AUTH_REQUIRED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
         "kind": "essay", "title": "t",
     }),
     ("GET", "/api/v1/publications", None),
+    (
+        "GET",
+        "/api/v1/publications/00000000-0000-0000-0000-000000000000/book-pdf",
+        None,
+    ),
     ("GET", "/api/v1/subscribers", None),
     ("POST", "/api/v1/subscription-tiers", {"name": "t"}),
     ("POST", "/api/v1/newsletter-issues", {"subject": "s"}),
