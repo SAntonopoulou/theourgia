@@ -24,10 +24,10 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `b108-2hp` (Anglo-Saxon Futhorc bundle · 33 runes c. 5th-11th c. · 24 Elder base + 5 OE additions (Ac/Æsc/Yr/Ior/Ear) + 4 Northumbrian additions (Cweorð/Calc/Stan/Gar) · meanings from the *Anglo-Saxon Rune Poem* c. 8th-10th c. · Unicode Runic-block glyphs + 4-aett distribution (8+8+8+9) · reference plugin 6 of 7 partial) |
+| **Latest commit** | `b108-2hq` (Armanen runes bundle · Guido von List's 1902 modern reconstruction · 18 runes corresponding to the 18 charms of Odin in the Hávamál's Rúnatal (stanzas 138-145) · Fa · Ur · Thurs · Os · Rit · Ka · Hagal · Not · Is · Ar · Sig · Tyr · Bar · Laf · Man · Yr · Eh · Gibor · description flags "modern reconstruction, not historical" + acknowledges racialist-movement misuse without endorsement) |
 | **Production** | **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; 8 prod containers, isolated compose project) |
-| **vitest** | **2987** shared + **39** admin route-mount smoke + **2863** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
-| **backend** | **2863 passing** · alembic head **0075** — entry.published_at column; tea_leaf_reading; memorial_config; family-tree kinship enum + ancestor_profile column; recipe + pilgrimage_route + comment + content_format; every write endpoint + owned read on `CurrentUser` |
+| **vitest** | **2987** shared + **39** admin route-mount smoke + **2873** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
+| **backend** | **2873 passing** · alembic head **0075** — entry.published_at column; tea_leaf_reading; memorial_config; family-tree kinship enum + ancestor_profile column; recipe + pilgrimage_route + comment + content_format; every write endpoint + owned read on `CurrentUser` |
 | **backend** | **2670 passing** · alembic head **0066** — 51 v1 routers migrated to CurrentUser (writes + owned reads); public endpoints (subscribe · public reader · webhooks · webfinger · iCal token · public identity face) preserved; **+58 auth-required tests** |
 | **agent-daemon** | **198 passing** · alembic head **0002** — MCP + JSON-RPC + SSE + launcher + subprocess runner + cost-cap hard halt + audit emission · DB-backed (sinks + repos) · bwrap filesystem sandbox (rule 59 enforced) · install lifecycle CRUD · memory dir read/write with rule-59 path-safety |
 | **registry** | 34 passing · alembic head **0001** — DID + Ed25519 auth · author submission lifecycle · maintainer queue/decide/promote · advisory filing |

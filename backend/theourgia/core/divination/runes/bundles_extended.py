@@ -21,7 +21,7 @@ from theourgia.core.divination.runes.bundles import (
 )
 from theourgia.core.divination.runes.engine import RuneSet
 
-__all__ = ["ANGLO_SAXON_FUTHORC", "YOUNGER_FUTHARK"]
+__all__ = ["ANGLO_SAXON_FUTHORC", "ARMANEN_RUNES", "YOUNGER_FUTHARK"]
 
 
 # ───── Younger Futhark (Long Branch variant) ────────────────────────
@@ -521,4 +521,154 @@ ANGLO_SAXON_FUTHORC: BuiltinRuneSet = BuiltinRuneSet(
         "Rune Poem (c. 8th-10th c.)."
     ),
     runes=_FUTHORC,
+)
+
+
+# ───── Armanen ──────────────────────────────────────────────────────
+#
+# Guido von List's 1902 modern reconstruction, published in *Das
+# Geheimnis der Runen* ("The Secret of the Runes"). Eighteen runes
+# corresponding to the eighteen charms of Odin in the *Hávamál*
+# (Rúnatal stanzas 138-145).
+#
+# HONESTY NOTE (important): the Armanen system is a **modern
+# reconstruction**, not a historical alphabet. It draws on Old Norse
+# and Germanic material but sequences and glyph associations were
+# invented by von List. It has significant use in modern esoteric
+# practice — particularly the Odinist / Ariosophic currents — and
+# is bundled here as a reference system that users may choose. The
+# description below flags its provenance so practitioners aren't
+# misled about historicity.
+#
+# The Ariosophic and later Armanen-adjacent traditions were also
+# exploited by 20th-century racialist movements. The bundle ships
+# the alphabet as a reference tool; use of any tradition remains at
+# the practitioner's discretion and responsibility.
+
+_ARMANEN = (
+    BuiltinRune(
+        index=0, name="Fa", transliteration="F", glyph="ᚠ", aett=1,
+        element="fire", symmetric=False,
+        upright_meaning="Primal fire; the first movement, wealth as generative energy, creative impulse.",
+        reversed_meaning="Fire that consumes rather than kindles; wealth as end rather than means.",
+    ),
+    BuiltinRune(
+        index=1, name="Ur", transliteration="U", glyph="ᚢ", aett=1,
+        element="earth", symmetric=False,
+        upright_meaning="Primordial cause; the ancient root, essential health, that which stands before all.",
+        reversed_meaning="Origin forgotten, root cut, health that cannot be recovered.",
+    ),
+    BuiltinRune(
+        index=2, name="Thurs", transliteration="Th", glyph="ᚦ", aett=1,
+        element="fire", symmetric=False,
+        upright_meaning="Directed force; the pointed thrust that pierces obstacle, defensive intelligence.",
+        reversed_meaning="Force turned inward; the thrust that wounds the wielder.",
+    ),
+    BuiltinRune(
+        index=3, name="Os", transliteration="O", glyph="ᚬ", aett=1,
+        element="air", symmetric=False,
+        upright_meaning="Divine mouth; oath-sworn word, the god's speech that binds reality.",
+        reversed_meaning="Word broken, divine channel closed, silence where speech was owed.",
+    ),
+    BuiltinRune(
+        index=4, name="Rit", transliteration="R", glyph="ᚱ", aett=1,
+        element="air", symmetric=False,
+        upright_meaning="Right / rite / rhythm; the correct procession, cosmic order, ritual movement.",
+        reversed_meaning="Order broken, ritual disrupted, motion without rhythm.",
+    ),
+    BuiltinRune(
+        index=5, name="Ka", transliteration="K", glyph="ᚴ", aett=1,
+        element="fire", symmetric=False,
+        upright_meaning="Ancestral fire; sacred lineage, the burning that continues in the blood.",
+        reversed_meaning="Lineage cut, ancestral fire extinguished, inheritance refused.",
+    ),
+    BuiltinRune(
+        index=6, name="Hagal", transliteration="H", glyph="ᚼ", aett=2,
+        element="ice", symmetric=True,
+        upright_meaning="World-crystal; the seed of all-form, the hexagon that maps every possibility, cosmic pattern.",
+        reversed_meaning="(symmetric rune — no reversed reading)",
+    ),
+    BuiltinRune(
+        index=7, name="Not", transliteration="N", glyph="ᚾ", aett=2,
+        element="fire", symmetric=False,
+        upright_meaning="Necessity; that which cannot be avoided, the fated path acknowledged, endurance under compulsion.",
+        reversed_meaning="Resistance to what must be, refusal of the fated path, endurance failing.",
+    ),
+    BuiltinRune(
+        index=8, name="Is", transliteration="I", glyph="ᛁ", aett=2,
+        element="ice", symmetric=True,
+        upright_meaning="Ego; the still I, individuation held against the flux, the crystallised self.",
+        reversed_meaning="(symmetric rune — no reversed reading)",
+    ),
+    BuiltinRune(
+        index=9, name="Ar", transliteration="A", glyph="ᚨ", aett=2,
+        element="fire", symmetric=False,
+        upright_meaning="Solar year; the sun's course, harvest completed, honoured completion of the cycle.",
+        reversed_meaning="Sun that will not rise; cycle broken before harvest.",
+    ),
+    BuiltinRune(
+        index=10, name="Sig", transliteration="S", glyph="ᛋ", aett=2,
+        element="fire", symmetric=False,
+        upright_meaning="Victory; solar power actualised, the will's decisive stroke, brilliance made manifest.",
+        reversed_meaning="Victory hollowed by its cost; power that consumes what it saved.",
+    ),
+    BuiltinRune(
+        index=11, name="Tyr", transliteration="T", glyph="ᛏ", aett=3,
+        element="air", symmetric=False,
+        upright_meaning="The sworn hand; oath kept at cost, the judge who does not turn aside.",
+        reversed_meaning="Oath broken; judgement withdrawn; the hand that would not sacrifice.",
+    ),
+    BuiltinRune(
+        index=12, name="Bar", transliteration="B", glyph="ᛒ", aett=3,
+        element="earth", symmetric=False,
+        upright_meaning="Birth-giver; the returning mother, spring's promise, the cradle held.",
+        reversed_meaning="Birth denied; spring's promise revoked; the cradle empty.",
+    ),
+    BuiltinRune(
+        index=13, name="Laf", transliteration="L", glyph="ᛚ", aett=3,
+        element="water", symmetric=False,
+        upright_meaning="Primal law; the water that follows its own current, cosmic ordering by flow.",
+        reversed_meaning="Law flouted; flow diverted; the current that fights itself.",
+    ),
+    BuiltinRune(
+        index=14, name="Man", transliteration="M", glyph="ᛗ", aett=3,
+        element="air", symmetric=True,
+        upright_meaning="Humanity awake; the seeker's ascent, hands raised in acknowledgement of the higher.",
+        reversed_meaning="(symmetric rune — no reversed reading)",
+    ),
+    BuiltinRune(
+        index=15, name="Yr", transliteration="Y", glyph="ᛦ", aett=3,
+        element="earth", symmetric=False,
+        upright_meaning="Death-humanity; hands lowered in acknowledgement of the lower, mortality faced.",
+        reversed_meaning="Death denied; the lower refused; mortality unfaced.",
+    ),
+    BuiltinRune(
+        index=16, name="Eh", transliteration="E", glyph="ᛖ", aett=3,
+        element="earth", symmetric=False,
+        upright_meaning="Sacred marriage; two joined into one, the alchemical union, partnership as work.",
+        reversed_meaning="Union broken; the alchemy failed; partnership as burden.",
+    ),
+    BuiltinRune(
+        index=17, name="Gibor", transliteration="G", glyph="ᚸ", aett=3,
+        element="fire", symmetric=False,
+        upright_meaning="The great gift; cosmic reciprocity, the divine exchange, the offering that returns transformed.",
+        reversed_meaning="Gift refused; reciprocity broken; offering that vanishes without return.",
+    ),
+)
+
+
+ARMANEN_RUNES: BuiltinRuneSet = BuiltinRuneSet(
+    set_id=RuneSet.ARMANEN,
+    name="Armanen Runes",
+    description=(
+        "The 18-rune modern reconstruction of Guido von List (1902, "
+        "*Das Geheimnis der Runen*), one rune per stanza of the "
+        "Hávamál's Rúnatal (138-145). This is NOT a historical "
+        "alphabet — von List invented the sequence and many "
+        "associations. Bundled here as a reference for practitioners "
+        "who work in the Armanen tradition. Its later associations "
+        "with 20th-century racialist movements are documented; the "
+        "runes ship without endorsement of that use."
+    ),
+    runes=_ARMANEN,
 )

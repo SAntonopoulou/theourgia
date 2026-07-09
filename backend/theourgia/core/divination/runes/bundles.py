@@ -366,7 +366,11 @@ def _extended_sets() -> tuple[BuiltinRuneSet, ...]:
     without creating a circular import."""
     from theourgia.core.divination.runes import bundles_extended as _e
 
-    return (_e.YOUNGER_FUTHARK, _e.ANGLO_SAXON_FUTHORC)
+    return (
+        _e.YOUNGER_FUTHARK,
+        _e.ANGLO_SAXON_FUTHORC,
+        _e.ARMANEN_RUNES,
+    )
 
 
 BUILTIN_RUNE_SETS: tuple[BuiltinRuneSet, ...] = (
