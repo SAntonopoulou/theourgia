@@ -24,7 +24,7 @@ Open source, self-hostable, federated. For working magicians.
 
 | | |
 |---|---|
-| **Latest commit** | `b108-2hv` (Matrix notification channel · reference plugin **7/7 COMPLETE** · `core/notifications/channels/matrix.py` implements NotificationChannel protocol · POSTs m.notice (not m.text) via `PUT /_matrix/client/v3/rooms/{roomId}/send/m.room.message/{txnId}` · bearer-token auth · random 32-hex txn_id per send · transport injected as Protocol (test-friendly) · one attempt + clean NotificationDeliveryError on failure (retries live in the service, source-level regression-guarded) · DeliveryChannel.MATRIX enum value added · config rejects empty homeserver/token, missing scheme, room aliases) |
+| **Latest commit** | `b108-2hw` (Editor title is now editable · before this, `createEntry({title: "Untitled entry"})` was the ONLY writer of the title field — no UI to rename, so every published post showed as "Untitled" on the blog · new title input above the Tiptap editor with h1-styled `<input>`, on-blur PATCH via `apiMethods.updateEntry`, `Toast.push("Couldn't save title")` on error) |
 | **Production** | **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; 8 prod containers, isolated compose project) |
 | **vitest** | **2987** shared + **39** admin route-mount smoke + **2922** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
 | **backend** | **2922 passing** · alembic head **0075** — entry.published_at column; tea_leaf_reading; memorial_config; family-tree kinship enum + ancestor_profile column; recipe + pilgrimage_route + comment + content_format; every write endpoint + owned read on `CurrentUser` |

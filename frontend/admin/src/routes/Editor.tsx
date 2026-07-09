@@ -364,6 +364,11 @@ export function Editor() {
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<EntityVisibility>("personal");
   const [sealed, setSealed] = useState<boolean>(false);
+  // b108-2hw: editable title. Before this, entries were locked to
+  // "Untitled entry" from create — no UI to rename. The topbar
+  // breadcrumb read title from `detail.data.title` (read-only), and
+  // the blog surface then showed every post as "Untitled".
+  const [title, setTitle] = useState<string>("");
 
   // Hydrate from detail on first successful fetch.
   useEffect(() => {
@@ -379,8 +384,30 @@ export function Editor() {
       setPublishedAt(detail.data.published_at);
       setVisibility(detail.data.visibility);
       setSealed(detail.data.sealed);
+      setTitle(detail.data.title ?? "");
     }
   }, [detail.status, detail.data, entryId]);
+
+  // b108-2hw: PATCH the entry title on blur. Blur is chosen over
+  // per-keystroke debouncing so the URL doesn't flicker in the
+  // topbar breadcrumb while the user is still typing.
+  const onTitleBlur = useMemo(
+    () => async (nextTitle: string) => {
+      const trimmed = nextTitle.trim();
+      if (!trimmed || entryId === null) return;
+      if (trimmed === (detail.data?.title ?? "")) return;
+      try {
+        await apiMethods.updateEntry(entryId, { title: trimmed });
+      } catch (cause) {
+        Toast.push({
+          tone: "error",
+          title: "Couldn't save title",
+          body: cause instanceof Error ? cause.message : String(cause),
+        });
+      }
+    },
+    [entryId, detail.data?.title],
+  );
 
   const fetchChart: ChartFetchFn = useMemo(
     () =>
@@ -526,6 +553,39 @@ export function Editor() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, margin: "0 -28px" }}>
+      <div
+        style={{
+          maxWidth: 720,
+          margin: "0 auto",
+          padding: "44px 28px 0",
+          width: "100%",
+          boxSizing: "border-box",
+        }}
+        data-role="entry-title-container"
+      >
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onBlur={(e) => void onTitleBlur(e.target.value)}
+          placeholder="Title your entry"
+          aria-label="Entry title"
+          data-role="entry-title-input"
+          style={{
+            width: "100%",
+            border: "none",
+            outline: "none",
+            background: "transparent",
+            fontFamily: "var(--font-display)",
+            fontWeight: 700,
+            fontSize: 40,
+            lineHeight: 1.1,
+            color: "var(--ink)",
+            padding: 0,
+            marginBottom: 20,
+          }}
+        />
+      </div>
       {doc !== null ? (
         <TiptapEditor
           initialDoc={doc}
@@ -544,7 +604,7 @@ export function Editor() {
           min-height: 0;
         }
         .theourgia-editor .ProseMirror {
-          padding: 44px 28px 120px;
+          padding: 8px 28px 120px;
           outline: none;
           max-width: 720px;
           margin: 0 auto;
