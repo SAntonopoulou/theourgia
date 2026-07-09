@@ -27,6 +27,10 @@ class DeliveryChannel(str, enum.Enum):
     WEB_PUSH = "web_push"
     """Web Push via VAPID (stubbed at S4; real delivery in Phase 02+)."""
 
+    MATRIX = "matrix"
+    """Matrix / Element channel — posts to a room via the client-server
+    API. (b108-2hv, FEATURES §13 reference plugin 7/7.)"""
+
 
 @dataclass(frozen=True, slots=True)
 class NotificationMessage:
