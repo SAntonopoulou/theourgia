@@ -4,7 +4,7 @@
 where prod is, what's shipped, what's next, and every gotcha we've
 paid for.
 
-Last updated: **2026-07-09** (session close after b108-2ha → b108-2hx — 24 batches).
+Last updated: **2026-07-09** (session close after b108-2ha → b108-2hz — 26 batches).
 
 ---
 
@@ -20,12 +20,12 @@ Last updated: **2026-07-09** (session close after b108-2ha → b108-2hx — 24 b
 - Sign in at <https://theourgia.com/app/signin> as `soror-eu-a`
   (the slug form — the allowlist expects that exact string).
 
-### Test counts (post b108-2hx)
+### Test counts (post b108-2hz)
 
 | Suite | Passing | Notes |
 |---|---|---|
-| backend | **2922** | alembic head **0075** |
-| shared (vitest) | **3019** | admin tsc clean, shared tsc clean |
+| backend | **2949** | alembic head **0075** |
+| shared (vitest) | **3039** | admin tsc clean, shared tsc clean |
 | admin (route-mount) | **39** | |
 | agent-daemon | 198 | alembic head 0002 |
 | registry | 34 | alembic head 0001 |
@@ -69,6 +69,8 @@ Last updated: **2026-07-09** (session close after b108-2ha → b108-2hx — 24 b
 | **b108-2hv** | Matrix notification channel (ref plugin **7/7 COMPLETE**). POSTs m.notice to `/rooms/{roomId}/send/m.room.message/{txnId}`. Bearer auth. Random 32-hex txn_id per send. Transport injected as Protocol. One attempt + clean NotificationDeliveryError (retries live in the service). `DeliveryChannel.MATRIX` enum value. +16 backend. | §13 7/7 |
 | **b108-2hw** | Editor title is now editable. `createEntry({title:"Untitled entry"})` was the only writer of the title before — no UI to rename. New h1-styled `<input>` above Tiptap, on-blur PATCH via `updateEntry`. |
 | **b108-2hx** | Video integration. New `videoEmbed` Tiptap block + `/video` slash command. `extractYoutubeId()` handles all URL shapes. Privacy-enhanced `youtube-nocookie.com` host. `loading="lazy"` iframe (no 3P requests until scrolled to). Captions_url (.vtt) + chapters textarea supporting `mm:ss`, `h:mm:ss`, and bare seconds. Chapters render as clickable timestamp buttons that seek via startSeconds. NEVER autoplays by default (regression-guarded). Blog reader detail page renders the same iframe. +32 shared. | §17 `[~]` + captions `[x]` |
+| **b108-2hy** | Auto-stamp every entry. Entry had `astro_snapshot` + `calendar_snapshot` columns since Phase 04 but nothing wrote them. New `core/entries/autostamp.py`: Swiss Ephemeris → sun sign + degree, moon sign + phase + illumination %, 5-planet summary. Multi-calendar → Gregorian + Julian + Hebrew + Thelemic. POST /entries populates both at create time, falls back to user's stored astro.lat/astro.lng or Greenwich. Ephemeris hiccup NEVER fails entry create (regression-guarded). Editor renders AutoStampChip below the title; blog reader renders a stamp box above the excerpt. +27 backend + 9 shared. | Bug Sophia caught: "why doesn't the post show temperature, moon position, sun position?" |
+| **b108-2hz** | FIX: Hebrew month rendered as "month 4" on the auto-stamp box. Three stacked bugs: (1) `_serialise_calendar_date` missed `month_name` because pycalcal stashes it in `raw`; (2) both frontend `HEBREW_MONTH_NAMES` arrays used Tishri-starting when the backend returns Nisan-starting (Nisan=1, Tammuz=4); (3) neither frontend preferred the backend's pre-rendered `long` string. All three fixed. Serialiser now also surfaces `long`/`short`/`numeric`. Regression guard: `NEVER emits "month N"` for Hebrew. Sophia's existing entry re-backfilled on prod. +2 shared + 1 backend. | Bug Sophia caught: "Tammuz shows as month though." |
 
 ### Federation status (unchanged from 2026-07-08)
 
