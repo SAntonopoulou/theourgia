@@ -1,20 +1,23 @@
 ---
 /**
- * Blog post detail — theourgia.com/blog/{id}.
+ * Blog post detail — theourgia.com/blog-read?id={uuid}.
  *
- * b108-2ht. Client-side fetches `/api/v1/blog/posts/{id}` and
- * renders the full body. The body arrives as a Tiptap-JSON string
- * (per the Editor's auto-save format); a minimal renderer converts
- * paragraphs / headings / lists / marks to HTML so the reader sees
- * the actual content rather than raw JSON.
+ * b108-2ht (revised for static Astro). Client-side fetches
+ * `/api/v1/blog/posts/{id}` and renders the full body. Uses a
+ * query-param URL because the public-site is a fully-static Astro
+ * build (no SSR adapter); a dynamic `/blog/[id].astro` route would
+ * require on-demand rendering.
+ *
+ * The body arrives as a Tiptap-JSON string (per the Editor's
+ * auto-save format); a minimal renderer converts paragraphs /
+ * headings / lists / marks to HTML so the reader sees the actual
+ * content rather than raw JSON.
  *
  * If the post is missing (404) or private, we show the honest
  * "post not found" surface with a link back to the blog index.
  */
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import PublicChrome from "../../components/PublicChrome.astro";
-
-export const prerender = false;
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PublicChrome from "../components/PublicChrome.astro";
 
 const MAXW = "720px";
 ---
@@ -133,10 +136,9 @@ const MAXW = "720px";
     const body = document.getElementById("post-body");
     if (!loading || !missing || !body) return;
 
-    // URL: /blog/{id}
-    const parts = window.location.pathname.split("/").filter(Boolean);
-    const id = parts[parts.length - 1];
-    if (!id || id === "blog") {
+    const params = new URLSearchParams(window.location.search);
+    const id = (params.get("id") || "").trim();
+    if (!id) {
       loading.style.display = "none";
       missing.style.display = "block";
       return;
@@ -224,8 +226,6 @@ const MAXW = "720px";
           "</ol>"
         );
       }
-      // Fallback: unknown custom node — surface the JSON attrs as a note
-      // rather than silently dropping.
       if (node.attrs) {
         return (
           '<div style="padding:12px;border:1px dashed var(--line);border-radius:4px;font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);margin:0 0 20px">' +
@@ -242,10 +242,8 @@ const MAXW = "720px";
       try {
         const doc = JSON.parse(bodyString);
         if (doc && doc.type === "doc") return renderNode(doc);
-        // Fall through: not a Tiptap doc; treat as plain text.
         return "<p>" + escapeHtml(bodyString) + "</p>";
       } catch (e) {
-        // Body isn't JSON — legacy plain-prose entry. Escape + wrap.
         return "<p>" + escapeHtml(bodyString).replace(/\n\n/g, "</p><p>") + "</p>";
       }
     }

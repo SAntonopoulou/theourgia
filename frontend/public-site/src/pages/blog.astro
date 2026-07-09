@@ -131,7 +131,7 @@ const MAXW = "1180px";
           const title = escapeHtml(p.title || "Untitled");
           const excerpt = escapeHtml(p.excerpt || "");
           const date = formatDate(p.published_at || p.created_at);
-          const href = "/blog/" + encodeURIComponent(p.id);
+          const href = "/blog-read?id=" + encodeURIComponent(p.id);
           return (
             '<a href="' + href + '" class="blog-card" style="background:var(--bg);padding:26px 24px;display:flex;flex-direction:column;transition:background-color 0.15s ease;text-decoration:none;color:inherit">' +
             '<div style="font-family:var(--font-ui);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px">Essay · ' +
