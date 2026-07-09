@@ -4,191 +4,191 @@
 where prod is, what's shipped, what's next, and every gotcha we've
 paid for.
 
-Last updated: **2026-07-08** (session close after b108-2gt → b108-2gz).
+Last updated: **2026-07-09** (session close after b108-2ha → b108-2hr — 19 batches).
 
 ---
 
-## State of the world (commit `9b6d4d0`)
+## State of the world (commit `4caa2f5`)
 
 ### Production
 
-- **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; re-deployed
-  seven times during 2026-07-08 session).
+- **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; redeployed
+  ~19 times during 2026-07-08→09 session).
 - 8 prod containers under compose project `theourgia-prod`, isolated
   from the `theourgia` dev stack.
-- Sophia's vault is the only account (single-operator gate — see
-  b108-2gs). Random signups return 403 with a self-host link.
-- Sign in at <https://theourgia.com/app/signin> as `Soror Ευ. Α.`.
+- Sophia's vault is the only account (single-operator gate).
+- Sign in at <https://theourgia.com/app/signin> as `soror-eu-a`
+  (the slug form — the allowlist expects that exact string).
 
-### Test counts (post b108-2gz)
+### Test counts (post b108-2hr)
 
 | Suite | Passing | Notes |
 |---|---|---|
-| backend | **2696** | alembic head **0071** |
-| shared (vitest) | **2944** | admin tsc clean, shared tsc clean |
-| admin (route-mount) | **32** | |
+| backend | **2898** | alembic head **0075** |
+| shared (vitest) | **2987** | admin tsc clean, shared tsc clean |
+| admin (route-mount) | **39** | |
 | agent-daemon | 198 | alembic head 0002 |
 | registry | 34 | alembic head 0001 |
 
-### The 2026-07-08 session (SEVEN batches)
+### 🚨 ACTION ITEMS FOR SOPHIA (on resume)
+
+1. **SET A PASSWORD.** Visit https://theourgia.com/app/settings/password
+   The b108-2hl security fix closed the "type magickal name → get the
+   session" hole, BUT the fix only kicks in AFTER you set a password.
+   Until then, anyone typing `soror-eu-a` can still sign in as you.
+2. If you're stuck on stale-chunk 404s: DevTools → Application →
+   Service Workers → Unregister → then Ctrl+Shift+R. The b108-2hn
+   SW fix (network-first navigation) prevents this class of bug from
+   recurring after the next update.
+
+### 2026-07-08→09 session (NINETEEN batches)
 
 | Batch | What shipped | FEATURES.md flip |
 |---|---|---|
-| **b108-2gt** | Admin auth lockdown — 51 v1 routers migrated from `OptionalCookieUser` → `CurrentUser`; every POST/PATCH/DELETE + owned GET now 401s without a cookie; SPA `RequireSession` guard on every admin route; landing IA gains "This vault · Soror Ευ. Α." strip above the hero, "Begin the work" → "Start your own instance →" (routes to `/self-host`). +58 auth tests. | §Security |
-| **b108-2gu** | Editor: `correspondence` · `calendarStamp` · `voxMagicae` · `voiceRecording` blocks + slash commands `/geomancy` `/runes` `/voce` `/correspondence` `/calendar` `/voice`. DivinationKind widens to `tarot \| iching \| geomancy \| runes`. +8 tests. | §2 `[~]` → `[x]` |
-| **b108-2gv** | Publications: in-browser PDF viewer + EPUB reader (pdf.js + epub.js **lazy-loaded** inside ReaderSurface — do NOT re-export from Reader/index.ts, jsdom explodes). `publication.content_format` = html/pdf/epub + `file_url` + `file_size_bytes`. Alembic 0068. Gated behind paywall same as body. +2 tests. | §12 `[ ]` → `[x]` |
-| **b108-2gw** | Comments with moderation. `comment` table (pending/approved/rejected/spam) · honeypot `website_ref` field on the form (any non-empty → SPAM) · per-target `comments_enabled` opt-in on Publication + Entry · CommentsSurface + ModerationQueueSurface primitives · admin `/comments-moderation` route · alembic 0069. **Migration lesson: use raw SQL `DO $$ IF NOT EXISTS ...` + `postgresql.ENUM(create_type=False)` on column defs — `sa.Enum(create_type=False)` DOES NOT prevent op.create_table from re-emitting CREATE TYPE.** +9 backend + 5 frontend tests. | §2 + §12 `[ ]` → `[x]` |
-| **b108-2gx** | Pilgrimage routes backend. `pilgrimage_route` + `pilgrimage_route_stop` (with UNIQUE(route_id, order_index)); 9 endpoints (CRUD + add/patch/delete stop + reorder). Site references are ownership-checked before adding to a route. Alembic 0070. +7 tests. **Frontend polyline + admin editor STILL QUEUED.** | §13 `[ ]` → `[~]` |
-| **b108-2gy** | Recipe builder backend. `recipe` table (kind enum: incense/oil/wash/philtre/other · ingredients + steps + correspondences JSONB · library_source_ids + entity_ids arrays). Full CRUD. Alembic 0071. +8 tests. **Frontend form + list surface STILL QUEUED.** | §10 `[ ]` → `[~]` |
-| **b108-2gz** | Multi-language IME primitives. `LanguagePalette` (three script tabs: polytonic Greek breathings + accents + iota subscript · Hebrew letters + sofit + niqud + cantillation · IAST Sanskrit + devanagari reference row). `transliterateIast` (romanization → Unicode IAST: `.rgveda` → ṛgveda · `Kri.s.na` → Kriṣṇa · `Raama` → Rāma · `OM` → oṁ · convention: dot BEFORE the letter for retroflex; `s'` for śa; longest-match first). +7 tests. | §2 + §7 `[ ]` → `[x]` |
+| **b108-2ha** | Family tree viz. Kinship on entity_alias (parent-of · sibling-of · spouse-of) + `ancestor_profile` JSONB + `/entities/{id}/family-tree` + admin `/family-tree` route with generational-lane SVG. Alembic 0072. +10 backend + 11 shared + 1 admin route-mount. | §3 `[ ]` → `[x]` (per-ancestor + tree viz) |
+| **b108-2hb** | Watermark purchase downloads. pypdf + reportlab · `apply_email_watermark` diagonal grey stamp · `/api/v1/purchases/{id}/asset` streaming endpoint (idempotent · sealed = 403 · EPUB skipped by design). Pillow-12 exif_stripper migration (`getdata()` → `paste()`). +17 backend. | §12 `[ ]` → `[x]` |
+| **b108-2hc** | Deck + spread designer. Card CRUD (POST/PATCH/DELETE) + Spread GET/PATCH endpoints. `DeckDesignerSurface` + `SpreadDesignerSurface` primitives. Admin `/deck-designer` route with tabs. Uses `PromptDialog` + `ConfirmDialog` (no native prompts). +8 backend + 11 shared + 1 admin. | §4 `[ ]` → `[x]` |
+| **b108-2hd** | SECURITY: tarot list endpoints auth-gate. `list_decks` + `list_spreads` + `get_deck` + `/tarot/cast` now require auth + filter to `(is_builtin OR owner_id=current_user.id)`. Anonymous callers could previously enumerate user custom decks. +4 backend. | Security |
+| **b108-2he** | Frontend follow-ups #4 + #5. `RecipesSurface` (kind chips + ingredients + steps) + `PilgrimageRoutesSurface` (SVG polyline over site coordinates). Admin `/recipes` + `/pilgrimage-routes`. +13 shared + 2 admin. | §10 + §13 `[~]` → `[x]` |
+| **b108-2hf** | Web-based first-run wizard. Public `GET /api/v1/setup/status`. Admin `/setup` route with 5-step wizard (welcome · magickal name · tradition · calendars · review). SignInRoute auto-redirects to `/setup` on fresh installs. Backend router named `first_run.py` because pytest treats `setup_module` as an xUnit fixture. +5 backend + 1 admin. | §12 `[ ]` → `[x]` |
+| **b108-2hg** | Memorial mode v1. `memorial_config` table (per-user; cadence + warning + executor + posthumous flag + memorialized_at). Alembic 0073. 5 endpoints (config · check-in · trigger · reactivate). `MemorialModeSurface` with state-toned status card. Admin `/memorial-mode`. Copy warm + matter-of-fact. +17 backend + 8 shared + 1 admin. | §18 memorial + check-in `[ ]` → `[x]`; executor + posthumous `[~]` |
+| **b108-2hh** | Reference plugin 1/7: Egyptian decans (36) + Liber 777 (32 rows). Read-only `/api/v1/reference/{egyptian-decans,correspondences-777}` endpoints. Chaldean-order rulers · PGM refs where documented · sephiroth + paths. +14 backend. | §13 (2 of 7 shipped) |
+| **b108-2hi** | Reference plugin 3/7: Obsidian markdown exporter. `/api/v1/exports/obsidian` streams ZIP of `.md` files with YAML frontmatter + Tiptap→markdown renderer (paragraphs · headings · lists · code · marks · custom nodes preserved as YAML fences). Sealed entries filtered in SQL (regression guard). +20 backend. | §13 (3 of 7) |
+| **b108-2hj** | Reference plugin 4/7: Tea-leaf reading log. `tea_leaf_reading` table (question · tea_variety · symbols_observed JSONB · interpretation · intuitive_notes · occurred_at). Alembic 0074. 41-symbol dictionary. `intuitive_notes` first-class so non-mechanical divination is honored in the model. +15 backend. | §13 (4 of 7) |
+| **b108-2hk** | Reference plugin 5/7: Day One importer. `POST /api/v1/imports/day-one` accepts Day One JSON export → creates Entry rows. Lenient parser handles 10+ years of schema drift. Title from first non-empty body line (markdown hashes stripped). Photos/audios/videos noted in body (counts) but NOT imported. **Raw lat/lng NEVER emitted** (precision floor applies to imports). +15 backend. | §13 (5 of 7) |
+| **b108-2hl** | SECURITY FIX: password required at sign-in. `demo_signin` now verifies `password_hash` when set. Before this: anyone typing magickal name got the account's session. `GET /auth/password` + `PUT /auth/password` (current-password check + 8-char min). SignInRoute password field. Admin `/settings/password` route with care-toned banner when no password is set. +11 backend + 1 admin. | Security |
+| **b108-2hm** | FIX: publish + auto-save endpoints. Editor's Publish CTA + auto-save called `/entries/{id}/publish` + `/entries/{id}/body` — neither existed. Adds `entry.published_at` column (alembic 0075) + both endpoints (publish idempotent + sealed-refusal; body 2MB cap + sealed-refusal). `EntryRead` now surfaces `published_at` + `sealed`. +8 backend. | Fix |
+| **b108-2hn** | FIX: SW navigations now network-first. Was pinning stale chunks (`Placeholder-Dk3fNKXU.js not found`) after every deploy because SW served cached `index.html` referencing chunks that had been rotated out. Network-first navigation makes this class of bug impossible. VERSION bumped v3-2026-07-09. | Fix |
+| **b108-2ho** | Reference plugin 6/7 part 1: Younger Futhark Long Branch (16 runes c. 800-1100 CE). Diacritics preserved (Þurs · Ísa · Sól · Týr · Ýr). Unicode Runic block glyphs. 3-aett distribution (6+5+5). +11 backend. | §13 (6/7 partial) |
+| **b108-2hp** | Reference plugin 6/7 part 2: Anglo-Saxon Futhorc (33 runes). 24 Elder base + 5 OE additions (Ac/Æsc/Yr/Ior/Ear) + 4 Northumbrian additions (Cweorð/Calc/Stan/Gar). Meanings from the *Anglo-Saxon Rune Poem* c. 8th-10th c. +12 backend. | §13 (6/7 more done) |
+| **b108-2hq** | Reference plugin 6/7 part 3: Armanen runes (18). Guido von List 1902 modern reconstruction. Description honestly flags "modern reconstruction, NOT historical" + acknowledges racialist-movement misuse without endorsement (regression guards). +10 backend. | §13 (6/7 nearly done) |
+| **b108-2hr** | DP analytics substrate. `core/analytics/differential_privacy.py`: Laplace mechanism using `secrets.SystemRandom` (not stdlib random). `noisy_count` · `noisy_sum` · `noisy_mean` with input-clipping enforced before aggregation. `CohortTooSmall` blocks queries below threshold BEFORE noise is added. `NoisyAggregate` surfaces value+epsilon+cohort_size+noise_scale for trust. Cross-vault endpoints land with Phase 12+ federation. +25 backend. | §9 aggregate analytics `[~]` |
 
-### Federation status
+### Federation status (unchanged from 2026-07-08)
 
-- **`THEOURGIA_FEDERATION_TRANSPORT_ENABLED=1`** was flipped in prod
-  `.env` at Sophia's request (2026-07-08).
-- Backend + celery + celery-beat restarted to pick it up.
-- **Webfinger still returns 404** because ActivityPub is a per-vault
-  opt-in and Sophia has NOT yet enabled it at `/app/settings/activitypub`.
-  This is on Sophia — mention it if she asks why federation isn't live.
-- Once she toggles ActivityPub for her vault:
-  `acct:<vault-slug>@theourgia.com` resolves via
-  `.well-known/webfinger` → `/users/<slug>` actor JSON-LD.
+- `THEOURGIA_FEDERATION_TRANSPORT_ENABLED=1` is on.
+- Webfinger still returns 404 because ActivityPub is a per-vault
+  opt-in and Sophia hasn't toggled it at `/app/settings/activitypub`.
 
 ---
 
-## What's next — the remaining Tier plan
+## What's next
 
-The user's directive from 2026-07-08: **"we can do tier 3 do not put
-them off we will do them last. Finish the other stuff eventually all
-of this needs to get done."** Every item MUST ship.
+Sophia's directive on this session's autonomous run: **"Please continue
+working through the planned tasks."** She stepped away and I picked up
+Tier 2 #13 partials + one Tier 3 substrate item. Every item MUST still
+ship.
 
-### Tier 1 (high leverage, ship next)
+### Tier 1 — ✅ ALL COMPLETE (9/9)
 
-- **#7 Family tree visualization** (FEATURES §3) — SVG viz over the
-  existing entity alias-graph. Ancestors are entities with kind =
-  `beloved_dead` + parent/child aliases. NOT a genealogy service
-  integration (privacy).
-- **#8 Watermark purchase downloads** (FEATURES §12) — hook into the
-  existing download token pipeline; when `publication.watermark_enabled`
-  is true, overlay buyer email on the PDF at download time (pdf-lib or
-  reportlab). Small backend job.
-- **#9 Custom deck + spread designer** (FEATURES §4) — backend can
-  already store custom decks + spreads. Frontend surfaces are large:
-  deck creator (drag-and-drop card art + meanings) + spread designer
-  (drag positions on canvas). Two batches probably.
-- **Frontend follow-ups** for #4 pilgrimage routes + #5 recipes —
-  backend shipped, need admin list + form + the pilgrimage map
-  polyline overlay.
+### Tier 2 — status
 
-### Tier 2 (needs standalone session or external dep)
+- **#10 Whisper transcription** — needs `whisper.cpp` on prod host.
+  **Blocked on infra** — Sophia authorization required.
+- **#11 Digital inheritance / memorial mode** — ✅ v1 shipped (b108-2hg).
+  Follow-ups: cryptographic executor key-share (needs threat-model
+  review), automatic Celery-beat trigger, per-entry publish-on-death
+  gate.
+- **#12 Web-based first-run wizard** — ✅ shipped (b108-2hf).
+- **#13 Reference plugins (7)** — partial:
+  - ✅ Egyptian decans (b108-2hh)
+  - ✅ Liber 777 correspondences (b108-2hh)
+  - ✅ Obsidian markdown exporter (b108-2hi)
+  - ✅ Tea-leaf reading log (b108-2hj)
+  - ✅ Day One journal importer (b108-2hk)
+  - ~ Norse runes extended (b108-2ho + 2hp + 2hq: Younger + Futhorc
+    + Armanen done; bind-rune designer surface still open)
+  - ⏳ Matrix notification channel — last remaining plugin. Needs
+    outbound HTTP client + credentials substrate.
+- **#14 Content bundles (7)** — needs the MBF (Magickal Bundle
+  Format) schema substrate first. See FEATURES §11 — a lot of
+  unchecked structural boxes there. Sophia should weigh in on the
+  schema before I ship data.
+- **#15 Group ritual + egregore** — needs Phase 12 federation
+  transport tested with a second instance (Tier 3 #16).
 
-- **#10 Whisper transcription** — needs `whisper.cpp` on prod host +
-  upload pipeline route + opt-in per-vault. Local + self-hosted
-  (matches Sophia's "no paid services" preference).
-- **#11 Digital inheritance / memorial mode** — check-in mechanic +
-  designated executor key-share + posthumous publication + memorial
-  read-only mode after trigger. Multiple new tables + flows.
-- **#12 Web-based first-run wizard** — replace CLI + `.env` with a
-  signed-out setup surface (magical name · tradition · location ·
-  calendars · encryption · 2FA · library import).
-- **#13 Reference plugins (7)** — Norse runes extended, Egyptian
-  decans, 777 correspondences importer, Day One journal importer,
-  Obsidian markdown exporter, Matrix notification channel, tea-leaf
-  reading log. Small self-contained plugins each.
-- **#14 Content bundles (7)** — pantheons · tradition · initiation
-  curriculum · reading curriculum · rituals · pathworkings · sigil
-  library. Authored against MBF format (§11).
-- **#15 Post-ritual collective log + egregore via group ritual** —
-  needs Phase 12 federation transport tested with a second instance
-  first (see Tier 3 #16).
+### Tier 3 — status
 
-### Tier 3 (last, per Sophia — must still ship)
-
-- **#16 Cross-instance federation test** — spin up a second Theourgia
-  instance + interop test against Mastodon/Pleroma/GoToSocial/Akkoma/
-  Friendica. Also unlocks §14 custom AP extensions
-  (`theourgia:Ritual`, `theourgia:Divination`, `theourgia:Sigil`).
+- **#16 Cross-instance federation test** — needs second instance.
+  Blocked on infra.
 - **#17 Video integration + captions** — YouTube privacy-enhanced
-  embeds + optional Cloudflare Stream/Mux + per-video captions/
-  subtitles + chapter markers.
-- **#18 Newsletter delivery plugin slots** — Postmark, SES, Resend,
-  Mailgun as delivery plugins on top of existing SMTP.
-- **#19 Print-quality book typography** — crop marks, bleed, embedded
-  fonts, drop caps, true small caps, ligatures, oldstyle figures,
-  footnote management, auto-index, auto-glossary, auto-TOC. Lulu +
-  BookBaby specs.
-- **#20 Cross-magician aggregate analytics (DP)** — opt-in
-  network-scoped anonymized aggregates with differential-privacy
-  noise + minimum cohort size + audit log. FEATURES §9 explicitly
-  deferred to Phase 12+ during the b108 sprint.
-- **#21 Helm chart + Traefik alternative** — K8s Helm chart + Traefik
-  reverse-proxy option (only Caddy today).
-- **#22 FEATURES.md checkbox audit** — flip `[ ]` → `[x]` for every
-  Phase 03–15 feature that actually shipped. Do LAST so the finished
-  catalogue tells the truth.
-
-### Task IDs
-
-TaskCreate IDs 243–264 map to items #1–#22. Check `TaskList` on
-resume — items 243, 244, 245 done; 246, 247 marked done but with
-frontend follow-ups queued; 248 (IME) done; 249–264 still pending.
+  embeds. Doable purely in code — pick this up next.
+- **#18 Newsletter delivery plugin slots** — Postmark/SES/Resend/
+  Mailgun as delivery plugins. Needs MBF plugin substrate.
+- **#19 Print-quality book typography** — reportlab-based book
+  layout. Substantial, doable purely in code.
+- **#20 Cross-magician aggregate analytics (DP)** — substrate ✅
+  shipped (b108-2hr). Endpoints land with Phase 12+ federation.
+- **#21 Helm chart + Traefik alternative** — needs K8s to test.
+- **#22 FEATURES.md checkbox audit** — DO LAST.
 
 ---
 
 ## Migration gotchas (paid tuition, do not repeat)
 
 - **`sa.Enum(create_type=False)` does NOT prevent CREATE TYPE inside
-  `op.create_table`.** It only affects `Enum.create()` semantics. The
-  op.create_table pathway still re-emits CREATE TYPE. Fix:
+  `op.create_table`.** Fix:
   1. Create the enum with `op.execute("DO $$ BEGIN IF NOT EXISTS
      (SELECT 1 FROM pg_type WHERE typname = '...') THEN CREATE TYPE
      ... AS ENUM (...); END IF; END $$;")`
-  2. Reference from the column with `postgresql.ENUM(*values,
-     name="...", create_type=False)`.
-  See `0069_comments.py` + `0071_recipe.py` for the correct pattern.
+  2. Reference with `postgresql.ENUM(*values, name="...", create_type=False)`.
+  See `0069_comments.py` + `0071_recipe.py`.
 - **Adding an enum column via `op.add_column` is safer** — SQLAlchemy
-  doesn't re-emit CREATE TYPE there. `0068_publication_content_format.py`
-  uses `sa.Enum(...)` directly and it Just Works.
-- **Migration failures leave partial state.** If a migration fails
-  after CREATE TYPE but before create_table, the enum type persists
-  even though alembic didn't advance. Recovery: SSH in, `docker exec
-  ... psql -c 'DROP TYPE IF EXISTS ... CASCADE;'`, then re-deploy.
+  doesn't re-emit CREATE TYPE there.
+- **Migration failures leave partial state.** Recovery: SSH in,
+  `docker exec ... psql -c 'DROP TYPE IF EXISTS ... CASCADE;'`.
+- **ALTER TYPE ADD VALUE** must run in `op.get_context().autocommit_block()`.
+  See `0072_family_tree.py`.
 
-## Auth gotchas (b108-2gt sweep)
+## Backend gotchas
 
-- **Every new v1 write endpoint MUST use `CurrentUser`** — the b108-2gt
-  sweep migrated all 51 existing routers. `OptionalCookieUser` is now
-  reserved for exactly three known exceptions:
-  - `checkout.create_checkout` (anonymous buyer)
-  - `ical_feed.serve_feed` (token-authed feed)
-  - `identities.get_identity` when `public_face_enabled=true`
-- Public reader / subscribe / webhooks / webfinger / AP inbox use
-  their own auth mechanisms — leave them alone.
-- New router tests must include an `assert 'get_current_user' in
-  names` check for every non-public route (see
-  `test_pilgrimage_routes.py::test_every_route_requires_auth`).
+- **`sa_type=datetime` is wrong** — use `sa_type=DateTime(timezone=True)`.
+  See `models/memorial.py` fix.
+- **NEVER name a backend router module `setup.py`** — pytest treats a
+  module-level `setup_module` symbol as an xUnit setup hook and tries
+  to CALL IT. Rename to `first_run.py` etc. See b108-2hf.
+- **Never import a router module in tests with the alias `setup_module`**
+  for the same reason. Use `first_run_module` or similar.
 
-## SPA session gate
+## Auth gotchas
 
-- Every admin route is wrapped by `RequireSession` in `App.tsx`. If
-  you add a route that should be signed-out-accessible (like `/signin`),
-  add a matching early-return in `ShellRoutes`.
-- The route guard uses `useAuth().status` — status starts as
-  `"checking"` and returns a SurfaceSkeleton, then flips to
-  `"authenticated"` or `"unauthenticated"`. Unauthenticated navigates
-  to `/signin` with `state={ from }` so we can bounce back after sign-in.
+- **Every new v1 write endpoint MUST use `CurrentUser`** — b108-2gt
+  sweep. `OptionalCookieUser` reserved for three exceptions:
+  `checkout.create_checkout`, `ical_feed.serve_feed`,
+  `identities.get_identity(public_face_enabled)`.
+- **b108-2hd** — even READ endpoints on multi-user data (tarot decks,
+  spreads, entities) MUST filter to `is_builtin OR owner_id=caller`.
+  Anonymous listing = data leak.
+- **b108-2hl** — `demo_signin` MUST verify `password_hash` when set.
+  Existing pre-b108-2hl accounts (Sophia's) with `password_hash=NULL`
+  are still open until they set a password.
 
-## Frontend module gotchas
+## Editor gotchas
 
-- **Never re-export heavy client-only libraries from a barrel that's
-  in the shared package's root export.** pdf.js + epub.js are lazy
-  loaded inside `ReaderSurface.tsx` via `React.lazy` and NOT
-  re-exported from `Reader/index.ts`. If you re-export them,
-  RouteMountSmoke.test.tsx explodes with `DOMMatrix is not defined`.
+- **b108-2hm** — the Editor auto-save calls `PATCH /entries/{id}/body`
+  and Publish CTA calls `POST /entries/{id}/publish`. Both must exist
+  on the backend. `EntryRead` MUST surface `published_at` + `sealed`.
+
+## Frontend gotchas
+
+- **Never re-export heavy client-only libraries** (pdf.js, epub.js)
+  from a barrel that reaches shared/index.ts. Lazy-load via
+  `React.lazy` inside surfaces. jsdom explodes otherwise.
 - **Vite `?url` import type** — `frontend/shared/src/vite-env.d.ts`
   declares `declare module "*?url" { const src: string; export
-  default src; }`. This lets shared tsc pass without `vite/client`
-  types in every downstream tsconfig.
+  default src; }`.
+- **`SpreadPosition` name collision** — the divination engine already
+  has one. Any new spread-position type must use a different name.
+  Deck designer uses `SpreadDesignerPosition`. See b108-2hc.
+
+## Service worker gotchas
+
+- **b108-2hn** — SW navigations are now network-first. Do NOT revert
+  to cache-first for `request.mode === "navigate"` — pinning stale
+  chunks after every deploy is exactly what broke Sophia's session.
+- **Bump `VERSION` in `frontend/admin/public/sw.js`** on any deploy
+  that changes SW behaviour. Cache keys embed VERSION so old caches
+  get cleared on activate.
 
 ---
 
@@ -199,18 +199,11 @@ frontend follow-ups queued; 248 (IME) done; 249–264 still pending.
 - **Prod host:** `theourgia@178.105.106.225`
 - **SSH key:** `~/.ssh/agent-house-access-theourgia`
 - **Prod deploy root:** `/srv/theourgia/prod`
-- **Env file:** `/srv/theourgia/prod/.env` (contains
-  `THEOURGIA_FEDERATION_TRANSPORT_ENABLED=1`,
-  `THEOURGIA_ALLOWED_MAGICKAL_NAMES=soror-eu-a`, R2 credentials,
-  Restic password, etc.)
 
 ### Restic backup password
 
-- Saved to `/home/sophia/theourgia-restic-password.txt` (chmod 600
-  on the laptop).
+- Saved to `/home/sophia/theourgia-restic-password.txt` (chmod 600).
 - **Password:** `wj2Z01AJqy81DtWAvYHGxe2V6GgjneXVPfJUoBr7KL80E9Ma`
-- Encrypts backups in the `theourgia-backups` R2 bucket. Lose it and
-  no backup is recoverable.
 
 ### R2 buckets
 
@@ -250,7 +243,7 @@ ssh -i ~/.ssh/agent-house-access-theourgia theourgia@178.105.106.225 \
 
 ```bash
 # From this laptop:
-curl -sS https://theourgia.com/api/v1/entries -w "\nstatus=%{http_code}\n"
+curl -sS https://theourgia.com/api/v1/entities -w "\nstatus=%{http_code}\n"
 # Should return 401 without a cookie (auth lockdown live).
 
 curl -sS https://theourgia.com/api/v1/blog/feed.rss -w "\nstatus=%{http_code}\n" | head -3
@@ -268,7 +261,7 @@ curl -sS https://theourgia.com/api/v1/blog/feed.rss -w "\nstatus=%{http_code}\n"
 - **Style Guide voice overrides mockup jargon** — expand "a11y" /
   "i18n" / "RTL" to plain language in user-facing labels.
 - **README updates ride EVERY commit/push** — every batch bumps the
-  "Latest commit" row + test counts + alembic head. Don't skip.
+  "Latest commit" row + test counts + alembic head.
 - **No emojis in commits or code** unless Sophia asks.
 - **GitHub identity is SAntonopoulou** — pre-push hook enforces the
   allowlist.
@@ -276,9 +269,9 @@ curl -sS https://theourgia.com/api/v1/blog/feed.rss -w "\nstatus=%{http_code}\n"
   `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>`
 - **Honesty by construction** — surface what filtered, what was
   refused, what was halted.
-- **Single-operator vault** — `THEOURGIA_ALLOWED_MAGICKAL_NAMES=soror-eu-a`
-  in prod .env. New magickal-name signups for anyone else 403 with a
-  self-host message.
+- **Single-operator vault** — `THEOURGIA_ALLOWED_MAGICKAL_NAMES=soror-eu-a`.
+- **UI modals only** — no native `window.alert/confirm/prompt`. Use
+  shared `PromptDialog` + `ConfirmDialog`.
 
 ---
 
@@ -288,12 +281,10 @@ The auto-memory index is at
 `~/.claude/projects/-home-sophia-Documents-development-theourgia/memory/MEMORY.md`
 and loads on every session. Key entries most relevant to resume:
 
-- `project_resume_state.md` — pointer BACK to this file (updated
-  2026-07-08).
-- `project_2026_07_08_session_close.md` — this session's shipped
-  batches + open threads.
+- `project_resume_state.md` — pointer BACK to this file.
+- `project_2026_07_08_session_close.md` — the 2026-07-08 session.
 - `feedback_migrate_not_remove.md` — the "don't remove substrate"
-  rule that shaped b108-2gt.
+  rule.
 - `feedback_match_design_exactly.md` — the most-cited convention.
 - `user_magickal_name.md` — CRITICAL: docs use `Soror Ευ. Α.` ONLY.
 
@@ -305,16 +296,24 @@ Once you're in the repo root:
 
 ```bash
 cat CLAUDE_CONTINUATION.md        # THIS FILE — read first
-git log --oneline -15             # what's shipped
+git log --oneline -25             # what's shipped
 git status                        # branch state
 ```
 
-Then use `TaskList` in Claude to see the 22-item Tier plan. Items
-243, 244, 245, 248 done; 246, 247 have frontend follow-ups queued;
-249–264 pending.
+**The work is at a clean pause point.** All tests green (2898 backend
+/ 2987 shared / 39 admin route-mount), prod live at commit `4caa2f5`,
+19 batches deployed this session. Pick up with the operator's next
+directive.
 
-**The work is at a clean pause point.** All tests green, prod live,
-seven batches deployed this session. Pick up with **#7 family tree
-viz** or **#8 watermark downloads** or the queued frontend
-follow-ups for pilgrimage routes + recipes — whichever Sophia
-directs.
+## What Sophia should test on resume
+
+1. **/settings/password** — set your password. This closes the auth
+   hole.
+2. **/editor** — try creating a journal entry. Auto-save should now
+   persist (it wasn't before b108-2hm). Publish should now work.
+3. **/deck-designer** — build a custom tarot deck. Custom deck
+   creation + custom spread designer both work end-to-end.
+4. **/family-tree** — build a family tree over your entity kinship
+   graph.
+5. **/memorial-mode** — configure a check-in cadence and set an
+   executor email.
