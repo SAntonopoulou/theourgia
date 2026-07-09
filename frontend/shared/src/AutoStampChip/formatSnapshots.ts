@@ -33,12 +33,15 @@ export interface CalendarSnapshotShape {
     month?: number;
     month_name?: string;
     day?: number;
+    /** Pre-rendered date string, e.g. "20 Tammuz 5786 AM". */
+    long?: string;
   };
   thelemic?: {
     year?: number;
     month?: number;
     day?: number;
     formatted?: string;
+    long?: string;
   };
 }
 
@@ -87,20 +90,29 @@ export function formatAstroSnapshot(
   return parts.join(" · ");
 }
 
+// Backend numbering (theourgia.core.calendars.hebrew.HEBREW_MONTH_NAMES)
+// is Nisan-starting (Biblical / ecclesiastical order), NOT Tishri-starting:
+// Nisan=1 · Iyyar=2 · Sivan=3 · Tammuz=4 · Av=5 · Elul=6 · Tishrei=7 ·
+// Cheshvan=8 · Kislev=9 · Tevet=10 · Shevat=11 · Adar=12 · Adar II=13.
+//
+// Matching the backend exactly (b108-2hz): Sophia caught the mismatch —
+// July → Tammuz should be month 4, and my Tishri-starting array was
+// producing "Tevet" instead. The spelling "Iyyar" (double y) also
+// mirrors the backend's canonical spelling.
 const HEBREW_MONTH_NAMES = [
-  "Tishri",
+  "Nisan",
+  "Iyyar",
+  "Sivan",
+  "Tammuz",
+  "Av",
+  "Elul",
+  "Tishrei",
   "Cheshvan",
   "Kislev",
   "Tevet",
   "Shevat",
   "Adar",
   "Adar II",
-  "Nisan",
-  "Iyar",
-  "Sivan",
-  "Tammuz",
-  "Av",
-  "Elul",
 ];
 
 function hebrewMonthLabel(
@@ -120,17 +132,26 @@ export function formatCalendarSnapshot(
   if (!parsed) return null;
   const parts: string[] = [];
   if (parsed.hebrew) {
-    const month = hebrewMonthLabel(parsed.hebrew);
-    if (
-      month
-      && typeof parsed.hebrew.day === "number"
-      && typeof parsed.hebrew.year === "number"
-    ) {
-      parts.push(`${parsed.hebrew.day} ${month} ${parsed.hebrew.year}`);
+    // Prefer the backend's pre-rendered "long" string, then compose
+    // from day + month_name/month_number → name + year, else fall
+    // through so the reader NEVER sees "month 4".
+    if (typeof parsed.hebrew.long === "string" && parsed.hebrew.long) {
+      parts.push(parsed.hebrew.long);
+    } else {
+      const month = hebrewMonthLabel(parsed.hebrew);
+      if (
+        month
+        && typeof parsed.hebrew.day === "number"
+        && typeof parsed.hebrew.year === "number"
+      ) {
+        parts.push(`${parsed.hebrew.day} ${month} ${parsed.hebrew.year}`);
+      }
     }
   }
   if (parsed.thelemic?.formatted) {
     parts.push(parsed.thelemic.formatted);
+  } else if (parsed.thelemic?.long) {
+    parts.push(parsed.thelemic.long);
   }
   if (parsed.julian) {
     const j = parsed.julian;

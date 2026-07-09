@@ -101,8 +101,34 @@ describe("formatCalendarSnapshot", () => {
     const raw = JSON.stringify({
       hebrew: { year: 5786, month: 10, day: 24 },
     });
-    // Month 10 in the Tishri-starting count is Sivan.
-    expect(formatCalendarSnapshot(raw)).toContain("Sivan");
+    // Backend uses Nisan-starting numbering (Nisan=1). Month 10 is Tevet.
+    expect(formatCalendarSnapshot(raw)).toContain("Tevet");
+  });
+
+  it("prefers the backend's pre-rendered 'long' string when present", () => {
+    const raw = JSON.stringify({
+      hebrew: {
+        year: 5786,
+        month: 4,
+        month_name: "Tammuz",
+        day: 20,
+        long: "20 Tammuz 5786 AM",
+      },
+    });
+    // The long field is emitted verbatim — never re-composed.
+    expect(formatCalendarSnapshot(raw)).toContain("20 Tammuz 5786 AM");
+  });
+
+  it("NEVER emits the literal 'month N' string as a Hebrew fallback", () => {
+    // Regression guard on the b108-2hz bug Sophia caught: falling
+    // through to "month 4" instead of "Tammuz". If a future refactor
+    // reintroduces a raw-number fallback, this test catches it.
+    const raw = JSON.stringify({
+      hebrew: { year: 5786, month: 4, day: 20 },
+    });
+    const out = formatCalendarSnapshot(raw);
+    expect(out).not.toMatch(/month \d/i);
+    expect(out).toContain("Tammuz");
   });
 
   it("includes Thelemic formatted line when present", () => {

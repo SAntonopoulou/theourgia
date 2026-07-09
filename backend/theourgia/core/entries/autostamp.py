@@ -230,9 +230,21 @@ def _serialise_calendar_date(date: object) -> dict[str, Any]:
     """Turn a CalendarDate into JSON-safe dict.
 
     We introspect field-by-field rather than importing CalendarDate
-    directly so an unexpected shape falls back to str() gracefully."""
+    directly so an unexpected shape falls back to str() gracefully.
+
+    b108-2hz: also pull ``month_name`` from ``raw`` if the calendar
+    stores it there (Hebrew does — the top-level ``month_name``
+    attribute isn't set, but ``raw['month_name']`` carries "Tammuz"
+    / "Sivan" / etc.). Same for other calendar-specific labels the
+    frontend renders verbatim (e.g. ``long``, ``short``).
+    """
     out: dict[str, Any] = {}
-    for key in ("year", "month", "day", "month_name", "era", "formatted"):
+    # Pull well-known display fields including the pre-rendered strings
+    # (long / short / numeric) that some calendars produce.
+    for key in (
+        "year", "month", "day", "month_name", "era",
+        "formatted", "long", "short", "numeric",
+    ):
         value = getattr(date, key, None)
         if value is None:
             continue
@@ -242,6 +254,14 @@ def _serialise_calendar_date(date: object) -> dict[str, Any]:
             out[key] = value.isoformat()
         else:
             out[key] = str(value)
+    # Some calendars (Hebrew) stash the display month name in ``raw``
+    # rather than as a top-level attribute. Pull it up so the frontend
+    # can render "Tammuz" instead of falling back to "month 4".
+    raw = getattr(date, "raw", None)
+    if isinstance(raw, dict) and out.get("month_name") is None:
+        raw_month_name = raw.get("month_name")
+        if isinstance(raw_month_name, str) and raw_month_name:
+            out["month_name"] = raw_month_name
     if not out:
         out["repr"] = str(date)
     return out

@@ -198,6 +198,21 @@ def test_calendar_payload_includes_hebrew() -> None:
     assert "year" in heb
 
 
+def test_calendar_hebrew_payload_carries_month_name_and_long() -> None:
+    """b108-2hz — regression guard for the "Tammuz shows as month"
+    bug Sophia caught. The Hebrew calendar puts ``month_name`` inside
+    ``raw`` rather than as a top-level attribute, so the serialiser
+    must pull it up. Same for the pre-rendered ``long`` string.
+    Publication of an entry on 2026-07-09 lands in Tammuz 5786."""
+    cal = _calendar()
+    heb = cal["hebrew"]
+    assert "month_name" in heb
+    assert heb["month_name"] == "Tammuz"
+    # ``long`` also gets surfaced so the frontend can render it verbatim.
+    assert "long" in heb
+    assert "Tammuz" in heb["long"]
+
+
 def test_calendar_payload_includes_thelemic() -> None:
     cal = _calendar()
     assert "thelemic" in cal

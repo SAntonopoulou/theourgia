@@ -329,10 +329,31 @@ const MAXW = "720px";
       try {
         if (calendarRaw) {
           const c = JSON.parse(calendarRaw);
+          // Hebrew months, Nisan-starting — matches the backend
+          // (theourgia.core.calendars.hebrew.HEBREW_MONTH_NAMES).
+          // In this order Tammuz is month 4.
+          const HEBREW_MONTHS = [
+            "Nisan", "Iyyar", "Sivan", "Tammuz", "Av", "Elul",
+            "Tishrei", "Cheshvan", "Kislev", "Tevet", "Shevat", "Adar",
+            "Adar II",
+          ];
           const bits = [];
-          if (c.hebrew && c.hebrew.day && (c.hebrew.month_name || typeof c.hebrew.month === "number") && c.hebrew.year) {
-            const month = c.hebrew.month_name || ("month " + c.hebrew.month);
-            bits.push(c.hebrew.day + " " + month + " " + c.hebrew.year);
+          if (c.hebrew) {
+            // Prefer the backend's pre-rendered "long" string
+            // ("20 Tammuz 5786 AM"); else compose from day + month_name
+            // + year; else fall back to the month-number → name array
+            // so the reader NEVER sees "month 4".
+            if (typeof c.hebrew.long === "string" && c.hebrew.long) {
+              bits.push(c.hebrew.long);
+            } else if (c.hebrew.day && c.hebrew.year) {
+              let month = c.hebrew.month_name;
+              if (!month && typeof c.hebrew.month === "number") {
+                month = HEBREW_MONTHS[c.hebrew.month - 1];
+              }
+              if (month) {
+                bits.push(c.hebrew.day + " " + month + " " + c.hebrew.year);
+              }
+            }
           }
           if (c.thelemic && c.thelemic.formatted) {
             bits.push(c.thelemic.formatted);
