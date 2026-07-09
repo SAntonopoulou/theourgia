@@ -4,28 +4,28 @@
 where prod is, what's shipped, what's next, and every gotcha we've
 paid for.
 
-Last updated: **2026-07-09** (session close after b108-2ha → b108-2hr — 19 batches).
+Last updated: **2026-07-09** (session close after b108-2ha → b108-2hx — 24 batches).
 
 ---
 
-## State of the world (commit `4caa2f5`)
+## State of the world (commit `28a7749`)
 
 ### Production
 
 - **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; redeployed
-  ~19 times during 2026-07-08→09 session).
+  ~24 times during 2026-07-08→09 session).
 - 8 prod containers under compose project `theourgia-prod`, isolated
   from the `theourgia` dev stack.
 - Sophia's vault is the only account (single-operator gate).
 - Sign in at <https://theourgia.com/app/signin> as `soror-eu-a`
   (the slug form — the allowlist expects that exact string).
 
-### Test counts (post b108-2hr)
+### Test counts (post b108-2hx)
 
 | Suite | Passing | Notes |
 |---|---|---|
-| backend | **2898** | alembic head **0075** |
-| shared (vitest) | **2987** | admin tsc clean, shared tsc clean |
+| backend | **2922** | alembic head **0075** |
+| shared (vitest) | **3019** | admin tsc clean, shared tsc clean |
 | admin (route-mount) | **39** | |
 | agent-daemon | 198 | alembic head 0002 |
 | registry | 34 | alembic head 0001 |
@@ -63,6 +63,12 @@ Last updated: **2026-07-09** (session close after b108-2ha → b108-2hr — 19 b
 | **b108-2hp** | Reference plugin 6/7 part 2: Anglo-Saxon Futhorc (33 runes). 24 Elder base + 5 OE additions (Ac/Æsc/Yr/Ior/Ear) + 4 Northumbrian additions (Cweorð/Calc/Stan/Gar). Meanings from the *Anglo-Saxon Rune Poem* c. 8th-10th c. +12 backend. | §13 (6/7 more done) |
 | **b108-2hq** | Reference plugin 6/7 part 3: Armanen runes (18). Guido von List 1902 modern reconstruction. Description honestly flags "modern reconstruction, NOT historical" + acknowledges racialist-movement misuse without endorsement (regression guards). +10 backend. | §13 (6/7 nearly done) |
 | **b108-2hr** | DP analytics substrate. `core/analytics/differential_privacy.py`: Laplace mechanism using `secrets.SystemRandom` (not stdlib random). `noisy_count` · `noisy_sum` · `noisy_mean` with input-clipping enforced before aggregation. `CohortTooSmall` blocks queries below threshold BEFORE noise is added. `NoisyAggregate` surfaces value+epsilon+cohort_size+noise_scale for trust. Cross-vault endpoints land with Phase 12+ federation. +25 backend. | §9 aggregate analytics `[~]` |
+| **b108-2hs** | Docs refresh (this file) after the initial 19 batches. |
+| **b108-2ht** | FIX: "I published but the blog is empty" — Publish now sets `visibility=PUBLIC` too (was only setting `published_at`). Blog query dropped the `type=BLOG_POST` filter (Editor has no type picker). New `GET /api/v1/blog/posts/{id}` + `/blog-read?id=xxx` public detail page with Tiptap→HTML renderer. Sophia's existing entry was direct-patched on prod. +8 backend. |
+| **b108-2hu** | FIX: Astro `[id]` dynamic route needed SSR adapter; public-site is static. Switched to `/blog-read?id=xxx` query-param URL. |
+| **b108-2hv** | Matrix notification channel (ref plugin **7/7 COMPLETE**). POSTs m.notice to `/rooms/{roomId}/send/m.room.message/{txnId}`. Bearer auth. Random 32-hex txn_id per send. Transport injected as Protocol. One attempt + clean NotificationDeliveryError (retries live in the service). `DeliveryChannel.MATRIX` enum value. +16 backend. | §13 7/7 |
+| **b108-2hw** | Editor title is now editable. `createEntry({title:"Untitled entry"})` was the only writer of the title before — no UI to rename. New h1-styled `<input>` above Tiptap, on-blur PATCH via `updateEntry`. |
+| **b108-2hx** | Video integration. New `videoEmbed` Tiptap block + `/video` slash command. `extractYoutubeId()` handles all URL shapes. Privacy-enhanced `youtube-nocookie.com` host. `loading="lazy"` iframe (no 3P requests until scrolled to). Captions_url (.vtt) + chapters textarea supporting `mm:ss`, `h:mm:ss`, and bare seconds. Chapters render as clickable timestamp buttons that seek via startSeconds. NEVER autoplays by default (regression-guarded). Blog reader detail page renders the same iframe. +32 shared. | §17 `[~]` + captions `[x]` |
 
 ### Federation status (unchanged from 2026-07-08)
 
@@ -90,16 +96,16 @@ ship.
   review), automatic Celery-beat trigger, per-entry publish-on-death
   gate.
 - **#12 Web-based first-run wizard** — ✅ shipped (b108-2hf).
-- **#13 Reference plugins (7)** — partial:
+- **#13 Reference plugins (7)** — ✅ **COMPLETE (b108-2hv)**:
   - ✅ Egyptian decans (b108-2hh)
   - ✅ Liber 777 correspondences (b108-2hh)
   - ✅ Obsidian markdown exporter (b108-2hi)
   - ✅ Tea-leaf reading log (b108-2hj)
   - ✅ Day One journal importer (b108-2hk)
-  - ~ Norse runes extended (b108-2ho + 2hp + 2hq: Younger + Futhorc
-    + Armanen done; bind-rune designer surface still open)
-  - ⏳ Matrix notification channel — last remaining plugin. Needs
-    outbound HTTP client + credentials substrate.
+  - ✅ Norse runes extended (b108-2ho + 2hp + 2hq: Younger + Futhorc
+    + Armanen bundled; standalone Northumbrian + bind-rune designer
+    surface are the remaining follow-ups)
+  - ✅ Matrix notification channel (b108-2hv)
 - **#14 Content bundles (7)** — needs the MBF (Magickal Bundle
   Format) schema substrate first. See FEATURES §11 — a lot of
   unchecked structural boxes there. Sophia should weigh in on the
@@ -111,12 +117,13 @@ ship.
 
 - **#16 Cross-instance federation test** — needs second instance.
   Blocked on infra.
-- **#17 Video integration + captions** — YouTube privacy-enhanced
-  embeds. Doable purely in code — pick this up next.
+- **#17 Video integration + captions** — ✅ YouTube shipped (b108-2hx);
+  Cloudflare Stream / Mux still open. Captions + chapter markers ✅
+  shipped.
 - **#18 Newsletter delivery plugin slots** — Postmark/SES/Resend/
   Mailgun as delivery plugins. Needs MBF plugin substrate.
 - **#19 Print-quality book typography** — reportlab-based book
-  layout. Substantial, doable purely in code.
+  layout. Substantial, doable purely in code. **Next batch candidate.**
 - **#20 Cross-magician aggregate analytics (DP)** — substrate ✅
   shipped (b108-2hr). Endpoints land with Phase 12+ federation.
 - **#21 Helm chart + Traefik alternative** — needs K8s to test.
