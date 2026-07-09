@@ -310,7 +310,7 @@ Implementation phase: **[09 — Synchronicity & Analytics](plan/09-synchronicity
 - [ ] **Saved queries and studies** — named, persistent, with viz config + notes
 - [ ] **Visualizations** — time-series, heatmaps, correlation matrix, network graph (entities↔workings↔outcomes), Sankey (intention→working→outcome), calendar heatmap; Tufte-aware design
 - [ ] **Pattern detection** — automated weekly digest surfacing statistically interesting recurrences; multi-test correction (Bonferroni/FDR) on automated findings
-- [ ] **Cross-magician aggregate analytics** — opt-in network-scoped, anonymized, differential-privacy noise, minimum cohort size before any aggregate shown
+- [~] **Cross-magician aggregate analytics** — opt-in network-scoped, anonymized, differential-privacy noise, minimum cohort size before any aggregate shown — b108-2hr shipped the DP math substrate (`core/analytics/differential_privacy.py`: Laplace mechanism using `secrets.SystemRandom`, `noisy_count` (sensitivity=1, post-clip at 0), `noisy_sum` + `noisy_mean` (input-clipping enforced BEFORE aggregation), `CohortTooSmall` guard, `NoisyAggregate` dataclass surfaces epsilon + cohort_size + noise_scale to reader for trust judgement). Cross-vault sharing endpoints land with the Phase 12+ federation aggregation infra.
 - [ ] **Network analytics audit log** — every aggregate query logged and visible to contributors
 - [ ] **Cohort comparison** — your data across periods, or across network members in aggregate
 
