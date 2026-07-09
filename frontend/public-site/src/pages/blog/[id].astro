@@ -1,0 +1,288 @@
+---
+/**
+ * Blog post detail — theourgia.com/blog/{id}.
+ *
+ * b108-2ht. Client-side fetches `/api/v1/blog/posts/{id}` and
+ * renders the full body. The body arrives as a Tiptap-JSON string
+ * (per the Editor's auto-save format); a minimal renderer converts
+ * paragraphs / headings / lists / marks to HTML so the reader sees
+ * the actual content rather than raw JSON.
+ *
+ * If the post is missing (404) or private, we show the honest
+ * "post not found" surface with a link back to the blog index.
+ */
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PublicChrome from "../../components/PublicChrome.astro";
+
+export const prerender = false;
+
+const MAXW = "720px";
+---
+
+<BaseLayout title="A note from the practitioner — Theourgia">
+  <div
+    style="background:var(--bg);color:var(--ink);font-family:var(--font-serif);min-height:100vh"
+  >
+    <PublicChrome active="blog" subscribe="Subscribe" />
+
+    <main
+      id="post-root"
+      style={`max-width:${MAXW};margin:0 auto;padding:56px 20px 88px`}
+    >
+      <div
+        id="post-loading"
+        style="padding:60px 20px;text-align:center;font-family:var(--font-ui);font-size:14px;color:var(--ink-mute)"
+      >
+        Loading…
+      </div>
+
+      <div
+        id="post-missing"
+        style="display:none;padding:60px 20px;text-align:center;font-family:var(--font-serif);font-size:16px;color:var(--ink-mute);line-height:1.55"
+      >
+        <p style="font-size:22px;margin:0 0 12px;color:var(--ink)">
+          This post isn't public.
+        </p>
+        <p style="margin:0 0 24px">
+          The link may have expired, the entry may have been withdrawn,
+          or the URL may be wrong.
+        </p>
+        <p>
+          <a href="/blog" style="color:var(--accent);text-decoration:none"
+            >← Back to the blog</a
+          >
+        </p>
+      </div>
+
+      <article id="post-body" style="display:none">
+        <a
+          href="/blog"
+          style="display:inline-block;margin-bottom:36px;font-family:var(--font-ui);font-size:13px;color:var(--accent);text-decoration:none"
+          >← Back to the blog</a
+        >
+        <div
+          id="post-eyebrow"
+          style="font-family:var(--font-ui);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:14px"
+        ></div>
+        <h1
+          id="post-title"
+          style="font-family:var(--font-display);font-size:36px;line-height:1.15;margin:0 0 12px"
+        ></h1>
+        <p
+          id="post-excerpt"
+          style="font-size:19px;line-height:1.5;color:var(--ink-soft);margin:0 0 40px"
+        ></p>
+        <div
+          id="post-content"
+          style="font-size:17px;line-height:1.75;color:var(--ink)"
+        ></div>
+      </article>
+    </main>
+  </div>
+</BaseLayout>
+
+<style is:inline>
+  #post-content h1,
+  #post-content h2,
+  #post-content h3,
+  #post-content h4 {
+    font-family: var(--font-display);
+    line-height: 1.2;
+    margin: 32px 0 12px;
+  }
+  #post-content h1 { font-size: 28px; }
+  #post-content h2 { font-size: 24px; }
+  #post-content h3 { font-size: 20px; }
+  #post-content p { margin: 0 0 20px; }
+  #post-content ul, #post-content ol { padding-left: 24px; margin: 0 0 20px; }
+  #post-content li { margin-bottom: 6px; }
+  #post-content code {
+    font-family: var(--font-mono, monospace);
+    background: var(--bg-2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.92em;
+  }
+  #post-content pre {
+    background: var(--bg-2);
+    padding: 16px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 0 0 20px;
+  }
+  #post-content pre code {
+    background: transparent;
+    padding: 0;
+  }
+  #post-content blockquote {
+    border-left: 3px solid var(--accent);
+    padding-left: 18px;
+    margin: 0 0 20px;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+  #post-content a {
+    color: var(--accent);
+  }
+</style>
+
+<script is:inline>
+  (async function () {
+    const loading = document.getElementById("post-loading");
+    const missing = document.getElementById("post-missing");
+    const body = document.getElementById("post-body");
+    if (!loading || !missing || !body) return;
+
+    // URL: /blog/{id}
+    const parts = window.location.pathname.split("/").filter(Boolean);
+    const id = parts[parts.length - 1];
+    if (!id || id === "blog") {
+      loading.style.display = "none";
+      missing.style.display = "block";
+      return;
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function renderInline(nodes) {
+      if (!Array.isArray(nodes)) return "";
+      return nodes
+        .map(function (n) {
+          if (n.type === "hardBreak") return "<br />";
+          if (n.type === "text") {
+            let t = escapeHtml(n.text || "");
+            const marks = n.marks || [];
+            marks.forEach(function (m) {
+              if (m.type === "bold") t = "<strong>" + t + "</strong>";
+              else if (m.type === "italic") t = "<em>" + t + "</em>";
+              else if (m.type === "code") t = "<code>" + t + "</code>";
+              else if (m.type === "link") {
+                const href = m.attrs && m.attrs.href ? m.attrs.href : "#";
+                t = '<a href="' + escapeHtml(href) + '" rel="noopener">' + t + "</a>";
+              }
+            });
+            return t;
+          }
+          if (n.content) return renderInline(n.content);
+          return "";
+        })
+        .join("");
+    }
+
+    function renderNode(node) {
+      if (!node || typeof node !== "object") return "";
+      const kind = node.type;
+      const content = node.content || [];
+      if (kind === "doc") return content.map(renderNode).join("");
+      if (kind === "paragraph") return "<p>" + renderInline(content) + "</p>";
+      if (kind === "heading") {
+        const level = (node.attrs && node.attrs.level) || 2;
+        const tag = "h" + Math.min(4, Math.max(1, level));
+        return "<" + tag + ">" + renderInline(content) + "</" + tag + ">";
+      }
+      if (kind === "horizontalRule") return "<hr />";
+      if (kind === "codeBlock") {
+        return "<pre><code>" + escapeHtml(renderInline(content)) + "</code></pre>";
+      }
+      if (kind === "blockquote") {
+        return "<blockquote>" + content.map(renderNode).join("") + "</blockquote>";
+      }
+      if (kind === "bulletList") {
+        return (
+          "<ul>" +
+          content
+            .map(function (li) {
+              return (
+                "<li>" +
+                (li.content || []).map(renderNode).join("") +
+                "</li>"
+              );
+            })
+            .join("") +
+          "</ul>"
+        );
+      }
+      if (kind === "orderedList") {
+        return (
+          "<ol>" +
+          content
+            .map(function (li) {
+              return (
+                "<li>" +
+                (li.content || []).map(renderNode).join("") +
+                "</li>"
+              );
+            })
+            .join("") +
+          "</ol>"
+        );
+      }
+      // Fallback: unknown custom node — surface the JSON attrs as a note
+      // rather than silently dropping.
+      if (node.attrs) {
+        return (
+          '<div style="padding:12px;border:1px dashed var(--line);border-radius:4px;font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);margin:0 0 20px">' +
+          "custom block: " +
+          escapeHtml(kind) +
+          "</div>"
+        );
+      }
+      return "";
+    }
+
+    function renderBody(bodyString) {
+      if (!bodyString) return "";
+      try {
+        const doc = JSON.parse(bodyString);
+        if (doc && doc.type === "doc") return renderNode(doc);
+        // Fall through: not a Tiptap doc; treat as plain text.
+        return "<p>" + escapeHtml(bodyString) + "</p>";
+      } catch (e) {
+        // Body isn't JSON — legacy plain-prose entry. Escape + wrap.
+        return "<p>" + escapeHtml(bodyString).replace(/\n\n/g, "</p><p>") + "</p>";
+      }
+    }
+
+    function formatDate(iso) {
+      if (!iso) return "";
+      try {
+        return new Date(iso).toLocaleDateString(undefined, {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        });
+      } catch {
+        return "";
+      }
+    }
+
+    try {
+      const res = await fetch("/api/v1/blog/posts/" + encodeURIComponent(id));
+      if (res.status === 404) {
+        loading.style.display = "none";
+        missing.style.display = "block";
+        return;
+      }
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const post = await res.json();
+      loading.style.display = "none";
+      body.style.display = "block";
+      document.getElementById("post-title").textContent = post.title || "Untitled";
+      document.getElementById("post-excerpt").textContent = post.excerpt || "";
+      document.getElementById("post-eyebrow").textContent =
+        "Essay · " + formatDate(post.published_at || post.created_at);
+      document.getElementById("post-content").innerHTML = renderBody(post.body);
+      document.title = (post.title || "Untitled") + " — Theourgia";
+    } catch (e) {
+      loading.style.display = "none";
+      missing.style.display = "block";
+    }
+  })();
+</script>

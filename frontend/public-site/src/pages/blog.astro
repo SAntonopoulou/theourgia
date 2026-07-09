@@ -12,9 +12,13 @@
  * response is empty.
  *
  * Per the backend contract (`api/v1/routers/blog.py`): posts are
- * Entry rows with type=blog_post + visibility=public + no encryption.
- * The scheduler holds back rows whose `scheduled_publish_at` is in
- * the future.
+ * Entry rows with visibility=public + no encryption. The scheduler
+ * holds back rows whose `scheduled_publish_at` is in the future.
+ * (Before b108-2ht the query also required type=blog_post but the
+ * Editor UI has no type picker so users had no way to hit that.)
+ *
+ * Cards click through to /blog/{id} — the single-post detail page
+ * added in b108-2ht.
  */
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PublicChrome from "../components/PublicChrome.astro";
@@ -127,8 +131,9 @@ const MAXW = "1180px";
           const title = escapeHtml(p.title || "Untitled");
           const excerpt = escapeHtml(p.excerpt || "");
           const date = formatDate(p.published_at || p.created_at);
+          const href = "/blog/" + encodeURIComponent(p.id);
           return (
-            '<article class="blog-card" style="background:var(--bg);padding:26px 24px;display:flex;flex-direction:column;transition:background-color 0.15s ease">' +
+            '<a href="' + href + '" class="blog-card" style="background:var(--bg);padding:26px 24px;display:flex;flex-direction:column;transition:background-color 0.15s ease;text-decoration:none;color:inherit">' +
             '<div style="font-family:var(--font-ui);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px">Essay · ' +
             date +
             "</div>" +
@@ -140,7 +145,7 @@ const MAXW = "1180px";
                 excerpt +
                 "</p>"
               : "") +
-            "</article>"
+            "</a>"
           );
         })
         .join("");

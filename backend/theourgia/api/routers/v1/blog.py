@@ -20,7 +20,9 @@ from datetime import UTC, datetime
 from typing import Annotated
 from xml.sax.saxutils import escape
 
-from fastapi import APIRouter, Depends, Query, Response
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -46,7 +48,15 @@ class BlogPostsResponse(BaseModel):
 async def _fetch_published_posts(
     session: AsyncSession, *, limit: int = 100, offset: int = 0,
 ) -> tuple[list[Entry], int]:
-    """Every public, non-encrypted, non-soft-deleted blog post.
+    """Every public, non-encrypted, non-soft-deleted entry.
+
+    b108-2ht: removed the ``type == BLOG_POST`` filter. The user
+    mental model of "public means public" wins: any entry the user
+    has explicitly made public shows on the blog, regardless of
+    its entry type (observation, ritual log, dream, etc.). Before
+    this fix, only entries whose type was specifically ``blog_post``
+    surfaced, but the Editor UI has no type picker so users had no
+    way to actually create a blog_post.
 
     Excludes posts whose ``scheduled_publish_at`` is in the future
     (the Batch 33 scheduler hasn't promoted them yet).
@@ -55,7 +65,6 @@ async def _fetch_published_posts(
     base = (
         select(Entry)
         .where(Entry.deleted_at.is_(None))
-        .where(Entry.type == EntryType.BLOG_POST)
         .where(Entry.visibility == EntryVisibility.PUBLIC)
         .where(Entry.encryption_mode == EncryptionMode.NONE)
         .where(
@@ -91,6 +100,50 @@ async def list_blog_posts(
         limit=limit,
         offset=offset,
     )
+
+
+# ── b108-2ht: single-post detail endpoint ─────────────────────────
+#
+# The blog surface at theourgia.com/blog needs to click through to a
+# reader view. This endpoint returns a single public post (same
+# public-visibility filter as the list) plus the full body — the
+# list endpoint returns only excerpts.
+
+
+@router.get(
+    "/blog/posts/{post_id}",
+    response_model=EntryRead,
+    tags=["blog"],
+)
+async def get_blog_post(
+    post_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> EntryRead:
+    """One public post + its full body.
+
+    Same filters as the list endpoint (visibility=public,
+    non-encrypted, not deleted, scheduled window elapsed).
+    Non-matching IDs 404 rather than 403 so we don't disclose
+    the existence of a private entry.
+    """
+    now = datetime.now(tz=UTC)
+    stmt = (
+        select(Entry)
+        .where(Entry.id == post_id)
+        .where(Entry.deleted_at.is_(None))
+        .where(Entry.visibility == EntryVisibility.PUBLIC)
+        .where(Entry.encryption_mode == EncryptionMode.NONE)
+        .where(
+            (Entry.scheduled_publish_at.is_(None))
+            | (Entry.scheduled_publish_at <= now)
+        )
+    )
+    row = (await session.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Post not found.",
+        )
+    return _to_read(row)
 
 
 @router.get(

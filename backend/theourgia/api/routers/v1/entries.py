@@ -469,8 +469,20 @@ async def publish_entry(
     # Idempotent — publishing an already-published entry keeps the
     # original timestamp so "when was this published" doesn't drift
     # on repeated clicks.
+    #
+    # b108-2ht: Publish now ALSO promotes visibility to PUBLIC. Before
+    # this, hitting Publish left visibility=personal, so the entry
+    # appeared "published" in the Editor but never surfaced in the
+    # public blog — the user's mental model ("publish means public")
+    # was silently broken.
+    changed = False
     if row.published_at is None:
         row.published_at = _dt.now(tz=UTC)
+        changed = True
+    if row.visibility != EntryVisibility.PUBLIC:
+        row.visibility = EntryVisibility.PUBLIC
+        changed = True
+    if changed:
         await session.commit()
         await session.refresh(row)
     return _to_read(row)
