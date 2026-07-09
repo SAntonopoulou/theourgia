@@ -85,7 +85,7 @@ Implementation phase: **[04 — Journaling](plan/04-journaling.md)** (with blog 
 
 ### Core journaling
 - [ ] **Unified entry model** with discriminator: note, ritual_log, divination, dream, synchronicity, working, magical_record, pathworking, scrying, body_practice, meeting_note, study_note, liber_resh, blog_post, plugin-defined
-- [ ] **Auto-stamping** of every entry with multi-calendar date, astrological snapshot, weather, location (opt-in), body state
+- [~] **Auto-stamping** of every entry with multi-calendar date, astrological snapshot, weather, location (opt-in), body state — b108-2hy shipped astro (sun sign+degree, moon sign+phase+illumination %, mercury/venus/mars/jupiter/saturn positions via Swiss Ephemeris) + multi-calendar (Gregorian + Julian + Hebrew + Thelemic) auto-stamped at POST /entries. Falls back to user's stored `astro.lat`/`astro.lng` or Greenwich. Editor renders AutoStampChip below the title; blog reader shows a stamp box above the excerpt. **Weather + body state still open** — weather needs a credential substrate; body state needs a sensor/opt-in flow.
 - [ ] **Per-entry visibility**: personal / viewer / network:{hub_id} / public / sealed
 - [ ] **Flexible tagging** + tradition tags
 - [ ] **Version history** with diff browsing and revision restore

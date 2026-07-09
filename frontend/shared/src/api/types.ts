@@ -98,6 +98,13 @@ export interface EntryDetailRecord extends EntryRecord {
   sealed: boolean;
   /** Set when the entry was published (null for drafts). */
   published_at: string | null;
+  /**
+   * Auto-stamp snapshot (b108-2hy) — compact JSON strings recorded
+   * at entry creation. The Editor renders these as a chip strip at
+   * the top of the entry.
+   */
+  astro_snapshot?: string | null;
+  calendar_snapshot?: string | null;
 }
 
 /** Input for ``PATCH /api/v1/entries/{id}/body``. */

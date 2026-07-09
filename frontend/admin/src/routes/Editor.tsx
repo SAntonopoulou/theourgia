@@ -18,10 +18,13 @@
 
 import {
   SealEntryDialog,
+  AutoStampChip,
   TiptapEditor,
   Toast,
   VisibilityControl,
   VisibilityDowngradeDialog,
+  formatAstroSnapshot,
+  formatCalendarSnapshot,
   useTopbar,
   type ChartFetchFn,
   type EntityVisibility,
@@ -582,9 +585,26 @@ export function Editor() {
             lineHeight: 1.1,
             color: "var(--ink)",
             padding: 0,
-            marginBottom: 20,
+            marginBottom: 16,
           }}
         />
+        {(() => {
+          const astroLabel = formatAstroSnapshot(
+            detail.data?.astro_snapshot,
+          );
+          const calendarLabel = formatCalendarSnapshot(
+            detail.data?.calendar_snapshot,
+          );
+          if (!astroLabel && !calendarLabel) return null;
+          return (
+            <div style={{ marginBottom: 20 }} data-role="entry-autostamp">
+              <AutoStampChip
+                astro={astroLabel ?? undefined}
+                calendar={calendarLabel ?? undefined}
+              />
+            </div>
+          );
+        })()}
       </div>
       {doc !== null ? (
         <TiptapEditor

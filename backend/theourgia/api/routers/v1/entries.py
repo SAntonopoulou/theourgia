@@ -98,6 +98,10 @@ class EntryRead(BaseModel):
     authored_by_persona_id: str | None = None
     # b108-2hm — expose to the editor so the "Published" chip renders.
     sealed: bool = False
+    # b108-2hy — auto-stamp snapshots (JSON strings). The frontend
+    # renders these as chip strips at the top of the entry.
+    astro_snapshot: str | None = None
+    calendar_snapshot: str | None = None
 
 
 class EntryCreate(BaseModel):
@@ -178,6 +182,8 @@ def _to_read(row: Entry) -> EntryRead:
             else None
         ),
         sealed=row.encryption_mode == EncryptionMode.SEALED,
+        astro_snapshot=row.astro_snapshot,
+        calendar_snapshot=row.calendar_snapshot,
     )
 
 
@@ -276,6 +282,54 @@ async def create_entry(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     current_user: CurrentUser,
 ) -> EntryRead:
+    # b108-2hy — auto-stamp on create. Compute the astro + calendar
+    # snapshots at entry-birth so the entry always carries context
+    # about WHERE in the moon cycle + WHICH sun sign it was made.
+    #
+    # The AutoStamp module handles the heavy lifting (Swiss Ephemeris
+    # + multi-calendar converters). We derive location from the
+    # payload if present, otherwise fall back to the user's stored
+    # astro location, otherwise Greenwich.
+    from datetime import UTC as _UTC, datetime as _dt
+
+    from theourgia.core.entries.autostamp import (
+        AutoStampInput,
+        compute_snapshots,
+    )
+
+    stamp_instant = payload.occurred_at or _dt.now(tz=_UTC)
+    if stamp_instant.tzinfo is None:
+        stamp_instant = stamp_instant.replace(tzinfo=_UTC)
+
+    stamp_lat = payload.location_lat
+    stamp_lon = payload.location_lon
+    if stamp_lat is None or stamp_lon is None:
+        # Fall back to the user's stored astrological location.
+        from theourgia.api.routers.v1.user_settings import _read_value
+
+        settings_lat = await _read_value(session, current_user.id, "astro.lat")
+        settings_lon = await _read_value(session, current_user.id, "astro.lng")
+        if stamp_lat is None:
+            stamp_lat = settings_lat if settings_lat is not None else 0.0
+        if stamp_lon is None:
+            stamp_lon = settings_lon if settings_lon is not None else 0.0
+
+    try:
+        snapshot = compute_snapshots(
+            AutoStampInput(
+                instant=stamp_instant,
+                latitude=stamp_lat,
+                longitude=stamp_lon,
+            )
+        )
+        astro_snapshot: str | None = snapshot.astro_snapshot
+        calendar_snapshot: str | None = snapshot.calendar_snapshot
+    except Exception:
+        # Never fail entry creation because the ephemeris hiccupped;
+        # the entry itself is more valuable than the context it lacks.
+        astro_snapshot = None
+        calendar_snapshot = None
+
     row = Entry(
         title=payload.title,
         type=EntryType(payload.type),
@@ -299,6 +353,9 @@ async def create_entry(
             if payload.authored_by_persona_id
             else None
         ),
+        # b108-2hy — auto-populated at create time.
+        astro_snapshot=astro_snapshot,
+        calendar_snapshot=calendar_snapshot,
     )
     session.add(row)
     await session.commit()

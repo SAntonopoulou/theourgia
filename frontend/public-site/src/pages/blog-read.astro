@@ -73,8 +73,12 @@ const MAXW = "720px";
         ></h1>
         <p
           id="post-excerpt"
-          style="font-size:19px;line-height:1.5;color:var(--ink-soft);margin:0 0 40px"
+          style="font-size:19px;line-height:1.5;color:var(--ink-soft);margin:0 0 20px"
         ></p>
+        <div
+          id="post-stamp"
+          style="display:none;padding:8px 12px;margin:0 0 40px;border:1px solid var(--line);border-radius:6px;background:var(--bg-2);font-family:var(--font-ui);font-size:12px;color:var(--ink-soft);line-height:1.5"
+        ></div>
         <div
           id="post-content"
           style="font-size:17px;line-height:1.75;color:var(--ink)"
@@ -291,6 +295,56 @@ const MAXW = "720px";
       }
     }
 
+    // b108-2hy — render the auto-stamp payload as one or two prose
+    // lines above the excerpt. Falls silent when the payload is
+    // missing or unparseable.
+    function renderStamp(astroRaw, calendarRaw) {
+      const stampEl = document.getElementById("post-stamp");
+      if (!stampEl) return;
+      const parts = [];
+      try {
+        if (astroRaw) {
+          const a = JSON.parse(astroRaw);
+          const bits = [];
+          if (a.sun && a.sun.sign) {
+            const glyph = a.sun.glyph ? " " + a.sun.glyph : "";
+            const deg = typeof a.sun.degree === "number" ? " " + Math.floor(a.sun.degree) + "°" : "";
+            bits.push("Sun" + glyph + " " + a.sun.sign + deg);
+          }
+          if (a.moon && a.moon.sign) {
+            const glyph = a.moon.glyph ? " " + a.moon.glyph : "";
+            const deg = typeof a.moon.degree === "number" ? " " + Math.floor(a.moon.degree) + "°" : "";
+            bits.push("Moon" + glyph + " " + a.moon.sign + deg);
+          }
+          if (a.moon && a.moon.phase) {
+            let phase = a.moon.phase;
+            if (typeof a.moon.illumination_pct === "number") {
+              phase += " (" + Math.round(a.moon.illumination_pct) + "%)";
+            }
+            bits.push(phase);
+          }
+          if (bits.length) parts.push(bits.join(" · "));
+        }
+      } catch (e) {}
+      try {
+        if (calendarRaw) {
+          const c = JSON.parse(calendarRaw);
+          const bits = [];
+          if (c.hebrew && c.hebrew.day && (c.hebrew.month_name || typeof c.hebrew.month === "number") && c.hebrew.year) {
+            const month = c.hebrew.month_name || ("month " + c.hebrew.month);
+            bits.push(c.hebrew.day + " " + month + " " + c.hebrew.year);
+          }
+          if (c.thelemic && c.thelemic.formatted) {
+            bits.push(c.thelemic.formatted);
+          }
+          if (bits.length) parts.push(bits.join(" · "));
+        }
+      } catch (e) {}
+      if (!parts.length) return;
+      stampEl.style.display = "block";
+      stampEl.innerHTML = parts.map(escapeHtml).join("<br />");
+    }
+
     try {
       const res = await fetch("/api/v1/blog/posts/" + encodeURIComponent(id));
       if (res.status === 404) {
@@ -306,6 +360,8 @@ const MAXW = "720px";
       document.getElementById("post-excerpt").textContent = post.excerpt || "";
       document.getElementById("post-eyebrow").textContent =
         "Essay · " + formatDate(post.published_at || post.created_at);
+      // b108-2hy — surface the astro + calendar auto-stamp.
+      renderStamp(post.astro_snapshot, post.calendar_snapshot);
       document.getElementById("post-content").innerHTML = renderBody(post.body);
       document.title = (post.title || "Untitled") + " — Theourgia";
     } catch (e) {
