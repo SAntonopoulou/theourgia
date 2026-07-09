@@ -31,8 +31,8 @@ function mountHeadless(content: unknown = { type: "doc", content: [{ type: "para
 }
 
 describe("Editor — slash command catalog", () => {
-  it("ships 15 commands at b108-2gu (b99a nine + geomancy + runes + voce + correspondence + calendar + voice)", () => {
-    expect(SLASH_COMMANDS).toHaveLength(15);
+  it("ships 16 commands at b108-2hx (b99a nine + geomancy + runes + voce + correspondence + calendar + voice + video)", () => {
+    expect(SLASH_COMMANDS).toHaveLength(16);
     const keys = SLASH_COMMANDS.map((c) => c.key);
     expect(keys).toEqual(
       expect.arrayContaining([
@@ -51,6 +51,7 @@ describe("Editor — slash command catalog", () => {
         "correspondence",
         "calendar-stamp",
         "voice",
+        "video",
       ]),
     );
   });
@@ -62,12 +63,12 @@ describe("Editor — slash command catalog", () => {
   });
 
   it("returns the full list when query is empty", () => {
-    expect(filterSlashCommands("")).toHaveLength(15);
+    expect(filterSlashCommands("")).toHaveLength(16);
   });
 });
 
 describe("Editor — extensions wiring", () => {
-  it("registers all 12 custom block nodes in the schema (8 B97-B99 + 4 b108-2gu)", () => {
+  it("registers all 13 custom block nodes in the schema (8 B97-B99 + 4 b108-2gu + videoEmbed b108-2hx)", () => {
     const editor = mountHeadless();
     const schema = editor.schema;
     expect(schema.nodes.ritualLog).toBeDefined();
@@ -82,6 +83,7 @@ describe("Editor — extensions wiring", () => {
     expect(schema.nodes.calendarStamp).toBeDefined();
     expect(schema.nodes.voxMagicae).toBeDefined();
     expect(schema.nodes.voiceRecording).toBeDefined();
+    expect(schema.nodes.videoEmbed).toBeDefined();
     editor.destroy();
   });
 
@@ -125,6 +127,7 @@ describe("Editor — slash command insertion", () => {
       correspondence: "correspondence",
       "calendar-stamp": "calendarStamp",
       voice: "voiceRecording",
+      video: "videoEmbed",
     };
     for (const cmd of SLASH_COMMANDS) {
       const editor = mountHeadless();

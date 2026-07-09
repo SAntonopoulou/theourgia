@@ -328,6 +328,31 @@ export const SLASH_COMMANDS: SlashCommand[] = [
         .run();
     },
   },
+  {
+    key: "video",
+    command: "/video",
+    title: "Video",
+    description: "YouTube embed (privacy-enhanced) with chapters + captions",
+    iconColor: "var(--accent)",
+    iconPath: "M2 4h20v16H2z M10 8v8l6-4z",
+    run: (editor, range) => {
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent({
+          type: "videoEmbed",
+          attrs: {
+            youtube_id: "",
+            title: "",
+            caption: "",
+            captions_url: "",
+            chapters: [],
+          },
+        })
+        .run();
+    },
+  },
 ];
 
 export function filterSlashCommands(query: string): SlashCommand[] {

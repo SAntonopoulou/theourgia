@@ -31,6 +31,7 @@ import { EntityRefNode } from "./nodes/EntityRefNode.js";
 import { SigilNode } from "./nodes/SigilNode.js";
 import { VoxMagicaeNode } from "./nodes/VoxMagicaeNode.js";
 import { VoiceRecordingNode } from "./nodes/VoiceRecordingNode.js";
+import { VideoEmbedNode } from "./nodes/VideoEmbedNode.js";
 
 export { LANG_FONT, type LangScript };
 
@@ -129,5 +130,6 @@ export function buildExtensions(opts: BuildExtensionsOptions = {}) {
     CalendarStampNode,
     VoxMagicaeNode,
     VoiceRecordingNode,
+    VideoEmbedNode,
   ];
 }

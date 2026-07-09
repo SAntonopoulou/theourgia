@@ -417,8 +417,8 @@ Implementation phase: **[11 — Media Library](plan/11-media-library.md)**
 
 - [ ] **Image gallery** with EXIF stripping by default; opt-in to retain EXIF
 - [ ] **Audio library** — chants, voce magicae, ambient, lectures, dictation; optional Whisper transcription
-- [ ] **Video integration** — YouTube embeds (privacy-enhanced) + optional self-hosted (Cloudflare Stream / Mux)
-- [ ] **Per-video captions/subtitles** + chapter markers
+- [~] **Video integration** — YouTube embeds (privacy-enhanced) + optional self-hosted (Cloudflare Stream / Mux) — b108-2hx shipped YouTube via `youtube-nocookie.com` (privacy-enhanced host) as an Editor block + `/video` slash command. iframe is lazy-loaded (`loading="lazy"`) so no third-party requests fire until the viewer scrolls to it. Blog reader detail page renders the same iframe. NEVER autoplays by default (honesty rule, regression-guarded). Cloudflare Stream / Mux still open.
+- [x] **Per-video captions/subtitles** + chapter markers — b108-2hx: captions_url field (.vtt) + chapters list with textarea editor supporting `mm:ss`, `h:mm:ss`, and bare seconds formats. Chapters render as clickable buttons that seek the embed via `startSeconds` param. Round-trip regression-guarded.
 - [ ] **Pilgrimage / sacred site log** — map (Leaflet + OSM), per-site with location-precision controls (exact/neighborhood/region), visited_at multi-entry, deity associations
 - [ ] **Privacy-aware map rendering** — jittered coords on `network`, city-level only on `public`, exact only on `personal` / `viewer`
 - [x] **Pilgrimage routes** — ordered sequences with notes (e.g., "Eleusis route") — b108-2gx shipped backend (pilgrimage_route + pilgrimage_route_stop tables · CRUD + reorder endpoints · alembic 0070). b108-2he shipped frontend (`PilgrimageRoutesSurface` + admin `/pilgrimage-routes` route with SVG polyline preview + stops editor with up/down reorder).
