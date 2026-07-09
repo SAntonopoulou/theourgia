@@ -4,7 +4,7 @@
 where prod is, what's shipped, what's next, and every gotcha we've
 paid for.
 
-Last updated: **2026-07-09** (session close after b108-2ha → b108-2hz — 26 batches).
+Last updated: **2026-07-09** (session close after b108-2ha → b108-2ia — 27 batches).
 
 ---
 
@@ -20,13 +20,13 @@ Last updated: **2026-07-09** (session close after b108-2ha → b108-2hz — 26 b
 - Sign in at <https://theourgia.com/app/signin> as `soror-eu-a`
   (the slug form — the allowlist expects that exact string).
 
-### Test counts (post b108-2hz)
+### Test counts (post b108-2ia)
 
 | Suite | Passing | Notes |
 |---|---|---|
-| backend | **2949** | alembic head **0075** |
+| backend | **2974** | alembic head **0075** |
 | shared (vitest) | **3039** | admin tsc clean, shared tsc clean |
-| admin (route-mount) | **39** | |
+| admin (route-mount) | **40** | |
 | agent-daemon | 198 | alembic head 0002 |
 | registry | 34 | alembic head 0001 |
 
@@ -71,6 +71,7 @@ Last updated: **2026-07-09** (session close after b108-2ha → b108-2hz — 26 b
 | **b108-2hx** | Video integration. New `videoEmbed` Tiptap block + `/video` slash command. `extractYoutubeId()` handles all URL shapes. Privacy-enhanced `youtube-nocookie.com` host. `loading="lazy"` iframe (no 3P requests until scrolled to). Captions_url (.vtt) + chapters textarea supporting `mm:ss`, `h:mm:ss`, and bare seconds. Chapters render as clickable timestamp buttons that seek via startSeconds. NEVER autoplays by default (regression-guarded). Blog reader detail page renders the same iframe. +32 shared. | §17 `[~]` + captions `[x]` |
 | **b108-2hy** | Auto-stamp every entry. Entry had `astro_snapshot` + `calendar_snapshot` columns since Phase 04 but nothing wrote them. New `core/entries/autostamp.py`: Swiss Ephemeris → sun sign + degree, moon sign + phase + illumination %, 5-planet summary. Multi-calendar → Gregorian + Julian + Hebrew + Thelemic. POST /entries populates both at create time, falls back to user's stored astro.lat/astro.lng or Greenwich. Ephemeris hiccup NEVER fails entry create (regression-guarded). Editor renders AutoStampChip below the title; blog reader renders a stamp box above the excerpt. +27 backend + 9 shared. | Bug Sophia caught: "why doesn't the post show temperature, moon position, sun position?" |
 | **b108-2hz** | FIX: Hebrew month rendered as "month 4" on the auto-stamp box. Three stacked bugs: (1) `_serialise_calendar_date` missed `month_name` because pycalcal stashes it in `raw`; (2) both frontend `HEBREW_MONTH_NAMES` arrays used Tishri-starting when the backend returns Nisan-starting (Nisan=1, Tammuz=4); (3) neither frontend preferred the backend's pre-rendered `long` string. All three fixed. Serialiser now also surfaces `long`/`short`/`numeric`. Regression guard: `NEVER emits "month N"` for Hebrew. Sophia's existing entry re-backfilled on prod. +2 shared + 1 backend. | Bug Sophia caught: "Tammuz shows as month though." |
+| **b108-2ia** | Print-quality book PDF export. Tier plan #19. New `core/publishing/book_pdf.py` renders a Publication + PublicationChapter rows to a real trade-paperback PDF (6×9 in trim · asymmetric inner/outer margins · title / copyright / TOC front matter · chapters open on recto by inserting blank versos when needed · running headers: publication title on verso, chapter title on recto · roman-numeral folios in front matter, arabic in body · body style pins `allowWidows=0` + `allowOrphans=0` + `TA_JUSTIFY` + `hyphenationLang="en_US"` under source-level guards). Tiptap→flowable visitor parallel to the Obsidian exporter (paragraph, heading, lists, blockquote, codeBlock, hr, bold, italic, code, link, strike, underline). Unknown custom blocks render as labelled callout — silent skipping loses content. `GET /api/v1/publications/{id}/book-pdf` owner-only, license notice reflects the chosen license, author label from default Persona. Admin route `/publications/:id/print-preview` wires the shared `PrintPreviewSurface.onExport` to a Blob download. New shared `ApiClient.requestBlob` primitive. +25 backend + 1 admin route-mount. | Tier #19 `[ ]` → `[x]` |
 
 ### Federation status (unchanged from 2026-07-08)
 
@@ -124,8 +125,10 @@ ship.
   shipped.
 - **#18 Newsletter delivery plugin slots** — Postmark/SES/Resend/
   Mailgun as delivery plugins. Needs MBF plugin substrate.
-- **#19 Print-quality book typography** — reportlab-based book
-  layout. Substantial, doable purely in code. **Next batch candidate.**
+- **#19 Print-quality book typography** — ✅ SHIPPED (b108-2ia).
+  reportlab-based book layout end-to-end: `core/publishing/book_pdf.py`
+  + `GET /api/v1/publications/{id}/book-pdf` + admin
+  `/publications/:id/print-preview` route.
 - **#20 Cross-magician aggregate analytics (DP)** — substrate ✅
   shipped (b108-2hr). Endpoints land with Phase 12+ federation.
 - **#21 Helm chart + Traefik alternative** — needs K8s to test.
