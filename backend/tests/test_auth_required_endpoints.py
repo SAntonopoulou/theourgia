@@ -22,7 +22,6 @@ from typing import Any
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-
 # ``(METHOD, PATH, JSON_BODY_OR_NONE)`` triples. One canonical endpoint
 # per router — chosen to be either the primary write (POST) or a
 # reads-of-owned-data endpoint that MUST require auth.
@@ -172,6 +171,19 @@ AUTH_REQUIRED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("GET", "/api/v1/weather/current", None),
     # Schedule (Phase 04 admin queue).
     ("GET", "/api/v1/schedule/upcoming", None),
+    # Audio attachments + transcription (v1-012).
+    (
+        "POST",
+        "/api/v1/audio/00000000-0000-0000-0000-000000000000/transcribe",
+        None,
+    ),
+    # Wellbeing — crisis-aware nudge (v1-010). Doubly important: the
+    # response is derived from private mood data.
+    ("GET", "/api/v1/wellbeing/nudge", None),
+    # Magickal bundles (v1-011, ADR-0011).
+    ("GET", "/api/v1/bundles/installed", None),
+    ("POST", "/api/v1/bundles/preview", None),
+    ("GET", "/api/v1/bundles/export?type=pantheon", None),
 ]
 
 

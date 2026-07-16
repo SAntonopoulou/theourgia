@@ -34,11 +34,10 @@ from sqlalchemy import (
     Index,
     String,
 )
-from sqlmodel import Enum as SQLEnum
-from sqlmodel import Field
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlmodel import Enum as SQLEnum, Field
 
 from theourgia.models.base import IDMixin, TimestampMixin
-
 
 __all__ = ["Sandbox", "SandboxKind"]
 
@@ -120,4 +119,22 @@ class Sandbox(IDMixin, TimestampMixin, table=True):
         default=None,
         sa_column=Column(DateTime(timezone=True), nullable=True),
         description="Set when the sandbox is explicitly discarded.",
+    )
+
+    # ── Bundle sandboxes (ADR-0011) ─────────────────────────────────
+    # A kind=bundle sandbox stores the uploaded .mbf's manifest here
+    # WITHOUT materializing content — isolation is structural (nothing
+    # exists to leak into search or federation). The raw bytes live in
+    # the storage substrate under ``bundle_file_key``; promote reads
+    # them back and runs the real import.
+    bundle_manifest: Optional[dict] = Field(
+        default=None,
+        sa_column=Column(JSONB, nullable=True),
+        description="Parsed manifest.json of the held .mbf, if kind=bundle.",
+    )
+
+    bundle_file_key: Optional[str] = Field(
+        default=None,
+        sa_column=Column(String(500), nullable=True),
+        description="Storage key of the uploaded .mbf bytes.",
     )

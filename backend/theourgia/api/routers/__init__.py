@@ -92,6 +92,7 @@ from theourgia.api.routers.v1 import pilgrimage_sites as v1_pilgrimage_sites
 from theourgia.api.routers.v1 import ical_feed as v1_ical_feed
 from theourgia.api.routers.v1 import plugins as v1_plugins
 from theourgia.api.routers.v1 import sandbox as v1_sandbox
+from theourgia.api.routers.v1 import bundles as v1_bundles
 from theourgia.api.routers.v1 import user_account as v1_user_account
 from theourgia.api.routers.v1 import user_audit as v1_user_audit
 from theourgia.api.routers.v1 import user_sessions as v1_user_sessions
@@ -112,6 +113,8 @@ from theourgia.api.routers.v1 import reference as v1_reference
 from theourgia.api.routers.v1 import exports_obsidian as v1_exports_obsidian
 from theourgia.api.routers.v1 import tea_leaves as v1_tea_leaves
 from theourgia.api.routers.v1 import imports_day_one as v1_imports_day_one
+from theourgia.api.routers.v1 import audio as v1_audio
+from theourgia.api.routers.v1 import wellbeing as v1_wellbeing
 from theourgia.api.routers import feeds as app_feeds
 
 __all__ = ["register_routers"]
@@ -221,6 +224,10 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_tea_leaves.router, tags=["divination"])
     # Day One journal importer (b108-2hk)
     v1.include_router(v1_imports_day_one.router, tags=["imports"])
+    # Wellbeing — crisis-aware nudge (v1-010, opt-in OFF by default)
+    v1.include_router(v1_wellbeing.router, tags=["wellbeing"])
+    # Audio attachments — local Whisper transcription (v1-012)
+    v1.include_router(v1_audio.router, tags=["audio"])
     # Phase 11 Media (B132+)
     v1.include_router(v1_media.router, tags=["media"])
     v1.include_router(v1_media_uploads.router, tags=["media"])
@@ -242,6 +249,8 @@ def register_routers(app: FastAPI) -> None:
     # Phase 14 Plugin Ecosystem
     v1.include_router(v1_plugins.router, tags=["plugins"])
     v1.include_router(v1_sandbox.router, tags=["sandbox"])
+    # Magickal Bundle Format (ADR-0011, v1-011)
+    v1.include_router(v1_bundles.router, tags=["bundles"])
     # Phase 15 Hardening (H10 Cluster B prerequisites)
     v1.include_router(v1_user_audit.router, tags=["hardening"])
     v1.include_router(v1_user_account.router, tags=["hardening"])
