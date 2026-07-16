@@ -65,15 +65,20 @@ export type { PendulumDialProps } from "./PendulumDial.js";
 
 export { PendulumPanel } from "./PendulumPanel.js";
 export type {
+  PendulumAskEntry,
   PendulumLogEntry,
   PendulumPanelProps,
 } from "./PendulumPanel.js";
 
 export { ScryingPanel } from "./ScryingPanel.js";
 export type {
+  ScrySaveEntry,
   ScrySessionLog,
   ScryingPanelProps,
 } from "./ScryingPanel.js";
 
 export { Speculum } from "./Speculum.js";
 export type { SpeculumProps } from "./Speculum.js";
+
+export { TranceOverlay, formatTranceElapsed } from "./TranceOverlay.js";
+export type { TranceOverlayProps } from "./TranceOverlay.js";

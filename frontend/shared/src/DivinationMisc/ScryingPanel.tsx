@@ -1,14 +1,17 @@
 /**
- * ScryingPanel — medium picker · trance-mode link · speculum + textarea + record · past sessions.
+ * ScryingPanel — medium picker · trance-mode toggle · speculum + textarea + record · past sessions.
  *
  * Verbatim from `Theourgia Divination Misc.dc.html` lines 216-252.
- * The trance-mode link uses --trance (B76 token); the audio hint
- * references the shared upload chrome (same as library quote audio
- * per B34 substrate).
+ * The trance-mode affordance uses --trance (B76 token) and toggles the
+ * in-panel TranceOverlay (ported from `Theourgia Trance Mode.dc.html`,
+ * v1-014); the audio hint references the shared upload chrome (same as
+ * library quote audio per B34 substrate).
  */
 
 import { type CSSProperties, useState } from "react";
 
+import { Speculum } from "./Speculum.js";
+import { TranceOverlay } from "./TranceOverlay.js";
 import {
   SCRY_AUDIO_HINT,
   SCRY_MEDIA_OPTIONS,
@@ -19,7 +22,6 @@ import {
   SCRY_TRANCE_LABEL,
   type ScryMedium,
 } from "./copy.js";
-import { Speculum } from "./Speculum.js";
 
 const MEDIUM_ICON_PROPS = {
   width: 14,
@@ -81,20 +83,32 @@ const MEDIUM_BUTTON_ON: CSSProperties = {
 };
 
 export interface ScrySessionLog {
-  medium: ScryMedium;
+  /** One of the four panel media, or a raw backend mode string for
+   *  sessions recorded in a mode the panel doesn't offer (the label
+   *  falls back to the raw string; the icon is simply omitted). */
+  medium: ScryMedium | string;
   date: string;
   snippet: string;
+}
+
+/** What the Save button hands the composing route. */
+export interface ScrySaveEntry {
+  medium: ScryMedium;
+  vision: string;
+  /** Real measured trance-mode window, when the practitioner used the
+   *  overlay during this capture. Null otherwise — never fabricated. */
+  trance: { startedAt: string; endedAt: string } | null;
 }
 
 export interface ScryingPanelProps {
   /** Initial selected medium. Defaults to 'mirror' per the mockup. */
   initialMedium?: ScryMedium;
-  /** Past-sessions rail entries. */
+  /** Past-sessions rail entries — from ``GET /api/v1/scrying/sessions``. */
   pastSessions?: readonly ScrySessionLog[];
-  /** Optional href for the Trance-mode link (the existing
-   *  Theourgia Trance Mode surface). */
-  tranceHref?: string;
-  onSave?: () => void;
+  /** Current planetary hour label, when the composing route already
+   *  has the data. Shown in the trance overlay; omitted when absent. */
+  planetaryHour?: string;
+  onSave?: (entry: ScrySaveEntry) => void;
   onRecord?: () => void;
   className?: string;
   style?: CSSProperties;
@@ -111,7 +125,7 @@ const EYEBROW: CSSProperties = {
 export function ScryingPanel({
   initialMedium = "mirror",
   pastSessions,
-  tranceHref = "#",
+  planetaryHour,
   onSave,
   onRecord,
   className,
@@ -120,12 +134,34 @@ export function ScryingPanel({
   const [medium, setMedium] = useState<ScryMedium>(initialMedium);
   const [vision, setVision] = useState("");
 
+  // Trance mode — the overlay is mounted only while open, so its
+  // elapsed timer restarts at 0:00 on each entry. The last completed
+  // trance window rides the next save as real measured timing, then
+  // clears so it can never stamp a second session.
+  const [tranceOpen, setTranceOpen] = useState(false);
+  const [tranceOpenedAt, setTranceOpenedAt] = useState<string | null>(null);
+  const [lastTrance, setLastTrance] = useState<{ startedAt: string; endedAt: string } | null>(null);
+
+  const enterTrance = () => {
+    setTranceOpenedAt(new Date().toISOString());
+    setTranceOpen(true);
+  };
+
+  const exitTrance = () => {
+    if (tranceOpenedAt) {
+      setLastTrance({ startedAt: tranceOpenedAt, endedAt: new Date().toISOString() });
+    }
+    setTranceOpenedAt(null);
+    setTranceOpen(false);
+  };
+
+  const mediumLabel = SCRY_MEDIA_OPTIONS.find((m) => m.key === medium)?.label ?? medium;
+
   // Real past sessions come from ``GET /api/v1/scrying/sessions``; the
   // consumer route is expected to pass them in. Empty by default —
   // NEVER seed with fake "widdershins" specimens that a practitioner
   // might mistake for their own past readings.
-  const sessions: ReadonlyArray<{ medium: ScryMedium; date: string; snippet: string }> =
-    pastSessions ?? [];
+  const sessions: readonly ScrySessionLog[] = pastSessions ?? [];
 
   return (
     <div
@@ -181,9 +217,11 @@ export function ScryingPanel({
             })}
           </div>
 
-          <a
-            href={tranceHref}
+          <button
+            type="button"
             data-trance-link
+            aria-haspopup="dialog"
+            onClick={enterTrance}
             style={{
               display: "flex",
               alignItems: "center",
@@ -193,10 +231,11 @@ export function ScryingPanel({
               borderWidth: 1,
               borderStyle: "solid",
               borderColor: "var(--trance)",
+              background: "transparent",
               fontFamily: "var(--font-ui)",
               fontSize: 13,
               color: "var(--trance)",
-              textDecoration: "none",
+              cursor: "pointer",
             }}
           >
             <svg
@@ -214,8 +253,17 @@ export function ScryingPanel({
               <circle cx="12" cy="12" r="3.5" />
             </svg>
             {SCRY_TRANCE_LABEL}
-          </a>
+          </button>
         </div>
+
+        {tranceOpen ? (
+          <TranceOverlay
+            mediumLabel={mediumLabel}
+            planetaryHour={planetaryHour}
+            visionText={vision}
+            onExit={exitTrance}
+          />
+        ) : null}
 
         {/* Speculum + capture */}
         <div
@@ -317,7 +365,11 @@ export function ScryingPanel({
         <button
           type="button"
           data-action="save"
-          onClick={onSave}
+          onClick={() => {
+            onSave?.({ medium, vision, trance: lastTrance });
+            // The trance window stamps at most one saved session.
+            setLastTrance(null);
+          }}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -396,7 +448,7 @@ export function ScryingPanel({
                   style={{ display: "flex", color: "var(--ink-mute)" }}
                   aria-hidden="true"
                 >
-                  {MEDIUM_ICONS[s.medium]}
+                  {MEDIUM_ICONS[s.medium as ScryMedium] ?? null}
                 </span>
                 <span
                   style={{

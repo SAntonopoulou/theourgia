@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 
 import { BibliomancyPanel } from "./BibliomancyPanel.js";
 import {
@@ -19,6 +19,7 @@ import { PendulumDial } from "./PendulumDial.js";
 import { PendulumPanel } from "./PendulumPanel.js";
 import { ScryingPanel } from "./ScryingPanel.js";
 import { Speculum } from "./Speculum.js";
+import { formatTranceElapsed } from "./TranceOverlay.js";
 
 // ─── copy ─────────────────────────────────────────────────────────
 
@@ -210,6 +211,38 @@ describe("PendulumPanel", () => {
     const { container } = render(<PendulumPanel />);
     expect(container.innerHTML).not.toContain("--danger");
   });
+
+  it("Ask fires onAsk with question + answer + ISO askedAt (v1-014)", () => {
+    const onAsk = vi.fn();
+    const { container } = render(
+      <PendulumPanel random={() => 0} onAsk={onAsk} />,
+    );
+    fireEvent.change(
+      container.querySelector(
+        "[data-pendulum-question]",
+      ) as HTMLInputElement,
+      { target: { value: "Will it rain?" } },
+    );
+    fireEvent.click(screen.getByText("Ask"));
+    expect(onAsk).toHaveBeenCalledTimes(1);
+    const entry = onAsk.mock.calls[0]?.[0] as {
+      question: string;
+      answer: string;
+      askedAt: string;
+    };
+    expect(entry.question).toBe("Will it rain?");
+    expect(entry.answer).toBe("Yes");
+    expect(new Date(entry.askedAt).toISOString()).toBe(entry.askedAt);
+  });
+
+  it("Ask with a blank question passes the em-dash the log shows", () => {
+    const onAsk = vi.fn();
+    render(<PendulumPanel random={() => 0} onAsk={onAsk} />);
+    fireEvent.click(screen.getByText("Ask"));
+    expect(onAsk).toHaveBeenCalledWith(
+      expect.objectContaining({ question: "—" }),
+    );
+  });
 });
 
 // ─── BibliomancyPanel ────────────────────────────────────────────
@@ -346,6 +379,169 @@ describe("ScryingPanel", () => {
     fireEvent.click(screen.getByText("Save scrying session"));
     expect(onSave).toHaveBeenCalled();
   });
+
+  it("Save fires onSave with the selected medium + vision text", () => {
+    const onSave = vi.fn();
+    render(<ScryingPanel onSave={onSave} />);
+    fireEvent.click(screen.getByText("Crystal"));
+    fireEvent.change(screen.getByPlaceholderText(SCRY_TEXT_PLACEHOLDER), {
+      target: { value: "A door of pale stone." },
+    });
+    fireEvent.click(screen.getByText("Save scrying session"));
+    expect(onSave).toHaveBeenCalledWith({
+      medium: "crystal",
+      vision: "A door of pale stone.",
+      trance: null,
+    });
+  });
+
+  it("renders hydrated past sessions with label + date + snippet", () => {
+    render(
+      <ScryingPanel
+        pastSessions={[
+          { medium: "mirror", date: "12 Jun 2026", snippet: "A ring of salt." },
+        ]}
+      />,
+    );
+    expect(
+      screen.getByText(/Black mirror · 12 Jun 2026/),
+    ).toBeInTheDocument();
+    expect(screen.getByText("A ring of salt.")).toBeInTheDocument();
+  });
+
+  it("a raw backend mode string renders honestly with no icon", () => {
+    render(
+      <ScryingPanel
+        pastSessions={[
+          { medium: "candle_flame", date: "12 Jun 2026", snippet: "Flicker." },
+        ]}
+      />,
+    );
+    expect(screen.getByText(/candle_flame · 12 Jun 2026/)).toBeInTheDocument();
+  });
+});
+
+// ─── ScryingPanel trance mode (v1-014) ───────────────────────────
+
+describe("ScryingPanel trance mode", () => {
+  it("the trance affordance is a button that opens the overlay dialog", () => {
+    const { container } = render(<ScryingPanel />);
+    const trigger = container.querySelector(
+      "[data-trance-link]",
+    ) as HTMLElement;
+    expect(trigger.tagName).toBe("BUTTON");
+    expect(container.querySelector("[data-trance-overlay]")).toBeNull();
+    fireEvent.click(trigger);
+    const overlay = container.querySelector(
+      "[data-trance-overlay]",
+    ) as HTMLElement;
+    expect(overlay).not.toBeNull();
+    expect(overlay.getAttribute("role")).toBe("dialog");
+    expect(overlay.getAttribute("aria-modal")).toBe("true");
+  });
+
+  it("End closes the overlay", () => {
+    const { container } = render(<ScryingPanel />);
+    fireEvent.click(screen.getByText(SCRY_TRANCE_LABEL));
+    fireEvent.click(screen.getByLabelText("End session"));
+    expect(container.querySelector("[data-trance-overlay]")).toBeNull();
+  });
+
+  it("Escape closes the overlay (a11y-sweep modal contract)", () => {
+    const { container } = render(<ScryingPanel />);
+    fireEvent.click(screen.getByText(SCRY_TRANCE_LABEL));
+    expect(container.querySelector("[data-trance-overlay]")).not.toBeNull();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(container.querySelector("[data-trance-overlay]")).toBeNull();
+  });
+
+  it("elapsed timer starts at 0:00 and ticks (fake timers)", () => {
+    vi.useFakeTimers();
+    try {
+      const { container } = render(<ScryingPanel />);
+      fireEvent.click(screen.getByText(SCRY_TRANCE_LABEL));
+      const elapsed = () =>
+        container.querySelector("[data-trance-elapsed]")?.textContent;
+      expect(elapsed()).toBe("0:00");
+      act(() => {
+        vi.advanceTimersByTime(65_000);
+      });
+      expect(elapsed()).toBe("1:05");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("mirrors the live vision text — never seeds specimen prose", () => {
+    const { container } = render(<ScryingPanel />);
+    fireEvent.change(screen.getByPlaceholderText(SCRY_TEXT_PLACEHOLDER), {
+      target: { value: "A figure that will not turn." },
+    });
+    fireEvent.click(screen.getByText(SCRY_TRANCE_LABEL));
+    expect(
+      container.querySelector("[data-trance-vision]")?.textContent,
+    ).toContain("A figure that will not turn.");
+  });
+
+  it("empty vision → no vision element; session line is the medium label", () => {
+    const { container } = render(<ScryingPanel />);
+    fireEvent.click(screen.getByText(SCRY_TRANCE_LABEL));
+    expect(container.querySelector("[data-trance-vision]")).toBeNull();
+    expect(
+      container.querySelector("[data-trance-session]")?.textContent,
+    ).toBe("Black mirror");
+  });
+
+  it("appends the planetary hour only when the route supplies it", () => {
+    const { container } = render(
+      <ScryingPanel planetaryHour="Hour of the Moon" />,
+    );
+    fireEvent.click(screen.getByText(SCRY_TRANCE_LABEL));
+    expect(
+      container.querySelector("[data-trance-session]")?.textContent,
+    ).toBe("Black mirror · Hour of the Moon");
+  });
+
+  it("a completed trance window rides the next save exactly once", () => {
+    const onSave = vi.fn();
+    render(<ScryingPanel onSave={onSave} />);
+    fireEvent.click(screen.getByText(SCRY_TRANCE_LABEL));
+    fireEvent.click(screen.getByLabelText("End session"));
+    fireEvent.change(screen.getByPlaceholderText(SCRY_TEXT_PLACEHOLDER), {
+      target: { value: "Water moving without sound." },
+    });
+    fireEvent.click(screen.getByText("Save scrying session"));
+    const first = onSave.mock.calls[0]?.[0] as {
+      trance: { startedAt: string; endedAt: string } | null;
+    };
+    expect(first.trance).not.toBeNull();
+    expect(Date.parse(first.trance?.endedAt ?? "")).toBeGreaterThanOrEqual(
+      Date.parse(first.trance?.startedAt ?? ""),
+    );
+    fireEvent.click(screen.getByText("Save scrying session"));
+    const second = onSave.mock.calls[1]?.[0] as { trance: unknown };
+    expect(second.trance).toBeNull();
+  });
+
+  it("the low-blue-light overlay never uses --danger or --trance", () => {
+    const { container } = render(<ScryingPanel />);
+    fireEvent.click(screen.getByText(SCRY_TRANCE_LABEL));
+    const overlay = container.querySelector(
+      "[data-trance-overlay]",
+    ) as HTMLElement;
+    expect(overlay.innerHTML).not.toContain("--danger");
+    expect(overlay.innerHTML).not.toContain("--trance");
+  });
+});
+
+// ─── formatTranceElapsed ─────────────────────────────────────────
+
+describe("formatTranceElapsed", () => {
+  it("matches the design's m:ss timer format", () => {
+    expect(formatTranceElapsed(0)).toBe("0:00");
+    expect(formatTranceElapsed(65)).toBe("1:05");
+    expect(formatTranceElapsed(768)).toBe("12:48");
+  });
 });
 
 // ─── DivinationMiscSurface ──────────────────────────────────────
@@ -406,5 +602,29 @@ describe("DivinationMiscSurface", () => {
       );
       expect(container.innerHTML).not.toContain("--danger");
     }
+  });
+
+  it("onSavePendulum receives the Ask entry (pendulum's save moment)", () => {
+    const onSavePendulum = vi.fn();
+    render(<DivinationMiscSurface onSavePendulum={onSavePendulum} />);
+    fireEvent.click(screen.getByText("Ask"));
+    expect(onSavePendulum).toHaveBeenCalledWith(
+      expect.objectContaining({
+        answer: expect.any(String),
+        askedAt: expect.any(String),
+      }),
+    );
+  });
+
+  it("scryPastSessions hydrate the scrying rail", () => {
+    render(
+      <DivinationMiscSurface
+        initialMethod="scrying"
+        scryPastSessions={[
+          { medium: "water", date: "01 Jul 2026", snippet: "Still water." },
+        ]}
+      />,
+    );
+    expect(screen.getByText("Still water.")).toBeInTheDocument();
   });
 });

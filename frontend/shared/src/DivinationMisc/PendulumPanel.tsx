@@ -55,6 +55,18 @@ export interface PendulumLogEntry {
   timestamp: string;
 }
 
+/** What Ask hands the composing route — the same record the local
+ *  session log keeps, plus the wire-ready ISO instant for
+ *  ``POST /api/v1/pendulum/readings``. */
+export interface PendulumAskEntry {
+  answer: PendulumAnswer;
+  /** The asked question; "—" when the practitioner left it blank,
+   *  mirroring the session-log rail. */
+  question: string;
+  /** ISO 8601 instant of the ask (wire ``asked_at``). */
+  askedAt: string;
+}
+
 export interface PendulumPanelProps {
   /** Initial answer to show on the dial. Pass ``null`` (default) for
    *  the honest "not yet asked" state; the dial + label render in
@@ -62,6 +74,10 @@ export interface PendulumPanelProps {
   initialAnswer?: PendulumAnswer | null;
   /** Initial log entries. */
   initialLog?: readonly PendulumLogEntry[];
+  /** Fires on each Ask with the drawn answer — the composing route
+   *  persists it. The local session log appends optimistically either
+   *  way. */
+  onAsk?: (entry: PendulumAskEntry) => void;
   /** Optional injected random source. */
   random?: () => number;
   className?: string;
@@ -79,6 +95,7 @@ const EYEBROW: CSSProperties = {
 export function PendulumPanel({
   initialAnswer = null,
   initialLog,
+  onAsk,
   random = Math.random,
   className,
   style,
@@ -92,15 +109,18 @@ export function PendulumPanel({
   const ask = () => {
     const next = pendulumAnswer(DEFAULT_PENDULUM_CALIBRATION, random);
     setAnswer(next);
-    const stamp = new Date().toLocaleTimeString(undefined, {
+    const askedAt = new Date();
+    const stamp = askedAt.toLocaleTimeString(undefined, {
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
     });
+    const asked = question || "—";
     setLog((prev) => [
-      { answer: next, question: question || "—", timestamp: stamp },
+      { answer: next, question: asked, timestamp: stamp },
       ...prev,
     ]);
+    onAsk?.({ answer: next, question: asked, askedAt: askedAt.toISOString() });
     setQuestion("");
   };
 

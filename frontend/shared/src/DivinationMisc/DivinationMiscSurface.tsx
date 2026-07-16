@@ -12,33 +12,39 @@
 import { type CSSProperties, useState } from "react";
 
 import { BibliomancyPanel } from "./BibliomancyPanel.js";
-import { type DivMiscMethod } from "./copy.js";
 import { HoraryPanel } from "./HoraryPanel.js";
 import { MethodTablist } from "./MethodTablist.js";
 import { PendulumPanel } from "./PendulumPanel.js";
-import { ScryingPanel } from "./ScryingPanel.js";
+import { type ScrySessionLog, ScryingPanel } from "./ScryingPanel.js";
+import type { DivMiscMethod } from "./copy.js";
 
 export interface DivinationMiscSurfaceProps {
   /** Initial sub-method. Defaults to 'pendulum'. */
   initialMethod?: DivMiscMethod;
-  /** Hooks for the per-method save buttons. */
-  onSavePendulum?: () => void;
+  /** Hooks for the per-method save buttons. Pendulum fires on Ask
+   *  (its save moment) with a `PendulumAskEntry`; scrying fires with
+   *  a `ScrySaveEntry`. */
+  onSavePendulum?: (entry: unknown) => void;
   onSaveBibliomancy?: (entry: unknown) => void;
   onSaveHorary?: () => void;
-  onSaveScrying?: () => void;
-  /** Optional href for the Trance Mode link (scrying panel). */
-  tranceHref?: string;
+  onSaveScrying?: (entry: unknown) => void;
+  /** Scrying "Past sessions" rail — from ``GET /api/v1/scrying/sessions``. */
+  scryPastSessions?: readonly ScrySessionLog[];
+  /** Current planetary hour label, when the composing route already
+   *  has the data (trance overlay context line). */
+  scryPlanetaryHour?: string;
   className?: string;
   style?: CSSProperties;
 }
 
 export function DivinationMiscSurface({
   initialMethod = "pendulum",
-  onSavePendulum: _onSavePendulum,
+  onSavePendulum,
   onSaveBibliomancy,
   onSaveHorary,
   onSaveScrying,
-  tranceHref,
+  scryPastSessions,
+  scryPlanetaryHour,
   className,
   style,
 }: DivinationMiscSurfaceProps) {
@@ -64,15 +70,15 @@ export function DivinationMiscSurface({
             <MethodTablist value={method} onChange={setMethod} />
           </div>
 
-          {method === "pendulum" ? <PendulumPanel /> : null}
-          {method === "biblio" ? (
-            <BibliomancyPanel onLog={onSaveBibliomancy} />
-          ) : null}
-          {method === "horary" ? (
-            <HoraryPanel onSave={onSaveHorary} />
-          ) : null}
+          {method === "pendulum" ? <PendulumPanel onAsk={onSavePendulum} /> : null}
+          {method === "biblio" ? <BibliomancyPanel onLog={onSaveBibliomancy} /> : null}
+          {method === "horary" ? <HoraryPanel onSave={onSaveHorary} /> : null}
           {method === "scrying" ? (
-            <ScryingPanel onSave={onSaveScrying} tranceHref={tranceHref} />
+            <ScryingPanel
+              onSave={onSaveScrying}
+              pastSessions={scryPastSessions}
+              planetaryHour={scryPlanetaryHour}
+            />
           ) : null}
         </div>
       </div>
