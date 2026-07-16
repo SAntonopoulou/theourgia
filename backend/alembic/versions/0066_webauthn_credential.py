@@ -24,6 +24,19 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # v1-017 replay guard: 0006 already creates this exact table (plus
+    # its RLS policy). This migration only ever succeeded on databases
+    # where the table had been dropped out-of-band during the 2026-07-05
+    # deploy recovery. On a fresh replay the table exists — skip, keeping
+    # 0006's shape and policy. 0078 re-asserts the RLS policy for
+    # databases that took the recreate path without it.
+    bind = op.get_bind()
+    exists = bind.execute(
+        sa.text("SELECT to_regclass('public.webauthn_credential') IS NOT NULL")
+    ).scalar()
+    if exists:
+        return
+
     op.create_table(
         "webauthn_credential",
         sa.Column("id", sa.dialects.postgresql.UUID(as_uuid=True), nullable=False),
