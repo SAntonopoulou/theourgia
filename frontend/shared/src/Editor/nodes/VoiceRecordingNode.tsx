@@ -6,6 +6,13 @@
  * upload flow lives on the Media Library surface; the slash command
  * inserts an empty node the user then populates by picking / uploading.
  *
+ * v1-012: when the node carries a server `assetId` and no transcript,
+ * a "Transcribe" button queues local Whisper transcription via the
+ * context-injected `transcribeAudio` (POST /audio/{id}/transcribe).
+ * A 403 (instance disabled / user not opted in) hides the button and
+ * shows the backend's detail inline — probed via the response, never
+ * a capability pre-check.
+ *
  * Persisted attrs:
  *   - assetId:    optional server media asset id
  *   - url:        canonical audio URL (mp3, ogg, wav, m4a)
@@ -20,6 +27,14 @@ import {
   NodeViewWrapper,
   type NodeViewProps,
 } from "@tiptap/react";
+import { useState } from "react";
+
+import { useEditorData } from "../EditorContext.js";
+
+import {
+  canRequestTranscription,
+  transcriptionFailureFrom,
+} from "./voiceRecording.js";
 
 const LINE = "var(--line)";
 
@@ -41,14 +56,48 @@ function fmtDuration(seconds: number | null): string {
   return `${m}:${String(rem).padStart(2, "0")}`;
 }
 
-function VoiceRecordingView({ node, updateAttributes, editor }: NodeViewProps) {
+type TranscribeState =
+  | { phase: "idle" }
+  | { phase: "busy" }
+  | { phase: "queued" }
+  | { phase: "error"; message: string }
+  | { phase: "hidden"; message: string };
+
+export function VoiceRecordingView({ node, updateAttributes, editor }: NodeViewProps) {
   const url: string = node.attrs.url ?? "";
+  const assetId: string | null = node.attrs.assetId ?? null;
   const caption: string = node.attrs.caption ?? "";
   const transcript: string = node.attrs.transcript ?? "";
   const duration: number | null = typeof node.attrs.duration === "number"
     ? node.attrs.duration
     : null;
   const editable = editor.isEditable;
+
+  const { transcribeAudio } = useEditorData();
+  const [tx, setTx] = useState<TranscribeState>({ phase: "idle" });
+
+  const showTranscribeButton =
+    editable &&
+    canRequestTranscription(
+      { assetId, transcript },
+      typeof transcribeAudio === "function",
+    ) &&
+    (tx.phase === "idle" || tx.phase === "error" || tx.phase === "busy");
+
+  const onTranscribe = async () => {
+    if (!transcribeAudio || !assetId || tx.phase === "busy") return;
+    setTx({ phase: "busy" });
+    try {
+      await transcribeAudio(assetId);
+      setTx({ phase: "queued" });
+    } catch (cause) {
+      const failure = transcriptionFailureFrom(cause);
+      setTx({
+        phase: failure.forbidden ? "hidden" : "error",
+        message: failure.message,
+      });
+    }
+  };
 
   return (
     <NodeViewWrapper
@@ -184,7 +233,7 @@ function VoiceRecordingView({ node, updateAttributes, editor }: NodeViewProps) {
           <textarea
             value={transcript}
             onChange={(e) => updateAttributes({ transcript: e.target.value })}
-            placeholder="Transcript (optional — Whisper-generated in Tier 2)"
+            placeholder="Transcript (optional — type one, or use Transcribe)"
             aria-label="Transcript"
             rows={3}
             style={{
@@ -209,6 +258,55 @@ function VoiceRecordingView({ node, updateAttributes, editor }: NodeViewProps) {
             }}
           >
             {transcript}
+          </p>
+        ) : null}
+        {showTranscribeButton ? (
+          <button
+            type="button"
+            onClick={onTranscribe}
+            disabled={tx.phase === "busy"}
+            style={{
+              marginTop: 8,
+              padding: "5px 11px",
+              fontFamily: "var(--font-ui)",
+              fontSize: 11.5,
+              color: "var(--ink-soft)",
+              background: "transparent",
+              border: `1px dashed ${LINE}`,
+              borderRadius: "var(--r-sm)",
+              cursor: tx.phase === "busy" ? "wait" : "pointer",
+            }}
+          >
+            {tx.phase === "busy" ? "Queuing…" : "Transcribe"}
+          </button>
+        ) : null}
+        {tx.phase === "queued" ? (
+          <p
+            role="status"
+            style={{
+              fontFamily: "var(--font-ui)",
+              fontSize: 12,
+              color: "var(--ink-mute)",
+              fontStyle: "italic",
+              margin: "8px 0 0",
+            }}
+          >
+            Transcription queued — the transcript will appear here once
+            it is ready.
+          </p>
+        ) : null}
+        {tx.phase === "error" || tx.phase === "hidden" ? (
+          <p
+            role="status"
+            style={{
+              fontFamily: "var(--font-ui)",
+              fontSize: 12,
+              color: "var(--ink-mute)",
+              fontStyle: "italic",
+              margin: "8px 0 0",
+            }}
+          >
+            {tx.message}
           </p>
         ) : null}
       </div>

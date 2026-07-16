@@ -28,10 +28,22 @@ export interface ChartFetchRequest {
 
 export type ChartFetchFn = (req: ChartFetchRequest) => Promise<ChartSnapshot>;
 
+/**
+ * Queue local Whisper transcription for a server audio attachment
+ * (v1-012). Resolves the backend's 202 body; rejects with an ApiError
+ * whose 403 detail distinguishes "instance disabled" from "user not
+ * opted in".
+ */
+export type TranscribeAudioFn = (
+  attachmentId: string,
+  opts?: { force?: boolean },
+) => Promise<{ queued: boolean }>;
+
 export interface EditorData {
   entities?: readonly EntityRecord[];
   books?: readonly BookRecord[];
   fetchChart?: ChartFetchFn;
+  transcribeAudio?: TranscribeAudioFn;
 }
 
 const Ctx = createContext<EditorData>({});
@@ -45,9 +57,10 @@ export function EditorDataProvider({
   entities,
   books,
   fetchChart,
+  transcribeAudio,
 }: EditorDataProviderProps) {
   return (
-    <Ctx.Provider value={{ entities, books, fetchChart }}>
+    <Ctx.Provider value={{ entities, books, fetchChart, transcribeAudio }}>
       {children}
     </Ctx.Provider>
   );

@@ -30,6 +30,7 @@ import {
   type ChartFetchFn,
   type EntityVisibility,
   type EntryDetailRecord,
+  type TranscribeAudioFn,
 } from "@theourgia/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -457,6 +458,15 @@ export function Editor() {
     [],
   );
 
+  // v1-012: queue local Whisper transcription from the voiceRecording
+  // node. The node handles the 403 gates (instance off / not opted
+  // in) itself via the response detail.
+  const transcribeAudio: TranscribeAudioFn = useMemo(
+    () => (attachmentId, opts) =>
+      apiMethods.transcribeAudio(attachmentId, opts),
+    [],
+  );
+
   const onVisibilityChange = useMemo(
     () => async (patch: { visibility?: EntityVisibility; sealed?: boolean }) => {
       if (entryId === null) return;
@@ -662,6 +672,7 @@ export function Editor() {
           entities={entities.data ?? undefined}
           books={books.data ?? undefined}
           fetchChart={fetchChart}
+          transcribeAudio={transcribeAudio}
         />
       ) : null}
       <style>{`

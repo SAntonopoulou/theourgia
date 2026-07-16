@@ -87,6 +87,10 @@ sentry = ["sentry-sdk[fastapi,celery] >=2.20,<3.0"]
 # S3-compatible storage — install when THEOURGIA_STORAGE_BACKEND=s3.
 storage-s3 = ["boto3 >=1.35,<2.0"]
 
+# Local Whisper transcription — install when
+# THEOURGIA_TRANSCRIPTION_ENABLED=true. Fully local; never a cloud API.
+transcription = ["faster-whisper >=1.0,<2.0"]
+
 [dependency-groups]
 dev = [
     # Test framework

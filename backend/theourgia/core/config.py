@@ -261,6 +261,24 @@ class Settings(BaseSettings):
         default=True, alias="THEOURGIA_STORAGE_S3_USE_SSL"
     )
 
+    # ── Transcription (Tier 2 audio — local Whisper) ──────────────────────
+    transcription_enabled: bool = Field(
+        default=False, alias="THEOURGIA_TRANSCRIPTION_ENABLED"
+    )
+    """Whether local audio transcription is available on this instance.
+
+    **Off by default** — audio never leaves the machine either way;
+    this gates whether the worker will run the (CPU-heavy) local
+    Whisper model at all. Requires the ``[transcription]`` extra
+    (``uv sync --extra transcription``). Users must ALSO opt in via
+    the ``audio.transcription_opt_in`` user setting."""
+    transcription_model: str = Field(
+        default="small", alias="THEOURGIA_TRANSCRIPTION_MODEL"
+    )
+    """faster-whisper model size: tiny, base, small, medium, or
+    large-v3. Bigger models transcribe better but need more RAM —
+    see ``docs/dev/transcription.md`` for the sizing table."""
+
     # ── Agent daemon (Phase 16) ───────────────────────────────────────────
     # Localhost HTTP URL of the agent daemon's control plane. The vault
     # proxies the H10 C-cluster surfaces through here; when unset, agent

@@ -29,7 +29,11 @@ import {
 
 import type { BookRecord, EntityRecord } from "../api/types.js";
 
-import { EditorDataProvider, type ChartFetchFn } from "./EditorContext.js";
+import {
+  EditorDataProvider,
+  type ChartFetchFn,
+  type TranscribeAudioFn,
+} from "./EditorContext.js";
 import { buildExtensions, type LangScript } from "./extensions.js";
 import { SlashMenu } from "./SlashMenu.js";
 import { filterSlashCommands, type SlashCommand } from "./slashCommands.js";
@@ -50,6 +54,8 @@ export interface TiptapEditorProps {
   books?: readonly BookRecord[];
   /** Async fetcher for the ChartPicker. Optional. */
   fetchChart?: ChartFetchFn;
+  /** Async transcription queuer for the VoiceRecordingNode. Optional. */
+  transcribeAudio?: TranscribeAudioFn;
 }
 
 const EMPTY_DOC = { type: "doc", content: [{ type: "paragraph" }] };
@@ -81,6 +87,7 @@ export function TiptapEditor({
   entities,
   books,
   fetchChart,
+  transcribeAudio,
 }: TiptapEditorProps): React.ReactElement {
   const [lang, setLang] = useState<LangScript>("en");
   const [slash, setSlash] = useState<SlashState>(INITIAL_SLASH);
@@ -175,7 +182,12 @@ export function TiptapEditor({
   }
 
   return (
-    <EditorDataProvider entities={entities} books={books} fetchChart={fetchChart}>
+    <EditorDataProvider
+      entities={entities}
+      books={books}
+      fetchChart={fetchChart}
+      transcribeAudio={transcribeAudio}
+    >
       <div
         data-editor-root
         onKeyDown={onKeyDown}
