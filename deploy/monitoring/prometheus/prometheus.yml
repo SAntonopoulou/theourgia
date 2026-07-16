@@ -1,0 +1,44 @@
+# Theourgia — Prometheus scrape configuration (starter kit).
+#
+# The backend /metrics endpoint is ADMIN-SCOPED (scope: admin.observe) —
+# a deliberate departure from the unauthenticated-/metrics convention so
+# the metrics surface can't fingerprint the instance from the public
+# web. The scrape authenticates with `Authorization: Bearer <token>`
+# where the token is a Theourgia session token (there is no separate
+# static API-token mechanism today). Sessions expire after 7 days — see
+# README.md next to the compose file for how to mint the token and what
+# that expiry means for you.
+#
+# Write the token (one line, no trailing newline needed) to:
+#   deploy/monitoring/prometheus/secrets/theourgia-scrape-token
+
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Theourgia backend — scraped directly over the Docker network,
+  # bypassing Caddy, so no TLS and no public exposure is involved.
+  - job_name: theourgia-backend
+    metrics_path: /metrics
+    scheme: http
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/secrets/theourgia-scrape-token
+    static_configs:
+      - targets: ["backend:8000"]
+
+  # Postgres (vault database) via postgres-exporter
+  - job_name: postgres
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+  # Redis (sessions / cache / Celery broker) via redis-exporter
+  - job_name: redis
+    static_configs:
+      - targets: ["redis-exporter:9121"]

@@ -127,3 +127,10 @@ Use Flower (or any Celery-compatible monitor) for live introspection. We don't b
 3. If you have **metrics**, check whether the problem is request-specific (single log line) or systemic (a counter spiking).
 4. If you have **Sentry enabled**, the exception will be in the project tied to your DSN with the same `request_id` tag attached.
 5. For backup failures specifically, the `BackupRun` table records every attempt with the captured Restic stderr — the DR runbook tells you how to act on what you find.
+
+## Bundled monitoring stack
+
+You don't have to assemble the scrape yourself: `deploy/monitoring/` ships a loopback-only Prometheus + Grafana starter kit (plus postgres-exporter and redis-exporter) that joins the app's Docker network and scrapes `backend:8000/metrics` directly — no public exposure involved. It includes a provisioned dashboard built on the metric names above, and its README covers the one honest wrinkle: the scrape credential is a regular session token (there is no static machine-token mechanism yet), so it expires after 7 days and needs re-minting.
+
+- Quickstart + token provisioning: `deploy/monitoring/README.md`
+- Incident recipes, including "monitoring stack down": [runbooks](./runbooks.md)

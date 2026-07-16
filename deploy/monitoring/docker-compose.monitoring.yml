@@ -1,0 +1,96 @@
+# Theourgia — bundled monitoring starter kit (Prometheus + Grafana)
+#
+# Run from the deploy root so interpolation picks up the stack's .env:
+#   cd /srv/theourgia/prod
+#   docker compose --env-file .env -f deploy/monitoring/docker-compose.monitoring.yml up -d
+#
+# Invariants (match the main stack):
+#   - Nothing binds beyond host loopback. Prometheus and Grafana are
+#     127.0.0.1-only; reach them over an SSH tunnel or add a Caddy site
+#     with auth. The exporters have no host bindings at all.
+#   - Joins the app stack's network as an *external* network so
+#     Prometheus can scrape backend:8000 and the exporters can reach
+#     postgres / redis by service name. The default name below assumes
+#     the compose project name `theourgia` (docker-compose.yml `name:`).
+#     If `docker network ls | grep theourgia-internal` shows a different
+#     prefix (e.g. COMPOSE_PROJECT_NAME is set), override with
+#     THEOURGIA_APP_NETWORK in .env.
+#
+# The backend /metrics scrape needs a token — see README.md next to
+# this file before starting the stack.
+
+name: theourgia-monitoring
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.53.1
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=30d"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/secrets:/etc/prometheus/secrets:ro
+      - prometheus_data:/prometheus
+    ports:
+      # Host loopback only — never externally bound.
+      - "127.0.0.1:${THEOURGIA_PROMETHEUS_HOST_PORT:-9090}:9090"
+    restart: unless-stopped
+    networks:
+      - monitoring
+      - theourgia-app
+
+  grafana:
+    image: grafana/grafana-oss:11.1.4
+    environment:
+      GF_SECURITY_ADMIN_USER: ${THEOURGIA_GRAFANA_ADMIN_USER:-admin}
+      # Change this in .env before first start, or in the UI right after.
+      GF_SECURITY_ADMIN_PASSWORD: ${THEOURGIA_GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # Zero-telemetry ethos extends to the ops tooling: no usage
+      # reporting, no update phone-home.
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      # Host loopback only — never externally bound.
+      - "127.0.0.1:${THEOURGIA_GRAFANA_HOST_PORT:-3000}:3000"
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0
+    environment:
+      # Reads the vault Postgres over the app network. sslmode=disable is
+      # correct here: the connection never leaves the Docker bridge.
+      DATA_SOURCE_NAME: "postgresql://${THEOURGIA_DB_USER:-theourgia}:${THEOURGIA_DB_PASSWORD:?THEOURGIA_DB_PASSWORD must be set (run with --env-file .env from the deploy root)}@postgres:5432/${THEOURGIA_DB_NAME:-theourgia}?sslmode=disable"
+    restart: unless-stopped
+    networks:
+      - monitoring
+      - theourgia-app
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.62.0
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+    restart: unless-stopped
+    networks:
+      - monitoring
+      - theourgia-app
+
+volumes:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  monitoring:
+    driver: bridge
+  theourgia-app:
+    external: true
+    name: ${THEOURGIA_APP_NETWORK:-theourgia_theourgia-internal}
