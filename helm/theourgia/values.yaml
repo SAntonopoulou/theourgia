@@ -87,7 +87,8 @@ postgresql:
     url: ""
   internal:
     enabled: false
-    image: postgres:16-alpine
+    # pgvector build required — migration 0001 issues CREATE EXTENSION vector.
+    image: pgvector/pgvector:pg16
     auth:
       username: theourgia
       password: ""
