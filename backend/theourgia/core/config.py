@@ -166,8 +166,8 @@ class Settings(BaseSettings):
 
     # ── Email ─────────────────────────────────────────────────────────────
     email_backend: str = Field(default="console", alias="THEOURGIA_EMAIL_BACKEND")
-    """Selected delivery backend. One of: console, null, smtp, resend.
-    (Additional providers — ses, postmark, mailgun — land as needed.)"""
+    """Selected delivery backend. One of: console, null, smtp, resend,
+    postmark, ses, mailgun."""
     email_default_from: str = Field(default="", alias="THEOURGIA_EMAIL_DEFAULT_FROM")
     email_default_from_name: str = Field(
         default="", alias="THEOURGIA_EMAIL_DEFAULT_FROM_NAME"
@@ -178,6 +178,36 @@ class Settings(BaseSettings):
     # Resend
     resend_api_key: SecretStr | None = Field(
         default=None, alias="THEOURGIA_RESEND_API_KEY"
+    )
+
+    # Postmark
+    postmark_server_token: SecretStr | None = Field(
+        default=None, alias="THEOURGIA_POSTMARK_SERVER_TOKEN"
+    )
+    postmark_message_stream: str = Field(
+        default="outbound", alias="THEOURGIA_POSTMARK_MESSAGE_STREAM"
+    )
+
+    # SES (key/secret optional — factory falls back to the instance-wide
+    # AWS credentials used by the S3 storage extra)
+    ses_region: str = Field(default="", alias="THEOURGIA_SES_REGION")
+    ses_access_key_id: SecretStr | None = Field(
+        default=None, alias="THEOURGIA_SES_ACCESS_KEY_ID"
+    )
+    ses_secret_access_key: SecretStr | None = Field(
+        default=None, alias="THEOURGIA_SES_SECRET_ACCESS_KEY"
+    )
+    ses_session_token: SecretStr | None = Field(
+        default=None, alias="THEOURGIA_SES_SESSION_TOKEN"
+    )
+
+    # Mailgun
+    mailgun_api_key: SecretStr | None = Field(
+        default=None, alias="THEOURGIA_MAILGUN_API_KEY"
+    )
+    mailgun_domain: str = Field(default="", alias="THEOURGIA_MAILGUN_DOMAIN")
+    mailgun_eu_region: bool = Field(
+        default=False, alias="THEOURGIA_MAILGUN_EU_REGION"
     )
 
     # SMTP

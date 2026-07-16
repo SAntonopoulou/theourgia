@@ -15,7 +15,11 @@ core/email/
     ├── console.py      # dev: prints to stderr
     ├── null.py         # tests: records sends
     ├── resend.py       # Resend API
-    └── smtp.py         # stdlib SMTP
+    ├── smtp.py         # stdlib SMTP
+    ├── transport.py    # EmailHTTPTransport Protocol + httpx default
+    ├── postmark.py     # Postmark API
+    ├── ses.py          # AWS SES v2 (hand-rolled SigV4, no boto3)
+    └── mailgun.py      # Mailgun API
 ```
 
 Plus `core/tasks/email.py` (Celery task for async dispatch) and `models/email.py` (`EmailLog` audit table).
@@ -143,12 +147,11 @@ The `NullEmailBackend` records every send in `backend.sent`; `find_by_template` 
 
 ## Adding a new provider
 
-The five backends today cover most cases, but adding one (SES, Postmark, Mailgun) follows the same pattern:
+The seven backends today (console, null, smtp, resend, postmark, ses, mailgun) cover most cases, but adding one follows the same pattern:
 
-1. Add `core/email/backends/<provider>.py` implementing the `EmailBackend` Protocol.
-2. Add the package to `pyproject.toml`'s `[project.optional-dependencies]` as a `[email-<provider>]` extra.
-3. Add settings fields to `core/config.py`.
-4. Add a branch to `factory.build_backend_from_settings`.
-5. Tests in `tests/test_email_backends.py` against a stubbed client.
+1. Add `core/email/backends/<provider>.py` implementing the `EmailBackend` Protocol. For an HTTPS API provider, take an injected `EmailHTTPTransport` (see `backends/transport.py`) with the httpx default — no provider SDK, and tests never touch the network. Only reach for a provider package (and a `[email-<provider>]` extra in `pyproject.toml`) if the API genuinely can't be spoken as a plain POST.
+2. Add settings fields to `core/config.py`.
+3. Add a branch to `factory.build_backend_from_settings`.
+4. Tests against a stubbed transport (see `tests/test_email_backends_v1.py` for the Postmark/SES/Mailgun examples, `tests/test_email_backends.py` for the older backends).
 
-Aim for ~50-100 LOC per backend. The Resend backend is a clean reference.
+Aim for ~100 LOC per backend. Rules every backend keeps: one attempt per send (retries live in the service layer / Celery), a clean `EmailDeliveryError` on any failure, and no logging of message bodies or recipient lists.
