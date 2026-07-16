@@ -7,7 +7,7 @@ Currently bundled:
   reconstructed Proto-Germanic forms.
 
 Additional sets (Younger Futhark, Anglo-Saxon Futhorc, Armanen,
-Northumbrian) ship in follow-up data batches — the engine handles
+Northumbrian) ship in :mod:`bundles_extended` — the engine handles
 any rune list of any size.
 
 Each rune carries:
@@ -370,6 +370,7 @@ def _extended_sets() -> tuple[BuiltinRuneSet, ...]:
         _e.YOUNGER_FUTHARK,
         _e.ANGLO_SAXON_FUTHORC,
         _e.ARMANEN_RUNES,
+        _e.NORTHUMBRIAN_RUNES,
     )
 
 

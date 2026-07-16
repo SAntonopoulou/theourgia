@@ -21,6 +21,7 @@ export * from "./Badge/index.js";
 export * from "./Banner/index.js";
 export * from "./BeingsTabs/index.js";
 export * from "./BindingKindIcon/index.js";
+export * from "./BindRune/index.js";
 export * from "./BodySensation/index.js";
 export * from "./BodySilhouette/index.js";
 export * from "./BulkActionBar/index.js";
@@ -122,77 +123,205 @@ export * from "./VulnerabilityAdvisoryBanner/index.js";
 // access copy as `AccountDeletionCopy.BUTTONS` or import directly from
 // the deep path.
 export * as DataExportRequestCopy from "./DataExportRequest/index.js";
-export { DataExportRequestSurface, type DataExportRequestSurfaceProps } from "./DataExportRequest/DataExportRequestSurface.js";
+export {
+  DataExportRequestSurface,
+  type DataExportRequestSurfaceProps,
+} from "./DataExportRequest/DataExportRequestSurface.js";
 export * as AccountDeletionCopy from "./AccountDeletion/index.js";
-export { AccountDeletionSurface, type AccountDeletionSurfaceProps } from "./AccountDeletion/AccountDeletionSurface.js";
+export {
+  AccountDeletionSurface,
+  type AccountDeletionSurfaceProps,
+} from "./AccountDeletion/AccountDeletionSurface.js";
 export * as PerUserAuditLogCopy from "./PerUserAuditLog/index.js";
-export { PerUserAuditLogSurface, type AuditLogRow, type PerUserAuditLogSurfaceProps } from "./PerUserAuditLog/PerUserAuditLogSurface.js";
+export {
+  PerUserAuditLogSurface,
+  type AuditLogRow,
+  type PerUserAuditLogSurfaceProps,
+} from "./PerUserAuditLog/PerUserAuditLogSurface.js";
 export * as SessionsAndDevicesCopy from "./SessionsAndDevices/index.js";
-export { SessionsAndDevicesSurface, type CurrentSession, type SessionRow, type SessionsAndDevicesSurfaceProps } from "./SessionsAndDevices/SessionsAndDevicesSurface.js";
+export {
+  SessionsAndDevicesSurface,
+  type CurrentSession,
+  type SessionRow,
+  type SessionsAndDevicesSurfaceProps,
+} from "./SessionsAndDevices/SessionsAndDevicesSurface.js";
 export * as AccountSettingsCopy from "./AccountSettings/index.js";
-export { AccountSettingsSurface, type AccountSettingsSurfaceProps } from "./AccountSettings/AccountSettingsSurface.js";
+export {
+  AccountSettingsSurface,
+  type AccountSettingsSurfaceProps,
+} from "./AccountSettings/AccountSettingsSurface.js";
 export * as AccessibilityAndMotionCopy from "./AccessibilityAndMotion/index.js";
-export { AccessibilityAndMotionSurface, type AccessibilityAndMotionSurfaceProps } from "./AccessibilityAndMotion/AccessibilityAndMotionSurface.js";
+export {
+  AccessibilityAndMotionSurface,
+  type AccessibilityAndMotionSurfaceProps,
+} from "./AccessibilityAndMotion/AccessibilityAndMotionSurface.js";
 export * as KeyRotationCopy from "./KeyRotation/index.js";
-export { KeyRotationSurface, type CurrentKey, type KeyHistoryEntry, type KeyRotationSurfaceProps } from "./KeyRotation/KeyRotationSurface.js";
+export {
+  KeyRotationSurface,
+  type CurrentKey,
+  type KeyHistoryEntry,
+  type KeyRotationSurfaceProps,
+} from "./KeyRotation/KeyRotationSurface.js";
 export * as RegistryPublicHomeCopy from "./RegistryPublicHome/index.js";
-export { RegistryPublicHomeSurface, type RegistryPublicHomeSurfaceProps } from "./RegistryPublicHome/RegistryPublicHomeSurface.js";
-export type { ExtensionPointTile, RecentlyAddedItem, RecentlyUpdatedItem, TierKey } from "./RegistryPublicHome/copy.js";
+export {
+  RegistryPublicHomeSurface,
+  type RegistryPublicHomeSurfaceProps,
+} from "./RegistryPublicHome/RegistryPublicHomeSurface.js";
+export type {
+  ExtensionPointTile,
+  RecentlyAddedItem,
+  RecentlyUpdatedItem,
+  TierKey,
+} from "./RegistryPublicHome/copy.js";
 export * as PluginSubmissionFormCopy from "./PluginSubmissionForm/index.js";
-export { PluginSubmissionFormSurface, type PluginSubmissionFormProps } from "./PluginSubmissionForm/PluginSubmissionFormSurface.js";
-export type { CapabilityChip as RegistryCapabilityChip, SourceKind as RegistrySourceKind } from "./PluginSubmissionForm/copy.js";
+export {
+  PluginSubmissionFormSurface,
+  type PluginSubmissionFormProps,
+} from "./PluginSubmissionForm/PluginSubmissionFormSurface.js";
+export type {
+  CapabilityChip as RegistryCapabilityChip,
+  SourceKind as RegistrySourceKind,
+} from "./PluginSubmissionForm/copy.js";
 export * as PluginSubmissionListCopy from "./PluginSubmissionList/index.js";
-export { PluginSubmissionListSurface, type PluginSubmissionListSurfaceProps, type SubmissionRow } from "./PluginSubmissionList/PluginSubmissionListSurface.js";
+export {
+  PluginSubmissionListSurface,
+  type PluginSubmissionListSurfaceProps,
+  type SubmissionRow,
+} from "./PluginSubmissionList/PluginSubmissionListSurface.js";
 export type { SubmissionState } from "./PluginSubmissionList/copy.js";
 export * as PluginSubmissionDetailCopy from "./PluginSubmissionDetail/index.js";
-export { PluginSubmissionDetailSurface, type PluginSubmissionDetailSurfaceProps } from "./PluginSubmissionDetail/PluginSubmissionDetailSurface.js";
-export type { CapabilityChip as DetailCapabilityChip, TimelineEntry, TimelineDotTone } from "./PluginSubmissionDetail/copy.js";
+export {
+  PluginSubmissionDetailSurface,
+  type PluginSubmissionDetailSurfaceProps,
+} from "./PluginSubmissionDetail/PluginSubmissionDetailSurface.js";
+export type {
+  CapabilityChip as DetailCapabilityChip,
+  TimelineEntry,
+  TimelineDotTone,
+} from "./PluginSubmissionDetail/copy.js";
 export * as RegistryReviewQueueCopy from "./RegistryReviewQueue/index.js";
-export { RegistryReviewQueueSurface, type RegistryReviewQueueSurfaceProps, type ReviewQueueRow } from "./RegistryReviewQueue/RegistryReviewQueueSurface.js";
-export type { TargetTier, TargetTierFilter, TimeRangeFilter as ReviewTimeRangeFilter } from "./RegistryReviewQueue/copy.js";
+export {
+  RegistryReviewQueueSurface,
+  type RegistryReviewQueueSurfaceProps,
+  type ReviewQueueRow,
+} from "./RegistryReviewQueue/RegistryReviewQueueSurface.js";
+export type {
+  TargetTier,
+  TargetTierFilter,
+  TimeRangeFilter as ReviewTimeRangeFilter,
+} from "./RegistryReviewQueue/copy.js";
 export * as RegistryReviewDetailCopy from "./RegistryReviewDetail/index.js";
-export { RegistryReviewDetailSurface, type RegistryReviewDetailSurfaceProps } from "./RegistryReviewDetail/RegistryReviewDetailSurface.js";
-export type { VerificationCheck, DiffEntry as ReviewDiffEntry, DiffEntryKind as ReviewDiffEntryKind } from "./RegistryReviewDetail/copy.js";
+export {
+  RegistryReviewDetailSurface,
+  type RegistryReviewDetailSurfaceProps,
+} from "./RegistryReviewDetail/RegistryReviewDetailSurface.js";
+export type {
+  VerificationCheck,
+  DiffEntry as ReviewDiffEntry,
+  DiffEntryKind as ReviewDiffEntryKind,
+} from "./RegistryReviewDetail/copy.js";
 export * as TierPromotionCopy from "./TierPromotion/index.js";
-export { TierPromotionSurface, type TierPromotionSurfaceProps } from "./TierPromotion/TierPromotionSurface.js";
+export {
+  TierPromotionSurface,
+  type TierPromotionSurfaceProps,
+} from "./TierPromotion/TierPromotionSurface.js";
 export type { PluginPickerMeta } from "./TierPromotion/TierPromotionSurface.js";
 export type { ChecklistItem as TierPromotionChecklistItem } from "./TierPromotion/copy.js";
 export * as VulnerabilityAdvisorySubmitCopy from "./VulnerabilityAdvisorySubmit/index.js";
-export { VulnerabilityAdvisorySubmitSurface, type VulnerabilityAdvisorySubmitSurfaceProps, type PluginOption } from "./VulnerabilityAdvisorySubmit/VulnerabilityAdvisorySubmitSurface.js";
+export {
+  VulnerabilityAdvisorySubmitSurface,
+  type VulnerabilityAdvisorySubmitSurfaceProps,
+  type PluginOption,
+} from "./VulnerabilityAdvisorySubmit/VulnerabilityAdvisorySubmitSurface.js";
 export type { SeverityKey, DisclosureTiming } from "./VulnerabilityAdvisorySubmit/copy.js";
 export * as AgentsHomeCopy from "./AgentsHome/index.js";
-export { AgentsHomeSurface, type AgentRow, type AgentsHomeSurfaceProps, type DisabledAgentRow } from "./AgentsHome/AgentsHomeSurface.js";
+export {
+  AgentsHomeSurface,
+  type AgentRow,
+  type AgentsHomeSurfaceProps,
+  type DisabledAgentRow,
+} from "./AgentsHome/AgentsHomeSurface.js";
 export * as AgentMarketplaceCopy from "./AgentMarketplace/index.js";
-export { AgentMarketplaceSurface, type AgentMarketplaceSurfaceProps, type MarketAgentCard } from "./AgentMarketplace/AgentMarketplaceSurface.js";
-export type { AgentMarketKind, AgentTier, CapabilityFilter, SourceFilter, SortOption as MarketSortOption } from "./AgentMarketplace/copy.js";
+export {
+  AgentMarketplaceSurface,
+  type AgentMarketplaceSurfaceProps,
+  type MarketAgentCard,
+} from "./AgentMarketplace/AgentMarketplaceSurface.js";
+export type {
+  AgentMarketKind,
+  AgentTier,
+  CapabilityFilter,
+  SourceFilter,
+  SortOption as MarketSortOption,
+} from "./AgentMarketplace/copy.js";
 export * as AgentInstallCopy from "./AgentInstall/index.js";
-export { AgentInstallSurface, type AgentInstallSurfaceProps } from "./AgentInstall/AgentInstallSurface.js";
+export {
+  AgentInstallSurface,
+  type AgentInstallSurfaceProps,
+} from "./AgentInstall/AgentInstallSurface.js";
 export type { AgentCapabilityChip } from "./AgentInstall/copy.js";
 export * as AgentCapabilityReviewCopy from "./AgentCapabilityReview/index.js";
-export { AgentCapabilityReviewSurface, type AgentCapabilityReviewSurfaceProps } from "./AgentCapabilityReview/AgentCapabilityReviewSurface.js";
+export {
+  AgentCapabilityReviewSurface,
+  type AgentCapabilityReviewSurfaceProps,
+} from "./AgentCapabilityReview/AgentCapabilityReviewSurface.js";
 export type { AgentCapabilityRow, CapabilityReviewScenario } from "./AgentCapabilityReview/copy.js";
 export * as AgentByoKeySettingsCopy from "./AgentByoKeySettings/index.js";
-export { AgentByoKeySettingsSurface, type AgentByoKeySettingsSurfaceProps, type PerAgentKeyRow } from "./AgentByoKeySettings/AgentByoKeySettingsSurface.js";
+export {
+  AgentByoKeySettingsSurface,
+  type AgentByoKeySettingsSurfaceProps,
+  type PerAgentKeyRow,
+} from "./AgentByoKeySettings/AgentByoKeySettingsSurface.js";
 export type { PerAgentKeyKind } from "./AgentByoKeySettings/copy.js";
 export * as AgentTaskComposerCopy from "./AgentTaskComposer/index.js";
-export { AgentTaskComposerSurface, type AgentTaskComposerSurfaceProps } from "./AgentTaskComposer/AgentTaskComposerSurface.js";
+export {
+  AgentTaskComposerSurface,
+  type AgentTaskComposerSurfaceProps,
+} from "./AgentTaskComposer/AgentTaskComposerSurface.js";
 export type { ScopeOption } from "./AgentTaskComposer/copy.js";
 export * as AgentRunMonitorCopy from "./AgentRunMonitor/index.js";
-export { AgentRunMonitorSurface, type AgentRunMonitorSurfaceProps } from "./AgentRunMonitor/AgentRunMonitorSurface.js";
+export {
+  AgentRunMonitorSurface,
+  type AgentRunMonitorSurfaceProps,
+} from "./AgentRunMonitor/AgentRunMonitorSurface.js";
 export type { ActivityRowTone, HumanActivityRow } from "./AgentRunMonitor/copy.js";
 export * as AgentTranscriptViewerCopy from "./AgentTranscriptViewer/index.js";
-export { AgentTranscriptViewerSurface, type AgentTranscriptViewerSurfaceProps, type TranscriptRow } from "./AgentTranscriptViewer/AgentTranscriptViewerSurface.js";
+export {
+  AgentTranscriptViewerSurface,
+  type AgentTranscriptViewerSurfaceProps,
+  type TranscriptRow,
+} from "./AgentTranscriptViewer/AgentTranscriptViewerSurface.js";
 export type { SpeakerKind } from "./AgentTranscriptViewer/copy.js";
 export * as AgentMemoryReaderCopy from "./AgentMemoryReader/index.js";
-export { AgentMemoryReaderSurface, type AgentMemoryReaderSurfaceProps, type MemoryFileMeta } from "./AgentMemoryReader/AgentMemoryReaderSurface.js";
+export {
+  AgentMemoryReaderSurface,
+  type AgentMemoryReaderSurfaceProps,
+  type MemoryFileMeta,
+} from "./AgentMemoryReader/AgentMemoryReaderSurface.js";
 export * as AgentCostDashboardCopy from "./AgentCostDashboard/index.js";
-export { AgentCostDashboardSurface, type AgentCostDashboardSurfaceProps, type PerAgentRow } from "./AgentCostDashboard/AgentCostDashboardSurface.js";
+export {
+  AgentCostDashboardSurface,
+  type AgentCostDashboardSurfaceProps,
+  type PerAgentRow,
+} from "./AgentCostDashboard/AgentCostDashboardSurface.js";
 export type { TokenBreakdown, AgentRowKind } from "./AgentCostDashboard/copy.js";
 export * as AgentActivityLogCopy from "./AgentActivityLog/index.js";
-export { AgentActivityLogSurface, type AgentActivityLogSurfaceProps, type ActivityRunRow } from "./AgentActivityLog/AgentActivityLogSurface.js";
-export type { ActivityTimeRange, OutcomeFilter, RunOutcome as ActivityRunOutcome } from "./AgentActivityLog/copy.js";
+export {
+  AgentActivityLogSurface,
+  type AgentActivityLogSurfaceProps,
+  type ActivityRunRow,
+} from "./AgentActivityLog/AgentActivityLogSurface.js";
+export type {
+  ActivityTimeRange,
+  OutcomeFilter,
+  RunOutcome as ActivityRunOutcome,
+} from "./AgentActivityLog/copy.js";
 export * as AgentTrustReviewCopy from "./AgentTrustReview/index.js";
-export { AgentTrustReviewSurface, type AgentTrustReviewSurfaceProps, type AddedSinceInstall } from "./AgentTrustReview/AgentTrustReviewSurface.js";
+export {
+  AgentTrustReviewSurface,
+  type AgentTrustReviewSurfaceProps,
+  type AddedSinceInstall,
+} from "./AgentTrustReview/AgentTrustReviewSurface.js";
 export type { CurrentCapabilityRow } from "./AgentTrustReview/copy.js";
 export * from "./RegistryBrowser/index.js";
 export * from "./RegistryPluginDetail/index.js";

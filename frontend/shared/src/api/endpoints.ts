@@ -9,14 +9,24 @@
 
 import type { ApiClient } from "./client.js";
 import type {
+  AgentAuditQueryResponse,
+  AgentInstallListResponse,
+  AgentInstallSnapshot,
+  AgentInstallState,
+  AgentRunCostSampleInput,
+  AgentRunCostSnapshot,
+  AgentRunSnapshot,
   AltarRecordWire,
   BanishingLogRecord,
   BodyPracticeRecord,
   BookRecord,
   BundledVoce,
+  ChartRequestInput,
+  ChartResponse,
   CircleRecord,
   CompletionInput,
   ConsecrateToolPayload,
+  CreateAgentInstallInput,
   CreateAltarInput,
   CreateBanishingLogInput,
   CreateBodyPracticeInput,
@@ -31,72 +41,62 @@ import type {
   CreateToolInput,
   CreateVoceInput,
   CreateVoceRecordingInput,
-  ChartRequestInput,
-  ChartResponse,
+  DataExportResponse,
+  DecideSubmissionInput,
+  DeletionScheduledRead,
   EntityKind,
   EntityRecord,
   EntryDetailRecord,
   EntryRecord,
   EntryStats,
   EntryType,
+  FileAdvisoryInput,
+  HealthStatus,
   MagicSquareRecord,
+  MaintainerQueueResponse,
+  MeRead,
+  MemoryFileContent,
+  MemoryListResponse,
+  Meta,
+  MyAuditListResponse,
+  MyAuditQueryInput,
+  MySessionsListResponse,
   PlanetarySquareWire,
+  PracticeRecord,
+  PracticesToday,
   PresetCircle,
+  PromotePluginInput,
+  RegistryAdvisory,
+  RegistryAuthorRead,
+  RegistryPluginListResponse,
+  RegistrySubmission,
+  RegistrySubmissionListResponse,
+  Session,
   SigilRecord,
   SourceScriptWire,
+  StartAgentRunInput,
+  SubmitPluginInput,
   TalismanRecord,
   TalismanSealPayload,
   TalismanUnsealResponse,
+  TodayLedger,
   ToolKindWire,
   ToolRecordWire,
   UpdateAltarInput,
   UpdateCircleInput,
   UpdateEntryBodyInput,
   UpdateMagicSquareInput,
+  UpdatePracticeInput,
   UpdateSigilInput,
   UpdateTalismanInput,
   UpdateToolInput,
   UpdateVoceInput,
+  UserLocation,
   VoceRecordWire,
   VoceRecordingRecord,
-  HealthStatus,
-  Meta,
-  PracticeRecord,
-  PracticesToday,
-  Session,
-  TodayLedger,
-  UpdatePracticeInput,
-  UserLocation,
   WeatherCurrentResponse,
-  AgentAuditQueryResponse,
-  AgentRunCostSampleInput,
-  AgentRunCostSnapshot,
-  AgentRunSnapshot,
-  StartAgentRunInput,
-  RegistryAuthorRead,
-  RegistryPluginListResponse,
-  AgentInstallListResponse,
-  AgentInstallSnapshot,
-  AgentInstallState,
-  CreateAgentInstallInput,
-  MemoryFileContent,
-  MemoryListResponse,
-  FileAdvisoryInput,
-  RegistryAdvisory,
-  RegistrySubmission,
-  RegistrySubmissionListResponse,
-  SubmitPluginInput,
-  DecideSubmissionInput,
-  MaintainerQueueResponse,
-  PromotePluginInput,
-  MeRead,
-  DeletionScheduledRead,
-  DataExportResponse,
-  MyAuditListResponse,
-  MyAuditQueryInput,
-  MySessionsListResponse,
-  WebauthnCredentialRead,
   WebauthnCredentialListResponse,
+  WebauthnCredentialRead,
 } from "./types.js";
 
 export class NotImplementedError extends Error {
@@ -151,42 +151,38 @@ export function api(client: ApiClient) {
     // ── WebAuthn (Phase 15) — passkey / hardware-key ceremony ────
 
     webauthnRegisterBegin(): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/auth/webauthn/register/begin",
-        { method: "POST" },
-      );
+      return client.request<Record<string, unknown>>("/api/v1/auth/webauthn/register/begin", {
+        method: "POST",
+      });
     },
 
     webauthnRegisterFinish(input: {
       credential: Record<string, unknown>;
       nickname?: string;
     }): Promise<WebauthnCredentialRead> {
-      return client.request<WebauthnCredentialRead>(
-        "/api/v1/auth/webauthn/register/finish",
-        { method: "POST", json: input },
-      );
+      return client.request<WebauthnCredentialRead>("/api/v1/auth/webauthn/register/finish", {
+        method: "POST",
+        json: input,
+      });
     },
 
     webauthnAssertBegin(): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/auth/webauthn/assert/begin",
-        { method: "POST" },
-      );
+      return client.request<Record<string, unknown>>("/api/v1/auth/webauthn/assert/begin", {
+        method: "POST",
+      });
     },
 
     webauthnAssertFinish(input: {
       credential: Record<string, unknown>;
     }): Promise<Session> {
-      return client.request<Session>(
-        "/api/v1/auth/webauthn/assert/finish",
-        { method: "POST", json: input },
-      );
+      return client.request<Session>("/api/v1/auth/webauthn/assert/finish", {
+        method: "POST",
+        json: input,
+      });
     },
 
     listWebauthnCredentials(): Promise<WebauthnCredentialListResponse> {
-      return client.request<WebauthnCredentialListResponse>(
-        "/api/v1/auth/webauthn/credentials",
-      );
+      return client.request<WebauthnCredentialListResponse>("/api/v1/auth/webauthn/credentials");
     },
 
     renameWebauthnCredential(
@@ -251,10 +247,9 @@ export function api(client: ApiClient) {
     },
 
     totpRegenerateBackupCodes(): Promise<{ backup_codes: string[] }> {
-      return client.request<{ backup_codes: string[] }>(
-        "/api/v1/auth/totp/backup-codes",
-        { method: "POST" },
-      );
+      return client.request<{ backup_codes: string[] }>("/api/v1/auth/totp/backup-codes", {
+        method: "POST",
+      });
     },
 
     totpDisable(): Promise<void> {
@@ -264,185 +259,145 @@ export function api(client: ApiClient) {
     // ── Divination (Phase 06) ─────────────────────────────────────
 
     listTarotDecks(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/tarot/decks",
-      );
+      return client.request<Array<Record<string, unknown>>>("/api/v1/tarot/decks");
     },
 
     getTarotDeck(id: string): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        `/api/v1/tarot/decks/${id}`,
-      );
+      return client.request<Record<string, unknown>>(`/api/v1/tarot/decks/${id}`);
     },
 
-    createTarotDeck(
-      input: Record<string, unknown>,
-    ): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/tarot/decks",
-        { method: "POST", json: input },
-      );
+    createTarotDeck(input: Record<string, unknown>): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>("/api/v1/tarot/decks", {
+        method: "POST",
+        json: input,
+      });
     },
 
-    updateTarotDeck(
-      id: string,
-      patch: Record<string, unknown>,
-    ): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        `/api/v1/tarot/decks/${id}`,
-        { method: "PATCH", json: patch },
-      );
+    updateTarotDeck(id: string, patch: Record<string, unknown>): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(`/api/v1/tarot/decks/${id}`, {
+        method: "PATCH",
+        json: patch,
+      });
     },
 
     deleteTarotDeck(id: string): Promise<void> {
-      return client.request<void>(
-        `/api/v1/tarot/decks/${id}`,
-        { method: "DELETE" },
-      );
+      return client.request<void>(`/api/v1/tarot/decks/${id}`, { method: "DELETE" });
     },
 
     // Card CRUD (b108-2hc)
 
-    addTarotCard(
-      deckId: string,
-      input: Record<string, unknown>,
-    ): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        `/api/v1/tarot/decks/${deckId}/cards`,
-        { method: "POST", json: input },
-      );
+    addTarotCard(deckId: string, input: Record<string, unknown>): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(`/api/v1/tarot/decks/${deckId}/cards`, {
+        method: "POST",
+        json: input,
+      });
     },
 
     updateTarotCard(
       cardId: string,
       patch: Record<string, unknown>,
     ): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        `/api/v1/tarot/cards/${cardId}`,
-        { method: "PATCH", json: patch },
-      );
+      return client.request<Record<string, unknown>>(`/api/v1/tarot/cards/${cardId}`, {
+        method: "PATCH",
+        json: patch,
+      });
     },
 
     deleteTarotCard(cardId: string): Promise<void> {
-      return client.request<void>(
-        `/api/v1/tarot/cards/${cardId}`,
-        { method: "DELETE" },
-      );
+      return client.request<void>(`/api/v1/tarot/cards/${cardId}`, { method: "DELETE" });
     },
 
     // ── Account password (b108-2hl SECURITY) ─────────────────────
 
     getPasswordStatus(): Promise<{ has_password: boolean }> {
-      return client.request<{ has_password: boolean }>(
-        "/api/v1/auth/password",
-      );
+      return client.request<{ has_password: boolean }>("/api/v1/auth/password");
     },
 
-    setPassword(
-      input: { new_password: string; current_password?: string | null },
-    ): Promise<{ has_password: boolean }> {
-      return client.request<{ has_password: boolean }>(
-        "/api/v1/auth/password",
-        { method: "PUT", json: input },
-      );
+    setPassword(input: { new_password: string; current_password?: string | null }): Promise<{
+      has_password: boolean;
+    }> {
+      return client.request<{ has_password: boolean }>("/api/v1/auth/password", {
+        method: "PUT",
+        json: input,
+      });
     },
 
     // ── Memorial mode / digital inheritance (b108-2hg) ───────────
 
     getMemorialConfig(): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/memorial/config",
-      );
+      return client.request<Record<string, unknown>>("/api/v1/memorial/config");
     },
 
-    updateMemorialConfig(
-      patch: Record<string, unknown>,
-    ): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/memorial/config",
-        { method: "PATCH", json: patch },
-      );
+    updateMemorialConfig(patch: Record<string, unknown>): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>("/api/v1/memorial/config", {
+        method: "PATCH",
+        json: patch,
+      });
     },
 
     memorialCheckIn(): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/memorial/check-in",
-        { method: "POST" },
-      );
+      return client.request<Record<string, unknown>>("/api/v1/memorial/check-in", {
+        method: "POST",
+      });
     },
 
     memorialTrigger(): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/memorial/trigger",
-        { method: "POST" },
-      );
+      return client.request<Record<string, unknown>>("/api/v1/memorial/trigger", {
+        method: "POST",
+      });
     },
 
     memorialReactivate(): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/memorial/reactivate",
-        { method: "POST" },
-      );
+      return client.request<Record<string, unknown>>("/api/v1/memorial/reactivate", {
+        method: "POST",
+      });
     },
 
     // ── Pilgrimage routes (b108-2gx backend, b108-2he frontend) ───
 
     listPilgrimageRoutes(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/pilgrimage-routes",
-      );
+      return client.request<Array<Record<string, unknown>>>("/api/v1/pilgrimage-routes");
     },
 
     getPilgrimageRoute(id: string): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        `/api/v1/pilgrimage-routes/${id}`,
-      );
+      return client.request<Record<string, unknown>>(`/api/v1/pilgrimage-routes/${id}`);
     },
 
-    createPilgrimageRoute(
-      input: Record<string, unknown>,
-    ): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/pilgrimage-routes",
-        { method: "POST", json: input },
-      );
+    createPilgrimageRoute(input: Record<string, unknown>): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>("/api/v1/pilgrimage-routes", {
+        method: "POST",
+        json: input,
+      });
     },
 
     updatePilgrimageRoute(
       id: string,
       patch: Record<string, unknown>,
     ): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        `/api/v1/pilgrimage-routes/${id}`,
-        { method: "PATCH", json: patch },
-      );
+      return client.request<Record<string, unknown>>(`/api/v1/pilgrimage-routes/${id}`, {
+        method: "PATCH",
+        json: patch,
+      });
     },
 
     deletePilgrimageRoute(id: string): Promise<void> {
-      return client.request<void>(
-        `/api/v1/pilgrimage-routes/${id}`,
-        { method: "DELETE" },
-      );
+      return client.request<void>(`/api/v1/pilgrimage-routes/${id}`, { method: "DELETE" });
     },
 
     addPilgrimageRouteStop(
       routeId: string,
       input: Record<string, unknown>,
     ): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        `/api/v1/pilgrimage-routes/${routeId}/stops`,
-        { method: "POST", json: input },
-      );
+      return client.request<Record<string, unknown>>(`/api/v1/pilgrimage-routes/${routeId}/stops`, {
+        method: "POST",
+        json: input,
+      });
     },
 
-    deletePilgrimageRouteStop(
-      routeId: string,
-      stopId: string,
-    ): Promise<void> {
-      return client.request<void>(
-        `/api/v1/pilgrimage-routes/${routeId}/stops/${stopId}`,
-        { method: "DELETE" },
-      );
+    deletePilgrimageRouteStop(routeId: string, stopId: string): Promise<void> {
+      return client.request<void>(`/api/v1/pilgrimage-routes/${routeId}/stops/${stopId}`, {
+        method: "DELETE",
+      });
     },
 
     reorderPilgrimageRouteStops(
@@ -457,89 +412,64 @@ export function api(client: ApiClient) {
 
     // ── Recipes (b108-2gy backend, b108-2he frontend) ────────────
 
-    listRecipes(
-      kind?: string,
-    ): Promise<Array<Record<string, unknown>>> {
+    listRecipes(kind?: string): Promise<Array<Record<string, unknown>>> {
       const qs = kind ? `?kind=${encodeURIComponent(kind)}` : "";
-      return client.request<Array<Record<string, unknown>>>(
-        `/api/v1/recipes${qs}`,
-      );
+      return client.request<Array<Record<string, unknown>>>(`/api/v1/recipes${qs}`);
     },
 
     getRecipe(id: string): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        `/api/v1/recipes/${id}`,
-      );
+      return client.request<Record<string, unknown>>(`/api/v1/recipes/${id}`);
     },
 
-    createRecipe(
-      input: Record<string, unknown>,
-    ): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/recipes",
-        { method: "POST", json: input },
-      );
+    createRecipe(input: Record<string, unknown>): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>("/api/v1/recipes", {
+        method: "POST",
+        json: input,
+      });
     },
 
-    updateRecipe(
-      id: string,
-      patch: Record<string, unknown>,
-    ): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        `/api/v1/recipes/${id}`,
-        { method: "PATCH", json: patch },
-      );
+    updateRecipe(id: string, patch: Record<string, unknown>): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(`/api/v1/recipes/${id}`, {
+        method: "PATCH",
+        json: patch,
+      });
     },
 
     deleteRecipe(id: string): Promise<void> {
-      return client.request<void>(
-        `/api/v1/recipes/${id}`,
-        { method: "DELETE" },
-      );
+      return client.request<void>(`/api/v1/recipes/${id}`, { method: "DELETE" });
     },
 
     listTarotSpreads(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/tarot/spreads",
-      );
+      return client.request<Array<Record<string, unknown>>>("/api/v1/tarot/spreads");
     },
 
     getTarotSpread(id: string): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        `/api/v1/tarot/spreads/${id}`,
-      );
+      return client.request<Record<string, unknown>>(`/api/v1/tarot/spreads/${id}`);
     },
 
-    createTarotSpread(
-      input: Record<string, unknown>,
-    ): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/tarot/spreads",
-        { method: "POST", json: input },
-      );
+    createTarotSpread(input: Record<string, unknown>): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>("/api/v1/tarot/spreads", {
+        method: "POST",
+        json: input,
+      });
     },
 
     updateTarotSpread(
       id: string,
       patch: Record<string, unknown>,
     ): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        `/api/v1/tarot/spreads/${id}`,
-        { method: "PATCH", json: patch },
-      );
+      return client.request<Record<string, unknown>>(`/api/v1/tarot/spreads/${id}`, {
+        method: "PATCH",
+        json: patch,
+      });
     },
 
     deleteTarotSpread(id: string): Promise<void> {
-      return client.request<void>(
-        `/api/v1/tarot/spreads/${id}`,
-        { method: "DELETE" },
-      );
+      return client.request<void>(`/api/v1/tarot/spreads/${id}`, { method: "DELETE" });
     },
 
     listTarotReadings(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/tarot/readings",
-      );
+      return client.request<Array<Record<string, unknown>>>("/api/v1/tarot/readings");
     },
 
     castTarot(input: {
@@ -550,16 +480,14 @@ export function api(client: ApiClient) {
       seed?: string;
       title?: string;
     }): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/tarot/cast",
-        { method: "POST", json: input },
-      );
+      return client.request<Record<string, unknown>>("/api/v1/tarot/cast", {
+        method: "POST",
+        json: input,
+      });
     },
 
     listIchingReadings(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/iching/readings",
-      );
+      return client.request<Array<Record<string, unknown>>>("/api/v1/iching/readings");
     },
 
     castIching(input: {
@@ -567,16 +495,14 @@ export function api(client: ApiClient) {
       method?: "three_coins" | "yarrow_stalks" | "six_coins";
       seed?: string;
     }): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/iching/cast",
-        { method: "POST", json: input },
-      );
+      return client.request<Record<string, unknown>>("/api/v1/iching/cast", {
+        method: "POST",
+        json: input,
+      });
     },
 
     listGeomancyReadings(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/geomancy/readings",
-      );
+      return client.request<Array<Record<string, unknown>>>("/api/v1/geomancy/readings");
     },
 
     castGeomancy(input: {
@@ -584,28 +510,28 @@ export function api(client: ApiClient) {
       method?: "rng" | "sand" | "manual";
       seed?: string;
     }): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/geomancy/cast",
-        { method: "POST", json: input },
-      );
+      return client.request<Record<string, unknown>>("/api/v1/geomancy/cast", {
+        method: "POST",
+        json: input,
+      });
     },
 
     listRuneSets(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/runes/sets",
+      return client.request<Array<Record<string, unknown>>>("/api/v1/runes/sets");
+    },
+
+    getRuneSet(setId: string): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(
+        `/api/v1/runes/sets/${encodeURIComponent(setId)}`,
       );
     },
 
     listRuneSpreads(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/runes/spreads",
-      );
+      return client.request<Array<Record<string, unknown>>>("/api/v1/runes/spreads");
     },
 
     listRuneReadings(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/runes/readings",
-      );
+      return client.request<Array<Record<string, unknown>>>("/api/v1/runes/readings");
     },
 
     castRunes(input: {
@@ -615,18 +541,16 @@ export function api(client: ApiClient) {
       seed?: string;
       allow_reversals?: boolean;
     }): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/runes/cast",
-        { method: "POST", json: input },
-      );
+      return client.request<Record<string, unknown>>("/api/v1/runes/cast", {
+        method: "POST",
+        json: input,
+      });
     },
 
     // ── Publications / Subscribers / Media / Pilgrimage / Hubs ───
 
     listPublications(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/publications",
-      );
+      return client.request<Array<Record<string, unknown>>>("/api/v1/publications");
     },
 
     createPublication(input: {
@@ -634,10 +558,10 @@ export function api(client: ApiClient) {
       title: string;
       summary?: string;
     }): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/publications",
-        { method: "POST", json: input },
-      );
+      return client.request<Record<string, unknown>>("/api/v1/publications", {
+        method: "POST",
+        json: input,
+      });
     },
 
     getPublication(id: string): Promise<Record<string, unknown>> {
@@ -681,46 +605,33 @@ export function api(client: ApiClient) {
      *  Owner-only. Returns a Blob suitable for triggering a browser
      *  download or piping into pdf.js for in-browser preview. */
     downloadPublicationBookPdf(pubId: string): Promise<Blob> {
-      return client.requestBlob(
-        `/api/v1/publications/${encodeURIComponent(pubId)}/book-pdf`,
-      );
+      return client.requestBlob(`/api/v1/publications/${encodeURIComponent(pubId)}/book-pdf`);
     },
 
     listSubscribers(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/subscribers",
-      );
+      return client.request<Array<Record<string, unknown>>>("/api/v1/subscribers");
     },
 
     listMedia(
       opts: { kind?: "image" | "audio" | "video" | "document" } = {},
     ): Promise<Array<Record<string, unknown>>> {
       const qs = opts.kind ? `?kind=${encodeURIComponent(opts.kind)}` : "";
-      return client.request<Array<Record<string, unknown>>>(
-        `/api/v1/media${qs}`,
-      );
+      return client.request<Array<Record<string, unknown>>>(`/api/v1/media${qs}`);
     },
 
     getMedia(id: string): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        `/api/v1/media/${encodeURIComponent(id)}`,
-      );
+      return client.request<Record<string, unknown>>(`/api/v1/media/${encodeURIComponent(id)}`);
     },
 
-    updateMedia(
-      id: string,
-      patch: Record<string, unknown>,
-    ): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        `/api/v1/media/${encodeURIComponent(id)}`,
-        { method: "PATCH", json: patch },
-      );
+    updateMedia(id: string, patch: Record<string, unknown>): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(`/api/v1/media/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        json: patch,
+      });
     },
 
     listPilgrimageSites(): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/pilgrimage-sites",
-      );
+      return client.request<Record<string, unknown>>("/api/v1/pilgrimage-sites");
     },
 
     listHubs(): Promise<Array<Record<string, unknown>>> {
@@ -728,19 +639,14 @@ export function api(client: ApiClient) {
     },
 
     getHub(hubId: string): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        `/api/v1/hubs/${encodeURIComponent(hubId)}`,
-      );
+      return client.request<Record<string, unknown>>(`/api/v1/hubs/${encodeURIComponent(hubId)}`);
     },
 
-    updateHub(
-      hubId: string,
-      patch: Record<string, unknown>,
-    ): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        `/api/v1/hubs/${encodeURIComponent(hubId)}`,
-        { method: "PATCH", json: patch },
-      );
+    updateHub(hubId: string, patch: Record<string, unknown>): Promise<Record<string, unknown>> {
+      return client.request<Record<string, unknown>>(`/api/v1/hubs/${encodeURIComponent(hubId)}`, {
+        method: "PATCH",
+        json: patch,
+      });
     },
 
     listHubMembers(hubId: string): Promise<Array<Record<string, unknown>>> {
@@ -784,27 +690,19 @@ export function api(client: ApiClient) {
     },
 
     listPrivateViewers(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/private-viewers",
-      );
+      return client.request<Array<Record<string, unknown>>>("/api/v1/private-viewers");
     },
 
     listSynchronicities(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/synchronicities",
-      );
+      return client.request<Array<Record<string, unknown>>>("/api/v1/synchronicities");
     },
 
     listStudies(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/studies",
-      );
+      return client.request<Array<Record<string, unknown>>>("/api/v1/studies");
     },
 
     listTemplates(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/templates",
-      );
+      return client.request<Array<Record<string, unknown>>>("/api/v1/templates");
     },
 
     // ── Studies + Ciphers (Phase 08) ─────────────────────────────
@@ -816,42 +714,31 @@ export function api(client: ApiClient) {
       description?: string;
       visibility?: "personal" | "vault_shared" | "publishable";
     }): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/studies",
-        { method: "POST", json: input },
-      );
+      return client.request<Record<string, unknown>>("/api/v1/studies", {
+        method: "POST",
+        json: input,
+      });
     },
 
     listCiphers(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/ciphers",
-      );
+      return client.request<Array<Record<string, unknown>>>("/api/v1/ciphers");
     },
 
     listBundledCiphers(): Promise<Array<Record<string, unknown>>> {
-      return client.request<Array<Record<string, unknown>>>(
-        "/api/v1/ciphers/bundled",
-      );
+      return client.request<Array<Record<string, unknown>>>("/api/v1/ciphers/bundled");
     },
 
     createCipher(input: {
       name: string;
-      language:
-        | "greek"
-        | "hebrew"
-        | "english"
-        | "coptic"
-        | "arabic"
-        | "sanskrit"
-        | "custom";
+      language: "greek" | "hebrew" | "english" | "coptic" | "arabic" | "sanskrit" | "custom";
       mapping: Record<string, number>;
       notes?: string;
       source_citation?: string | null;
     }): Promise<Record<string, unknown>> {
-      return client.request<Record<string, unknown>>(
-        "/api/v1/ciphers",
-        { method: "POST", json: input },
-      );
+      return client.request<Record<string, unknown>>("/api/v1/ciphers", {
+        method: "POST",
+        json: input,
+      });
     },
 
     // ─── Entries (live as of Batch 10) ───────────────────────────────
@@ -963,10 +850,9 @@ export function api(client: ApiClient) {
       opts?: { signal?: AbortSignal },
     ): Promise<WeatherCurrentResponse> {
       const qs = `?lat=${encodeURIComponent(params.lat)}&lng=${encodeURIComponent(params.lng)}`;
-      return client.request<WeatherCurrentResponse>(
-        `/api/v1/weather/current${qs}`,
-        { signal: opts?.signal },
-      );
+      return client.request<WeatherCurrentResponse>(`/api/v1/weather/current${qs}`, {
+        signal: opts?.signal,
+      });
     },
 
     // ─── Library ─────────────────────────────────────────────────────
@@ -1006,10 +892,9 @@ export function api(client: ApiClient) {
       if (opts?.kind) params.set("kind", opts.kind);
       if (opts?.tradition) params.set("tradition", opts.tradition);
       const qs = params.toString();
-      return client.request<EntityRecord[]>(
-        `/api/v1/entities${qs ? `?${qs}` : ""}`,
-        { signal: opts?.signal },
-      );
+      return client.request<EntityRecord[]>(`/api/v1/entities${qs ? `?${qs}` : ""}`, {
+        signal: opts?.signal,
+      });
     },
 
     getEntity(id: string, opts?: { signal?: AbortSignal }): Promise<EntityRecord> {
@@ -1062,10 +947,9 @@ export function api(client: ApiClient) {
         params.set("generations", String(opts.generations));
       }
       const qs = params.toString();
-      return client.request(
-        `/api/v1/entities/${entityId}/family-tree${qs ? `?${qs}` : ""}`,
-        { signal: opts?.signal },
-      );
+      return client.request(`/api/v1/entities/${entityId}/family-tree${qs ? `?${qs}` : ""}`, {
+        signal: opts?.signal,
+      });
     },
 
     addKinship(
@@ -1146,17 +1030,13 @@ export function api(client: ApiClient) {
     },
 
     archivePractice(id: string): Promise<PracticeRecord> {
-      return client.request<PracticeRecord>(
-        `/api/v1/practices/${id}/archive`,
-        { method: "POST" },
-      );
+      return client.request<PracticeRecord>(`/api/v1/practices/${id}/archive`, { method: "POST" });
     },
 
     unarchivePractice(id: string): Promise<PracticeRecord> {
-      return client.request<PracticeRecord>(
-        `/api/v1/practices/${id}/unarchive`,
-        { method: "POST" },
-      );
+      return client.request<PracticeRecord>(`/api/v1/practices/${id}/unarchive`, {
+        method: "POST",
+      });
     },
 
     deletePractice(id: string): Promise<void> {
@@ -1165,11 +1045,7 @@ export function api(client: ApiClient) {
       });
     },
 
-    completePractice(
-      id: string,
-      payload?: CompletionInput,
-      opts?: { tz?: string },
-    ): Promise<void> {
+    completePractice(id: string, payload?: CompletionInput, opts?: { tz?: string }): Promise<void> {
       const tz = opts?.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
       const qs = `?tz=${encodeURIComponent(tz)}`;
       return client.request<void>(`/api/v1/practices/${id}/complete${qs}`, {
@@ -1178,11 +1054,7 @@ export function api(client: ApiClient) {
       });
     },
 
-    skipPractice(
-      id: string,
-      payload?: CompletionInput,
-      opts?: { tz?: string },
-    ): Promise<void> {
+    skipPractice(id: string, payload?: CompletionInput, opts?: { tz?: string }): Promise<void> {
       const tz = opts?.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
       const qs = `?tz=${encodeURIComponent(tz)}`;
       return client.request<void>(`/api/v1/practices/${id}/skip${qs}`, {
@@ -1191,10 +1063,7 @@ export function api(client: ApiClient) {
       });
     },
 
-    undoPracticeToday(
-      id: string,
-      opts?: { tz?: string },
-    ): Promise<void> {
+    undoPracticeToday(id: string, opts?: { tz?: string }): Promise<void> {
       const tz = opts?.tz ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
       const qs = `?tz=${encodeURIComponent(tz)}`;
       return client.request<void>(`/api/v1/practices/${id}/today${qs}`, {
@@ -1204,9 +1073,7 @@ export function api(client: ApiClient) {
 
     // ─── Practice Logs — body + banishing (B88) ──────────────────────
 
-    createBodyPracticeSession(
-      input: CreateBodyPracticeInput,
-    ): Promise<BodyPracticeRecord> {
+    createBodyPracticeSession(input: CreateBodyPracticeInput): Promise<BodyPracticeRecord> {
       return client.request<BodyPracticeRecord>("/api/v1/practice/body", {
         method: "POST",
         json: input,
@@ -1222,19 +1089,16 @@ export function api(client: ApiClient) {
       if (opts?.kind) params.set("kind", opts.kind);
       if (opts?.limit) params.set("limit", String(opts.limit));
       const qs = params.toString();
-      return client.request<BodyPracticeRecord[]>(
-        `/api/v1/practice/body${qs ? `?${qs}` : ""}`,
-        { signal: opts?.signal },
-      );
+      return client.request<BodyPracticeRecord[]>(`/api/v1/practice/body${qs ? `?${qs}` : ""}`, {
+        signal: opts?.signal,
+      });
     },
 
-    createBanishingLog(
-      input: CreateBanishingLogInput,
-    ): Promise<BanishingLogRecord> {
-      return client.request<BanishingLogRecord>(
-        "/api/v1/practice/banishing",
-        { method: "POST", json: input },
-      );
+    createBanishingLog(input: CreateBanishingLogInput): Promise<BanishingLogRecord> {
+      return client.request<BanishingLogRecord>("/api/v1/practice/banishing", {
+        method: "POST",
+        json: input,
+      });
     },
 
     listBanishingLogs(opts?: {
@@ -1300,10 +1164,9 @@ export function api(client: ApiClient) {
     listPlanetarySquares(opts?: {
       signal?: AbortSignal;
     }): Promise<PlanetarySquareWire[]> {
-      return client.request<PlanetarySquareWire[]>(
-        "/api/v1/magic-squares/planetary",
-        { signal: opts?.signal },
-      );
+      return client.request<PlanetarySquareWire[]>("/api/v1/magic-squares/planetary", {
+        signal: opts?.signal,
+      });
     },
 
     listMagicSquares(opts?: {
@@ -1316,28 +1179,20 @@ export function api(client: ApiClient) {
       });
     },
 
-    getMagicSquare(
-      id: string,
-      opts?: { signal?: AbortSignal },
-    ): Promise<MagicSquareRecord> {
+    getMagicSquare(id: string, opts?: { signal?: AbortSignal }): Promise<MagicSquareRecord> {
       return client.request<MagicSquareRecord>(`/api/v1/magic-squares/${id}`, {
         signal: opts?.signal,
       });
     },
 
-    createMagicSquare(
-      input: CreateMagicSquareInput,
-    ): Promise<MagicSquareRecord> {
+    createMagicSquare(input: CreateMagicSquareInput): Promise<MagicSquareRecord> {
       return client.request<MagicSquareRecord>("/api/v1/magic-squares", {
         method: "POST",
         json: input,
       });
     },
 
-    updateMagicSquare(
-      id: string,
-      input: UpdateMagicSquareInput,
-    ): Promise<MagicSquareRecord> {
+    updateMagicSquare(id: string, input: UpdateMagicSquareInput): Promise<MagicSquareRecord> {
       return client.request<MagicSquareRecord>(`/api/v1/magic-squares/${id}`, {
         method: "PATCH",
         json: input,
@@ -1361,16 +1216,12 @@ export function api(client: ApiClient) {
       if (opts?.sealed !== undefined) params.set("sealed", String(opts.sealed));
       if (opts?.limit) params.set("limit", String(opts.limit));
       const qs = params.toString();
-      return client.request<TalismanRecord[]>(
-        `/api/v1/talismans${qs ? `?${qs}` : ""}`,
-        { signal: opts?.signal },
-      );
+      return client.request<TalismanRecord[]>(`/api/v1/talismans${qs ? `?${qs}` : ""}`, {
+        signal: opts?.signal,
+      });
     },
 
-    getTalisman(
-      id: string,
-      opts?: { signal?: AbortSignal },
-    ): Promise<TalismanRecord> {
+    getTalisman(id: string, opts?: { signal?: AbortSignal }): Promise<TalismanRecord> {
       return client.request<TalismanRecord>(`/api/v1/talismans/${id}`, {
         signal: opts?.signal,
       });
@@ -1383,10 +1234,7 @@ export function api(client: ApiClient) {
       });
     },
 
-    updateTalisman(
-      id: string,
-      input: UpdateTalismanInput,
-    ): Promise<TalismanRecord> {
+    updateTalisman(id: string, input: UpdateTalismanInput): Promise<TalismanRecord> {
       return client.request<TalismanRecord>(`/api/v1/talismans/${id}`, {
         method: "PATCH",
         json: input,
@@ -1399,10 +1247,7 @@ export function api(client: ApiClient) {
       });
     },
 
-    sealTalisman(
-      id: string,
-      payload: TalismanSealPayload,
-    ): Promise<TalismanRecord> {
+    sealTalisman(id: string, payload: TalismanSealPayload): Promise<TalismanRecord> {
       return client.request<TalismanRecord>(`/api/v1/talismans/${id}/seal`, {
         method: "POST",
         json: payload,
@@ -1410,10 +1255,9 @@ export function api(client: ApiClient) {
     },
 
     unsealTalisman(id: string): Promise<TalismanUnsealResponse> {
-      return client.request<TalismanUnsealResponse>(
-        `/api/v1/talismans/${id}/unseal`,
-        { method: "POST" },
-      );
+      return client.request<TalismanUnsealResponse>(`/api/v1/talismans/${id}/unseal`, {
+        method: "POST",
+      });
     },
 
     forkTalisman(id: string, input?: { name?: string }): Promise<TalismanRecord> {
@@ -1443,10 +1287,7 @@ export function api(client: ApiClient) {
       });
     },
 
-    getCircle(
-      id: string,
-      opts?: { signal?: AbortSignal },
-    ): Promise<CircleRecord> {
+    getCircle(id: string, opts?: { signal?: AbortSignal }): Promise<CircleRecord> {
       return client.request<CircleRecord>(`/api/v1/circles/${id}`, {
         signal: opts?.signal,
       });
@@ -1487,14 +1328,12 @@ export function api(client: ApiClient) {
     }): Promise<ToolRecordWire[]> {
       const params = new URLSearchParams();
       if (opts?.kind) params.set("kind", opts.kind);
-      if (opts?.consecrated !== undefined)
-        params.set("consecrated", String(opts.consecrated));
+      if (opts?.consecrated !== undefined) params.set("consecrated", String(opts.consecrated));
       if (opts?.limit) params.set("limit", String(opts.limit));
       const qs = params.toString();
-      return client.request<ToolRecordWire[]>(
-        `/api/v1/tools${qs ? `?${qs}` : ""}`,
-        { signal: opts?.signal },
-      );
+      return client.request<ToolRecordWire[]>(`/api/v1/tools${qs ? `?${qs}` : ""}`, {
+        signal: opts?.signal,
+      });
     },
 
     getTool(id: string, opts?: { signal?: AbortSignal }): Promise<ToolRecordWire> {
@@ -1521,10 +1360,7 @@ export function api(client: ApiClient) {
       return client.request<void>(`/api/v1/tools/${id}`, { method: "DELETE" });
     },
 
-    consecrateTool(
-      id: string,
-      payload: ConsecrateToolPayload,
-    ): Promise<ToolRecordWire> {
+    consecrateTool(id: string, payload: ConsecrateToolPayload): Promise<ToolRecordWire> {
       return client.request<ToolRecordWire>(`/api/v1/tools/${id}/consecrate`, {
         method: "POST",
         json: payload,
@@ -1545,10 +1381,9 @@ export function api(client: ApiClient) {
     },
 
     removeToolPhoto(toolId: string, uploadId: string): Promise<void> {
-      return client.request<void>(
-        `/api/v1/tools/${toolId}/photos/${uploadId}`,
-        { method: "DELETE" },
-      );
+      return client.request<void>(`/api/v1/tools/${toolId}/photos/${uploadId}`, {
+        method: "DELETE",
+      });
     },
 
     // ─── Phase 07 Workshop — Altars (B106) ──────────────────────────
@@ -1559,14 +1394,12 @@ export function api(client: ApiClient) {
       limit?: number;
     }): Promise<AltarRecordWire[]> {
       const params = new URLSearchParams();
-      if (opts?.is_permanent !== undefined)
-        params.set("is_permanent", String(opts.is_permanent));
+      if (opts?.is_permanent !== undefined) params.set("is_permanent", String(opts.is_permanent));
       if (opts?.limit) params.set("limit", String(opts.limit));
       const qs = params.toString();
-      return client.request<AltarRecordWire[]>(
-        `/api/v1/altars${qs ? `?${qs}` : ""}`,
-        { signal: opts?.signal },
-      );
+      return client.request<AltarRecordWire[]>(`/api/v1/altars${qs ? `?${qs}` : ""}`, {
+        signal: opts?.signal,
+      });
     },
 
     getAltar(id: string, opts?: { signal?: AbortSignal }): Promise<AltarRecordWire> {
@@ -1619,10 +1452,9 @@ export function api(client: ApiClient) {
       if (opts?.source_script) params.set("source_script", opts.source_script);
       if (opts?.limit) params.set("limit", String(opts.limit));
       const qs = params.toString();
-      return client.request<VoceRecordWire[]>(
-        `/api/v1/voces${qs ? `?${qs}` : ""}`,
-        { signal: opts?.signal },
-      );
+      return client.request<VoceRecordWire[]>(`/api/v1/voces${qs ? `?${qs}` : ""}`, {
+        signal: opts?.signal,
+      });
     },
 
     getVoce(id: string, opts?: { signal?: AbortSignal }): Promise<VoceRecordWire> {
@@ -1660,17 +1492,16 @@ export function api(client: ApiClient) {
       voceId: string,
       input: CreateVoceRecordingInput,
     ): Promise<VoceRecordingRecord> {
-      return client.request<VoceRecordingRecord>(
-        `/api/v1/voces/${voceId}/recordings`,
-        { method: "POST", json: input },
-      );
+      return client.request<VoceRecordingRecord>(`/api/v1/voces/${voceId}/recordings`, {
+        method: "POST",
+        json: input,
+      });
     },
 
     removeVoceRecording(voceId: string, recordingId: string): Promise<void> {
-      return client.request<void>(
-        `/api/v1/voces/${voceId}/recordings/${recordingId}`,
-        { method: "DELETE" },
-      );
+      return client.request<void>(`/api/v1/voces/${voceId}/recordings/${recordingId}`, {
+        method: "DELETE",
+      });
     },
 
     // ── Phase 16 · agents (H10 C-cluster) ────────────────────────────
@@ -1686,23 +1517,20 @@ export function api(client: ApiClient) {
       return client.request<AgentRunSnapshot>(`/api/v1/agents/runs/${runId}`);
     },
 
-    terminateAgentRun(
-      runId: string,
-    ): Promise<{ run_id: string; status: string }> {
-      return client.request<{ run_id: string; status: string }>(
-        `/api/v1/agents/runs/${runId}`,
-        { method: "DELETE" },
-      );
+    terminateAgentRun(runId: string): Promise<{ run_id: string; status: string }> {
+      return client.request<{ run_id: string; status: string }>(`/api/v1/agents/runs/${runId}`, {
+        method: "DELETE",
+      });
     },
 
     reportAgentRunCost(
       runId: string,
       sample: AgentRunCostSampleInput,
     ): Promise<AgentRunCostSnapshot> {
-      return client.request<AgentRunCostSnapshot>(
-        `/api/v1/agents/runs/${runId}/cost`,
-        { method: "POST", json: sample },
-      );
+      return client.request<AgentRunCostSnapshot>(`/api/v1/agents/runs/${runId}/cost`, {
+        method: "POST",
+        json: sample,
+      });
     },
 
     queryAgentAudit(params?: {
@@ -1712,10 +1540,8 @@ export function api(client: ApiClient) {
     }): Promise<AgentAuditQueryResponse> {
       const search = new URLSearchParams();
       if (params?.eventType) search.set("event_type", params.eventType);
-      if (params?.limit !== undefined)
-        search.set("limit", String(params.limit));
-      if (params?.offset !== undefined)
-        search.set("offset", String(params.offset));
+      if (params?.limit !== undefined) search.set("limit", String(params.limit));
+      if (params?.offset !== undefined) search.set("offset", String(params.offset));
       const query = search.toString();
       return client.request<AgentAuditQueryResponse>(
         `/api/v1/agents/audit${query ? `?${query}` : ""}`,
@@ -1743,19 +1569,15 @@ export function api(client: ApiClient) {
 
     // ── Agent installs (Phase 16) ─────────────────────────────────
 
-    createAgentInstall(
-      input: CreateAgentInstallInput,
-    ): Promise<AgentInstallSnapshot> {
-      return client.request<AgentInstallSnapshot>(
-        "/api/v1/agents/installs",
-        { method: "POST", json: input },
-      );
+    createAgentInstall(input: CreateAgentInstallInput): Promise<AgentInstallSnapshot> {
+      return client.request<AgentInstallSnapshot>("/api/v1/agents/installs", {
+        method: "POST",
+        json: input,
+      });
     },
 
     listAgentInstalls(): Promise<AgentInstallListResponse> {
-      return client.request<AgentInstallListResponse>(
-        "/api/v1/agents/installs",
-      );
+      return client.request<AgentInstallListResponse>("/api/v1/agents/installs");
     },
 
     getAgentInstall(installId: string): Promise<AgentInstallSnapshot> {
@@ -1787,10 +1609,7 @@ export function api(client: ApiClient) {
       );
     },
 
-    readInstallMemory(
-      installId: string,
-      name: string,
-    ): Promise<MemoryFileContent> {
+    readInstallMemory(installId: string, name: string): Promise<MemoryFileContent> {
       return client.request<MemoryFileContent>(
         `/api/v1/agents/installs/${encodeURIComponent(installId)}/memory/${encodeURIComponent(name)}`,
       );
@@ -1810,16 +1629,14 @@ export function api(client: ApiClient) {
     // ── Registry author (H10 A2-A4 + A8) ──────────────────────────
 
     submitPlugin(input: SubmitPluginInput): Promise<RegistrySubmission> {
-      return client.request<RegistrySubmission>(
-        "/api/v1/registry/author/submissions",
-        { method: "POST", json: input },
-      );
+      return client.request<RegistrySubmission>("/api/v1/registry/author/submissions", {
+        method: "POST",
+        json: input,
+      });
     },
 
     listMySubmissions(): Promise<RegistrySubmissionListResponse> {
-      return client.request<RegistrySubmissionListResponse>(
-        "/api/v1/registry/author/submissions",
-      );
+      return client.request<RegistrySubmissionListResponse>("/api/v1/registry/author/submissions");
     },
 
     getMySubmission(submissionId: string): Promise<RegistrySubmission> {
@@ -1829,18 +1646,16 @@ export function api(client: ApiClient) {
     },
 
     fileAdvisory(input: FileAdvisoryInput): Promise<RegistryAdvisory> {
-      return client.request<RegistryAdvisory>(
-        "/api/v1/registry/author/advisories",
-        { method: "POST", json: input },
-      );
+      return client.request<RegistryAdvisory>("/api/v1/registry/author/advisories", {
+        method: "POST",
+        json: input,
+      });
     },
 
     // ── Registry maintainer (H10 A5-A7) ───────────────────────────
 
     reviewQueue(): Promise<MaintainerQueueResponse> {
-      return client.request<MaintainerQueueResponse>(
-        "/api/v1/registry/maintainer/queue",
-      );
+      return client.request<MaintainerQueueResponse>("/api/v1/registry/maintainer/queue");
     },
 
     takeSubmission(submissionId: string): Promise<Record<string, unknown>> {
@@ -1860,10 +1675,7 @@ export function api(client: ApiClient) {
       );
     },
 
-    promotePlugin(
-      pluginId: string,
-      input: PromotePluginInput,
-    ): Promise<Record<string, unknown>> {
+    promotePlugin(pluginId: string, input: PromotePluginInput): Promise<Record<string, unknown>> {
       return client.request<Record<string, unknown>>(
         `/api/v1/registry/maintainer/plugins/${encodeURIComponent(pluginId)}/promote`,
         { method: "POST", json: input },
@@ -1883,10 +1695,7 @@ export function api(client: ApiClient) {
     },
 
     scheduleAccountDeletion(): Promise<DeletionScheduledRead> {
-      return client.request<DeletionScheduledRead>(
-        "/api/v1/me/account/delete",
-        { method: "POST" },
-      );
+      return client.request<DeletionScheduledRead>("/api/v1/me/account/delete", { method: "POST" });
     },
 
     reactivateAccount(): Promise<MeRead> {
@@ -1898,24 +1707,18 @@ export function api(client: ApiClient) {
     listMyAudit(input: MyAuditQueryInput = {}): Promise<MyAuditListResponse> {
       const params = new URLSearchParams();
       if (input.kind && input.kind !== "all") params.set("kind", input.kind);
-      if (input.action && input.action !== "all")
-        params.set("action", input.action);
+      if (input.action && input.action !== "all") params.set("action", input.action);
       if (input.time_range) params.set("time_range", input.time_range);
-      if (typeof input.limit === "number")
-        params.set("limit", String(input.limit));
-      if (typeof input.offset === "number")
-        params.set("offset", String(input.offset));
+      if (typeof input.limit === "number") params.set("limit", String(input.limit));
+      if (typeof input.offset === "number") params.set("offset", String(input.offset));
       const qs = params.toString();
-      return client.request<MyAuditListResponse>(
-        `/api/v1/me/audit${qs ? `?${qs}` : ""}`,
-      );
+      return client.request<MyAuditListResponse>(`/api/v1/me/audit${qs ? `?${qs}` : ""}`);
     },
 
     myAuditCsvUrl(input: MyAuditQueryInput = {}): string {
       const params = new URLSearchParams();
       if (input.kind && input.kind !== "all") params.set("kind", input.kind);
-      if (input.action && input.action !== "all")
-        params.set("action", input.action);
+      if (input.action && input.action !== "all") params.set("action", input.action);
       if (input.time_range) params.set("time_range", input.time_range);
       const qs = params.toString();
       return `/api/v1/me/audit.csv${qs ? `?${qs}` : ""}`;
@@ -1926,17 +1729,15 @@ export function api(client: ApiClient) {
     },
 
     revokeMySession(sessionId: string): Promise<void> {
-      return client.request<void>(
-        `/api/v1/me/sessions/${encodeURIComponent(sessionId)}`,
-        { method: "DELETE" },
-      );
+      return client.request<void>(`/api/v1/me/sessions/${encodeURIComponent(sessionId)}`, {
+        method: "DELETE",
+      });
     },
 
     revokeOtherSessions(): Promise<MySessionsListResponse> {
-      return client.request<MySessionsListResponse>(
-        "/api/v1/me/sessions/revoke-others",
-        { method: "POST" },
-      );
+      return client.request<MySessionsListResponse>("/api/v1/me/sessions/revoke-others", {
+        method: "POST",
+      });
     },
   };
 }

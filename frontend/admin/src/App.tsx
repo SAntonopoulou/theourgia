@@ -11,6 +11,7 @@
  * ``<VaultNav active=…>`` so the design's inset-accent highlight follows.
  */
 
+import { QueryClientProvider } from "@tanstack/react-query";
 import {
   ActingAsProvider,
   ActingAsSwitcher,
@@ -20,17 +21,16 @@ import {
   type NavKey,
   ToastProvider,
   TopbarProvider,
-  useAuth,
   VaultNav,
   type VaultNavLinkProps,
   VaultTopbar,
+  useAuth,
 } from "@theourgia/shared";
-import { QueryClientProvider } from "@tanstack/react-query";
 import { Suspense, lazy } from "react";
 import {
   BrowserRouter,
-  Navigate,
   NavLink,
+  Navigate,
   Route,
   Routes,
   useLocation,
@@ -38,16 +38,16 @@ import {
 } from "react-router-dom";
 
 import { apiMethods } from "./data/api.js";
-import { queryClient } from "./lib/queryClient.js";
 import { SurfaceSkeleton } from "./lib/SurfaceSkeleton.js";
+import { queryClient } from "./lib/queryClient.js";
 
 // Eager: home route (/), auth surface, and PWA start_url. Flashing a
 // spinner on any of these three would hurt UX; everything else is
 // lazy-loaded so Vite can code-split each route into its own chunk
 // (b108-2ge — follow-up to the vendor-chunk split in b108-2cp).
 import { Capture } from "./routes/Capture.js";
-import { SignInRoute } from "./routes/SignInRoute.js";
 import { SetupWizardRoute } from "./routes/SetupWizardRoute.js";
+import { SignInRoute } from "./routes/SignInRoute.js";
 import { Today } from "./routes/Today.js";
 
 // Lazy: every other surface. Route modules use NAMED exports, so the
@@ -138,9 +138,7 @@ const RunesRoute = lazy(() =>
 const TarotRoute = lazy(() =>
   import("./routes/TarotRoute.js").then((m) => ({ default: m.TarotRoute })),
 );
-const Entities = lazy(() =>
-  import("./routes/Entities.js").then((m) => ({ default: m.Entities })),
-);
+const Entities = lazy(() => import("./routes/Entities.js").then((m) => ({ default: m.Entities })));
 const FamilyTreeRoute = lazy(() =>
   import("./routes/FamilyTreeRoute.js").then((m) => ({
     default: m.FamilyTreeRoute,
@@ -405,12 +403,8 @@ const VulnerabilityAdvisorySubmitRoute = lazy(() =>
     default: m.VulnerabilityAdvisorySubmitRoute,
   })),
 );
-const Editor = lazy(() =>
-  import("./routes/Editor.js").then((m) => ({ default: m.Editor })),
-);
-const Health = lazy(() =>
-  import("./routes/Health.js").then((m) => ({ default: m.Health })),
-);
+const Editor = lazy(() => import("./routes/Editor.js").then((m) => ({ default: m.Editor })));
+const Health = lazy(() => import("./routes/Health.js").then((m) => ({ default: m.Health })));
 const Identities = lazy(() =>
   import("./routes/Identities.js").then((m) => ({ default: m.Identities })),
 );
@@ -419,23 +413,20 @@ const LineageAdmin = lazy(() =>
     default: m.LineageAdmin,
   })),
 );
-const Oracle = lazy(() =>
-  import("./routes/Oracle.js").then((m) => ({ default: m.Oracle })),
-);
+const Oracle = lazy(() => import("./routes/Oracle.js").then((m) => ({ default: m.Oracle })));
 const Templates = lazy(() =>
   import("./routes/Templates.js").then((m) => ({ default: m.Templates })),
 );
 const Wellbeing = lazy(() =>
   import("./routes/Wellbeing.js").then((m) => ({ default: m.Wellbeing })),
 );
-const Workshop = lazy(() =>
-  import("./routes/Workshop.js").then((m) => ({ default: m.Workshop })),
-);
-const Journal = lazy(() =>
-  import("./routes/Journal.js").then((m) => ({ default: m.Journal })),
-);
-const Library = lazy(() =>
-  import("./routes/Library.js").then((m) => ({ default: m.Library })),
+const Workshop = lazy(() => import("./routes/Workshop.js").then((m) => ({ default: m.Workshop })));
+const Journal = lazy(() => import("./routes/Journal.js").then((m) => ({ default: m.Journal })));
+const Library = lazy(() => import("./routes/Library.js").then((m) => ({ default: m.Library })));
+const BindRuneRoute = lazy(() =>
+  import("./routes/BindRuneRoute.js").then((m) => ({
+    default: m.BindRuneRoute,
+  })),
 );
 const MagicalCircleRoute = lazy(() =>
   import("./routes/MagicalCircleRoute.js").then((m) => ({
@@ -538,9 +529,7 @@ const SigilGeneratorRoute = lazy(() =>
 const RitualFeed = lazy(() =>
   import("./routes/RitualFeed.js").then((m) => ({ default: m.RitualFeed })),
 );
-const Settings = lazy(() =>
-  import("./routes/Settings.js").then((m) => ({ default: m.Settings })),
-);
+const Settings = lazy(() => import("./routes/Settings.js").then((m) => ({ default: m.Settings })));
 const AccountSettingsRoute = lazy(() =>
   import("./routes/AccountSettingsRoute.js").then((m) => ({
     default: m.AccountSettingsRoute,
@@ -610,11 +599,9 @@ function navKeyForPath(pathname: string): NavKey | undefined {
   if (pathname.startsWith("/library")) return "library";
   if (pathname.startsWith("/calendar")) return "calendar";
   if (pathname.startsWith("/divination")) return "divination";
-  if (pathname.startsWith("/sigils") || pathname.startsWith("/sigil"))
-    return "sigils";
+  if (pathname.startsWith("/sigils") || pathname.startsWith("/sigil")) return "sigils";
   if (pathname.startsWith("/magic-squares")) return "magicsquares";
-  if (pathname.startsWith("/circles") || pathname.startsWith("/circle"))
-    return "circles";
+  if (pathname.startsWith("/circles") || pathname.startsWith("/circle")) return "circles";
   if (pathname.startsWith("/talisman")) return "talismans";
   if (pathname.startsWith("/tools")) return "tools";
   if (pathname.startsWith("/voces")) return "voces";
@@ -654,10 +641,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   // (SignIn / Connection pre-auth screens).
   const navIdentity = auth.session
     ? {
-        name:
-          auth.session.magickal_name ||
-          auth.session.display_name ||
-          "Practitioner",
+        name: auth.session.magickal_name || auth.session.display_name || "Practitioner",
         role: "Practitioner",
       }
     : { name: "Practitioner", role: "This vault" };
@@ -671,10 +655,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         {
           id: auth.session.user_id,
           vaultId: auth.session.vault_id ?? auth.session.user_id,
-          name:
-            auth.session.magickal_name ||
-            auth.session.display_name ||
-            "Practitioner",
+          name: auth.session.magickal_name || auth.session.display_name || "Practitioner",
           bio: "",
           glyph: undefined,
           glyphTone: "accent" as const,
@@ -732,13 +713,7 @@ function RequireSession({ children }: { children: React.ReactNode }) {
     return <SurfaceSkeleton rowCount={4} />;
   }
   if (status === "unauthenticated") {
-    return (
-      <Navigate
-        to="/signin"
-        replace
-        state={{ from: location.pathname + location.search }}
-      />
-    );
+    return <Navigate to="/signin" replace state={{ from: location.pathname + location.search }} />;
   }
   return <>{children}</>;
 }
@@ -778,220 +753,161 @@ function ShellRoutes() {
         <Suspense fallback={<SurfaceSkeleton rowCount={4} />}>
           <Routes>
             <Route path="/" element={<Today />} />
-          <Route path="/connection" element={<Connection />} />
-          <Route path="/journal" element={<Journal />} />
-          <Route path="/library" element={<Library />} />
-          <Route path="/synchronicities" element={<SynchronicityLogRoute />} />
-          <Route path="/daily-practice" element={<DailyPracticeRoute />} />
-          <Route path="/practice-logs" element={<PracticeLogsRoute />} />
-          <Route path="/entities" element={<Entities />} />
-          <Route path="/family-tree" element={<FamilyTreeRoute />} />
-          <Route path="/deck-designer" element={<DeckDesignerRoute />} />
-          <Route path="/recipes" element={<RecipesRoute />} />
-          <Route path="/pilgrimage-routes" element={<PilgrimageRoutesRoute />} />
-          <Route path="/memorial-mode" element={<MemorialModeRoute />} />
-          <Route path="/settings/password" element={<AccountPasswordRoute />} />
-          <Route
-            path="/calendar"
-            element={
-              <Placeholder
-                glyph="moon"
-                title="Calendar"
-                body="Multi-tradition calendar — feasts, planetary days, lunation arc. The dedicated .dc.html for this surface hasn't shipped from the design hand-off yet; Scheduler covers content publishing, not the magickal calendar."
-              />
-            }
-          />
-          <Route path="/divination" element={<Divination />} />
-          <Route path="/divination/tarot" element={<TarotRoute />} />
-          <Route path="/divination/iching" element={<IChingRoute />} />
-          <Route path="/divination/geomancy" element={<GeomancyRoute />} />
-          <Route path="/divination/runes" element={<RunesRoute />} />
-          <Route path="/divination/more" element={<DivinationMiscRoute />} />
-          <Route path="/sigils" element={<SigilGeneratorRoute />} />
-          <Route path="/magic-squares" element={<MagicSquaresRoute />} />
-          <Route path="/circles" element={<MagicalCircleRoute />} />
-          <Route path="/talismans" element={<TalismanDesignerRoute />} />
-          <Route path="/tools" element={<ToolRegistryRoute />} />
-          <Route path="/voces" element={<VocesMagicaeRoute />} />
-          <Route path="/gematria" element={<GematriaCalculatorRoute />} />
-          <Route
-            path="/gematria/search"
-            element={<CrossJournalSearchRoute />}
-          />
-          <Route path="/studies" element={<StudiesIndexRoute />} />
-          <Route path="/studies/:id" element={<PerStudyPageRoute />} />
-          <Route path="/query" element={<QueryBuilderRoute />} />
-          <Route path="/voces-library" element={<VocesLibraryRoute />} />
-          <Route path="/publications" element={<PublicationsRoute />} />
-          <Route
-            path="/publications/:id/edit"
-            element={<PublicationEditorRoute />}
-          />
-          <Route path="/publication-editor" element={<PublicationEditorRoute />} />
-          <Route
-            path="/publications/:id/settings"
-            element={<PublicationSettingsRoute />}
-          />
-          <Route
-            path="/publication-settings"
-            element={<PublicationSettingsRoute />}
-          />
-          <Route
-            path="/publications/:id/print-preview"
-            element={<PublicationPrintPreviewRoute />}
-          />
-          <Route
-            path="/publications/:id/pricing"
-            element={<PricingDistributionRoute />}
-          />
-          <Route
-            path="/pricing-distribution"
-            element={<PricingDistributionRoute />}
-          />
-          <Route
-            path="/subscription-tiers"
-            element={<SubscriptionTiersRoute />}
-          />
-          <Route path="/subscribers" element={<SubscribersRoute />} />
-          <Route
-            path="/newsletter-editor"
-            element={<NewsletterEditorRoute />}
-          />
-          <Route
-            path="/newsletters/:id/edit"
-            element={<NewsletterEditorRoute />}
-          />
-          <Route path="/audio" element={<AudioLibraryRoute />} />
-          <Route path="/icalfeed" element={<ICalFeedRoute />} />
-          <Route path="/pilgrimage" element={<PilgrimageMapRoute />} />
-          <Route path="/media" element={<MediaLibraryRoute />} />
-          <Route path="/media/:id" element={<MediaDetailRoute />} />
-          <Route path="/analytics" element={<AnalyticsDashboardRoute />} />
-          <Route path="/feed" element={<RitualFeed />} />
-          {/* H08 — Network section routes. Cluster A surfaces land one per
+            <Route path="/connection" element={<Connection />} />
+            <Route path="/journal" element={<Journal />} />
+            <Route path="/library" element={<Library />} />
+            <Route path="/synchronicities" element={<SynchronicityLogRoute />} />
+            <Route path="/daily-practice" element={<DailyPracticeRoute />} />
+            <Route path="/practice-logs" element={<PracticeLogsRoute />} />
+            <Route path="/entities" element={<Entities />} />
+            <Route path="/family-tree" element={<FamilyTreeRoute />} />
+            <Route path="/deck-designer" element={<DeckDesignerRoute />} />
+            <Route path="/recipes" element={<RecipesRoute />} />
+            <Route path="/pilgrimage-routes" element={<PilgrimageRoutesRoute />} />
+            <Route path="/memorial-mode" element={<MemorialModeRoute />} />
+            <Route path="/settings/password" element={<AccountPasswordRoute />} />
+            <Route
+              path="/calendar"
+              element={
+                <Placeholder
+                  glyph="moon"
+                  title="Calendar"
+                  body="Multi-tradition calendar — feasts, planetary days, lunation arc. The dedicated .dc.html for this surface hasn't shipped from the design hand-off yet; Scheduler covers content publishing, not the magickal calendar."
+                />
+              }
+            />
+            <Route path="/divination" element={<Divination />} />
+            <Route path="/divination/tarot" element={<TarotRoute />} />
+            <Route path="/divination/iching" element={<IChingRoute />} />
+            <Route path="/divination/geomancy" element={<GeomancyRoute />} />
+            <Route path="/divination/runes" element={<RunesRoute />} />
+            <Route path="/divination/more" element={<DivinationMiscRoute />} />
+            <Route path="/sigils" element={<SigilGeneratorRoute />} />
+            <Route path="/magic-squares" element={<MagicSquaresRoute />} />
+            <Route path="/bind-rune" element={<BindRuneRoute />} />
+            <Route path="/circles" element={<MagicalCircleRoute />} />
+            <Route path="/talismans" element={<TalismanDesignerRoute />} />
+            <Route path="/tools" element={<ToolRegistryRoute />} />
+            <Route path="/voces" element={<VocesMagicaeRoute />} />
+            <Route path="/gematria" element={<GematriaCalculatorRoute />} />
+            <Route path="/gematria/search" element={<CrossJournalSearchRoute />} />
+            <Route path="/studies" element={<StudiesIndexRoute />} />
+            <Route path="/studies/:id" element={<PerStudyPageRoute />} />
+            <Route path="/query" element={<QueryBuilderRoute />} />
+            <Route path="/voces-library" element={<VocesLibraryRoute />} />
+            <Route path="/publications" element={<PublicationsRoute />} />
+            <Route path="/publications/:id/edit" element={<PublicationEditorRoute />} />
+            <Route path="/publication-editor" element={<PublicationEditorRoute />} />
+            <Route path="/publications/:id/settings" element={<PublicationSettingsRoute />} />
+            <Route path="/publication-settings" element={<PublicationSettingsRoute />} />
+            <Route
+              path="/publications/:id/print-preview"
+              element={<PublicationPrintPreviewRoute />}
+            />
+            <Route path="/publications/:id/pricing" element={<PricingDistributionRoute />} />
+            <Route path="/pricing-distribution" element={<PricingDistributionRoute />} />
+            <Route path="/subscription-tiers" element={<SubscriptionTiersRoute />} />
+            <Route path="/subscribers" element={<SubscribersRoute />} />
+            <Route path="/newsletter-editor" element={<NewsletterEditorRoute />} />
+            <Route path="/newsletters/:id/edit" element={<NewsletterEditorRoute />} />
+            <Route path="/audio" element={<AudioLibraryRoute />} />
+            <Route path="/icalfeed" element={<ICalFeedRoute />} />
+            <Route path="/pilgrimage" element={<PilgrimageMapRoute />} />
+            <Route path="/media" element={<MediaLibraryRoute />} />
+            <Route path="/media/:id" element={<MediaDetailRoute />} />
+            <Route path="/analytics" element={<AnalyticsDashboardRoute />} />
+            <Route path="/feed" element={<RitualFeed />} />
+            {/* H08 — Network section routes. Cluster A surfaces land one per
               batch; My Networks is in. The legacy `/hubs` URL still
               resolves (now to the same surface) so any external bookmarks
               stay alive while the rest of Cluster A ships. */}
-          <Route path="/networks" element={<MyNetworks />} />
-          <Route path="/networks/peers" element={<NetworkBrowser />} />
-          <Route path="/networks/discover" element={<HubDiscovery />} />
-          <Route path="/hubs" element={<MyNetworks />} />
-          <Route
-            path="/hubs/:hubId/admin"
-            element={<HubAdminDashboard />}
-          />
-          <Route
-            path="/hubs/:hubId/admin/roles"
-            element={<RolesPermissionsEditor />}
-          />
-          <Route
-            path="/hubs/:hubId/admin/audit"
-            element={<FederationAuditLog />}
-          />
-          <Route
-            path="/hubs/:hubId/newsletter"
-            element={<HubNewsletterComposer />}
-          />
-          <Route
-            path="/hubs/:hubId"
-            element={<HubMemberDashboard />}
-          />
-          <Route path="/hub/:slug" element={<HubPublicFace />} />
-          <Route path="/private-viewers" element={<PrivateViewers />} />
-          <Route
-            path="/settings/activitypub"
-            element={<ActivityPubSettings />}
-          />
-          <Route path="/followers" element={<Followers />} />
-          <Route path="/verify" element={<WebFingerVerify />} />
-          {/* H09 — Platform section */}
-          <Route path="/plugins" element={<InstalledPlugins />} />
-          <Route path="/plugins/status" element={<PluginStatus />} />
-          <Route
-            path="/plugins/registry"
-            element={<RegistryBrowserRoute />}
-          />
-          <Route
-            path="/plugins/registry/:id"
-            element={<RegistryPluginDetail />}
-          />
-          <Route
-            path="/plugins/authors/:did"
-            element={<PluginAuthorProfile />}
-          />
-          <Route
-            path="/plugins/:id/configure"
-            element={<PluginConfiguration />}
-          />
-          <Route path="/plugins/:id" element={<PluginDetail />} />
-          <Route path="/bundles" element={<BundleLibrary />} />
-          <Route path="/bundles/:id" element={<BundleDetail />} />
-          <Route path="/sandbox" element={<SandboxBrowserRoute />} />
-          <Route path="/sandbox/:id" element={<SandboxDetail />} />
-          <Route
-            path="/group-rituals/:id/run"
-            element={<GroupRitualCoordination />}
-          />
-          <Route
-            path="/group-rituals/new"
-            element={<GroupRitualScheduler />}
-          />
-          <Route
-            path="/group-rituals/:id"
-            element={<GroupRitualPostMortem />}
-          />
-          <Route path="/identities" element={<Identities />} />
-          <Route path="/lineage" element={<LineageAdmin />} />
-          <Route path="/wellbeing" element={<Wellbeing />} />
-          <Route path="/agents-home" element={<AgentsHomeRoute />} />
-          <Route path="/agents/runs/:runId" element={<AgentRunMonitorRoute />} />
-          <Route path="/agents-activity" element={<AgentActivityLogRoute />} />
-          <Route path="/agents-cost" element={<AgentCostDashboardRoute />} />
-          <Route path="/agents/:installId/compose" element={<AgentTaskComposerRoute />} />
-          <Route path="/agents/runs/:runId/transcript" element={<AgentTranscriptViewerRoute />} />
-          <Route path="/agents-marketplace" element={<AgentMarketplaceRoute />} />
-          <Route path="/registry" element={<RegistryPublicHomeRoute />} />
-          <Route path="/agents-marketplace/:agentSlug" element={<AgentInstallRoute />} />
-          <Route path="/agents/:installId/trust" element={<AgentTrustReviewRoute />} />
-          <Route path="/agents/:installId/capabilities" element={<AgentCapabilityReviewRoute />} />
-          <Route path="/agents-keys" element={<AgentByoKeySettingsRoute />} />
-          <Route path="/agents/:installId/memory" element={<AgentMemoryReaderRoute />} />
-          <Route path="/registry/submit" element={<PluginSubmissionFormRoute />} />
-          <Route path="/registry/submissions" element={<PluginSubmissionListRoute />} />
-          <Route path="/registry/submissions/:submissionId" element={<PluginSubmissionDetailRoute />} />
-          <Route path="/registry/review" element={<RegistryReviewQueueRoute />} />
-          <Route path="/registry/review/:submissionId" element={<RegistryReviewDetailRoute />} />
-          <Route path="/registry/promote/:pluginId" element={<TierPromotionRoute />} />
-          <Route path="/registry/advisory" element={<VulnerabilityAdvisorySubmitRoute />} />
-          <Route path="/editor" element={<Editor />} />
-          <Route path="/editor/:id" element={<Editor />} />
-          <Route path="/templates" element={<Templates />} />
-          <Route path="/health" element={<Health />} />
-          <Route path="/workshop" element={<Workshop />} />
-          <Route path="/oracle" element={<Oracle />} />
-          <Route path="/transliterations" element={<TransliterationUtilityRoute />} />
-          <Route path="/settings" element={<AccountSettingsRoute />} />
-          <Route path="/settings/data-export" element={<DataExportRequestRoute />} />
-          <Route path="/settings/delete-account" element={<AccountDeletionRoute />} />
-          <Route path="/settings/audit" element={<PerUserAuditLogRoute />} />
-          <Route path="/settings/sessions" element={<SessionsAndDevicesRoute />} />
-          <Route path="/settings/accessibility" element={<AccessibilityAndMotionRoute />} />
-          <Route path="/settings/preferences" element={<Settings />} />
-          <Route path="/comments-moderation" element={<CommentModerationRoute />} />
-          <Route path="/settings/keys" element={<KeyRotationRoute />} />
-          <Route path="/settings/webauthn" element={<WebAuthnEnrollmentRoute />} />
-          <Route path="/settings/totp" element={<TotpEnrollmentRoute />} />
-          <Route path="/foundations" element={<Foundations />} />
-          <Route
-            path="*"
-            element={
-              <Placeholder
-                glyph="compass"
-                title="Lost"
-                body="This route does not exist yet. Use the navigation to find your way back."
-              />
-            }
-          />
+            <Route path="/networks" element={<MyNetworks />} />
+            <Route path="/networks/peers" element={<NetworkBrowser />} />
+            <Route path="/networks/discover" element={<HubDiscovery />} />
+            <Route path="/hubs" element={<MyNetworks />} />
+            <Route path="/hubs/:hubId/admin" element={<HubAdminDashboard />} />
+            <Route path="/hubs/:hubId/admin/roles" element={<RolesPermissionsEditor />} />
+            <Route path="/hubs/:hubId/admin/audit" element={<FederationAuditLog />} />
+            <Route path="/hubs/:hubId/newsletter" element={<HubNewsletterComposer />} />
+            <Route path="/hubs/:hubId" element={<HubMemberDashboard />} />
+            <Route path="/hub/:slug" element={<HubPublicFace />} />
+            <Route path="/private-viewers" element={<PrivateViewers />} />
+            <Route path="/settings/activitypub" element={<ActivityPubSettings />} />
+            <Route path="/followers" element={<Followers />} />
+            <Route path="/verify" element={<WebFingerVerify />} />
+            {/* H09 — Platform section */}
+            <Route path="/plugins" element={<InstalledPlugins />} />
+            <Route path="/plugins/status" element={<PluginStatus />} />
+            <Route path="/plugins/registry" element={<RegistryBrowserRoute />} />
+            <Route path="/plugins/registry/:id" element={<RegistryPluginDetail />} />
+            <Route path="/plugins/authors/:did" element={<PluginAuthorProfile />} />
+            <Route path="/plugins/:id/configure" element={<PluginConfiguration />} />
+            <Route path="/plugins/:id" element={<PluginDetail />} />
+            <Route path="/bundles" element={<BundleLibrary />} />
+            <Route path="/bundles/:id" element={<BundleDetail />} />
+            <Route path="/sandbox" element={<SandboxBrowserRoute />} />
+            <Route path="/sandbox/:id" element={<SandboxDetail />} />
+            <Route path="/group-rituals/:id/run" element={<GroupRitualCoordination />} />
+            <Route path="/group-rituals/new" element={<GroupRitualScheduler />} />
+            <Route path="/group-rituals/:id" element={<GroupRitualPostMortem />} />
+            <Route path="/identities" element={<Identities />} />
+            <Route path="/lineage" element={<LineageAdmin />} />
+            <Route path="/wellbeing" element={<Wellbeing />} />
+            <Route path="/agents-home" element={<AgentsHomeRoute />} />
+            <Route path="/agents/runs/:runId" element={<AgentRunMonitorRoute />} />
+            <Route path="/agents-activity" element={<AgentActivityLogRoute />} />
+            <Route path="/agents-cost" element={<AgentCostDashboardRoute />} />
+            <Route path="/agents/:installId/compose" element={<AgentTaskComposerRoute />} />
+            <Route path="/agents/runs/:runId/transcript" element={<AgentTranscriptViewerRoute />} />
+            <Route path="/agents-marketplace" element={<AgentMarketplaceRoute />} />
+            <Route path="/registry" element={<RegistryPublicHomeRoute />} />
+            <Route path="/agents-marketplace/:agentSlug" element={<AgentInstallRoute />} />
+            <Route path="/agents/:installId/trust" element={<AgentTrustReviewRoute />} />
+            <Route
+              path="/agents/:installId/capabilities"
+              element={<AgentCapabilityReviewRoute />}
+            />
+            <Route path="/agents-keys" element={<AgentByoKeySettingsRoute />} />
+            <Route path="/agents/:installId/memory" element={<AgentMemoryReaderRoute />} />
+            <Route path="/registry/submit" element={<PluginSubmissionFormRoute />} />
+            <Route path="/registry/submissions" element={<PluginSubmissionListRoute />} />
+            <Route
+              path="/registry/submissions/:submissionId"
+              element={<PluginSubmissionDetailRoute />}
+            />
+            <Route path="/registry/review" element={<RegistryReviewQueueRoute />} />
+            <Route path="/registry/review/:submissionId" element={<RegistryReviewDetailRoute />} />
+            <Route path="/registry/promote/:pluginId" element={<TierPromotionRoute />} />
+            <Route path="/registry/advisory" element={<VulnerabilityAdvisorySubmitRoute />} />
+            <Route path="/editor" element={<Editor />} />
+            <Route path="/editor/:id" element={<Editor />} />
+            <Route path="/templates" element={<Templates />} />
+            <Route path="/health" element={<Health />} />
+            <Route path="/workshop" element={<Workshop />} />
+            <Route path="/oracle" element={<Oracle />} />
+            <Route path="/transliterations" element={<TransliterationUtilityRoute />} />
+            <Route path="/settings" element={<AccountSettingsRoute />} />
+            <Route path="/settings/data-export" element={<DataExportRequestRoute />} />
+            <Route path="/settings/delete-account" element={<AccountDeletionRoute />} />
+            <Route path="/settings/audit" element={<PerUserAuditLogRoute />} />
+            <Route path="/settings/sessions" element={<SessionsAndDevicesRoute />} />
+            <Route path="/settings/accessibility" element={<AccessibilityAndMotionRoute />} />
+            <Route path="/settings/preferences" element={<Settings />} />
+            <Route path="/comments-moderation" element={<CommentModerationRoute />} />
+            <Route path="/settings/keys" element={<KeyRotationRoute />} />
+            <Route path="/settings/webauthn" element={<WebAuthnEnrollmentRoute />} />
+            <Route path="/settings/totp" element={<TotpEnrollmentRoute />} />
+            <Route path="/foundations" element={<Foundations />} />
+            <Route
+              path="*"
+              element={
+                <Placeholder
+                  glyph="compass"
+                  title="Lost"
+                  body="This route does not exist yet. Use the navigation to find your way back."
+                />
+              }
+            />
           </Routes>
         </Suspense>
       </Shell>

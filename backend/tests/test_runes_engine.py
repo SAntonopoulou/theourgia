@@ -208,10 +208,12 @@ def test_runeset_by_value_lookup() -> None:
 
 
 def test_runeset_by_value_unknown_raises() -> None:
-    with pytest.raises(KeyError):
-        # NORTHUMBRIAN is the last not-yet-bundled set. YOUNGER (b108-2ho),
-        # FUTHORC (b108-2hp), and ARMANEN (b108-2hq) all now bundled.
-        runeset_by_value(RuneSet.NORTHUMBRIAN)
+    # All five RuneSet members now bundle (YOUNGER b108-2ho, FUTHORC
+    # b108-2hp, ARMANEN b108-2hq, NORTHUMBRIAN v1-007), so the unknown
+    # path is a non-member string — the enum constructor raises
+    # ValueError before the bundle lookup.
+    with pytest.raises(ValueError, match="not_a_rune_set"):
+        runeset_by_value("not_a_rune_set")
 
 
 # ───── Integration with bundle ───────────────────────────────────────

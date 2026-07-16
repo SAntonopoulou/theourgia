@@ -5,9 +5,11 @@ b108-2ho · FEATURES §13 (reference plugin: Norse runes extended).
 Bundles ship one alphabet at a time so each stays reviewable:
 
 - Younger Futhark (Long Branch) — 16 runes, c. 800-1100 CE
-- Anglo-Saxon Futhorc — coming in a follow-up batch (33 runes)
-- Armanen — coming in a follow-up batch (18 runes, Guido von List 1902)
-- Northumbrian — coming in a follow-up batch (33 runes)
+- Anglo-Saxon Futhorc — 33 runes, c. 5th-11th centuries
+- Armanen — 18 runes (Guido von List 1902, modern reconstruction)
+- Northumbrian — the Futhorc's 33-rune row presented as the
+  standalone Northumbrian tradition (derived from the Futhorc
+  bundle — no rune data is duplicated)
 
 The engine accepts any rune set of any size, so adding a bundle
 is purely a data authoring step; no engine changes needed.
@@ -21,7 +23,12 @@ from theourgia.core.divination.runes.bundles import (
 )
 from theourgia.core.divination.runes.engine import RuneSet
 
-__all__ = ["ANGLO_SAXON_FUTHORC", "ARMANEN_RUNES", "YOUNGER_FUTHARK"]
+__all__ = [
+    "ANGLO_SAXON_FUTHORC",
+    "ARMANEN_RUNES",
+    "NORTHUMBRIAN_RUNES",
+    "YOUNGER_FUTHARK",
+]
 
 
 # ───── Younger Futhark (Long Branch variant) ────────────────────────
@@ -301,7 +308,7 @@ YOUNGER_FUTHARK: BuiltinRuneSet = BuiltinRuneSet(
 # Elder Futhark with runes for Old English phonology (Ac, Æsc, Yr,
 # Ior, Ear) and later adds regional variants for the Northumbrian
 # expansion (Cweorð, Calc, Stan, Gar) — those latter four also
-# appear in the separate NORTHUMBRIAN bundle when it lands.
+# anchor the standalone NORTHUMBRIAN_RUNES bundle below.
 #
 # Meanings for the first 24 track Elder Futhark closely but with
 # Old English names and specifically Anglo-Saxon associations
@@ -671,4 +678,37 @@ ARMANEN_RUNES: BuiltinRuneSet = BuiltinRuneSet(
         "runes ship without endorsement of that use."
     ),
     runes=_ARMANEN,
+)
+
+
+# ───── Northumbrian ─────────────────────────────────────────────────
+#
+# FEATURES §4 lists Northumbrian as its own tradition, so it ships
+# as its own bundle id — but the "Northumbrian futhorc" is not a
+# distinct alphabet. It is the Anglo-Saxon Futhorc's own final
+# 33-rune expansion (24 Elder-derived + 5 Old English + the 4 late
+# additions Cweorð · Calc · Stan · Gar), attested chiefly in
+# 9th-10th c. Northumbrian manuscripts and monuments.
+#
+# HONESTY NOTE (same discipline as the Armanen bundle): rather than
+# invent divergent "Northumbrian" meanings, this bundle derives its
+# rune tuple directly from ANGLO_SAXON_FUTHORC — no data duplicated,
+# and the description states the relationship plainly so
+# practitioners aren't misled into thinking they hold a separate
+# historical row.
+
+NORTHUMBRIAN_RUNES: BuiltinRuneSet = BuiltinRuneSet(
+    set_id=RuneSet.NORTHUMBRIAN,
+    name="Northumbrian Futhorc",
+    description=(
+        "The Futhorc row as used in 9th-10th c. Northumbria — the "
+        "identical 33-rune set as the Anglo-Saxon Futhorc bundle "
+        "(24 Elder-derived + 5 Old English + the 4 Northumbrian "
+        "additions: Cweorð, Calc, Stan, Gar), presented standalone "
+        "for practitioners who work the Northumbrian tradition. "
+        "This is not a distinct alphabet: the four late additions "
+        "are the Futhorc's own final expansion, attested chiefly in "
+        "Northumbrian manuscripts and monuments."
+    ),
+    runes=ANGLO_SAXON_FUTHORC.runes,
 )

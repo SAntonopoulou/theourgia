@@ -16,18 +16,18 @@
  * here. If it renders, the wiring in layers 1-3 does the rest.
  */
 
-import { describe, it, expect, vi } from "vitest";
-import { render } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { Suspense, type ReactElement } from "react";
+import { render } from "@testing-library/react";
 import {
+  ActingAsProvider,
   AuthProvider,
+  I18nProvider,
   ToastProvider,
   TopbarProvider,
-  ActingAsProvider,
-  I18nProvider,
 } from "@theourgia/shared";
+import { type ReactElement, Suspense } from "react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { describe, expect, it, vi } from "vitest";
 
 // Stub the shared API client to always resolve with an empty array.
 // Enough for the initial query in every list/detail route to settle.
@@ -94,41 +94,144 @@ function withProviders(inner: ReactElement) {
 const ROUTES: ReadonlyArray<[string, () => Promise<{ Component: React.ComponentType }>]> = [
   ["TarotRoute", () => import("../TarotRoute.js").then((m) => ({ Component: m.TarotRoute }))],
   ["IChingRoute", () => import("../IChingRoute.js").then((m) => ({ Component: m.IChingRoute }))],
-  ["GeomancyRoute", () => import("../GeomancyRoute.js").then((m) => ({ Component: m.GeomancyRoute }))],
+  [
+    "GeomancyRoute",
+    () => import("../GeomancyRoute.js").then((m) => ({ Component: m.GeomancyRoute })),
+  ],
   ["RunesRoute", () => import("../RunesRoute.js").then((m) => ({ Component: m.RunesRoute }))],
-  ["DivinationMiscRoute", () => import("../DivinationMiscRoute.js").then((m) => ({ Component: m.DivinationMiscRoute }))],
-  ["MagicalCircleRoute", () => import("../MagicalCircleRoute.js").then((m) => ({ Component: m.MagicalCircleRoute }))],
-  ["MagicSquaresRoute", () => import("../MagicSquaresRoute.js").then((m) => ({ Component: m.MagicSquaresRoute }))],
-  ["TalismanDesignerRoute", () => import("../TalismanDesignerRoute.js").then((m) => ({ Component: m.TalismanDesignerRoute }))],
-  ["ToolRegistryRoute", () => import("../ToolRegistryRoute.js").then((m) => ({ Component: m.ToolRegistryRoute }))],
-  ["SigilGeneratorRoute", () => import("../SigilGeneratorRoute.js").then((m) => ({ Component: m.SigilGeneratorRoute }))],
-  ["VocesMagicaeRoute", () => import("../VocesMagicaeRoute.js").then((m) => ({ Component: m.VocesMagicaeRoute }))],
-  ["VocesLibraryRoute", () => import("../VocesLibraryRoute.js").then((m) => ({ Component: m.VocesLibraryRoute }))],
-  ["GematriaCalculatorRoute", () => import("../GematriaCalculatorRoute.js").then((m) => ({ Component: m.GematriaCalculatorRoute }))],
-  ["AnalyticsDashboardRoute", () => import("../AnalyticsDashboardRoute.js").then((m) => ({ Component: m.AnalyticsDashboardRoute }))],
-  ["SynchronicityLogRoute", () => import("../SynchronicityLogRoute.js").then((m) => ({ Component: m.SynchronicityLogRoute }))],
-  ["QueryBuilderRoute", () => import("../QueryBuilderRoute.js").then((m) => ({ Component: m.QueryBuilderRoute }))],
-  ["StudiesIndexRoute", () => import("../StudiesIndexRoute.js").then((m) => ({ Component: m.StudiesIndexRoute }))],
-  ["PublicationsRoute", () => import("../PublicationsRoute.js").then((m) => ({ Component: m.PublicationsRoute }))],
-  ["PublicationPrintPreviewRoute", () => import("../PublicationPrintPreviewRoute.js").then((m) => ({ Component: m.PublicationPrintPreviewRoute }))],
-  ["SubscribersRoute", () => import("../SubscribersRoute.js").then((m) => ({ Component: m.SubscribersRoute }))],
-  ["MediaLibraryRoute", () => import("../MediaLibraryRoute.js").then((m) => ({ Component: m.MediaLibraryRoute }))],
-  ["AudioLibraryRoute", () => import("../AudioLibraryRoute.js").then((m) => ({ Component: m.AudioLibraryRoute }))],
-  ["PilgrimageMapRoute", () => import("../PilgrimageMapRoute.js").then((m) => ({ Component: m.PilgrimageMapRoute }))],
-  ["ICalFeedRoute", () => import("../ICalFeedRoute.js").then((m) => ({ Component: m.ICalFeedRoute }))],
+  [
+    "DivinationMiscRoute",
+    () => import("../DivinationMiscRoute.js").then((m) => ({ Component: m.DivinationMiscRoute })),
+  ],
+  [
+    "MagicalCircleRoute",
+    () => import("../MagicalCircleRoute.js").then((m) => ({ Component: m.MagicalCircleRoute })),
+  ],
+  [
+    "MagicSquaresRoute",
+    () => import("../MagicSquaresRoute.js").then((m) => ({ Component: m.MagicSquaresRoute })),
+  ],
+  [
+    "BindRuneRoute",
+    () => import("../BindRuneRoute.js").then((m) => ({ Component: m.BindRuneRoute })),
+  ],
+  [
+    "TalismanDesignerRoute",
+    () =>
+      import("../TalismanDesignerRoute.js").then((m) => ({ Component: m.TalismanDesignerRoute })),
+  ],
+  [
+    "ToolRegistryRoute",
+    () => import("../ToolRegistryRoute.js").then((m) => ({ Component: m.ToolRegistryRoute })),
+  ],
+  [
+    "SigilGeneratorRoute",
+    () => import("../SigilGeneratorRoute.js").then((m) => ({ Component: m.SigilGeneratorRoute })),
+  ],
+  [
+    "VocesMagicaeRoute",
+    () => import("../VocesMagicaeRoute.js").then((m) => ({ Component: m.VocesMagicaeRoute })),
+  ],
+  [
+    "VocesLibraryRoute",
+    () => import("../VocesLibraryRoute.js").then((m) => ({ Component: m.VocesLibraryRoute })),
+  ],
+  [
+    "GematriaCalculatorRoute",
+    () =>
+      import("../GematriaCalculatorRoute.js").then((m) => ({
+        Component: m.GematriaCalculatorRoute,
+      })),
+  ],
+  [
+    "AnalyticsDashboardRoute",
+    () =>
+      import("../AnalyticsDashboardRoute.js").then((m) => ({
+        Component: m.AnalyticsDashboardRoute,
+      })),
+  ],
+  [
+    "SynchronicityLogRoute",
+    () =>
+      import("../SynchronicityLogRoute.js").then((m) => ({ Component: m.SynchronicityLogRoute })),
+  ],
+  [
+    "QueryBuilderRoute",
+    () => import("../QueryBuilderRoute.js").then((m) => ({ Component: m.QueryBuilderRoute })),
+  ],
+  [
+    "StudiesIndexRoute",
+    () => import("../StudiesIndexRoute.js").then((m) => ({ Component: m.StudiesIndexRoute })),
+  ],
+  [
+    "PublicationsRoute",
+    () => import("../PublicationsRoute.js").then((m) => ({ Component: m.PublicationsRoute })),
+  ],
+  [
+    "PublicationPrintPreviewRoute",
+    () =>
+      import("../PublicationPrintPreviewRoute.js").then((m) => ({
+        Component: m.PublicationPrintPreviewRoute,
+      })),
+  ],
+  [
+    "SubscribersRoute",
+    () => import("../SubscribersRoute.js").then((m) => ({ Component: m.SubscribersRoute })),
+  ],
+  [
+    "MediaLibraryRoute",
+    () => import("../MediaLibraryRoute.js").then((m) => ({ Component: m.MediaLibraryRoute })),
+  ],
+  [
+    "AudioLibraryRoute",
+    () => import("../AudioLibraryRoute.js").then((m) => ({ Component: m.AudioLibraryRoute })),
+  ],
+  [
+    "PilgrimageMapRoute",
+    () => import("../PilgrimageMapRoute.js").then((m) => ({ Component: m.PilgrimageMapRoute })),
+  ],
+  [
+    "ICalFeedRoute",
+    () => import("../ICalFeedRoute.js").then((m) => ({ Component: m.ICalFeedRoute })),
+  ],
   ["MyNetworks", () => import("../MyNetworks.js").then((m) => ({ Component: m.MyNetworks }))],
-  ["NetworkBrowser", () => import("../NetworkBrowser.js").then((m) => ({ Component: m.NetworkBrowser }))],
+  [
+    "NetworkBrowser",
+    () => import("../NetworkBrowser.js").then((m) => ({ Component: m.NetworkBrowser })),
+  ],
   ["HubDiscovery", () => import("../HubDiscovery.js").then((m) => ({ Component: m.HubDiscovery }))],
   ["Followers", () => import("../Followers.js").then((m) => ({ Component: m.Followers }))],
-  ["PrivateViewers", () => import("../PrivateViewers.js").then((m) => ({ Component: m.PrivateViewers }))],
+  [
+    "PrivateViewers",
+    () => import("../PrivateViewers.js").then((m) => ({ Component: m.PrivateViewers })),
+  ],
   ["Journal", () => import("../Journal.js").then((m) => ({ Component: m.Journal }))],
-  ["FamilyTreeRoute", () => import("../FamilyTreeRoute.js").then((m) => ({ Component: m.FamilyTreeRoute }))],
-  ["DeckDesignerRoute", () => import("../DeckDesignerRoute.js").then((m) => ({ Component: m.DeckDesignerRoute }))],
+  [
+    "FamilyTreeRoute",
+    () => import("../FamilyTreeRoute.js").then((m) => ({ Component: m.FamilyTreeRoute })),
+  ],
+  [
+    "DeckDesignerRoute",
+    () => import("../DeckDesignerRoute.js").then((m) => ({ Component: m.DeckDesignerRoute })),
+  ],
   ["RecipesRoute", () => import("../RecipesRoute.js").then((m) => ({ Component: m.RecipesRoute }))],
-  ["PilgrimageRoutesRoute", () => import("../PilgrimageRoutesRoute.js").then((m) => ({ Component: m.PilgrimageRoutesRoute }))],
-  ["SetupWizardRoute", () => import("../SetupWizardRoute.js").then((m) => ({ Component: m.SetupWizardRoute }))],
-  ["MemorialModeRoute", () => import("../MemorialModeRoute.js").then((m) => ({ Component: m.MemorialModeRoute }))],
-  ["AccountPasswordRoute", () => import("../AccountPasswordRoute.js").then((m) => ({ Component: m.AccountPasswordRoute }))],
+  [
+    "PilgrimageRoutesRoute",
+    () =>
+      import("../PilgrimageRoutesRoute.js").then((m) => ({ Component: m.PilgrimageRoutesRoute })),
+  ],
+  [
+    "SetupWizardRoute",
+    () => import("../SetupWizardRoute.js").then((m) => ({ Component: m.SetupWizardRoute })),
+  ],
+  [
+    "MemorialModeRoute",
+    () => import("../MemorialModeRoute.js").then((m) => ({ Component: m.MemorialModeRoute })),
+  ],
+  [
+    "AccountPasswordRoute",
+    () => import("../AccountPasswordRoute.js").then((m) => ({ Component: m.AccountPasswordRoute })),
+  ],
   ["Library", () => import("../Library.js").then((m) => ({ Component: m.Library }))],
   ["LineageAdmin", () => import("../LineageAdmin.js").then((m) => ({ Component: m.LineageAdmin }))],
   ["Health", () => import("../Health.js").then((m) => ({ Component: m.Health }))],
