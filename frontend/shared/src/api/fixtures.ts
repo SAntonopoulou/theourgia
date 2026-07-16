@@ -11,32 +11,40 @@ import type {
   AltarRecordWire,
   BookRecord,
   BundledVoce,
+  CastHoraryInput,
   CircleRecord,
   CreateAltarInput,
   CreateBookInput,
   CreateCircleInput,
   CreateEntryInput,
   CreateMagicSquareInput,
+  CreatePendulumReadingInput,
   CreateSigilInput,
   CreateTalismanInput,
   CreateToolInput,
   CreateVoceInput,
+  EndScryingSessionInput,
   EntryDetailRecord,
   EntryRecord,
   EntryStats,
   EntryType,
   HealthStatus,
+  HoraryReadingRecord,
   MagicSquareRecord,
   Meta,
+  PendulumReadingRecord,
   PlanetarySquareWire,
   PresetCircle,
   Problem,
+  ScryingSessionRecord,
+  SearchEntriesResponse,
   Session,
   SigilRecord,
+  StartScryingSessionInput,
   TalismanRecord,
+  TodayLedger,
   ToolRecordWire,
   VoceRecordWire,
-  TodayLedger,
 } from "./types.js";
 
 /**
@@ -110,6 +118,33 @@ const SESSION: Session = {
 };
 
 const MOCK_LOCATION = { lat: 51.4769, lng: 0 };
+
+// Wellbeing crisis-aware nudge (v1-010). Opt-in OFF by default — the
+// mock mirrors the backend contract: resources only when enabled,
+// show=false while opted out or muted, mood data never consulted.
+// Resource entries mirror backend/theourgia/core/wellbeing/resources.py
+// and stay pending maintainer review (Sacred Well Directory rule).
+const MOCK_WELLBEING = { enabled: false, muted: false };
+const WELLBEING_RESOURCES = [
+  {
+    region: "international",
+    name: "IASP Crisis Centres directory",
+    url: "https://www.iasp.info/resources/Crisis_Centres/",
+  },
+  {
+    region: "international",
+    name: "Find a Helpline",
+    url: "https://findahelpline.com",
+  },
+];
+
+function wellbeingNudgeRead() {
+  return {
+    enabled: MOCK_WELLBEING.enabled,
+    show: false,
+    resources: MOCK_WELLBEING.enabled ? [...WELLBEING_RESOURCES] : [],
+  };
+}
 
 const IN_4_HOURS = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
 const IN_18_HOURS = new Date(Date.now() + 18 * 60 * 60 * 1000).toISOString();
@@ -394,6 +429,36 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     return computeStats();
   }
 
+  // Lexical FTS (B29). Mock approximates websearch_to_tsquery with a
+  // case-insensitive substring match over title + excerpt. Always
+  // reports sealed_excluded_count > 0 so the SealedExcludedCallout
+  // is exercised in mock mode.
+  if (bare === "/api/v1/search" && method === "GET") {
+    const params = new URLSearchParams(qs);
+    const q = (params.get("q") ?? "").trim().toLowerCase();
+    const kinds = params.getAll("kind") as EntryType[];
+    const matching = ENTRIES.filter((e) => {
+      if (kinds.length > 0 && !kinds.includes(e.type)) return false;
+      if (q.length > 0) {
+        const haystack = `${e.title} ${e.excerpt}`.toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+      return true;
+    });
+    const limit = Number(params.get("limit") ?? "20");
+    const offset = Number(params.get("offset") ?? "0");
+    return {
+      hits: matching.slice(offset, offset + limit).map((e) => ({
+        ...e,
+        visibility: entryMeta(e.id).visibility,
+      })),
+      total: matching.length,
+      limit,
+      offset,
+      sealed_excluded_count: 2,
+    } satisfies SearchEntriesResponse;
+  }
+
   if (bare === "/api/v1/users/me/settings/location") {
     if (method === "GET") return { ...MOCK_LOCATION };
     if (method === "PUT") {
@@ -402,6 +467,24 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
       if (typeof input.lng === "number") MOCK_LOCATION.lng = input.lng;
       return { ...MOCK_LOCATION };
     }
+  }
+
+  if (bare === "/api/v1/wellbeing/nudge") {
+    if (method === "GET") return wellbeingNudgeRead();
+    if (method === "PUT") {
+      const input = (body ?? {}) as { enabled?: boolean };
+      if (typeof input.enabled === "boolean") {
+        MOCK_WELLBEING.enabled = input.enabled;
+        // Enabling clears the mute horizon — mirrors the backend.
+        if (input.enabled) MOCK_WELLBEING.muted = false;
+      }
+      return wellbeingNudgeRead();
+    }
+  }
+
+  if (bare === "/api/v1/wellbeing/nudge/dismiss" && method === "POST") {
+    MOCK_WELLBEING.muted = true;
+    return wellbeingNudgeRead();
   }
 
   if (bare === "/api/v1/books") {
@@ -571,6 +654,13 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     return entryDetail(ENTRIES[idx]!);
   }
 
+  // ── Phase 06 divination lite fixtures (v1-014) ──────────────────
+
+  if (bare !== undefined) {
+    const divination = divinationLiteFixture(method, bare, body);
+    if (divination !== undefined) return divination;
+  }
+
   // ── Phase 07 Workshop fixtures (B108-2) ──────────────────────────
 
   if (bare !== undefined) {
@@ -579,6 +669,130 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
   }
 
   return new NotFoundError(problem(404, "Not Found", `No fixture for ${method} ${path}`));
+}
+
+// ── Phase 06 divination lite fixture state + handler (v1-014) ───────
+
+const PENDULUM_READINGS: PendulumReadingRecord[] = [];
+const HORARY_READINGS: HoraryReadingRecord[] = [];
+const SCRYING_SESSIONS: ScryingSessionRecord[] = [];
+
+function divinationLiteFixture(method: string, bare: string, body: unknown): unknown {
+  if (bare === "/api/v1/pendulum/readings") {
+    if (method === "GET") return [...PENDULUM_READINGS];
+    if (method === "POST") {
+      const input = body as CreatePendulumReadingInput;
+      const row: PendulumReadingRecord = {
+        id: workshopId(),
+        question: input.question,
+        asked_at: input.asked_at ?? nowIso(),
+        outcome: input.outcome,
+        confidence: input.confidence ?? null,
+        board_image_upload_id: null,
+        board_landing: null,
+        notes: input.notes ?? null,
+        calibration: null,
+        calibration_at: null,
+        entry_id: input.entry_id ?? null,
+        entity_id: input.entity_id ?? null,
+        owner_id: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      PENDULUM_READINGS.unshift(row);
+      return row;
+    }
+  }
+
+  if (bare === "/api/v1/horary/readings" && method === "GET") {
+    return [...HORARY_READINGS];
+  }
+
+  if (bare === "/api/v1/horary/cast" && method === "POST") {
+    const input = body as CastHoraryInput;
+    const askedAt = input.asked_at ?? nowIso();
+    const row: HoraryReadingRecord = {
+      id: workshopId(),
+      question: input.question,
+      asked_at: askedAt,
+      latitude: input.latitude,
+      longitude: input.longitude,
+      location_label: input.location_label ?? null,
+      chart_snapshot: {
+        instant: askedAt,
+        latitude: input.latitude,
+        longitude: input.longitude,
+        attribution: "Swiss Ephemeris (mock fixture)",
+      },
+      significator_querent: input.significator_querent ?? null,
+      significator_quesited: input.significator_quesited ?? null,
+      perfection_notes: null,
+      interpretation: null,
+      retrospective_rating: null,
+      retrospective_notes: null,
+      entry_id: input.entry_id ?? null,
+      entity_id: input.entity_id ?? null,
+      owner_id: null,
+      created_at: nowIso(),
+      updated_at: nowIso(),
+    };
+    HORARY_READINGS.unshift(row);
+    return row;
+  }
+
+  if (bare === "/api/v1/scrying/sessions") {
+    if (method === "GET") return [...SCRYING_SESSIONS];
+    if (method === "POST") {
+      const input = body as StartScryingSessionInput;
+      const row: ScryingSessionRecord = {
+        id: workshopId(),
+        mode: input.mode,
+        started_at: input.started_at ?? nowIso(),
+        ended_at: null,
+        duration_seconds: null,
+        intention: input.intention ?? null,
+        preparation_notes: input.preparation_notes ?? null,
+        entity_id: input.entity_id ?? null,
+        vision_notes: null,
+        symbols: [],
+        sketch_upload_id: null,
+        voice_memo_upload_id: null,
+        planetary_hour: input.planetary_hour ?? null,
+        entry_id: null,
+        owner_id: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      SCRYING_SESSIONS.unshift(row);
+      return row;
+    }
+  }
+
+  const endMatch = /^\/api\/v1\/scrying\/sessions\/(.+)\/end$/.exec(bare);
+  if (endMatch && method === "POST") {
+    const [, id] = endMatch;
+    const idx = SCRYING_SESSIONS.findIndex((s) => s.id === id);
+    if (idx < 0) {
+      return new NotFoundError(problem(404, "Not Found", `Session ${id} not found`));
+    }
+    const input = (body ?? {}) as EndScryingSessionInput;
+    const current = SCRYING_SESSIONS[idx]!;
+    const endedAt = input.ended_at ?? nowIso();
+    const durationMs = new Date(endedAt).getTime() - new Date(current.started_at).getTime();
+    const next: ScryingSessionRecord = {
+      ...current,
+      ended_at: endedAt,
+      duration_seconds: Math.max(0, Math.round(durationMs / 1000)),
+      vision_notes: input.vision_notes ?? current.vision_notes,
+      symbols: input.symbols ?? current.symbols,
+      entry_id: input.entry_id ?? current.entry_id,
+      updated_at: nowIso(),
+    };
+    SCRYING_SESSIONS[idx] = next;
+    return next;
+  }
+
+  return undefined;
 }
 
 // ── Phase 07 Workshop fixture state + handler ───────────────────────

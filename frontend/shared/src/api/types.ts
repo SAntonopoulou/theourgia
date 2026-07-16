@@ -202,10 +202,79 @@ export interface EntryStats {
   last_week: EntryWindowCounts;
 }
 
+/**
+ * Query for ``GET /api/v1/search`` — the B29 lexical Postgres FTS
+ * endpoint. All filters compose with AND-semantics; values inside
+ * `kind` / `visibility` compose with OR (mirrors the backend's
+ * ``SearchRequest``). The query string uses Postgres websearch
+ * syntax (quotes for phrases, OR, ``-foo`` negation).
+ */
+export interface SearchEntriesQuery {
+  q?: string;
+  kind?: EntryType[];
+  visibility?: EntityVisibility[];
+  /** ISO 8601 — filters on occurred_at (falls back to created_at). */
+  since?: string;
+  until?: string;
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * One hit from ``GET /api/v1/search``. The backend serialises full
+ * ``EntryRead`` rows, so `visibility` is always present (defaults
+ * to "personal" server-side).
+ */
+export interface SearchEntryHit extends EntryRecord {
+  visibility: EntityVisibility;
+}
+
+/**
+ * Response of ``GET /api/v1/search``. Sealed entries never appear
+ * in `hits` — the server can't read their plaintext (Mode B
+ * zero-knowledge). `sealed_excluded_count` is the honest upper
+ * bound of sealed rows matching the metadata filters, surfaced by
+ * the UI as a calm callout, never an error.
+ */
+export interface SearchEntriesResponse {
+  hits: SearchEntryHit[];
+  total: number;
+  limit: number;
+  offset: number;
+  sealed_excluded_count: number;
+}
+
 /** Response of ``GET /api/v1/users/me/settings/location``. */
 export interface UserLocation {
   lat: number;
   lng: number;
+}
+
+/**
+ * One crisis-support resource from the wellbeing starter list.
+ * Server data pending maintainer review — the designer's "Sacred Well
+ * Directory" placeholder rule applies to whatever copy eventually
+ * surrounds these in the UI.
+ */
+export interface WellbeingCrisisResource {
+  region: string;
+  name: string;
+  url: string;
+}
+
+/**
+ * Response of ``GET /api/v1/wellbeing/nudge`` (v1-010).
+ *
+ * `enabled` mirrors the opt-in ``a11y.crisis_nudge`` user setting —
+ * OFF by default, always the user's choice. `show` is enabled AND the
+ * sustained-distress trigger; while opted out or muted it is always
+ * false and the server never queries mood data. `resources` is empty
+ * whenever `enabled` is false.
+ */
+export interface WellbeingNudge {
+  enabled: boolean;
+  show: boolean;
+  resources: WellbeingCrisisResource[];
 }
 
 /** Normalised current-weather snapshot returned by the H11 auto-context
@@ -937,6 +1006,155 @@ export interface CreateVoceRecordingInput {
   audio_attachment_id: string;
   duration_seconds: number;
   notes?: string | null;
+}
+
+// ── Audio attachments + local Whisper transcription (v1-012) ─────────
+
+/** Backend ``AudioAttachmentRead`` (api/routers/v1/audio.py). */
+export interface AudioAttachmentRecord {
+  id: string;
+  entry_id: string | null;
+  upload_id: string;
+  duration_seconds: number;
+  mime_type: string;
+  transcript: string | null;
+  /** Provenance tag, e.g. ``"whisper:small"``. */
+  transcript_engine: string | null;
+  waveform_thumbnail_url: string | null;
+  label: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** 202 body from ``POST /audio/{id}/transcribe``. */
+export interface TranscribeQueuedResponse {
+  queued: boolean;
+}
+
+
+// ── Phase 06 divination lite (pendulum / horary / scrying · v1-014) ──
+
+/** Backend ``PendulumOutcome`` (theourgia/models/divination_lite.py). */
+export type PendulumOutcomeWire = "yes" | "no" | "maybe" | "no_response";
+
+/** Per-reading verification mark, set after the fact by the user. */
+export type PendulumCalibrationWire = "correct" | "incorrect" | "ambiguous";
+
+/** Mirrors `theourgia.api.routers.v1.pendulum.ReadingRead`. */
+export interface PendulumReadingRecord {
+  id: string;
+  question: string;
+  asked_at: string;
+  outcome: PendulumOutcomeWire;
+  confidence: number | null;
+  board_image_upload_id: string | null;
+  board_landing: Record<string, unknown> | null;
+  notes: string | null;
+  calibration: PendulumCalibrationWire | null;
+  calibration_at: string | null;
+  entry_id: string | null;
+  entity_id: string | null;
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Input for ``POST /api/v1/pendulum/readings``. */
+export interface CreatePendulumReadingInput {
+  question: string;
+  asked_at?: string;
+  outcome: PendulumOutcomeWire;
+  confidence?: number;
+  notes?: string;
+  entry_id?: string;
+  entity_id?: string;
+}
+
+/** Mirrors `theourgia.api.routers.v1.horary.ReadingRead`. */
+export interface HoraryReadingRecord {
+  id: string;
+  question: string;
+  asked_at: string;
+  latitude: number;
+  longitude: number;
+  location_label: string | null;
+  chart_snapshot: Record<string, unknown>;
+  significator_querent: string | null;
+  significator_quesited: string | null;
+  perfection_notes: string | null;
+  interpretation: string | null;
+  retrospective_rating: number | null;
+  retrospective_notes: string | null;
+  entry_id: string | null;
+  entity_id: string | null;
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Input for ``POST /api/v1/horary/cast``. */
+export interface CastHoraryInput {
+  question: string;
+  asked_at?: string;
+  latitude: number;
+  longitude: number;
+  location_label?: string;
+  significator_querent?: string;
+  significator_quesited?: string;
+  entry_id?: string;
+  entity_id?: string;
+}
+
+/** Backend ``ScryingMode`` (theourgia/models/divination_lite.py). */
+export type ScryingModeWire =
+  | "water_bowl"
+  | "black_mirror"
+  | "crystal"
+  | "fire"
+  | "smoke"
+  | "ink_in_water"
+  | "candle_flame"
+  | "other";
+
+/** Mirrors `theourgia.api.routers.v1.scrying.SessionRead`. */
+export interface ScryingSessionRecord {
+  id: string;
+  mode: ScryingModeWire;
+  started_at: string;
+  ended_at: string | null;
+  duration_seconds: number | null;
+  intention: string | null;
+  preparation_notes: string | null;
+  entity_id: string | null;
+  vision_notes: string | null;
+  symbols: string[];
+  sketch_upload_id: string | null;
+  voice_memo_upload_id: string | null;
+  planetary_hour: string | null;
+  entry_id: string | null;
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Input for ``POST /api/v1/scrying/sessions``. */
+export interface StartScryingSessionInput {
+  mode: ScryingModeWire;
+  started_at?: string;
+  intention?: string;
+  preparation_notes?: string;
+  entity_id?: string;
+  planetary_hour?: string;
+}
+
+/** Input for ``POST /api/v1/scrying/sessions/{id}/end``. */
+export interface EndScryingSessionInput {
+  ended_at?: string;
+  vision_notes?: string;
+  symbols?: string[];
+  sketch_upload_id?: string;
+  voice_memo_upload_id?: string;
+  entry_id?: string;
 }
 
 

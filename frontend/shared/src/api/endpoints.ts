@@ -17,10 +17,12 @@ import type {
   AgentRunCostSnapshot,
   AgentRunSnapshot,
   AltarRecordWire,
+  AudioAttachmentRecord,
   BanishingLogRecord,
   BodyPracticeRecord,
   BookRecord,
   BundledVoce,
+  CastHoraryInput,
   ChartRequestInput,
   ChartResponse,
   CircleRecord,
@@ -35,6 +37,7 @@ import type {
   CreateEntityInput,
   CreateEntryInput,
   CreateMagicSquareInput,
+  CreatePendulumReadingInput,
   CreatePracticeInput,
   CreateSigilInput,
   CreateTalismanInput,
@@ -44,6 +47,7 @@ import type {
   DataExportResponse,
   DecideSubmissionInput,
   DeletionScheduledRead,
+  EndScryingSessionInput,
   EntityKind,
   EntityRecord,
   EntryDetailRecord,
@@ -52,6 +56,7 @@ import type {
   EntryType,
   FileAdvisoryInput,
   HealthStatus,
+  HoraryReadingRecord,
   MagicSquareRecord,
   MaintainerQueueResponse,
   MeRead,
@@ -61,6 +66,7 @@ import type {
   MyAuditListResponse,
   MyAuditQueryInput,
   MySessionsListResponse,
+  PendulumReadingRecord,
   PlanetarySquareWire,
   PracticeRecord,
   PracticesToday,
@@ -71,10 +77,14 @@ import type {
   RegistryPluginListResponse,
   RegistrySubmission,
   RegistrySubmissionListResponse,
+  ScryingSessionRecord,
+  SearchEntriesQuery,
+  SearchEntriesResponse,
   Session,
   SigilRecord,
   SourceScriptWire,
   StartAgentRunInput,
+  StartScryingSessionInput,
   SubmitPluginInput,
   TalismanRecord,
   TalismanSealPayload,
@@ -82,6 +92,7 @@ import type {
   TodayLedger,
   ToolKindWire,
   ToolRecordWire,
+  TranscribeQueuedResponse,
   UpdateAltarInput,
   UpdateCircleInput,
   UpdateEntryBodyInput,
@@ -97,6 +108,7 @@ import type {
   WeatherCurrentResponse,
   WebauthnCredentialListResponse,
   WebauthnCredentialRead,
+  WellbeingNudge,
 } from "./types.js";
 
 export class NotImplementedError extends Error {
@@ -547,6 +559,51 @@ export function api(client: ApiClient) {
       });
     },
 
+    // ── Divination misc (Phase 06 · pendulum / horary / scrying) ──
+
+    listPendulumReadings(): Promise<PendulumReadingRecord[]> {
+      return client.request<PendulumReadingRecord[]>("/api/v1/pendulum/readings");
+    },
+
+    createPendulumReading(input: CreatePendulumReadingInput): Promise<PendulumReadingRecord> {
+      return client.request<PendulumReadingRecord>("/api/v1/pendulum/readings", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    listHoraryReadings(): Promise<HoraryReadingRecord[]> {
+      return client.request<HoraryReadingRecord[]>("/api/v1/horary/readings");
+    },
+
+    castHorary(input: CastHoraryInput): Promise<HoraryReadingRecord> {
+      return client.request<HoraryReadingRecord>("/api/v1/horary/cast", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    listScryingSessions(): Promise<ScryingSessionRecord[]> {
+      return client.request<ScryingSessionRecord[]>("/api/v1/scrying/sessions");
+    },
+
+    startScryingSession(input: StartScryingSessionInput): Promise<ScryingSessionRecord> {
+      return client.request<ScryingSessionRecord>("/api/v1/scrying/sessions", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    endScryingSession(
+      id: string,
+      input: EndScryingSessionInput,
+    ): Promise<ScryingSessionRecord> {
+      return client.request<ScryingSessionRecord>(
+        `/api/v1/scrying/sessions/${encodeURIComponent(id)}/end`,
+        { method: "POST", json: input },
+      );
+    },
+
     // ── Publications / Subscribers / Media / Pilgrimage / Hubs ───
 
     listPublications(): Promise<Array<Record<string, unknown>>> {
@@ -828,6 +885,30 @@ export function api(client: ApiClient) {
       return client.request<EntryStats>("/api/v1/entries/stats", { signal: opts?.signal });
     },
 
+    /**
+     * Lexical FTS across the user's entries — ``GET /api/v1/search``
+     * (B29 backend). Sealed entries never appear in hits; the
+     * response carries the honest `sealed_excluded_count` so the
+     * caller can render the SealedExcludedCallout.
+     */
+    searchEntries(
+      query: SearchEntriesQuery,
+      opts?: { signal?: AbortSignal },
+    ): Promise<SearchEntriesResponse> {
+      const params = new URLSearchParams();
+      if (query.q) params.set("q", query.q);
+      for (const k of query.kind ?? []) params.append("kind", k);
+      for (const v of query.visibility ?? []) params.append("visibility", v);
+      if (query.since) params.set("since", query.since);
+      if (query.until) params.set("until", query.until);
+      if (query.limit !== undefined) params.set("limit", String(query.limit));
+      if (query.offset !== undefined) params.set("offset", String(query.offset));
+      const qs = params.toString();
+      return client.request<SearchEntriesResponse>(`/api/v1/search${qs ? `?${qs}` : ""}`, {
+        signal: opts?.signal,
+      });
+    },
+
     // ─── User settings (Phase 02 minimal slice) ──────────────────────
 
     getMyLocation(opts?: { signal?: AbortSignal }): Promise<UserLocation> {
@@ -840,6 +921,33 @@ export function api(client: ApiClient) {
       return client.request<UserLocation>("/api/v1/users/me/settings/location", {
         method: "PUT",
         json: location,
+      });
+    },
+
+    // ─── Wellbeing — crisis-aware nudge (v1-010, opt-in) ─────────────
+
+    getWellbeingNudge(opts?: { signal?: AbortSignal }): Promise<WellbeingNudge> {
+      return client.request<WellbeingNudge>("/api/v1/wellbeing/nudge", {
+        signal: opts?.signal,
+      });
+    },
+
+    /** Persists the `a11y.crisis_nudge` setting. Enabling clears any mute. */
+    putWellbeingNudge(input: { enabled: boolean }): Promise<WellbeingNudge> {
+      return client.request<WellbeingNudge>("/api/v1/wellbeing/nudge", {
+        method: "PUT",
+        json: input,
+      });
+    },
+
+    /**
+     * Mute the nudge: `until` is an ISO date or "forever" (default —
+     * the user can mute indefinitely without nag).
+     */
+    dismissWellbeingNudge(input?: { until: string }): Promise<WellbeingNudge> {
+      return client.request<WellbeingNudge>("/api/v1/wellbeing/nudge/dismiss", {
+        method: "POST",
+        json: input ?? { until: "forever" },
       });
     },
 
@@ -1502,6 +1610,34 @@ export function api(client: ApiClient) {
       return client.request<void>(`/api/v1/voces/${voceId}/recordings/${recordingId}`, {
         method: "DELETE",
       });
+    },
+
+    // ── Audio attachments + local Whisper transcription (v1-012) ────
+
+    getAudioAttachment(
+      id: string,
+      opts?: { signal?: AbortSignal },
+    ): Promise<AudioAttachmentRecord> {
+      return client.request<AudioAttachmentRecord>(`/api/v1/audio/${id}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    /**
+     * Queue local Whisper transcription for one attachment. 202 with
+     * ``{queued: true}``; 403 when the instance gate or the user
+     * opt-in gate is closed (distinct details); 409 when a transcript
+     * already exists and ``force`` isn't set.
+     */
+    transcribeAudio(
+      id: string,
+      opts?: { force?: boolean; signal?: AbortSignal },
+    ): Promise<TranscribeQueuedResponse> {
+      const qs = opts?.force ? "?force=true" : "";
+      return client.request<TranscribeQueuedResponse>(
+        `/api/v1/audio/${id}/transcribe${qs}`,
+        { method: "POST", signal: opts?.signal },
+      );
     },
 
     // ── Phase 16 · agents (H10 C-cluster) ────────────────────────────

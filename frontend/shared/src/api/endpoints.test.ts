@@ -63,6 +63,27 @@ describe("endpoints — mock mode", () => {
     }
   });
 
+  it("searchEntries matches title/excerpt and reports sealed_excluded_count > 0", async () => {
+    const r = await buildMock().searchEntries({ q: "candle" });
+    expect(r.hits.length).toBeGreaterThanOrEqual(1);
+    for (const hit of r.hits) {
+      expect(`${hit.title} ${hit.excerpt}`.toLowerCase()).toContain("candle");
+      expect(hit.visibility).toBeDefined();
+    }
+    expect(r.total).toBe(r.hits.length);
+    // Mock always exercises the SealedExcludedCallout path.
+    expect(r.sealed_excluded_count).toBeGreaterThan(0);
+  });
+
+  it("searchEntries kind filter composes with the query", async () => {
+    const m = buildMock();
+    // "candle" hit is an observation — filtering to divination excludes it.
+    const r = await m.searchEntries({ q: "candle", kind: ["divination"] });
+    expect(r.hits).toHaveLength(0);
+    const r2 = await m.searchEntries({ q: "candle", kind: ["observation"] });
+    expect(r2.hits.length).toBeGreaterThanOrEqual(1);
+  });
+
   it("getEntryStats returns counts + week-over-week buckets", async () => {
     const stats = await buildMock().getEntryStats();
     expect(stats.total).toBeGreaterThanOrEqual(0);
@@ -128,6 +149,106 @@ describe("endpoints — mock mode", () => {
     expect(chart.houses.cusps).toHaveLength(12);
     expect(chart.aspects.length).toBeGreaterThanOrEqual(0);
     expect(typeof chart.attribution).toBe("string");
+  });
+
+  it("getWellbeingNudge defaults to opted out — no resources, never shown", async () => {
+    const nudge = await buildMock().getWellbeingNudge();
+    expect(nudge.enabled).toBe(false);
+    expect(nudge.show).toBe(false);
+    expect(nudge.resources).toEqual([]);
+  });
+
+  it("putWellbeingNudge opts in and returns the resource starter list", async () => {
+    const m = buildMock();
+    const on = await m.putWellbeingNudge({ enabled: true });
+    expect(on.enabled).toBe(true);
+    expect(on.resources.length).toBeGreaterThan(0);
+    for (const r of on.resources) {
+      expect(r.region).toBeTruthy();
+      expect(r.name).toBeTruthy();
+      expect(r.url).toMatch(/^https:\/\//);
+    }
+    const off = await m.putWellbeingNudge({ enabled: false });
+    expect(off.enabled).toBe(false);
+    expect(off.resources).toEqual([]);
+  });
+
+  it("dismissWellbeingNudge keeps show=false (mute honored)", async () => {
+    const m = buildMock();
+    await m.putWellbeingNudge({ enabled: true });
+    const dismissed = await m.dismissWellbeingNudge();
+    expect(dismissed.enabled).toBe(true);
+    expect(dismissed.show).toBe(false);
+  });
+});
+
+describe("endpoints — divination lite fixtures (v1-014)", () => {
+  it("createPendulumReading + listPendulumReadings round-trip", async () => {
+    const m = buildMock();
+    const created = await m.createPendulumReading({
+      question: "Will it rain?",
+      outcome: "yes",
+      asked_at: "2026-07-16T10:00:00.000Z",
+    });
+    expect(created.question).toBe("Will it rain?");
+    expect(created.outcome).toBe("yes");
+    expect(created.asked_at).toBe("2026-07-16T10:00:00.000Z");
+    expect(created.calibration).toBeNull();
+    const list = await m.listPendulumReadings();
+    expect(list.some((r) => r.id === created.id)).toBe(true);
+  });
+
+  it("castHorary returns a chart snapshot + listHoraryReadings sees it", async () => {
+    const m = buildMock();
+    const cast = await m.castHorary({
+      question: "Where is the lost ring?",
+      latitude: 37.9755,
+      longitude: 23.7348,
+      location_label: "Athens",
+    });
+    expect(cast.latitude).toBe(37.9755);
+    expect(cast.location_label).toBe("Athens");
+    expect(cast.chart_snapshot).toBeTruthy();
+    expect(cast.interpretation).toBeNull();
+    const list = await m.listHoraryReadings();
+    expect(list.some((r) => r.id === cast.id)).toBe(true);
+  });
+
+  it("scrying start → end round-trips vision notes + duration", async () => {
+    const m = buildMock();
+    const started = await m.startScryingSession({ mode: "black_mirror" });
+    expect(started.mode).toBe("black_mirror");
+    expect(started.ended_at).toBeNull();
+    expect(started.duration_seconds).toBeNull();
+    const ended = await m.endScryingSession(started.id, {
+      vision_notes: "A door of pale stone, half-open.",
+    });
+    expect(ended.id).toBe(started.id);
+    expect(ended.vision_notes).toBe("A door of pale stone, half-open.");
+    expect(ended.ended_at).not.toBeNull();
+    expect(ended.duration_seconds).not.toBeNull();
+    const list = await m.listScryingSessions();
+    const found = list.find((s) => s.id === started.id);
+    expect(found?.vision_notes).toBe("A door of pale stone, half-open.");
+  });
+
+  it("scrying start honours an explicit trance-measured window", async () => {
+    const m = buildMock();
+    const started = await m.startScryingSession({
+      mode: "crystal",
+      started_at: "2026-07-16T20:00:00.000Z",
+    });
+    const ended = await m.endScryingSession(started.id, {
+      ended_at: "2026-07-16T20:12:48.000Z",
+      vision_notes: "Rings within rings.",
+    });
+    expect(ended.duration_seconds).toBe(768);
+  });
+
+  it("endScryingSession with an unknown id rejects NotFound", async () => {
+    await expect(
+      buildMock().endScryingSession("does-not-exist", { vision_notes: "x" }),
+    ).rejects.toThrow(/not found/i);
   });
 });
 

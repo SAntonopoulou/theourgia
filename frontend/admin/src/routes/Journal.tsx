@@ -8,7 +8,14 @@
  *               Timeline ships in this batch; the rest are "coming soon"
  *               placeholders until grouping endpoints land.
  *   Filter bar · Search field + Working/Divination/Synchronicity/Journal
- *                chips with colored dots.
+ *                chips with colored dots. Queries under 2 chars filter
+ *                the loaded list client-side; from 2 chars the box
+ *                becomes a debounced (300ms) call to the backend's
+ *                Postgres FTS endpoint (GET /api/v1/search), rendering
+ *                SearchHitCard rows with hit highlighting plus the
+ *                honest SealedExcludedCallout (sealed entries are
+ *                zero-knowledge — the server can't search them).
+ *                Active kind chips pass through as `kind` filters.
  *   Left col   · Date-grouped entry sections (Today · [Latin day] / Earlier
  *                this week / Earlier this month / Earlier).
  *   Right rail · Content types (counts from currently-loaded entries),
@@ -25,12 +32,15 @@
 import {
   type EntryRecord,
   type EntryType,
+  SealedExcludedCallout,
+  type SearchEntriesResponse,
+  SearchHitCard,
   Skeleton,
   Toast,
   useApiCall,
   useTopbar,
 } from "@theourgia/shared";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
@@ -467,6 +477,169 @@ function GroupedSection({
   );
 }
 
+// ─── Backend FTS search (v1-015) ────────────────────────────────────────────
+
+const SEARCH_DEBOUNCE_MS = 300;
+const SEARCH_MIN_CHARS = 2;
+
+interface SearchState {
+  status: "loading" | "ok" | "error";
+  response: SearchEntriesResponse | null;
+  error: Error | null;
+  /** Query that produced `response` — highlights use this, not the
+   *  live input value, so hits never highlight a fresher query than
+   *  the one they answered. */
+  forQuery: string;
+}
+
+const SEARCH_IDLE: SearchState = {
+  status: "loading",
+  response: null,
+  error: null,
+  forQuery: "",
+};
+
+function SearchResultsPane({
+  state,
+  now,
+  onOpen,
+  onRetry,
+}: {
+  state: SearchState;
+  now: Date;
+  onOpen: (id: string) => void;
+  onRetry: () => void;
+}) {
+  if (state.status === "loading") return <ListSkeleton />;
+
+  if (state.status === "error") {
+    return (
+      <div
+        style={{
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-lg, 14px)",
+          background: "var(--bg-2)",
+          padding: "20px 24px",
+          fontFamily: "var(--font-serif)",
+          fontSize: 14.5,
+          color: "var(--ink-soft)",
+        }}
+      >
+        Couldn't search entries: {state.error?.message ?? "unknown error from the API."}{" "}
+        <button
+          type="button"
+          onClick={onRetry}
+          style={{
+            color: "var(--accent)",
+            background: "transparent",
+            border: "none",
+            fontFamily: "inherit",
+            fontSize: "inherit",
+            cursor: "pointer",
+            padding: 0,
+            marginLeft: 6,
+            textDecoration: "underline",
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  const response = state.response;
+  if (!response) return null;
+  const sealed = response.sealed_excluded_count;
+
+  if (response.hits.length === 0) {
+    return (
+      <div
+        style={{
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-lg, 14px)",
+          background: "var(--bg-2)",
+          padding: "32px 24px",
+          textAlign: "center",
+          fontFamily: "var(--font-serif)",
+          fontSize: 14.5,
+          color: "var(--ink-mute)",
+        }}
+      >
+        No entries match the current filters.
+        {sealed > 0 ? (
+          <SealedExcludedCallout
+            sealedCount={sealed}
+            layout="inline"
+            style={{ marginTop: 16, textAlign: "left" }}
+          />
+        ) : null}
+      </div>
+    );
+  }
+
+  return (
+    <section style={{ marginBottom: 26 }}>
+      <div
+        style={{
+          fontFamily: "var(--font-ui)",
+          fontSize: 11,
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          color: "var(--ink-mute)",
+          margin: "0 0 10px",
+        }}
+      >
+        Search results
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-lg, 14px)",
+          overflow: "hidden",
+          background: "var(--bg-2)",
+        }}
+      >
+        {response.hits.map((hit, i) => (
+          <div
+            key={hit.id}
+            style={{
+              borderBottom: i === response.hits.length - 1 ? "none" : "1px solid var(--line)",
+            }}
+          >
+            <SearchHitCard
+              hit={{
+                id: hit.id,
+                title: hit.title,
+                excerpt: hit.excerpt,
+                kindLabel: TYPE_LABEL[hit.type],
+                when: relativeTime(hit.created_at, now),
+                visibility: hit.visibility,
+              }}
+              query={state.forQuery}
+              glyph={
+                <span
+                  style={{
+                    width: 9,
+                    height: 9,
+                    borderRadius: "50%",
+                    background: TYPE_COLOR[hit.type],
+                  }}
+                />
+              }
+              onSelect={() => onOpen(hit.id)}
+            />
+          </div>
+        ))}
+      </div>
+      {sealed > 0 ? (
+        <SealedExcludedCallout sealedCount={sealed} layout="compact" style={{ marginTop: 16 }} />
+      ) : null}
+    </section>
+  );
+}
+
 // ─── Right rail facets ──────────────────────────────────────────────────────
 
 const facetCardStyle: React.CSSProperties = {
@@ -745,6 +918,62 @@ export function Journal() {
     });
   }
 
+  // ── Backend FTS (v1-015) ──────────────────────────────────────────
+  // From SEARCH_MIN_CHARS the search box stops filtering the loaded
+  // list and becomes a debounced call to GET /api/v1/search. Active
+  // kind chips pass through as `kind` filters (AND with the query).
+  const trimmedSearch = search.trim();
+  const searchActive = trimmedSearch.length >= SEARCH_MIN_CHARS;
+
+  const activeKinds = useMemo(
+    () =>
+      Array.from(activeChips)
+        .map((k) => CHIP_FILTERS.find((c) => c.key === k)?.type)
+        .filter((t): t is EntryType => t !== undefined),
+    [activeChips],
+  );
+
+  const [searchState, setSearchState] = useState<SearchState>(SEARCH_IDLE);
+  const [searchAttempt, setSearchAttempt] = useState(0);
+
+  useEffect(() => {
+    // Referenced so the Retry nonce legitimately re-triggers the effect.
+    void searchAttempt;
+    if (!searchActive) {
+      setSearchState(SEARCH_IDLE);
+      return;
+    }
+    setSearchState((prev) => ({ ...prev, status: "loading", error: null }));
+    const controller = new AbortController();
+    const timer = setTimeout(() => {
+      apiMethods
+        .searchEntries(
+          {
+            q: trimmedSearch,
+            kind: activeKinds.length > 0 ? activeKinds : undefined,
+          },
+          { signal: controller.signal },
+        )
+        .then((response) => {
+          if (controller.signal.aborted) return;
+          setSearchState({ status: "ok", response, error: null, forQuery: trimmedSearch });
+        })
+        .catch((e) => {
+          if (controller.signal.aborted) return;
+          setSearchState({
+            status: "error",
+            response: null,
+            error: e instanceof Error ? e : new Error(String(e)),
+            forQuery: trimmedSearch,
+          });
+        });
+    }, SEARCH_DEBOUNCE_MS);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [searchActive, trimmedSearch, activeKinds, searchAttempt]);
+
   // Filter by chips (any-of) then by search term (case-insensitive on title +
   // excerpt). Empty chip set = show all types.
   const filtered = useMemo(() => {
@@ -819,6 +1048,13 @@ export function Journal() {
                 "{VIEW_TABS.find((t) => t.key === view)?.label}" arrives with the aggregation
                 endpoints. Use the Timeline view in the meantime.
               </div>
+            ) : searchActive ? (
+              <SearchResultsPane
+                state={searchState}
+                now={now}
+                onOpen={openEntry}
+                onRetry={() => setSearchAttempt((n) => n + 1)}
+              />
             ) : entries.status === "loading" ? (
               <ListSkeleton />
             ) : entries.status === "error" ? (
