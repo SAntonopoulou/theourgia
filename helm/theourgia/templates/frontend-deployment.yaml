@@ -1,0 +1,51 @@
+# The frontend image serves the built public site + admin SPA through a
+# bundled Caddy on port 80 and reverse-proxies API / federation / websocket
+# routes to the hostname "backend:8000" (see frontend/Caddyfile.internal and
+# the alias Service in backend-service.yaml).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "theourgia.fullname" . }}-frontend
+  labels:
+    {{- include "theourgia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      {{- include "theourgia.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: frontend
+  template:
+    metadata:
+      labels:
+        {{- include "theourgia.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: frontend
+    spec:
+      {{- include "theourgia.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: frontend
+          image: {{ include "theourgia.image" (dict "image" .Values.frontend.image "chart" .Chart) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          {{- with .Values.frontend.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}

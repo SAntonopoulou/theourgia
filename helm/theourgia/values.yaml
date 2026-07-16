@@ -1,0 +1,231 @@
+# Theourgia — community-supported Helm chart values.
+#
+# Docker Compose is the primary deployment path for Theourgia; this chart
+# mirrors the compose topology for operators who already run Kubernetes.
+# Read helm/theourgia/README.md and docs/admin/kubernetes.md before
+# installing.
+#
+# Required before a working install:
+#   - secrets.secretKey + secrets.masterEncryptionKey (or secrets.existingSecret)
+#   - a PostgreSQL URL (postgresql.external.url, or postgresql.internal.enabled
+#     for evaluation only)
+#   - a Redis URL (redis.external.url, or redis.internal.enabled for
+#     evaluation only)
+
+nameOverride: ""
+fullnameOverride: ""
+
+# ── Images ─────────────────────────────────────────────────────────────────
+# Per-component repositories live under each component block below. Tags
+# default to the chart's appVersion when left empty.
+image:
+  pullPolicy: IfNotPresent
+  # Names of image pull secrets, applied to every pod:
+  #   pullSecrets: [ghcr-credentials]
+  pullSecrets: []
+
+# ── Application configuration (non-secret) ─────────────────────────────────
+config:
+  # One of: development, production, test.
+  env: production
+  # Public base URL of the instance — must match what the Ingress serves.
+  baseUrl: https://theourgia.example.com
+  # Stable instance identifier (conventionally the apex domain).
+  instanceId: theourgia.example.com
+  # One of: debug, info, warning, error.
+  logLevel: info
+  # Comma-separated allowlist of magickal names permitted to create
+  # accounts. Empty = open enrollment. See THEOURGIA_ALLOWED_MAGICKAL_NAMES
+  # in .env.example.
+  allowedMagickalNames: ""
+  # Extra environment variables for the backend, celery worker, and
+  # celery-beat pods (raw EnvVar entries — value or valueFrom both work).
+  # Use this for storage (THEOURGIA_STORAGE_*), email (THEOURGIA_EMAIL_*,
+  # THEOURGIA_SMTP_*), WebAuthn (THEOURGIA_WEBAUTHN_*), and any other
+  # variable from .env.example not modelled here.
+  extraEnv: []
+  #  - name: THEOURGIA_STORAGE_BACKEND
+  #    value: s3
+
+# ── Secrets ────────────────────────────────────────────────────────────────
+# Either set values inline here (they land in a chart-managed Secret) or
+# point existingSecret at a Secret you manage yourself (sealed-secrets,
+# external-secrets, SOPS, ...). When existingSecret is set the chart renders
+# no Secret and every secretKeyRef points at yours. Expected keys:
+#   THEOURGIA_SECRET_KEY            (required)
+#   THEOURGIA_MASTER_ENCRYPTION_KEY (required)
+#   DATABASE_URL                    (required — postgresql+asyncpg:// DSN)
+#   REDIS_URL                       (required — redis:// DSN)
+#   POSTGRES_PASSWORD               (only if postgresql.internal.enabled)
+#   THEOURGIA_AGENT_CONTROL_TOKEN   (only if agentDaemon.enabled)
+#   THEOURGIA_AGENT_HKDF_SALT       (only if agentDaemon.enabled)
+#   THEOURGIA_AGENT_DATABASE_URL    (only if agentDaemon.enabled)
+#   THEOURGIA_REGISTRY_DATABASE_URL (only if registry.enabled)
+secrets:
+  existingSecret: ""
+  # Generate with: openssl rand -base64 64
+  secretKey: ""
+  # Generate with: openssl rand -base64 64. Losing this key makes all
+  # server-side-encrypted (Mode A) content permanently unreadable — treat
+  # it like the disaster-recovery runbook says to treat RESTIC_PASSWORD.
+  masterEncryptionKey: ""
+  # Shared secret between backend and agent daemon (only used when
+  # agentDaemon.enabled).
+  agentControlToken: ""
+  # HKDF salt for the agent daemon (only used when agentDaemon.enabled).
+  agentHkdfSalt: ""
+
+# ── PostgreSQL ─────────────────────────────────────────────────────────────
+# Recommended: a managed PostgreSQL service or an operator (CloudNativePG,
+# Zalando postgres-operator, Crunchy PGO) and point external.url at it.
+# The internal StatefulSet is a single replica with no backups, no HA, and
+# no tuning — evaluation only, never production.
+postgresql:
+  external:
+    # Full asyncpg DSN, e.g.
+    #   postgresql+asyncpg://theourgia:PASSWORD@my-postgres:5432/theourgia
+    url: ""
+  internal:
+    enabled: false
+    image: postgres:16-alpine
+    auth:
+      username: theourgia
+      password: ""
+      database: theourgia
+    storage: 10Gi
+    # Empty uses the cluster default StorageClass.
+    storageClassName: ""
+    resources: {}
+
+# ── Redis ──────────────────────────────────────────────────────────────────
+# Same recommendation as PostgreSQL: use a managed service or operator for
+# production. The internal StatefulSet is single-replica, evaluation only.
+redis:
+  external:
+    # e.g. redis://my-redis:6379/0
+    url: ""
+  internal:
+    enabled: false
+    image: redis:7-alpine
+    storage: 1Gi
+    storageClassName: ""
+    resources: {}
+
+# ── Backend (FastAPI) ──────────────────────────────────────────────────────
+backend:
+  image:
+    repository: ghcr.io/santonopoulou/theourgia-backend
+    tag: ""
+  replicas: 1
+  # uvicorn worker processes per pod.
+  workers: 4
+  resources: {}
+  #  requests: {cpu: 250m, memory: 512Mi}
+  #  limits: {memory: 1Gi}
+
+# ── Celery worker (background jobs) ────────────────────────────────────────
+# Runs the backend image with the celery worker command.
+celeryWorker:
+  replicas: 1
+  resources: {}
+
+# ── Celery beat (scheduler) ────────────────────────────────────────────────
+# Beat is a singleton: it is always deployed with exactly one replica and a
+# Recreate strategy so two schedulers never overlap. There is deliberately
+# no replicas knob.
+celeryBeat:
+  resources: {}
+
+# ── Frontend (static site + internal Caddy) ────────────────────────────────
+frontend:
+  image:
+    repository: ghcr.io/santonopoulou/theourgia-frontend
+    tag: ""
+  replicas: 1
+  resources: {}
+  # The frontend image bundles a Caddy that reverse-proxies /api/*,
+  # /federation/*, /.well-known/*, /users/*, and /ws/* to the fixed
+  # hostname "backend:8000" (see frontend/Caddyfile.internal). The chart
+  # therefore creates an extra Service literally named "backend" in the
+  # release namespace. Consequence: one Theourgia release per namespace.
+  # Disable only if you provide your own alias (e.g. an ExternalName
+  # Service named "backend").
+  backendAliasService: true
+
+# ── Agent daemon (Phase 16, opt-in) ────────────────────────────────────────
+# Disabled by default: AI agent integration is opt-in in Theourgia, and the
+# daemon needs its own PostgreSQL database (never the vault's — daemon
+# failures must not be able to poison the vault). The daemon is never
+# exposed outside the cluster; all access goes through the backend's
+# /api/v1/agents/* bridge.
+agentDaemon:
+  enabled: false
+  image:
+    repository: ghcr.io/santonopoulou/theourgia-agent-daemon
+    tag: ""
+  workers: 2
+  # Required when enabled (unless provided via secrets.existingSecret as
+  # THEOURGIA_AGENT_DATABASE_URL): asyncpg DSN of the daemon's OWN database.
+  databaseUrl: ""
+  # Agent filesystem memory (/srv/theourgia/agents). Uses an emptyDir when
+  # persistence is disabled — agent memory is then lost on pod restart.
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClassName: ""
+  extraEnv: []
+  resources: {}
+
+# ── Plugin registry (opt-in) ───────────────────────────────────────────────
+# Disabled by default: most instances consume plugins from the canonical
+# registry at plugins.theourgia.com rather than hosting their own. Needs
+# its own PostgreSQL database and (for plugin tarballs) S3-compatible
+# storage configured via extraEnv (THEOURGIA_REGISTRY_R2_*, AWS_*).
+registry:
+  enabled: false
+  image:
+    repository: ghcr.io/santonopoulou/theourgia-registry
+    tag: ""
+  workers: 2
+  # Required when enabled (unless provided via secrets.existingSecret as
+  # THEOURGIA_REGISTRY_DATABASE_URL): asyncpg DSN of the registry's OWN
+  # database.
+  databaseUrl: ""
+  bootstrapMaintainerDid: ""
+  extraEnv: []
+  resources: {}
+
+# ── Ingress ────────────────────────────────────────────────────────────────
+# Disabled by default. When enabled, ALL traffic for `host` is routed to
+# the frontend Service — the frontend's internal Caddy does the path split
+# (static site vs /api vs federation vs websockets), exactly as in the
+# Docker Compose deployment. Make sure your controller allows WebSocket
+# upgrades on /ws/*.
+ingress:
+  enabled: false
+  className: ""
+  host: theourgia.example.com
+  annotations: {}
+  #  cert-manager.io/cluster-issuer: letsencrypt
+  # Standard Ingress TLS list:
+  tls: []
+  #  - secretName: theourgia-tls
+  #    hosts: [theourgia.example.com]
+  # Optional second vhost for a self-hosted plugin registry (only rendered
+  # when registry.enabled), e.g. plugins.theourgia.example.com.
+  registryHost: ""
+
+# ── Database migrations ────────────────────────────────────────────────────
+# A Helm-hook Job that runs `alembic upgrade head` with the backend image.
+migrations:
+  enabled: true
+  # Helm hook events for the Job. The default runs migrations before
+  # install and before every upgrade — correct when the database already
+  # exists (external PostgreSQL, the recommended path). If you enable the
+  # internal evaluation PostgreSQL, the database does not exist yet at
+  # pre-install time; set this to "post-install,pre-upgrade" so the first
+  # migration run happens after the StatefulSet is created.
+  hooks: "pre-install,pre-upgrade"
+  backoffLimit: 10
+  activeDeadlineSeconds: 600
+  resources: {}

@@ -1,0 +1,148 @@
+{{- /*
+Agent daemon (Phase 16) — opt-in, disabled by default. Runs against its
+OWN PostgreSQL database (agentDaemon.databaseUrl) so daemon failures can
+never poison the vault. Never exposed outside the cluster: the only
+consumer is the backend's /api/v1/agents/* bridge (rule 59 — the daemon's
+filesystem sandbox + capability gate are the trust boundary).
+*/ -}}
+{{- if .Values.agentDaemon.enabled }}
+{{- if .Values.agentDaemon.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "theourgia.fullname" . }}-agent-memory
+  labels:
+    {{- include "theourgia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent-daemon
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.agentDaemon.persistence.size }}
+  {{- with .Values.agentDaemon.persistence.storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "theourgia.fullname" . }}-agent-daemon
+  labels:
+    {{- include "theourgia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent-daemon
+spec:
+  # Single replica: the daemon owns a ReadWriteOnce memory volume and
+  # supervises long-running agent subprocesses. Recreate avoids two
+  # daemons contending for the same agent filesystem during a rollout.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "theourgia.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: agent-daemon
+  template:
+    metadata:
+      labels:
+        {{- include "theourgia.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: agent-daemon
+      {{- if not .Values.secrets.existingSecret }}
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+      {{- end }}
+    spec:
+      {{- include "theourgia.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: agent-daemon
+          image: {{ include "theourgia.image" (dict "image" .Values.agentDaemon.image "chart" .Chart) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - uvicorn
+            - theourgia_agent.api.app:app
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8002"
+            - --workers
+            - {{ .Values.agentDaemon.workers | quote }}
+          ports:
+            - name: http
+              containerPort: 8002
+          env:
+            - name: THEOURGIA_AGENT_ENV
+              value: {{ .Values.config.env | quote }}
+            - name: THEOURGIA_AGENT_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "theourgia.secretName" . }}
+                  key: THEOURGIA_AGENT_DATABASE_URL
+            - name: THEOURGIA_AGENT_VAULT_MCP_URL
+              value: http://{{ include "theourgia.fullname" . }}-backend:8000/mcp
+            - name: THEOURGIA_AGENT_CONTROL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "theourgia.secretName" . }}
+                  key: THEOURGIA_AGENT_CONTROL_TOKEN
+            - name: THEOURGIA_AGENT_HKDF_SALT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "theourgia.secretName" . }}
+                  key: THEOURGIA_AGENT_HKDF_SALT
+            - name: THEOURGIA_AGENT_LISTEN_HOST
+              value: 0.0.0.0
+            - name: THEOURGIA_AGENT_LISTEN_PORT
+              value: "8002"
+            {{- with .Values.agentDaemon.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          volumeMounts:
+            - name: agent-memory
+              mountPath: /srv/theourgia/agents
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          {{- with .Values.agentDaemon.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: agent-memory
+          {{- if .Values.agentDaemon.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "theourgia.fullname" . }}-agent-memory
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "theourgia.fullname" . }}-agent-daemon
+  labels:
+    {{- include "theourgia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: agent-daemon
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "theourgia.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: agent-daemon
+  ports:
+    - name: http
+      port: 8002
+      targetPort: http
+{{- end }}
