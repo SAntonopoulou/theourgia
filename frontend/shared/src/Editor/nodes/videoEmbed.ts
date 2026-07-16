@@ -1,9 +1,12 @@
 /**
- * YouTube URL / ID normaliser — pure functions, no React.
+ * Video URL / ID normaliser — pure functions, no React.
  *
- * b108-2hx · FEATURES §17 (video integration).
+ * b108-2hx · FEATURES §17 (video integration) — YouTube.
+ * v1-013 · FEATURES §13 — self-hosted-friendly providers: Cloudflare
+ * Stream + Mux join YouTube as embed providers. No upload pipeline in
+ * v1 — bring your own provider dashboard; the block embeds by URL/ID.
  *
- * Handles the URL shapes YouTube emits + the ID directly:
+ * YouTube handles the URL shapes YouTube emits + the ID directly:
  *
  *   https://www.youtube.com/watch?v=XXXXXXXXXXX
  *   https://youtu.be/XXXXXXXXXXX
@@ -14,9 +17,10 @@
  *
  * IDs are 11 characters, [A-Za-z0-9_-]. Anything else returns null.
  *
- * All embeds render through youtube-nocookie.com (the "privacy-
- * enhanced" host) so YouTube can't set tracking cookies until the
- * viewer actually clicks play.
+ * All YouTube embeds render through youtube-nocookie.com (the
+ * "privacy-enhanced" host) so YouTube can't set tracking cookies
+ * until the viewer actually clicks play. See `extractVideoRef` for
+ * the Cloudflare Stream + Mux URL shapes.
  */
 
 const ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
@@ -92,6 +96,186 @@ export function youtubeEmbedUrl(
   return `https://www.youtube-nocookie.com/embed/${id}?${params.toString()}`;
 }
 
+// ── Multi-provider support (v1-013) ───────────────────────────────
+
+export type VideoProvider = "youtube" | "cloudflare-stream" | "mux";
+
+export interface VideoRef {
+  provider: VideoProvider;
+  id: string;
+}
+
+/** Plain display labels — shown in the provider select. */
+export const VIDEO_PROVIDER_LABELS: Record<VideoProvider, string> = {
+  youtube: "YouTube",
+  "cloudflare-stream": "Cloudflare Stream",
+  mux: "Mux",
+};
+
+/** Per-provider placeholder for the URL/ID input. */
+export const VIDEO_URL_PLACEHOLDERS: Record<VideoProvider, string> = {
+  youtube: "Paste a YouTube URL or 11-char video ID",
+  "cloudflare-stream": "Paste a Cloudflare Stream URL or 32-hex video ID",
+  mux: "Paste a Mux player or stream URL, or a playback ID",
+};
+
+// Cloudflare Stream video IDs are 32 lowercase hex characters.
+const CLOUDFLARE_ID_PATTERN = /^[0-9a-f]{32}$/;
+
+// Mux playback IDs are long URL-safe alphanumeric strings (typically
+// 30+ characters). 16 is a conservative floor that still rejects
+// YouTube IDs (11 chars) and casual garbage.
+const MUX_ID_PATTERN = /^[A-Za-z0-9]{16,128}$/;
+
+export function isValidVideoId(provider: VideoProvider, id: string): boolean {
+  if (typeof id !== "string" || !id) return false;
+  if (provider === "youtube") return ID_PATTERN.test(id);
+  if (provider === "cloudflare-stream") return CLOUDFLARE_ID_PATTERN.test(id);
+  return MUX_ID_PATTERN.test(id);
+}
+
+/**
+ * Superset of `extractYoutubeId` covering all three embed providers.
+ *
+ * URL shapes are self-identifying, so a pasted URL always resolves
+ * to its own provider regardless of the pre-selected `provider`.
+ * Bare IDs carry no provider signal and only resolve against the
+ * pre-selected provider:
+ *
+ *   youtube            XXXXXXXXXXX                       (11 chars)
+ *   cloudflare-stream  5d5bc37ffcf54c9b82e996823bffbb81  (32 hex)
+ *   mux                DS00Spx1CV902MCtPj5WknGlR102V...  (playback ID)
+ *
+ * Recognised URL shapes (besides the YouTube set above):
+ *
+ *   https://customer-<code>.cloudflarestream.com/<id>/watch
+ *   https://customer-<code>.cloudflarestream.com/<id>/iframe
+ *   https://iframe.videodelivery.net/<id>
+ *   https://stream.mux.com/<playback_id>.m3u8
+ *   https://player.mux.com/<playback_id>
+ */
+export function extractVideoRef(
+  input: string,
+  provider: VideoProvider = "youtube",
+): VideoRef | null {
+  if (typeof input !== "string") return null;
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  // Bare ID (no scheme) — resolve against the pre-selected provider.
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return isValidVideoId(provider, trimmed)
+      ? { provider, id: trimmed }
+      : null;
+  }
+
+  // YouTube URL shapes — delegate so b108-2hx behavior stays exact.
+  const youtubeId = extractYoutubeId(trimmed);
+  if (youtubeId) return { provider: "youtube", id: youtubeId };
+
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    return null;
+  }
+
+  const host = url.hostname.replace(/^www\./, "");
+  const segments = url.pathname.split("/").filter(Boolean);
+  const first = segments[0] ?? "";
+  const second = segments[1] ?? "";
+
+  // Cloudflare Stream — the customer subdomain or the iframe host.
+  if (
+    /^customer-[a-z0-9]+\.cloudflarestream\.com$/i.test(host)
+    && CLOUDFLARE_ID_PATTERN.test(first)
+    && (segments.length === 1 || second === "watch" || second === "iframe")
+  ) {
+    return { provider: "cloudflare-stream", id: first };
+  }
+  if (
+    host === "iframe.videodelivery.net"
+    && CLOUDFLARE_ID_PATTERN.test(first)
+  ) {
+    return { provider: "cloudflare-stream", id: first };
+  }
+
+  // Mux — the HLS URL (stream.mux.com/<id>.m3u8) or the hosted player.
+  if (host === "stream.mux.com" && first.endsWith(".m3u8")) {
+    const id = first.slice(0, -".m3u8".length);
+    if (MUX_ID_PATTERN.test(id)) return { provider: "mux", id };
+  }
+  if (host === "player.mux.com" && MUX_ID_PATTERN.test(first)) {
+    return { provider: "mux", id: first };
+  }
+
+  return null;
+}
+
+/**
+ * Build the embed URL for any provider.
+ *
+ * Chapter-seek query params per provider (each documented by the
+ * vendor for its embed host):
+ *
+ *   youtube            ?start=<seconds>       (youtube-nocookie.com)
+ *   cloudflare-stream  ?startTime=<seconds>   (iframe.videodelivery.net)
+ *   mux                ?start-time=<seconds>  (player.mux.com — hosted
+ *                      player forwards query params to Mux Player
+ *                      attributes, whose seek attribute is start-time)
+ *
+ * NEVER autoplays — this function has no autoplay code path for any
+ * provider (FEATURES §17 privacy: visitors decide when to play).
+ */
+export function videoEmbedUrl(
+  ref: VideoRef,
+  opts: { startSeconds?: number } = {},
+): string {
+  const start = opts.startSeconds && opts.startSeconds > 0
+    ? Math.floor(opts.startSeconds)
+    : 0;
+  if (ref.provider === "cloudflare-stream") {
+    const params = new URLSearchParams();
+    if (start > 0) params.set("startTime", String(start));
+    const qs = params.toString();
+    return `https://iframe.videodelivery.net/${ref.id}${qs ? `?${qs}` : ""}`;
+  }
+  if (ref.provider === "mux") {
+    const params = new URLSearchParams();
+    if (start > 0) params.set("start-time", String(start));
+    const qs = params.toString();
+    return `https://player.mux.com/${ref.id}${qs ? `?${qs}` : ""}`;
+  }
+  return youtubeEmbedUrl(ref.id, { startSeconds: start });
+}
+
+/**
+ * Resolve persisted node attrs to a provider + ID pair.
+ *
+ * Back-compat: b108-2hx nodes predate `provider` / `video_id` and
+ * carry the ID in `youtube_id` only — they resolve as YouTube. IDs
+ * that don't match the provider's pattern resolve to null so no
+ * renderer ever builds an iframe src from junk.
+ */
+export function videoRefFromAttrs(attrs: {
+  provider?: unknown;
+  video_id?: unknown;
+  youtube_id?: unknown;
+}): VideoRef | null {
+  const provider: VideoProvider =
+    attrs.provider === "cloudflare-stream" || attrs.provider === "mux"
+      ? attrs.provider
+      : "youtube";
+  const id =
+    typeof attrs.video_id === "string" && attrs.video_id
+      ? attrs.video_id
+      : typeof attrs.youtube_id === "string"
+        ? attrs.youtube_id
+        : "";
+  if (!isValidVideoId(provider, id)) return null;
+  return { provider, id };
+}
+
 /**
  * A single chapter marker on a video (title + start seconds).
  */
@@ -105,6 +289,14 @@ export interface VideoChapter {
  * ID/URL helpers so both can be tested + serialised independently.
  */
 export interface VideoEmbedAttrs {
+  provider: VideoProvider;
+  /** Provider-scoped video / playback ID (v1-013). */
+  video_id: string;
+  /**
+   * Legacy b108-2hx field — kept populated for YouTube nodes so
+   * pre-v1-013 documents and renderers keep working. Empty for the
+   * other providers.
+   */
   youtube_id: string;
   title: string;
   caption: string;
@@ -114,6 +306,8 @@ export interface VideoEmbedAttrs {
 
 export function makeDefaultVideoEmbedAttrs(): VideoEmbedAttrs {
   return {
+    provider: "youtube",
+    video_id: "",
     youtube_id: "",
     title: "",
     caption: "",

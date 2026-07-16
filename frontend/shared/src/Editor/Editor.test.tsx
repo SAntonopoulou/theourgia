@@ -291,6 +291,82 @@ describe("Editor — b108-2gu new block nodes", () => {
   });
 });
 
+describe("Editor — v1-013 videoEmbed providers", () => {
+  it("/video inserts a videoEmbed defaulting to the YouTube provider", () => {
+    const editor = mountHeadless();
+    const cmd = SLASH_COMMANDS.find((c) => c.key === "video");
+    expect(cmd).toBeDefined();
+    cmd?.run(editor, { from: 1, to: editor.state.selection.to });
+    const content = (editor.getJSON().content ?? []) as {
+      type: string;
+      attrs?: { provider?: string; video_id?: string; youtube_id?: string };
+    }[];
+    const block = content.find((b) => b.type === "videoEmbed");
+    expect(block).toBeDefined();
+    expect(block?.attrs?.provider).toBe("youtube");
+    expect(block?.attrs?.video_id).toBe("");
+    expect(block?.attrs?.youtube_id).toBe("");
+    editor.destroy();
+  });
+
+  it("pre-v1-013 videoEmbed JSON (no provider attr) fills the youtube default", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        {
+          type: "videoEmbed",
+          attrs: {
+            youtube_id: "dQw4w9WgXcQ",
+            title: "Old node",
+            caption: "",
+            captions_url: "",
+            chapters: [],
+          },
+        },
+      ],
+    };
+    const editor = mountHeadless(doc);
+    const block = (editor.getJSON().content ?? [])[0] as {
+      type: string;
+      attrs: { provider: string; video_id: string; youtube_id: string };
+    };
+    expect(block.type).toBe("videoEmbed");
+    expect(block.attrs.provider).toBe("youtube");
+    expect(block.attrs.youtube_id).toBe("dQw4w9WgXcQ");
+    expect(block.attrs.video_id).toBe("");
+    editor.destroy();
+  });
+
+  it("round-trips a Mux provider node through the schema", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        {
+          type: "videoEmbed",
+          attrs: {
+            provider: "mux",
+            video_id: "DS00Spx1CV902MCtPj5WknGlR102V5HFkDe",
+            youtube_id: "",
+            title: "Workshop recording",
+            caption: "",
+            captions_url: "",
+            chapters: [{ title: "Intro", start_seconds: 0 }],
+          },
+        },
+      ],
+    };
+    const editor = mountHeadless(doc);
+    const block = (editor.getJSON().content ?? [])[0] as {
+      type: string;
+      attrs: { provider: string; video_id: string; chapters: unknown[] };
+    };
+    expect(block.attrs.provider).toBe("mux");
+    expect(block.attrs.video_id).toBe("DS00Spx1CV902MCtPj5WknGlR102V5HFkDe");
+    expect(block.attrs.chapters).toHaveLength(1);
+    editor.destroy();
+  });
+});
+
 describe("Editor — gematria utility", () => {
   it("computes Greek isopsephy for ἀγαθοδαίμων (789 → 989 per Crowley convention)", () => {
     // α+γ+α+θ+ο+δ+α+ι+μ+ω+ν = 1+3+1+9+70+4+1+10+40+800+50 = 989

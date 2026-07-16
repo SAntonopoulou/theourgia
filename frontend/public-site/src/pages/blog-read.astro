@@ -231,17 +231,39 @@ const MAXW = "720px";
         );
       }
       // b108-2hx — videoEmbed renders as a real iframe.
+      // v1-013 — provider-aware: youtube | cloudflare-stream | mux.
+      // Mirrors videoEmbedUrl in the shared Editor helpers: same
+      // hosts, lazy loading, and never an autoplay param.
       if (kind === "videoEmbed") {
         const a = node.attrs || {};
-        const id = a.youtube_id ? String(a.youtube_id) : "";
-        if (!id || !/^[A-Za-z0-9_-]{11}$/.test(id)) {
-          return "";
+        const provider =
+          a.provider === "cloudflare-stream" || a.provider === "mux"
+            ? a.provider
+            : "youtube";
+        const id = a.video_id
+          ? String(a.video_id)
+          : a.youtube_id
+            ? String(a.youtube_id)
+            : "";
+        let src = "";
+        let providerTitle = "";
+        if (provider === "youtube") {
+          if (!/^[A-Za-z0-9_-]{11}$/.test(id)) return "";
+          const params = new URLSearchParams();
+          params.set("rel", "0");
+          params.set("modestbranding", "1");
+          src = "https://www.youtube-nocookie.com/embed/" + id + "?" + params.toString();
+          providerTitle = "YouTube video";
+        } else if (provider === "cloudflare-stream") {
+          if (!/^[0-9a-f]{32}$/.test(id)) return "";
+          src = "https://iframe.videodelivery.net/" + id;
+          providerTitle = "Cloudflare Stream video";
+        } else {
+          if (!/^[A-Za-z0-9]{16,128}$/.test(id)) return "";
+          src = "https://player.mux.com/" + id;
+          providerTitle = "Mux video";
         }
-        const params = new URLSearchParams();
-        params.set("rel", "0");
-        params.set("modestbranding", "1");
-        const src = "https://www.youtube-nocookie.com/embed/" + id + "?" + params.toString();
-        const title = escapeHtml(a.title ? String(a.title) : "YouTube video");
+        const title = escapeHtml(a.title ? String(a.title) : providerTitle);
         const caption = a.caption ? escapeHtml(String(a.caption)) : "";
         return (
           '<figure style="margin:0 0 28px">' +

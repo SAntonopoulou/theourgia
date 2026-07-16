@@ -332,7 +332,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     key: "video",
     command: "/video",
     title: "Video",
-    description: "YouTube embed (privacy-enhanced) with chapters + captions",
+    description: "Video embed (YouTube · Cloudflare Stream · Mux) with chapters + captions",
     iconColor: "var(--accent)",
     iconPath: "M2 4h20v16H2z M10 8v8l6-4z",
     run: (editor, range) => {
@@ -343,6 +343,8 @@ export const SLASH_COMMANDS: SlashCommand[] = [
         .insertContent({
           type: "videoEmbed",
           attrs: {
+            provider: "youtube",
+            video_id: "",
             youtube_id: "",
             title: "",
             caption: "",

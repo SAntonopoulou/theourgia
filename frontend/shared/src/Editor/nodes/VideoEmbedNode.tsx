@@ -1,25 +1,34 @@
 /**
  * Tiptap node — videoEmbed.
  *
- * b108-2hx · FEATURES §17 (video integration).
+ * b108-2hx · FEATURES §17 (video integration) — YouTube.
+ * v1-013 · FEATURES §13 — Cloudflare Stream + Mux embed providers.
  *
- * Inline YouTube embed via the privacy-enhanced (youtube-nocookie.com)
- * host. Rendered inside a bordered card that reads like the other
- * custom blocks (calendar-stamp, correspondence, etc.). The iframe
- * is lazy-loaded so the embed only fires network requests when the
- * viewer actually scrolls it into view — matches the honesty rule:
- * no third-party requests until the user shows they want them.
+ * Inline video embed rendered inside a bordered card that reads like
+ * the other custom blocks (calendar-stamp, correspondence, etc.).
+ * YouTube embeds go through the privacy-enhanced youtube-nocookie.com
+ * host; Cloudflare Stream through iframe.videodelivery.net; Mux
+ * through player.mux.com. The iframe is lazy-loaded so the embed
+ * only fires network requests when the viewer actually scrolls it
+ * into view — matches the honesty rule: no third-party requests
+ * until the user shows they want them. No provider ever autoplays.
  *
  * Persisted attrs:
- *   - youtube_id:  11-char ID, extracted from whatever URL the user pastes
+ *   - provider:    "youtube" | "cloudflare-stream" | "mux" (default
+ *                  youtube — pre-v1-013 nodes render as YouTube)
+ *   - video_id:    provider-scoped video / playback ID
+ *   - youtube_id:  legacy b108-2hx field; still written for YouTube
+ *                  nodes so older renderers keep working
  *   - title:       display title (shown above the iframe)
  *   - caption:     short editorial caption
  *   - captions_url: optional .vtt captions file for accessibility
  *   - chapters:    list of {title, start_seconds}
  *
  * The slash command inserts an empty node with all fields blank;
- * the user pastes a YouTube URL into the URL input and the node
- * extracts the ID.
+ * the user picks a provider and pastes a URL (or bare ID) into the
+ * URL input and the node extracts the ID. Pasted URLs are
+ * self-identifying, so a YouTube link pasted while "Mux" is selected
+ * still lands on the YouTube provider.
  */
 
 import { Node, mergeAttributes } from "@tiptap/core";
@@ -32,10 +41,14 @@ import { useMemo, useState } from "react";
 
 import {
   chaptersToInput,
-  extractYoutubeId,
+  extractVideoRef,
   parseChaptersInput,
-  youtubeEmbedUrl,
+  videoEmbedUrl,
+  videoRefFromAttrs,
+  VIDEO_PROVIDER_LABELS,
+  VIDEO_URL_PLACEHOLDERS,
   type VideoChapter,
+  type VideoProvider,
 } from "./videoEmbed.js";
 
 const LINE = "var(--line)";
@@ -60,8 +73,13 @@ function formatChapterTime(seconds: number): string {
     : `${m}:${String(sec).padStart(2, "0")}`;
 }
 
-function VideoEmbedView({ node, updateAttributes, editor }: NodeViewProps) {
-  const youtubeId: string = node.attrs.youtube_id ?? "";
+/** Exported for tests — Tiptap mounts it via ReactNodeViewRenderer. */
+export function VideoEmbedView({ node, updateAttributes, editor }: NodeViewProps) {
+  const provider: VideoProvider =
+    node.attrs.provider === "cloudflare-stream" || node.attrs.provider === "mux"
+      ? node.attrs.provider
+      : "youtube";
+  const currentId: string = node.attrs.video_id || node.attrs.youtube_id || "";
   const title: string = node.attrs.title ?? "";
   const caption: string = node.attrs.caption ?? "";
   const captionsUrl: string = node.attrs.captions_url ?? "";
@@ -75,14 +93,22 @@ function VideoEmbedView({ node, updateAttributes, editor }: NodeViewProps) {
   );
   const [startAt, setStartAt] = useState<number>(0);
 
+  const videoRef = useMemo(() => videoRefFromAttrs(node.attrs), [node.attrs]);
+
   const embedSrc = useMemo(() => {
-    if (!youtubeId) return null;
-    return youtubeEmbedUrl(youtubeId, { startSeconds: startAt });
-  }, [youtubeId, startAt]);
+    if (!videoRef) return null;
+    return videoEmbedUrl(videoRef, { startSeconds: startAt });
+  }, [videoRef, startAt]);
 
   const commitUrlOrId = (raw: string): void => {
-    const id = extractYoutubeId(raw);
-    if (id) updateAttributes({ youtube_id: id });
+    const ref = extractVideoRef(raw, provider);
+    if (!ref) return;
+    updateAttributes({
+      provider: ref.provider,
+      video_id: ref.id,
+      // Legacy field — pre-v1-013 renderers read youtube_id directly.
+      youtube_id: ref.provider === "youtube" ? ref.id : "",
+    });
   };
 
   const commitChapters = (draft: string): void => {
@@ -140,10 +166,33 @@ function VideoEmbedView({ node, updateAttributes, editor }: NodeViewProps) {
         >
           Video
         </span>
+        {editable ? (
+          <select
+            value={provider}
+            onChange={(e) =>
+              updateAttributes({ provider: e.target.value as VideoProvider })
+            }
+            aria-label="Video provider"
+            style={{
+              marginLeft: "auto",
+              fontFamily: "var(--font-ui)",
+              fontSize: 11,
+              background: "var(--bg-2)",
+              color: "var(--ink-soft)",
+              border: `1px solid ${LINE}`,
+              borderRadius: "var(--r-sm)",
+              padding: "2px 6px",
+            }}
+          >
+            <option value="youtube">YouTube</option>
+            <option value="cloudflare-stream">Cloudflare Stream</option>
+            <option value="mux">Mux</option>
+          </select>
+        ) : null}
         {captionsUrl ? (
           <span
             style={{
-              marginLeft: "auto",
+              marginLeft: editable ? 0 : "auto",
               fontFamily: "var(--font-ui)",
               fontSize: 11,
               color: "var(--ink-mute)",
@@ -159,10 +208,11 @@ function VideoEmbedView({ node, updateAttributes, editor }: NodeViewProps) {
       {editable ? (
         <div style={{ padding: "12px 16px", borderBottom: `1px solid ${LINE}` }}>
           <input
+            key={provider}
             type="text"
-            defaultValue={youtubeId}
+            defaultValue={currentId}
             onBlur={(e) => commitUrlOrId(e.target.value)}
-            placeholder="Paste a YouTube URL or 11-char video ID"
+            placeholder={VIDEO_URL_PLACEHOLDERS[provider]}
             style={{
               ...inputBase,
               fontFamily: "var(--font-mono, monospace)",
@@ -185,7 +235,7 @@ function VideoEmbedView({ node, updateAttributes, editor }: NodeViewProps) {
         >
           <iframe
             src={embedSrc}
-            title={title || "YouTube video"}
+            title={title || `${VIDEO_PROVIDER_LABELS[provider]} video`}
             loading="lazy"
             allow="accelerometer; encrypted-media; picture-in-picture"
             allowFullScreen
@@ -210,7 +260,7 @@ function VideoEmbedView({ node, updateAttributes, editor }: NodeViewProps) {
           }}
         >
           {editable
-            ? "Paste a YouTube URL above."
+            ? `Paste a ${VIDEO_PROVIDER_LABELS[provider]} URL above.`
             : "No video linked."}
         </div>
       )}
@@ -365,6 +415,12 @@ export const VideoEmbedNode = Node.create({
 
   addAttributes() {
     return {
+      // Back-compat: b108-2hx nodes have no provider attr — the
+      // default makes them render as YouTube.
+      provider: { default: "youtube" },
+      video_id: { default: "" },
+      // Legacy b108-2hx field — still written for YouTube nodes so
+      // pre-v1-013 renderers keep working.
       youtube_id: { default: "" },
       title: { default: "" },
       caption: { default: "" },
