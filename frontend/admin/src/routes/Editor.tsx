@@ -19,6 +19,7 @@
 import {
   SealEntryDialog,
   AutoStampChip,
+  EntryTagsRow,
   TiptapEditor,
   Toast,
   VisibilityControl,
@@ -372,6 +373,9 @@ export function Editor() {
   // breadcrumb read title from `detail.data.title` (read-only), and
   // the blog surface then showed every post as "Untitled".
   const [title, setTitle] = useState<string>("");
+  // v1-001: flexible tags + tradition tags.
+  const [tags, setTags] = useState<string[]>([]);
+  const [traditionTags, setTraditionTags] = useState<string[]>([]);
 
   // Hydrate from detail on first successful fetch.
   useEffect(() => {
@@ -388,6 +392,8 @@ export function Editor() {
       setVisibility(detail.data.visibility);
       setSealed(detail.data.sealed);
       setTitle(detail.data.title ?? "");
+      setTags(detail.data.tags ?? []);
+      setTraditionTags(detail.data.tradition_tags ?? []);
     }
   }, [detail.status, detail.data, entryId]);
 
@@ -410,6 +416,27 @@ export function Editor() {
       }
     },
     [entryId, detail.data?.title],
+  );
+
+  // v1-001: PATCH tag lists on every chip add / remove — same
+  // optimistic-then-toast pattern as the visibility chip.
+  const onTagsChange = useMemo(
+    () =>
+      async (field: "tags" | "tradition_tags", next: string[]) => {
+        if (entryId === null) return;
+        if (field === "tags") setTags(next);
+        else setTraditionTags(next);
+        try {
+          await apiMethods.updateEntry(entryId, { [field]: next });
+        } catch (cause) {
+          Toast.push({
+            tone: "error",
+            title: "Couldn't save tags",
+            body: cause instanceof Error ? cause.message : String(cause),
+          });
+        }
+      },
+    [entryId],
   );
 
   const fetchChart: ChartFetchFn = useMemo(
@@ -588,6 +615,27 @@ export function Editor() {
             marginBottom: 16,
           }}
         />
+        <div
+          data-role="entry-tags-rows"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+            marginBottom: 16,
+          }}
+        >
+          <EntryTagsRow
+            label="Tags"
+            values={tags}
+            onChange={(next) => void onTagsChange("tags", next)}
+          />
+          <EntryTagsRow
+            label="Tradition tags"
+            values={traditionTags}
+            onChange={(next) => void onTagsChange("tradition_tags", next)}
+            placeholder="Add a tradition"
+          />
+        </div>
         {(() => {
           const astroLabel = formatAstroSnapshot(
             detail.data?.astro_snapshot,

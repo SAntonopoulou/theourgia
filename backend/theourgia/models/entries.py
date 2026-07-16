@@ -31,6 +31,7 @@ from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import Column, DateTime, Float, ForeignKey, Index, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Enum as SQLEnum
 from sqlmodel import Field
 
@@ -157,6 +158,24 @@ class Entry(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
         description=(
             "Denormalised plaintext extraction of ``body`` for "
             "Postgres FTS. Absent for sealed entries."
+        ),
+    )
+
+    # — Tagging (v1-001) ————————————————————————————————
+    tags: list[str] = Field(
+        default_factory=list,
+        sa_column=Column(JSONB, nullable=False, server_default="[]"),
+        description="Free-form flexible tags.",
+    )
+
+    tradition_tags: list[str] = Field(
+        default_factory=list,
+        sa_column=Column(JSONB, nullable=False, server_default="[]"),
+        description=(
+            "Tradition tags this entry belongs to (Hellenic, Thelemic, "
+            "Hermetic, Goetic, Vedic, …). Checked against the "
+            "operator-curated closed-tradition list before any public "
+            "visibility path — see theourgia.core.traditions."
         ),
     )
 

@@ -60,6 +60,7 @@ from theourgia.api.routers.v1 import tarot as v1_tarot
 from theourgia.api.routers.v1 import templates as v1_templates
 from theourgia.api.routers.v1 import today_ledger as v1_today_ledger
 from theourgia.api.routers.v1 import tools as v1_tools
+from theourgia.api.routers.v1 import traditions as v1_traditions
 from theourgia.api.routers.v1 import user_settings as v1_user_settings
 from theourgia.api.routers.v1 import voces as v1_voces
 from theourgia.api.routers.v1 import weather as v1_weather
@@ -137,6 +138,7 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_webauthn.router, tags=["auth"])
     v1.include_router(v1_totp.router, tags=["auth"])
     v1.include_router(v1_entries.router, tags=["entries"])
+    v1.include_router(v1_traditions.router, tags=["traditions"])
     v1.include_router(v1_entities.router, tags=["entities"])
     v1.include_router(v1_library.router, tags=["library"])
     v1.include_router(v1_user_settings.router, tags=["user_settings"])

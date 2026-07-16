@@ -129,6 +129,23 @@ def register_default_instance_settings(
         registry=target,
     )
 
+    # ── Content / cultural sensitivity ───────────────────────────────
+    register_instance_setting(
+        "content.closed_tradition_slugs",
+        value_type=str,
+        default="",
+        description=(
+            "Operator-curated, comma-separated list of closed-tradition "
+            "slugs (for example active indigenous practices whose "
+            "communities do not share their material publicly). Content "
+            "whose tradition_tags match a listed slug is hard-blocked "
+            "from public visibility and excluded from AI agent access. "
+            "Empty by default — which traditions are closed is a "
+            "judgement each operator makes for their community."
+        ),
+        registry=target,
+    )
+
     # ── Backups / maintenance ────────────────────────────────────────
     register_instance_setting(
         "maintenance.mode",

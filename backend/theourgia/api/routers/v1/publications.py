@@ -48,6 +48,11 @@ from theourgia.core.publishing.book_pdf import (
     PublicationChapterInput,
     render_book_pdf,
 )
+from theourgia.core.traditions import (
+    RESPECT_SOURCE_DETAIL,
+    closed_tradition_conflicts,
+    get_closed_tradition_slugs,
+)
 from theourgia.models.entries import EncryptionMode, Entry
 from theourgia.models.persona import Persona, PersonaKind
 from theourgia.models.publications import (
@@ -354,6 +359,37 @@ async def _reject_sealed_embeds(
         )
 
 
+async def _reject_closed_tradition_embeds(
+    db: AsyncSession, body: dict, owner_id: UUID,
+) -> None:
+    """If the body references any entry carrying a closed-tradition
+    tag, raise 400.
+
+    v1-001 respect-source rule (Phase 15 §14): publications are
+    public-facing, so closed-tradition material never embeds. Same
+    walk as :func:`_reject_sealed_embeds`."""
+    refs = _collect_entry_id_refs(body)
+    if not refs:
+        return
+    closed = await get_closed_tradition_slugs(db)
+    if not closed:
+        return
+    stmt = (
+        select(Entry.id, Entry.tradition_tags)
+        .where(Entry.id.in_(refs))
+        .where(Entry.owner_id == owner_id)
+    )
+    # Intersect in Python — the referenced-entry set is small and the
+    # closed set tiny; JSONB overlap operators aren't worth it here.
+    for _entry_id, tradition_tags in (await db.execute(stmt)).all():
+        conflicts = closed_tradition_conflicts(tradition_tags or [], closed)
+        if conflicts:
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST,
+                RESPECT_SOURCE_DETAIL.format(slugs=", ".join(conflicts)),
+            )
+
+
 # ── Routes ──────────────────────────────────────────────────────
 
 
@@ -508,6 +544,9 @@ async def publish_publication(
             f"Cannot publish from state {row.state.value!r}.",
         )
     await _reject_sealed_embeds(db, dict(row.body or {}), current_user.id)
+    await _reject_closed_tradition_embeds(
+        db, dict(row.body or {}), current_user.id,
+    )
     row.state = PublicationState.LIVE
     row.published_at = _now_utc(row)
     row.scheduled_publish_at = None
@@ -587,6 +626,9 @@ async def republish_publication(
             f"Cannot republish from state {row.state.value!r}.",
         )
     await _reject_sealed_embeds(db, dict(row.body or {}), current_user.id)
+    await _reject_closed_tradition_embeds(
+        db, dict(row.body or {}), current_user.id,
+    )
     row.state = PublicationState.LIVE
     row.published_at = _now_utc(row)
     row.withdrawn_at = None

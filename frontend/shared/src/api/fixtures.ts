@@ -47,15 +47,25 @@ import type {
 const ENTRY_BODIES: Map<string, string> = new Map();
 
 /**
- * Per-entry visibility + sealed + published_at state for the
- * detail/PATCH fixtures. Defaults: personal · not-sealed · not-published.
+ * Per-entry visibility + sealed + published_at + tag state for the
+ * detail/PATCH fixtures. Defaults: personal · not-sealed · not-published
+ * · untagged.
  */
-type EntryMeta = Pick<EntryDetailRecord, "visibility" | "sealed" | "published_at">;
+type EntryMeta = Pick<
+  EntryDetailRecord,
+  "visibility" | "sealed" | "published_at" | "tags" | "tradition_tags"
+>;
 const ENTRY_META: Map<string, EntryMeta> = new Map();
 
 function entryMeta(id: string): EntryMeta {
   return (
-    ENTRY_META.get(id) ?? { visibility: "personal", sealed: false, published_at: null }
+    ENTRY_META.get(id) ?? {
+      visibility: "personal",
+      sealed: false,
+      published_at: null,
+      tags: [],
+      tradition_tags: [],
+    }
   );
 }
 
@@ -522,6 +532,8 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
       const patch = (body ?? {}) as Partial<EntryRecord> & {
         visibility?: EntryMeta["visibility"];
         sealed?: boolean;
+        tags?: string[];
+        tradition_tags?: string[];
       };
       const current = ENTRIES[idx] as EntryRecord;
       const updated: EntryRecord = {
@@ -532,14 +544,23 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
         updated_at: new Date().toISOString(),
       };
       ENTRIES[idx] = updated;
-      // Persist visibility / sealed into the meta store so subsequent
-      // detail reads see the new values.
-      if (patch.visibility !== undefined || patch.sealed !== undefined) {
+      // Persist visibility / sealed / tags into the meta store so
+      // subsequent detail reads see the new values.
+      if (
+        patch.visibility !== undefined ||
+        patch.sealed !== undefined ||
+        patch.tags !== undefined ||
+        patch.tradition_tags !== undefined
+      ) {
         const existing = entryMeta(id!);
         ENTRY_META.set(id!, {
           ...existing,
           ...(patch.visibility !== undefined ? { visibility: patch.visibility } : {}),
           ...(patch.sealed !== undefined ? { sealed: patch.sealed } : {}),
+          ...(patch.tags !== undefined ? { tags: patch.tags } : {}),
+          ...(patch.tradition_tags !== undefined
+            ? { tradition_tags: patch.tradition_tags }
+            : {}),
         });
       }
       return updated;

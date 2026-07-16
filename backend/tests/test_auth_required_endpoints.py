@@ -31,6 +31,8 @@ AUTH_REQUIRED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("POST", "/api/v1/entries", {"title": "unauth", "type": "note"}),
     ("GET", "/api/v1/entries", None),
     ("GET", "/api/v1/entries/stats", None),
+    # Traditions (v1-001).
+    ("GET", "/api/v1/traditions/closed-slugs", None),
     # Entities + alias-graph + views.
     ("POST", "/api/v1/entities", {"name": "x"}),
     ("GET", "/api/v1/entities", None),

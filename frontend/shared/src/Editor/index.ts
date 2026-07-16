@@ -7,6 +7,7 @@ export {
   type ChartFetchRequest,
 } from "./EditorContext.js";
 export { EntityPicker, type EntityPickerProps } from "./EntityPicker.js";
+export { EntryTagsRow, type EntryTagsRowProps } from "./EntryTagsRow.js";
 export {
   LibraryPicker,
   type LibraryPickerProps,

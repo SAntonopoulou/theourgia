@@ -23,6 +23,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import CurrentUser, get_db_session
+from theourgia.core.traditions import (
+    RESPECT_SOURCE_DETAIL,
+    closed_tradition_conflicts,
+    get_closed_tradition_slugs,
+)
 from theourgia.models.entries import (
     EncryptionMode,
     Entry,
@@ -102,6 +107,9 @@ class EntryRead(BaseModel):
     # renders these as chip strips at the top of the entry.
     astro_snapshot: str | None = None
     calendar_snapshot: str | None = None
+    # v1-001 — flexible tags + tradition tags.
+    tags: list[str] = []
+    tradition_tags: list[str] = []
 
 
 class EntryCreate(BaseModel):
@@ -132,6 +140,10 @@ class EntryCreate(BaseModel):
     scheduled_publish_at: datetime | None = None
     # Multi-identity authoring (Batch 32).
     authored_by_persona_id: str | None = None
+    # v1-001 — flexible tags + tradition tags. Normalized on write via
+    # ``_normalize_tags`` (strip, drop empties, dedupe, caps).
+    tags: list[str] = Field(default_factory=list)
+    tradition_tags: list[str] = Field(default_factory=list)
 
 
 class EntryWindowCounts(BaseModel):
@@ -152,6 +164,57 @@ class EntryStats(BaseModel):
     by_type: dict[EntryTypeLiteral, int]
     this_week: EntryWindowCounts
     last_week: EntryWindowCounts
+
+
+# v1-001 — tag caps. Enforced in ``_normalize_tags`` rather than the
+# pydantic schema so the 422 detail names the offending list.
+_MAX_TAGS_PER_LIST = 32
+_MAX_TAG_LENGTH = 64
+
+
+def _normalize_tags(items: list[str], field: str) -> list[str]:
+    """Strip whitespace, drop empties, dedupe preserving order."""
+    seen: set[str] = set()
+    cleaned: list[str] = []
+    for item in items:
+        stripped = item.strip()
+        if not stripped:
+            continue
+        if len(stripped) > _MAX_TAG_LENGTH:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=(
+                    f"{field} items must be at most "
+                    f"{_MAX_TAG_LENGTH} characters."
+                ),
+            )
+        if stripped in seen:
+            continue
+        seen.add(stripped)
+        cleaned.append(stripped)
+    if len(cleaned) > _MAX_TAGS_PER_LIST:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"{field} accepts at most {_MAX_TAGS_PER_LIST} items.",
+        )
+    return cleaned
+
+
+async def _reject_closed_tradition_public(
+    session: AsyncSession, tradition_tags: list[str],
+) -> None:
+    """403 when ``tradition_tags`` intersect the operator's closed set.
+
+    The respect-source rule (Phase 15 §14): closed-tradition content
+    never becomes publicly visible from this instance.
+    """
+    closed = await get_closed_tradition_slugs(session)
+    conflicts = closed_tradition_conflicts(tradition_tags, closed)
+    if conflicts:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=RESPECT_SOURCE_DETAIL.format(slugs=", ".join(conflicts)),
+        )
 
 
 def _to_read(row: Entry) -> EntryRead:
@@ -184,6 +247,8 @@ def _to_read(row: Entry) -> EntryRead:
         sealed=row.encryption_mode == EncryptionMode.SEALED,
         astro_snapshot=row.astro_snapshot,
         calendar_snapshot=row.calendar_snapshot,
+        tags=list(row.tags),
+        tradition_tags=list(row.tradition_tags),
     )
 
 
@@ -282,6 +347,13 @@ async def create_entry(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     current_user: CurrentUser,
 ) -> EntryRead:
+    # v1-001 — normalize the tag lists, then apply the respect-source
+    # rule before doing any other work.
+    tags = _normalize_tags(payload.tags, "tags")
+    tradition_tags = _normalize_tags(payload.tradition_tags, "tradition_tags")
+    if payload.visibility == "public":
+        await _reject_closed_tradition_public(session, tradition_tags)
+
     # b108-2hy — auto-stamp on create. Compute the astro + calendar
     # snapshots at entry-birth so the entry always carries context
     # about WHERE in the moon cycle + WHICH sun sign it was made.
@@ -346,6 +418,8 @@ async def create_entry(
         mood=payload.mood,
         energy=payload.energy,
         health_notes=payload.health_notes,
+        tags=tags,
+        tradition_tags=tradition_tags,
         parent_id=UUID(payload.parent_id) if payload.parent_id else None,
         scheduled_publish_at=payload.scheduled_publish_at,
         authored_by_persona_id=(
@@ -395,6 +469,12 @@ class EntryUpdate(BaseModel):
     excerpt: str | None = Field(default=None, max_length=1024)
     glyph: str | None = Field(default=None, max_length=64)
     body: str | None = None
+    # v1-001 — the Editor's visibility chip PATCHes this route; the
+    # respect-source rule below gates the personal-to-public flips.
+    visibility: EntryVisibilityLiteral | None = None
+    # v1-001 — None means unchanged.
+    tags: list[str] | None = None
+    tradition_tags: list[str] | None = None
 
 
 @router.patch(
@@ -421,6 +501,32 @@ async def update_entry(
     row = result.scalar_one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail=f"Entry {entry_id} not found")
+    # v1-001 — normalize incoming tag lists (None means unchanged).
+    new_tags = (
+        None if payload.tags is None
+        else _normalize_tags(payload.tags, "tags")
+    )
+    new_tradition_tags = (
+        None if payload.tradition_tags is None
+        else _normalize_tags(payload.tradition_tags, "tradition_tags")
+    )
+    # Respect-source rule: refuse any patch that would leave the entry
+    # publicly visible with a closed-tradition tag — whether it flips
+    # visibility to public or retags an already-public entry.
+    effective_visibility = (
+        EntryVisibility(payload.visibility)
+        if payload.visibility is not None
+        else row.visibility
+    )
+    if effective_visibility == EntryVisibility.PUBLIC and (
+        payload.visibility is not None or new_tradition_tags is not None
+    ):
+        await _reject_closed_tradition_public(
+            session,
+            new_tradition_tags
+            if new_tradition_tags is not None
+            else row.tradition_tags,
+        )
     if payload.title is not None:
         row.title = payload.title
     if payload.type is not None:
@@ -431,6 +537,12 @@ async def update_entry(
         row.glyph = payload.glyph
     if payload.body is not None:
         row.body = payload.body
+    if payload.visibility is not None:
+        row.visibility = EntryVisibility(payload.visibility)
+    if new_tags is not None:
+        row.tags = new_tags
+    if new_tradition_tags is not None:
+        row.tradition_tags = new_tradition_tags
     await session.commit()
     await session.refresh(row)
     return _to_read(row)
@@ -523,6 +635,9 @@ async def publish_entry(
                 "defeat the whole point of the seal."
             ),
         )
+    # v1-001 — respect-source rule: publish promotes visibility to
+    # PUBLIC, so closed-tradition entries must refuse here too.
+    await _reject_closed_tradition_public(session, row.tradition_tags)
     # Idempotent — publishing an already-published entry keeps the
     # original timestamp so "when was this published" doesn't drift
     # on repeated clicks.

@@ -105,6 +105,14 @@ export interface EntryDetailRecord extends EntryRecord {
    */
   astro_snapshot?: string | null;
   calendar_snapshot?: string | null;
+  /** Free-form flexible tags (v1-001). */
+  tags: string[];
+  /**
+   * Tradition tags (Hellenic, Thelemic, ...). Checked server-side
+   * against the operator-curated closed-tradition list before any
+   * public visibility path.
+   */
+  tradition_tags: string[];
 }
 
 /** Input for ``PATCH /api/v1/entries/{id}/body``. */
@@ -174,6 +182,10 @@ export interface CreateEntryInput {
   visibility?: EntityVisibility;
   /** Client-side-encrypted body. Defaults false. */
   sealed?: boolean;
+  /** Free-form flexible tags (v1-001). Defaults to [] server-side. */
+  tags?: string[];
+  /** Tradition tags (Hellenic, Thelemic, ...). Defaults to []. */
+  tradition_tags?: string[];
 }
 
 /** Counts within a single time window. */
