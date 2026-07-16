@@ -73,7 +73,7 @@ def test_namespaces_grouped(registry: SettingsRegistry) -> None:
     """All baseline keys fall into one of the documented namespaces."""
     expected_namespaces = {
         "ui", "a11y", "i18n", "editor", "notifications",
-        "federation", "agent",
+        "federation", "agent", "audio", "calendars",
     }
     actual = {d.key.split(".", 1)[0] for d in registry.all()}
     assert actual.issubset(expected_namespaces), (

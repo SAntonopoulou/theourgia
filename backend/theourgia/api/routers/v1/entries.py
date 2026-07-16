@@ -386,12 +386,27 @@ async def create_entry(
         if stamp_lon is None:
             stamp_lon = settings_lon if settings_lon is not None else 0.0
 
+    # v1-016 — the user's enabled calendars (wizard / settings) join
+    # the snapshot beyond the always-stamped four. A failed read means
+    # no extras, never a failed entry.
+    try:
+        from theourgia.api.routers.v1.user_settings import (
+            read_enabled_calendars,
+        )
+
+        extra_calendar_ids = tuple(
+            await read_enabled_calendars(session, current_user.id)
+        )
+    except Exception:
+        extra_calendar_ids = ()
+
     try:
         snapshot = compute_snapshots(
             AutoStampInput(
                 instant=stamp_instant,
                 latitude=stamp_lat,
                 longitude=stamp_lon,
+                extra_calendar_ids=extra_calendar_ids,
             )
         )
         astro_snapshot: str | None = snapshot.astro_snapshot

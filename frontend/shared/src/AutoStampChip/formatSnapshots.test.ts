@@ -166,4 +166,36 @@ describe("formatCalendarSnapshot", () => {
     expect(formatCalendarSnapshot("not json")).toBeNull();
     expect(formatCalendarSnapshot("{}")).toBeNull();
   });
+
+  // v1-016 — user-enabled extras render exclusively from the
+  // backend's pre-formatted `long` string. The frontend keeps no
+  // month-name tables for these (the b108-2hz rule), so a calendar
+  // it has never heard of still renders correctly.
+  it("renders enabled extras verbatim from their 'long' string", () => {
+    const raw = JSON.stringify({
+      islamic: { year: 1448, month: 1, day: 5, month_name: "Muharram", long: "5 Muharram 1448 AH" },
+      coptic: { year: 1742, month: 10, day: 14, month_name: "Paoni", long: "14 Paoni 1742 AM" },
+      mayan: { year: 13, month: 5, day: 3, long: "13.0.13.12.10 · 7 Ok · 3 Sek" },
+      "french-republican": { year: 234, month: 10, day: 3, long: "3 Messidor An CCXXXIV" },
+    });
+    const out = formatCalendarSnapshot(raw);
+    expect(out).toContain("5 Muharram 1448 AH");
+    expect(out).toContain("14 Paoni 1742 AM");
+    expect(out).toContain("13.0.13.12.10 · 7 Ok · 3 Sek");
+    expect(out).toContain("3 Messidor An CCXXXIV");
+    expect(out).not.toMatch(/month \d/i);
+  });
+
+  it("skips extras without a 'long' string instead of guessing", () => {
+    const raw = JSON.stringify({
+      hebrew: { year: 5786, month_name: "Tammuz", day: 24 },
+      islamic: { year: 1448, month: 1, day: 5 },
+      instant_utc: "2026-06-21T12:00:00+00:00",
+    });
+    const out = formatCalendarSnapshot(raw);
+    expect(out).toContain("Tammuz");
+    expect(out).not.toContain("1448");
+    expect(out).not.toContain("instant_utc");
+    expect(out).not.toMatch(/month \d/i);
+  });
 });

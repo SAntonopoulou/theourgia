@@ -16,9 +16,11 @@
  *   4. Choose which calendars to display (optional; multi-select)
  *   5. Review + submit
  *
- * Tradition + calendars are informational — no schema for
- * preferences yet — but capturing them here lets the wizard "know"
- * you and lets a follow-up batch actually persist them.
+ * Traditions are informational — no schema for that preference yet.
+ * Calendars persist (v1-016): after the account is created, the
+ * selection is saved to the `calendars.enabled` user setting via
+ * PUT /users/me/settings/calendars, and entry auto-stamps include
+ * the chosen calendars from then on.
  */
 
 import { useAuth } from "@theourgia/shared";
@@ -42,13 +44,17 @@ const TRADITIONS = [
   "Other",
 ] as const;
 
+// Exactly the calendars the backend registers (core/calendars/) —
+// every checkbox here converts for real and lands in entry stamps.
 const CALENDARS = [
   { key: "gregorian", label: "Gregorian" },
   { key: "julian", label: "Julian" },
   { key: "hebrew", label: "Hebrew" },
-  { key: "islamic", label: "Islamic (Hijri)" },
+  { key: "thelemic", label: "Thelemic" },
+  { key: "islamic", label: "Islamic (civil)" },
   { key: "coptic", label: "Coptic" },
-  { key: "thelemic", label: "Thelemic Era" },
+  { key: "mayan", label: "Mayan" },
+  { key: "french-republican", label: "French Republican" },
 ] as const;
 
 type Step = 0 | 1 | 2 | 3 | 4;
@@ -113,7 +119,19 @@ export function SetupWizardRoute() {
         method: "POST",
         json: { magickal_name: draft.magickalName.trim() },
       });
-      // The auth cookie is now set; force auth refresh + navigate.
+      // The auth cookie is now set — persist the calendar selection
+      // (v1-016). Best-effort: a failed preference write must never
+      // block the vault from opening; the same choice is editable in
+      // Settings afterwards.
+      try {
+        await apiClient.request("/api/v1/users/me/settings/calendars", {
+          method: "PUT",
+          json: { enabled: draft.calendars },
+        });
+      } catch {
+        // Preference write failed — the account exists; carry on.
+      }
+      // Force auth refresh + navigate.
       window.location.assign("/");
     } catch (e) {
       setError(

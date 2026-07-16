@@ -24,8 +24,9 @@ authoritative instant) into a localized civil/ritual presentation. Two
 calendars looking at the same instant must always agree on *when*
 they're looking at — they only disagree on *how* to spell it.
 
-The first batch ships Gregorian, Julian, Hebrew, and Thelemic. The
-remaining calendars in `plan/03-time-and-cosmos.md` §1 land in
+The first batch shipped Gregorian, Julian, Hebrew, and Thelemic;
+v1-016 added Islamic (civil), Coptic, Mayan, and French Republican.
+The remaining calendars in `plan/03-time-and-cosmos.md` §1 land in
 follow-up batches; the substrate is the same for each.
 """
 
@@ -43,6 +44,10 @@ from theourgia.core.calendars import gregorian as _gregorian  # noqa: F401
 from theourgia.core.calendars import julian as _julian  # noqa: F401
 from theourgia.core.calendars import hebrew as _hebrew  # noqa: F401
 from theourgia.core.calendars import thelemic as _thelemic  # noqa: F401
+from theourgia.core.calendars import islamic as _islamic  # noqa: F401
+from theourgia.core.calendars import coptic as _coptic  # noqa: F401
+from theourgia.core.calendars import mayan as _mayan  # noqa: F401
+from theourgia.core.calendars import french_republican as _french_republican  # noqa: F401
 
 __all__ = [
     "Calendar",

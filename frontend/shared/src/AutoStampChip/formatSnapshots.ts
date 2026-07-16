@@ -43,6 +43,14 @@ export interface CalendarSnapshotShape {
     formatted?: string;
     long?: string;
   };
+  /**
+   * v1-016 — user-enabled extras (islamic, coptic, mayan,
+   * french-republican, plugin calendars). Rendered exclusively from
+   * the backend's pre-formatted `long` string — the b108-2hz rule:
+   * the frontend keeps NO month-name tables for these, so it can
+   * never disagree with the backend about what a month is called.
+   */
+  [calendarId: string]: unknown;
 }
 
 export function parseSnapshot<T>(raw: string | null | undefined): T | null {
@@ -163,6 +171,18 @@ export function formatCalendarSnapshot(
       parts.push(
         `Julian: ${j.year}-${String(j.month).padStart(2, "0")}-${String(j.day).padStart(2, "0")}`,
       );
+    }
+  }
+  // v1-016 — user-enabled extras (islamic, coptic, mayan,
+  // french-republican, plugin calendars): always the backend's
+  // pre-rendered `long`, never a frontend name table.
+  const handledAbove = new Set(["gregorian", "julian", "hebrew", "thelemic", "instant_utc"]);
+  for (const [calendarId, value] of Object.entries(parsed)) {
+    if (handledAbove.has(calendarId)) continue;
+    if (value === null || typeof value !== "object") continue;
+    const long = (value as { long?: unknown }).long;
+    if (typeof long === "string" && long) {
+      parts.push(long);
     }
   }
   if (parts.length === 0) return null;

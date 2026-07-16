@@ -100,6 +100,34 @@ def register_default_settings(
         registry=target,
     )
 
+    # ── Wellbeing (v1-010, opt-in — OFF by default) ──────────────────
+    # Maps to the frontend "Crisis-aware nudge" toggle on the
+    # AccessibilityAndMotion surface (prefs key ``crisisNudge``); hence
+    # the a11y namespace. Project rule: the user chooses whether this
+    # care exists — never default it on.
+    register_setting(
+        "a11y.crisis_nudge",
+        value_type=bool,
+        default=False,
+        description=(
+            "Opt-in crisis-aware nudge. When on, Theourgia may show a "
+            "single quiet dismissible note pointing at support "
+            "resources. Off by default."
+        ),
+        registry=target,
+    )
+    register_setting(
+        "a11y.crisis_nudge_muted_until",
+        value_type=str,
+        default="",
+        description=(
+            "Nudge mute horizon: empty (not muted), an ISO date "
+            "(muted through that day), or 'forever' (muted "
+            "indefinitely — the user is never nagged)."
+        ),
+        registry=target,
+    )
+
     # ── Locale / time ────────────────────────────────────────────────
     register_setting(
         "i18n.locale_override",
@@ -117,6 +145,21 @@ def register_default_settings(
         value_type=str,
         default="UTC",
         description="IANA timezone name for displaying dates.",
+        registry=target,
+    )
+
+    # ── Calendars (v1-016 — the setup wizard's multi-select) ─────────
+    register_setting(
+        "calendars.enabled",
+        value_type=list,
+        default=["gregorian", "julian", "hebrew", "thelemic"],
+        description=(
+            "Calendar ids shown on the dashboard and stamped onto new "
+            "entries (JSON list). Gregorian, Julian, Hebrew, and "
+            "Thelemic are always stamped; ids listed here add the "
+            "optional calendars (islamic, coptic, mayan, "
+            "french-republican, plugin-provided)."
+        ),
         registry=target,
     )
 
@@ -167,6 +210,20 @@ def register_default_settings(
             "per entry."
         ),
         allowed_values=("personal", "viewer", "network", "public", "sealed"),
+        registry=target,
+    )
+
+    # ── Audio (Tier 2 — local Whisper transcription) ─────────────────
+    register_setting(
+        "audio.transcription_opt_in",
+        value_type=bool,
+        default=False,
+        description=(
+            "Whether this user's voice recordings may be transcribed "
+            "by the local Whisper engine. Off by default; runs only "
+            "when the instance ALSO has THEOURGIA_TRANSCRIPTION_ENABLED "
+            "set. Audio never leaves the instance either way."
+        ),
         registry=target,
     )
 

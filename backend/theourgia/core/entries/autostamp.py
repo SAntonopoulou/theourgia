@@ -54,6 +54,10 @@ class AutoStampInput:
     instant: datetime  # tz-aware; MUST be UTC or convertible
     latitude: float
     longitude: float
+    # v1-016 — calendar ids beyond the always-stamped four (from the
+    # user's ``calendars.enabled`` setting). Unknown ids are skipped,
+    # never fatal.
+    extra_calendar_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,7 +75,7 @@ def compute_snapshots(inp: AutoStampInput) -> AutoStampResult:
     utc = inp.instant.astimezone(timezone.utc)
 
     astro_payload = _astro_payload(utc, inp.latitude, inp.longitude)
-    calendar_payload = _calendar_payload(utc)
+    calendar_payload = _calendar_payload(utc, inp.extra_calendar_ids)
 
     return AutoStampResult(
         astro_snapshot=json.dumps(astro_payload, ensure_ascii=False),
@@ -198,28 +202,39 @@ def moon_phase_name(elongation_deg: float) -> str:
 # ── Calendar payload ───────────────────────────────────────────
 
 
-def _calendar_payload(utc: datetime) -> dict[str, Any]:
+#: Calendars stamped on EVERY entry, regardless of user preference —
+#: the b108-2hy baseline. User-enabled extras (v1-016) ride on top.
+ALWAYS_STAMPED_CALENDAR_IDS = ("gregorian", "julian", "hebrew", "thelemic")
+
+
+def _calendar_payload(
+    utc: datetime, extra_calendar_ids: tuple[str, ...] = (),
+) -> dict[str, Any]:
     """Multi-calendar snapshot.
 
-    Includes: Gregorian (canonical) · Julian · Hebrew · Thelemic.
-    (Coptic + Islamic land when their converters ship.)
+    Always includes: Gregorian (canonical) · Julian · Hebrew ·
+    Thelemic. Plus (v1-016) any calendar the user enabled via the
+    ``calendars.enabled`` setting — Islamic (civil), Coptic, Mayan,
+    French Republican ship with core; plugins can add more. Unknown
+    or failing extras never break the stamp.
     """
-    from theourgia.core.calendars.gregorian import GregorianCalendar
-    from theourgia.core.calendars.hebrew import HebrewCalendar
-    from theourgia.core.calendars.julian import JulianCalendar
-    from theourgia.core.calendars.thelemic import ThelemicCalendar
+    from theourgia.core.calendars import get_calendar
 
     result: dict[str, Any] = {"instant_utc": utc.isoformat()}
 
-    for label, calendar in (
-        ("gregorian", GregorianCalendar()),
-        ("julian", JulianCalendar()),
-        ("hebrew", HebrewCalendar()),
-        ("thelemic", ThelemicCalendar()),
-    ):
+    labels = list(ALWAYS_STAMPED_CALENDAR_IDS)
+    for extra in extra_calendar_ids:
+        if extra not in labels:
+            labels.append(extra)
+
+    for label in labels:
         try:
-            date = calendar.from_instant(utc)
+            date = get_calendar(label).from_instant(utc)
             result[label] = _serialise_calendar_date(date)
+        except KeyError:
+            # Unknown extra id (stale setting, unloaded plugin) —
+            # skip rather than stamping an error blob.
+            continue
         except Exception as exc:  # pragma: no cover — defensive
             result[label] = {"error": str(exc)}
 
