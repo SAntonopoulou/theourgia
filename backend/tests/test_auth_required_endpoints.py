@@ -184,6 +184,9 @@ AUTH_REQUIRED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("GET", "/api/v1/bundles/installed", None),
     ("POST", "/api/v1/bundles/preview", None),
     ("GET", "/api/v1/bundles/export?type=pantheon", None),
+    # Bundled content packages (v1-020).
+    ("GET", "/api/v1/bundles/bundled", None),
+    ("POST", "/api/v1/bundles/bundled/hellenic-pantheon/import", None),
     # Memorial executor key-share (v1-018). Doubly important: the
     # request body is vault key material.
     ("POST", "/api/v1/memorial/key-share", {

@@ -102,8 +102,16 @@ redistribution, not your own practice.
 
 ### Current status
 
-The bundle format (version 1) is specified and the sandbox import path
-is live. The bundle library surface at `/bundles` is in place, with the
-full install-and-manage wiring landing alongside the registry's content
-hosting — the surface will tell you plainly if an action is not yet
-connected.
+The bundle backend is live: preview, piecemeal import, the installed
+list, export, and the sandbox path all run against real endpoints, and
+`/bundles` shows your actual install records. Seven bundled content
+packages ship with Theourgia — a Hellenic pantheon, a Thelemic ritual
+set, classic tarot spreads, a further PGM voces selection, Agrippa's
+planetary correspondences, traditional incense recipes, and
+traditional dream symbols — each a real `.mbf` built from cited
+public-domain sources. Two of the seven (the correspondences and the
+dream symbols) carry payload kinds that have no importer yet: their
+items are listed and kept with the install record, and the import
+report says plainly that they were not materialized. Removing an
+installed bundle is not wired yet — the surface tells you so rather
+than pretending.

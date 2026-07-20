@@ -10,6 +10,8 @@ import { NotFoundError } from "./errors.js";
 import type {
   AltarRecordWire,
   BookRecord,
+  BundleImportItemResultWire,
+  BundledPackageRead,
   BundledVoce,
   CastHoraryInput,
   CircleRecord,
@@ -43,6 +45,7 @@ import type {
   HealthStatus,
   HoraryReadingRecord,
   InitiationRead,
+  InstalledBundleRead,
   MagicSquareRecord,
   Meta,
   OathRead,
@@ -755,6 +758,13 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
   if (bare !== undefined) {
     const ledger = beingsLedgerFixture(method, bare, qs, body);
     if (ledger !== undefined) return ledger;
+  }
+
+  // ── Magickal bundles fixtures (v1-020) ───────────────────────────
+
+  if (bare !== undefined) {
+    const bundles = bundlesFixture(method, bare);
+    if (bundles !== undefined) return bundles;
   }
 
   return new NotFoundError(problem(404, "Not Found", `No fixture for ${method} ${path}`));
@@ -2760,6 +2770,257 @@ function beingsLedgerFixture(method: string, bare: string, qs: string, body: unk
       LEDGER_SERVITOR_TASKS.splice(idx, 1);
       return null;
     }
+  }
+
+  return undefined;
+}
+
+// ── Magickal bundles fixture state + handler (v1-020) ───────────────
+// Mirrors the seven real bundled packages in
+// `backend/theourgia/core/bundles/bundled_content.py` — slugs, types,
+// versions, per-kind counts, and licenses match the backend exactly.
+
+/** Payload kinds with a v1 importer (mirror of the backend's
+ *  KIND_IMPORTERS). Everything else is opaque-but-listed. */
+const BUNDLE_IMPORTABLE_KINDS = new Set([
+  "entities",
+  "entry-templates",
+  "tarot-spreads",
+  "voces",
+  "recipes",
+]);
+
+interface BundledPackageFixture extends BundledPackageRead {
+  /** First bundle-level source citation (short form) — used for the
+   *  install record's citation chip. */
+  citation: string;
+}
+
+const HELLENIC_PACKAGE: BundledPackageFixture = {
+  slug: "hellenic-pantheon",
+  name: "Hellenic Pantheon",
+  type: "pantheon",
+  version: "1.0.0",
+  description:
+    "The twelve Olympians and Hekate — thirteen entities with epithets, domains, and the classically documented planetary attributions.",
+  license: "CC0-1.0",
+  item_counts: { entities: 13 },
+  total_items: 13,
+  citation: "Hesiod, Theogony; the Homeric Hymns (PD)",
+};
+
+const BUNDLED_PACKAGES: BundledPackageFixture[] = [
+  HELLENIC_PACKAGE,
+  {
+    slug: "thelemic-ritual-set",
+    name: "Thelemic Ritual Set",
+    type: "ritual-set",
+    version: "1.0.0",
+    description:
+      "Liber Resh, the Star Ruby (1913 text), and the Will meal saying — entry templates carrying the full public-domain texts.",
+    license: "LicenseRef-Public-Domain",
+    item_counts: { "entry-templates": 3 },
+    total_items: 3,
+    citation: "Crowley, The Equinox I(6), 1911 (PD)",
+  },
+  {
+    slug: "classic-tarot-spreads",
+    name: "Classic Tarot Spreads",
+    type: "tarot-spreads",
+    version: "1.0.0",
+    description:
+      "Five traditional layouts — Celtic Cross, Three Card, Horseshoe, Tree of Life, and a thirteen-card Year Ahead.",
+    license: "CC0-1.0",
+    item_counts: { "tarot-spreads": 5 },
+    total_items: 5,
+    citation: "Waite, The Pictorial Key to the Tarot (1911, PD)",
+  },
+  {
+    slug: "pgm-voces-selection",
+    name: "PGM Voces — a Further Selection",
+    type: "voces-library",
+    version: "1.0.0",
+    description:
+      "Twelve voces magicae from the Greek Magical Papyri, each with its PGM reference, none duplicating the bundled Workshop corpus.",
+    license: "LicenseRef-Public-Domain",
+    item_counts: { voces: 12 },
+    total_items: 12,
+    citation: "PGM, Preisendanz ed. 1928-31 (PD)",
+  },
+  {
+    slug: "planetary-correspondences",
+    name: "Planetary Correspondences (Agrippa)",
+    type: "correspondences",
+    version: "1.0.0",
+    description:
+      "The classical seven-planet table per Agrippa (1533). No v1 importer for this kind — imports as a listed reference document.",
+    license: "CC0-1.0",
+    item_counts: { correspondences: 7 },
+    total_items: 7,
+    citation: "Agrippa, De Occulta Philosophia (1533, PD)",
+  },
+  {
+    slug: "traditional-incense-recipes",
+    name: "Traditional Incense Recipes",
+    type: "recipe-book",
+    version: "1.0.0",
+    description:
+      "Six documented historical formulas: two kyphi, the Exodus temple compound, two Orphic rubrics, and the seven planetary fumes.",
+    license: "CC0-1.0",
+    item_counts: { recipes: 6 },
+    total_items: 6,
+    citation: "Plutarch, De Iside et Osiride §80 (PD)",
+  },
+  {
+    slug: "dream-symbols-traditional",
+    name: "Traditional Dream Symbols",
+    type: "dream-symbols",
+    version: "1.0.0",
+    description:
+      "Forty symbols with traditional meanings, citing Artemidorus or the folk tradition each compiles. No v1 importer for this kind.",
+    license: "CC0-1.0",
+    item_counts: { "dream-symbols": 40 },
+    total_items: 40,
+    citation: "Artemidorus, Oneirocritica (2nd c. CE, PD)",
+  },
+];
+
+let BUNDLE_SEQ = 0;
+
+function makeInstalledBundle(pkg: BundledPackageFixture): InstalledBundleRead {
+  BUNDLE_SEQ += 1;
+  const importable = Object.entries(pkg.item_counts)
+    .filter(([kind]) => BUNDLE_IMPORTABLE_KINDS.has(kind))
+    .reduce((sum, [, count]) => sum + count, 0);
+  return {
+    id: `ib-${pkg.slug}-${BUNDLE_SEQ}`,
+    slug: pkg.slug,
+    version: pkg.version,
+    name: pkg.name,
+    type: pkg.type,
+    signature_verdict: "unsigned",
+    imported_item_count: importable,
+    closed_tradition: false,
+    attribution: `${pkg.name} v${pkg.version} by Theourgia Project — ${pkg.license} (public-domain). Sources: ${pkg.citation}`,
+    provenance: [],
+    installed_at: nowIso(),
+    author_name: "Theourgia Project",
+    description: pkg.description,
+    license_spdx: pkg.license,
+    source_citation: pkg.citation,
+    item_counts: { ...pkg.item_counts },
+  };
+}
+
+/** Seeded with one install so the /bundles surface is alive in mock
+ *  mode; bundledImport appends to it within the page session. */
+const INSTALLED_BUNDLES: InstalledBundleRead[] = [
+  { ...makeInstalledBundle(HELLENIC_PACKAGE), installed_at: "2026-07-16T00:00:00Z" },
+];
+
+function bundleImportResults(pkg: BundledPackageFixture): BundleImportItemResultWire[] {
+  const results: BundleImportItemResultWire[] = [];
+  for (const [kind, count] of Object.entries(pkg.item_counts)) {
+    const importable = BUNDLE_IMPORTABLE_KINDS.has(kind);
+    for (let i = 1; i <= count; i += 1) {
+      results.push({
+        ref: `${kind}-${i}`,
+        kind,
+        status: importable ? "imported" : "skipped",
+        detail: importable ? "" : `kind '${kind}' has no v1 importer — listed but not materialized`,
+        created_id: importable ? `row-${kind}-${i}` : null,
+      });
+    }
+  }
+  return results;
+}
+
+function bundlesFixture(method: string, bare: string): unknown {
+  if (bare === "/api/v1/bundles/installed" && method === "GET") {
+    return { bundles: [...INSTALLED_BUNDLES] };
+  }
+
+  if (bare === "/api/v1/bundles/bundled" && method === "GET") {
+    return {
+      bundles: BUNDLED_PACKAGES.map(({ citation: _citation, ...pkg }) => pkg),
+    };
+  }
+
+  const bundledImportMatch = /^\/api\/v1\/bundles\/bundled\/([^/]+)\/import$/.exec(bare);
+  if (bundledImportMatch && method === "POST") {
+    const pkg = BUNDLED_PACKAGES.find((b) => b.slug === bundledImportMatch[1]);
+    if (!pkg) {
+      return new NotFoundError(
+        problem(404, "Not Found", `unknown bundled package '${bundledImportMatch[1]}'`),
+      );
+    }
+    const installed = makeInstalledBundle(pkg);
+    INSTALLED_BUNDLES.unshift(installed);
+    const results = bundleImportResults(pkg);
+    const imported = results.filter((r) => r.status === "imported").length;
+    return {
+      installed_bundle_id: installed.id,
+      attribution: installed.attribution,
+      signature_verdict: "unsigned",
+      results,
+      imported,
+      skipped: results.length - imported,
+      total: results.length,
+    };
+  }
+
+  if (bare === "/api/v1/bundles/preview" && method === "POST") {
+    // Mock mode cannot open the uploaded zip — return a canonical
+    // preview shaped like the backend's (unsigned verdict, warn not
+    // block).
+    const pkg = HELLENIC_PACKAGE;
+    return {
+      manifest: {
+        mbf_version: 1,
+        type: pkg.type,
+        name: pkg.name,
+        slug: pkg.slug,
+        version: pkg.version,
+        description: pkg.description,
+      },
+      signature: { verdict: "unsigned", reason: "no signature.json present" },
+      unsigned_warning:
+        "This bundle is unsigned — its origin cannot be verified. Import proceeds with this warning; unsigned bundles are warned about, never blocked.",
+      items: bundleImportResults(pkg).map((r) => ({
+        ref: r.ref,
+        kind: r.kind,
+        display_name: r.ref,
+        importable: r.status === "imported",
+      })),
+      license: { spdx: pkg.license, magickal_tags: ["public-domain"] },
+      attribution: `${pkg.name} v${pkg.version} by Theourgia Project — ${pkg.license}`,
+      closed_tradition: false,
+      closed_tradition_note: "",
+      respect_source_notice: null,
+      closed_tradition_conflicts: [],
+      conflicts: { entity_names: [], installed_bundle_slug: false },
+    };
+  }
+
+  if (bare === "/api/v1/bundles/import" && method === "POST") {
+    const pkg = HELLENIC_PACKAGE;
+    const installed = makeInstalledBundle(pkg);
+    INSTALLED_BUNDLES.unshift(installed);
+    const results = bundleImportResults(pkg);
+    return {
+      installed_bundle_id: installed.id,
+      attribution: installed.attribution,
+      signature_verdict: "unsigned",
+      results,
+      imported: results.length,
+      skipped: 0,
+      total: results.length,
+    };
+  }
+
+  if (bare === "/api/v1/bundles/export" && method === "GET") {
+    // A tiny stand-in blob — the real endpoint streams the .mbf zip.
+    return new Blob(["mock-mbf-container"], { type: "application/zip" });
   }
 
   return undefined;

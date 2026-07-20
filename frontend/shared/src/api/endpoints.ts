@@ -21,6 +21,9 @@ import type {
   BanishingLogRecord,
   BodyPracticeRecord,
   BookRecord,
+  BundleImportResponse,
+  BundlePreviewResponse,
+  BundledPackageListResponse,
   BundledVoce,
   CastHoraryInput,
   ChartRequestInput,
@@ -70,6 +73,7 @@ import type {
   HoraryReadingRecord,
   InitiationRead,
   InitiationStatusWire,
+  InstalledBundleListResponse,
   MagicSquareRecord,
   MaintainerQueueResponse,
   MeRead,
@@ -146,6 +150,12 @@ export class NotImplementedError extends Error {
     super(`Endpoint not yet implemented on backend: ${endpoint}`);
     this.name = "NotImplementedError";
   }
+}
+
+/** The upload's own filename when it has one (``File``), else the
+ *  fallback — multipart parts need a name for the backend parser. */
+function fileName(file: Blob, fallback: string): string {
+  return typeof File !== "undefined" && file instanceof File && file.name ? file.name : fallback;
 }
 
 export function api(client: ApiClient) {
@@ -2168,6 +2178,70 @@ export function api(client: ApiClient) {
       return client.request<Record<string, unknown>>(
         `/api/v1/registry/maintainer/plugins/${encodeURIComponent(pluginId)}/promote`,
         { method: "POST", json: input },
+      );
+    },
+
+    // ── Magickal bundles — ADR-0011 (v1-011 backend · v1-020 wiring) ──
+
+    /** Upload + validate + verify a ``.mbf`` — no writes. Multipart. */
+    bundlesPreview(file: Blob, opts?: { signal?: AbortSignal }): Promise<BundlePreviewResponse> {
+      const form = new FormData();
+      form.append("file", file, fileName(file, "bundle.mbf"));
+      return client.request<BundlePreviewResponse>("/api/v1/bundles/preview", {
+        method: "POST",
+        form,
+        signal: opts?.signal,
+      });
+    },
+
+    /** Commit a user-selected subset of items (piecemeal by design —
+     *  omit ``selectedRefs`` to import everything). Multipart. */
+    bundlesImport(file: Blob, selectedRefs?: string[]): Promise<BundleImportResponse> {
+      const form = new FormData();
+      form.append("file", file, fileName(file, "bundle.mbf"));
+      if (selectedRefs !== undefined) {
+        form.append("selected_refs", JSON.stringify(selectedRefs));
+      }
+      return client.request<BundleImportResponse>("/api/v1/bundles/import", {
+        method: "POST",
+        form,
+      });
+    },
+
+    /** The vault's install records — attribution always present. */
+    bundlesInstalled(opts?: { signal?: AbortSignal }): Promise<InstalledBundleListResponse> {
+      return client.request<InstalledBundleListResponse>("/api/v1/bundles/installed", {
+        signal: opts?.signal,
+      });
+    },
+
+    /** Build an ``.mbf`` from vault content of one type — returns the
+     *  container bytes as a Blob for download. */
+    bundlesExport(
+      bundleType: string,
+      opts?: { sign?: boolean; signal?: AbortSignal },
+    ): Promise<Blob> {
+      const params = new URLSearchParams({ type: bundleType });
+      if (opts?.sign) params.set("sign", "true");
+      return client.requestBlob(`/api/v1/bundles/export?${params.toString()}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    /** The seven bundled content packages that ship with Theourgia. */
+    bundledList(opts?: { signal?: AbortSignal }): Promise<BundledPackageListResponse> {
+      return client.request<BundledPackageListResponse>("/api/v1/bundles/bundled", {
+        signal: opts?.signal,
+      });
+    },
+
+    /** Import one bundled package wholesale — the standard import
+     *  path; opaque kinds are listed-not-imported and the response
+     *  reports every item honestly. */
+    bundledImport(slug: string): Promise<BundleImportResponse> {
+      return client.request<BundleImportResponse>(
+        `/api/v1/bundles/bundled/${encodeURIComponent(slug)}/import`,
+        { method: "POST" },
       );
     },
 

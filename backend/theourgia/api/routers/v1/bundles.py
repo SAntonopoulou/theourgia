@@ -8,6 +8,8 @@ Endpoints:
   POST /api/v1/bundles/import     commit a user-selected subset of items
   GET  /api/v1/bundles/installed  the vault's install records
   GET  /api/v1/bundles/export     build an .mbf from vault content
+  GET  /api/v1/bundles/bundled    the seven bundled content packages
+  POST /api/v1/bundles/bundled/{slug}/import  import one wholesale
 
 Rules enforced here, verbatim from the ADR:
 
@@ -25,8 +27,12 @@ Rules enforced here, verbatim from the ADR:
 from __future__ import annotations
 
 import json
-from datetime import datetime
+
+# FastAPI + pydantic resolve these annotations at runtime — they must
+# stay importable outside TYPE_CHECKING.
+from datetime import datetime  # noqa: TC003
 from typing import Annotated, Any
+from uuid import UUID  # noqa: TC003
 
 from fastapi import (
     APIRouter,
@@ -41,10 +47,15 @@ from fastapi import (
 )
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002
 
 from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.authz.audit import AuditLogger
+from theourgia.core.bundles.bundled_content import (
+    BUNDLED_CONTENT,
+    build_bundled_mbf,
+    bundled_by_slug,
+)
 from theourgia.core.bundles.container import (
     MAX_CONTAINER_BYTES,
     BundleError,
@@ -224,6 +235,14 @@ class InstalledBundleRead(BaseModel):
     attribution: str
     provenance: list[dict[str, Any]]
     installed_at: datetime
+    # Derived from the persisted manifest so the /bundles surface can
+    # render its designed card fields without parsing the attribution
+    # string (v1-020).
+    author_name: str
+    description: str
+    license_spdx: str
+    source_citation: str | None
+    item_counts: dict[str, int]
 
 
 class InstalledBundleListResponse(BaseModel):
@@ -232,7 +251,70 @@ class InstalledBundleListResponse(BaseModel):
     bundles: list[InstalledBundleRead]
 
 
+class BundledPackageRead(BaseModel):
+    """One of the content packages that ship with Theourgia."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    slug: str
+    name: str
+    type: str
+    version: str
+    description: str
+    license: str
+    item_counts: dict[str, int]
+    total_items: int
+
+
+class BundledPackageListResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    bundles: list[BundledPackageRead]
+
+
+def _first_citation(manifest: dict[str, Any]) -> str | None:
+    citations = manifest.get("source_citations")
+    if isinstance(citations, list) and citations:
+        first = citations[0]
+        if isinstance(first, dict) and isinstance(first.get("citation"), str):
+            return first["citation"]
+    return None
+
+
+def _manifest_item_counts(manifest: dict[str, Any]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    payloads = manifest.get("payloads")
+    if isinstance(payloads, list):
+        for entry in payloads:
+            if (
+                isinstance(entry, dict)
+                and isinstance(entry.get("kind"), str)
+                and isinstance(entry.get("count"), int)
+            ):
+                counts[entry["kind"]] = entry["count"]
+    return counts
+
+
 def _to_installed_read(row: InstalledBundle) -> InstalledBundleRead:
+    manifest: dict[str, Any] = row.manifest if isinstance(row.manifest, dict) else {}
+    author = manifest.get("author")
+    author_name = (
+        author["name"]
+        if isinstance(author, dict) and isinstance(author.get("name"), str)
+        else ""
+    )
+    license_block = manifest.get("license")
+    license_spdx = (
+        license_block["spdx"]
+        if isinstance(license_block, dict)
+        and isinstance(license_block.get("spdx"), str)
+        else ""
+    )
+    description = (
+        manifest["description"]
+        if isinstance(manifest.get("description"), str)
+        else ""
+    )
     return InstalledBundleRead(
         id=str(row.id),
         slug=row.slug,
@@ -245,6 +327,11 @@ def _to_installed_read(row: InstalledBundle) -> InstalledBundleRead:
         attribution=row.attribution,
         provenance=list(row.provenance or []),
         installed_at=row.created_at,
+        author_name=author_name,
+        description=description,
+        license_spdx=license_spdx,
+        source_citation=_first_citation(manifest),
+        item_counts=_manifest_item_counts(manifest),
     )
 
 
@@ -395,15 +482,29 @@ async def import_bundle(
             )
         refs = decoded
 
+    return await _commit_import(db, parsed, owner_id=user.id, selected_refs=refs)
+
+
+async def _commit_import(
+    db: AsyncSession,
+    parsed: ParsedBundle,
+    *,
+    owner_id: UUID,
+    selected_refs: list[str] | None,
+    audit_extra: dict[str, Any] | None = None,
+) -> BundleImportResponse:
+    """The shared commit path for the upload import and the bundled
+    import: run the per-kind importers, persist the install record,
+    audit, and report every item's outcome honestly."""
     verification = verify_container(parsed)
     results = await import_parsed_bundle(
-        db, parsed, owner_id=user.id, selected_refs=refs
+        db, parsed, owner_id=owner_id, selected_refs=selected_refs
     )
     imported = sum(1 for r in results if r.status == STATUS_IMPORTED)
 
     installed = make_installed_bundle(
         parsed.manifest,
-        owner_id=user.id,
+        owner_id=owner_id,
         signature_verdict=verification.verdict,
         imported_item_count=imported,
     )
@@ -412,12 +513,13 @@ async def import_bundle(
         kind=AuditEventKind.PLUGIN,
         action="bundle.import",
         outcome=AuditOutcome.SUCCESS,
-        actor_id=user.id,
+        actor_id=owner_id,
         detail={
             "bundle": f"{parsed.manifest.slug}@{parsed.manifest.version}",
             "signature_verdict": verification.verdict,
             "imported": imported,
             "skipped": len(results) - imported,
+            **(audit_extra or {}),
         },
     )
     await db.commit()
@@ -459,6 +561,69 @@ async def list_installed_bundles(
     )
     return InstalledBundleListResponse(
         bundles=[_to_installed_read(r) for r in rows]
+    )
+
+
+@router.get("/bundles/bundled", response_model=BundledPackageListResponse)
+async def list_bundled_packages(
+    current_user: CurrentUser,  # noqa: ARG001
+) -> BundledPackageListResponse:
+    """The seven content packages that ship with Theourgia — real
+    ``.mbf`` containers built at runtime from cited public-domain
+    sources (see :mod:`theourgia.core.bundles.bundled_content` for
+    the diligence record)."""
+    return BundledPackageListResponse(
+        bundles=[
+            BundledPackageRead(
+                slug=b.slug,
+                name=b.name,
+                type=b.type,
+                version=b.version,
+                description=b.description,
+                license=b.license_spdx,
+                item_counts={
+                    doc.kind: len(doc.items) for doc in b.payloads
+                },
+                total_items=b.item_count,
+            )
+            for b in BUNDLED_CONTENT
+        ]
+    )
+
+
+@router.post(
+    "/bundles/bundled/{slug}/import",
+    response_model=BundleImportResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def import_bundled_package(
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    slug: str,
+) -> BundleImportResponse:
+    """Import one bundled content package wholesale.
+
+    Runs the standard import path: entities land as immutable nodes
+    with ``origin="imported_from_bundle:<slug>@<version>"``, imported
+    content is always personal-visibility, and payload kinds without
+    a v1 importer (``correspondences``, ``dream-symbols``) are
+    listed-not-imported with an honest per-item report — never
+    silently dropped.
+    """
+    if bundled_by_slug(slug) is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"unknown bundled package {slug!r}",
+        )
+    # First-party bytes built from this codebase — read_mbf cannot
+    # reject them (the round-trip is covered by tests).
+    parsed = read_mbf(build_bundled_mbf(slug))
+    return await _commit_import(
+        db,
+        parsed,
+        owner_id=user.id,
+        selected_refs=None,
+        audit_extra={"source": "bundled"},
     )
 
 

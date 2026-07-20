@@ -20,6 +20,9 @@ Modules:
   exception — FEATURES §11: warn, don't block)
 - :mod:`importer` — per-kind import into the vault
 - :mod:`exporter` — per-kind export builders from vault content
+- :mod:`bundled_content` — the seven bundled content packages
+  (public-domain diligenced), built into real ``.mbf`` containers at
+  runtime
 
 The format reference for bundle authors lives in
 ``docs/developer/mbf.md``.
@@ -27,6 +30,12 @@ The format reference for bundle authors lives in
 
 from __future__ import annotations
 
+from theourgia.core.bundles.bundled_content import (
+    BUNDLED_CONTENT,
+    BundledContent,
+    build_bundled_mbf,
+    bundled_by_slug,
+)
 from theourgia.core.bundles.canonical import canonical_json_bytes, sha256_hex
 from theourgia.core.bundles.container import (
     MAX_CONTAINER_BYTES,
@@ -59,6 +68,7 @@ from theourgia.core.bundles.signing import (
 )
 
 __all__ = [
+    "BUNDLED_CONTENT",
     "MAGICKAL_LICENSE_TAGS",
     "MAX_CONTAINER_BYTES",
     "MAX_TOTAL_ITEMS",
@@ -73,12 +83,15 @@ __all__ = [
     "BundleSignature",
     "BundleTooLargeError",
     "BundleVerification",
+    "BundledContent",
     "DigestMismatchError",
     "ParsedBundle",
     "PayloadDocument",
     "TooManyItemsError",
     "build_attribution",
+    "build_bundled_mbf",
     "build_mbf",
+    "bundled_by_slug",
     "canonical_json_bytes",
     "read_mbf",
     "sha256_hex",

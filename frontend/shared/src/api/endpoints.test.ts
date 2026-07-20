@@ -389,6 +389,87 @@ describe("endpoints — relational ledger (v1-019)", () => {
   });
 });
 
+describe("endpoints — magickal bundles (v1-020)", () => {
+  it("bundledList returns the seven bundled packages with counts + licenses", async () => {
+    const r = await buildMock().bundledList();
+    expect(r.bundles.map((b) => b.slug)).toEqual([
+      "hellenic-pantheon",
+      "thelemic-ritual-set",
+      "classic-tarot-spreads",
+      "pgm-voces-selection",
+      "planetary-correspondences",
+      "traditional-incense-recipes",
+      "dream-symbols-traditional",
+    ]);
+    for (const pkg of r.bundles) {
+      expect(pkg.license.length).toBeGreaterThan(0);
+      const counted = Object.values(pkg.item_counts).reduce((a, b) => a + b, 0);
+      expect(counted).toBe(pkg.total_items);
+      expect(pkg.total_items).toBeGreaterThan(0);
+    }
+  });
+
+  it("bundlesInstalled lists install records with attribution always present", async () => {
+    const r = await buildMock().bundlesInstalled();
+    expect(r.bundles.length).toBeGreaterThanOrEqual(1);
+    for (const b of r.bundles) {
+      expect(b.attribution.length).toBeGreaterThan(0);
+      expect(b.author_name.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("bundledImport records the install and reports every item", async () => {
+    const m = buildMock();
+    const before = await m.bundlesInstalled();
+    const r = await m.bundledImport("classic-tarot-spreads");
+    expect(r.total).toBe(5);
+    expect(r.imported).toBe(5);
+    expect(r.skipped).toBe(0);
+    expect(r.signature_verdict).toBe("unsigned");
+    const after = await m.bundlesInstalled();
+    expect(after.bundles.length).toBe(before.bundles.length + 1);
+  });
+
+  it("bundledImport reports opaque kinds as listed-not-imported, honestly", async () => {
+    const r = await buildMock().bundledImport("planetary-correspondences");
+    expect(r.imported).toBe(0);
+    expect(r.skipped).toBe(7);
+    expect(r.total).toBe(7);
+    for (const item of r.results) {
+      expect(item.status).toBe("skipped");
+      expect(item.detail).toContain("no v1 importer");
+      expect(item.created_id).toBeNull();
+    }
+  });
+
+  it("bundledImport with an unknown slug rejects NotFound", async () => {
+    await expect(buildMock().bundledImport("no-such-bundle")).rejects.toThrow(
+      /unknown bundled package/i,
+    );
+  });
+
+  it("bundlesPreview returns the manifest + unsigned warning (warn, never block)", async () => {
+    const file = new Blob(["fake-mbf"], { type: "application/zip" });
+    const r = await buildMock().bundlesPreview(file);
+    expect(r.signature.verdict).toBe("unsigned");
+    expect(r.unsigned_warning).toMatch(/unsigned/i);
+    expect(r.items.length).toBeGreaterThan(0);
+    expect(r.attribution.length).toBeGreaterThan(0);
+  });
+
+  it("bundlesImport uploads multipart and reports totals", async () => {
+    const file = new Blob(["fake-mbf"], { type: "application/zip" });
+    const r = await buildMock().bundlesImport(file, ["entities-1"]);
+    expect(r.total).toBeGreaterThan(0);
+    expect(r.imported + r.skipped).toBe(r.total);
+  });
+
+  it("bundlesExport resolves a Blob", async () => {
+    const blob = await buildMock().bundlesExport("pantheon");
+    expect(blob).toBeInstanceOf(Blob);
+  });
+});
+
 describe("endpoints — live mode", () => {
   function liveApi() {
     return api(new ApiClient({ baseUrl: "https://api.test", mock: false }));

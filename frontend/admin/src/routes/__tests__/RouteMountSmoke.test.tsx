@@ -92,6 +92,11 @@ function withProviders(inner: ReactElement) {
  * take down the whole suite import.
  */
 const ROUTES: ReadonlyArray<[string, () => Promise<{ Component: React.ComponentType }>]> = [
+  [
+    "BundleLibrary",
+    () => import("../BundleLibrary.js").then((m) => ({ Component: m.BundleLibrary })),
+  ],
+  ["BundleDetail", () => import("../BundleDetail.js").then((m) => ({ Component: m.BundleDetail }))],
   ["TarotRoute", () => import("../TarotRoute.js").then((m) => ({ Component: m.TarotRoute }))],
   ["IChingRoute", () => import("../IChingRoute.js").then((m) => ({ Component: m.IChingRoute }))],
   [

@@ -1875,3 +1875,112 @@ export interface UpdateServitorTaskInput {
   status?: ServitorTaskStatusWire | null;
   outcome_notes?: string | null;
 }
+
+// ─── Magickal bundles — ADR-0011 wire shapes (v1-011 backend · v1-020 wiring) ───
+
+/** Signature verdict — unsigned WARNS, never blocks. */
+export type BundleSignatureVerdictWire = "verified" | "unsigned" | "failed";
+
+export interface BundleSignatureBlockWire {
+  verdict: BundleSignatureVerdictWire;
+  reason: string;
+}
+
+/** One listed item from ``POST /api/v1/bundles/preview``. */
+export interface BundlePreviewItemWire {
+  ref: string;
+  kind: string;
+  display_name: string;
+  /** False for payload kinds without a v1 importer — those items are
+   *  opaque-but-listed, never silently dropped. */
+  importable: boolean;
+}
+
+export interface BundleLicenseBlockWire {
+  spdx: string;
+  magickal_tags: string[];
+}
+
+export interface BundleConflictBlockWire {
+  entity_names: string[];
+  installed_bundle_slug: boolean;
+}
+
+/** Response of ``POST /api/v1/bundles/preview`` (multipart upload). */
+export interface BundlePreviewResponse {
+  manifest: Record<string, unknown>;
+  signature: BundleSignatureBlockWire;
+  unsigned_warning: string | null;
+  items: BundlePreviewItemWire[];
+  license: BundleLicenseBlockWire;
+  attribution: string;
+  closed_tradition: boolean;
+  closed_tradition_note: string;
+  respect_source_notice: string | null;
+  closed_tradition_conflicts: string[];
+  conflicts: BundleConflictBlockWire;
+}
+
+/** Per-item outcome of an import — every selected item is reported,
+ *  ``skipped`` always carries a reason in ``detail``. */
+export interface BundleImportItemResultWire {
+  ref: string;
+  kind: string;
+  status: "imported" | "skipped";
+  detail: string;
+  created_id: string | null;
+}
+
+/** Response of ``POST /api/v1/bundles/import`` and
+ *  ``POST /api/v1/bundles/bundled/{slug}/import``. */
+export interface BundleImportResponse {
+  installed_bundle_id: string;
+  attribution: string;
+  signature_verdict: BundleSignatureVerdictWire;
+  results: BundleImportItemResultWire[];
+  imported: number;
+  skipped: number;
+  total: number;
+}
+
+/** One install record from ``GET /api/v1/bundles/installed``.
+ *  ``attribution`` is always present — there is no strip path. */
+export interface InstalledBundleRead {
+  id: string;
+  slug: string;
+  version: string;
+  name: string;
+  type: string;
+  signature_verdict: BundleSignatureVerdictWire;
+  imported_item_count: number;
+  closed_tradition: boolean;
+  attribution: string;
+  provenance: Record<string, unknown>[];
+  installed_at: string;
+  author_name: string;
+  description: string;
+  license_spdx: string;
+  source_citation: string | null;
+  item_counts: Record<string, number>;
+}
+
+export interface InstalledBundleListResponse {
+  bundles: InstalledBundleRead[];
+}
+
+/** One of the seven bundled content packages —
+ *  ``GET /api/v1/bundles/bundled``. */
+export interface BundledPackageRead {
+  slug: string;
+  name: string;
+  type: string;
+  version: string;
+  description: string;
+  license: string;
+  item_counts: Record<string, number>;
+  total_items: number;
+}
+
+export interface BundledPackageListResponse {
+  bundles: BundledPackageRead[];
+}

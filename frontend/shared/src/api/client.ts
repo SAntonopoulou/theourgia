@@ -32,6 +32,10 @@ export interface ApiClientConfig {
 export interface ApiRequestOptions extends Omit<RequestInit, "body" | "signal"> {
   /** JSON-serialisable request body. */
   json?: unknown;
+  /** Multipart form body (file uploads). Mutually exclusive with
+   *  ``json``; the Content-Type header is left unset so the runtime
+   *  writes the multipart boundary itself. */
+  form?: FormData;
   /** Custom AbortSignal — if absent we install a timeout-driven one. */
   signal?: AbortSignal;
   /** Per-request timeout override. */
@@ -75,7 +79,7 @@ export class ApiClient {
   }
 
   async request<T>(path: string, opts: ApiRequestOptions = {}): Promise<T> {
-    const { json, signal: callerSignal, timeoutMs, headers: callerHeaders, ...rest } = opts;
+    const { json, form, signal: callerSignal, timeoutMs, headers: callerHeaders, ...rest } = opts;
     const headers = new Headers(callerHeaders);
     if (json !== undefined) headers.set("Content-Type", "application/json");
     if (this.authToken) headers.set("Authorization", `Bearer ${this.authToken}`);
@@ -84,7 +88,7 @@ export class ApiClient {
     const init: RequestInit = {
       ...rest,
       headers,
-      body: json !== undefined ? JSON.stringify(json) : undefined,
+      body: json !== undefined ? JSON.stringify(json) : form,
     };
 
     if (this.mock) {
@@ -147,7 +151,7 @@ export class ApiClient {
    *  timeout + error semantics as ``request``. Returned as a Blob so
    *  the caller can download or preview it. */
   async requestBlob(path: string, opts: ApiRequestOptions = {}): Promise<Blob> {
-    const { json, signal: callerSignal, timeoutMs, headers: callerHeaders, ...rest } = opts;
+    const { json, form, signal: callerSignal, timeoutMs, headers: callerHeaders, ...rest } = opts;
     const headers = new Headers(callerHeaders);
     if (json !== undefined) headers.set("Content-Type", "application/json");
     if (this.authToken) headers.set("Authorization", `Bearer ${this.authToken}`);
@@ -156,7 +160,7 @@ export class ApiClient {
     const init: RequestInit = {
       ...rest,
       headers,
-      body: json !== undefined ? JSON.stringify(json) : undefined,
+      body: json !== undefined ? JSON.stringify(json) : form,
     };
 
     if (this.mock) {
