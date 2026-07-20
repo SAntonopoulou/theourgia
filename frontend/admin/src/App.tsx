@@ -139,6 +139,30 @@ const TarotRoute = lazy(() =>
   import("./routes/TarotRoute.js").then((m) => ({ default: m.TarotRoute })),
 );
 const Entities = lazy(() => import("./routes/Entities.js").then((m) => ({ default: m.Entities })));
+// v1-019 — the five Beings-ledger surfaces that ride BeingsTabs.
+const OfferingsRoute = lazy(() =>
+  import("./routes/OfferingsRoute.js").then((m) => ({
+    default: m.OfferingsRoute,
+  })),
+);
+const ContractsRoute = lazy(() =>
+  import("./routes/ContractsRoute.js").then((m) => ({
+    default: m.ContractsRoute,
+  })),
+);
+const OathsRoute = lazy(() =>
+  import("./routes/OathsRoute.js").then((m) => ({ default: m.OathsRoute })),
+);
+const InitiationsRoute = lazy(() =>
+  import("./routes/InitiationsRoute.js").then((m) => ({
+    default: m.InitiationsRoute,
+  })),
+);
+const ServitorsRoute = lazy(() =>
+  import("./routes/ServitorsRoute.js").then((m) => ({
+    default: m.ServitorsRoute,
+  })),
+);
 const FamilyTreeRoute = lazy(() =>
   import("./routes/FamilyTreeRoute.js").then((m) => ({
     default: m.FamilyTreeRoute,
@@ -596,6 +620,18 @@ function navKeyForPath(pathname: string): NavKey | undefined {
   if (pathname.startsWith("/daily-practice")) return "dailypractice";
   if (pathname.startsWith("/practice-logs")) return "practicelogs";
   if (pathname.startsWith("/entities")) return "entities";
+  // The Beings-ledger cluster (v1-019): BeingsTabs is the secondary
+  // nav; the VaultNav "Entities" entry stays active per the design.
+  if (
+    pathname.startsWith("/offerings") ||
+    pathname.startsWith("/contracts") ||
+    pathname.startsWith("/oaths") ||
+    pathname.startsWith("/initiations") ||
+    pathname.startsWith("/servitors") ||
+    pathname.startsWith("/aliases")
+  ) {
+    return "entities";
+  }
   if (pathname.startsWith("/library")) return "library";
   if (pathname.startsWith("/calendar")) return "calendar";
   if (pathname.startsWith("/divination")) return "divination";
@@ -760,6 +796,22 @@ function ShellRoutes() {
             <Route path="/daily-practice" element={<DailyPracticeRoute />} />
             <Route path="/practice-logs" element={<PracticeLogsRoute />} />
             <Route path="/entities" element={<Entities />} />
+            {/* v1-019 — Beings-ledger cluster (BeingsTabs secondary nav). */}
+            <Route path="/offerings" element={<OfferingsRoute />} />
+            <Route path="/contracts" element={<ContractsRoute />} />
+            <Route path="/oaths" element={<OathsRoute />} />
+            <Route path="/initiations" element={<InitiationsRoute />} />
+            <Route path="/servitors" element={<ServitorsRoute />} />
+            <Route
+              path="/aliases"
+              element={
+                <Placeholder
+                  glyph="entity"
+                  title="Aliases"
+                  body="The alias graph — same-as, aspect-of, syncretic-with edges between figures. The BeingsTabs entry is reserved; the dedicated surface from Theourgia Aliases.dc.html hasn't been composed yet."
+                />
+              }
+            />
             <Route path="/family-tree" element={<FamilyTreeRoute />} />
             <Route path="/deck-designer" element={<DeckDesignerRoute />} />
             <Route path="/recipes" element={<RecipesRoute />} />

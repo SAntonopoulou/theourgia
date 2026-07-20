@@ -252,6 +252,143 @@ describe("endpoints — divination lite fixtures (v1-014)", () => {
   });
 });
 
+describe("endpoints — relational ledger (v1-019)", () => {
+  it("listOfferings covers all five reception levels", async () => {
+    const rows = await buildMock().listOfferings();
+    const levels = new Set(rows.map((o) => o.reception_perceived));
+    for (const level of ["none", "faint", "clear", "strong", "overwhelming"]) {
+      expect(levels.has(level as never)).toBe(true);
+    }
+  });
+
+  it("createOffering appends a row", async () => {
+    const m = buildMock();
+    const before = await m.listOfferings();
+    const created = await m.createOffering({
+      entity_id: "ent-hekate",
+      offered_at: "2026-06-22T21:00:00Z",
+      items: [{ kind: "wine", quantity: "1", unit: "cup" }],
+      intention: "test",
+      reception_perceived: "clear",
+    });
+    expect(created.entity_id).toBe("ent-hekate");
+    const after = await m.listOfferings();
+    expect(after.length).toBe(before.length + 1);
+  });
+
+  it("updateRecurringOffering toggles is_active (pause/resume)", async () => {
+    const m = buildMock();
+    const rows = await m.listRecurringOfferings();
+    const target = rows.find((r) => r.is_active);
+    expect(target).toBeDefined();
+    const paused = await m.updateRecurringOffering(target!.id, { is_active: false });
+    expect(paused.is_active).toBe(false);
+    // Restore so the module-level fixture stays deterministic for
+    // other tests in this file.
+    await m.updateRecurringOffering(target!.id, { is_active: true });
+  });
+
+  it("listContracts covers all six statuses and filters by contract_status", async () => {
+    const m = buildMock();
+    const rows = await m.listContracts();
+    const statuses = new Set(rows.map((c) => c.status));
+    for (const s of ["draft", "active", "fulfilled", "expired", "dissolved", "breached"]) {
+      expect(statuses.has(s as never)).toBe(true);
+    }
+    const active = await m.listContracts({ status: "active" });
+    expect(active.length).toBeGreaterThanOrEqual(1);
+    expect(active.every((c) => c.status === "active")).toBe(true);
+  });
+
+  it("fulfillObligation flips the matched obligation only", async () => {
+    const m = buildMock();
+    const updated = await m.fulfillObligation("ct-active", {
+      side: "theirs",
+      obligation_id: "ob-theirs-2",
+      new_status: "fulfilled",
+      fulfilled_at: "2026-06-21T12:00:00Z",
+    });
+    const flipped = updated.their_obligations.find((o) => o.id === "ob-theirs-2");
+    expect(flipped?.status).toBe("fulfilled");
+    expect(flipped?.fulfilled_at).toBe("2026-06-21T12:00:00Z");
+    const untouched = updated.their_obligations.find((o) => o.id === "ob-theirs-1");
+    expect(untouched?.status).toBe("in-progress");
+  });
+
+  it("listOaths covers all five statuses; sealed rows never carry text", async () => {
+    const rows = await buildMock().listOaths();
+    const statuses = new Set(rows.map((o) => o.status));
+    for (const s of ["active", "fulfilled", "broken", "renounced", "lapsed"]) {
+      expect(statuses.has(s as never)).toBe(true);
+    }
+    for (const o of rows.filter((r) => r.sealed)) {
+      expect(o.text).toBeNull();
+    }
+  });
+
+  it("createOath sealed drops the plaintext; unsealed keeps it", async () => {
+    const m = buildMock();
+    const sealed = await m.createOath({
+      kind: "self",
+      taken_at: "2026-06-22T00:00:00Z",
+      text: "should be dropped",
+      encryption_mode: "sealed",
+      encrypted_payload: "b64-ciphertext",
+    });
+    expect(sealed.sealed).toBe(true);
+    expect(sealed.text).toBeNull();
+    const open = await m.createOath({
+      kind: "community",
+      taken_at: "2026-06-22T00:00:00Z",
+      text: "kept in the open",
+      encryption_mode: "none",
+    });
+    expect(open.sealed).toBe(false);
+    expect(open.text).toBe("kept in the open");
+  });
+
+  it("listInitiations is minimal + always sealed, all four statuses", async () => {
+    const rows = await buildMock().listInitiations();
+    const statuses = new Set(rows.map((i) => i.status));
+    for (const s of ["active", "lapsed", "suspended", "resigned"]) {
+      expect(statuses.has(s as never)).toBe(true);
+    }
+    for (const i of rows) {
+      expect(i.sealed).toBe(true);
+      // The read model must never leak sealed fields.
+      expect("encrypted_payload" in i).toBe(false);
+      expect("grade_or_degree" in i).toBe(false);
+    }
+  });
+
+  it("listServitors covers all four statuses; feedServitor stamps last_fed_at", async () => {
+    const m = buildMock();
+    const rows = await m.listServitors();
+    const statuses = new Set(rows.map((s) => s.status));
+    for (const s of ["active", "dormant", "retired", "decommissioned"]) {
+      expect(statuses.has(s as never)).toBe(true);
+    }
+    const fed = await m.feedServitor("sv-active", { fed_at: "2026-06-22T21:10:00Z" });
+    expect(fed.last_fed_at).toBe("2026-06-22T21:10:00Z");
+  });
+
+  it("servitor tasks list covers all four task statuses; create appends", async () => {
+    const m = buildMock();
+    const tasks = await m.listServitorTasks("sv-active");
+    const statuses = new Set(tasks.map((t) => t.status));
+    for (const s of ["pending", "in-progress", "completed", "abandoned"]) {
+      expect(statuses.has(s as never)).toBe(true);
+    }
+    const created = await m.createServitorTask("sv-active", {
+      description: "Carry the message",
+      given_at: "2026-06-22T00:00:00Z",
+    });
+    expect(created.status).toBe("pending");
+    const after = await m.listServitorTasks("sv-active");
+    expect(after.length).toBe(tasks.length + 1);
+  });
+});
+
 describe("endpoints — live mode", () => {
   function liveApi() {
     return api(new ApiClient({ baseUrl: "https://api.test", mock: false }));

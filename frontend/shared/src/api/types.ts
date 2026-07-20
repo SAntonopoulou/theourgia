@@ -113,6 +113,12 @@ export interface EntryDetailRecord extends EntryRecord {
    * public visibility path.
    */
   tradition_tags: string[];
+  /**
+   * Posthumous publication flag (v1-018). When memorial mode
+   * activates and posthumous publications are enabled, the hourly
+   * sweep publishes flagged, unsealed entries.
+   */
+  publish_on_death: boolean;
 }
 
 /** Input for ``PATCH /api/v1/entries/{id}/body``. */
@@ -186,6 +192,8 @@ export interface CreateEntryInput {
   tags?: string[];
   /** Tradition tags (Hellenic, Thelemic, ...). Defaults to []. */
   tradition_tags?: string[];
+  /** Publish when memorial mode activates (v1-018). Defaults false. */
+  publish_on_death?: boolean;
 }
 
 /** Counts within a single time window. */
@@ -645,11 +653,7 @@ export type SigilModeWire =
   | "freeform"
   | "image";
 
-export type SigilPurposeWire =
-  | "workshop_draft"
-  | "consecrated"
-  | "gift"
-  | "personal_study";
+export type SigilPurposeWire = "workshop_draft" | "consecrated" | "gift" | "personal_study";
 
 export interface SigilRecord {
   id: string;
@@ -1031,7 +1035,6 @@ export interface TranscribeQueuedResponse {
   queued: boolean;
 }
 
-
 // ── Phase 06 divination lite (pendulum / horary / scrying · v1-014) ──
 
 /** Backend ``PendulumOutcome`` (theourgia/models/divination_lite.py). */
@@ -1157,15 +1160,9 @@ export interface EndScryingSessionInput {
   entry_id?: string;
 }
 
-
 // ── Phase 16 · agents (H10 C-cluster) ───────────────────────────────────
 
-export type AgentRunStatus =
-  | "pending"
-  | "running"
-  | "completed"
-  | "halted"
-  | "errored";
+export type AgentRunStatus = "pending" | "running" | "completed" | "halted" | "errored";
 
 export interface AgentRunCostSnapshot {
   tokens_in: number;
@@ -1242,7 +1239,6 @@ export interface AgentAuditQueryResponse {
   events: AgentAuditEvent[];
 }
 
-
 // ── Registry (H10 A-cluster · marketplace browse) ───────────────────────
 
 export type RegistryPluginTier = "official" | "community" | "unverified";
@@ -1269,7 +1265,6 @@ export interface RegistryAuthorRead {
   homepage: string | null;
   plugin_count: number;
 }
-
 
 // ── Agent installs (Phase 16 lifecycle) ─────────────────────────────────
 
@@ -1300,7 +1295,6 @@ export interface CreateAgentInstallInput {
   monthly_cost_cap_usd: string;
 }
 
-
 export interface MemoryFile {
   name: string;
   size_bytes: number;
@@ -1316,7 +1310,6 @@ export interface MemoryFileContent {
   body: string;
   size_bytes: number;
 }
-
 
 // ── Registry author submissions (H10 A2-A4 + A8) ────────────────────────
 
@@ -1377,7 +1370,6 @@ export interface RegistryAdvisory {
   published_at: string | null;
 }
 
-
 // ── Registry maintainer (H10 A5-A7) ─────────────────────────────────────
 
 export interface MaintainerQueueItem {
@@ -1423,11 +1415,7 @@ export interface DataExportResponse {
   archive: Record<string, unknown>;
 }
 
-export type MyAuditTimeRange =
-  | "last_7_days"
-  | "last_30_days"
-  | "last_90_days"
-  | "all_time";
+export type MyAuditTimeRange = "last_7_days" | "last_30_days" | "last_90_days" | "all_time";
 
 export interface MyAuditEvent {
   id: string;
@@ -1481,4 +1469,409 @@ export interface WebauthnCredentialRead {
 
 export interface WebauthnCredentialListResponse {
   credentials: WebauthnCredentialRead[];
+}
+
+// ─── Phase 05 · Relational ledger (v1-019) ──────────────────────────
+// Wire types for the five Beings ledgers: Offerings · Contracts ·
+// Oaths · Initiations · Servitors. Mirrors
+// backend/theourgia/api/routers/v1/{offerings,contracts,oaths,
+// initiations,servitors}.py exactly. All list endpoints return bare
+// arrays; status filter query keys are prefixed (``contract_status``,
+// ``oath_status``, ``init_status``, ``servitor_status``,
+// ``task_status``) because FastAPI uses the Python parameter name.
+
+/** Backend ``OfferingReception`` — same scale as the UI ReceptionLevel. */
+export type OfferingReceptionWire = "none" | "faint" | "clear" | "strong" | "overwhelming";
+
+/** One item given in an offering. Free-form JSON on the wire; the
+ *  documented convention is ``{ kind, quantity?, unit?, notes? }``. */
+export interface OfferingItemWire {
+  kind?: string;
+  quantity?: string;
+  unit?: string;
+  notes?: string;
+  [key: string]: unknown;
+}
+
+/** Single offering — wire format from ``GET /api/v1/offerings``. */
+export interface OfferingRead {
+  id: string;
+  entity_id: string;
+  working_id: string | null;
+  offered_at: string;
+  location: string | null;
+  location_lat: number | null;
+  location_lon: number | null;
+  items: OfferingItemWire[];
+  intention: string | null;
+  reception_perceived: OfferingReceptionWire | null;
+  outcome_notes: string | null;
+  astro_snapshot: string | null;
+  calendar_snapshot: string | null;
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Input for ``POST /api/v1/offerings``. */
+export interface CreateOfferingInput {
+  entity_id: string;
+  working_id?: string | null;
+  offered_at: string;
+  location?: string | null;
+  location_lat?: number | null;
+  location_lon?: number | null;
+  items?: OfferingItemWire[];
+  intention?: string | null;
+  reception_perceived?: OfferingReceptionWire | null;
+  outcome_notes?: string | null;
+  astro_snapshot?: string | null;
+  calendar_snapshot?: string | null;
+}
+
+/** Input for ``PATCH /api/v1/offerings/{id}``. ``entity_id``,
+ *  ``working_id``, ``offered_at`` and the snapshots are immutable. */
+export interface UpdateOfferingInput {
+  location?: string | null;
+  location_lat?: number | null;
+  location_lon?: number | null;
+  items?: OfferingItemWire[] | null;
+  intention?: string | null;
+  reception_perceived?: OfferingReceptionWire | null;
+  outcome_notes?: string | null;
+}
+
+/** Single recurring offering (an "active practice"). */
+export interface RecurringOfferingRead {
+  id: string;
+  entity_id: string;
+  label: string;
+  cadence: string;
+  items_template: OfferingItemWire[];
+  next_due_at: string | null;
+  is_active: boolean;
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Input for ``POST /api/v1/recurring-offerings``. */
+export interface CreateRecurringOfferingInput {
+  entity_id: string;
+  label: string;
+  cadence: string;
+  items_template?: OfferingItemWire[];
+  next_due_at?: string | null;
+  is_active?: boolean;
+}
+
+/** Input for ``PATCH /api/v1/recurring-offerings/{id}``. */
+export interface UpdateRecurringOfferingInput {
+  label?: string | null;
+  cadence?: string | null;
+  items_template?: OfferingItemWire[] | null;
+  next_due_at?: string | null;
+  is_active?: boolean | null;
+}
+
+/** Backend ``ContractStatus``. */
+export type ContractStatusWire =
+  | "draft"
+  | "active"
+  | "fulfilled"
+  | "expired"
+  | "dissolved"
+  | "breached";
+
+/** Backend ``BindingKind`` (note the hyphens). */
+export type BindingKindWire =
+  | "verbal"
+  | "written"
+  | "blood"
+  | "breath"
+  | "item-bound"
+  | "name-bound"
+  | "other";
+
+/** Obligation status inside the contract obligation JSON. */
+export type ObligationStatusWire = "pending" | "in-progress" | "fulfilled" | "overdue" | "waived";
+
+/** One obligation inside ``our_obligations`` / ``their_obligations``.
+ *  Free-form JSON on the wire; ``id`` is a client-supplied string the
+ *  fulfill endpoint matches against. */
+export interface ObligationWire {
+  id: string;
+  description: string;
+  status: ObligationStatusWire;
+  due_at?: string | null;
+  fulfilled_at?: string | null;
+  notes?: string | null;
+  [key: string]: unknown;
+}
+
+/** Single contract — wire format from ``GET /api/v1/contracts``. */
+export interface ContractRead {
+  id: string;
+  entity_id: string;
+  title: string;
+  terms: string | null;
+  our_obligations: ObligationWire[];
+  their_obligations: ObligationWire[];
+  status: ContractStatusWire;
+  effective_at: string | null;
+  expires_at: string | null;
+  renewable: boolean;
+  binding_kind: BindingKindWire;
+  witness_entity_ids: string[];
+  dissolution_ritual_id: string | null;
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Input for ``POST /api/v1/contracts``. */
+export interface CreateContractInput {
+  entity_id: string;
+  title: string;
+  terms?: string | null;
+  our_obligations?: ObligationWire[];
+  their_obligations?: ObligationWire[];
+  status?: ContractStatusWire;
+  effective_at?: string | null;
+  expires_at?: string | null;
+  renewable?: boolean;
+  binding_kind?: BindingKindWire;
+  witness_entity_ids?: string[];
+  dissolution_ritual_id?: string | null;
+}
+
+/** Input for ``PATCH /api/v1/contracts/{id}``. ``entity_id`` is immutable. */
+export interface UpdateContractInput {
+  title?: string | null;
+  terms?: string | null;
+  our_obligations?: ObligationWire[] | null;
+  their_obligations?: ObligationWire[] | null;
+  status?: ContractStatusWire | null;
+  effective_at?: string | null;
+  expires_at?: string | null;
+  renewable?: boolean | null;
+  binding_kind?: BindingKindWire | null;
+  witness_entity_ids?: string[] | null;
+  dissolution_ritual_id?: string | null;
+}
+
+/** Input for ``POST /api/v1/contracts/{id}/fulfill-obligation``. */
+export interface FulfillObligationInput {
+  side: "ours" | "theirs";
+  obligation_id: string;
+  new_status?: ObligationStatusWire;
+  fulfilled_at?: string | null;
+  notes?: string | null;
+}
+
+/** Backend ``OathKind``. */
+export type OathKindWire =
+  | "self"
+  | "tradition"
+  | "order"
+  | "deity"
+  | "partner"
+  | "community"
+  | "other";
+
+/** Backend ``OathStatus``. States, not judgments. */
+export type OathStatusWire = "active" | "fulfilled" | "broken" | "renounced" | "lapsed";
+
+/** One accountability checkpoint on an oath (plaintext JSON). */
+export interface OathCheckpointWire {
+  due_at?: string | null;
+  reflection_text?: string | null;
+  completed_at?: string | null;
+  reflection_entry_id?: string | null;
+  [key: string]: unknown;
+}
+
+/** Single oath — wire format from ``GET /api/v1/oaths``. When
+ *  ``sealed`` is true, ``text`` is always null on read and
+ *  ``encrypted_payload`` is write-only (never returned). */
+export interface OathRead {
+  id: string;
+  kind: OathKindWire;
+  recipient_entity_id: string | null;
+  recipient_text: string | null;
+  text: string | null;
+  encryption_mode: "none" | "sealed";
+  sealed: boolean;
+  taken_at: string;
+  expires_at: string | null;
+  renewal_cadence: string | null;
+  status: OathStatusWire;
+  accountability_checkpoints: OathCheckpointWire[];
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Input for ``POST /api/v1/oaths``. Sealed (the default) requires a
+ *  non-empty ``encrypted_payload``; ``text`` is dropped server-side
+ *  when sealed. */
+export interface CreateOathInput {
+  kind: OathKindWire;
+  recipient_entity_id?: string | null;
+  recipient_text?: string | null;
+  text?: string | null;
+  encryption_mode?: "none" | "sealed";
+  encrypted_payload?: string | null;
+  taken_at: string;
+  expires_at?: string | null;
+  renewal_cadence?: string | null;
+  status?: OathStatusWire;
+  accountability_checkpoints?: OathCheckpointWire[];
+}
+
+/** Input for ``PATCH /api/v1/oaths/{id}``. ``kind``, recipient and
+ *  ``taken_at`` are immutable; sealed rows silently drop ``text``. */
+export interface UpdateOathInput {
+  text?: string | null;
+  encrypted_payload?: string | null;
+  expires_at?: string | null;
+  renewal_cadence?: string | null;
+  status?: OathStatusWire | null;
+  accountability_checkpoints?: OathCheckpointWire[] | null;
+}
+
+/** Backend ``InitiationStatus``. */
+export type InitiationStatusWire = "active" | "lapsed" | "suspended" | "resigned";
+
+/** Single initiation — deliberately minimal read model. Everything
+ *  beyond tradition/status/disclosure lives inside the sealed payload
+ *  and is never serialized by the API. */
+export interface InitiationRead {
+  id: string;
+  tradition: string;
+  status: InitiationStatusWire;
+  sealed: boolean;
+  publicly_disclosed_at: string | null;
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Input for ``POST /api/v1/initiations``. Only ``"sealed"`` is
+ *  accepted for ``encryption_mode``; ``encrypted_payload`` must be
+ *  non-empty — there are no unsealed initiations, ever. */
+export interface CreateInitiationInput {
+  tradition: string;
+  status?: InitiationStatusWire;
+  encryption_mode?: "sealed";
+  encrypted_payload: string;
+  publicly_disclosed_at?: string | null;
+}
+
+/** Input for ``PATCH /api/v1/initiations/{id}``. ``encryption_mode``
+ *  is not patchable (no downgrade path). */
+export interface UpdateInitiationInput {
+  tradition?: string | null;
+  status?: InitiationStatusWire | null;
+  encrypted_payload?: string | null;
+  publicly_disclosed_at?: string | null;
+}
+
+/** Backend ``ServitorKind``. */
+export type ServitorKindWire = "servitor" | "egregore";
+
+/** Backend ``ServitorStatus``. */
+export type ServitorStatusWire = "active" | "dormant" | "retired" | "decommissioned";
+
+/** Backend ``ServitorTaskStatus``. */
+export type ServitorTaskStatusWire = "pending" | "in-progress" | "completed" | "abandoned";
+
+/** Single servitor — wire format from ``GET /api/v1/servitors``. */
+export interface ServitorRead {
+  id: string;
+  name: string;
+  kind: ServitorKindWire;
+  purpose: string | null;
+  sigil_upload_id: string | null;
+  creation_entry_id: string | null;
+  feeding_cadence: string | null;
+  feeding_method: string | null;
+  last_fed_at: string | null;
+  /** ``YYYY-MM-DD`` date, or null for "no planned end". */
+  lifespan_limit: string | null;
+  status: ServitorStatusWire;
+  members: string[];
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Input for ``POST /api/v1/servitors``. ``last_fed_at`` is only
+ *  settable via the /feed action. */
+export interface CreateServitorInput {
+  name: string;
+  kind?: ServitorKindWire;
+  purpose?: string | null;
+  sigil_upload_id?: string | null;
+  creation_entry_id?: string | null;
+  feeding_cadence?: string | null;
+  feeding_method?: string | null;
+  lifespan_limit?: string | null;
+  status?: ServitorStatusWire;
+  members?: string[];
+}
+
+/** Input for ``PATCH /api/v1/servitors/{id}``. ``kind`` and
+ *  ``last_fed_at`` are not patchable here. */
+export interface UpdateServitorInput {
+  name?: string | null;
+  purpose?: string | null;
+  sigil_upload_id?: string | null;
+  creation_entry_id?: string | null;
+  feeding_cadence?: string | null;
+  feeding_method?: string | null;
+  lifespan_limit?: string | null;
+  status?: ServitorStatusWire | null;
+  members?: string[] | null;
+}
+
+/** Input for ``POST /api/v1/servitors/{id}/feed``. ``fed_at``
+ *  defaults to server receipt time; ``notes`` is accepted but not
+ *  persisted (only ``last_fed_at`` updates). */
+export interface FeedServitorInput {
+  fed_at?: string | null;
+  notes?: string | null;
+}
+
+/** Single servitor task — wire format from
+ *  ``GET /api/v1/servitors/{id}/tasks``. */
+export interface ServitorTaskRead {
+  id: string;
+  servitor_id: string;
+  description: string;
+  given_at: string;
+  target_completion_at: string | null;
+  completed_at: string | null;
+  status: ServitorTaskStatusWire;
+  outcome_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Input for ``POST /api/v1/servitors/{id}/tasks``. */
+export interface CreateServitorTaskInput {
+  description: string;
+  given_at: string;
+  target_completion_at?: string | null;
+  status?: ServitorTaskStatusWire;
+}
+
+/** Input for ``PATCH /api/v1/servitor-tasks/{taskId}`` — note the
+ *  un-nested base path. */
+export interface UpdateServitorTaskInput {
+  description?: string | null;
+  target_completion_at?: string | null;
+  completed_at?: string | null;
+  status?: ServitorTaskStatusWire | null;
+  outcome_notes?: string | null;
 }

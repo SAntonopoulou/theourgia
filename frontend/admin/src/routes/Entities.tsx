@@ -31,6 +31,7 @@ import {
 import { useMemo, useState } from "react";
 
 import { apiMethods } from "../data/api.js";
+import { BeingsSubnav } from "../lib/BeingsSubnav.js";
 
 // ─── UI taxonomy ────────────────────────────────────────────────────────────
 
@@ -525,6 +526,7 @@ export function Entities() {
 
   return (
     <>
+      <BeingsSubnav active="entities" />
       <div style={{ maxWidth: 1180, margin: "0 auto" }}>
         <ClassFilters active={active} counts={counts} onChange={setActive} />
 

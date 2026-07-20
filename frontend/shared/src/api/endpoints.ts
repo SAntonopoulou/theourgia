@@ -28,17 +28,26 @@ import type {
   CircleRecord,
   CompletionInput,
   ConsecrateToolPayload,
+  ContractRead,
+  ContractStatusWire,
   CreateAgentInstallInput,
   CreateAltarInput,
   CreateBanishingLogInput,
   CreateBodyPracticeInput,
   CreateBookInput,
   CreateCircleInput,
+  CreateContractInput,
   CreateEntityInput,
   CreateEntryInput,
+  CreateInitiationInput,
   CreateMagicSquareInput,
+  CreateOathInput,
+  CreateOfferingInput,
   CreatePendulumReadingInput,
   CreatePracticeInput,
+  CreateRecurringOfferingInput,
+  CreateServitorInput,
+  CreateServitorTaskInput,
   CreateSigilInput,
   CreateTalismanInput,
   CreateToolInput,
@@ -54,9 +63,13 @@ import type {
   EntryRecord,
   EntryStats,
   EntryType,
+  FeedServitorInput,
   FileAdvisoryInput,
+  FulfillObligationInput,
   HealthStatus,
   HoraryReadingRecord,
+  InitiationRead,
+  InitiationStatusWire,
   MagicSquareRecord,
   MaintainerQueueResponse,
   MeRead,
@@ -66,12 +79,17 @@ import type {
   MyAuditListResponse,
   MyAuditQueryInput,
   MySessionsListResponse,
+  OathKindWire,
+  OathRead,
+  OathStatusWire,
+  OfferingRead,
   PendulumReadingRecord,
   PlanetarySquareWire,
   PracticeRecord,
   PracticesToday,
   PresetCircle,
   PromotePluginInput,
+  RecurringOfferingRead,
   RegistryAdvisory,
   RegistryAuthorRead,
   RegistryPluginListResponse,
@@ -80,6 +98,11 @@ import type {
   ScryingSessionRecord,
   SearchEntriesQuery,
   SearchEntriesResponse,
+  ServitorKindWire,
+  ServitorRead,
+  ServitorStatusWire,
+  ServitorTaskRead,
+  ServitorTaskStatusWire,
   Session,
   SigilRecord,
   SourceScriptWire,
@@ -95,9 +118,16 @@ import type {
   TranscribeQueuedResponse,
   UpdateAltarInput,
   UpdateCircleInput,
+  UpdateContractInput,
   UpdateEntryBodyInput,
+  UpdateInitiationInput,
   UpdateMagicSquareInput,
+  UpdateOathInput,
+  UpdateOfferingInput,
   UpdatePracticeInput,
+  UpdateRecurringOfferingInput,
+  UpdateServitorInput,
+  UpdateServitorTaskInput,
   UpdateSigilInput,
   UpdateTalismanInput,
   UpdateToolInput,
@@ -365,6 +395,37 @@ export function api(client: ApiClient) {
       });
     },
 
+    /**
+     * Executor key-share (v1-018): the server splits a client-supplied
+     * secret via Shamir over GF(256), returns the shares ONCE (they
+     * are never stored), and keeps only a SHA-256 commitment.
+     */
+    memorialKeyShare(input: {
+      secret_b64: string;
+      shares: number;
+      threshold: number;
+    }): Promise<{ shares_b64: string[]; n: number; k: number; created_at: string }> {
+      return client.request<{
+        shares_b64: string[];
+        n: number;
+        k: number;
+        created_at: string;
+      }>("/api/v1/memorial/key-share", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    /** Check a client-side reconstruction against the stored commitment. */
+    memorialKeyShareVerify(input: {
+      secret_b64: string;
+    }): Promise<{ verified: boolean }> {
+      return client.request<{ verified: boolean }>("/api/v1/memorial/key-share/verify", {
+        method: "POST",
+        json: input,
+      });
+    },
+
     // ── Pilgrimage routes (b108-2gx backend, b108-2he frontend) ───
 
     listPilgrimageRoutes(): Promise<Array<Record<string, unknown>>> {
@@ -594,10 +655,7 @@ export function api(client: ApiClient) {
       });
     },
 
-    endScryingSession(
-      id: string,
-      input: EndScryingSessionInput,
-    ): Promise<ScryingSessionRecord> {
+    endScryingSession(id: string, input: EndScryingSessionInput): Promise<ScryingSessionRecord> {
       return client.request<ScryingSessionRecord>(
         `/api/v1/scrying/sessions/${encodeURIComponent(id)}/end`,
         { method: "POST", json: input },
@@ -1027,6 +1085,301 @@ export function api(client: ApiClient) {
 
     archiveEntity(id: string): Promise<void> {
       return client.request<void>(`/api/v1/entities/${id}`, { method: "DELETE" });
+    },
+
+    // ─── Phase 05 · Relational ledger (v1-019) ───────────────────────
+    // Offerings · Contracts · Oaths · Initiations · Servitors. All
+    // list endpoints return bare arrays. Status filters use the
+    // backend's prefixed query keys (``contract_status`` etc.).
+
+    listOfferings(opts?: {
+      signal?: AbortSignal;
+      entityId?: string;
+      workingId?: string;
+      limit?: number;
+    }): Promise<OfferingRead[]> {
+      const params = new URLSearchParams();
+      if (opts?.entityId) params.set("entity_id", opts.entityId);
+      if (opts?.workingId) params.set("working_id", opts.workingId);
+      if (opts?.limit !== undefined) params.set("limit", String(opts.limit));
+      const qs = params.toString();
+      return client.request<OfferingRead[]>(`/api/v1/offerings${qs ? `?${qs}` : ""}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    getOffering(id: string, opts?: { signal?: AbortSignal }): Promise<OfferingRead> {
+      return client.request<OfferingRead>(`/api/v1/offerings/${id}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    createOffering(input: CreateOfferingInput): Promise<OfferingRead> {
+      return client.request<OfferingRead>("/api/v1/offerings", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    updateOffering(id: string, patch: UpdateOfferingInput): Promise<OfferingRead> {
+      return client.request<OfferingRead>(`/api/v1/offerings/${id}`, {
+        method: "PATCH",
+        json: patch,
+      });
+    },
+
+    deleteOffering(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/offerings/${id}`, { method: "DELETE" });
+    },
+
+    listRecurringOfferings(opts?: {
+      signal?: AbortSignal;
+      entityId?: string;
+      isActive?: boolean;
+    }): Promise<RecurringOfferingRead[]> {
+      const params = new URLSearchParams();
+      if (opts?.entityId) params.set("entity_id", opts.entityId);
+      if (opts?.isActive !== undefined) params.set("is_active", String(opts.isActive));
+      const qs = params.toString();
+      return client.request<RecurringOfferingRead[]>(
+        `/api/v1/recurring-offerings${qs ? `?${qs}` : ""}`,
+        { signal: opts?.signal },
+      );
+    },
+
+    createRecurringOffering(input: CreateRecurringOfferingInput): Promise<RecurringOfferingRead> {
+      return client.request<RecurringOfferingRead>("/api/v1/recurring-offerings", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    updateRecurringOffering(
+      id: string,
+      patch: UpdateRecurringOfferingInput,
+    ): Promise<RecurringOfferingRead> {
+      return client.request<RecurringOfferingRead>(`/api/v1/recurring-offerings/${id}`, {
+        method: "PATCH",
+        json: patch,
+      });
+    },
+
+    deleteRecurringOffering(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/recurring-offerings/${id}`, { method: "DELETE" });
+    },
+
+    listContracts(opts?: {
+      signal?: AbortSignal;
+      entityId?: string;
+      status?: ContractStatusWire;
+      limit?: number;
+    }): Promise<ContractRead[]> {
+      const params = new URLSearchParams();
+      if (opts?.entityId) params.set("entity_id", opts.entityId);
+      // The backend's query key is ``contract_status`` (FastAPI uses
+      // the Python parameter name), not ``status``.
+      if (opts?.status) params.set("contract_status", opts.status);
+      if (opts?.limit !== undefined) params.set("limit", String(opts.limit));
+      const qs = params.toString();
+      return client.request<ContractRead[]>(`/api/v1/contracts${qs ? `?${qs}` : ""}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    getContract(id: string, opts?: { signal?: AbortSignal }): Promise<ContractRead> {
+      return client.request<ContractRead>(`/api/v1/contracts/${id}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    createContract(input: CreateContractInput): Promise<ContractRead> {
+      return client.request<ContractRead>("/api/v1/contracts", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    updateContract(id: string, patch: UpdateContractInput): Promise<ContractRead> {
+      return client.request<ContractRead>(`/api/v1/contracts/${id}`, {
+        method: "PATCH",
+        json: patch,
+      });
+    },
+
+    deleteContract(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/contracts/${id}`, { method: "DELETE" });
+    },
+
+    fulfillObligation(contractId: string, input: FulfillObligationInput): Promise<ContractRead> {
+      return client.request<ContractRead>(`/api/v1/contracts/${contractId}/fulfill-obligation`, {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    listOaths(opts?: {
+      signal?: AbortSignal;
+      kind?: OathKindWire;
+      status?: OathStatusWire;
+      limit?: number;
+    }): Promise<OathRead[]> {
+      const params = new URLSearchParams();
+      if (opts?.kind) params.set("kind", opts.kind);
+      // Backend query key is ``oath_status``.
+      if (opts?.status) params.set("oath_status", opts.status);
+      if (opts?.limit !== undefined) params.set("limit", String(opts.limit));
+      const qs = params.toString();
+      return client.request<OathRead[]>(`/api/v1/oaths${qs ? `?${qs}` : ""}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    getOath(id: string, opts?: { signal?: AbortSignal }): Promise<OathRead> {
+      return client.request<OathRead>(`/api/v1/oaths/${id}`, { signal: opts?.signal });
+    },
+
+    createOath(input: CreateOathInput): Promise<OathRead> {
+      return client.request<OathRead>("/api/v1/oaths", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    updateOath(id: string, patch: UpdateOathInput): Promise<OathRead> {
+      return client.request<OathRead>(`/api/v1/oaths/${id}`, {
+        method: "PATCH",
+        json: patch,
+      });
+    },
+
+    deleteOath(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/oaths/${id}`, { method: "DELETE" });
+    },
+
+    listInitiations(opts?: {
+      signal?: AbortSignal;
+      tradition?: string;
+      status?: InitiationStatusWire;
+      limit?: number;
+    }): Promise<InitiationRead[]> {
+      const params = new URLSearchParams();
+      if (opts?.tradition) params.set("tradition", opts.tradition);
+      // Backend query key is ``init_status``.
+      if (opts?.status) params.set("init_status", opts.status);
+      if (opts?.limit !== undefined) params.set("limit", String(opts.limit));
+      const qs = params.toString();
+      return client.request<InitiationRead[]>(`/api/v1/initiations${qs ? `?${qs}` : ""}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    getInitiation(id: string, opts?: { signal?: AbortSignal }): Promise<InitiationRead> {
+      return client.request<InitiationRead>(`/api/v1/initiations/${id}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    createInitiation(input: CreateInitiationInput): Promise<InitiationRead> {
+      return client.request<InitiationRead>("/api/v1/initiations", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    updateInitiation(id: string, patch: UpdateInitiationInput): Promise<InitiationRead> {
+      return client.request<InitiationRead>(`/api/v1/initiations/${id}`, {
+        method: "PATCH",
+        json: patch,
+      });
+    },
+
+    deleteInitiation(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/initiations/${id}`, { method: "DELETE" });
+    },
+
+    listServitors(opts?: {
+      signal?: AbortSignal;
+      kind?: ServitorKindWire;
+      status?: ServitorStatusWire;
+      limit?: number;
+    }): Promise<ServitorRead[]> {
+      const params = new URLSearchParams();
+      if (opts?.kind) params.set("kind", opts.kind);
+      // Backend query key is ``servitor_status``.
+      if (opts?.status) params.set("servitor_status", opts.status);
+      if (opts?.limit !== undefined) params.set("limit", String(opts.limit));
+      const qs = params.toString();
+      return client.request<ServitorRead[]>(`/api/v1/servitors${qs ? `?${qs}` : ""}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    getServitor(id: string, opts?: { signal?: AbortSignal }): Promise<ServitorRead> {
+      return client.request<ServitorRead>(`/api/v1/servitors/${id}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    createServitor(input: CreateServitorInput): Promise<ServitorRead> {
+      return client.request<ServitorRead>("/api/v1/servitors", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    updateServitor(id: string, patch: UpdateServitorInput): Promise<ServitorRead> {
+      return client.request<ServitorRead>(`/api/v1/servitors/${id}`, {
+        method: "PATCH",
+        json: patch,
+      });
+    },
+
+    deleteServitor(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/servitors/${id}`, { method: "DELETE" });
+    },
+
+    feedServitor(id: string, input: FeedServitorInput = {}): Promise<ServitorRead> {
+      return client.request<ServitorRead>(`/api/v1/servitors/${id}/feed`, {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    listServitorTasks(
+      servitorId: string,
+      opts?: { signal?: AbortSignal; status?: ServitorTaskStatusWire },
+    ): Promise<ServitorTaskRead[]> {
+      const params = new URLSearchParams();
+      // Backend query key is ``task_status``.
+      if (opts?.status) params.set("task_status", opts.status);
+      const qs = params.toString();
+      return client.request<ServitorTaskRead[]>(
+        `/api/v1/servitors/${servitorId}/tasks${qs ? `?${qs}` : ""}`,
+        { signal: opts?.signal },
+      );
+    },
+
+    createServitorTask(
+      servitorId: string,
+      input: CreateServitorTaskInput,
+    ): Promise<ServitorTaskRead> {
+      return client.request<ServitorTaskRead>(`/api/v1/servitors/${servitorId}/tasks`, {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    // NOTE the un-nested base path — task update/delete live at
+    // /api/v1/servitor-tasks/{taskId}, not under /servitors.
+    updateServitorTask(taskId: string, patch: UpdateServitorTaskInput): Promise<ServitorTaskRead> {
+      return client.request<ServitorTaskRead>(`/api/v1/servitor-tasks/${taskId}`, {
+        method: "PATCH",
+        json: patch,
+      });
+    },
+
+    deleteServitorTask(taskId: string): Promise<void> {
+      return client.request<void>(`/api/v1/servitor-tasks/${taskId}`, { method: "DELETE" });
     },
 
     // ─── Family tree kinship (b108-2ha) ─────────────────────────────
@@ -1634,10 +1987,10 @@ export function api(client: ApiClient) {
       opts?: { force?: boolean; signal?: AbortSignal },
     ): Promise<TranscribeQueuedResponse> {
       const qs = opts?.force ? "?force=true" : "";
-      return client.request<TranscribeQueuedResponse>(
-        `/api/v1/audio/${id}/transcribe${qs}`,
-        { method: "POST", signal: opts?.signal },
-      );
+      return client.request<TranscribeQueuedResponse>(`/api/v1/audio/${id}/transcribe${qs}`, {
+        method: "POST",
+        signal: opts?.signal,
+      });
     },
 
     // ── Phase 16 · agents (H10 C-cluster) ────────────────────────────

@@ -235,6 +235,24 @@ const ROUTES: ReadonlyArray<[string, () => Promise<{ Component: React.ComponentT
   ["Library", () => import("../Library.js").then((m) => ({ Component: m.Library }))],
   ["LineageAdmin", () => import("../LineageAdmin.js").then((m) => ({ Component: m.LineageAdmin }))],
   ["Health", () => import("../Health.js").then((m) => ({ Component: m.Health }))],
+  // v1-019 — Beings-ledger cluster.
+  [
+    "OfferingsRoute",
+    () => import("../OfferingsRoute.js").then((m) => ({ Component: m.OfferingsRoute })),
+  ],
+  [
+    "ContractsRoute",
+    () => import("../ContractsRoute.js").then((m) => ({ Component: m.ContractsRoute })),
+  ],
+  ["OathsRoute", () => import("../OathsRoute.js").then((m) => ({ Component: m.OathsRoute }))],
+  [
+    "InitiationsRoute",
+    () => import("../InitiationsRoute.js").then((m) => ({ Component: m.InitiationsRoute })),
+  ],
+  [
+    "ServitorsRoute",
+    () => import("../ServitorsRoute.js").then((m) => ({ Component: m.ServitorsRoute })),
+  ],
 ];
 
 describe("route mount smoke suite", () => {

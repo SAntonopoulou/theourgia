@@ -13,37 +13,62 @@ import type {
   BundledVoce,
   CastHoraryInput,
   CircleRecord,
+  ContractRead,
   CreateAltarInput,
   CreateBookInput,
   CreateCircleInput,
+  CreateContractInput,
+  CreateEntityInput,
   CreateEntryInput,
+  CreateInitiationInput,
   CreateMagicSquareInput,
+  CreateOathInput,
+  CreateOfferingInput,
   CreatePendulumReadingInput,
+  CreateRecurringOfferingInput,
+  CreateServitorInput,
+  CreateServitorTaskInput,
   CreateSigilInput,
   CreateTalismanInput,
   CreateToolInput,
   CreateVoceInput,
   EndScryingSessionInput,
+  EntityRecord,
   EntryDetailRecord,
   EntryRecord,
   EntryStats,
   EntryType,
+  FeedServitorInput,
+  FulfillObligationInput,
   HealthStatus,
   HoraryReadingRecord,
+  InitiationRead,
   MagicSquareRecord,
   Meta,
+  OathRead,
+  OfferingRead,
   PendulumReadingRecord,
   PlanetarySquareWire,
   PresetCircle,
   Problem,
+  RecurringOfferingRead,
   ScryingSessionRecord,
   SearchEntriesResponse,
+  ServitorRead,
+  ServitorTaskRead,
   Session,
   SigilRecord,
   StartScryingSessionInput,
   TalismanRecord,
   TodayLedger,
   ToolRecordWire,
+  UpdateContractInput,
+  UpdateInitiationInput,
+  UpdateOathInput,
+  UpdateOfferingInput,
+  UpdateRecurringOfferingInput,
+  UpdateServitorInput,
+  UpdateServitorTaskInput,
   VoceRecordWire,
 } from "./types.js";
 
@@ -61,7 +86,7 @@ const ENTRY_BODIES: Map<string, string> = new Map();
  */
 type EntryMeta = Pick<
   EntryDetailRecord,
-  "visibility" | "sealed" | "published_at" | "tags" | "tradition_tags"
+  "visibility" | "sealed" | "published_at" | "tags" | "tradition_tags" | "publish_on_death"
 >;
 const ENTRY_META: Map<string, EntryMeta> = new Map();
 
@@ -73,6 +98,7 @@ function entryMeta(id: string): EntryMeta {
       published_at: null,
       tags: [],
       tradition_tags: [],
+      publish_on_death: false,
     }
   );
 }
@@ -82,10 +108,7 @@ function entryMeta(id: string): EntryMeta {
  * Used by the GET `/entries/{id}` + PATCH `/entries/{id}/body` +
  * POST `/entries/{id}/publish` fixture handlers.
  */
-function entryDetail(
-  e: EntryRecord,
-  over: Partial<EntryDetailRecord> = {},
-): EntryDetailRecord {
+function entryDetail(e: EntryRecord, over: Partial<EntryDetailRecord> = {}): EntryDetailRecord {
   return {
     ...e,
     body: ENTRY_BODIES.get(e.id) ?? "",
@@ -549,13 +572,69 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
       zodiac: "tropical",
       house_system: "placidus",
       placements: [
-        { body_id: "sun", body_name: "Sun", glyph: "☉", tropical_longitude: 12.5, tropical_sign: "Aries", house: 1, is_retrograde: false },
-        { body_id: "moon", body_name: "Moon", glyph: "☽", tropical_longitude: 92.0, tropical_sign: "Cancer", house: 4, is_retrograde: false },
-        { body_id: "mercury", body_name: "Mercury", glyph: "☿", tropical_longitude: 18.0, tropical_sign: "Aries", house: 1, is_retrograde: false },
-        { body_id: "venus", body_name: "Venus", glyph: "♀", tropical_longitude: 38.0, tropical_sign: "Taurus", house: 2, is_retrograde: false },
-        { body_id: "mars", body_name: "Mars", glyph: "♂", tropical_longitude: 145.0, tropical_sign: "Leo", house: 5, is_retrograde: false },
-        { body_id: "jupiter", body_name: "Jupiter", glyph: "♃", tropical_longitude: 195.0, tropical_sign: "Libra", house: 7, is_retrograde: false },
-        { body_id: "saturn", body_name: "Saturn", glyph: "♄", tropical_longitude: 285.0, tropical_sign: "Capricorn", house: 10, is_retrograde: true },
+        {
+          body_id: "sun",
+          body_name: "Sun",
+          glyph: "☉",
+          tropical_longitude: 12.5,
+          tropical_sign: "Aries",
+          house: 1,
+          is_retrograde: false,
+        },
+        {
+          body_id: "moon",
+          body_name: "Moon",
+          glyph: "☽",
+          tropical_longitude: 92.0,
+          tropical_sign: "Cancer",
+          house: 4,
+          is_retrograde: false,
+        },
+        {
+          body_id: "mercury",
+          body_name: "Mercury",
+          glyph: "☿",
+          tropical_longitude: 18.0,
+          tropical_sign: "Aries",
+          house: 1,
+          is_retrograde: false,
+        },
+        {
+          body_id: "venus",
+          body_name: "Venus",
+          glyph: "♀",
+          tropical_longitude: 38.0,
+          tropical_sign: "Taurus",
+          house: 2,
+          is_retrograde: false,
+        },
+        {
+          body_id: "mars",
+          body_name: "Mars",
+          glyph: "♂",
+          tropical_longitude: 145.0,
+          tropical_sign: "Leo",
+          house: 5,
+          is_retrograde: false,
+        },
+        {
+          body_id: "jupiter",
+          body_name: "Jupiter",
+          glyph: "♃",
+          tropical_longitude: 195.0,
+          tropical_sign: "Libra",
+          house: 7,
+          is_retrograde: false,
+        },
+        {
+          body_id: "saturn",
+          body_name: "Saturn",
+          glyph: "♄",
+          tropical_longitude: 285.0,
+          tropical_sign: "Capricorn",
+          house: 10,
+          is_retrograde: true,
+        },
       ],
       houses: {
         cusps: [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330],
@@ -617,6 +696,7 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
         sealed?: boolean;
         tags?: string[];
         tradition_tags?: string[];
+        publish_on_death?: boolean;
       };
       const current = ENTRIES[idx] as EntryRecord;
       const updated: EntryRecord = {
@@ -633,7 +713,8 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
         patch.visibility !== undefined ||
         patch.sealed !== undefined ||
         patch.tags !== undefined ||
-        patch.tradition_tags !== undefined
+        patch.tradition_tags !== undefined ||
+        patch.publish_on_death !== undefined
       ) {
         const existing = entryMeta(id!);
         ENTRY_META.set(id!, {
@@ -641,8 +722,9 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
           ...(patch.visibility !== undefined ? { visibility: patch.visibility } : {}),
           ...(patch.sealed !== undefined ? { sealed: patch.sealed } : {}),
           ...(patch.tags !== undefined ? { tags: patch.tags } : {}),
-          ...(patch.tradition_tags !== undefined
-            ? { tradition_tags: patch.tradition_tags }
+          ...(patch.tradition_tags !== undefined ? { tradition_tags: patch.tradition_tags } : {}),
+          ...(patch.publish_on_death !== undefined
+            ? { publish_on_death: patch.publish_on_death }
             : {}),
         });
       }
@@ -666,6 +748,13 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
   if (bare !== undefined) {
     const workshop = workshopFixture(method, bare, qs, body);
     if (workshop !== undefined) return workshop;
+  }
+
+  // ── Phase 05 relational-ledger fixtures (v1-019) ─────────────────
+
+  if (bare !== undefined) {
+    const ledger = beingsLedgerFixture(method, bare, qs, body);
+    if (ledger !== undefined) return ledger;
   }
 
   return new NotFoundError(problem(404, "Not Found", `No fixture for ${method} ${path}`));
@@ -871,8 +960,7 @@ const PRESET_CIRCLES_FIXTURE: PresetCircle[] = [
       N: "Uriel",
     },
     centre_element: { kind: "hexagram" },
-    citation:
-      "Israel Regardie, The Golden Dawn (1937–40), PD per first-publication.",
+    citation: "Israel Regardie, The Golden Dawn (1937–40), PD per first-publication.",
   },
 ];
 
@@ -890,12 +978,7 @@ const BUNDLED_VOCES_FIXTURE: BundledVoce[] = [
   },
 ];
 
-function workshopFixture(
-  method: string,
-  bare: string,
-  qs: string,
-  body: unknown,
-): unknown {
+function workshopFixture(method: string, bare: string, qs: string, body: unknown): unknown {
   // ── Sigils ────────────────────────────────────────────────────
   if (bare === "/api/v1/sigils") {
     if (method === "GET") return [...SIGILS];
@@ -929,16 +1012,13 @@ function workshopFixture(
     if (!idMaybe) return undefined;
     const id = idMaybe;
     const idx = SIGILS.findIndex((s) => s.id === id);
-    if (idx < 0)
-      return new NotFoundError(
-        problem(404, "Not Found", `Sigil ${id} not found`),
-      );
+    if (idx < 0) return new NotFoundError(problem(404, "Not Found", `Sigil ${id} not found`));
     if (sub === "fork" && method === "POST") {
       const parent = SIGILS[idx]!;
       const fork: SigilRecord = {
         ...parent,
         id: workshopId(),
-        title: ((body as { title?: string })?.title) ?? `${parent.title} — new version`,
+        title: (body as { title?: string })?.title ?? `${parent.title} — new version`,
         purpose: "workshop_draft",
         parent_sigil_id: parent.id,
         created_at: nowIso(),
@@ -991,9 +1071,7 @@ function workshopFixture(
     const id = bare.slice("/api/v1/magic-squares/".length);
     const idx = MAGIC_SQUARES.findIndex((m) => m.id === id);
     if (idx < 0)
-      return new NotFoundError(
-        problem(404, "Not Found", `Magic square ${id} not found`),
-      );
+      return new NotFoundError(problem(404, "Not Found", `Magic square ${id} not found`));
     if (method === "GET") return MAGIC_SQUARES[idx];
     if (method === "DELETE") {
       MAGIC_SQUARES.splice(idx, 1);
@@ -1028,8 +1106,7 @@ function workshopFixture(
         components: input.components ?? {},
         materials_notes: input.materials_notes ?? null,
         linked_election: input.linked_election ?? null,
-        linked_consecration_working_id:
-          input.linked_consecration_working_id ?? null,
+        linked_consecration_working_id: input.linked_consecration_working_id ?? null,
         encryption_mode: "none",
         sealed: false,
         encrypted_payload_b64: null,
@@ -1048,10 +1125,7 @@ function workshopFixture(
     if (!idMaybe) return undefined;
     const id = idMaybe;
     const idx = TALISMANS.findIndex((t) => t.id === id);
-    if (idx < 0)
-      return new NotFoundError(
-        problem(404, "Not Found", `Talisman ${id} not found`),
-      );
+    if (idx < 0) return new NotFoundError(problem(404, "Not Found", `Talisman ${id} not found`));
     const row = TALISMANS[idx]!;
     if (sub === "seal" && method === "POST") {
       const payload = body as {
@@ -1079,8 +1153,7 @@ function workshopFixture(
       };
     }
     if (sub === "fork" && method === "POST") {
-      const name =
-        ((body as { name?: string })?.name) ?? `${row.name} — new version`;
+      const name = (body as { name?: string })?.name ?? `${row.name} — new version`;
       const fork: TalismanRecord = {
         ...row,
         id: workshopId(),
@@ -1141,14 +1214,10 @@ function workshopFixture(
     if (!idMaybe) return undefined;
     const id = idMaybe;
     const idx = CIRCLES.findIndex((c) => c.id === id);
-    if (idx < 0)
-      return new NotFoundError(
-        problem(404, "Not Found", `Circle ${id} not found`),
-      );
+    if (idx < 0) return new NotFoundError(problem(404, "Not Found", `Circle ${id} not found`));
     const row = CIRCLES[idx]!;
     if (sub === "fork" && method === "POST") {
-      const name =
-        ((body as { name?: string })?.name) ?? `${row.name} — new version`;
+      const name = (body as { name?: string })?.name ?? `${row.name} — new version`;
       const fork: CircleRecord = {
         ...row,
         id: workshopId(),
@@ -1208,10 +1277,7 @@ function workshopFixture(
     if (!idMaybe) return undefined;
     const id = idMaybe;
     const idx = TOOLS.findIndex((t) => t.id === id);
-    if (idx < 0)
-      return new NotFoundError(
-        problem(404, "Not Found", `Tool ${id} not found`),
-      );
+    if (idx < 0) return new NotFoundError(problem(404, "Not Found", `Tool ${id} not found`));
     const row = TOOLS[idx]!;
     if (sub === "consecrate" && method === "POST") {
       const payload = body as {
@@ -1249,9 +1315,7 @@ function workshopFixture(
         return row;
       }
       if (method === "DELETE" && subId) {
-        row.photo_upload_ids = row.photo_upload_ids.filter(
-          (p) => p !== subId,
-        );
+        row.photo_upload_ids = row.photo_upload_ids.filter((p) => p !== subId);
         row.updated_at = nowIso();
         return null;
       }
@@ -1299,10 +1363,7 @@ function workshopFixture(
     if (!idMaybe) return undefined;
     const id = idMaybe;
     const idx = ALTARS.findIndex((a) => a.id === id);
-    if (idx < 0)
-      return new NotFoundError(
-        problem(404, "Not Found", `Altar ${id} not found`),
-      );
+    if (idx < 0) return new NotFoundError(problem(404, "Not Found", `Altar ${id} not found`));
     const row = ALTARS[idx]!;
     if (sub === "photos" && method === "POST") {
       const payload = body as { upload_id: string };
@@ -1389,10 +1450,7 @@ function workshopFixture(
     if (!idMaybe) return undefined;
     const id = idMaybe;
     const idx = VOCES.findIndex((v) => v.id === id);
-    if (idx < 0)
-      return new NotFoundError(
-        problem(404, "Not Found", `Voce ${id} not found`),
-      );
+    if (idx < 0) return new NotFoundError(problem(404, "Not Found", `Voce ${id} not found`));
     const row = VOCES[idx]!;
     if (sub === "recordings") {
       if (method === "POST") {
@@ -1477,9 +1535,7 @@ function workshopFixture(
     const runId = runIdMaybe ?? "";
     const fixture = AGENT_RUNS.get(runId);
     if (!fixture) {
-      return new NotFoundError(
-        problem(404, "Not Found", `Agent run ${runId} not found`),
-      );
+      return new NotFoundError(problem(404, "Not Found", `Agent run ${runId} not found`));
     }
     if (sub === undefined) {
       if (method === "GET") return fixture;
@@ -1622,4 +1678,1089 @@ function isValidMagicSquareFixture(cells: number[][]): boolean {
     d2 += cells[i]?.[n - 1 - i] ?? 0;
   }
   return d1 === expected && d2 === expected;
+}
+
+// ── Phase 05 relational-ledger fixture state + handler (v1-019) ─────
+// Deterministic seed rows mirror the H01-H03 design seeds and exercise
+// every status-pill variant: all 5 reception levels, all 6 contract
+// statuses, all 5 obligation statuses, all 5 oath statuses, all 4
+// initiation statuses, all 4 servitor statuses, all 4 task statuses.
+
+let LEDGER_SEQ = 0;
+function ledgerId(prefix: string): string {
+  LEDGER_SEQ += 1;
+  return `${prefix}-fx-${LEDGER_SEQ}`;
+}
+
+const LEDGER_ENTITIES: EntityRecord[] = [
+  {
+    id: "ent-hekate",
+    name: "Hekate",
+    kind: "deity",
+    aliases: ["Ἑκάτη"],
+    glyph: "entity",
+    description: null,
+    tradition: "hellenic",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "ent-brigid",
+    name: "Brigid",
+    kind: "deity",
+    aliases: [],
+    glyph: "entity",
+    description: null,
+    tradition: "celtic",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "ent-apollon",
+    name: "Apollon",
+    kind: "deity",
+    aliases: ["Ἀπόλλων"],
+    glyph: "entity",
+    description: null,
+    tradition: "hellenic",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "ent-agathos",
+    name: "Agathos Daimon",
+    kind: "spirit",
+    aliases: [],
+    glyph: "entity",
+    description: null,
+    tradition: "hellenic",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "ent-yiayia",
+    name: "Yiayia (María)",
+    kind: "ancestor",
+    aliases: [],
+    glyph: "entity",
+    description: null,
+    tradition: "folk",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "ent-threshold",
+    name: "The Threshold Guardian",
+    kind: "spirit",
+    aliases: [],
+    glyph: "entity",
+    description: null,
+    tradition: "personal",
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+];
+
+// Ordered offered_at desc (the backend list order).
+const LEDGER_OFFERINGS: OfferingRead[] = [
+  {
+    id: "off-overwhelming",
+    entity_id: "ent-hekate",
+    working_id: null,
+    offered_at: "2026-06-21T23:30:00Z",
+    location: "The crossroads",
+    location_lat: null,
+    location_lon: null,
+    items: [
+      { kind: "food", quantity: "1", unit: "plate" },
+      { kind: "wine", quantity: "1", unit: "cup" },
+    ],
+    intention: "Deipnon at the crossroads, the dark of the moon.",
+    reception_perceived: "overwhelming",
+    outcome_notes: null,
+    astro_snapshot: "Sun ☉ Gemini · dark moon · hour of Saturn",
+    calendar_snapshot: "24 Sivan 5786",
+    owner_id: null,
+    created_at: "2026-06-21T23:31:00Z",
+    updated_at: "2026-06-21T23:31:00Z",
+  },
+  {
+    id: "off-strong",
+    entity_id: "ent-brigid",
+    working_id: null,
+    offered_at: "2026-06-21T19:00:00Z",
+    location: "The household shrine",
+    location_lat: null,
+    location_lon: null,
+    items: [{ kind: "milk" }, { kind: "flowers" }],
+    intention: "Gratitude for the mending of a long quarrel.",
+    reception_perceived: "strong",
+    outcome_notes: null,
+    astro_snapshot: "Sun ☉ Gemini · waning crescent",
+    calendar_snapshot: null,
+    owner_id: null,
+    created_at: "2026-06-21T19:01:00Z",
+    updated_at: "2026-06-21T19:01:00Z",
+  },
+  {
+    id: "off-clear",
+    entity_id: "ent-apollon",
+    working_id: null,
+    offered_at: "2026-06-20T08:12:00Z",
+    location: null,
+    location_lat: null,
+    location_lon: null,
+    items: [{ kind: "incense", quantity: "3", unit: "sticks" }, { kind: "song" }],
+    intention: "Morning paean before the workday.",
+    reception_perceived: "clear",
+    outcome_notes: null,
+    astro_snapshot: "Sun ☉ Gemini · waning crescent",
+    calendar_snapshot: null,
+    owner_id: null,
+    created_at: "2026-06-20T08:13:00Z",
+    updated_at: "2026-06-20T08:13:00Z",
+  },
+  {
+    id: "off-faint",
+    entity_id: "ent-agathos",
+    working_id: null,
+    offered_at: "2026-06-20T06:05:00Z",
+    location: "The household shrine",
+    location_lat: null,
+    location_lon: null,
+    items: [{ kind: "libation", quantity: "1", unit: "cup" }],
+    intention: "Daily libation at dawn.",
+    reception_perceived: "faint",
+    outcome_notes: null,
+    astro_snapshot: null,
+    calendar_snapshot: null,
+    owner_id: null,
+    created_at: "2026-06-20T06:06:00Z",
+    updated_at: "2026-06-20T06:06:00Z",
+  },
+  {
+    id: "off-none",
+    entity_id: "ent-yiayia",
+    working_id: null,
+    offered_at: "2026-06-18T20:00:00Z",
+    location: "The kitchen ikon",
+    location_lat: null,
+    location_lon: null,
+    items: [{ kind: "food" }, { kind: "time" }],
+    intention: "Sunday remembrance at the kitchen ikon.",
+    reception_perceived: "none",
+    outcome_notes: null,
+    astro_snapshot: "Sun ☉ Gemini · waxing gibbous",
+    calendar_snapshot: null,
+    owner_id: null,
+    created_at: "2026-06-18T20:01:00Z",
+    updated_at: "2026-06-18T20:01:00Z",
+  },
+];
+
+// Ordered next_due_at asc nulls-last (the backend list order).
+const LEDGER_RECURRING: RecurringOfferingRead[] = [
+  {
+    id: "rec-libation",
+    entity_id: "ent-agathos",
+    label: "Morning libation",
+    cadence: "Daily at dawn",
+    items_template: [{ kind: "libation", quantity: "1", unit: "cup" }],
+    next_due_at: "2026-06-22T06:00:00Z",
+    is_active: true,
+    owner_id: null,
+    created_at: "2026-02-01T00:00:00Z",
+    updated_at: "2026-06-21T06:00:00Z",
+  },
+  {
+    id: "rec-deipnon",
+    entity_id: "ent-hekate",
+    label: "Hekate's Deipnon",
+    cadence: "Every dark moon",
+    items_template: [{ kind: "food" }, { kind: "wine", quantity: "1", unit: "cup" }],
+    next_due_at: "2026-06-23T21:00:00Z",
+    is_active: true,
+    owner_id: null,
+    created_at: "2026-01-05T00:00:00Z",
+    updated_at: "2026-05-26T00:00:00Z",
+  },
+  {
+    id: "rec-memorial",
+    entity_id: "ent-yiayia",
+    label: "Memorial candle",
+    cadence: "Every Sunday",
+    items_template: [{ kind: "time" }],
+    next_due_at: "2026-06-25T19:00:00Z",
+    is_active: false,
+    owner_id: null,
+    created_at: "2026-03-10T00:00:00Z",
+    updated_at: "2026-06-14T19:00:00Z",
+  },
+];
+
+// Ordered created_at desc (the backend list order). One row per
+// status; the active row's obligations exercise all five obligation
+// statuses across both sides.
+const LEDGER_CONTRACTS: ContractRead[] = [
+  {
+    id: "ct-active",
+    entity_id: "ent-brigid",
+    title: "Midsummer accord",
+    terms:
+      "A candle kept at the hearth each evening; in return, a steady hand at the forge work until the harvest.",
+    our_obligations: [
+      {
+        id: "ob-ours-1",
+        description: "Daily candle at the hearth shrine",
+        status: "pending",
+        due_at: "2026-06-24T20:00:00Z",
+      },
+      {
+        id: "ob-ours-2",
+        description: "Well visit at Imbolc",
+        status: "fulfilled",
+        fulfilled_at: "2026-05-01T12:00:00Z",
+      },
+      {
+        id: "ob-ours-3",
+        description: "A poem for the festival",
+        status: "waived",
+        notes: "Waived by mutual agreement at the spring rite.",
+      },
+    ],
+    their_obligations: [
+      {
+        id: "ob-theirs-1",
+        description: "Steady hand for the forge work",
+        status: "in-progress",
+      },
+      {
+        id: "ob-theirs-2",
+        description: "Spring rain for the garden",
+        status: "overdue",
+        due_at: "2026-06-19T00:00:00Z",
+      },
+    ],
+    status: "active",
+    effective_at: "2026-05-01T00:00:00Z",
+    expires_at: "2026-09-01T00:00:00Z",
+    renewable: true,
+    binding_kind: "written",
+    witness_entity_ids: ["ent-hekate"],
+    dissolution_ritual_id: null,
+    owner_id: null,
+    created_at: "2026-06-10T00:00:00Z",
+    updated_at: "2026-06-10T00:00:00Z",
+  },
+  {
+    id: "ct-draft",
+    entity_id: "ent-threshold",
+    title: "Threshold ward",
+    terms: "Watch over the door; a monthly libation in return.",
+    our_obligations: [],
+    their_obligations: [],
+    status: "draft",
+    effective_at: null,
+    expires_at: null,
+    renewable: false,
+    binding_kind: "verbal",
+    witness_entity_ids: [],
+    dissolution_ritual_id: null,
+    owner_id: null,
+    created_at: "2026-06-08T00:00:00Z",
+    updated_at: "2026-06-08T00:00:00Z",
+  },
+  {
+    id: "ct-fulfilled",
+    entity_id: "ent-apollon",
+    title: "Healing accord",
+    terms: null,
+    our_obligations: [],
+    their_obligations: [],
+    status: "fulfilled",
+    effective_at: "2026-02-01T00:00:00Z",
+    expires_at: "2026-05-01T00:00:00Z",
+    renewable: false,
+    binding_kind: "breath",
+    witness_entity_ids: [],
+    dissolution_ritual_id: null,
+    owner_id: null,
+    created_at: "2026-05-02T00:00:00Z",
+    updated_at: "2026-05-02T00:00:00Z",
+  },
+  {
+    id: "ct-dissolved",
+    entity_id: "ent-hekate",
+    title: "Crossroads bargain",
+    terms: null,
+    our_obligations: [],
+    their_obligations: [],
+    status: "dissolved",
+    effective_at: "2026-01-01T00:00:00Z",
+    expires_at: null,
+    renewable: false,
+    binding_kind: "blood",
+    witness_entity_ids: [],
+    dissolution_ritual_id: null,
+    owner_id: null,
+    created_at: "2026-04-01T00:00:00Z",
+    updated_at: "2026-04-01T00:00:00Z",
+  },
+  {
+    id: "ct-expired",
+    entity_id: "ent-agathos",
+    title: "Winter watch",
+    terms: null,
+    our_obligations: [],
+    their_obligations: [],
+    status: "expired",
+    effective_at: "2025-11-01T00:00:00Z",
+    expires_at: "2026-03-01T00:00:00Z",
+    renewable: false,
+    binding_kind: "item-bound",
+    witness_entity_ids: [],
+    dissolution_ritual_id: null,
+    owner_id: null,
+    created_at: "2026-03-01T00:00:00Z",
+    updated_at: "2026-03-01T00:00:00Z",
+  },
+  {
+    id: "ct-breached",
+    entity_id: "ent-threshold",
+    title: "Silence pact",
+    terms: null,
+    our_obligations: [],
+    their_obligations: [],
+    status: "breached",
+    effective_at: "2025-12-01T00:00:00Z",
+    expires_at: null,
+    renewable: false,
+    binding_kind: "name-bound",
+    witness_entity_ids: [],
+    dissolution_ritual_id: null,
+    owner_id: null,
+    created_at: "2026-02-01T00:00:00Z",
+    updated_at: "2026-02-01T00:00:00Z",
+  },
+];
+
+// Ordered taken_at desc (the backend list order). Sealed rows carry
+// text=null per the read model — the ciphertext is write-only.
+const LEDGER_OATHS: OathRead[] = [
+  {
+    id: "oath-broken",
+    kind: "partner",
+    recipient_entity_id: null,
+    recipient_text: "A partner in the work",
+    text: null,
+    encryption_mode: "sealed",
+    sealed: true,
+    taken_at: "2026-02-14T00:00:00Z",
+    expires_at: null,
+    renewal_cadence: null,
+    status: "broken",
+    accountability_checkpoints: [],
+    owner_id: null,
+    created_at: "2026-02-14T00:00:00Z",
+    updated_at: "2026-06-01T00:00:00Z",
+  },
+  {
+    id: "oath-active",
+    kind: "self",
+    recipient_entity_id: null,
+    recipient_text: null,
+    text: null,
+    encryption_mode: "sealed",
+    sealed: true,
+    taken_at: "2026-01-01T00:00:00Z",
+    expires_at: null,
+    renewal_cadence: "Renews each lunar month",
+    status: "active",
+    accountability_checkpoints: [{ due_at: "2026-06-24T00:00:00Z" }],
+    owner_id: null,
+    created_at: "2026-01-01T00:00:00Z",
+    updated_at: "2026-01-01T00:00:00Z",
+  },
+  {
+    id: "oath-fulfilled",
+    kind: "deity",
+    recipient_entity_id: "ent-hekate",
+    recipient_text: null,
+    text: "To keep the household shrine lit through the dark half of the year.",
+    encryption_mode: "none",
+    sealed: false,
+    taken_at: "2025-11-01T00:00:00Z",
+    expires_at: "2026-05-01T00:00:00Z",
+    renewal_cadence: null,
+    status: "fulfilled",
+    accountability_checkpoints: [],
+    owner_id: null,
+    created_at: "2025-11-01T00:00:00Z",
+    updated_at: "2026-05-01T00:00:00Z",
+  },
+  {
+    id: "oath-lapsed",
+    kind: "community",
+    recipient_entity_id: null,
+    recipient_text: "The grove",
+    text: "To tend the shared garden each full moon.",
+    encryption_mode: "none",
+    sealed: false,
+    taken_at: "2025-08-09T00:00:00Z",
+    expires_at: null,
+    renewal_cadence: "Yearly",
+    status: "lapsed",
+    accountability_checkpoints: [{ due_at: "2026-06-10T00:00:00Z" }],
+    owner_id: null,
+    created_at: "2025-08-09T00:00:00Z",
+    updated_at: "2026-06-11T00:00:00Z",
+  },
+  {
+    id: "oath-renounced",
+    kind: "order",
+    recipient_entity_id: null,
+    recipient_text: "The old order",
+    text: null,
+    encryption_mode: "sealed",
+    sealed: true,
+    taken_at: "2025-06-01T00:00:00Z",
+    expires_at: null,
+    renewal_cadence: null,
+    status: "renounced",
+    accountability_checkpoints: [],
+    owner_id: null,
+    created_at: "2025-06-01T00:00:00Z",
+    updated_at: "2026-03-01T00:00:00Z",
+  },
+];
+
+// Ordered created_at desc. Always sealed — the read model carries only
+// tradition, status and the optional disclosure mark.
+const LEDGER_INITIATIONS: InitiationRead[] = [
+  {
+    id: "init-active",
+    tradition: "Hellenic mystery",
+    status: "active",
+    sealed: true,
+    publicly_disclosed_at: null,
+    owner_id: null,
+    created_at: "2026-05-01T00:00:00Z",
+    updated_at: "2026-05-01T00:00:00Z",
+  },
+  {
+    id: "init-suspended",
+    tradition: "Rosicrucian order",
+    status: "suspended",
+    sealed: true,
+    publicly_disclosed_at: null,
+    owner_id: null,
+    created_at: "2026-03-15T00:00:00Z",
+    updated_at: "2026-04-20T00:00:00Z",
+  },
+  {
+    id: "init-lapsed",
+    tradition: "Druidic grove",
+    status: "lapsed",
+    sealed: true,
+    publicly_disclosed_at: "2026-04-12T00:00:00Z",
+    owner_id: null,
+    created_at: "2025-09-01T00:00:00Z",
+    updated_at: "2026-04-12T00:00:00Z",
+  },
+  {
+    id: "init-resigned",
+    tradition: "Ceremonial lodge",
+    status: "resigned",
+    sealed: true,
+    publicly_disclosed_at: null,
+    owner_id: null,
+    created_at: "2024-11-11T00:00:00Z",
+    updated_at: "2026-01-05T00:00:00Z",
+  },
+];
+
+// Ordered name asc (the backend list order).
+const LEDGER_SERVITORS: ServitorRead[] = [
+  {
+    id: "sv-dormant",
+    name: "Chalkeia",
+    kind: "egregore",
+    purpose: "Group working for the forge circle.",
+    sigil_upload_id: null,
+    creation_entry_id: null,
+    feeding_cadence: "Monthly",
+    feeding_method: "group attention",
+    last_fed_at: "2026-05-30T20:00:00Z",
+    lifespan_limit: null,
+    status: "dormant",
+    members: ["Soror E.", "Frater A.", "Soror K."],
+    owner_id: null,
+    created_at: "2026-01-20T00:00:00Z",
+    updated_at: "2026-05-30T20:00:00Z",
+  },
+  {
+    id: "sv-retired",
+    name: "Lampas",
+    kind: "servitor",
+    purpose: "Carried petitions to the crossroads.",
+    sigil_upload_id: null,
+    creation_entry_id: null,
+    feeding_cadence: null,
+    feeding_method: null,
+    last_fed_at: null,
+    lifespan_limit: "2026-07-11",
+    status: "retired",
+    members: [],
+    owner_id: null,
+    created_at: "2025-10-01T00:00:00Z",
+    updated_at: "2026-06-01T00:00:00Z",
+  },
+  {
+    id: "sv-active",
+    name: "Phylax",
+    kind: "servitor",
+    purpose: "Guards the threshold of the flat and turns away unwanted attention.",
+    sigil_upload_id: null,
+    creation_entry_id: null,
+    feeding_cadence: "Weekly",
+    feeding_method: "attention + a lit lamp",
+    last_fed_at: "2026-06-15T21:10:00Z",
+    lifespan_limit: null,
+    status: "active",
+    members: [],
+    owner_id: null,
+    created_at: "2026-02-02T00:00:00Z",
+    updated_at: "2026-06-15T21:10:00Z",
+  },
+  {
+    id: "sv-decommissioned",
+    name: "Skiouros",
+    kind: "servitor",
+    purpose: "An errand-runner for small findings.",
+    sigil_upload_id: null,
+    creation_entry_id: null,
+    feeding_cadence: null,
+    feeding_method: null,
+    last_fed_at: null,
+    lifespan_limit: "2026-05-30",
+    status: "decommissioned",
+    members: [],
+    owner_id: null,
+    created_at: "2025-08-15T00:00:00Z",
+    updated_at: "2026-05-30T00:00:00Z",
+  },
+];
+
+// Ordered given_at desc (the backend list order). All four task
+// statuses, all on the active servitor.
+const LEDGER_SERVITOR_TASKS: ServitorTaskRead[] = [
+  {
+    id: "task-progress",
+    servitor_id: "sv-active",
+    description: "Turn away the salesman's persistence",
+    given_at: "2026-06-10T00:00:00Z",
+    target_completion_at: "2026-06-25T00:00:00Z",
+    completed_at: null,
+    status: "in-progress",
+    outcome_notes: null,
+    created_at: "2026-06-10T00:00:00Z",
+    updated_at: "2026-06-10T00:00:00Z",
+  },
+  {
+    id: "task-pending",
+    servitor_id: "sv-active",
+    description: "Watch the door while the household sleeps",
+    given_at: "2026-06-01T00:00:00Z",
+    target_completion_at: null,
+    completed_at: null,
+    status: "pending",
+    outcome_notes: null,
+    created_at: "2026-06-01T00:00:00Z",
+    updated_at: "2026-06-01T00:00:00Z",
+  },
+  {
+    id: "task-completed",
+    servitor_id: "sv-active",
+    description: "Find the lost ring",
+    given_at: "2026-05-20T00:00:00Z",
+    target_completion_at: "2026-06-10T00:00:00Z",
+    completed_at: "2026-06-04T00:00:00Z",
+    status: "completed",
+    outcome_notes: "Found beneath the third floorboard.",
+    created_at: "2026-05-20T00:00:00Z",
+    updated_at: "2026-06-04T00:00:00Z",
+  },
+  {
+    id: "task-abandoned",
+    servitor_id: "sv-active",
+    description: "Follow the noisy neighbour's mood",
+    given_at: "2026-04-02T00:00:00Z",
+    target_completion_at: null,
+    completed_at: null,
+    status: "abandoned",
+    outcome_notes: null,
+    created_at: "2026-04-02T00:00:00Z",
+    updated_at: "2026-04-15T00:00:00Z",
+  },
+];
+
+/** Merge only the keys the patch actually defines (mirrors the
+ *  backend's ``exclude_unset`` PATCH semantics). */
+function mergeDefined<T extends object>(row: T, patch: object): T {
+  const next = { ...row } as Record<string, unknown>;
+  for (const [k, v] of Object.entries(patch)) {
+    if (v !== undefined) next[k] = v;
+  }
+  return next as T;
+}
+
+function beingsLedgerFixture(method: string, bare: string, qs: string, body: unknown): unknown {
+  const params = new URLSearchParams(qs);
+
+  // ── Entities (list + create + detail) ─────────────────────────────
+  if (bare === "/api/v1/entities") {
+    if (method === "GET") {
+      const kind = params.get("kind");
+      const tradition = params.get("tradition");
+      return LEDGER_ENTITIES.filter(
+        (e) => (!kind || e.kind === kind) && (!tradition || e.tradition === tradition),
+      );
+    }
+    if (method === "POST") {
+      const input = body as CreateEntityInput;
+      const row: EntityRecord = {
+        id: ledgerId("ent"),
+        name: input.name,
+        kind: input.kind ?? "other",
+        aliases: input.aliases ?? [],
+        glyph: input.glyph ?? "entity",
+        description: input.description ?? null,
+        tradition: input.tradition ?? "",
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      LEDGER_ENTITIES.unshift(row);
+      return row;
+    }
+  }
+  const entityMatch = /^\/api\/v1\/entities\/([^/]+)$/.exec(bare);
+  if (entityMatch && method === "GET") {
+    const row = LEDGER_ENTITIES.find((e) => e.id === entityMatch[1]);
+    return (
+      row ?? new NotFoundError(problem(404, "Not Found", `Entity ${entityMatch[1]} not found`))
+    );
+  }
+
+  // ── Offerings ─────────────────────────────────────────────────────
+  if (bare === "/api/v1/offerings") {
+    if (method === "GET") {
+      const entityId = params.get("entity_id");
+      return LEDGER_OFFERINGS.filter((o) => !entityId || o.entity_id === entityId);
+    }
+    if (method === "POST") {
+      const input = body as CreateOfferingInput;
+      const row: OfferingRead = {
+        id: ledgerId("off"),
+        entity_id: input.entity_id,
+        working_id: input.working_id ?? null,
+        offered_at: input.offered_at,
+        location: input.location ?? null,
+        location_lat: input.location_lat ?? null,
+        location_lon: input.location_lon ?? null,
+        items: input.items ?? [],
+        intention: input.intention ?? null,
+        reception_perceived: input.reception_perceived ?? null,
+        outcome_notes: input.outcome_notes ?? null,
+        astro_snapshot: input.astro_snapshot ?? null,
+        calendar_snapshot: input.calendar_snapshot ?? null,
+        owner_id: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      LEDGER_OFFERINGS.unshift(row);
+      return row;
+    }
+  }
+  const offeringMatch = /^\/api\/v1\/offerings\/([^/]+)$/.exec(bare);
+  if (offeringMatch) {
+    const idx = LEDGER_OFFERINGS.findIndex((o) => o.id === offeringMatch[1]);
+    if (idx < 0) {
+      return new NotFoundError(problem(404, "Not Found", `Offering ${offeringMatch[1]} not found`));
+    }
+    if (method === "GET") return LEDGER_OFFERINGS[idx];
+    if (method === "PATCH") {
+      const next = mergeDefined(LEDGER_OFFERINGS[idx]!, (body ?? {}) as UpdateOfferingInput);
+      next.updated_at = nowIso();
+      LEDGER_OFFERINGS[idx] = next;
+      return next;
+    }
+    if (method === "DELETE") {
+      LEDGER_OFFERINGS.splice(idx, 1);
+      return null;
+    }
+  }
+
+  // ── Recurring offerings ───────────────────────────────────────────
+  if (bare === "/api/v1/recurring-offerings") {
+    if (method === "GET") {
+      const entityId = params.get("entity_id");
+      const isActive = params.get("is_active");
+      return LEDGER_RECURRING.filter(
+        (r) =>
+          (!entityId || r.entity_id === entityId) &&
+          (isActive === null || String(r.is_active) === isActive),
+      );
+    }
+    if (method === "POST") {
+      const input = body as CreateRecurringOfferingInput;
+      const row: RecurringOfferingRead = {
+        id: ledgerId("rec"),
+        entity_id: input.entity_id,
+        label: input.label,
+        cadence: input.cadence,
+        items_template: input.items_template ?? [],
+        next_due_at: input.next_due_at ?? null,
+        is_active: input.is_active ?? true,
+        owner_id: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      LEDGER_RECURRING.unshift(row);
+      return row;
+    }
+  }
+  const recurringMatch = /^\/api\/v1\/recurring-offerings\/([^/]+)$/.exec(bare);
+  if (recurringMatch) {
+    const idx = LEDGER_RECURRING.findIndex((r) => r.id === recurringMatch[1]);
+    if (idx < 0) {
+      return new NotFoundError(
+        problem(404, "Not Found", `Recurring offering ${recurringMatch[1]} not found`),
+      );
+    }
+    if (method === "GET") return LEDGER_RECURRING[idx];
+    if (method === "PATCH") {
+      const next = mergeDefined(
+        LEDGER_RECURRING[idx]!,
+        (body ?? {}) as UpdateRecurringOfferingInput,
+      );
+      next.updated_at = nowIso();
+      LEDGER_RECURRING[idx] = next;
+      return next;
+    }
+    if (method === "DELETE") {
+      LEDGER_RECURRING.splice(idx, 1);
+      return null;
+    }
+  }
+
+  // ── Contracts ─────────────────────────────────────────────────────
+  if (bare === "/api/v1/contracts") {
+    if (method === "GET") {
+      const entityId = params.get("entity_id");
+      const status = params.get("contract_status");
+      return LEDGER_CONTRACTS.filter(
+        (c) => (!entityId || c.entity_id === entityId) && (!status || c.status === status),
+      );
+    }
+    if (method === "POST") {
+      const input = body as CreateContractInput;
+      const row: ContractRead = {
+        id: ledgerId("ct"),
+        entity_id: input.entity_id,
+        title: input.title,
+        terms: input.terms ?? null,
+        our_obligations: input.our_obligations ?? [],
+        their_obligations: input.their_obligations ?? [],
+        status: input.status ?? "draft",
+        effective_at: input.effective_at ?? null,
+        expires_at: input.expires_at ?? null,
+        renewable: input.renewable ?? false,
+        binding_kind: input.binding_kind ?? "verbal",
+        witness_entity_ids: input.witness_entity_ids ?? [],
+        dissolution_ritual_id: input.dissolution_ritual_id ?? null,
+        owner_id: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      LEDGER_CONTRACTS.unshift(row);
+      return row;
+    }
+  }
+  const fulfillMatch = /^\/api\/v1\/contracts\/([^/]+)\/fulfill-obligation$/.exec(bare);
+  if (fulfillMatch && method === "POST") {
+    const idx = LEDGER_CONTRACTS.findIndex((c) => c.id === fulfillMatch[1]);
+    if (idx < 0) {
+      return new NotFoundError(problem(404, "Not Found", `Contract ${fulfillMatch[1]} not found`));
+    }
+    const input = body as FulfillObligationInput;
+    const contract = LEDGER_CONTRACTS[idx]!;
+    const key = input.side === "ours" ? "our_obligations" : "their_obligations";
+    const obligations = contract[key].map((ob) =>
+      ob.id === input.obligation_id
+        ? {
+            ...ob,
+            status: input.new_status ?? "fulfilled",
+            ...(input.fulfilled_at ? { fulfilled_at: input.fulfilled_at } : {}),
+            ...(input.notes ? { notes: input.notes } : {}),
+          }
+        : ob,
+    );
+    if (!obligations.some((ob) => ob.id === input.obligation_id)) {
+      return new NotFoundError(
+        problem(
+          404,
+          "Not Found",
+          `Obligation '${input.obligation_id}' not found on the ${input.side} side.`,
+        ),
+      );
+    }
+    const next: ContractRead = { ...contract, [key]: obligations, updated_at: nowIso() };
+    LEDGER_CONTRACTS[idx] = next;
+    return next;
+  }
+  const contractMatch = /^\/api\/v1\/contracts\/([^/]+)$/.exec(bare);
+  if (contractMatch) {
+    const idx = LEDGER_CONTRACTS.findIndex((c) => c.id === contractMatch[1]);
+    if (idx < 0) {
+      return new NotFoundError(problem(404, "Not Found", `Contract ${contractMatch[1]} not found`));
+    }
+    if (method === "GET") return LEDGER_CONTRACTS[idx];
+    if (method === "PATCH") {
+      const next = mergeDefined(LEDGER_CONTRACTS[idx]!, (body ?? {}) as UpdateContractInput);
+      next.updated_at = nowIso();
+      LEDGER_CONTRACTS[idx] = next;
+      return next;
+    }
+    if (method === "DELETE") {
+      LEDGER_CONTRACTS.splice(idx, 1);
+      return null;
+    }
+  }
+
+  // ── Oaths ─────────────────────────────────────────────────────────
+  if (bare === "/api/v1/oaths") {
+    if (method === "GET") {
+      const kind = params.get("kind");
+      const status = params.get("oath_status");
+      return LEDGER_OATHS.filter(
+        (o) => (!kind || o.kind === kind) && (!status || o.status === status),
+      );
+    }
+    if (method === "POST") {
+      const input = body as CreateOathInput;
+      const sealed = (input.encryption_mode ?? "sealed") === "sealed";
+      const row: OathRead = {
+        id: ledgerId("oath"),
+        kind: input.kind,
+        recipient_entity_id: input.recipient_entity_id ?? null,
+        recipient_text: input.recipient_text ?? null,
+        // The backend drops plaintext for sealed oaths and never
+        // returns the ciphertext — mirror both behaviours.
+        text: sealed ? null : (input.text ?? null),
+        encryption_mode: sealed ? "sealed" : "none",
+        sealed,
+        taken_at: input.taken_at,
+        expires_at: input.expires_at ?? null,
+        renewal_cadence: input.renewal_cadence ?? null,
+        status: input.status ?? "active",
+        accountability_checkpoints: input.accountability_checkpoints ?? [],
+        owner_id: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      LEDGER_OATHS.unshift(row);
+      return row;
+    }
+  }
+  const oathMatch = /^\/api\/v1\/oaths\/([^/]+)$/.exec(bare);
+  if (oathMatch) {
+    const idx = LEDGER_OATHS.findIndex((o) => o.id === oathMatch[1]);
+    if (idx < 0) {
+      return new NotFoundError(problem(404, "Not Found", `Oath ${oathMatch[1]} not found`));
+    }
+    if (method === "GET") return LEDGER_OATHS[idx];
+    if (method === "PATCH") {
+      const patch = (body ?? {}) as UpdateOathInput;
+      const current = LEDGER_OATHS[idx]!;
+      const next = mergeDefined(current, patch);
+      // Sealed rows silently drop patched plaintext (backend rule).
+      if (current.sealed) next.text = null;
+      next.updated_at = nowIso();
+      LEDGER_OATHS[idx] = next;
+      return next;
+    }
+    if (method === "DELETE") {
+      LEDGER_OATHS.splice(idx, 1);
+      return null;
+    }
+  }
+
+  // ── Initiations ───────────────────────────────────────────────────
+  if (bare === "/api/v1/initiations") {
+    if (method === "GET") {
+      const tradition = params.get("tradition");
+      const status = params.get("init_status");
+      return LEDGER_INITIATIONS.filter(
+        (i) => (!tradition || i.tradition === tradition) && (!status || i.status === status),
+      );
+    }
+    if (method === "POST") {
+      const input = body as CreateInitiationInput;
+      const row: InitiationRead = {
+        id: ledgerId("init"),
+        tradition: input.tradition,
+        status: input.status ?? "active",
+        sealed: true,
+        publicly_disclosed_at: input.publicly_disclosed_at ?? null,
+        owner_id: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      LEDGER_INITIATIONS.unshift(row);
+      return row;
+    }
+  }
+  const initiationMatch = /^\/api\/v1\/initiations\/([^/]+)$/.exec(bare);
+  if (initiationMatch) {
+    const idx = LEDGER_INITIATIONS.findIndex((i) => i.id === initiationMatch[1]);
+    if (idx < 0) {
+      return new NotFoundError(
+        problem(404, "Not Found", `Initiation ${initiationMatch[1]} not found`),
+      );
+    }
+    if (method === "GET") return LEDGER_INITIATIONS[idx];
+    if (method === "PATCH") {
+      const patch = (body ?? {}) as UpdateInitiationInput;
+      const next = mergeDefined(LEDGER_INITIATIONS[idx]!, {
+        tradition: patch.tradition ?? undefined,
+        status: patch.status ?? undefined,
+        publicly_disclosed_at: patch.publicly_disclosed_at,
+      });
+      next.updated_at = nowIso();
+      LEDGER_INITIATIONS[idx] = next;
+      return next;
+    }
+    if (method === "DELETE") {
+      LEDGER_INITIATIONS.splice(idx, 1);
+      return null;
+    }
+  }
+
+  // ── Servitors + tasks ─────────────────────────────────────────────
+  if (bare === "/api/v1/servitors") {
+    if (method === "GET") {
+      const kind = params.get("kind");
+      const status = params.get("servitor_status");
+      return LEDGER_SERVITORS.filter(
+        (s) => (!kind || s.kind === kind) && (!status || s.status === status),
+      );
+    }
+    if (method === "POST") {
+      const input = body as CreateServitorInput;
+      const row: ServitorRead = {
+        id: ledgerId("sv"),
+        name: input.name,
+        kind: input.kind ?? "servitor",
+        purpose: input.purpose ?? null,
+        sigil_upload_id: input.sigil_upload_id ?? null,
+        creation_entry_id: input.creation_entry_id ?? null,
+        feeding_cadence: input.feeding_cadence ?? null,
+        feeding_method: input.feeding_method ?? null,
+        last_fed_at: null,
+        lifespan_limit: input.lifespan_limit ?? null,
+        status: input.status ?? "active",
+        members: input.members ?? [],
+        owner_id: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      LEDGER_SERVITORS.unshift(row);
+      return row;
+    }
+  }
+  const feedMatch = /^\/api\/v1\/servitors\/([^/]+)\/feed$/.exec(bare);
+  if (feedMatch && method === "POST") {
+    const idx = LEDGER_SERVITORS.findIndex((s) => s.id === feedMatch[1]);
+    if (idx < 0) {
+      return new NotFoundError(problem(404, "Not Found", `Servitor ${feedMatch[1]} not found`));
+    }
+    const input = (body ?? {}) as FeedServitorInput;
+    const next: ServitorRead = {
+      ...LEDGER_SERVITORS[idx]!,
+      last_fed_at: input.fed_at ?? nowIso(),
+      updated_at: nowIso(),
+    };
+    LEDGER_SERVITORS[idx] = next;
+    return next;
+  }
+  const tasksMatch = /^\/api\/v1\/servitors\/([^/]+)\/tasks$/.exec(bare);
+  if (tasksMatch) {
+    const servitor = LEDGER_SERVITORS.find((s) => s.id === tasksMatch[1]);
+    if (!servitor) {
+      return new NotFoundError(problem(404, "Not Found", `Servitor ${tasksMatch[1]} not found`));
+    }
+    if (method === "GET") {
+      const status = params.get("task_status");
+      return LEDGER_SERVITOR_TASKS.filter(
+        (t) => t.servitor_id === servitor.id && (!status || t.status === status),
+      );
+    }
+    if (method === "POST") {
+      const input = body as CreateServitorTaskInput;
+      const row: ServitorTaskRead = {
+        id: ledgerId("task"),
+        servitor_id: servitor.id,
+        description: input.description,
+        given_at: input.given_at,
+        target_completion_at: input.target_completion_at ?? null,
+        completed_at: null,
+        status: input.status ?? "pending",
+        outcome_notes: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      };
+      LEDGER_SERVITOR_TASKS.unshift(row);
+      return row;
+    }
+  }
+  const servitorMatch = /^\/api\/v1\/servitors\/([^/]+)$/.exec(bare);
+  if (servitorMatch) {
+    const idx = LEDGER_SERVITORS.findIndex((s) => s.id === servitorMatch[1]);
+    if (idx < 0) {
+      return new NotFoundError(problem(404, "Not Found", `Servitor ${servitorMatch[1]} not found`));
+    }
+    if (method === "GET") return LEDGER_SERVITORS[idx];
+    if (method === "PATCH") {
+      const next = mergeDefined(LEDGER_SERVITORS[idx]!, (body ?? {}) as UpdateServitorInput);
+      next.updated_at = nowIso();
+      LEDGER_SERVITORS[idx] = next;
+      return next;
+    }
+    if (method === "DELETE") {
+      LEDGER_SERVITORS.splice(idx, 1);
+      return null;
+    }
+  }
+  const taskMatch = /^\/api\/v1\/servitor-tasks\/([^/]+)$/.exec(bare);
+  if (taskMatch) {
+    const idx = LEDGER_SERVITOR_TASKS.findIndex((t) => t.id === taskMatch[1]);
+    if (idx < 0) {
+      return new NotFoundError(problem(404, "Not Found", `Task ${taskMatch[1]} not found`));
+    }
+    if (method === "PATCH") {
+      const next = mergeDefined(
+        LEDGER_SERVITOR_TASKS[idx]!,
+        (body ?? {}) as UpdateServitorTaskInput,
+      );
+      next.updated_at = nowIso();
+      LEDGER_SERVITOR_TASKS[idx] = next;
+      return next;
+    }
+    if (method === "DELETE") {
+      LEDGER_SERVITOR_TASKS.splice(idx, 1);
+      return null;
+    }
+  }
+
+  return undefined;
 }
