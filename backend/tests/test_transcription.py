@@ -232,22 +232,27 @@ def test_null_engine_refuses_with_clear_message() -> None:
         NullEngine().transcribe("/tmp/x.ogg")
 
 
-def test_faster_whisper_guarded_import_names_the_extra() -> None:
-    """faster-whisper is NOT installed in the test environment — the
-    lazy import must fail with a message pointing at the extra."""
+def test_faster_whisper_guarded_import_names_the_extra(monkeypatch) -> None:
+    """When faster-whisper is absent, the lazy import must fail with a
+    message pointing at the extra. Simulate absence via sys.modules so
+    the test holds whether or not the optional extra is installed (CI
+    runs `uv sync --all-extras`, which DOES install it — v1-049)."""
+    import sys
+
+    monkeypatch.setitem(sys.modules, "faster_whisper", None)
     engine = FasterWhisperEngine(model_size="tiny")
     with pytest.raises(TranscriptionError, match="uv sync --extra transcription"):
         engine.transcribe("/tmp/x.ogg")
 
 
-def test_faster_whisper_construction_does_not_import_the_package() -> None:
+def test_faster_whisper_construction_does_not_import_the_package(monkeypatch) -> None:
     """Constructing the engine (as the factory does at config time)
-    must not require the optional dependency."""
+    must not require the optional dependency — it succeeds even when the
+    package is unimportable (the import is lazy, inside transcribe)."""
     import sys
 
-    assert "faster_whisper" not in sys.modules
-    FasterWhisperEngine(model_size="large-v3")
-    assert "faster_whisper" not in sys.modules
+    monkeypatch.setitem(sys.modules, "faster_whisper", None)
+    FasterWhisperEngine(model_size="large-v3")  # must not raise
 
 
 def test_user_setting_key_matches_registered_default() -> None:

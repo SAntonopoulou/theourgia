@@ -71,6 +71,47 @@ class PeerPublicKey:
     entries older than PEER_KEY_TTL_SECONDS."""
 
 
+def _is_blocked_ssrf_host(host: str) -> bool:
+    """True if ``host`` must not be fetched from the DID-derived path.
+
+    Blocks IP literals in private / loopback / link-local / reserved /
+    multicast / unspecified ranges, and internal-looking hostnames
+    (``localhost``, single-label names, ``.local`` / ``.internal`` /
+    ``.localhost`` suffixes). A real federation peer is a public FQDN.
+
+    v1 limitation (documented in the threat model): this does not defend
+    against DNS rebinding — a public name that resolves to a private IP.
+    A pinned-IP connector is the follow-up; the literal + internal-name
+    guard closes the direct-SSRF vector.
+    """
+    import ipaddress
+
+    # Strip an optional :port before inspecting the host.
+    bare = host.rsplit(":", 1)[0] if host.count(":") == 1 else host
+    bare = bare.strip("[]")  # bracketed IPv6
+
+    try:
+        ip = ipaddress.ip_address(bare)
+    except ValueError:
+        name = bare.lower().rstrip(".")
+        if name in {"localhost", ""}:
+            return True
+        if name.endswith((".local", ".internal", ".localhost")):
+            return True
+        # Single-label hostnames are internal by construction.
+        if "." not in name:
+            return True
+        return False
+    return (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_link_local
+        or ip.is_reserved
+        or ip.is_multicast
+        or ip.is_unspecified
+    )
+
+
 def did_to_host(did: str) -> str:
     """Map ``did:theourgia:peer.example.com`` → ``peer.example.com``.
 
@@ -147,13 +188,21 @@ class PeerKeyResolver:
                 f"cannot map DID to host: {exc}",
             ) from exc
 
-        url = f"https://{host}/.well-known/theourgia/actor"
+        # SSRF guard (v1-049): the DID here comes from an inbound request's
+        # keyid, so a crafted keyid could point us at an internal host. A
+        # registered peer's base_url is operator-trusted (they added it
+        # deliberately) and is exempt; the DID-derived host is not.
+        registered = None
         if self.peer_base_url_lookup is not None:
             registered = await self.peer_base_url_lookup(did)
-            if registered:
-                url = (
-                    f"{registered.rstrip('/')}/.well-known/theourgia/actor"
+        if registered:
+            url = f"{registered.rstrip('/')}/.well-known/theourgia/actor"
+        else:
+            if _is_blocked_ssrf_host(host):
+                raise PeerKeyUnavailableError(
+                    f"refusing to resolve a non-public host: {host!r}",
                 )
+            url = f"https://{host}/.well-known/theourgia/actor"
         try:
             if self.http_client is not None:
                 response = await self.http_client.get(url)

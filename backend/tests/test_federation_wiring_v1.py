@@ -1308,3 +1308,22 @@ def test_deliver_refuses_http_unless_lab_flag(monkeypatch):
     # the scheme gate.
     assert result.error != "non-HTTPS URL"
     config.get_settings.cache_clear()
+
+
+def test_ssrf_guard_blocks_internal_hosts_on_did_path():
+    """v1-049: the DID-derived fetch refuses private/internal hosts;
+    operator-registered peer URLs are exempt."""
+    from theourgia.core.federation.peer_keys import _is_blocked_ssrf_host
+
+    for bad in [
+        "localhost", "127.0.0.1", "10.0.0.5", "192.168.1.1", "172.16.0.1",
+        "169.254.169.254",  # cloud metadata
+        "internal", "db.internal", "svc.local", "[::1]", "0.0.0.0",
+    ]:
+        assert _is_blocked_ssrf_host(bad), f"should block {bad!r}"
+
+    for ok in [
+        "aurora.example.com", "hearth.sophia.example", "theourgia.com",
+        "a.b.c.example.org",
+    ]:
+        assert not _is_blocked_ssrf_host(ok), f"should allow {ok!r}"

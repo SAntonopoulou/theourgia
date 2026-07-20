@@ -121,6 +121,12 @@
         X-Content-Type-Options "nosniff"
         Referrer-Policy "strict-origin-when-cross-origin"
         Permissions-Policy "interest-cohort=()"
+        # v1-049 hardening (plan/15 §3): isolate this browsing context so a
+        # cross-origin opener can't reach our window. COEP is deliberately
+        # NOT set — require-corp would break the privacy-enhanced YouTube /
+        # Mux / Cloudflare video embeds, which are opt-in per post.
+        Cross-Origin-Opener-Policy "same-origin"
+        Cross-Origin-Resource-Policy "same-site"
         # CSP is set per-route by the backend for API responses; here we set
         # a sensible default for static page responses.
         Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"

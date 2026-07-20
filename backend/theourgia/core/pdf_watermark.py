@@ -63,9 +63,12 @@ def apply_email_watermark(pdf_bytes: bytes, email: str) -> bytes:
     """
     if not email:
         return pdf_bytes
-    source = PdfReader(io.BytesIO(pdf_bytes))
-    writer = PdfWriter()
-    for page in source.pages:
+    # pypdf 6: merge_page must run on pages already attached to a writer,
+    # so clone the source INTO the writer first, then stamp each writer
+    # page in place (the pre-6 "read page → merge → add_page" pattern is
+    # deprecated and, per pypdf, was unreliable).
+    writer = PdfWriter(clone_from=io.BytesIO(pdf_bytes))
+    for page in writer.pages:
         media = page.mediabox
         width = float(media.width)
         height = float(media.height)
@@ -73,7 +76,6 @@ def apply_email_watermark(pdf_bytes: bytes, email: str) -> bytes:
         stamp_page = stamp_pdf.pages[0]
         # merge_page draws the stamp on top of the existing page.
         page.merge_page(stamp_page)
-        writer.add_page(page)
     output = io.BytesIO()
     writer.write(output)
     return output.getvalue()
