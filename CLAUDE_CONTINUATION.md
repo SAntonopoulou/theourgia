@@ -4,11 +4,82 @@
 where prod is, what's shipped, what's next, and every gotcha we've
 paid for.
 
-Last updated: **2026-07-09** (session close after b108-2ha → b108-2ia — 27 batches).
+Last updated: **2026-07-20** (v1.0 close-out run in progress — see below).
 
 ---
 
-## State of the world (commit `28a7749`)
+## State of the world — 2026-07-20 v1.0 close-out run
+
+**~51 commits this run** (`ea521b1` → HEAD). The directive was
+"complete it to version 1." What landed, all pushed to `main` with
+suites green at every commit:
+
+### Features closed toward v1
+- **Tier 2**: Whisper transcription (opt-in, faster-whisper) · memorial
+  follow-ups (auto-trigger sweep + posthumous release + Shamir key-share
+  + threat model) · bind-rune designer + Northumbrian bundle · **MBF**
+  (Magickal Bundle Format, ADR-0011) + 7 content bundles · cross-instance
+  group rituals + egregore flow.
+- **Tier 3**: Postmark/SES/Mailgun email backends · Stream/Mux video
+  providers · Helm chart · cross-vault DP hub aggregates.
+- **Phase 14/16**: agent-daemon vault-side MCP (`/api/v1/mcp`, SQL-level
+  sealed exclusion) + runs persistence + 6 agent definitions (ADR-0012)
+  · registry release hosting + signed installs + SSO bridge + startup
+  plugin loader.
+- **Phase 15**: closed-tradition substrate · crisis-nudge backend · B5
+  vault key rotation · GDPR doc set + cookie notice + zero-telemetry
+  verify · operator health dashboard (`/api/v1/admin/health`).
+- **Gaps found by docs/verification**: 8 missing calendars→4 added
+  (Hijri/Coptic/Mayan/French Republican) · divination-panel persistence
+  + trance mode · FTS search wired · Phase 05 beings routes mounted ·
+  entry version history · seal reconciliation (real one-way seal
+  ceremony) · **vault provisioning** (nothing created a Vault — fixed +
+  backfilled on prod).
+
+### Three production incidents found by RUNNING the code (all fixed on prod)
+1. **Celery had never run in prod** (daskalos-claude's note): wrong `-A`
+   module since first deploy → your vault had **never been backed up**.
+   Six stacked defects fixed; first-ever restic snapshot verified in R2;
+   restore drill passed. See `docs/ops/INCIDENT-2026-07-20-celery-never-ran.md`.
+2. **Migration chain couldn't replay from zero** (0066 dup webauthn +
+   missing RLS policy) → fixed, prod RLS healed.
+3. **pgvector missing** from the compose/Helm postgres image → fresh
+   installs would die at migration 0001. Switched to `pgvector/pgvector:pg16`.
+
+### Twin-instance federation test — PASSED live
+Two instances, signed handshake both directions + inbox processing +
+follow/accept round-trip + replay rejection (409). See
+`docs/ops/twin-instance-federation-test-2026-07-20.md`. Unblocked group
+ritual + DP. Found 5 lab-federation fixes (v1-029) + the vault blocker.
+
+### Prod state (2026-07-20)
+- 🟢 LIVE, 8 containers healthy, alembic head **0085**, vault
+  `soror-eu-a` provisioned, celery + backups autonomous, frontend
+  healthcheck green.
+- Test counts: backend **3595** · shared **3201** · admin **123** ·
+  registry **56** · agent-daemon **228** (181 + DB tests). Chain replays
+  `0001→0085` from zero on a fresh pgvector Postgres.
+
+### What remains for the v1.0.0 tag (in progress)
+- Docs-site wiring + API reference (batch running) · Playwright E2E
+  flows (batch running) · **release engineering** (bump 10 version
+  strings `0.0.0-dev`→`1.0.0`, re-enable full CI from `6afc51a` —
+  careful, ~3300 baseline ruff findings mean lint stays separate —,
+  cut CHANGELOG `[1.0.0]`, release.yml builds all 4 images) · **FEATURES.md
+  evidence-backed audit (DO LAST)** · tag `v1.0.0` + deploy + launch
+  report.
+
+### Orchestration lesson (paid tuition)
+Running many agents in ONE working tree collided: duplicate migration
+numbers + "file modified since read". Rule for the rest: **one code
+batch in flight at a time for anything touching shared files** (router
+`__init__`, `config.py`, api-client barrels, alembic chain, auth-test).
+Docs/isolated-module batches parallelize safely. Reconcile against the
+real tree + full suites, never agent reports.
+
+---
+
+## State of the world (commit `28a7749`) — 2026-07-09 (historical)
 
 ### Production
 
