@@ -95,8 +95,16 @@ const {
     background: var(--accent-soft) !important;
     border-color: var(--line-2) !important;
   }
+  /* Responsive chrome (v1-050). The full row (logo · nav · theme cycler ·
+   * mode toggle · CTA) only fits on wide desktops. On a half-screen tiled
+   * window (~860–1024px) the nav links AND the theme cycler both showed and
+   * the right cluster clipped off the edge — hide the theme cycler from
+   * ≤1024 (same call as the admin chrome; the mode toggle stays). Nav links
+   * still collapse at ≤860; a proper hamburger menu for the marketing pages
+   * on true-mobile is the follow-up. */
+  @media (max-width: 1024px) { .om-pubseg { display: none !important; } }
   @media (max-width: 860px) { .om-pubnav { display: none !important; } }
-  @media (max-width: 600px) { .om-pubseg { display: none !important; } }
+  @media (max-width: 600px) { .om-pubwrap { gap: 12px !important; } }
 </style>
 
 <script>
