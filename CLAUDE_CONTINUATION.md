@@ -8,6 +8,43 @@ Last updated: **2026-07-20** (v1.0 close-out run in progress — see below).
 
 ---
 
+## ▶▶ RESUME HERE — 2026-07-20 night (responsive sweep + prod deploy)
+
+**Prod is now current and stable at HEAD (`71c713d`, DB `0085`).** Tonight
+did the responsive/mobile UX sweep (v1-050) and caught prod up from 21
+commits behind (`dc22932`, DB 0082). RestartCount=0 on every service —
+**no restart loop**; `/`, `/healthz` 200, `/api/v1/entities` 401, SW v4
+served. pg_dump safety backup at `/srv/theourgia/prod/backups-manual/pre-v1050-*`.
+
+**Shipped + deployed tonight:** topbar clip fix (`.om-topbar-actions`
+`0 0 auto`) on every surface · heavy topbar chrome hidden ≤1024 (tablet) ·
+new `useNarrowLayout` hook · pane-stacking on MagicSquares/Gematria/Analytics ·
+public-site nav no longer clips on tiled ~960px windows · SW VERSION v3→v4.
+Full detector triage: **98 routes × 4 widths, only 1 trivial 4px offender.**
+
+**Verify harness:** `.sweep-mobshot.mjs` at repo root (run from repo root;
+`SHOTS=0` = fast triage; `WIDTHS=...`). Detector is a FLOOR — screenshot-verify.
+
+**FOUR OPEN FOLLOW-UPS (do these first):**
+1. **Public-site mobile hamburger menu** — below 860px `.om-pubnav` links
+   vanish with no menu; unreachable on true mobile/small tiles. Add a toggle
+   menu to `PublicChrome.astro`. (Tonight's fix only stopped the ~960px clip.)
+2. **plugin_state enum** — backend logs `invalid input value for enum
+   plugin_state: "ACTIVE"` every startup (code sends uppercase NAME, DB labels
+   are lowercase). Caught/skipped, non-blocking. Fix: `Enum(...,
+   values_callable=lambda e:[x.value for x in e])` on the column.
+3. **Celery healthcheck wrong** — curls `localhost:8000` inside celery
+   containers (no HTTP there) → "unhealthy" though tasks succeed. Fix or drop it.
+4. **`/` "Sealed" chip** 4px clip @390 (below fold) + finish the broader
+   VISUAL spot-check pass across admin surfaces (release gate).
+
+Then v1.0.0 release remains LAST: FEATURES.md evidence audit → version bump
+0.0.0-dev→1.0.0 → CHANGELOG → tag `v1.0.0`.
+
+Full session detail: memory `project_2026_07_20_responsive_sweep_deploy`.
+
+---
+
 ## State of the world — 2026-07-20 v1.0 close-out run
 
 **~51 commits this run** (`ea521b1` → HEAD). The directive was
