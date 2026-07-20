@@ -14,10 +14,17 @@ diff against previously accepted version is computed at review time.
 
 from __future__ import annotations
 
+import base64
+import hashlib
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PublicKey,
+)
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,7 +34,11 @@ from theourgia_registry.models.advisory import (
     AdvisorySeverity,
     VulnerabilityAdvisory,
 )
-from theourgia_registry.models.author import Author
+from theourgia_registry.models.artifact import (
+    MAX_ARTIFACT_BYTES,
+    ReleaseArtifact,
+    artifact_signing_payload,
+)
 from theourgia_registry.models.plugin import (
     Plugin,
     PluginTier,
@@ -35,8 +46,7 @@ from theourgia_registry.models.plugin import (
     VersionStatus,
 )
 
-
-__all__ = ["router", "ACCEPTED_LICENSES"]
+__all__ = ["ACCEPTED_LICENSES", "router"]
 
 
 router = APIRouter()
@@ -243,6 +253,154 @@ async def get_submission(
         raise HTTPException(status_code=404, detail="submission not found")
     plugin, version = row
     return _serialise(plugin, version)
+
+
+# ── release artifacts (v1-032) ────────────────────────────────────────
+
+
+class ArtifactUploadResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    plugin_name: str
+    version: str
+    sha256: str
+    size_bytes: int
+    signature_base64: str
+
+
+@router.post(
+    "/author/plugins/{slug}/releases/{version}/artifact",
+    response_model=ArtifactUploadResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_release_artifact(
+    slug: str,
+    version: str,
+    request: Request,
+    author: CurrentAuthor,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    x_artifact_signature: Annotated[
+        str | None, Header(alias="X-Artifact-Signature"),
+    ] = None,
+    content_type: Annotated[
+        str | None, Header(alias="Content-Type"),
+    ] = None,
+) -> ArtifactUploadResponse:
+    """Upload the release archive for an already-submitted version.
+
+    The request body is the raw archive bytes (tar.gz or zip). The
+    DID-auth headers already sign SHA-256(body) + timestamp, so the
+    transport is covered; ``X-Artifact-Signature`` additionally carries
+    the DURABLE release signature — Ed25519 over the domain-separated
+    payload (see ``models.artifact.artifact_signing_payload``) — which
+    the registry stores and republishes to every installing vault.
+
+    Refusals: 404 unknown/not-owned plugin or version · 400 empty body,
+    missing/invalid artifact signature · 413 over the 10 MB cap (the
+    honest limit is named in the detail) · 409 artifact already
+    uploaded (releases are immutable — new bytes mean a new version).
+    """
+    plugin = (
+        await db.execute(
+            select(Plugin).where(
+                Plugin.author_id == author.id, Plugin.name == slug,
+            ),
+        )
+    ).scalar_one_or_none()
+    if plugin is None:
+        raise HTTPException(status_code=404, detail="plugin not found")
+
+    version_row = (
+        await db.execute(
+            select(PluginVersion).where(
+                PluginVersion.plugin_id == plugin.id,
+                PluginVersion.version == version,
+            ),
+        )
+    ).scalar_one_or_none()
+    if version_row is None:
+        raise HTTPException(
+            status_code=404, detail="version not submitted — submit first",
+        )
+
+    existing = (
+        await db.execute(
+            select(ReleaseArtifact).where(
+                ReleaseArtifact.plugin_version_id == version_row.id,
+            ),
+        )
+    ).scalar_one_or_none()
+    if existing is not None:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "artifact already uploaded for this version — releases "
+                "are immutable; publish a new version instead"
+            ),
+        )
+
+    body = await request.body()
+    if not body:
+        raise HTTPException(
+            status_code=400, detail="request body must be the archive bytes",
+        )
+    if len(body) > MAX_ARTIFACT_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"archive is {len(body)} bytes; this registry stores "
+                f"artifacts up to {MAX_ARTIFACT_BYTES} bytes (10 MB)"
+            ),
+        )
+
+    if not x_artifact_signature:
+        raise HTTPException(
+            status_code=400,
+            detail="X-Artifact-Signature header required (Ed25519 over the artifact payload)",
+        )
+
+    sha256_hex = hashlib.sha256(body).hexdigest()
+    payload = artifact_signing_payload(
+        slug=slug, version=version, sha256_hex=sha256_hex,
+    )
+    try:
+        signature = base64.b64decode(x_artifact_signature)
+        public_key = serialization.load_pem_public_key(
+            (author.public_key_pem or "").encode("utf-8"),
+        )
+        if not isinstance(public_key, Ed25519PublicKey):
+            raise HTTPException(
+                status_code=400, detail="author key is not Ed25519",
+            )
+        public_key.verify(signature, payload)
+    except HTTPException:
+        raise
+    except (InvalidSignature, ValueError, TypeError) as exc:
+        raise HTTPException(
+            status_code=400,
+            detail="artifact signature does not verify against the author's registered key",
+        ) from exc
+
+    declared_type = (content_type or "application/gzip").split(";")[0].strip()
+    artifact = ReleaseArtifact(
+        plugin_version_id=version_row.id,
+        content=body,
+        size_bytes=len(body),
+        sha256=sha256_hex,
+        signature_base64=x_artifact_signature,
+        content_type=declared_type or "application/gzip",
+        uploaded_by_author_id=author.id,
+    )
+    db.add(artifact)
+    await db.commit()
+
+    return ArtifactUploadResponse(
+        plugin_name=plugin.name,
+        version=version_row.version,
+        sha256=sha256_hex,
+        size_bytes=len(body),
+        signature_base64=x_artifact_signature,
+    )
 
 
 # ── advisories (A8) ────────────────────────────────────────────────────

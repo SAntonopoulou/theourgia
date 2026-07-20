@@ -9,8 +9,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, FastAPI
 
-from theourgia_registry.api.routers import author, maintainer, public
-
+from theourgia_registry.api.routers import author, maintainer, public, sso
 
 __all__ = ["register_routers"]
 
@@ -20,4 +19,5 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(public.router, tags=["public"])
     v1.include_router(author.router, tags=["author"])
     v1.include_router(maintainer.router, tags=["maintainer"])
+    v1.include_router(sso.router, tags=["sso"])
     app.include_router(v1)

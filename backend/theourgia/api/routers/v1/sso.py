@@ -20,17 +20,31 @@ Honesty rules wired:
 
 from __future__ import annotations
 
+import base64
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
+from urllib.parse import urlparse
 from uuid import UUID
 
+from cryptography.hazmat.primitives import serialization
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import CurrentUser, get_db_session
+from theourgia.core.config import Settings, get_settings
+from theourgia.core.federation.keys import load_or_create_keypair
+from theourgia.core.federation.signing import (
+    canonical_attestation_bytes,
+    sign_bytes,
+)
+from theourgia.core.registry.author_signer import (
+    AuthorSigner,
+    AuthorSigningUnconfigured,
+)
 from theourgia.models.audit import AuditEvent, AuditEventKind, AuditOutcome
+from theourgia.models.identity import Vault
 from theourgia.models.sso_assertion import SsoAssertion
 
 __all__ = ["router"]
@@ -40,6 +54,10 @@ router = APIRouter()
 
 
 ASSERTION_TTL = timedelta(hours=24)
+
+REGISTRY_ASSERTION_TTL = timedelta(minutes=15)
+"""Registry SSO assertions are exchange-once bootstrap material —
+they live minutes, not hours."""
 
 
 # ── Schemas ─────────────────────────────────────────────────────────
@@ -151,6 +169,141 @@ async def authorize(
     await db.commit()
     await db.refresh(assertion)
     return _to_read(assertion)
+
+
+class RegistryAssertionResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    assertion: dict
+    signature_b64: str
+    registry_sso_url: str
+
+
+@router.post(
+    "/sso/registry-assertion",
+    response_model=RegistryAssertionResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def mint_registry_assertion(
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+) -> RegistryAssertionResponse:
+    """Mint a vault-signed SSO assertion for the plugin registry.
+
+    The registry bridge half of v1-032: the client POSTs the returned
+    ``{assertion, signature_b64}`` pair to the registry's
+    ``/api/v1/auth/sso-session`` (``registry_sso_url``) and receives an
+    author session mapped to this vault's author DID.
+
+    The assertion is signed with the instance's FEDERATION keypair —
+    the key the registry verifies against this host's
+    ``/.well-known/theourgia/actor`` document. It carries the author's
+    registry signing public key (when configured) so first-contact SSO
+    can bootstrap the author's key at the registry; the registry never
+    overwrites an existing key via this path.
+
+    503 when the registry URL or the author identity isn't configured —
+    same honesty copy as the A-cluster routes."""
+    settings = get_settings()
+    if not settings.registry_url:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Plugin registry not configured for this instance.",
+        )
+    if not settings.author_did:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="author identity not configured for this instance",
+        )
+    audience = urlparse(settings.registry_url).hostname
+    if not audience:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="registry URL is malformed — cannot derive audience",
+        )
+
+    try:
+        keypair = load_or_create_keypair(
+            private_path=settings.federation_private_key_path,
+            public_path=settings.federation_public_key_path,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="federation keypair not available",
+        ) from exc
+
+    vault = (
+        await db.execute(
+            select(Vault).where(Vault.owner_id == user.id)
+            .order_by(Vault.created_at.asc())
+            .limit(1)
+        )
+    ).scalars().first()
+    display_name = vault.display_name if vault else settings.author_did
+
+    issuer_host = urlparse(settings.base_url).hostname or settings.instance_id
+    now = datetime.now(tz=UTC)
+    assertion: dict = {
+        "kind": "registry-sso",
+        "issuer_host": issuer_host,
+        "subject_did": settings.author_did,
+        "display_name": display_name,
+        "audience": audience,
+        "expires_at": (now + REGISTRY_ASSERTION_TTL).isoformat(),
+    }
+
+    # Include the author's registry signing public key when the
+    # operator has one configured — lets first-contact SSO register it.
+    author_public_key_pem = _author_public_key_pem(settings)
+    if author_public_key_pem is not None:
+        assertion["public_key_pem"] = author_public_key_pem
+
+    signature = sign_bytes(
+        keypair.private_key, canonical_attestation_bytes(assertion),
+    )
+
+    db.add(
+        AuditEvent(
+            kind=AuditEventKind.FEDERATION,
+            action="sso.registry_assertion",
+            actor_id=user.id,
+            outcome=AuditOutcome.SUCCESS,
+            detail={
+                "audience": audience,
+                "subject_did": settings.author_did,
+                "expires_at": assertion["expires_at"],
+            },
+        )
+    )
+    await db.commit()
+
+    return RegistryAssertionResponse(
+        assertion=assertion,
+        signature_b64=base64.b64encode(signature).decode("ascii"),
+        registry_sso_url=(
+            settings.registry_url.rstrip("/") + "/api/v1/auth/sso-session"
+        ),
+    )
+
+
+def _author_public_key_pem(settings: Settings) -> str | None:
+    """The configured author key's PUBLIC half as PEM, or None."""
+    try:
+        signer = AuthorSigner.from_paths(
+            did=settings.author_did,
+            private_key_path=settings.author_private_key_path,
+        )
+    except AuthorSigningUnconfigured:
+        return None
+    return (
+        signer.private_key.public_key()
+        .public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+        .decode("utf-8")
+    )
 
 
 @router.post(

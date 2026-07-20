@@ -8,12 +8,7 @@
  * Wire contract per `backend/theourgia/api/routers/v1/plugins.py`.
  */
 
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  type UseQueryResult,
-} from "@tanstack/react-query";
+import { type UseQueryResult, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiDelete, apiGet, apiPost } from "./api.js";
 
@@ -53,6 +48,38 @@ export function useInstalledPlugins(): UseQueryResult<PluginInstall[], Error> {
     queryFn: async () => {
       const data = await apiGet<InstalledListResponse>("/plugins/installed");
       return data.plugins;
+    },
+  });
+}
+
+/**
+ * Install a plugin straight from the registry (v1-032).
+ *
+ * The backend fetches the release archive, verifies sha256 + the
+ * author's Ed25519 signature against the registry-pinned key, unpacks
+ * it defensively, and records the install — unsigned or tampered
+ * releases are refused with a 400 whose detail names the reason.
+ * `version` omitted → the newest accepted release.
+ */
+export function useInstallFromRegistry() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      slug,
+      version,
+      approvedCapabilities,
+    }: {
+      slug: string;
+      version?: string;
+      approvedCapabilities?: string[];
+    }) =>
+      apiPost<PluginInstall>("/plugins/install-from-registry", {
+        slug,
+        ...(version ? { version } : {}),
+        ...(approvedCapabilities ? { approved_capabilities: approvedCapabilities } : {}),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: PLUGINS_QUERY_KEY });
     },
   });
 }

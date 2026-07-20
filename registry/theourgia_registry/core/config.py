@@ -7,7 +7,6 @@ from functools import lru_cache
 from pydantic import Field, PostgresDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 __all__ = ["RegistrySettings", "get_settings"]
 
 
@@ -44,6 +43,17 @@ class RegistrySettings(BaseSettings):
 
     # ── Session ───────────────────────────────────────────────────────
     session_secret: SecretStr = Field(default=SecretStr("change-me-in-production"))
+    sso_session_ttl_hours: int = Field(default=24)
+
+    # ── SSO bridge (v1-032) ───────────────────────────────────────────
+    # Vault hosts whose signed SSO assertions this registry accepts.
+    # The registry fetches `https://<host>/.well-known/theourgia/actor`
+    # to obtain the vault's Ed25519 public key and verifies the
+    # assertion against it. Minimal v1: plugins.theourgia.com trusts
+    # theourgia.com. See README "SSO trust model".
+    trusted_vault_hosts: list[str] = Field(
+        default_factory=lambda: ["theourgia.com"],
+    )
 
 
 @lru_cache(maxsize=1)

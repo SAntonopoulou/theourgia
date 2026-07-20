@@ -20,9 +20,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from theourgia.core.config import get_settings
-from theourgia.core.db import dispose_engine
+from theourgia.core.db import dispose_engine, session_scope
 from theourgia.core.observability import get_logger
 from theourgia.core.observability.sentry import init_sentry
+from theourgia.core.plugins.startup import load_active_plugins
 
 __all__ = ["lifespan"]
 
@@ -48,6 +49,25 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         sentry=sentry_active,
         telemetry="none" if not sentry_active else "operator_opt_in",
     )
+
+    # Activate installed plugins (v1-032). Failure-isolated twice over:
+    # the sweep isolates per-plugin failures internally, and this outer
+    # guard ensures even a DB outage at boot never blocks the API from
+    # starting — plugins simply stay unloaded (logged) until restart.
+    try:
+        async with session_scope() as session:
+            report = await load_active_plugins(
+                session, plugins_dir=settings.plugins_dir,
+            )
+        if report.loaded or report.failed or report.missing_package:
+            _log.info(
+                "theourgia.plugins.startup",
+                loaded=report.loaded,
+                failed=list(report.failed),
+                missing_package=report.missing_package,
+            )
+    except Exception as exc:  # noqa: BLE001 — plugin trouble must never block boot
+        _log.error("theourgia.plugins.startup_skipped", error=str(exc))
 
     try:
         yield
