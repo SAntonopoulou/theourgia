@@ -207,6 +207,23 @@ select:focus-visible {
   .om-aside button {
     min-height: 44px;
   }
+  /* v1-047/v1-050 compact topbar: hide the heavy chrome (full search box,
+   * the "Acting as / name" label + caret, the theme segmented control)
+   * from phones through small tablets. The full topbar chrome only fits
+   * comfortably on wide desktops — at ≤1024 the sidebar is already
+   * off-canvas behind the hamburger, so this is the same "compact shell"
+   * regime. Everything hidden here stays reachable via the drawer + the
+   * acting-as medallion menu; the sun/moon mode toggle stays visible. */
+  .om-search {
+    display: none !important;
+  }
+  .om-actingas-label,
+  .om-actingas-caret {
+    display: none !important;
+  }
+  .om-theme-seg {
+    display: none !important;
+  }
 }
 @media (max-width: 640px) {
   :root {
@@ -219,21 +236,6 @@ select:focus-visible {
   }
   .om-topbar-actions {
     gap: 8px !important;
-  }
-  /* v1-047 mobile header: one slim row — hamburger · truncating title ·
-   * acting-as medallion · mode toggle. The heavy chrome (full search
-   * box, the "Acting as / name" label + caret, the theme segmented
-   * control) is hidden on phones; everything stays reachable via the
-   * drawer + the medallion menu. */
-  .om-search {
-    display: none !important;
-  }
-  .om-actingas-label,
-  .om-actingas-caret {
-    display: none !important;
-  }
-  .om-theme-seg {
-    display: none !important;
   }
 }
 @media (prefers-reduced-motion: reduce) {
