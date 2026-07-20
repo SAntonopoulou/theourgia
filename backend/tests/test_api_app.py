@@ -116,10 +116,23 @@ async def test_unknown_path_returns_problem_404(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_cors_preflight_allowed_origins_in_dev() -> None:
-    """In a development environment, the local frontend origins are allowed."""
-    # The test conftest forces THEOURGIA_ENV=test; CORS rules in the
-    # factory mirror dev for non-production. Verify the preflight succeeds.
+async def test_cors_preflight_allowed_origins_in_dev(
+    monkeypatch: pytest.MonkeyPatch, reset_settings: None
+) -> None:
+    """In a development environment, the local frontend origins are allowed.
+
+    ``register_middleware`` only installs the permissive localhost CORS
+    set when ``settings.is_development`` (env == "development"). The
+    session conftest pins env=test, so this test must set env explicitly
+    and clear the settings cache (via the reset_settings fixture, which
+    also restores it afterward). Previously it relied on a prior test
+    leaving env=development cached — a real ordering flake surfaced when
+    the agent-MCP suite reset the cache to test just before it.
+    """
+    from theourgia.core.config import reset_settings_cache
+
+    monkeypatch.setenv("THEOURGIA_ENV", "development")
+    reset_settings_cache()
     app = create_app()
     async with AsyncClient(
         transport=ASGITransport(app=app),
