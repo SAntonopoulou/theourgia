@@ -77,6 +77,7 @@ import type {
   FileAdvisoryInput,
   FulfillObligationInput,
   HealthStatus,
+  HealthSummary,
   HoraryReadingRecord,
   InitiationRead,
   InitiationStatusWire,
@@ -183,6 +184,14 @@ export function api(client: ApiClient) {
 
     getMeta(opts?: { signal?: AbortSignal }): Promise<Meta> {
       return client.request<Meta>("/api/v1/meta", { signal: opts?.signal });
+    },
+
+    getAdminHealth(opts?: {
+      signal?: AbortSignal;
+    }): Promise<HealthSummary> {
+      return client.request<HealthSummary>("/api/v1/admin/health", {
+        signal: opts?.signal,
+      });
     },
 
     // ─── Auth (live as of Batch 12) ──────────────────────────────────

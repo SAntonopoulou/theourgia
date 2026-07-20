@@ -286,6 +286,9 @@ AUTH_REQUIRED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     # Registry SSO assertion minting (v1-032) — a signed identity
     # assertion must never be mintable anonymously.
     ("POST", "/api/v1/sso/registry-assertion", None),
+    # Operator health dashboard (v1-041) — service topology is not
+    # public; admin.observe scope only.
+    ("GET", "/api/v1/admin/health", None),
 ]
 
 

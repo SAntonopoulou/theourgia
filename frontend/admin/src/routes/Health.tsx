@@ -21,7 +21,12 @@ import { apiMethods } from "../data/api.js";
 
 const LINE = "var(--line)";
 
-type ServiceStatus = "operational" | "degraded" | "expiring" | "pending";
+type ServiceStatus =
+  | "operational"
+  | "degraded"
+  | "expiring"
+  | "unavailable"
+  | "pending";
 
 interface ServiceProbe {
   id: string;
@@ -36,7 +41,9 @@ function statusColor(s: ServiceStatus): string {
   if (s === "operational") return "var(--success, #4a9d5a)";
   if (s === "expiring") return "var(--warning, #b8891a)";
   if (s === "pending") return "var(--ink-mute)";
-  return "var(--warning, #b8891a)"; // degraded shares warning tone
+  // degraded + unavailable share the warning tone (care palette — never
+  // --danger, which is reserved for Visibility→Public).
+  return "var(--warning, #b8891a)";
 }
 
 function statusBorder(s: ServiceStatus): string {
@@ -138,7 +145,7 @@ const PAGE: CSSProperties = {
 export function Health() {
   useTopbar(() => ({
     title: "Node health",
-    subtitle: "Self-host probes · API + database live · others pending",
+    subtitle: "Self-host probes · live service status",
   }));
 
   const metaQuery = useQuery({
@@ -147,84 +154,72 @@ export function Health() {
     refetchInterval: 30_000,
   });
 
+  // v1-041: GET /api/v1/admin/health aggregates the per-service probes
+  // (database, migrations, backups, federation, plugins, storage,
+  // agents). Each probe is failure-isolated server-side.
+  const healthQuery = useQuery({
+    queryKey: ["admin-health"],
+    queryFn: async () => apiMethods.getAdminHealth(),
+    refetchInterval: 30_000,
+  });
+
   const apiReachable = metaQuery.isSuccess && metaQuery.data !== undefined;
   const apiPending = metaQuery.isPending;
   const apiError = metaQuery.isError;
 
-  const probes: ServiceProbe[] = [
-    {
-      id: "api",
-      label: "API server",
-      status: apiError ? "degraded" : apiReachable ? "operational" : "pending",
-      statusLabel: apiError
-        ? "Unreachable"
-        : apiReachable
-          ? "Operational"
-          : apiPending
-            ? "Checking…"
-            : "Pending",
-      detail: apiReachable
-        ? `${metaQuery.data.instance_id} · v${metaQuery.data.version} · ${metaQuery.data.environment}`
-        : apiError
-          ? "GET /api/v1/meta failed"
-          : "polling…",
-    },
-    {
-      id: "db",
-      label: "Database",
-      status: apiReachable ? "operational" : apiError ? "degraded" : "pending",
-      statusLabel: apiReachable
-        ? "Reachable"
-        : apiError
-          ? "Cannot verify"
-          : "Checking…",
-      detail: apiReachable
-        ? "implied from /meta response"
-        : "waits on API probe",
-    },
-    {
-      id: "federation",
-      label: "Federation peers",
-      status: "pending",
-      statusLabel: "Probe pending",
-      detail: "peer-reachability probe wires with Phase 12.5 completion",
-    },
-    {
-      id: "backups",
-      label: "Backups",
-      status: "pending",
-      statusLabel: "Probe pending",
-      detail: "restic status probe wires with the ops observability wave",
-    },
-    {
-      id: "migrations",
-      label: "Migrations",
-      status: "pending",
-      statusLabel: "Probe pending",
-      detail: "alembic head lookup wires with GET /api/v1/meta extension",
-    },
-    {
-      id: "plugins",
-      label: "Plugins",
-      status: "pending",
-      statusLabel: "Probe pending",
-      detail: "plugin registry status wires next",
-    },
-    {
-      id: "agents",
-      label: "Agent daemon",
-      status: "pending",
-      statusLabel: "Probe pending",
-      detail: "daemon health probe queued",
-    },
-    {
-      id: "tls",
-      label: "TLS certificate",
-      status: "pending",
-      statusLabel: "Probe pending",
-      detail: "Caddy issues + renews; explicit expiry probe queued",
-    },
-  ];
+  const apiProbe: ServiceProbe = {
+    id: "api",
+    label: "API server",
+    status: apiError ? "degraded" : apiReachable ? "operational" : "pending",
+    statusLabel: apiError
+      ? "Unreachable"
+      : apiReachable
+        ? "Operational"
+        : apiPending
+          ? "Checking…"
+          : "Pending",
+    detail: apiReachable
+      ? `${metaQuery.data.instance_id} · v${metaQuery.data.version} · ${metaQuery.data.environment}`
+      : apiError
+        ? "GET /api/v1/meta failed"
+        : "polling…",
+  };
+
+  // Backend probes map straight onto the ServiceProbe shape (snake →
+  // camel on the two label fields).
+  const backendProbes: ServiceProbe[] = (healthQuery.data?.probes ?? []).map(
+    (p): ServiceProbe => ({
+      id: p.id,
+      label: p.label,
+      status: p.status,
+      statusLabel: p.status_label,
+      detail: p.detail,
+    }),
+  );
+
+  // TLS stays honestly pending — Caddy owns issuance/renewal, and the
+  // backend behind the reverse proxy can't observe the edge cert.
+  const tlsProbe: ServiceProbe = {
+    id: "tls",
+    label: "TLS certificate",
+    status: "pending",
+    statusLabel: "Managed by Caddy",
+    detail: "issued + auto-renewed at the reverse proxy; not probed here",
+  };
+
+  const probes: ServiceProbe[] = healthQuery.isError
+    ? [
+        apiProbe,
+        {
+          id: "health",
+          label: "Service probes",
+          status: "degraded",
+          statusLabel: "Unavailable",
+          detail: "GET /api/v1/admin/health failed (admin scope required)",
+        },
+        tlsProbe,
+      ]
+    : [apiProbe, ...backendProbes, tlsProbe];
 
   const liveCount = probes.filter((p) => p.status !== "pending").length;
   const totalCount = probes.length;

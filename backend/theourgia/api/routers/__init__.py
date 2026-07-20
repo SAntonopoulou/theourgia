@@ -12,6 +12,7 @@ from __future__ import annotations
 from fastapi import APIRouter, FastAPI
 
 from theourgia.api.routers import health, metrics, nodeinfo, webfinger, well_known
+from theourgia.api.routers.v1 import admin_health as v1_admin_health
 from theourgia.api.routers.v1 import altars as v1_altars
 from theourgia.api.routers.v1 import astro as v1_astro
 from theourgia.api.routers.v1 import attestations as v1_attestations
@@ -144,6 +145,7 @@ def register_routers(app: FastAPI) -> None:
     # Versioned API surface (v1)
     v1 = APIRouter(prefix="/api/v1")
     v1.include_router(v1_meta.router, tags=["meta"])
+    v1.include_router(v1_admin_health.router, tags=["operations"])
     v1.include_router(v1_auth.router, tags=["auth"])
     v1.include_router(v1_webauthn.router, tags=["auth"])
     v1.include_router(v1_totp.router, tags=["auth"])

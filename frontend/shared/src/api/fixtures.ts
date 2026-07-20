@@ -541,6 +541,22 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
   if (path === "/healthz") return HEALTH;
   if (path === "/readyz") return READYZ;
   if (path === "/api/v1/meta") return META;
+  if (path === "/api/v1/admin/health") {
+    const probes = [
+      { id: "database", label: "Database", status: "operational", status_label: "Operational", detail: "PostgreSQL reachable" },
+      { id: "migrations", label: "Migrations", status: "operational", status_label: "Up to date", detail: "head 0085" },
+      { id: "backups", label: "Backups", status: "operational", status_label: "Healthy", detail: "last success 3h ago" },
+      { id: "federation", label: "Federation", status: "pending", status_label: "Disabled", detail: "transport off (opt-in)" },
+      { id: "plugins", label: "Plugins", status: "operational", status_label: "Loaded", detail: "0 active" },
+      { id: "storage", label: "Object storage", status: "operational", status_label: "LOCAL", detail: "backend=local" },
+      { id: "agents", label: "AI agents", status: "pending", status_label: "Disabled", detail: "no daemon configured (opt-in)" },
+    ];
+    return {
+      probes,
+      live_count: probes.filter((p) => p.status !== "pending").length,
+      total_count: probes.length,
+    };
+  }
   if (path === "/api/v1/today/ledger") return todayLedger();
 
   if (path === "/api/v1/auth/session") {

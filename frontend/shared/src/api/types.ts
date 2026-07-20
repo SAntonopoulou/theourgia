@@ -23,6 +23,22 @@ export interface HealthStatus {
   checks?: Record<string, string>;
 }
 
+/** One service card in the operator health dashboard (GET /api/v1/admin/health). */
+export interface HealthProbe {
+  id: string;
+  label: string;
+  status: "operational" | "degraded" | "expiring" | "unavailable" | "pending";
+  status_label: string;
+  detail: string;
+}
+
+/** GET /api/v1/admin/health response. */
+export interface HealthSummary {
+  probes: HealthProbe[];
+  live_count: number;
+  total_count: number;
+}
+
 /** GET /api/v1/meta response. */
 export interface Meta {
   instance_id: string;
