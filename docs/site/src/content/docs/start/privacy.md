@@ -11,7 +11,7 @@ This is a hard guarantee, verified by an automated test in CI: any change that i
 
 ## What this means specifically
 
-When you run Theourgia (self-hosted or future hosted), the platform does not:
+When you run Theourgia (self-hosted or on theourgia.com), the platform does not:
 
 - Send any usage metrics to any third party, ever
 - Include third-party analytics scripts (Google Analytics, Plausible, Fathom, Posthog, etc.) by default
@@ -33,7 +33,7 @@ If we ever add a new outbound destination, it is documented and gated behind exp
 
 ## What happens to your magickal record
 
-Your journal, your entities, your divinations, your sigils, your rituals — all of it lives on the server you chose. If you self-host, that is your server. If you use the future hosted theourgia.com, that is our server, and you can export everything and leave at any time.
+Your journal, your entities, your divinations, your sigils, your rituals — all of it lives on the server you chose. If you self-host, that is your server. If you use the hosted theourgia.com, that is our server, and you can export everything and leave at any time.
 
 The platform offers two encryption modes per content item:
 
@@ -57,4 +57,4 @@ For network hub operators, the project provides DPIA templates and breach-notifi
 
 The platform sets minimal session cookies for authenticated users. No third-party cookies are set. No tracking pixels. No fingerprinting.
 
-A cookie-consent UI is presented on public surfaces — and because there is nothing to track, the consent flow is correspondingly simple.
+A cookie *notice* is shown on public surfaces. Because the only cookie is the essential first-party session cookie, there is nothing to accept or reject — the notice simply states what the one cookie is and links here.

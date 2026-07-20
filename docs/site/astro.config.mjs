@@ -25,34 +25,58 @@ export default defineConfig({
       locales: {
         en: { label: "English", lang: "en" },
       },
+      // The User / Admin / Developer / Ops sections autogenerate from the
+      // real repository docs, which `scripts/sync-docs.mjs` copies into
+      // src/content/docs/<section>/ (with frontmatter) before every build.
       sidebar: [
         {
-          label: "Start",
+          label: "Getting Started",
           items: [
             { label: "About Theourgia", link: "/" },
-            { label: "Status & Roadmap", link: "/start/status/" },
-            { label: "Privacy", link: "/start/privacy/" },
+            { label: "Status & roadmap", link: "/start/status/" },
+            { label: "Privacy & your data", link: "/start/privacy/" },
+            { label: "Theourgia for practitioners", link: "/user/" },
           ],
         },
         {
-          label: "User Guide",
+          label: "Using Theourgia",
           collapsed: false,
           items: [{ autogenerate: { directory: "user" } }],
         },
         {
-          label: "Admin Guide (self-hosting)",
+          label: "Self-Hosting & Operations",
           collapsed: false,
-          items: [{ autogenerate: { directory: "admin" } }],
-        },
-        {
-          label: "Developer Guide",
-          collapsed: false,
-          items: [{ autogenerate: { directory: "developer" } }],
-        },
-        {
-          label: "Concepts",
-          collapsed: true,
           items: [
+            {
+              label: "Runbooks & guides",
+              items: [{ autogenerate: { directory: "admin" } }],
+            },
+            {
+              label: "Operations log",
+              items: [{ autogenerate: { directory: "ops" } }],
+            },
+          ],
+        },
+        {
+          label: "Developer",
+          collapsed: false,
+          items: [
+            {
+              label: "Building on Theourgia",
+              items: [{ autogenerate: { directory: "developer" } }],
+            },
+            {
+              label: "Substrate internals",
+              items: [{ autogenerate: { directory: "dev" } }],
+            },
+          ],
+        },
+        {
+          label: "Reference",
+          collapsed: false,
+          items: [
+            { label: "API reference", link: "/reference/api/" },
+            { label: "API endpoints", link: "/reference/api-endpoints/" },
             { label: "Architecture overview", link: "/concepts/architecture/" },
             { label: "Feature catalog", link: "/concepts/features/" },
           ],

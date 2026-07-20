@@ -7,8 +7,11 @@
   "description": "Theourgia documentation site (Astro Starlight)",
   "license": "AGPL-3.0-only",
   "scripts": {
+    "sync": "node scripts/sync-docs.mjs",
+    "predev": "node scripts/sync-docs.mjs",
     "dev": "astro dev",
     "start": "astro dev",
+    "prebuild": "node scripts/sync-docs.mjs",
     "build": "astro check && astro build",
     "preview": "astro preview",
     "astro": "astro",

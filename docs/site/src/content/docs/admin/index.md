@@ -1,20 +1,12 @@
 ---
-title: Admin guide (self-hosting)
-description: How to deploy, operate, and maintain a Theourgia instance.
+title: "Self-hosting & operations"
+description: "Runbooks, disaster recovery, observability, and compliance templates for operating a Theourgia instance."
+sidebar:
+  order: 0
+editUrl: false
 ---
+Everything an operator needs to run a Theourgia instance in production: day-to-day runbooks, total-loss recovery, what the instance logs and measures, object storage and email wiring, a Kubernetes path, and the GDPR paperwork self-hosters can adapt.
 
-This section will hold self-hosting documentation: deployment, backups, migrations, monitoring, security.
+Theourgia is live at [theourgia.com](https://theourgia.com) and fully self-hostable. Start with the [production deployment runbook](/ops/deployment_runbook/), keep the [operations runbooks](/admin/runbooks/) within reach, and read the [disaster-recovery runbook](/admin/disaster-recovery/) *before* you need it.
 
-Theourgia is currently in **planning phase**; the operational story is fully designed but not yet implemented. When phases 00–01 complete, this guide will cover:
-
-- One-command deployment (Docker Compose or Helm)
-- First-run setup wizard
-- Multi-tenant deployment patterns (host shared Caddy + per-tenant snippets)
-- Cloudflare R2 backup configuration
-- Migration procedures (one-click with diff preview)
-- Monitoring and observability
-- Encryption mode configuration
-- Federation peer management
-- Disaster recovery
-
-For now, see the project's [self-hoster reference Caddyfile](https://github.com/SAntonopoulou/theourgia/blob/main/Caddyfile.example) and the [agent-house deployment plan](https://github.com/SAntonopoulou/theourgia/tree/main/plan).
+The compliance material — the [DPIA template](/admin/dpia-template/), the [breach-notification runbook](/admin/breach-notification-runbook/), and the [privacy-policy template](/admin/privacy-policy-template/) — is provided so network-hub operators can build their own GDPR posture. It is a starting point, not legal advice.

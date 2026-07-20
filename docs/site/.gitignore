@@ -3,6 +3,18 @@
 dist
 node_modules
 
+# Generated documentation content — src/content/docs/{user,admin,dev,developer,ops,reference}
+# is synced from the canonical docs/ tree + public/openapi.json by
+# scripts/sync-docs.mjs on every `pnpm dev` / `pnpm build`. Keeping it out of
+# git avoids duplicating the source-of-truth Markdown. The hand-authored pages
+# (index.mdx, start/, concepts/) stay tracked.
+src/content/docs/user/
+src/content/docs/admin/
+src/content/docs/dev/
+src/content/docs/developer/
+src/content/docs/ops/
+src/content/docs/reference/
+
 # Environment
 .env
 .env.*
