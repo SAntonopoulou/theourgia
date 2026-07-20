@@ -67,16 +67,28 @@ class BackupRun(IDMixin, TimestampMixin, table=True):
         sa_column=Column(DateTime(timezone=True), nullable=True),
     )
 
+    # values_callable: the DB enums hold the lowercase VALUES; without it
+    # SQLAlchemy sends member NAMES ("FAILURE") and the insert fails.
+    # Latent since 0005 — first observable the first time a worker ever
+    # persisted a run (v1-023).
     status: BackupRunStatus = Field(
         sa_column=Column(
-            SQLEnum(BackupRunStatus, name="backup_run_status"),
+            SQLEnum(
+                BackupRunStatus,
+                name="backup_run_status",
+                values_callable=lambda obj: [m.value for m in obj],
+            ),
             nullable=False,
         ),
     )
 
     trigger: BackupTrigger = Field(
         sa_column=Column(
-            SQLEnum(BackupTrigger, name="backup_trigger"),
+            SQLEnum(
+                BackupTrigger,
+                name="backup_trigger",
+                values_callable=lambda obj: [m.value for m in obj],
+            ),
             nullable=False,
         ),
     )

@@ -163,6 +163,12 @@ class Settings(BaseSettings):
         default_factory=lambda: ["*.tmp", "*.log", "__pycache__"],
         alias="THEOURGIA_BACKUP_EXCLUDE_PATTERNS",
     )
+    backup_spool_dir: Path = Field(
+        default=Path("/var/spool/theourgia-backup"),
+        alias="THEOURGIA_BACKUP_SPOOL_DIR",
+    )
+    """Writable directory where the pre-backup pg_dump lands; appended
+    to the restic include paths automatically."""
 
     # ── Email ─────────────────────────────────────────────────────────────
     email_backend: str = Field(default="console", alias="THEOURGIA_EMAIL_BACKEND")

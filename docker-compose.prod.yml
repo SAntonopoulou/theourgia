@@ -28,6 +28,16 @@ services:
   celery:
     build:
       target: prod
+    # Backup sources (v1-023): the deploy dir mounts read-only at its
+    # host path so restic's default include path reads the real files
+    # (.env, compose, manual dumps); the spool volume receives the
+    # pg_dump pre-step. PGDATA lives in a Docker volume and is NEVER
+    # file-backed-up — the dump is the database backup.
+    volumes:
+      - .:/srv/theourgia/prod:ro
+      - backup_spool:/var/spool/theourgia-backup
+    environment:
+      THEOURGIA_BACKUP_INCLUDE_PATHS: '["/srv/theourgia/prod"]'
     logging:
       driver: json-file
       options:
@@ -87,3 +97,7 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+
+volumes:
+  backup_spool:
+    driver: local

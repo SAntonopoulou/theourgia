@@ -89,7 +89,9 @@ ENV PYTHONUNBUFFERED=1 \
 
 # Minimal runtime system deps. restic: the scheduled-backup task shells
 # out to the restic binary (core/backups/restic.py) from the celery
-# worker, which runs this same image.
+# worker, which runs this same image. postgresql-client-16 (via PGDG —
+# bookworm ships client 15, which refuses to dump a 16 server): the
+# backup task's pg_dump pre-step (v1-023).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libpq5 \
@@ -97,9 +99,17 @@ RUN apt-get update \
         ca-certificates \
         curl \
         restic \
+    && install -d /usr/share/postgresql-common/pgdg \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+        -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+    && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+        > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client-16 \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 1000 theourgia \
-    && useradd --uid 1000 --gid theourgia --shell /bin/bash --create-home theourgia
+    && useradd --uid 1000 --gid theourgia --shell /bin/bash --create-home theourgia \
+    && install -d -o theourgia -g theourgia /var/spool/theourgia-backup
 
 WORKDIR /app
 
