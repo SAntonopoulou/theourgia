@@ -3,6 +3,7 @@
 ``GET    /api/v1/initiations``                — list (filter ``?tradition=`` / ``?status=``)
 ``POST   /api/v1/initiations``                — record (encryption_mode = sealed is the only accepted value)
 ``GET    /api/v1/initiations/{id}``           — fetch (encrypted payload returned as opaque bytes)
+``GET    /api/v1/initiations/{id}/sealed-payload`` — ciphertext (base64), owner-only (v1-033)
 ``PATCH  /api/v1/initiations/{id}``           — update tradition / status / publicly_disclosed_at / encrypted_payload
 ``DELETE /api/v1/initiations/{id}``           — soft delete
 
@@ -14,6 +15,7 @@ already ``sealed``; this just makes the constraint a 400.
 
 from __future__ import annotations
 
+from base64 import b64encode
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 from uuid import UUID
@@ -153,6 +155,45 @@ async def get_initiation(
     if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Initiation not found.")
     return _to_read(row)
+
+
+class InitiationSealedPayloadRead(BaseModel):
+    """Ciphertext-only read model (v1-033) — there is no plaintext
+    field to leak by construction."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    encrypted_payload_b64: str
+
+
+@router.get(
+    "/initiations/{init_id}/sealed-payload",
+    response_model=InitiationSealedPayloadRead,
+    tags=["initiations"],
+)
+async def get_initiation_sealed_payload(
+    init_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> InitiationSealedPayloadRead:
+    """Return the sealed ciphertext (base64) so the owner's client
+    can decrypt it in memory with the vault passphrase (the SealUnlock
+    per-read flow — same Mode B read path as the talisman unseal,
+    b108-2d). Never plaintext; the row stays sealed — this is
+    read-only. Sealed rows of other users 404 like every other
+    initiation read."""
+    row = await db.get(Initiation, init_id)
+    if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Initiation not found.")
+    if row.owner_id != current_user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Initiation not found.")
+    if row.encryption_mode != EncryptionMode.SEALED or not row.encrypted_payload:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "This initiation is not sealed.",
+        )
+    return InitiationSealedPayloadRead(
+        encrypted_payload_b64=b64encode(row.encrypted_payload).decode("ascii"),
+    )
 
 
 @router.patch(

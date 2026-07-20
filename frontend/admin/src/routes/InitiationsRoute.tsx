@@ -15,10 +15,13 @@
  *               (PBKDF2 + AES-GCM via SealUnlock per-read passphrase)
  *               before POST.
  *
- * The read model never returns the ciphertext, so the detail renders
- * the sealed block without an unlock CTA — plaintext is never
- * fabricated. The unlock affordance lands with a payload-read
- * endpoint.
+ * Unlocking (v1-033): the SealedContentsBlock's "Unlock to view"
+ * opens the per-read SealUnlock; the passphrase fetches the selected
+ * row's ciphertext from `GET /initiations/{id}/sealed-payload` and
+ * decrypts it in memory (`decryptSealedPayloadB64`). Per-read policy:
+ * the reveal applies to the selected row only and clears on
+ * selection change; the opt-in "stay" toggle caches the passphrase
+ * for five minutes, never longer.
  */
 
 import {
@@ -36,11 +39,12 @@ import {
   TextArea,
   TextInput,
   Toast,
-  encryptVaultPayloadWithSalt,
+  decryptSealedPayloadB64,
+  sealToEnvelope,
   useApiCall,
   useTopbar,
 } from "@theourgia/shared";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { apiMethods } from "../data/api.js";
 import { BeingsSubnav } from "../lib/BeingsSubnav.js";
@@ -122,24 +126,19 @@ function RecordInitiationDrawer({
       // embedded in the ciphertext envelope, the IV joins it in a
       // JSON wrapper — one opaque string, decryptable only with the
       // passphrase.
-      const sealed = await encryptVaultPayloadWithSalt(
-        {
-          grade_or_degree: grade.trim() || null,
-          received_at: received || null,
-          location: place.trim() || null,
-          experience_notes: notes.trim() || null,
-        },
-        passphrase,
-      );
       await apiMethods.createInitiation({
         tradition: tradition.trim(),
         status,
         encryption_mode: "sealed",
-        encrypted_payload: JSON.stringify({
-          v: 1,
-          iv: sealed.encryption_iv_b64,
-          ct: sealed.encrypted_payload_b64,
-        }),
+        encrypted_payload: await sealToEnvelope(
+          {
+            grade_or_degree: grade.trim() || null,
+            received_at: received || null,
+            location: place.trim() || null,
+            experience_notes: notes.trim() || null,
+          },
+          passphrase,
+        ),
       });
       Toast.push({ tone: "success", title: "Initiation sealed and recorded (personal)" });
       setAskPassphrase(false);
@@ -275,13 +274,73 @@ function RecordInitiationDrawer({
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 
+/** The fields the drawer seals — decrypted back for the reveal. */
+interface SealedInitiationFields {
+  grade_or_degree?: string | null;
+  received_at?: string | null;
+  location?: string | null;
+  experience_notes?: string | null;
+}
+
+/** Five minutes — the only window the opt-in "stay" toggle offers. */
+const STAY_WINDOW_MS = 5 * 60_000;
+
 export function InitiationsRoute() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // v1-033 — per-read reveal: decrypted fields for ONE row, cleared
+  // on selection change. Only ever held in memory.
+  const [revealed, setRevealed] = useState<{
+    id: string;
+    fields: SealedInitiationFields;
+  } | null>(null);
+  const [unlockOpen, setUnlockOpen] = useState(false);
+  const [unlockError, setUnlockError] = useState<string | null>(null);
+  // Opt-in 5-minute passphrase cache (per-read policy's "stay").
+  const stayRef = useRef<{ passphrase: string; until: number } | null>(null);
 
   const initiations = useApiCall<InitiationRead[]>((signal) =>
     apiMethods.listInitiations({ signal }),
   );
+
+  async function reveal(
+    id: string,
+    passphrase: string,
+    opts: { fromCache?: boolean; stay?: boolean } = {},
+  ): Promise<void> {
+    try {
+      const payload = await apiMethods.getInitiationSealedPayload(id);
+      const fields = await decryptSealedPayloadB64<SealedInitiationFields>(
+        payload.encrypted_payload_b64,
+        passphrase,
+      );
+      setRevealed({ id, fields });
+      setUnlockOpen(false);
+      setUnlockError(null);
+      if (opts.stay) {
+        stayRef.current = { passphrase, until: Date.now() + STAY_WINDOW_MS };
+      }
+    } catch {
+      if (opts.fromCache) {
+        // The cached passphrase went stale or didn't decrypt this
+        // row — drop it and fall back to the prompt.
+        stayRef.current = null;
+        setUnlockOpen(true);
+      } else {
+        setUnlockError("Passphrase didn't decrypt — try again.");
+      }
+    }
+  }
+
+  function onUnlockRequest(id: string): void {
+    const cached = stayRef.current;
+    if (cached && cached.until > Date.now()) {
+      void reveal(id, cached.passphrase, { fromCache: true });
+    } else {
+      stayRef.current = null;
+      setUnlockOpen(true);
+    }
+  }
 
   useTopbar(
     () => ({
@@ -372,7 +431,12 @@ export function InitiationsRoute() {
                     ? { disclosed: `Disclosed ${fmtDate(i.publicly_disclosed_at)}` }
                     : {})}
                   selected={selected?.id === i.id}
-                  onSelect={() => setSelectedId(i.id)}
+                  onSelect={() => {
+                    setSelectedId(i.id);
+                    // Per-read: a reveal never survives a selection
+                    // change.
+                    setRevealed(null);
+                  }}
                 />
               ))}
             </div>
@@ -430,11 +494,67 @@ export function InitiationsRoute() {
               </div>
 
               <div style={{ marginTop: 20 }}>
-                {/* Canonical zero-knowledge copy ships inside the
-                    primitive. No unlock CTA: the API never returns
-                    the ciphertext, so nothing could honestly be
-                    decrypted here yet. */}
-                <SealedContentsBlock />
+                {revealed?.id === selected.id ? (
+                  <div
+                    data-role="initiation-revealed"
+                    style={{
+                      border: "1px solid var(--seal-border)",
+                      borderRadius: "var(--r-lg, 14px)",
+                      background: "var(--seal-soft)",
+                      padding: "20px 22px",
+                    }}
+                  >
+                    {(
+                      [
+                        ["Grade or degree", revealed.fields.grade_or_degree],
+                        ["Received", revealed.fields.received_at],
+                        ["Place", revealed.fields.location],
+                        ["Experience notes", revealed.fields.experience_notes],
+                      ] as const
+                    ).map(([label, value]) => (
+                      <div key={label} style={{ marginBottom: 12 }}>
+                        <div
+                          style={{
+                            fontFamily: "var(--font-ui)",
+                            fontSize: 10.5,
+                            letterSpacing: "0.14em",
+                            textTransform: "uppercase",
+                            color: "var(--ink-mute)",
+                            marginBottom: 3,
+                          }}
+                        >
+                          {label}
+                        </div>
+                        <div
+                          data-revealed-field={label}
+                          style={{
+                            fontFamily: "var(--font-serif)",
+                            fontSize: 14.5,
+                            lineHeight: 1.6,
+                            color: "var(--ink)",
+                          }}
+                        >
+                          {value || "—"}
+                        </div>
+                      </div>
+                    ))}
+                    <div
+                      style={{
+                        marginTop: 4,
+                        fontFamily: "var(--font-ui)",
+                        fontSize: 11,
+                        color: "var(--ink-mute)",
+                      }}
+                    >
+                      Decrypted on this device only. The server cannot read or recover them.
+                    </div>
+                  </div>
+                ) : (
+                  // Canonical zero-knowledge copy ships inside the
+                  // primitive; the CTA opens the per-read SealUnlock
+                  // (v1-033 payload-read endpoint).
+                  <SealedContentsBlock onUnlock={() => onUnlockRequest(selected.id)} />
+                )}
               </div>
 
               <div
@@ -453,6 +573,20 @@ export function InitiationsRoute() {
           ) : null}
         </main>
       </div>
+
+      {/* Per-read passphrase prompt for the sealed reveal (v1-033). */}
+      <SealUnlock
+        open={unlockOpen}
+        policy="per-read"
+        errorMessage={unlockError ?? undefined}
+        onUnlock={(passphrase, stay) => {
+          if (selected) void reveal(selected.id, passphrase, { stay });
+        }}
+        onCancel={() => {
+          setUnlockOpen(false);
+          setUnlockError(null);
+        }}
+      />
 
       <RecordInitiationDrawer
         open={drawerOpen}

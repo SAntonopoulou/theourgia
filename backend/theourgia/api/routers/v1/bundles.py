@@ -7,6 +7,7 @@ Endpoints:
   POST /api/v1/bundles/preview    upload + validate + verify (no writes)
   POST /api/v1/bundles/import     commit a user-selected subset of items
   GET  /api/v1/bundles/installed  the vault's install records
+  DELETE /api/v1/bundles/installed/{id}  uninstall (record only, v1-033)
   GET  /api/v1/bundles/export     build an .mbf from vault content
   GET  /api/v1/bundles/bundled    the seven bundled content packages
   POST /api/v1/bundles/bundled/{slug}/import  import one wholesale
@@ -22,6 +23,9 @@ Rules enforced here, verbatim from the ADR:
 - ``closed_tradition`` bundles surface the respect-source notice; the
   items keep their ``tradition_tags`` so the Phase 15 §14 public-share
   hard-block and AI-agent exclusion filters apply downstream.
+- Uninstall removes the install record and NOTHING else — imported
+  entities / templates / recipes persist in the vault (the MBF
+  tombstone-not-erasure rule). The response says so explicitly.
 """
 
 from __future__ import annotations
@@ -249,6 +253,26 @@ class InstalledBundleListResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     bundles: list[InstalledBundleRead]
+
+
+class BundleUninstallResponse(BaseModel):
+    """Response of ``DELETE /bundles/installed/{id}`` — explicit about
+    what was and was not removed (tombstone, not erasure)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    removed_id: str
+    slug: str
+    version: str
+    imported_content_retained: bool
+    detail: str
+
+
+UNINSTALL_DETAIL = (
+    "Install record removed. Content imported from this bundle "
+    "(entities, templates, recipes, …) stays in your vault — bundle "
+    "removal is a tombstone, not an erasure."
+)
 
 
 class BundledPackageRead(BaseModel):
@@ -562,6 +586,59 @@ async def list_installed_bundles(
     return InstalledBundleListResponse(
         bundles=[_to_installed_read(r) for r in rows]
     )
+
+
+@router.delete(
+    "/bundles/installed/{installed_id}",
+    response_model=BundleUninstallResponse,
+)
+async def uninstall_bundle(
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    installed_id: UUID,
+) -> BundleUninstallResponse:
+    """Remove the install record — and nothing else.
+
+    Imported content (entities, templates, recipes, …) persists in
+    the vault per the MBF tombstone-not-erasure rule: imported
+    entities are immutable provenance-stamped nodes the user may
+    have already linked from entries, and uninstalling a bundle must
+    never silently delete vault content. Owner-only; other users'
+    install records 404.
+    """
+    row = (
+        await db.execute(
+            select(InstalledBundle).where(
+                InstalledBundle.id == installed_id,
+                InstalledBundle.owner_id == user.id,
+            )
+        )
+    ).scalars().first()
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"installed bundle {installed_id} not found",
+        )
+    response = BundleUninstallResponse(
+        removed_id=str(row.id),
+        slug=row.slug,
+        version=row.version,
+        imported_content_retained=True,
+        detail=UNINSTALL_DETAIL,
+    )
+    await db.delete(row)
+    await AuditLogger(db).log(
+        kind=AuditEventKind.PLUGIN,
+        action="bundle.uninstall",
+        outcome=AuditOutcome.SUCCESS,
+        actor_id=user.id,
+        detail={
+            "bundle": f"{response.slug}@{response.version}",
+            "imported_content_retained": True,
+        },
+    )
+    await db.commit()
+    return response
 
 
 @router.get("/bundles/bundled", response_model=BundledPackageListResponse)

@@ -14,6 +14,15 @@
  *
  * Pickers (entity / library / chart) and visibility / publish wiring
  * land in B99c.
+ *
+ * Sealing (v1-033, Mode B): "Seal this entry" → type-to-confirm
+ * (SealEntryDialog) → passphrase prompt (SealUnlock) → the doc is
+ * encrypted on this device (`sealToEnvelope`) and POSTed to
+ * `/entries/{id}/seal`; the server stores ciphertext, NULLs the
+ * plaintext, and purges plaintext revisions. The seal is one-way
+ * server-side — there is no unseal. Reading a sealed entry is a
+ * different flow: "Sealed — tap to read" / "Unlock to view" fetches
+ * the ciphertext and decrypts in memory (read-only preview).
  */
 
 import {
@@ -26,13 +35,17 @@ import {
   type EntryRevisionRead,
   EntryTagsRow,
   SealEntryDialog,
+  SealUnlock,
+  SealedContentsBlock,
   TiptapEditor,
   Toast,
   type TranscribeAudioFn,
   VisibilityControl,
   VisibilityDowngradeDialog,
+  decryptSealedPayloadB64,
   formatAstroSnapshot,
   formatCalendarSnapshot,
+  sealToEnvelope,
   useTopbar,
 } from "@theourgia/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -60,22 +73,32 @@ type SaveStatus =
 
 interface VisibilityChipProps {
   entryId: string | null;
+  entryTitle: string;
   visibility: EntityVisibility;
   sealed: boolean;
   publishOnDeath: boolean;
   onChange: (next: {
     visibility?: EntityVisibility;
-    sealed?: boolean;
     publish_on_death?: boolean;
   }) => void;
+  /** Confirmed seal request (SealEntryDialog passed) — the Editor
+   *  owns the passphrase prompt + client-side encrypt + POST. */
+  onRequestSeal: () => void;
+  /** Sealed read request — the Editor owns the passphrase prompt +
+   *  ciphertext fetch + client-side decrypt. There is NO unseal:
+   *  the seal is one-way server-side. */
+  onRequestRead: () => void;
 }
 
 function VisibilityChip({
   entryId,
+  entryTitle,
   visibility,
   sealed,
   publishOnDeath,
   onChange,
+  onRequestSeal,
+  onRequestRead,
 }: VisibilityChipProps) {
   const [open, setOpen] = useState(false);
   const [downgradeTarget, setDowngradeTarget] = useState<EntityVisibility | null>(null);
@@ -210,7 +233,11 @@ function VisibilityChip({
               type="button"
               onClick={() => {
                 if (sealed) {
-                  onChange({ sealed: false });
+                  // Honest affordance: the seal cannot be undone
+                  // server-side. Reading is a client-side decrypt
+                  // with the passphrase — a different flow.
+                  setOpen(false);
+                  onRequestRead();
                 } else {
                   setSealDialogOpen(true);
                 }
@@ -243,7 +270,7 @@ function VisibilityChip({
                 <rect x="5" y="11" width="14" height="9" rx="1.5" />
                 <path d="M8 11V8a4 4 0 0 1 8 0v3" />
               </svg>
-              {sealed ? "Sealed — click to unseal" : "Seal this entry"}
+              {sealed ? "Sealed — tap to read" : "Seal this entry"}
             </button>
           </div>
           <div>
@@ -296,9 +323,11 @@ function VisibilityChip({
       />
       <SealEntryDialog
         open={sealDialogOpen}
+        entryTitle={entryTitle || "Untitled entry"}
         onConfirm={() => {
-          onChange({ sealed: true });
           setSealDialogOpen(false);
+          setOpen(false);
+          onRequestSeal();
         }}
         onCancel={() => setSealDialogOpen(false)}
       />
@@ -763,12 +792,15 @@ function SaveStatusIndicator({ status }: { status: SaveStatus }) {
 interface PublishCtaProps {
   entryId: string | null;
   publishedAt: string | null;
+  /** Sealed entries can never publish (defence in depth — the
+   *  backend refuses too); the CTA disables rather than 403ing. */
+  sealed: boolean;
   onPublished: (next: EntryDetailRecord) => void;
 }
 
-function PublishCta({ entryId, publishedAt, onPublished }: PublishCtaProps) {
+function PublishCta({ entryId, publishedAt, sealed, onPublished }: PublishCtaProps) {
   const [busy, setBusy] = useState(false);
-  const disabled = entryId === null || busy || publishedAt !== null;
+  const disabled = entryId === null || busy || publishedAt !== null || sealed;
 
   return (
     <button
@@ -856,6 +888,13 @@ export function Editor() {
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<EntityVisibility>("personal");
   const [sealed, setSealed] = useState<boolean>(false);
+  // v1-033 — the Mode B seal + read flows. Sealing prompts for a
+  // passphrase, encrypts the doc on this device, and POSTs the
+  // envelope; reading fetches the ciphertext and decrypts in memory.
+  const [sealPromptOpen, setSealPromptOpen] = useState(false);
+  const [revealPromptOpen, setRevealPromptOpen] = useState(false);
+  const [revealError, setRevealError] = useState<string | null>(null);
+  const [revealedDoc, setRevealedDoc] = useState<unknown | null>(null);
   // v1-018 — posthumous publication flag.
   const [publishOnDeath, setPublishOnDeath] = useState<boolean>(false);
   // b108-2hw: editable title. Before this, entries were locked to
@@ -958,14 +997,15 @@ export function Editor() {
     () =>
       async (patch: {
         visibility?: EntityVisibility;
-        sealed?: boolean;
         publish_on_death?: boolean;
       }) => {
         if (entryId === null) return;
         // Optimistic update — local state moves immediately so the chip
         // feels responsive; PATCH catches up in the background.
+        // NOTE (v1-033): `sealed` is deliberately NOT in this patch —
+        // the PATCH schema rejects it (extra=forbid); sealing routes
+        // through the dedicated seal endpoint below.
         if (patch.visibility !== undefined) setVisibility(patch.visibility);
-        if (patch.sealed !== undefined) setSealed(patch.sealed);
         if (patch.publish_on_death !== undefined) {
           setPublishOnDeath(patch.publish_on_death);
         }
@@ -1000,6 +1040,59 @@ export function Editor() {
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingDocRef = useRef<unknown>(null);
+
+  // v1-033 — seal: encrypt the current doc on this device, POST the
+  // envelope; the server NULLs the plaintext and purges revisions.
+  const handleSeal = useMemo(
+    () => async (passphrase: string) => {
+      if (entryId === null) return;
+      try {
+        // A pending auto-save would 403 against a sealed row — the
+        // doc being sealed IS the latest doc, so drop it.
+        if (debounceTimer.current !== null) clearTimeout(debounceTimer.current);
+        const docToSeal = pendingDocRef.current ?? doc;
+        const envelope = await sealToEnvelope(docToSeal, passphrase);
+        await apiMethods.sealEntry(entryId, { encrypted_payload: envelope });
+        setSealed(true);
+        setStatus({ state: "idle" });
+        setSealPromptOpen(false);
+        Toast.push({
+          tone: "success",
+          title: "Entry sealed",
+          body: "Encrypted on this device; the server can't read it.",
+        });
+      } catch (cause) {
+        setSealPromptOpen(false);
+        Toast.push({
+          tone: "error",
+          title: "Couldn't seal the entry",
+          body: cause instanceof Error ? cause.message : "Unknown error",
+        });
+      }
+    },
+    [entryId, doc],
+  );
+
+  // v1-033 — read a sealed entry: fetch the ciphertext, decrypt in
+  // memory with the passphrase. Read-only; the row stays sealed.
+  const handleReveal = useMemo(
+    () => async (passphrase: string) => {
+      if (entryId === null) return;
+      try {
+        const payload = await apiMethods.getEntrySealedPayload(entryId);
+        const revealed = await decryptSealedPayloadB64<unknown>(
+          payload.encrypted_payload_b64,
+          passphrase,
+        );
+        setRevealedDoc(revealed);
+        setRevealError(null);
+        setRevealPromptOpen(false);
+      } catch {
+        setRevealError("Passphrase didn't decrypt — try again.");
+      }
+    },
+    [entryId],
+  );
 
   const onChange = useMemo(
     () => (next: unknown) => {
@@ -1054,16 +1147,20 @@ export function Editor() {
       before: (
         <VisibilityChip
           entryId={entryId}
+          entryTitle={title}
           visibility={visibility}
           sealed={sealed}
           publishOnDeath={publishOnDeath}
           onChange={onVisibilityChange}
+          onRequestSeal={() => setSealPromptOpen(true)}
+          onRequestRead={() => setRevealPromptOpen(true)}
         />
       ),
       after: (
         <PublishCta
           entryId={entryId}
           publishedAt={publishedAt}
+          sealed={sealed}
           onPublished={(next) => setPublishedAt(next.published_at)}
         />
       ),
@@ -1071,6 +1168,7 @@ export function Editor() {
     [
       entryId,
       detail.data?.title,
+      title,
       status,
       publishedAt,
       visibility,
@@ -1184,7 +1282,44 @@ export function Editor() {
           <RevisionHistory entryId={entryId} sealed={sealed} onRestored={onRestored} />
         </div>
       </div>
-      {doc !== null ? (
+      {sealed ? (
+        <div
+          data-role="entry-sealed-body"
+          style={{
+            maxWidth: 720,
+            margin: "0 auto",
+            padding: "0 28px 120px",
+            width: "100%",
+            boxSizing: "border-box",
+          }}
+        >
+          {revealedDoc === null ? (
+            <SealedContentsBlock
+              body="The server cannot read it, cannot search it, and cannot recover it if your key is ever lost."
+              footer="Only on a device with your passphrase"
+              onUnlock={() => setRevealPromptOpen(true)}
+            />
+          ) : (
+            <div data-role="entry-sealed-preview">
+              {tiptapParagraphs(JSON.stringify(revealedDoc)).map((text, i) => (
+                <p
+                  // biome-ignore lint/suspicious/noArrayIndexKey: positional read-only paragraphs
+                  key={`sealed-paragraph-${i}`}
+                  style={{
+                    margin: "0 0 22px",
+                    fontFamily: "var(--font-serif)",
+                    fontSize: 19,
+                    lineHeight: 1.7,
+                    color: "var(--ink)",
+                  }}
+                >
+                  {text}
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : doc !== null ? (
         <TiptapEditor
           key={`doc-${docEpoch}`}
           initialDoc={doc}
@@ -1196,6 +1331,27 @@ export function Editor() {
           transcribeAudio={transcribeAudio}
         />
       ) : null}
+      {/* v1-033 — passphrase prompt for the client-side seal. */}
+      <SealUnlock
+        open={sealPromptOpen}
+        policy="per-read"
+        title="Seal these contents"
+        body="Your passphrase encrypts this entry on this device before it is saved. It is never sent to the server."
+        onUnlock={(passphrase) => void handleSeal(passphrase)}
+        onCancel={() => setSealPromptOpen(false)}
+      />
+      {/* v1-033 — passphrase prompt for the in-memory read. */}
+      <SealUnlock
+        open={revealPromptOpen}
+        policy="per-read"
+        body="Your passphrase decrypts this sealed entry on this device for this single read. It is never sent to the server."
+        errorMessage={revealError ?? undefined}
+        onUnlock={(passphrase) => void handleReveal(passphrase)}
+        onCancel={() => {
+          setRevealPromptOpen(false);
+          setRevealError(null);
+        }}
+      />
       <style>{`
         .theourgia-editor {
           overflow-y: auto;

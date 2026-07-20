@@ -4,6 +4,8 @@
 ``GET    /api/v1/entries/stats``     — counts + week-over-week deltas
 ``POST   /api/v1/entries``           — create
 ``GET    /api/v1/entries/{id}``      — single entry
+``POST   /api/v1/entries/{id}/seal`` — Mode B seal (v1-033; one-way)
+``GET    /api/v1/entries/{id}/sealed-payload`` — owner-gated ciphertext read
 
 Phase 02 NOTE: these endpoints are **unauthenticated** during foundations.
 Anonymous read + write is intentional for the dev preview. They gain auth
@@ -14,6 +16,7 @@ should also flip ``Entry.owner_id`` to NOT NULL.
 from __future__ import annotations
 
 import logging
+from base64 import b64encode
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
 from uuid import UUID
@@ -25,6 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.entries.revisions import (
+    purge_plaintext_revisions,
     restore_revision,
     revision_excerpt,
     snapshot_revision_guarded,
@@ -510,6 +514,30 @@ class EntryUpdate(BaseModel):
     publish_on_death: bool | None = None
 
 
+def _refuse_sealed_plaintext_patch(row: Entry, payload: EntryUpdate) -> None:
+    """v1-033 — sealed rows accept no plaintext body and never go
+    public. Same refusals as the body-PATCH + publish precedents."""
+    if row.encryption_mode != EncryptionMode.SEALED:
+        return
+    if payload.body is not None:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "This entry is sealed. Sealed bodies cannot be updated "
+                "server-side — the client must re-seal and use the "
+                "encrypted payload endpoint."
+            ),
+        )
+    if payload.visibility == "public":
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Sealed entries cannot be made public. Sealed content "
+                "is never publicly visible — defence in depth."
+            ),
+        )
+
+
 @router.patch(
     "/entries/{entry_id}",
     summary="Update entry",
@@ -534,6 +562,7 @@ async def update_entry(
     row = result.scalar_one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail=f"Entry {entry_id} not found")
+    _refuse_sealed_plaintext_patch(row, payload)
     # v1-001 — normalize incoming tag lists (None means unchanged).
     new_tags = (
         None if payload.tags is None
@@ -764,6 +793,138 @@ async def publish_entry(
         await session.commit()
         await session.refresh(row)
     return _to_read(row)
+
+
+# ── v1-033: Mode B seal — the honest model ───────────────────────
+#
+# "Sealed" server-side means: ``encryption_mode = sealed``, the
+# client-encrypted envelope lives in ``encrypted_payload``, and the
+# plaintext (``body`` / ``body_text``) plus every plaintext revision
+# are gone — same transaction. The envelope is the in-band-salt JSON
+# wrapper sealed oaths and initiations already use:
+# ``{"v": 1, "iv": <b64>, "ct": <b64>}`` with the PBKDF2 salt in the
+# first 16 bytes of ``ct`` (vaultCrypto's Mode B format, b108-2d).
+#
+# The seal is ONE-WAY server-side: the server never has the key, so
+# there is no unseal endpoint — a sealed entry can never become a
+# plaintext entry again through this API. Reading is a different flow:
+# the owner fetches the ciphertext below and decrypts in memory with
+# the vault passphrase (SealUnlock), exactly like the talisman unseal
+# read (which is also read-only — the row stays sealed).
+
+
+class EntrySealRequest(BaseModel):
+    """Body of ``POST /entries/{id}/seal`` — the client-encrypted
+    envelope string. Never plaintext; the server stores it opaquely.
+
+    The 4 MB cap mirrors the 2 MB plaintext body cap with headroom
+    for base64 expansion + the envelope wrapper.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    encrypted_payload: str = Field(min_length=1, max_length=4_000_000)
+
+
+class EntrySealedPayloadRead(BaseModel):
+    """Ciphertext-only read model — there is no plaintext field to
+    leak by construction."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    encrypted_payload_b64: str
+
+
+@router.post(
+    "/entries/{entry_id}/seal",
+    summary="Seal an entry (Mode B client-side encryption)",
+    description=(
+        "Stores the client-encrypted payload, sets encryption_mode=sealed, "
+        "NULLs the plaintext body, and purges every plaintext revision — "
+        "one transaction. One-way server-side: there is no unseal "
+        "endpoint. The owner reads the ciphertext back via "
+        "GET /entries/{id}/sealed-payload and decrypts client-side."
+    ),
+    response_model=EntryRead,
+)
+async def seal_entry(
+    entry_id: UUID,
+    payload: EntrySealRequest,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> EntryRead:
+    stmt = select(Entry).where(
+        Entry.id == entry_id,
+        Entry.deleted_at.is_(None),
+        Entry.owner_id == current_user.id,
+    )
+    row = (await session.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Entry {entry_id} not found")
+    if row.encryption_mode == EncryptionMode.SEALED:
+        raise HTTPException(
+            status_code=409,
+            detail="This entry is already sealed.",
+        )
+    if row.visibility == EntryVisibility.PUBLIC:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Public entries cannot be sealed. Lower the visibility "
+                "first — sealed content is never publicly visible."
+            ),
+        )
+    row.encrypted_payload = payload.encrypted_payload.encode("utf-8")
+    row.encryption_mode = EncryptionMode.SEALED
+    # The server must never see the plaintext again.
+    row.body = None
+    row.body_text = None
+    # Honest-behavior contract (v1-028): pre-seal plaintext snapshots
+    # surviving the seal would silently defeat it. Same transaction —
+    # the source-scan guard in tests/test_entry_revisions.py enforces
+    # this pairing.
+    purged = await purge_plaintext_revisions(session, row.id)
+    if purged:
+        _log.info(
+            "entries.seal.revisions_purged",
+            extra={"entry_id": str(row.id), "count": purged},
+        )
+    await session.commit()
+    await session.refresh(row)
+    return _to_read(row)
+
+
+@router.get(
+    "/entries/{entry_id}/sealed-payload",
+    summary="Sealed ciphertext of an entry (owner-only)",
+    description=(
+        "Returns the client-encrypted envelope (base64) so the owner's "
+        "client can decrypt it in memory with the vault passphrase. "
+        "Never returns plaintext; the row stays sealed — read-only."
+    ),
+    response_model=EntrySealedPayloadRead,
+)
+async def get_entry_sealed_payload(
+    entry_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> EntrySealedPayloadRead:
+    stmt = select(Entry).where(
+        Entry.id == entry_id,
+        Entry.deleted_at.is_(None),
+        Entry.owner_id == current_user.id,
+    )
+    row = (await session.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Entry {entry_id} not found")
+    if row.encryption_mode != EncryptionMode.SEALED or not row.encrypted_payload:
+        raise HTTPException(
+            status_code=409,
+            detail="This entry is not sealed.",
+        )
+    return EntrySealedPayloadRead(
+        encrypted_payload_b64=b64encode(row.encrypted_payload).decode("ascii"),
+    )
 
 
 @router.delete(

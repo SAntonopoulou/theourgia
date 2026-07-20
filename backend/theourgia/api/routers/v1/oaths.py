@@ -3,6 +3,7 @@
 ``GET    /api/v1/oaths``           — list (filter ``?kind=`` / ``?status=``)
 ``POST   /api/v1/oaths``           — record a new oath (default sealed)
 ``GET    /api/v1/oaths/{id}``      — fetch one (sealed body returned as opaque bytes)
+``GET    /api/v1/oaths/{id}/sealed-payload`` — ciphertext (base64), owner-only (v1-033)
 ``PATCH  /api/v1/oaths/{id}``      — update status / accountability checkpoints
 ``DELETE /api/v1/oaths/{id}``      — soft delete
 
@@ -15,6 +16,7 @@ sealed and the UI biases against downgrading.
 
 from __future__ import annotations
 
+from base64 import b64encode
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 from uuid import UUID
@@ -190,6 +192,42 @@ async def get_oath(
     if row.owner_id != current_user.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Oath not found.")
     return _to_read(row)
+
+
+class OathSealedPayloadRead(BaseModel):
+    """Ciphertext-only read model (v1-033) — there is no plaintext
+    field to leak by construction."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    encrypted_payload_b64: str
+
+
+@router.get(
+    "/oaths/{oath_id}/sealed-payload",
+    response_model=OathSealedPayloadRead,
+    tags=["oaths"],
+)
+async def get_oath_sealed_payload(
+    oath_id: UUID,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> OathSealedPayloadRead:
+    """Return the sealed ciphertext (base64) so the owner's client
+    can decrypt it in memory with the vault passphrase (the SealUnlock
+    flow — same Mode B read path as the talisman unseal, b108-2d).
+    Never plaintext; the row stays sealed — this is read-only. Sealed
+    rows of other users 404 like every other oath read."""
+    row = await db.get(Oath, oath_id)
+    if row is None or row.deleted_at is not None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Oath not found.")
+    if row.owner_id != current_user.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Oath not found.")
+    if row.encryption_mode != EncryptionMode.SEALED or not row.encrypted_payload:
+        raise HTTPException(status.HTTP_409_CONFLICT, "This oath is not sealed.")
+    return OathSealedPayloadRead(
+        encrypted_payload_b64=b64encode(row.encrypted_payload).decode("ascii"),
+    )
 
 
 @router.patch("/oaths/{oath_id}", response_model=OathRead, tags=["oaths"])

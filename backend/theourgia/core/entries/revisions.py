@@ -28,13 +28,13 @@ Sealed entries (honest-behavior decision, documented):
   snapshots of a now-sealed entry would silently defeat the seal.
 * Therefore: sealed entries never get new revisions (this module
   refuses), every revision endpoint refuses sealed entries with 403
-  (same precedent as the sealed body-PATCH refusal), and any future
-  code path that transitions ``Entry.encryption_mode`` to ``SEALED``
+  (same precedent as the sealed body-PATCH refusal), and any code
+  path that transitions ``Entry.encryption_mode`` to ``SEALED``
   MUST call :func:`purge_plaintext_revisions` in the same transaction.
-  There is no server-side seal-transition endpoint today (sealing is
-  a client-side flow); ``tests/test_entry_revisions.py`` carries a
-  source-scan regression guard that trips if one ever ships without
-  the purge.
+  The ONE such transition is ``POST /entries/{id}/seal`` (v1-033),
+  which does; ``tests/test_entry_revisions.py`` carries a source-scan
+  regression guard that trips if another ever ships without the
+  purge.
 
 Restores are never destructive: :func:`restore_revision` writes the
 CURRENT state as a new (forced) revision first, so a restore can
@@ -292,10 +292,10 @@ async def purge_plaintext_revisions(
 
     MUST be called (same transaction) by any code path that flips
     ``Entry.encryption_mode`` to ``SEALED`` — pre-seal plaintext
-    snapshots surviving the seal would silently defeat it. No such
-    server-side transition exists today; a source-scan regression
-    guard in ``tests/test_entry_revisions.py`` enforces this contract
-    on any future one.
+    snapshots surviving the seal would silently defeat it. The one
+    live caller is the seal endpoint (v1-033); a source-scan
+    regression guard in ``tests/test_entry_revisions.py`` enforces
+    this contract on any future one.
     """
     result = await session.execute(
         delete(EntryRevision).where(EntryRevision.entry_id == entry_id)

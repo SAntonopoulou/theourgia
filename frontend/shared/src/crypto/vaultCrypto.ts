@@ -55,10 +55,7 @@ export function base64ToBytes(b64: string): Uint8Array {
 }
 
 /** Derive an AES-GCM key from a passphrase + salt via PBKDF2. */
-export async function deriveVaultKey(
-  passphrase: string,
-  salt: Uint8Array,
-): Promise<CryptoKey> {
+export async function deriveVaultKey(passphrase: string, salt: Uint8Array): Promise<CryptoKey> {
   const baseKey = await crypto.subtle.importKey(
     "raw",
     enc.encode(passphrase) as BufferSource,
@@ -186,9 +183,57 @@ export async function decryptVaultPayloadWithSalt<T>(
   const salt = envelope.slice(0, SALT_LENGTH);
   const innerCt = envelope.slice(SALT_LENGTH);
   const key = await deriveVaultKey(passphrase, salt);
-  return decryptVaultPayload<T>(
-    bytesToBase64(innerCt),
-    encryption_iv_b64,
-    key,
-  );
+  return decryptVaultPayload<T>(bytesToBase64(innerCt), encryption_iv_b64, key);
+}
+
+/**
+ * The versioned sealed-envelope wrapper (v1-033) — the single opaque
+ * string sealed entries, oaths, and initiations persist server-side.
+ * A JSON object carrying the IV next to the salt-embedded ciphertext
+ * from :func:`encryptVaultPayloadWithSalt`, so one string holds
+ * everything needed to decrypt except the passphrase.
+ */
+export interface SealedEnvelopeV1 {
+  v: 1;
+  iv: string;
+  ct: string;
+}
+
+/**
+ * Encrypt a value into the opaque envelope string the sealed-write
+ * endpoints accept (``encrypted_payload``). One PBKDF2 derivation
+ * per call — same Mode B contract as the talisman seal (b108-2d).
+ */
+export async function sealToEnvelope(value: unknown, passphrase: string): Promise<string> {
+  const sealed = await encryptVaultPayloadWithSalt(value, passphrase);
+  const envelope: SealedEnvelopeV1 = {
+    v: 1,
+    iv: sealed.encryption_iv_b64,
+    ct: sealed.encrypted_payload_b64,
+  };
+  return JSON.stringify(envelope);
+}
+
+/**
+ * Decrypt the base64-encoded envelope the ``/sealed-payload``
+ * endpoints return: base64 → UTF-8 JSON envelope → salt-embedded
+ * Mode B decrypt. Throws on a malformed envelope or a passphrase
+ * that does not decrypt (AES-GCM rejects either).
+ */
+export async function decryptSealedPayloadB64<T>(
+  encrypted_payload_b64: string,
+  passphrase: string,
+): Promise<T> {
+  const raw = base64ToBytes(encrypted_payload_b64);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(dec.decode(raw));
+  } catch {
+    throw new Error("Sealed payload is not a recognised envelope.");
+  }
+  const envelope = parsed as Partial<SealedEnvelopeV1>;
+  if (envelope.v !== 1 || typeof envelope.iv !== "string" || typeof envelope.ct !== "string") {
+    throw new Error("Sealed payload is not a recognised envelope.");
+  }
+  return decryptVaultPayloadWithSalt<T>(envelope.ct, envelope.iv, passphrase);
 }

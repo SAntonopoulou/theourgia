@@ -129,6 +129,11 @@ services:
       THEOURGIA_MASTER_ENCRYPTION_KEY: ${THEOURGIA_MASTER_ENCRYPTION_KEY}
       DATABASE_URL: postgresql+asyncpg://${THEOURGIA_DB_USER:-theourgia}:${THEOURGIA_DB_PASSWORD}@postgres:5432/${THEOURGIA_DB_NAME:-theourgia}
       REDIS_URL: redis://redis:6379/0
+      # v1-033: instance identity for worker-side tagging — backup
+      # snapshots and outbound jobs otherwise fall back to the
+      # theourgia.example.com defaults baked into Settings.
+      THEOURGIA_BASE_URL: ${THEOURGIA_BASE_URL:-https://theourgia.example.com}
+      THEOURGIA_INSTANCE_ID: ${THEOURGIA_INSTANCE_ID:-theourgia.example.com}
       # Backups run on this worker (the backups queue) — restic needs
       # its repository, password, and the R2/S3 credentials here.
       RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:-}
@@ -160,6 +165,9 @@ services:
       THEOURGIA_MASTER_ENCRYPTION_KEY: ${THEOURGIA_MASTER_ENCRYPTION_KEY}
       DATABASE_URL: postgresql+asyncpg://${THEOURGIA_DB_USER:-theourgia}:${THEOURGIA_DB_PASSWORD}@postgres:5432/${THEOURGIA_DB_NAME:-theourgia}
       REDIS_URL: redis://redis:6379/0
+      # v1-033: same instance-identity passthrough as the worker.
+      THEOURGIA_BASE_URL: ${THEOURGIA_BASE_URL:-https://theourgia.example.com}
+      THEOURGIA_INSTANCE_ID: ${THEOURGIA_INSTANCE_ID:-theourgia.example.com}
     restart: unless-stopped
     networks:
       - theourgia-internal

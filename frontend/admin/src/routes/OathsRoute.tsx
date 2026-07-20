@@ -13,13 +13,15 @@
  *               sealed-by-default switch (make-public is a conscious
  *               step via ConfirmDialog), checkpoints repeater.
  *
- * Sealing: a sealed oath is encrypted client-side
- * (`encryptVaultPayloadWithSalt`, PBKDF2 + AES-GCM with the salt and
- * IV embedded in a JSON envelope) before POST — the server only ever
- * holds ciphertext. The read model never returns the ciphertext, so
- * sealed cards keep their sealed block after unlock; the session
- * unlock state is honest but cannot reveal server-side rows until a
- * payload-read endpoint ships.
+ * Sealing: a sealed oath is encrypted client-side (`sealToEnvelope`,
+ * PBKDF2 + AES-GCM with the salt and IV embedded in a JSON envelope)
+ * before POST — the server only ever holds ciphertext.
+ *
+ * Unlocking (v1-033): the SealUnlock passphrase fetches each sealed
+ * oath's ciphertext from `GET /oaths/{id}/sealed-payload` and
+ * decrypts it in memory (`decryptSealedPayloadB64`) — session policy
+ * per S3.1. Rows whose ciphertext the server does not hold (legacy)
+ * keep their sealed block; locking drops the decrypted texts.
  */
 
 import {
@@ -40,7 +42,8 @@ import {
   TextArea,
   TextInput,
   Toast,
-  encryptVaultPayloadWithSalt,
+  decryptSealedPayloadB64,
+  sealToEnvelope,
   useApiCall,
   useTopbar,
 } from "@theourgia/shared";
@@ -133,16 +136,11 @@ function TakeOathDrawer({
         // Client-side seal: salt rides in-band (first 16 bytes of the
         // ciphertext envelope); the IV joins it in a JSON wrapper so a
         // single opaque string carries everything but the passphrase.
-        const sealedEnvelope = await encryptVaultPayloadWithSalt({ text: vow }, passphrase);
         await apiMethods.createOath({
           kind,
           recipient_text: recipient.trim() ? recipient.trim() : null,
           encryption_mode: "sealed",
-          encrypted_payload: JSON.stringify({
-            v: 1,
-            iv: sealedEnvelope.encryption_iv_b64,
-            ct: sealedEnvelope.encrypted_payload_b64,
-          }),
+          encrypted_payload: await sealToEnvelope({ text: vow }, passphrase),
           taken_at: new Date(takenAt).toISOString(),
           renewal_cadence: renewal ? renewal : null,
           accountability_checkpoints: checkpointWire,
@@ -416,9 +414,41 @@ export function OathsRoute() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [unlockOpen, setUnlockOpen] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
+  // v1-033 — decrypted vow texts (id → text), populated on unlock,
+  // dropped on lock. Only ever held in memory.
+  const [sealedTexts, setSealedTexts] = useState<Record<string, string>>({});
+  const [unlockError, setUnlockError] = useState<string | null>(null);
 
   const oaths = useApiCall<OathRead[]>((signal) => apiMethods.listOaths({ signal }));
   const entities = useApiCall<EntityRecord[]>((signal) => apiMethods.listEntities({ signal }));
+
+  // Fetch + decrypt every sealed oath's ciphertext with the vault
+  // passphrase (session policy). Rows without server-held ciphertext
+  // (legacy) skip quietly and keep their sealed block; a passphrase
+  // that does not decrypt keeps the dialog open with an inline error.
+  async function handleUnlock(passphrase: string): Promise<void> {
+    const sealedRows = (oaths.data ?? []).filter((o) => o.sealed);
+    try {
+      const revealed: Record<string, string> = {};
+      for (const o of sealedRows) {
+        let payloadB64: string;
+        try {
+          payloadB64 = (await apiMethods.getOathSealedPayload(o.id)).encrypted_payload_b64;
+        } catch {
+          continue; // no ciphertext held server-side for this row
+        }
+        const value = await decryptSealedPayloadB64<{ text?: string }>(payloadB64, passphrase);
+        if (typeof value.text === "string") revealed[o.id] = value.text;
+      }
+      setSealedTexts(revealed);
+      setUnlocked(true);
+      setUnlockError(null);
+      setUnlockOpen(false);
+      Toast.push({ tone: "success", title: "Vault unlocked for this session" });
+    } catch {
+      setUnlockError("Passphrase didn't decrypt — try again.");
+    }
+  }
 
   const entityName = useMemo(() => {
     const byId = new Map((entities.data ?? []).map((e) => [e.id, e.name] as const));
@@ -434,8 +464,13 @@ export function OathsRoute() {
           <SessionLockIndicator
             locked={!unlocked}
             onToggle={() => {
-              if (unlocked) setUnlocked(false);
-              else setUnlockOpen(true);
+              if (unlocked) {
+                // Locking drops the decrypted texts from memory.
+                setUnlocked(false);
+                setSealedTexts({});
+              } else {
+                setUnlockOpen(true);
+              }
             }}
           />
           <Button variant="primary" onClick={() => setDrawerOpen(true)}>
@@ -474,13 +509,16 @@ export function OathsRoute() {
         ? "A sealed checkpoint is due"
         : `Reflection due ${fmtDate(String(openCheckpoint.due_at))}`
       : undefined;
+    // v1-033: sealed rows carry no wire text — the decrypted-in-memory
+    // vow (if the vault is unlocked) fills in.
+    const text = o.text ?? sealedTexts[o.id];
     return {
       id: o.id,
       title: recipient ?? KIND_LABEL[o.kind],
       meta,
       status: o.status,
       sealed: o.sealed,
-      ...(o.text ? { text: o.text } : {}),
+      ...(text ? { text } : {}),
       ...(checkpointDue ? { checkpointDue } : {}),
       ...(overdue ? { checkpointOverdue: true } : {}),
     };
@@ -602,9 +640,9 @@ export function OathsRoute() {
                 <OathCard
                   key={o.id}
                   oath={record}
-                  // The API never returns sealed ciphertext, so an
-                  // unlocked session can only reveal rows that carry
-                  // text — sealed rows keep their sealed block.
+                  // An unlocked session reveals rows whose ciphertext
+                  // decrypted; rows without server-held ciphertext
+                  // keep their sealed block — never fabricated text.
                   unlockedForSession={unlocked && !!record.text}
                   onRequestUnlock={() => setUnlockOpen(true)}
                 />
@@ -617,12 +655,12 @@ export function OathsRoute() {
       <SealUnlock
         open={unlockOpen}
         policy="session"
-        onUnlock={(_passphrase, stay) => {
-          setUnlocked(stay);
+        errorMessage={unlockError ?? undefined}
+        onUnlock={(passphrase) => void handleUnlock(passphrase)}
+        onCancel={() => {
           setUnlockOpen(false);
-          Toast.push({ tone: "success", title: "Vault unlocked for this session" });
+          setUnlockError(null);
         }}
-        onCancel={() => setUnlockOpen(false)}
       />
 
       <TakeOathDrawer
