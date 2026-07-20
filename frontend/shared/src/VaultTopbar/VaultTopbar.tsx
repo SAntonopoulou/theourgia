@@ -252,8 +252,11 @@ export function VaultTopbar({ onMenuToggle, navOpen, actingAs }: VaultTopbarProp
           display: "flex",
           alignItems: "center",
           gap: 12,
-          minWidth: 0,
-          flex: "0 1 auto",
+          // Must NOT shrink: with `0 1 auto` the cluster collapsed below
+          // its content and clipped the rightmost action (the mode toggle)
+          // off the viewport edge (v1-050). The title block (flex 1 1 auto,
+          // min-width 0) absorbs all shrinking instead.
+          flex: "0 0 auto",
         }}
       >
         {before ?? null}

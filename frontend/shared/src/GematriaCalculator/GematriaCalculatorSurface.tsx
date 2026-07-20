@@ -36,6 +36,7 @@ import {
 } from "../gematria/index.js";
 import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { useFocusTrap } from "../hooks/useFocusTrap.js";
+import { useNarrowLayout } from "../hooks/useNarrowLayout.js";
 
 import {
   GC_COPY_TABLE_LABEL,
@@ -481,6 +482,9 @@ export function GematriaCalculatorSurface({
   const [filter, setFilter] = useState("");
   const [customOpen, setCustomOpen] = useState(false);
   const [insertOpen, setInsertOpen] = useState(false);
+  // Responsive sweep (v1-050): below 720px the 300px cipher rail clips
+  // the results pane, so stack the two panes vertically.
+  const stacked = useNarrowLayout();
 
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -593,12 +597,31 @@ export function GematriaCalculatorSurface({
         </div>
       </header>
 
-      <div className="gc-panes" style={PANES_STYLE}>
+      <div
+        className="gc-panes"
+        style={{
+          ...PANES_STYLE,
+          flexDirection: stacked ? "column" : "row",
+          overflow: stacked ? "auto" : "hidden",
+        }}
+      >
         {/* LEFT: cipher picker */}
         <aside
           className="scroll gc-rail"
           aria-label="Cipher picker"
-          style={RAIL_STYLE}
+          style={
+            stacked
+              ? {
+                  ...RAIL_STYLE,
+                  flex: "0 0 auto",
+                  borderRight: "none",
+                  borderBottomWidth: 1,
+                  borderBottomStyle: "solid",
+                  borderBottomColor: "var(--line)",
+                  overflowY: "visible",
+                }
+              : RAIL_STYLE
+          }
         >
           <div style={FILTER_WRAP}>
             <span style={FILTER_ICON_WRAP}>
@@ -721,7 +744,12 @@ export function GematriaCalculatorSurface({
         </aside>
 
         {/* CENTRE: input + results */}
-        <div className="scroll" style={MAIN_STYLE}>
+        <div
+          className="scroll"
+          style={
+            stacked ? { ...MAIN_STYLE, overflowY: "visible" } : MAIN_STYLE
+          }
+        >
           <div style={{ maxWidth: 720, margin: "0 auto" }}>
             <label htmlFor="gc-text-input" style={INPUT_LABEL}>
               {GC_TEXT_INPUT_LABEL}

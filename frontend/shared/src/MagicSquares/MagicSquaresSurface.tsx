@@ -14,6 +14,7 @@
 import { type CSSProperties, useMemo, useState } from "react";
 
 import { PLANETARY_SQUARES, magicSquare } from "../workshop/index.js";
+import { useNarrowLayout } from "../hooks/index.js";
 
 import {
   BUILD_ORDER_LABEL,
@@ -154,6 +155,9 @@ export function MagicSquaresSurface({
   const [order, setOrder] = useState(3);
   const [trace, setTrace] = useState<number[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
+  // Responsive sweep (v1-050): below 720px the 260px rail + content
+  // split clips the main pane, so stack the panes vertically.
+  const stacked = useNarrowLayout();
 
   const isCustom = square === "custom";
 
@@ -268,16 +272,33 @@ export function MagicSquaresSurface({
         </div>
       </header>
 
-      <div className="ms-panes" style={PANES_STYLE}>
+      <div
+        className="ms-panes"
+        style={{
+          ...PANES_STYLE,
+          flexDirection: stacked ? "column" : "row",
+          overflow: stacked ? "auto" : "hidden",
+        }}
+      >
         <PlanetaryRail
           value={square}
           customValue={customValue}
           customSquares={customSquares}
           onPick={handlePick}
           onNew={handleNew}
+          style={
+            stacked
+              ? { flex: "0 0 auto", width: "100%", overflowY: "visible" }
+              : undefined
+          }
         />
 
-        <div className="scroll" style={MAIN_STYLE}>
+        <div
+          className="scroll"
+          style={
+            stacked ? { ...MAIN_STYLE, overflowY: "visible" } : MAIN_STYLE
+          }
+        >
           <div style={{ maxWidth: 680, margin: "0 auto" }}>
             <div style={TOOLBAR_STYLE}>
               <div role="group" aria-label="Mode" style={SEGMENT_GROUP_STYLE}>

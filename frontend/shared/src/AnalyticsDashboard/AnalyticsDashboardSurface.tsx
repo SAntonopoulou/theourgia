@@ -24,6 +24,8 @@ import {
   useState,
 } from "react";
 
+import { useNarrowLayout } from "../hooks/useNarrowLayout.js";
+
 // ── Types ──────────────────────────────────────────────────────────
 
 export type AnalyticsScope = "today" | "week" | "month" | "year" | "all";
@@ -296,6 +298,10 @@ export function AnalyticsDashboardSurface({
   style,
 }: AnalyticsDashboardSurfaceProps) {
   const [activeScope, setActiveScope] = useState<AnalyticsScope>(scope);
+  // Responsive sweep (v1-050): below 960px the main dashboard + saved-
+  // studies rail split clips, and the inner 12-column grid squeezes the
+  // cards to unreadable widths. Stack the panes and collapse the grid.
+  const stacked = useNarrowLayout("(max-width: 960px)");
 
   const handleScope = (next: AnalyticsScope) => {
     setActiveScope(next);
@@ -318,8 +324,9 @@ export function AnalyticsDashboardSurface({
       <header
         style={{
           display: "flex",
-          alignItems: "center",
-          gap: 16,
+          flexDirection: stacked ? "column" : "row",
+          alignItems: stacked ? "stretch" : "center",
+          gap: stacked ? 10 : 16,
           padding: "13px 24px",
           borderBottom: "1px solid var(--line)",
           background: "var(--bg)",
@@ -351,13 +358,15 @@ export function AnalyticsDashboardSurface({
           aria-label="Scope"
           data-scope-tabs
           style={{
-            marginLeft: "auto",
+            marginLeft: stacked ? 0 : "auto",
             display: "flex",
             gap: 2,
             padding: 3,
             border: "1px solid var(--line)",
             borderRadius: 8,
             background: "var(--bg-2)",
+            maxWidth: "100%",
+            overflowX: "auto",
           }}
         >
           {SCOPES.map((s) => {
@@ -391,9 +400,11 @@ export function AnalyticsDashboardSurface({
         className="ad-cols"
         style={{
           display: "flex",
+          flexDirection: stacked ? "column" : "row",
           alignItems: "stretch",
+          minWidth: 0,
           minHeight: 0,
-          overflow: "hidden",
+          overflow: stacked ? "auto" : "hidden",
         }}
       >
         <div
@@ -401,7 +412,7 @@ export function AnalyticsDashboardSurface({
           style={{
             flex: "1 1 auto",
             minWidth: 0,
-            overflowY: "auto",
+            overflowY: stacked ? "visible" : "auto",
             padding: "22px 26px 50px",
           }}
         >
@@ -424,7 +435,7 @@ export function AnalyticsDashboardSurface({
             className="ad-grid"
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(12, 1fr)",
+              gridTemplateColumns: stacked ? "1fr" : "repeat(12, 1fr)",
               gap: 16,
               maxWidth: 1080,
             }}
@@ -433,7 +444,7 @@ export function AnalyticsDashboardSurface({
             <section
               data-section-recent
               style={{
-                gridColumn: "span 12",
+                gridColumn: stacked ? "1 / -1" : "span 12",
                 border: "1px solid var(--line)",
                 borderRadius: "var(--r-lg)",
                 background: "var(--bg-2)",
@@ -519,7 +530,7 @@ export function AnalyticsDashboardSurface({
             <section
               data-section-patterns
               style={{
-                gridColumn: "span 8",
+                gridColumn: stacked ? "1 / -1" : "span 8",
                 border: "1px solid var(--line)",
                 borderRadius: "var(--r-lg)",
                 background: "var(--bg-2)",
@@ -652,7 +663,7 @@ export function AnalyticsDashboardSurface({
             <section
               data-section-stats
               style={{
-                gridColumn: "span 4",
+                gridColumn: stacked ? "1 / -1" : "span 4",
                 border: "1px solid var(--line)",
                 borderRadius: "var(--r-lg)",
                 background: "var(--bg-2)",
@@ -724,7 +735,7 @@ export function AnalyticsDashboardSurface({
             <section
               data-section-heatmap-hour
               style={{
-                gridColumn: "span 6",
+                gridColumn: stacked ? "1 / -1" : "span 6",
                 border: "1px solid var(--line)",
                 borderRadius: "var(--r-lg)",
                 background: "var(--bg-2)",
@@ -795,7 +806,7 @@ export function AnalyticsDashboardSurface({
             <section
               data-section-heatmap-lunar
               style={{
-                gridColumn: "span 6",
+                gridColumn: stacked ? "1 / -1" : "span 6",
                 border: "1px solid var(--line)",
                 borderRadius: "var(--r-lg)",
                 background: "var(--bg-2)",
@@ -869,12 +880,13 @@ export function AnalyticsDashboardSurface({
           data-saved-studies-rail
           className="scroll ad-rail"
           style={{
-            flex: "0 0 260px",
+            flex: stacked ? "0 0 auto" : "0 0 260px",
             minWidth: 0,
-            borderLeft: "1px solid var(--line)",
+            borderLeft: stacked ? "none" : "1px solid var(--line)",
+            borderTop: stacked ? "1px solid var(--line)" : "none",
             background: "var(--bg-2)",
             padding: "18px 16px 30px",
-            overflowY: "auto",
+            overflowY: stacked ? "visible" : "auto",
           }}
         >
           <div
