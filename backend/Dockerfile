@@ -87,6 +87,11 @@ FROM python:${PYTHON_VERSION}-slim-bookworm AS prod
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
+# THEOURGIA_UID: the runtime user's uid/gid. Match it to the HOST user
+# that owns the deploy directory so the backup mount (ro) is readable —
+# 600-mode .env files are unreadable across a uid mismatch (v1-024).
+ARG THEOURGIA_UID=1000
+
 # Minimal runtime system deps. restic: the scheduled-backup task shells
 # out to the restic binary (core/backups/restic.py) from the celery
 # worker, which runs this same image. postgresql-client-16 (via PGDG —
@@ -107,8 +112,8 @@ RUN apt-get update \
     && apt-get update \
     && apt-get install -y --no-install-recommends postgresql-client-16 \
     && rm -rf /var/lib/apt/lists/* \
-    && groupadd --gid 1000 theourgia \
-    && useradd --uid 1000 --gid theourgia --shell /bin/bash --create-home theourgia \
+    && groupadd --gid ${THEOURGIA_UID} theourgia \
+    && useradd --uid ${THEOURGIA_UID} --gid theourgia --shell /bin/bash --create-home theourgia \
     && install -d -o theourgia -g theourgia /var/spool/theourgia-backup
 
 WORKDIR /app

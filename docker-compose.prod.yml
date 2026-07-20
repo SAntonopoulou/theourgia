@@ -18,6 +18,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: prod
+      args:
+        THEOURGIA_UID: ${THEOURGIA_UID:-1000}
     command: ["uvicorn", "theourgia.api.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "${THEOURGIA_WORKERS:-4}"]
     logging:
       driver: json-file
@@ -28,6 +30,8 @@ services:
   celery:
     build:
       target: prod
+      args:
+        THEOURGIA_UID: ${THEOURGIA_UID:-1000}
     # Backup sources (v1-023): the deploy dir mounts read-only at its
     # host path so restic's default include path reads the real files
     # (.env, compose, manual dumps); the spool volume receives the
@@ -47,6 +51,8 @@ services:
   celery-beat:
     build:
       target: prod
+      args:
+        THEOURGIA_UID: ${THEOURGIA_UID:-1000}
     logging:
       driver: json-file
       options:
