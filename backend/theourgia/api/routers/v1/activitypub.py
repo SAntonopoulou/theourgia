@@ -23,13 +23,14 @@ Honesty rules wired at this layer:
     given the cache caveat).
   · Approve / decline are immutable terminal states — re-attempt
     returns 409.
-  · The cross-instance outbound delivery (POST to follower
-    inboxes when an approval fires) lands once Phase 12.5
-    transport is in.
+  · v1-026: approve queues a signed AP ``Accept`` to the follower's
+    inbox via the Phase 12.5 delivery queue (no-op while the
+    transport gate is off; failures never block the local approval).
 """
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 from uuid import UUID
@@ -40,6 +41,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import CurrentUser, get_db_session
+from theourgia.core.federation.ap_outbound import enqueue_accept_for_follow
 from theourgia.models.activitypub import (
     ActivityPubFollower,
     ActivityPubFollowRequest,
@@ -50,6 +52,9 @@ from theourgia.models.activitypub import (
 from theourgia.models.audit import AuditEvent, AuditEventKind, AuditOutcome
 
 __all__ = ["router"]
+
+
+_log = logging.getLogger(__name__)
 
 
 router = APIRouter()
@@ -340,9 +345,8 @@ async def approve_request(
         user_id=user.id,
         new_state=FollowRequestState.ACCEPTED,
     )
-    # Materialise the confirmed-follower row. Cross-instance
-    # delivery (POST to the follower's inbox) lands in Phase
-    # 13.5; the local row exists immediately.
+    # Materialise the confirmed-follower row; the local row exists
+    # immediately regardless of transport state.
     db.add(
         ActivityPubFollower(
             owner_id=user.id,
@@ -350,6 +354,21 @@ async def approve_request(
             follower_handle=req.follower_handle,
         )
     )
+    # v1-026: queue the signed Accept to the follower's inbox. The
+    # helper no-ops when transport is disabled; failures never block
+    # the local approval (the follower row above is the source of
+    # truth — the Accept is a courtesy the retry queue re-attempts).
+    try:
+        await enqueue_accept_for_follow(
+            db,
+            owner_id=user.id,
+            follower_did=req.follower_did,
+        )
+    except Exception:  # noqa: BLE001 — approval must never fail on enqueue
+        _log.warning(
+            "activitypub.approve.accept_enqueue_failed",
+            extra={"follower_did": req.follower_did},
+        )
     _emit_ap_audit(
         db,
         actor_id=user.id,

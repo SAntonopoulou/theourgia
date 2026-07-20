@@ -33,10 +33,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import get_db_session
 from theourgia.core.config import get_settings
+from theourgia.core.federation.capability_tokens import (
+    InvalidCapabilityTokenError,
+    verify_capability_token,
+)
 from theourgia.core.federation.http_signatures import (
     HTTPSignatureError,
     verify_request,
 )
+from theourgia.core.federation.identity import make_instance_id
+from theourgia.core.federation.keys import load_or_create_keypair
 from theourgia.core.federation.peer_keys import (
     PeerKeyResolver,
     PeerKeyUnavailableError,
@@ -52,7 +58,12 @@ from theourgia.models.federation_activity import (
 )
 
 
-__all__ = ["router", "get_peer_key_resolver"]
+__all__ = [
+    "CAPABILITY_INBOX_SCOPE",
+    "CAPABILITY_REQUIRED_KINDS",
+    "router",
+    "get_peer_key_resolver",
+]
 
 
 _log = logging.getLogger(__name__)
@@ -62,6 +73,74 @@ router = APIRouter()
 
 
 _KEYID_RE = re.compile(r'keyid="(?P<keyid>[^"]+)"')
+
+
+# ── Capability gating (spec §6) ─────────────────────────────────────
+#
+# Fine-grained native-protocol operations (hub-admin actions performed
+# on another instance) require a capability token this instance issued
+# to the peer at add-peer time. Comment-shaped and follow-shaped
+# activities are exempt per spec §6.4 (they land in moderation / the
+# approval queue instead). v1 verifies the minimal contract: our own
+# EdDSA signature, our DID as issuer AND audience, the sender as
+# subject, and the single inbox scope.
+
+CAPABILITY_INBOX_SCOPE = "federation:inbox"
+
+CAPABILITY_REQUIRED_KINDS = frozenset({
+    FederationActivityKind.HUB_INVITE,
+    FederationActivityKind.HUB_ACCEPT,
+    FederationActivityKind.HUB_DECLINE,
+    FederationActivityKind.HUB_LEAVE,
+    FederationActivityKind.HUB_POST,
+    FederationActivityKind.HUB_UPDATE,
+    FederationActivityKind.HUB_DELETE,
+})
+
+
+def _require_capability(token: str | None, sender_did: str) -> None:
+    """403 unless ``token`` is a valid inbox capability for this sender."""
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "capability_required: this operation needs a capability "
+                "token issued by this instance"
+            ),
+        )
+    settings = get_settings()
+    try:
+        keypair = load_or_create_keypair(
+            private_path=settings.federation_private_key_path,
+            public_path=settings.federation_public_key_path,
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="federation keypair not available",
+        ) from exc
+    instance_did = make_instance_id(settings.instance_id)
+    try:
+        decoded = verify_capability_token(
+            token=token,
+            public_key=keypair.public_key,
+            expected_issuer=instance_did,
+            expected_audience=instance_did,
+            required_capability=CAPABILITY_INBOX_SCOPE,
+        )
+    except InvalidCapabilityTokenError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"capability_invalid: {exc}",
+        ) from exc
+    if decoded.sub != sender_did:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "capability_invalid: token subject does not match the "
+                "request signer"
+            ),
+        )
 
 
 def get_peer_key_resolver() -> PeerKeyResolver:
@@ -169,6 +248,16 @@ async def receive_inbox(
         ) from exc
 
     kind = _classify_kind(body_json)
+
+    # Capability gating (spec §6) — hub-admin operations need the
+    # token this instance issued at add-peer time. Verified AFTER the
+    # signature so an attacker can't probe capability validity
+    # unsigned, and BEFORE persistence so refused ops leave no row.
+    if kind in CAPABILITY_REQUIRED_KINDS:
+        _require_capability(
+            request.headers.get("X-Theourgia-Capability"), keyid,
+        )
+
     target_hub_id = (
         body_json.get("target_hub_id")
         if isinstance(body_json.get("target_hub_id"), str)

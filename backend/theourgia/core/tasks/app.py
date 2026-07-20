@@ -112,6 +112,15 @@ def build_celery_app() -> Celery:
             "schedule": crontab(minute="*"),
             "options": {"queue": "default"},
         },
+        "theourgia.federation.process_inbox": {
+            "task": "theourgia.core.tasks.federation_inbox.run_process_federation_inbox",
+            # Every minute — inbound activity processor (follows,
+            # undos, federated comments). No-op when
+            # federation_transport_enabled is False, same as the
+            # outbound drain.
+            "schedule": crontab(minute="*"),
+            "options": {"queue": "default"},
+        },
         "theourgia.memorial.sweep": {
             "task": "theourgia.core.tasks.memorial.run_memorial_sweep",
             # Hourly — memorial state moves in days, so an hour of

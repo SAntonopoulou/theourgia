@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, FastAPI
 
-from theourgia.api.routers import health, metrics, webfinger, well_known
+from theourgia.api.routers import health, metrics, nodeinfo, webfinger, well_known
 from theourgia.api.routers.v1 import altars as v1_altars
 from theourgia.api.routers.v1 import astro as v1_astro
 from theourgia.api.routers.v1 import attestations as v1_attestations
@@ -96,8 +96,10 @@ from theourgia.api.routers.v1 import bundles as v1_bundles
 from theourgia.api.routers.v1 import user_account as v1_user_account
 from theourgia.api.routers.v1 import user_audit as v1_user_audit
 from theourgia.api.routers.v1 import user_sessions as v1_user_sessions
+from theourgia.api.routers.v1 import keys as v1_keys
 from theourgia.api.routers.v1 import agents as v1_agents
 from theourgia.api.routers.v1 import federation_inbox as v1_federation_inbox
+from theourgia.api.routers.v1 import federation_peers as v1_federation_peers
 from theourgia.api.routers.v1 import activitypub_actor as ap_actor
 from theourgia.api.routers.v1 import registry_bridge as v1_registry_bridge
 from theourgia.api.routers.v1 import registry_author as v1_registry_author
@@ -129,6 +131,7 @@ def register_routers(app: FastAPI) -> None:
     # .well-known endpoints (federation discovery, etc.)
     app.include_router(well_known.router, tags=["federation"])
     app.include_router(webfinger.router, tags=["federation"])
+    app.include_router(nodeinfo.router, tags=["federation"])
 
     # Unversioned vault feed endpoints (RSS / Atom / JSON Feed).
     # Feed readers subscribe to stable URLs; we don't version them.
@@ -255,8 +258,11 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_user_audit.router, tags=["hardening"])
     v1.include_router(v1_user_account.router, tags=["hardening"])
     v1.include_router(v1_user_sessions.router, tags=["hardening"])
+    # Mode A vault-key rotation (v1-027 · Phase 15 B5)
+    v1.include_router(v1_keys.router, tags=["hardening"])
     v1.include_router(v1_agents.router, tags=["agents"])
     v1.include_router(v1_federation_inbox.router, tags=["federation"])
+    v1.include_router(v1_federation_peers.router, tags=["federation"])
     v1.include_router(v1_registry_bridge.router, tags=["registry"])
     v1.include_router(v1_registry_author.router, tags=["registry"])
     v1.include_router(v1_registry_maintainer.router, tags=["registry"])

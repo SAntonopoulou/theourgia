@@ -40,12 +40,30 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import get_db_session
+from theourgia.api.routers.v1.federation_inbox import (
+    _build_replay_nonce_key,
+    _extract_keyid,
+    get_peer_key_resolver,
+)
 from theourgia.core.config import get_settings
+from theourgia.core.federation.http_signatures import (
+    HTTPSignatureError,
+    verify_request,
+)
 from theourgia.core.federation.identity import make_instance_id
 from theourgia.core.federation.keys import (
     load_or_create_keypair,
     serialize_public_key,
 )
+from theourgia.core.federation.peer_keys import (
+    PeerKeyResolver,
+    PeerKeyUnavailableError,
+)
+from theourgia.core.federation.replay_store import (
+    ReplayDetectedError,
+    record_nonce,
+)
+from theourgia.core.instancesettings.dbread import read_bool_setting
 from theourgia.models.activitypub import ActivityPubSettings
 from theourgia.models.entries import (
     Entry,
@@ -200,15 +218,18 @@ async def post_inbox(
     handle: str,
     request: Request,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    resolver: Annotated[PeerKeyResolver, Depends(get_peer_key_resolver)],
+    signature_input: str | None = Header(default=None, alias="Signature-Input"),
 ) -> Response:
     """Accept an AP-format activity addressed to this actor.
 
-    For v1.0 we accept-and-stash: the request must be signed (the
-    existing federation HTTP-signature verifier doesn't run here yet —
-    that wiring lives in Phase 13.5 which connects AP to the native
-    federation_activity table). We return 202 and persist the body to
-    federation_activity with kind=UNKNOWN if we can't classify, so the
-    operator dashboard always has a record."""
+    v1-026: the request MUST carry a valid HTTP signature (the same
+    RFC 9421 subset the native inbox verifies) unless the operator has
+    flipped the ``federation.accept_anonymous_inbound`` instance
+    setting. Unsigned / invalid → 401. Verified requests record a
+    replay nonce and persist to federation_activity where the inbox
+    processor drains them out-of-band; unclassifiable types stash as
+    kind=UNKNOWN so the operator always has a record."""
     vault = await _resolve_actor_vault(db, handle)
     body = await request.body()
     if not body:
@@ -216,6 +237,50 @@ async def post_inbox(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="empty body",
         )
+
+    # Escape hatch: operators may accept unsigned inbound (OFF by
+    # default — federation should always be signed).
+    allow_anonymous = await read_bool_setting(
+        db, "federation.accept_anonymous_inbound", default=False,
+    )
+    if not allow_anonymous:
+        keyid = _extract_keyid(signature_input)
+        if not keyid:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="signature_missing: unsigned inbound is not accepted",
+            )
+        try:
+            peer = await resolver.resolve(keyid)
+        except PeerKeyUnavailableError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=str(exc),
+            ) from exc
+        try:
+            verify_request(
+                public_key=peer.public_key,
+                method=request.method,
+                path=request.url.path,
+                headers={k: v for k, v in request.headers.items()},
+                expected_keyid=keyid,
+            )
+        except HTTPSignatureError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"signature verification failed: {exc}",
+            ) from exc
+
+        # Replay guard — same nonce key scheme as the native inbox.
+        nonce_key = _build_replay_nonce_key(signature_input, body)
+        try:
+            await record_nonce(db, nonce_key=nonce_key)
+        except ReplayDetectedError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"replayed nonce: {exc}",
+            ) from exc
+
     # Defer to the native inbox path's persistence layer. The AP→native
     # translation isn't lossless — for v1.0 we just stash with kind=UNKNOWN
     # and let the operator see what came in.
