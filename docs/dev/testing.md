@@ -144,3 +144,106 @@ clean and the verifier keeps passing.
 - `pytest -m "not integration"` to skip the slow tier.
 - If a test takes more than a second of wall clock, ask whether it's
   doing what it should.
+
+## Playwright suites (three of them)
+
+There are three Playwright configs at the repo root. Keep them apart —
+different `testDir`, different targets:
+
+| Suite  | Config                         | `testDir`      | Target                                  |
+|--------|--------------------------------|----------------|-----------------------------------------|
+| a11y   | `playwright.a11y.config.ts`    | `tests/a11y`   | Storybook static on `:6007` (self-served) |
+| visual | `playwright.visual.config.ts`  | `tests/visual` | Storybook static on `:6007` (self-served) |
+| e2e    | `playwright.config.ts`         | `tests/e2e`    | a **running app stack** (operator-started) |
+
+The a11y + visual suites build and serve Storybook themselves. The
+end-to-end suite does not start anything — it drives a live stack.
+
+## End-to-end tests (Playwright)
+
+`tests/e2e/*.spec.ts` cover the critical user flows a v1.0 must not
+regress. They drive the real admin SPA (and, for the blog, the public
+site) in a headless Chromium — no mocks, no fixtures.
+
+### Flows covered
+
+| Spec                 | Flow |
+|----------------------|------|
+| `auth.spec.ts`       | Sign in with a fresh magickal name → app shell → sign out. Plus the **b108-2hl** security property: after a password is set, name-only sign-in is refused. |
+| `journal.spec.ts`    | New entry → type title + body → auto-save survives a reload → add a tag → publish. |
+| `blog.spec.ts`       | Write an entry, make it Public, publish, then read it back via the backend blog API **and** the public reader page. |
+| `divination.spec.ts` | Open the tarot surface, cast a spread, assert a reading renders. |
+| `settings.spec.ts`   | Set an account password; the care-toned banner clears and success shows. |
+
+Selectors prefer roles / accessible names / real UI copy, with a few
+stable `data-*` hooks the app already exposes (the ProseMirror editor,
+the visibility pills, the tarot board). No assertions on styling.
+
+### Why it does NOT auto-start the stack
+
+Bringing the full Docker stack up from Playwright's `webServer`
+(Postgres + Redis + backend + Celery + admin + public-site) is slow and
+fragile: a partially-healthy stack fails in ways that look like test
+bugs. So the operator (or CI) starts the stack, then runs the suite.
+
+### The single-origin requirement (read this before running)
+
+The admin SPA calls the backend at its **own origin** (`/api/*`,
+same-origin) and session auth rides an HTTP cookie. For the UI flows to
+work, admin **and** the API must be served from **one origin**. Same for
+the blog reader: the public-site page fetches `/api/*` same-origin.
+
+`just dev` starts admin (`:5173`), backend (`:8000`) and public-site
+(`:4321`) as **separate** origins with no `/api` proxy — good for
+hot-reload development, but the SPA can't reach the API across origins
+there. For E2E, serve everything behind one origin. The simplest option
+is the internal Caddy that already reverse-proxies `/api/*` to the
+backend (the same layout `dev.theourgia.com` uses):
+
+```bash
+# One origin: admin under /app, public site at /, /api → backend.
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+```
+
+Then point the suite at that origin (adjust host/port/basename to your
+proxy):
+
+```bash
+export E2E_BASE_URL=http://127.0.0.1:8080        # admin SPA origin
+export E2E_API_URL=http://127.0.0.1:8080         # backend origin (same)
+export E2E_PUBLIC_URL=http://127.0.0.1:8080      # public-site origin (same)
+```
+
+The config also honours the bare `BASE_URL` / `API_URL` / `PUBLIC_URL`
+names. Defaults (used when unset) are the split dev ports
+`:5173` / `:8000` / `:4321`.
+
+Open enrollment must be on (`THEOURGIA_ALLOWED_MAGICKAL_NAMES` empty,
+the dev default) so the specs can create their own fresh accounts.
+
+### Running
+
+```bash
+# 1. Bring up a single-origin app stack (see above) and let it settle.
+curl -fsS http://127.0.0.1:8000/readyz     # backend ready?
+
+# 2. Install the browser once, then run.
+pnpm exec playwright install chromium
+pnpm test:e2e                              # or: just test-e2e
+#   = playwright test --config=playwright.config.ts
+
+# Collect / type-check without a stack (no browser, no server needed):
+pnpm exec playwright test --config=playwright.config.ts --list
+```
+
+Each spec is self-contained: it creates its own account and its own
+data, so the suite is safe to re-run against the same database.
+
+### CI posture
+
+Per the project's CI-pared-down-until-v1 stance, the E2E suite runs
+**locally / manually** for now — it needs a full app stack, which the
+minimized GitHub Actions don't spin up. It is slated to become a
+CI-gated job post-v1 (alongside a stack bring-up step), matching the
+DoD note in *Coverage targets* above ("user flows have at least one
+Playwright happy path each").
