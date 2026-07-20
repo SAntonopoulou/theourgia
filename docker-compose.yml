@@ -147,7 +147,9 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: ["celery", "-A", "theourgia.core.tasks.app:celery_app", "beat", "--loglevel=info"]
+    # -s: beat's schedule-state file must live somewhere the non-root
+    # runtime user can write; the image workdir is read-only to it.
+    command: ["celery", "-A", "theourgia.core.tasks.app:celery_app", "beat", "--loglevel=info", "-s", "/tmp/celerybeat-schedule"]
     depends_on:
       postgres:
         condition: service_healthy
