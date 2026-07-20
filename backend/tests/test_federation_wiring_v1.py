@@ -1189,3 +1189,122 @@ async def test_native_inbox_follow_needs_no_capability(fed_env) -> None:
             "/api/v1/federation/inbox", content=body, headers=headers,
         )
     assert response.status_code == 202, response.text
+
+
+# ── v1-029: registered peers resolve keys via their stored base_url ──
+
+
+def test_peer_key_resolver_prefers_registered_base_url():
+    """A DID with a registered peer row fetches the actor document from
+    the operator-trusted base_url (any scheme/port); unknown DIDs keep
+    the strict https-by-DID path. Found by the twin-instance test —
+    without this, signature verification between registered peers on
+    nonstandard ports is impossible."""
+    import asyncio
+
+    import httpx
+
+    from theourgia.core.federation.keys import (
+        load_or_create_keypair,
+        serialize_public_key,
+    )
+    from theourgia.core.federation.peer_keys import PeerKeyResolver
+
+    seen_urls: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen_urls.append(str(request.url))
+        did = (
+            "did:theourgia:known.example"
+            if "127.0.0.1:9999" in str(request.url)
+            else "did:theourgia:unknown.example"
+        )
+        import tempfile
+        from pathlib import Path
+
+        with tempfile.TemporaryDirectory() as td:
+            keypair = load_or_create_keypair(
+                private_path=Path(td) / "k",
+                public_path=Path(td) / "k.pub",
+            )
+            return httpx.Response(
+                200,
+                json={
+                    "did": did,
+                    "public_key": serialize_public_key(
+                        keypair.public_key
+                    ),
+                },
+            )
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+
+    async def lookup(did: str) -> str | None:
+        return (
+            "http://127.0.0.1:9999"
+            if did == "did:theourgia:known.example"
+            else None
+        )
+
+    resolver = PeerKeyResolver(
+        http_client=client, peer_base_url_lookup=lookup
+    )
+
+    async def run() -> None:
+        await resolver.resolve("did:theourgia:known.example")
+        await resolver.resolve("did:theourgia:unknown.example")
+
+    asyncio.run(run())
+    assert seen_urls[0] == (
+        "http://127.0.0.1:9999/.well-known/theourgia/actor"
+    )
+    assert seen_urls[1] == (
+        "https://unknown.example/.well-known/theourgia/actor"
+    )
+
+
+def test_deliver_refuses_http_unless_lab_flag(monkeypatch):
+    """https-only stands by default; the LAB-ONLY flag admits http."""
+    import asyncio
+
+    from theourgia.core import config
+    from theourgia.core.federation import outbound
+    from theourgia.core.federation.keys import load_or_create_keypair
+
+    monkeypatch.setenv("THEOURGIA_FEDERATION_TRANSPORT_ENABLED", "1")
+    monkeypatch.delenv(
+        "THEOURGIA_FEDERATION_ALLOW_INSECURE_HTTP", raising=False
+    )
+    config.get_settings.cache_clear()
+    result = asyncio.run(
+        outbound.deliver(
+            url="http://127.0.0.1:1/inbox",
+            body_json={},
+            sender_keyid="did:theourgia:x",
+            sender_private_key=None,  # scheme check precedes signing
+        )
+    )
+    assert result.error == "non-HTTPS URL"
+
+    monkeypatch.setenv("THEOURGIA_FEDERATION_ALLOW_INSECURE_HTTP", "1")
+    config.get_settings.cache_clear()
+    import tempfile
+    from pathlib import Path
+
+    with tempfile.TemporaryDirectory() as td:
+        keypair = load_or_create_keypair(
+            private_path=Path(td) / "k", public_path=Path(td) / "k.pub"
+        )
+        result = asyncio.run(
+            outbound.deliver(
+                url="http://127.0.0.1:1/inbox",
+                body_json={},
+                sender_keyid="did:theourgia:x",
+                sender_private_key=keypair.private_key,
+                timeout_seconds=0.2,
+            )
+        )
+    # Scheme admitted; failure (if any) is the unreachable port, never
+    # the scheme gate.
+    assert result.error != "non-HTTPS URL"
+    config.get_settings.cache_clear()

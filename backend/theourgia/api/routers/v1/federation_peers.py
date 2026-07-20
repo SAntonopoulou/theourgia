@@ -122,7 +122,11 @@ def _normalize_base_url(raw: str) -> str:
     """Validate + normalize the operator-supplied peer URL."""
     candidate = raw.strip().rstrip("/")
     parsed = urlparse(candidate)
-    if parsed.scheme != "https":
+    scheme_ok = parsed.scheme == "https" or (
+        parsed.scheme == "http"
+        and get_settings().federation_allow_insecure_http
+    )
+    if not scheme_ok:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Peer URLs must be https://.",

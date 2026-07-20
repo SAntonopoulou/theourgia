@@ -86,6 +86,13 @@ def resolve_inbox_url(
         return f"https://{host}/api/v1/federation/inbox"
     if follower_did.startswith("https://"):
         return f"{follower_did.rstrip('/')}/inbox"
+    # LAB-ONLY: plaintext AP actor URLs resolve to their inbox when the
+    # insecure-http flag is set (twin-instance tests / LAN labs). Same
+    # gate as outbound.deliver and the peers/​resolver paths (v1-029).
+    if follower_did.startswith("http://") and (
+        get_settings().federation_allow_insecure_http
+    ):
+        return f"{follower_did.rstrip('/')}/inbox"
     return None
 
 

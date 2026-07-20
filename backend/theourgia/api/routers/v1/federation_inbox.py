@@ -29,6 +29,7 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from fastapi.responses import JSONResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import get_db_session
@@ -57,12 +58,11 @@ from theourgia.models.federation_activity import (
     FederationActivityKind,
 )
 
-
 __all__ = [
     "CAPABILITY_INBOX_SCOPE",
     "CAPABILITY_REQUIRED_KINDS",
-    "router",
     "get_peer_key_resolver",
+    "router",
 ]
 
 
@@ -143,10 +143,30 @@ def _require_capability(token: str | None, sender_did: str) -> None:
         )
 
 
+async def _registered_peer_base_url(did: str) -> str | None:
+    """Resolve a DID to the base_url the operator registered at
+    peer-add time (v1-029). Registered peers are authoritative for
+    their own location — this is what makes nonstandard ports work;
+    unknown DIDs fall through to the strict https-by-DID fetch."""
+    from theourgia.core.db import get_sessionmaker
+    from theourgia.models.federation_peer import FederationPeer
+
+    async with get_sessionmaker()() as session:
+        result = await session.execute(
+            select(FederationPeer.base_url).where(
+                FederationPeer.instance_did == did
+            )
+        )
+        return result.scalar_one_or_none()
+
+
 def get_peer_key_resolver() -> PeerKeyResolver:
     """FastAPI dependency — tests override to inject a mock-transport
     resolver."""
-    return get_default_resolver()
+    resolver = get_default_resolver()
+    if resolver.peer_base_url_lookup is None:
+        resolver.peer_base_url_lookup = _registered_peer_base_url
+    return resolver
 
 
 def _extract_keyid(signature_input: str | None) -> str | None:

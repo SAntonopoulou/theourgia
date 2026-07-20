@@ -134,6 +134,15 @@ class Settings(BaseSettings):
     to true only after a second test instance + an external threat-model
     review have been completed. See ``docs/architecture/federation-
     transport-threat-model.md``."""
+    federation_allow_insecure_http: bool = Field(
+        default=False,
+        alias="THEOURGIA_FEDERATION_ALLOW_INSECURE_HTTP",
+    )
+    """LAB-ONLY. Permits plaintext http:// federation delivery URLs.
+    Never enable on an internet-facing instance — signatures
+    authenticate peers but plaintext transport leaks content and
+    invites replay capture. Exists for twin-instance tests and LAN
+    self-host labs (v1-029)."""
     federation_replay_window_seconds: int = Field(
         default=300,
         alias="THEOURGIA_FEDERATION_REPLAY_WINDOW_SECONDS",

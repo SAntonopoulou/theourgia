@@ -42,9 +42,9 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Mapping
 from dataclasses import dataclass
 from time import time
-from typing import Mapping
 from urllib.parse import urlparse
 
 import httpx
@@ -111,7 +111,10 @@ async def deliver(
         )
 
     parsed = urlparse(url)
-    if parsed.scheme != "https":
+    scheme_ok = parsed.scheme == "https" or (
+        parsed.scheme == "http" and settings.federation_allow_insecure_http
+    )
+    if not scheme_ok:
         return DeliveryResult(
             ok=False, status=None, error="non-HTTPS URL",
         )

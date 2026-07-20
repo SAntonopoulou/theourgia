@@ -29,9 +29,9 @@ import asyncio
 import base64
 import logging
 import time
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Final
-from urllib.parse import urlparse
 
 import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import (
@@ -40,11 +40,10 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 
 from theourgia.core.federation.keys import deserialize_public_key
 
-
 __all__ = [
-    "PeerPublicKey",
     "PeerKeyResolver",
     "PeerKeyUnavailableError",
+    "PeerPublicKey",
     "did_to_host",
 ]
 
@@ -98,6 +97,16 @@ class PeerKeyResolver:
     """Tests inject an httpx.MockTransport-backed client."""
 
     timeout_seconds: float = 5.0
+    peer_base_url_lookup: (
+        Callable[[str], Awaitable[str | None]] | None
+    ) = None
+    """Optional async lookup: DID → the base_url the operator registered
+    for that peer (the federation_peer table). Registered peers resolve
+    against their stored URL — the operator explicitly trusted it at
+    peer-add time, which is what makes nonstandard ports (and TLS-less
+    lab setups) work. Unknown peers keep the strict https-by-DID path
+    (v1-029, found by the twin-instance test)."""
+
     _cache: dict[str, PeerPublicKey] | None = None
     _lock: asyncio.Lock | None = None
 
@@ -139,6 +148,12 @@ class PeerKeyResolver:
             ) from exc
 
         url = f"https://{host}/.well-known/theourgia/actor"
+        if self.peer_base_url_lookup is not None:
+            registered = await self.peer_base_url_lookup(did)
+            if registered:
+                url = (
+                    f"{registered.rstrip('/')}/.well-known/theourgia/actor"
+                )
         try:
             if self.http_client is not None:
                 response = await self.http_client.get(url)
