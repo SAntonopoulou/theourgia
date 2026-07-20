@@ -206,13 +206,20 @@ export function VaultTopbar({ onMenuToggle, navOpen, actingAs }: VaultTopbarProp
       </button>
 
       {(title !== undefined || subtitle !== undefined) && (
-        <div style={{ minWidth: 0 }}>
+        // flex:1 1 auto + min-width:0 lets the title block yield space to
+        // the action cluster on narrow screens; the title truncates with
+        // an ellipsis rather than forcing the topbar wider than the
+        // viewport (the mobile-overflow fix — v1-046).
+        <div style={{ minWidth: 0, flex: "1 1 auto" }} className="om-topbar-title">
           {title !== undefined ? (
             <div
               style={{
                 fontFamily: "var(--font-display, var(--font-serif))",
                 fontSize: 21,
                 lineHeight: 1.1,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               }}
             >
               {title}
@@ -220,6 +227,7 @@ export function VaultTopbar({ onMenuToggle, navOpen, actingAs }: VaultTopbarProp
           ) : null}
           {subtitle !== undefined ? (
             <div
+              className="om-topbar-subtitle"
               style={{
                 fontFamily: "var(--font-ui)",
                 fontSize: 12.5,
@@ -238,11 +246,14 @@ export function VaultTopbar({ onMenuToggle, navOpen, actingAs }: VaultTopbarProp
       )}
 
       <div
+        className="om-topbar-actions"
         style={{
           marginLeft: "auto",
           display: "flex",
           alignItems: "center",
           gap: 12,
+          minWidth: 0,
+          flex: "0 1 auto",
         }}
       >
         {before ?? null}

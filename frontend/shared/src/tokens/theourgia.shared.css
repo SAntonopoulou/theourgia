@@ -216,6 +216,18 @@ select:focus-visible {
     padding-left: 14px !important;
     padding-right: 14px !important;
     gap: 10px !important;
+    /* v1-046 mobile fix: when the title + action cluster can't share one
+     * row, the cluster wraps to a second line instead of overflowing the
+     * viewport and being clipped. Title truncates; nothing is hidden. */
+    flex-wrap: wrap !important;
+  }
+  .om-topbar-actions {
+    flex-wrap: wrap !important;
+    row-gap: 8px;
+  }
+  .om-topbar-title {
+    /* Keep the title on its own row when the actions wrap below. */
+    flex-basis: 100% !important;
   }
   .om-search {
     min-width: 0 !important;
