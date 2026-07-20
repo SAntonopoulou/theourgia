@@ -75,5 +75,9 @@ UTC): prod celery worker + beat in a restart loop, restart count
 - `THEOURGIA_INSTANCE_ID` not passed to the worker → snapshots tagged
   `theourgia.example.com` (cosmetic; fix with the next env-passthrough
   touch).
-- Restore drill against the real R2 repo (plan/15 §4 requires it
-  before v1.0 tag).
+- ~~Restore drill against the real R2 repo~~ — **done 2026-07-20
+  15:52 UTC**: `restic restore latest` from R2 succeeded;
+  `pg_restore --list` read the dump's TOC cleanly (993 entries,
+  dbname theourgia); `.env` restored intact. A full load-into-scratch-
+  cluster drill remains a good annual exercise per
+  docs/admin/disaster-recovery.md.
