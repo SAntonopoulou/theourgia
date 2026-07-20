@@ -241,11 +241,16 @@ export function ActingAsSwitcher({ identities, onManage, onSignOut }: ActingAsSw
         style={chipBase}
       >
         <IdentityMedallion identity={active} size={28} />
-        <span style={labelStack}>
+        {/* On mobile the chip collapses to just the medallion — the
+         * "Acting as / name" text + caret are hidden to keep the header
+         * to one slim row (v1-047). The medallion still opens the menu. */}
+        <span style={labelStack} className="om-actingas-label">
           <span style={eyebrow}>Acting as</span>
           <span style={nameLine}>{active.name}</span>
         </span>
-        <CaretIcon />
+        <span className="om-actingas-caret" style={{ display: "flex" }}>
+          <CaretIcon />
+        </span>
       </button>
 
       {open ? (

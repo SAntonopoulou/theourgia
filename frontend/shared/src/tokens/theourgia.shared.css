@@ -216,25 +216,20 @@ select:focus-visible {
     padding-left: 14px !important;
     padding-right: 14px !important;
     gap: 10px !important;
-    /* v1-046 mobile fix: when the title + action cluster can't share one
-     * row, the cluster wraps to a second line instead of overflowing the
-     * viewport and being clipped. Title truncates; nothing is hidden. */
-    flex-wrap: wrap !important;
   }
   .om-topbar-actions {
-    flex-wrap: wrap !important;
-    row-gap: 8px;
+    gap: 8px !important;
   }
-  .om-topbar-title {
-    /* Keep the title on its own row when the actions wrap below. */
-    flex-basis: 100% !important;
-  }
+  /* v1-047 mobile header: one slim row — hamburger · truncating title ·
+   * acting-as medallion · mode toggle. The heavy chrome (full search
+   * box, the "Acting as / name" label + caret, the theme segmented
+   * control) is hidden on phones; everything stays reachable via the
+   * drawer + the medallion menu. */
   .om-search {
-    min-width: 0 !important;
-    flex: 1 1 auto;
+    display: none !important;
   }
-  .om-search-label,
-  .om-search-kbd {
+  .om-actingas-label,
+  .om-actingas-caret {
     display: none !important;
   }
   .om-theme-seg {
