@@ -36,8 +36,33 @@ jobs:
   wait-for-ci:
     name: wait-for-ci
     runs-on: ubuntu-latest
+    permissions:
+      checks: read
+      contents: read
     steps:
-      - run: echo "CI on the tagged commit must be green before this release runs."
+      - uses: actions/checkout@v4
+      - name: Require the tagged commit's CI to have concluded successfully
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          sha="${{ github.sha }}"
+          # The enforcing gates on the ci workflow must be success on
+          # this exact commit before we publish release artifacts.
+          required=("backend-test" "frontend-typecheck" "frontend-test")
+          runs_json=$(gh api "repos/${{ github.repository }}/commits/${sha}/check-runs?per_page=100")
+          fail=0
+          for name in "${required[@]}"; do
+            concl=$(echo "$runs_json" | jq -r --arg n "$name" \
+              '.check_runs[] | select(.name==$n) | .conclusion' | head -1)
+            if [[ "$concl" != "success" ]]; then
+              echo "::error::required check '$name' is '${concl:-missing}' on $sha (must be success)"
+              fail=1
+            else
+              echo "OK $name=success"
+            fi
+          done
+          exit $fail
 
   publish-images:
     name: publish-docker-images
@@ -45,7 +70,19 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        component: [backend, frontend]
+        include:
+          - component: backend
+            context: ./backend
+            dockerfile: ./backend/Dockerfile
+          - component: frontend
+            context: .
+            dockerfile: ./frontend/Dockerfile
+          - component: registry
+            context: ./registry
+            dockerfile: ./registry/Dockerfile
+          - component: agent-daemon
+            context: ./agent-daemon
+            dockerfile: ./agent-daemon/Dockerfile
     steps:
       - uses: actions/checkout@v4
 
@@ -80,8 +117,8 @@ jobs:
       - name: Build & push (${{ matrix.component }})
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.component == 'backend' && './backend' || '.' }}
-          file: ./${{ matrix.component }}/Dockerfile
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           target: prod
           push: true
           platforms: linux/amd64,linux/arm64
