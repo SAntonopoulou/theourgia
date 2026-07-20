@@ -35,6 +35,23 @@ export function uniqueName(prefix = "Soror"): string {
 }
 
 /**
+ * The identity label the app displays for a given magickal name.
+ *
+ * The dev backend derives the shown handle from the name by slugging
+ * it (`backend/.../auth.py::_slug`): lowercase, every run of
+ * non-`[a-z0-9]` collapses to a single hyphen, ends trimmed, capped at
+ * 32 chars. The acting-as switcher echoes THIS handle, not the raw
+ * name — so display assertions must compare against the handle.
+ */
+export function handleFor(name: string): string {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return (slug || "demo").slice(0, 32);
+}
+
+/**
  * Assert we've landed in the authenticated app shell. The acting-as
  * switcher in the topbar only renders when there is a live session,
  * so its presence is a reliable "signed in + chrome mounted" signal.
@@ -77,19 +94,13 @@ async function signInWithName(page: Page, name: string, password?: string): Prom
 export async function signInFresh(page: Page, name: string): Promise<void> {
   await page.goto("/signin");
 
-  // The /signin surface redirects an empty vault to the /setup wizard;
-  // wait for whichever surface actually renders.
-  const setupHeading = page.getByRole("heading", {
-    name: "Welcome to Theourgia",
-  });
-  const nameButton = page.getByRole("button", {
-    name: "Continue with magickal name",
-  });
-  await expect(setupHeading.or(nameButton).first()).toBeVisible({
-    timeout: 30_000,
-  });
+  // The /signin surface redirects an empty vault to the /setup wizard.
+  // Wait for the session-status fetch (and any redirect) to settle,
+  // THEN branch on the settled URL — a deterministic signal rather than
+  // a race between two locators that a redirect transition can flake.
+  await page.waitForLoadState("networkidle");
 
-  if (await setupHeading.isVisible()) {
+  if (page.url().includes("/setup")) {
     await completeSetupWizard(page, name);
   } else {
     await signInWithName(page, name);

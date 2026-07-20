@@ -174,10 +174,38 @@ site) in a headless Chromium — no mocks, no fixtures.
 | `blog.spec.ts`       | Write an entry, make it Public, publish, then read it back via the backend blog API **and** the public reader page. |
 | `divination.spec.ts` | Open the tarot surface, cast a spread, assert a reading renders. |
 | `settings.spec.ts`   | Set an account password; the care-toned banner clears and success shows. |
+| `responsive.spec.ts` | **Mobile project only.** Sign in, then walk every key surface at an iPhone-13 viewport (390×844) asserting none scrolls horizontally. |
 
 Selectors prefer roles / accessible names / real UI copy, with a few
 stable `data-*` hooks the app already exposes (the ProseMirror editor,
 the visibility pills, the tarot board). No assertions on styling.
+
+`blog.spec.ts` asserts the published post through the **backend blog
+API** (title + full body). The public-site *reader UI* is not exercised
+here — this single-origin stack proxies only the admin SPA + `/api` +
+`/.well-known`, not the Astro public site.
+
+### Two projects: desktop and mobile
+
+The config defines two projects, scoped by filename:
+
+| Project           | Viewport             | Runs                         |
+|-------------------|----------------------|------------------------------|
+| `e2e-chromium`    | Desktop Chrome 1280  | the five functional specs    |
+| `mobile-chromium` | iPhone 13 (390×844)¹ | only `responsive.spec.ts`    |
+
+¹ iPhone-13 *metrics* on the Chromium engine (WebKit is not installed
+here). Run one project alone with `--project=e2e-chromium` or
+`--project=mobile-chromium`; omit the flag to run both.
+
+### Mock mode must be OFF (`VITE_THEOURGIA_API_MOCK=0`)
+
+`frontend/admin/.env.development` sets `VITE_THEOURGIA_API_MOCK=1`, so a
+plain `vite` dev server runs on **fixtures** and reports itself
+perpetually "signed in" — the E2E specs would never touch the backend,
+and real auth/persistence would go untested. The E2E admin server MUST
+be launched with `VITE_THEOURGIA_API_MOCK=0` so the SPA talks to the
+real API. (The single-origin bring-up below already does this.)
 
 ### Why it does NOT auto-start the stack
 

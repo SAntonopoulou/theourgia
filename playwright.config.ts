@@ -62,10 +62,27 @@ export default defineConfig({
 
   projects: [
     {
+      // Functional flows on a desktop viewport. Excludes the responsive
+      // sweep, which is a mobile-only concern.
       name: "e2e-chromium",
+      testIgnore: /responsive\.spec\.ts/,
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1280, height: 900 },
+      },
+    },
+    {
+      // Mobile viewport (iPhone 13, 390×844) — drives ONLY the
+      // responsive overflow sweep. Every key surface must fit the
+      // narrow viewport without a horizontal scrollbar.
+      name: "mobile-chromium",
+      testMatch: /responsive\.spec\.ts/,
+      use: {
+        // iPhone 13 metrics (390×844, mobile UA, touch, DPR 3) but run
+        // on Chromium — the only engine installed here — rather than the
+        // descriptor's default WebKit.
+        ...devices["iPhone 13"],
+        defaultBrowserType: "chromium",
       },
     },
   ],

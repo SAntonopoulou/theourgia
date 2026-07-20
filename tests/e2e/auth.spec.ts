@@ -9,7 +9,7 @@
 
 import { expect, test } from "@playwright/test";
 
-import { expectAppShell, signInFresh, signOut, uniqueName } from "./helpers";
+import { expectAppShell, handleFor, signInFresh, signOut, uniqueName } from "./helpers";
 
 test.describe("authentication", () => {
   test("fresh magickal name opens the vault, then signs out", async ({ page }) => {
@@ -18,13 +18,19 @@ test.describe("authentication", () => {
     await signInFresh(page, name);
     await expectAppShell(page);
 
-    // The acting-as switcher echoes the signed-in identity.
-    await expect(page.getByRole("button", { name: "Switch acting identity" })).toContainText(name);
+    // The acting-as switcher echoes the signed-in identity. The dev
+    // backend shows the derived handle (slug of the magickal name),
+    // not the raw name — so compare against that.
+    await expect(page.getByRole("button", { name: "Switch acting identity" })).toContainText(
+      handleFor(name),
+    );
 
     await signOut(page);
 
     await expect(page).toHaveURL(/\/signin/);
-    await expect(page.getByRole("heading", { name: "Enter or open the vault" })).toBeVisible();
+    // "Enter or open the vault" is the sign-in card's display title
+    // (a styled <div>, not a semantic heading).
+    await expect(page.getByText("Enter or open the vault")).toBeVisible();
   });
 
   test("after a password is set, name-only sign-in is refused (b108-2hl)", async ({ page }) => {
