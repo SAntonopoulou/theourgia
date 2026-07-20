@@ -17,20 +17,23 @@
  */
 
 import {
-  SealEntryDialog,
   AutoStampChip,
+  type ChartFetchFn,
+  ConfirmDialog,
+  type EntityVisibility,
+  type EntryDetailRecord,
+  type EntryRevisionListItem,
+  type EntryRevisionRead,
   EntryTagsRow,
+  SealEntryDialog,
   TiptapEditor,
   Toast,
+  type TranscribeAudioFn,
   VisibilityControl,
   VisibilityDowngradeDialog,
   formatAstroSnapshot,
   formatCalendarSnapshot,
   useTopbar,
-  type ChartFetchFn,
-  type EntityVisibility,
-  type EntryDetailRecord,
-  type TranscribeAudioFn,
 } from "@theourgia/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -134,7 +137,16 @@ function VisibilityChip({
               gap: 5,
             }}
           >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.9"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
               <rect x="5" y="11" width="14" height="9" rx="1.5" />
               <path d="M8 11V8a4 4 0 0 1 8 0v3" />
             </svg>
@@ -218,7 +230,16 @@ function VisibilityChip({
                 cursor: "pointer",
               }}
             >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.9"
+                strokeLinecap="round"
+                aria-hidden="true"
+              >
                 <rect x="5" y="11" width="14" height="9" rx="1.5" />
                 <path d="M8 11V8a4 4 0 0 1 8 0v3" />
               </svg>
@@ -280,6 +301,417 @@ function VisibilityChip({
           setSealDialogOpen(false);
         }}
         onCancel={() => setSealDialogOpen(false)}
+      />
+    </div>
+  );
+}
+
+// Compact relative-time label — same local-helper precedent as
+// Journal.tsx's relativeTime.
+function relativeTime(iso: string, now = new Date()): string {
+  const d = new Date(iso);
+  const min = Math.floor((now.getTime() - d.getTime()) / 60_000);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min} min ago`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h} h ago`;
+  const days = Math.floor(h / 24);
+  if (days === 1) return "yesterday";
+  if (days < 30) return `${days} days ago`;
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
+// Plaintext paragraphs from a Tiptap-JSON body, for the read-only
+// revision preview (no second Tiptap mount needed).
+function tiptapParagraphs(body: string | null): string[] {
+  if (!body) return [];
+  try {
+    const doc = JSON.parse(body) as { content?: unknown[] };
+    const collect = (node: unknown): string => {
+      if (Array.isArray(node)) return node.map(collect).join("");
+      if (node && typeof node === "object") {
+        const n = node as { text?: unknown; content?: unknown };
+        if (typeof n.text === "string") return n.text;
+        return collect(n.content);
+      }
+      return "";
+    };
+    return (doc.content ?? [])
+      .map((block) => collect(block).trim())
+      .filter((text) => text.length > 0);
+  } catch {
+    return body.trim().length > 0 ? [body] : [];
+  }
+}
+
+interface RevisionHistoryProps {
+  entryId: string | null;
+  sealed: boolean;
+  onRestored: (next: EntryDetailRecord) => void;
+}
+
+/**
+ * Version history (v1-028) — "History" affordance near the title /
+ * autostamp area. Popover panel per the VisibilityChip dev-built
+ * precedent: revision list (relative time + excerpt), click to
+ * preview read-only, Restore behind the house ConfirmDialog.
+ */
+function RevisionHistory({ entryId, sealed, onRestored }: RevisionHistoryProps) {
+  const [open, setOpen] = useState(false);
+  const [revisions, setRevisions] = useState<EntryRevisionListItem[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<EntryRevisionRead | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (!wrapRef.current) return;
+      if (!wrapRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || sealed || entryId === null) return;
+    let cancelled = false;
+    setLoadError(null);
+    apiMethods
+      .listEntryRevisions(entryId)
+      .then((rows) => {
+        if (!cancelled) setRevisions(rows);
+      })
+      .catch((cause) => {
+        if (!cancelled) {
+          setLoadError(cause instanceof Error ? cause.message : "Unknown error");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, sealed, entryId]);
+
+  const onPickRevision = async (rev: EntryRevisionListItem) => {
+    if (entryId === null) return;
+    try {
+      setPreview(await apiMethods.getEntryRevision(entryId, rev.id));
+    } catch (cause) {
+      Toast.push({
+        tone: "error",
+        title: "Couldn't load that version",
+        body: cause instanceof Error ? cause.message : "Unknown error",
+      });
+    }
+  };
+
+  const doRestore = async () => {
+    if (entryId === null || preview === null || busy) return;
+    setBusy(true);
+    try {
+      const next = await apiMethods.restoreEntryRevision(entryId, preview.id);
+      onRestored(next);
+      Toast.push({
+        tone: "success",
+        title: "Version restored",
+        body: "Your latest text was saved as a new revision first — nothing is lost.",
+      });
+      setConfirmOpen(false);
+      setPreview(null);
+      setRevisions(await apiMethods.listEntryRevisions(entryId));
+    } catch (cause) {
+      setConfirmOpen(false);
+      Toast.push({
+        tone: "error",
+        title: "Couldn't restore",
+        body: cause instanceof Error ? cause.message : "Unknown error",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div ref={wrapRef} style={{ position: "relative", display: "inline-block" }}>
+      <button
+        type="button"
+        onClick={entryId === null ? undefined : () => setOpen((s) => !s)}
+        disabled={entryId === null}
+        aria-haspopup="dialog"
+        aria-expanded={open ? "true" : "false"}
+        data-role="entry-history-toggle"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "5px 11px",
+          border: `1px solid ${LINE}`,
+          borderRadius: "var(--r-md)",
+          background: open ? "var(--bg-3)" : "transparent",
+          color: "var(--ink-soft)",
+          fontFamily: "var(--font-ui)",
+          fontSize: 12,
+          cursor: entryId === null ? "not-allowed" : "pointer",
+        }}
+      >
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 7v5l3 3" />
+        </svg>
+        History
+      </button>
+      {open && (
+        <div
+          role="dialog"
+          aria-label="Version history"
+          data-role="entry-history-panel"
+          style={{
+            position: "absolute",
+            top: "calc(100% + 6px)",
+            left: 0,
+            width: 360,
+            maxHeight: 420,
+            overflowY: "auto",
+            overflowX: "hidden",
+            background: "var(--bg-2)",
+            border: "1px solid var(--line-2)",
+            borderRadius: "var(--r-md)",
+            boxShadow: "0 12px 28px rgba(0,0,0,.4)",
+            padding: 14,
+            zIndex: 30,
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-ui)",
+              fontSize: 10.5,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "var(--ink-mute)",
+            }}
+          >
+            Version history
+          </div>
+          {sealed ? (
+            <p
+              style={{
+                margin: 0,
+                fontFamily: "var(--font-ui)",
+                fontSize: 12.5,
+                lineHeight: 1.55,
+                color: "var(--ink-soft)",
+              }}
+            >
+              Sealed entries keep no server-readable history — plaintext snapshots would defeat the
+              seal.
+            </p>
+          ) : loadError !== null ? (
+            <p
+              style={{
+                margin: 0,
+                fontFamily: "var(--font-ui)",
+                fontSize: 12.5,
+                color: "var(--warn)",
+              }}
+            >
+              Couldn't load history: {loadError}
+            </p>
+          ) : revisions === null ? (
+            <p
+              style={{
+                margin: 0,
+                fontFamily: "var(--font-ui)",
+                fontSize: 12.5,
+                color: "var(--ink-mute)",
+              }}
+            >
+              Loading history…
+            </p>
+          ) : revisions.length === 0 ? (
+            <p
+              style={{
+                margin: 0,
+                fontFamily: "var(--font-ui)",
+                fontSize: 12.5,
+                lineHeight: 1.55,
+                color: "var(--ink-mute)",
+              }}
+            >
+              No earlier versions yet. Snapshots are written as you edit — at most one every ten
+              minutes.
+            </p>
+          ) : (
+            <ul
+              style={{
+                listStyle: "none",
+                margin: 0,
+                padding: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+              }}
+            >
+              {revisions.map((rev) => (
+                <li key={rev.id}>
+                  <button
+                    type="button"
+                    onClick={() => void onPickRevision(rev)}
+                    aria-pressed={preview?.id === rev.id}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "8px 10px",
+                      border: "1px solid var(--line)",
+                      borderRadius: "var(--r-sm)",
+                      background: preview?.id === rev.id ? "var(--accent-soft)" : "transparent",
+                      color: "var(--ink)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 10,
+                        fontFamily: "var(--font-ui)",
+                        fontSize: 12.5,
+                      }}
+                    >
+                      <span
+                        style={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {rev.title}
+                      </span>
+                      <span style={{ color: "var(--ink-mute)", flexShrink: 0 }}>
+                        {relativeTime(rev.created_at)}
+                      </span>
+                    </span>
+                    {rev.body_excerpt.length > 0 && (
+                      <span
+                        style={{
+                          marginTop: 3,
+                          fontFamily: "var(--font-ui)",
+                          fontSize: 11.5,
+                          lineHeight: 1.45,
+                          color: "var(--ink-soft)",
+                          overflow: "hidden",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                        }}
+                      >
+                        {rev.body_excerpt}
+                      </span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {preview !== null && (
+            <div
+              data-role="entry-history-preview"
+              style={{
+                borderTop: `1px solid ${LINE}`,
+                paddingTop: 10,
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 10,
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "var(--font-ui)",
+                    fontSize: 11,
+                    color: "var(--ink-mute)",
+                  }}
+                >
+                  Preview · revision {preview.revision_number} · {relativeTime(preview.created_at)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setConfirmOpen(true)}
+                  disabled={busy}
+                  style={{
+                    padding: "5px 12px",
+                    border: "none",
+                    borderRadius: "var(--r-sm)",
+                    background: "var(--accent)",
+                    color: "var(--accent-ink)",
+                    fontFamily: "var(--font-ui)",
+                    fontWeight: 700,
+                    fontSize: 12,
+                    cursor: busy ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Restore
+                </button>
+              </div>
+              <div
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontWeight: 700,
+                  fontSize: 15,
+                  color: "var(--ink)",
+                }}
+              >
+                {preview.title}
+              </div>
+              <div style={{ maxHeight: 140, overflowY: "auto", overflowX: "hidden" }}>
+                {tiptapParagraphs(preview.body).map((text, i) => (
+                  <p
+                    key={`${preview.id}-${i}`}
+                    style={{
+                      margin: "0 0 8px",
+                      fontFamily: "var(--font-serif)",
+                      fontSize: 13.5,
+                      lineHeight: 1.55,
+                      color: "var(--ink-soft)",
+                    }}
+                  >
+                    {text}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      <ConfirmDialog
+        open={confirmOpen}
+        tone="constructive"
+        title="Restore this version?"
+        body="Your current version is saved as a new revision first — nothing is lost."
+        confirmLabel="Restore"
+        onConfirm={() => void doRestore()}
+        onCancel={() => setConfirmOpen(false)}
       />
     </div>
   );
@@ -347,7 +779,11 @@ function PublishCta({ entryId, publishedAt, onPublished }: PublishCtaProps) {
         try {
           const next = await publishEntry(entryId);
           onPublished(next);
-          Toast.push({ tone: "success", title: "Published", body: "The entry is now visible at its public URL." });
+          Toast.push({
+            tone: "success",
+            title: "Published",
+            body: "The entry is now visible at its public URL.",
+          });
         } catch (cause) {
           Toast.push({
             tone: "error",
@@ -413,6 +849,9 @@ export function Editor() {
   }, [entryId, navigate]);
 
   const [doc, setDoc] = useState<unknown | null>(null);
+  // v1-028 — bumped on restore so TiptapEditor remounts with the
+  // restored doc (initialDoc is only read on mount).
+  const [docEpoch, setDocEpoch] = useState(0);
   const [status, setStatus] = useState<SaveStatus>({ state: "idle" });
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<EntityVisibility>("personal");
@@ -473,39 +912,37 @@ export function Editor() {
   // v1-001: PATCH tag lists on every chip add / remove — same
   // optimistic-then-toast pattern as the visibility chip.
   const onTagsChange = useMemo(
-    () =>
-      async (field: "tags" | "tradition_tags", next: string[]) => {
-        if (entryId === null) return;
-        if (field === "tags") setTags(next);
-        else setTraditionTags(next);
-        try {
-          await apiMethods.updateEntry(entryId, { [field]: next });
-        } catch (cause) {
-          Toast.push({
-            tone: "error",
-            title: "Couldn't save tags",
-            body: cause instanceof Error ? cause.message : String(cause),
-          });
-        }
-      },
+    () => async (field: "tags" | "tradition_tags", next: string[]) => {
+      if (entryId === null) return;
+      if (field === "tags") setTags(next);
+      else setTraditionTags(next);
+      try {
+        await apiMethods.updateEntry(entryId, { [field]: next });
+      } catch (cause) {
+        Toast.push({
+          tone: "error",
+          title: "Couldn't save tags",
+          body: cause instanceof Error ? cause.message : String(cause),
+        });
+      }
+    },
     [entryId],
   );
 
   const fetchChart: ChartFetchFn = useMemo(
-    () =>
-      async (req) => {
-        const response = await apiMethods.getChart({
-          when: req.datetime,
-          latitude: req.latitude,
-          longitude: req.longitude,
-          house_system: req.system,
-        });
-        return {
-          placements: response.placements,
-          houses: response.houses,
-          aspects: response.aspects,
-        };
-      },
+    () => async (req) => {
+      const response = await apiMethods.getChart({
+        when: req.datetime,
+        latitude: req.latitude,
+        longitude: req.longitude,
+        house_system: req.system,
+      });
+      return {
+        placements: response.placements,
+        houses: response.houses,
+        aspects: response.aspects,
+      };
+    },
     [],
   );
 
@@ -513,8 +950,7 @@ export function Editor() {
   // node. The node handles the 403 gates (instance off / not opted
   // in) itself via the response detail.
   const transcribeAudio: TranscribeAudioFn = useMemo(
-    () => (attachmentId, opts) =>
-      apiMethods.transcribeAudio(attachmentId, opts),
+    () => (attachmentId, opts) => apiMethods.transcribeAudio(attachmentId, opts),
     [],
   );
 
@@ -525,25 +961,41 @@ export function Editor() {
         sealed?: boolean;
         publish_on_death?: boolean;
       }) => {
-      if (entryId === null) return;
-      // Optimistic update — local state moves immediately so the chip
-      // feels responsive; PATCH catches up in the background.
-      if (patch.visibility !== undefined) setVisibility(patch.visibility);
-      if (patch.sealed !== undefined) setSealed(patch.sealed);
-      if (patch.publish_on_death !== undefined) {
-        setPublishOnDeath(patch.publish_on_death);
-      }
-      try {
-        await apiMethods.updateEntry(entryId, patch);
-      } catch (cause) {
-        Toast.push({
-          tone: "error",
-          title: "Couldn't update visibility",
-          body: cause instanceof Error ? cause.message : "Unknown error",
-        });
-      }
-    },
+        if (entryId === null) return;
+        // Optimistic update — local state moves immediately so the chip
+        // feels responsive; PATCH catches up in the background.
+        if (patch.visibility !== undefined) setVisibility(patch.visibility);
+        if (patch.sealed !== undefined) setSealed(patch.sealed);
+        if (patch.publish_on_death !== undefined) {
+          setPublishOnDeath(patch.publish_on_death);
+        }
+        try {
+          await apiMethods.updateEntry(entryId, patch);
+        } catch (cause) {
+          Toast.push({
+            tone: "error",
+            title: "Couldn't update visibility",
+            body: cause instanceof Error ? cause.message : "Unknown error",
+          });
+        }
+      },
     [entryId],
+  );
+
+  // v1-028 — after a restore the server state is authoritative:
+  // rehydrate title + doc and remount the Tiptap surface.
+  const onRestored = useMemo(
+    () => (next: EntryDetailRecord) => {
+      setTitle(next.title);
+      try {
+        const parsed = next.body && next.body.length > 0 ? JSON.parse(next.body) : null;
+        setDoc(parsed ?? { type: "doc", content: [{ type: "paragraph" }] });
+      } catch {
+        setDoc({ type: "doc", content: [{ type: "paragraph" }] });
+      }
+      setDocEpoch((epoch) => epoch + 1);
+    },
+    [],
   );
 
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -594,9 +1046,7 @@ export function Editor() {
           <span style={{ color: "var(--ink-soft)" }}>Workings</span>
           <span style={{ opacity: 0.5 }}>/</span>
           <span style={{ color: "var(--ink)" }}>
-            {entryId === null
-              ? "Untitled draft"
-              : detail.data?.title ?? "Loading…"}
+            {entryId === null ? "Untitled draft" : (detail.data?.title ?? "Loading…")}
           </span>
           <SaveStatusIndicator status={status} />
         </div>
@@ -618,7 +1068,16 @@ export function Editor() {
         />
       ),
     }),
-    [entryId, detail.data?.title, status, publishedAt, visibility, sealed, publishOnDeath, onVisibilityChange],
+    [
+      entryId,
+      detail.data?.title,
+      status,
+      publishedAt,
+      visibility,
+      sealed,
+      publishOnDeath,
+      onVisibilityChange,
+    ],
   );
 
   if (entryId !== null && detail.status === "loading") {
@@ -652,7 +1111,9 @@ export function Editor() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, margin: "0 -28px" }}>
+    <div
+      style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, margin: "0 -28px" }}
+    >
       <div
         style={{
           maxWidth: 720,
@@ -707,12 +1168,8 @@ export function Editor() {
           />
         </div>
         {(() => {
-          const astroLabel = formatAstroSnapshot(
-            detail.data?.astro_snapshot,
-          );
-          const calendarLabel = formatCalendarSnapshot(
-            detail.data?.calendar_snapshot,
-          );
+          const astroLabel = formatAstroSnapshot(detail.data?.astro_snapshot);
+          const calendarLabel = formatCalendarSnapshot(detail.data?.calendar_snapshot);
           if (!astroLabel && !calendarLabel) return null;
           return (
             <div style={{ marginBottom: 20 }} data-role="entry-autostamp">
@@ -723,9 +1180,13 @@ export function Editor() {
             </div>
           );
         })()}
+        <div style={{ marginBottom: 20 }} data-role="entry-history">
+          <RevisionHistory entryId={entryId} sealed={sealed} onRestored={onRestored} />
+        </div>
       </div>
       {doc !== null ? (
         <TiptapEditor
+          key={`doc-${docEpoch}`}
           initialDoc={doc}
           onChange={onChange}
           placeholder="Begin writing…"

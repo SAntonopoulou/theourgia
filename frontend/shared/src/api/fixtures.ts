@@ -38,14 +38,22 @@ import type {
   EntityRecord,
   EntryDetailRecord,
   EntryRecord,
+  EntryRevisionListItem,
+  EntryRevisionRead,
   EntryStats,
   EntryType,
+  FederationPeerCreated,
+  FederationPeerRead,
   FeedServitorInput,
   FulfillObligationInput,
   HealthStatus,
   HoraryReadingRecord,
   InitiationRead,
   InstalledBundleRead,
+  KeyRotationCurrentKey,
+  KeyRotationHistoryItem,
+  KeyRotationRead,
+  KeyRotationStatusResponse,
   MagicSquareRecord,
   Meta,
   OathRead,
@@ -118,6 +126,105 @@ function entryDetail(e: EntryRecord, over: Partial<EntryDetailRecord> = {}): Ent
     ...entryMeta(e.id),
     ...over,
   };
+}
+
+/**
+ * Version-history store (v1-028), keyed by entry id, oldest-first.
+ * Mirrors backend semantics: restore pushes the CURRENT state as a
+ * new revision before applying the old content (never destructive).
+ */
+const ENTRY_REVISIONS: Map<string, EntryRevisionRead[]> = new Map();
+
+function tiptapDoc(...paragraphs: string[]): string {
+  return JSON.stringify({
+    type: "doc",
+    content: paragraphs.map((text) => ({
+      type: "paragraph",
+      content: [{ type: "text", text }],
+    })),
+  });
+}
+
+/** Plaintext excerpt of a Tiptap-JSON body — mirrors the backend's. */
+function revisionExcerpt(body: string | null): string {
+  if (!body) return "";
+  let text = body;
+  try {
+    const doc = JSON.parse(body) as unknown;
+    const parts: string[] = [];
+    const walk = (node: unknown): void => {
+      if (Array.isArray(node)) {
+        for (const child of node) walk(child);
+      } else if (node && typeof node === "object") {
+        const n = node as { text?: unknown; content?: unknown };
+        if (typeof n.text === "string") parts.push(n.text);
+        walk(n.content);
+      }
+    };
+    walk(doc);
+    text = parts.join(" ");
+  } catch {
+    // Legacy prose body — excerpt the raw string.
+  }
+  const collapsed = text.split(/\s+/).filter(Boolean).join(" ");
+  return collapsed.length <= 240 ? collapsed : `${collapsed.slice(0, 239).trimEnd()}…`;
+}
+
+function toRevisionListItem(rev: EntryRevisionRead): EntryRevisionListItem {
+  return {
+    id: rev.id,
+    revision_number: rev.revision_number,
+    created_at: rev.created_at,
+    title: rev.title,
+    body_excerpt: revisionExcerpt(rev.body),
+  };
+}
+
+/** Seed entry "1" with a browsable history (+ a current body so the
+ * pre-restore snapshot of the current state is never empty). */
+function seedEntryRevisions(): void {
+  if (ENTRY_REVISIONS.size > 0) return;
+  if (!ENTRY_BODIES.has("1")) {
+    ENTRY_BODIES.set(
+      "1",
+      tiptapDoc(
+        "The taper at the eastern station burned through the entire opening invocation without flickering.",
+        "No draught reached the altar; the flame stood like a spearpoint.",
+        "Closed with the license to depart; the wax pooled clean.",
+      ),
+    );
+  }
+  ENTRY_REVISIONS.set("1", [
+    {
+      id: "rev-1",
+      revision_number: 1,
+      created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      title: "Candle observation (draft)",
+      body: tiptapDoc("First note: the taper burned steadily during the opening."),
+      edit_summary: null,
+    },
+    {
+      id: "rev-2",
+      revision_number: 2,
+      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      title: "Candle held its flame",
+      body: tiptapDoc(
+        "The taper at the eastern station burned through the entire opening invocation.",
+      ),
+      edit_summary: null,
+    },
+    {
+      id: "rev-3",
+      revision_number: 3,
+      created_at: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
+      title: "Candle held its flame",
+      body: tiptapDoc(
+        "The taper at the eastern station burned through the entire opening invocation without flickering.",
+        "No draught reached the altar; the flame stood like a spearpoint.",
+      ),
+      edit_summary: "Before publish",
+    },
+  ]);
 }
 
 const NOW_ISO = new Date().toISOString();
@@ -681,6 +788,62 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     return entryDetail(ENTRIES[idx]!);
   }
 
+  // /api/v1/entries/{id}/revisions/{revId}/restore — v1-028.
+  // Mirrors the backend: current state pushed as a new revision FIRST,
+  // then the old content applied (title + body only; visibility and
+  // publish state never time-travel).
+  const restoreMatch = /^\/api\/v1\/entries\/([^/]+)\/revisions\/([^/]+)\/restore$/.exec(
+    bare ?? "",
+  );
+  if (restoreMatch && method === "POST") {
+    seedEntryRevisions();
+    const [, id, revId] = restoreMatch;
+    const idx = ENTRIES.findIndex((e) => e.id === id);
+    const revs = ENTRY_REVISIONS.get(id!) ?? [];
+    const target = revs.find((r) => r.id === revId);
+    if (idx < 0 || !target) {
+      return new NotFoundError(problem(404, "Not Found", `Revision ${revId} not found`));
+    }
+    const now = new Date().toISOString();
+    const nextNumber = Math.max(0, ...revs.map((r) => r.revision_number)) + 1;
+    revs.push({
+      id: `rev-${nextNumber}-${Date.now()}`,
+      revision_number: nextNumber,
+      created_at: now,
+      title: ENTRIES[idx]!.title,
+      body: ENTRY_BODIES.get(id!) ?? "",
+      edit_summary: `Before restore to revision ${target.revision_number}`,
+    });
+    ENTRY_REVISIONS.set(id!, revs);
+    ENTRIES[idx] = { ...ENTRIES[idx]!, title: target.title, updated_at: now };
+    ENTRY_BODIES.set(id!, target.body ?? "");
+    return entryDetail(ENTRIES[idx]!);
+  }
+
+  // /api/v1/entries/{id}/revisions/{revId} — full revision body.
+  const revisionMatch = /^\/api\/v1\/entries\/([^/]+)\/revisions\/([^/]+)$/.exec(bare ?? "");
+  if (revisionMatch && method === "GET") {
+    seedEntryRevisions();
+    const [, id, revId] = revisionMatch;
+    const target = (ENTRY_REVISIONS.get(id!) ?? []).find((r) => r.id === revId);
+    if (!target) {
+      return new NotFoundError(problem(404, "Not Found", `Revision ${revId} not found`));
+    }
+    return { ...target };
+  }
+
+  // /api/v1/entries/{id}/revisions — newest-first list.
+  const revisionsMatch = /^\/api\/v1\/entries\/([^/]+)\/revisions$/.exec(bare ?? "");
+  if (revisionsMatch && method === "GET") {
+    seedEntryRevisions();
+    const [, id] = revisionsMatch;
+    if (!ENTRIES.some((e) => e.id === id)) {
+      return new NotFoundError(problem(404, "Not Found", `Entry ${id} not found`));
+    }
+    const revs = ENTRY_REVISIONS.get(id!) ?? [];
+    return [...revs].sort((a, b) => b.revision_number - a.revision_number).map(toRevisionListItem);
+  }
+
   const entryMatch = /^\/api\/v1\/entries\/(.+)$/.exec(bare ?? "");
   if (entryMatch) {
     const [, id] = entryMatch;
@@ -765,6 +928,20 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
   if (bare !== undefined) {
     const bundles = bundlesFixture(method, bare);
     if (bundles !== undefined) return bundles;
+  }
+
+  // ── Mode A vault-key rotation fixtures (v1-027) ──────────────────
+
+  if (bare !== undefined) {
+    const keys = keyRotationFixture(method, bare);
+    if (keys !== undefined) return keys;
+  }
+
+  // ── Federation peer directory fixtures (v1-026) ──────────────────
+
+  if (bare !== undefined) {
+    const peers = federationPeersFixture(method, bare, body);
+    if (peers !== undefined) return peers;
   }
 
   return new NotFoundError(problem(404, "Not Found", `No fixture for ${method} ${path}`));
@@ -2918,6 +3095,12 @@ const INSTALLED_BUNDLES: InstalledBundleRead[] = [
   { ...makeInstalledBundle(HELLENIC_PACKAGE), installed_at: "2026-07-16T00:00:00Z" },
 ];
 
+/** Federation peer directory (v1-026). Deliberately EMPTY at seed —
+ *  the Network Browser never pretends peers exist; POST appends
+ *  within the page session. */
+const FEDERATION_PEERS: FederationPeerRead[] = [];
+let PEER_SEQ = 0;
+
 function bundleImportResults(pkg: BundledPackageFixture): BundleImportItemResultWire[] {
   const results: BundleImportItemResultWire[] = [];
   for (const [kind, count] of Object.entries(pkg.item_counts)) {
@@ -3021,6 +3204,156 @@ function bundlesFixture(method: string, bare: string): unknown {
   if (bare === "/api/v1/bundles/export" && method === "GET") {
     // A tiny stand-in blob — the real endpoint streams the .mbf zip.
     return new Blob(["mock-mbf-container"], { type: "application/zip" });
+  }
+
+  return undefined;
+}
+
+// ── Federation peer directory fixture state + handler (v1-026) ──────
+
+function federationPeersFixture(method: string, bare: string, body: unknown): unknown {
+  // Starts EMPTY — the Network Browser's honesty rule: never pretend
+  // peers exist. Adding in mock mode simulates a successful actor
+  // verification.
+  if (bare === "/api/v1/federation/peers") {
+    if (method === "GET") return [...FEDERATION_PEERS];
+    if (method === "POST") {
+      const input = (body ?? {}) as { base_url?: string; label?: string | null };
+      const baseUrl = (input.base_url ?? "").replace(/\/+$/, "");
+      const host = baseUrl.replace(/^https?:\/\//, "");
+      const now = new Date().toISOString();
+      PEER_SEQ += 1;
+      const created: FederationPeerCreated = {
+        id: `peer-${PEER_SEQ}`,
+        base_url: baseUrl,
+        instance_did: `did:theourgia:${host}`,
+        label: input.label ?? null,
+        status: "successful",
+        added_at: now,
+        last_seen_at: now,
+        capability_token: "mock-capability-token",
+      };
+      const { capability_token: _token, ...listed } = created;
+      FEDERATION_PEERS.push(listed);
+      return created;
+    }
+  }
+
+  const peerMatch = /^\/api\/v1\/federation\/peers\/([^/]+)$/.exec(bare);
+  if (peerMatch && method === "DELETE") {
+    const idx = FEDERATION_PEERS.findIndex((p) => p.id === peerMatch[1]);
+    if (idx >= 0) FEDERATION_PEERS.splice(idx, 1);
+    return null;
+  }
+
+  return undefined;
+}
+
+// ── Mode A vault-key rotation fixture state + handler (v1-027) ──────
+//
+// The mock vault ships with one prior rotation in history so the
+// trusted-history list renders. POST /keys/rotate retires the current
+// key and starts a "running" rotation; the NEXT status poll completes
+// it and appends to history — one round-trip of visible progress
+// without timers.
+
+let KEY_SEQ = 1;
+
+function mockFingerprint(): string {
+  // 64 hex chars, deterministic per key within a page session.
+  const seed = `mock-vault-key-${KEY_SEQ}`;
+  let out = "";
+  for (let i = 0; out.length < 64; i += 1) {
+    const code = seed.charCodeAt(i % seed.length) * (i + 7) * KEY_SEQ;
+    out += (code % 256).toString(16).padStart(2, "0");
+  }
+  return out.slice(0, 64);
+}
+
+function mintMockKey(createdAt: string): KeyRotationCurrentKey {
+  KEY_SEQ += 1;
+  return {
+    key_id: `vk-${KEY_SEQ.toString().padStart(4, "0")}`,
+    fingerprint_sha256: mockFingerprint(),
+    created_at: createdAt,
+  };
+}
+
+const KEY_ROTATION_STATE: {
+  current: KeyRotationCurrentKey;
+  rotation: KeyRotationRead | null;
+  pendingRetireFingerprint: string | null;
+  history: KeyRotationHistoryItem[];
+} = {
+  current: mintMockKey("2026-05-04T09:00:00Z"),
+  rotation: {
+    id: "rot-0001",
+    state: "done",
+    rows_total: 34,
+    rows_done: 34,
+    started_at: "2026-05-04T09:00:00Z",
+    finished_at: "2026-05-04T09:02:00Z",
+    error: null,
+  },
+  pendingRetireFingerprint: null,
+  history: [
+    {
+      rotation_id: "rot-0001",
+      state: "done",
+      retired_key_fingerprint_sha256:
+        "3f2a9c81d5b04e7f6a1c8d92e0b35f47a6d1c0e9b82f5a34c7d60e18f92ab450",
+      retired_at: "2026-05-04T09:02:00Z",
+      rows_total: 34,
+      rows_done: 34,
+    },
+  ],
+};
+
+function keyRotationFixture(method: string, bare: string): unknown {
+  if (bare === "/api/v1/keys/rotate" && method === "POST") {
+    const now = nowIso();
+    KEY_ROTATION_STATE.pendingRetireFingerprint = KEY_ROTATION_STATE.current.fingerprint_sha256;
+    KEY_ROTATION_STATE.current = mintMockKey(now);
+    KEY_ROTATION_STATE.rotation = {
+      id: `rot-${Date.now()}`,
+      state: "running",
+      rows_total: 34,
+      rows_done: 8,
+      started_at: now,
+      finished_at: null,
+      error: null,
+    };
+    return {
+      current_key: { ...KEY_ROTATION_STATE.current },
+      rotation: { ...KEY_ROTATION_STATE.rotation },
+    } satisfies KeyRotationStatusResponse;
+  }
+
+  if (bare === "/api/v1/keys/rotation-status" && method === "GET") {
+    const rotation = KEY_ROTATION_STATE.rotation;
+    if (rotation && rotation.state === "running") {
+      const now = nowIso();
+      rotation.state = "done";
+      rotation.rows_done = rotation.rows_total;
+      rotation.finished_at = now;
+      KEY_ROTATION_STATE.history.unshift({
+        rotation_id: rotation.id,
+        state: "done",
+        retired_key_fingerprint_sha256: KEY_ROTATION_STATE.pendingRetireFingerprint,
+        retired_at: now,
+        rows_total: rotation.rows_total,
+        rows_done: rotation.rows_done,
+      });
+      KEY_ROTATION_STATE.pendingRetireFingerprint = null;
+    }
+    return {
+      current_key: { ...KEY_ROTATION_STATE.current },
+      rotation: rotation ? { ...rotation } : null,
+    } satisfies KeyRotationStatusResponse;
+  }
+
+  if (bare === "/api/v1/keys/history" && method === "GET") {
+    return { items: KEY_ROTATION_STATE.history.map((h) => ({ ...h })) };
   }
 
   return undefined;

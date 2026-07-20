@@ -127,6 +127,35 @@ export interface UpdateEntryBodyInput {
   body: string;
 }
 
+/**
+ * One row from ``GET /api/v1/entries/{id}/revisions`` (v1-028).
+ *
+ * Version history is debounced server-side: one snapshot per ten
+ * minutes of editing, with state transitions (visibility / publish)
+ * always snapshotting; at most 200 retained per entry. Sealed
+ * entries keep no server-readable history — the endpoints 403.
+ */
+export interface EntryRevisionListItem {
+  id: string;
+  revision_number: number;
+  created_at: string; // ISO 8601
+  title: string;
+  /** Short plaintext preview extracted from the revision body. */
+  body_excerpt: string;
+}
+
+/** Full revision — ``GET /api/v1/entries/{id}/revisions/{revId}``. */
+export interface EntryRevisionRead {
+  id: string;
+  revision_number: number;
+  created_at: string; // ISO 8601
+  title: string;
+  /** Tiptap doc serialised as JSON (null for legacy empty bodies). */
+  body: string | null;
+  /** e.g. "Before publish" / "Before restore to revision N". */
+  edit_summary: string | null;
+}
+
 /** Query for ``GET /api/v1/astro/chart``. */
 export interface ChartRequestInput {
   /** Instant (ISO 8601). The backend treats naive datetimes as UTC. */
@@ -1456,6 +1485,47 @@ export interface MySessionsListResponse {
   sessions: MySessionRead[];
 }
 
+// ─── Mode A vault-key rotation (v1-027 · Phase 15 B5) ───────────────
+// Mirrors backend/theourgia/api/routers/v1/keys.py exactly. Key
+// material never crosses the wire — fingerprints are SHA-256 hex of
+// the *wrapped* DEK (ciphertext under the master key).
+
+export type KeyRotationState = "pending" | "running" | "done" | "failed";
+
+export interface KeyRotationCurrentKey {
+  key_id: string;
+  fingerprint_sha256: string;
+  created_at: string;
+}
+
+export interface KeyRotationRead {
+  id: string;
+  state: KeyRotationState;
+  rows_total: number;
+  rows_done: number;
+  started_at: string | null;
+  finished_at: string | null;
+  error: string | null;
+}
+
+export interface KeyRotationStatusResponse {
+  current_key: KeyRotationCurrentKey | null;
+  rotation: KeyRotationRead | null;
+}
+
+export interface KeyRotationHistoryItem {
+  rotation_id: string;
+  state: KeyRotationState;
+  retired_key_fingerprint_sha256: string | null;
+  retired_at: string | null;
+  rows_total: number;
+  rows_done: number;
+}
+
+export interface KeyRotationHistoryResponse {
+  items: KeyRotationHistoryItem[];
+}
+
 // ─── WebAuthn (Phase 15) ────────────────────────────────────────────
 
 export interface WebauthnCredentialRead {
@@ -1983,4 +2053,28 @@ export interface BundledPackageRead {
 
 export interface BundledPackageListResponse {
   bundles: BundledPackageRead[];
+}
+
+/**
+ * One known federation peer — ``GET /api/v1/federation/peers``
+ * (v1-026). ``status`` is the handshake vocabulary the Network
+ * Browser renders: successful / pending / refused / blocked.
+ * No reputation fields, by design (H08 honesty rules).
+ */
+export interface FederationPeerRead {
+  id: string;
+  base_url: string;
+  instance_did: string;
+  label: string | null;
+  status: string;
+  added_at: string;
+  last_seen_at: string | null;
+}
+
+/**
+ * Response of ``POST /api/v1/federation/peers``. The capability
+ * token appears HERE and only here — list reads never include it.
+ */
+export interface FederationPeerCreated extends FederationPeerRead {
+  capability_token: string | null;
 }

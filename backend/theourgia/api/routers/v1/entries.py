@@ -13,6 +13,7 @@ should also flip ``Entry.owner_id`` to NOT NULL.
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
 from uuid import UUID
@@ -23,6 +24,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import CurrentUser, get_db_session
+from theourgia.core.entries.revisions import (
+    restore_revision,
+    revision_excerpt,
+    snapshot_revision_guarded,
+)
 from theourgia.core.traditions import (
     RESPECT_SOURCE_DETAIL,
     closed_tradition_conflicts,
@@ -31,11 +37,14 @@ from theourgia.core.traditions import (
 from theourgia.models.entries import (
     EncryptionMode,
     Entry,
+    EntryRevision,
     EntryType,
     EntryVisibility,
 )
 
 __all__ = ["apply_publish", "router"]
+
+_log = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -551,6 +560,27 @@ async def update_entry(
             if new_tradition_tags is not None
             else row.tradition_tags,
         )
+    # v1-028 — version history. Snapshot the PRIOR state before
+    # mutating. Content edits (title / body / type) are debounced to
+    # one revision per 10 minutes; a visibility change always forces
+    # a revision (it is a meaningful state transition the user will
+    # want a restore point at). See core.entries.revisions.
+    content_changing = (
+        (payload.title is not None and payload.title != row.title)
+        or (payload.body is not None and payload.body != row.body)
+        or (payload.type is not None and EntryType(payload.type) != row.type)
+    )
+    visibility_changing = (
+        payload.visibility is not None
+        and EntryVisibility(payload.visibility) != row.visibility
+    )
+    if content_changing or visibility_changing:
+        await snapshot_revision_guarded(
+            session,
+            row,
+            edited_by=current_user.id,
+            force=visibility_changing,
+        )
     if payload.title is not None:
         row.title = payload.title
     if payload.type is not None:
@@ -619,6 +649,12 @@ async def update_entry_body(
                 "encrypted payload endpoint."
             ),
         )
+    # v1-028 — version history. Auto-save fires every ~1 s; the
+    # snapshot helper debounces to one revision per 10 minutes of
+    # editing (see core.entries.revisions). Snapshot the PRIOR body
+    # before overwriting, and only when the body actually changed.
+    if payload.body != row.body:
+        await snapshot_revision_guarded(session, row, edited_by=current_user.id)
     row.body = payload.body
     await session.commit()
     await session.refresh(row)
@@ -646,6 +682,10 @@ async def apply_publish(
       timestamp so "when was this published" doesn't drift.
     - b108-2ht: publish ALSO promotes visibility to PUBLIC ("publish
       means public").
+    - v1-026: a fresh publish queues AP Create(Note) deliveries to
+      the owner's accepted followers (transport- and settings-gated
+      inside the helper). Failure-isolated — an enqueue error can
+      never fail the publish itself.
     """
     if row.encryption_mode == EncryptionMode.SEALED:
         raise HTTPException(
@@ -666,6 +706,18 @@ async def apply_publish(
     if row.visibility != EntryVisibility.PUBLIC:
         row.visibility = EntryVisibility.PUBLIC
         changed = True
+    if changed:
+        # Late import: keeps the federation stack out of the router's
+        # import graph for instances that never touch it.
+        try:
+            from theourgia.core.federation import ap_outbound
+
+            await ap_outbound.enqueue_create_for_entry(session, row)
+        except Exception:  # noqa: BLE001 — publish must never fail on enqueue
+            _log.warning(
+                "entries.publish.ap_broadcast_failed",
+                extra={"entry_id": str(row.id)},
+            )
     return changed
 
 
@@ -691,6 +743,23 @@ async def publish_entry(
     row = (await session.execute(stmt)).scalar_one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail=f"Entry {entry_id} not found")
+    # v1-028 — publish is a meaningful state transition: force a
+    # revision of the prior state (bypassing the 10-minute debounce)
+    # when this publish will actually change something. Snapshot BEFORE
+    # apply_publish mutates the row; if apply_publish refuses, the
+    # session rolls back on the raised HTTPException (get_db_session),
+    # so no stray revision persists.
+    will_change = (
+        row.published_at is None or row.visibility != EntryVisibility.PUBLIC
+    )
+    if will_change:
+        await snapshot_revision_guarded(
+            session,
+            row,
+            edited_by=current_user.id,
+            force=True,
+            edit_summary="Before publish",
+        )
     if await apply_publish(session, row):
         await session.commit()
         await session.refresh(row)
@@ -721,3 +790,158 @@ async def archive_entry(
     row.deleted_at = _dt.now(tz=UTC)
     await session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ── v1-028: version history (FEATURES §2) ────────────────────────
+#
+# Revision writes live in ``theourgia.core.entries.revisions`` (the
+# hooks above in update_entry / update_entry_body / publish_entry).
+# These endpoints browse + restore. All three refuse sealed entries
+# with 403 — sealed entries keep no server-readable history (same
+# precedent as the sealed body-PATCH refusal; rationale documented in
+# the core module).
+
+
+class EntryRevisionListItem(BaseModel):
+    """One row of ``GET /entries/{id}/revisions`` — list shape."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    revision_number: int
+    created_at: datetime
+    title: str
+    body_excerpt: str
+
+
+class EntryRevisionRead(BaseModel):
+    """Full revision — ``GET /entries/{id}/revisions/{rev_id}``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    revision_number: int
+    created_at: datetime
+    title: str
+    body: str | None
+    edit_summary: str | None
+
+
+async def _get_owned_unsealed_entry(
+    session: AsyncSession, entry_id: UUID, current_user_id: UUID
+) -> Entry:
+    stmt = select(Entry).where(
+        Entry.id == entry_id,
+        Entry.deleted_at.is_(None),
+        Entry.owner_id == current_user_id,
+    )
+    row = (await session.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Entry {entry_id} not found")
+    if row.encryption_mode == EncryptionMode.SEALED:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "This entry is sealed. Sealed entries keep no "
+                "server-readable version history — plaintext snapshots "
+                "would defeat the seal."
+            ),
+        )
+    return row
+
+
+@router.get(
+    "/entries/{entry_id}/revisions",
+    summary="List an entry's revisions",
+    description=(
+        "Newest-first version history. Snapshots are debounced to one "
+        "per 10 minutes of editing (state transitions always snapshot); "
+        "at most 200 are retained per entry, oldest pruned."
+    ),
+    response_model=list[EntryRevisionListItem],
+)
+async def list_entry_revisions(
+    entry_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> list[EntryRevisionListItem]:
+    await _get_owned_unsealed_entry(session, entry_id, current_user.id)
+    stmt = (
+        select(EntryRevision)
+        .where(EntryRevision.entry_id == entry_id)
+        .order_by(EntryRevision.revision_number.desc())
+    )
+    rows = (await session.execute(stmt)).scalars().all()
+    return [
+        EntryRevisionListItem(
+            id=str(rev.id),
+            revision_number=rev.revision_number,
+            created_at=rev.created_at,
+            title=rev.title_at_revision,
+            body_excerpt=revision_excerpt(rev),
+        )
+        for rev in rows
+    ]
+
+
+async def _get_revision_of(
+    session: AsyncSession, entry_id: UUID, revision_id: UUID
+) -> EntryRevision:
+    stmt = select(EntryRevision).where(
+        EntryRevision.id == revision_id,
+        EntryRevision.entry_id == entry_id,
+    )
+    rev = (await session.execute(stmt)).scalar_one_or_none()
+    if rev is None:
+        raise HTTPException(
+            status_code=404, detail=f"Revision {revision_id} not found"
+        )
+    return rev
+
+
+@router.get(
+    "/entries/{entry_id}/revisions/{revision_id}",
+    summary="Get one revision (full body)",
+    response_model=EntryRevisionRead,
+)
+async def get_entry_revision(
+    entry_id: UUID,
+    revision_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> EntryRevisionRead:
+    await _get_owned_unsealed_entry(session, entry_id, current_user.id)
+    rev = await _get_revision_of(session, entry_id, revision_id)
+    return EntryRevisionRead(
+        id=str(rev.id),
+        revision_number=rev.revision_number,
+        created_at=rev.created_at,
+        title=rev.title_at_revision,
+        body=rev.body_at_revision,
+        edit_summary=rev.edit_summary,
+    )
+
+
+@router.post(
+    "/entries/{entry_id}/revisions/{revision_id}/restore",
+    summary="Restore an entry to a revision",
+    description=(
+        "Never destructive: the CURRENT state is written as a new "
+        "revision first, then the old content (title + body) is "
+        "applied. Visibility, type, and publish state never "
+        "time-travel."
+    ),
+    response_model=EntryRead,
+)
+async def restore_entry_revision(
+    entry_id: UUID,
+    revision_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> EntryRead:
+    row = await _get_owned_unsealed_entry(session, entry_id, current_user.id)
+    rev = await _get_revision_of(session, entry_id, revision_id)
+    await restore_revision(session, row, rev, edited_by=current_user.id)
+    await session.commit()
+    await session.refresh(row)
+    return _to_read(row)

@@ -30,6 +30,19 @@ AUTH_REQUIRED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("POST", "/api/v1/entries", {"title": "unauth", "type": "note"}),
     ("GET", "/api/v1/entries", None),
     ("GET", "/api/v1/entries/stats", None),
+    # Entry version history (v1-028). Doubly important: revisions hold
+    # prior plaintext of private entries.
+    (
+        "GET",
+        "/api/v1/entries/00000000-0000-0000-0000-000000000000/revisions",
+        None,
+    ),
+    (
+        "POST",
+        "/api/v1/entries/00000000-0000-0000-0000-000000000000/revisions/"
+        "00000000-0000-0000-0000-000000000001/restore",
+        None,
+    ),
     # Traditions (v1-001).
     ("GET", "/api/v1/traditions/closed-slugs", None),
     # Entities + alias-graph + views.
@@ -194,6 +207,17 @@ AUTH_REQUIRED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     }),
     ("POST", "/api/v1/memorial/key-share/verify", {
         "secret_b64": "QUFBQQ==",
+    }),
+    # Mode A vault-key rotation (v1-027 · Phase 15 B5). Doubly
+    # important: rotation is a security-sensitive vault operation.
+    ("POST", "/api/v1/keys/rotate", None),
+    ("GET", "/api/v1/keys/rotation-status", None),
+    ("GET", "/api/v1/keys/history", None),
+    # Federation peer directory (v1-026). Operator-facing; auth runs
+    # before the transport-disabled 503 check.
+    ("GET", "/api/v1/federation/peers", None),
+    ("POST", "/api/v1/federation/peers", {
+        "base_url": "https://peer.example.com",
     }),
 ]
 

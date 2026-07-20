@@ -258,6 +258,10 @@ const ROUTES: ReadonlyArray<[string, () => Promise<{ Component: React.ComponentT
     "ServitorsRoute",
     () => import("../ServitorsRoute.js").then((m) => ({ Component: m.ServitorsRoute })),
   ],
+  [
+    "KeyRotationRoute",
+    () => import("../KeyRotationRoute.js").then((m) => ({ Component: m.KeyRotationRoute })),
+  ],
 ];
 
 describe("route mount smoke suite", () => {

@@ -64,8 +64,12 @@ import type {
   EntityRecord,
   EntryDetailRecord,
   EntryRecord,
+  EntryRevisionListItem,
+  EntryRevisionRead,
   EntryStats,
   EntryType,
+  FederationPeerCreated,
+  FederationPeerRead,
   FeedServitorInput,
   FileAdvisoryInput,
   FulfillObligationInput,
@@ -74,6 +78,8 @@ import type {
   InitiationRead,
   InitiationStatusWire,
   InstalledBundleListResponse,
+  KeyRotationHistoryResponse,
+  KeyRotationStatusResponse,
   MagicSquareRecord,
   MaintainerQueueResponse,
   MeRead,
@@ -932,6 +938,43 @@ export function api(client: ApiClient) {
         method: "POST",
         signal: opts?.signal,
       });
+    },
+
+    /**
+     * Version history (v1-028) — newest-first revision list. Sealed
+     * entries 403 (they keep no server-readable history).
+     */
+    listEntryRevisions(
+      id: string,
+      opts?: { signal?: AbortSignal },
+    ): Promise<EntryRevisionListItem[]> {
+      return client.request<EntryRevisionListItem[]>(`/api/v1/entries/${id}/revisions`, {
+        signal: opts?.signal,
+      });
+    },
+
+    /** One revision with its full Tiptap-JSON body. */
+    getEntryRevision(
+      id: string,
+      revisionId: string,
+      opts?: { signal?: AbortSignal },
+    ): Promise<EntryRevisionRead> {
+      return client.request<EntryRevisionRead>(`/api/v1/entries/${id}/revisions/${revisionId}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    /**
+     * Restore an entry to a revision. Never destructive: the server
+     * writes the CURRENT state as a new revision first, then applies
+     * the old content (title + body only — visibility, type, and
+     * publish state never time-travel). Returns the updated detail.
+     */
+    restoreEntryRevision(id: string, revisionId: string): Promise<EntryDetailRecord> {
+      return client.request<EntryDetailRecord>(
+        `/api/v1/entries/${id}/revisions/${revisionId}/restore`,
+        { method: "POST" },
+      );
     },
 
     createEntry(input: CreateEntryInput): Promise<EntryRecord> {
@@ -2301,6 +2344,56 @@ export function api(client: ApiClient) {
       return client.request<MySessionsListResponse>("/api/v1/me/sessions/revoke-others", {
         method: "POST",
       });
+    },
+
+    // ── Federation peer directory (v1-026) ───────────────────────
+
+    listFederationPeers(opts?: { signal?: AbortSignal }): Promise<FederationPeerRead[]> {
+      return client.request<FederationPeerRead[]>("/api/v1/federation/peers", {
+        signal: opts?.signal,
+      });
+    },
+
+    /**
+     * Add a peer by URL. The backend verifies the URL by fetching its
+     * ``/.well-known/theourgia/actor`` document; the capability token
+     * in the response appears ONCE and is never listed again.
+     */
+    addFederationPeer(input: {
+      base_url: string;
+      label?: string | null;
+    }): Promise<FederationPeerCreated> {
+      return client.request<FederationPeerCreated>("/api/v1/federation/peers", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    removeFederationPeer(peerId: string): Promise<void> {
+      return client.request<void>(`/api/v1/federation/peers/${encodeURIComponent(peerId)}`, {
+        method: "DELETE",
+      });
+    },
+
+    // ── Mode A vault-key rotation (v1-027 · Phase 15 B5) ─────────
+
+    /**
+     * Start a vault-key rotation. The new active DEK exists as soon
+     * as this resolves; the batched re-encryption sweep runs on the
+     * worker. 409 when a rotation is already pending/running.
+     */
+    startKeyRotation(): Promise<KeyRotationStatusResponse> {
+      return client.request<KeyRotationStatusResponse>("/api/v1/keys/rotate", {
+        method: "POST",
+      });
+    },
+
+    getKeyRotationStatus(): Promise<KeyRotationStatusResponse> {
+      return client.request<KeyRotationStatusResponse>("/api/v1/keys/rotation-status");
+    },
+
+    listKeyRotationHistory(): Promise<KeyRotationHistoryResponse> {
+      return client.request<KeyRotationHistoryResponse>("/api/v1/keys/history");
     },
   };
 }

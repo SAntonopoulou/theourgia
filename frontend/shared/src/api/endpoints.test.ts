@@ -124,6 +124,47 @@ describe("endpoints — mock mode", () => {
     expect(typeof result.published_at).toBe("string");
   });
 
+  it("listEntryRevisions returns the seeded history newest-first with excerpts, no bodies", async () => {
+    const revs = await buildMock().listEntryRevisions("1");
+    expect(revs.length).toBeGreaterThanOrEqual(3);
+    const numbers = revs.map((r) => r.revision_number);
+    expect(numbers).toEqual([...numbers].sort((a, b) => b - a));
+    for (const rev of revs) {
+      expect(rev.body_excerpt.length).toBeGreaterThan(0);
+      expect("body" in rev).toBe(false);
+    }
+  });
+
+  it("getEntryRevision returns the full Tiptap body", async () => {
+    const m = buildMock();
+    const revs = await m.listEntryRevisions("1");
+    const oldest = revs[revs.length - 1]!;
+    const full = await m.getEntryRevision("1", oldest.id);
+    expect(full.body).toContain('"type":"doc"');
+    expect(full.title).toBe(oldest.title);
+  });
+
+  it("restoreEntryRevision saves the current state as a new revision first, then applies", async () => {
+    const m = buildMock();
+    const before = await m.listEntryRevisions("1");
+    const oldest = before[before.length - 1]!;
+    const detail = await m.restoreEntryRevision("1", oldest.id);
+    expect(detail.title).toBe(oldest.title);
+    // Never destructive: history grew by one.
+    const after = await m.listEntryRevisions("1");
+    expect(after.length).toBe(before.length + 1);
+    expect(after[0]!.revision_number).toBe(before[0]!.revision_number + 1);
+    expect(after[0]!.body_excerpt.length).toBeGreaterThan(0);
+    // The entry body now reads back as the restored revision's body.
+    const readBack = await m.getEntryDetail("1");
+    const restored = await m.getEntryRevision("1", oldest.id);
+    expect(readBack.body).toBe(restored.body);
+  });
+
+  it("listEntryRevisions by unknown entry throws NotFoundError", async () => {
+    await expect(buildMock().listEntryRevisions("does-not-exist")).rejects.toThrow(/not found/i);
+  });
+
   it("getEntryDetail by unknown id throws NotFoundError", async () => {
     await expect(buildMock().getEntryDetail("does-not-exist")).rejects.toThrow(/not found/i);
   });
@@ -467,6 +508,77 @@ describe("endpoints — magickal bundles (v1-020)", () => {
   it("bundlesExport resolves a Blob", async () => {
     const blob = await buildMock().bundlesExport("pantheon");
     expect(blob).toBeInstanceOf(Blob);
+  });
+
+  // ── Mode A vault-key rotation (v1-027) ─────────────────────────
+
+  it("getKeyRotationStatus returns a current key with a 64-hex fingerprint", async () => {
+    const status = await buildMock().getKeyRotationStatus();
+    expect(status.current_key).not.toBeNull();
+    expect(status.current_key?.fingerprint_sha256).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("listKeyRotationHistory returns retired-key items", async () => {
+    const history = await buildMock().listKeyRotationHistory();
+    expect(history.items.length).toBeGreaterThanOrEqual(1);
+    const item = history.items[history.items.length - 1]!;
+    expect(item.state).toBe("done");
+    expect(item.retired_key_fingerprint_sha256).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("startKeyRotation rotates the key and the next status poll completes it", async () => {
+    const m = buildMock();
+    const before = await m.getKeyRotationStatus();
+    const historyBefore = await m.listKeyRotationHistory();
+
+    const started = await m.startKeyRotation();
+    expect(started.rotation?.state).toBe("running");
+    // The new active key exists as soon as the rotation starts.
+    expect(started.current_key?.key_id).not.toBe(before.current_key?.key_id);
+
+    const after = await m.getKeyRotationStatus();
+    expect(after.rotation?.state).toBe("done");
+    expect(after.rotation?.rows_done).toBe(after.rotation?.rows_total);
+
+    // The retired key's fingerprint lands in history.
+    const historyAfter = await m.listKeyRotationHistory();
+    expect(historyAfter.items.length).toBe(historyBefore.items.length + 1);
+    expect(historyAfter.items[0]!.retired_key_fingerprint_sha256).toBe(
+      before.current_key?.fingerprint_sha256,
+    );
+  });
+});
+
+describe("endpoints — federation peer directory (v1-026)", () => {
+  it("listFederationPeers starts EMPTY — no pretend peers", async () => {
+    const peers = await buildMock().listFederationPeers();
+    expect(peers).toEqual([]);
+  });
+
+  it("addFederationPeer verifies + stores, returning the token ONCE", async () => {
+    const m = buildMock();
+    const created = await m.addFederationPeer({
+      base_url: "https://aurora.example/",
+      label: "Hermetic",
+    });
+    expect(created.base_url).toBe("https://aurora.example");
+    expect(created.instance_did).toBe("did:theourgia:aurora.example");
+    expect(created.status).toBe("successful");
+    expect(created.capability_token).toBeTruthy();
+
+    // The token never appears in list reads.
+    const listed = await m.listFederationPeers();
+    const row = listed.find((p) => p.id === created.id);
+    expect(row).toBeDefined();
+    expect(row && "capability_token" in row).toBe(false);
+  });
+
+  it("removeFederationPeer removes the row from the listing", async () => {
+    const m = buildMock();
+    const created = await m.addFederationPeer({ base_url: "https://terra.example" });
+    await m.removeFederationPeer(created.id);
+    const listed = await m.listFederationPeers();
+    expect(listed.some((p) => p.id === created.id)).toBe(false);
   });
 });
 

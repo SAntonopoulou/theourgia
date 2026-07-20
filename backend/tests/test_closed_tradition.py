@@ -58,6 +58,9 @@ class _Result:
     def scalar_one_or_none(self) -> Any:
         return self._scalar
 
+    def scalar_one(self) -> Any:
+        return self._scalar
+
     def scalars(self) -> "_Result":
         return self
 
@@ -325,7 +328,13 @@ async def test_patch_replaces_tag_lists() -> None:
 
 async def test_patch_omitting_tags_leaves_them_unchanged() -> None:
     row = _entry(tags=["keep"], tradition_tags=["Hellenic"])
-    session = _FakeSession([_Result(scalar=row)])
+    session = _FakeSession([
+        _Result(scalar=row),
+        # v1-028 — title change triggers a revision snapshot:
+        # latest-revision select + retention-count select.
+        _Result(),
+        _Result(scalar=0),
+    ])
     read = await update_entry(
         row.id,
         EntryUpdate(title="Renamed"),
@@ -412,6 +421,10 @@ async def test_publish_with_closed_tag_is_403() -> None:
     row = _entry(tradition_tags=["diné"])
     session = _FakeSession([
         _Result(scalar=row),
+        # v1-028 — publish forces a revision snapshot before
+        # apply_publish: latest-revision select + retention count.
+        _Result(),
+        _Result(scalar=0),
         _Result(scalar=_setting_row("hopi, diné")),
     ])
     with pytest.raises(HTTPException) as excinfo:
@@ -424,6 +437,9 @@ async def test_publish_with_open_tradition_tag_succeeds() -> None:
     row = _entry(tradition_tags=["Hellenic"])
     session = _FakeSession([
         _Result(scalar=row),
+        # v1-028 — pre-publish revision snapshot (latest + count).
+        _Result(),
+        _Result(scalar=0),
         _Result(scalar=_setting_row("hopi, diné")),
     ])
     read = await publish_entry(row.id, session, _user())  # type: ignore[arg-type]
@@ -435,6 +451,9 @@ async def test_empty_setting_allows_everything() -> None:
     row = _entry(tradition_tags=["Diné"])
     session = _FakeSession([
         _Result(scalar=row),
+        # v1-028 — pre-publish revision snapshot (latest + count).
+        _Result(),
+        _Result(scalar=0),
         _Result(scalar=None),  # no instance_setting row
     ])
     read = await publish_entry(row.id, session, _user())  # type: ignore[arg-type]
