@@ -35,7 +35,7 @@ from theourgia.models.entries import (
     EntryVisibility,
 )
 
-__all__ = ["router"]
+__all__ = ["apply_publish", "router"]
 
 router = APIRouter()
 
@@ -110,6 +110,8 @@ class EntryRead(BaseModel):
     # v1-001 — flexible tags + tradition tags.
     tags: list[str] = []
     tradition_tags: list[str] = []
+    # v1-018 — posthumous publication flag (plan/15 §13).
+    publish_on_death: bool = False
 
 
 class EntryCreate(BaseModel):
@@ -144,6 +146,9 @@ class EntryCreate(BaseModel):
     # ``_normalize_tags`` (strip, drop empties, dedupe, caps).
     tags: list[str] = Field(default_factory=list)
     tradition_tags: list[str] = Field(default_factory=list)
+    # v1-018 — publish this entry when memorial mode activates (and
+    # posthumous publications are enabled on the memorial config).
+    publish_on_death: bool = False
 
 
 class EntryWindowCounts(BaseModel):
@@ -249,6 +254,7 @@ def _to_read(row: Entry) -> EntryRead:
         calendar_snapshot=row.calendar_snapshot,
         tags=list(row.tags),
         tradition_tags=list(row.tradition_tags),
+        publish_on_death=row.publish_on_death,
     )
 
 
@@ -435,6 +441,7 @@ async def create_entry(
         health_notes=payload.health_notes,
         tags=tags,
         tradition_tags=tradition_tags,
+        publish_on_death=payload.publish_on_death,
         parent_id=UUID(payload.parent_id) if payload.parent_id else None,
         scheduled_publish_at=payload.scheduled_publish_at,
         authored_by_persona_id=(
@@ -490,6 +497,8 @@ class EntryUpdate(BaseModel):
     # v1-001 — None means unchanged.
     tags: list[str] | None = None
     tradition_tags: list[str] | None = None
+    # v1-018 — None means unchanged.
+    publish_on_death: bool | None = None
 
 
 @router.patch(
@@ -558,6 +567,8 @@ async def update_entry(
         row.tags = new_tags
     if new_tradition_tags is not None:
         row.tradition_tags = new_tradition_tags
+    if payload.publish_on_death is not None:
+        row.publish_on_death = payload.publish_on_death
     await session.commit()
     await session.refresh(row)
     return _to_read(row)
@@ -617,6 +628,47 @@ async def update_entry_body(
 # ── b108-2hm: publish ────────────────────────────────────────────
 
 
+async def apply_publish(
+    session: AsyncSession, row: Entry, *, now: datetime | None = None,
+) -> bool:
+    """Apply the publish transition to ``row`` — the ONE publish path.
+
+    Used by the publish endpoint below and by the memorial sweep's
+    posthumous release (v1-018), so the refusal rules can never drift
+    between the two. Raises :class:`HTTPException` on refusal (the
+    sweep catches it and log-skips); returns whether anything changed.
+    Caller commits.
+
+    - Sealed entries refuse (defence in depth — sealed content never
+      goes public).
+    - Closed-tradition entries refuse (respect-source rule, v1-001).
+    - Idempotent — an already-published entry keeps its original
+      timestamp so "when was this published" doesn't drift.
+    - b108-2ht: publish ALSO promotes visibility to PUBLIC ("publish
+      means public").
+    """
+    if row.encryption_mode == EncryptionMode.SEALED:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Sealed entries cannot be published. Sealed content is "
+                "opaque to the server; unsealing before publish would "
+                "defeat the whole point of the seal."
+            ),
+        )
+    # v1-001 — respect-source rule: publish promotes visibility to
+    # PUBLIC, so closed-tradition entries must refuse here too.
+    await _reject_closed_tradition_public(session, row.tradition_tags)
+    changed = False
+    if row.published_at is None:
+        row.published_at = now or datetime.now(tz=UTC)
+        changed = True
+    if row.visibility != EntryVisibility.PUBLIC:
+        row.visibility = EntryVisibility.PUBLIC
+        changed = True
+    return changed
+
+
 @router.post(
     "/entries/{entry_id}/publish",
     summary="Publish an entry",
@@ -631,8 +683,6 @@ async def publish_entry(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     current_user: CurrentUser,
 ) -> EntryRead:
-    from datetime import UTC, datetime as _dt
-
     stmt = select(Entry).where(
         Entry.id == entry_id,
         Entry.deleted_at.is_(None),
@@ -641,35 +691,7 @@ async def publish_entry(
     row = (await session.execute(stmt)).scalar_one_or_none()
     if row is None:
         raise HTTPException(status_code=404, detail=f"Entry {entry_id} not found")
-    if row.encryption_mode == EncryptionMode.SEALED:
-        raise HTTPException(
-            status_code=403,
-            detail=(
-                "Sealed entries cannot be published. Sealed content is "
-                "opaque to the server; unsealing before publish would "
-                "defeat the whole point of the seal."
-            ),
-        )
-    # v1-001 — respect-source rule: publish promotes visibility to
-    # PUBLIC, so closed-tradition entries must refuse here too.
-    await _reject_closed_tradition_public(session, row.tradition_tags)
-    # Idempotent — publishing an already-published entry keeps the
-    # original timestamp so "when was this published" doesn't drift
-    # on repeated clicks.
-    #
-    # b108-2ht: Publish now ALSO promotes visibility to PUBLIC. Before
-    # this, hitting Publish left visibility=personal, so the entry
-    # appeared "published" in the Editor but never surfaced in the
-    # public blog — the user's mental model ("publish means public")
-    # was silently broken.
-    changed = False
-    if row.published_at is None:
-        row.published_at = _dt.now(tz=UTC)
-        changed = True
-    if row.visibility != EntryVisibility.PUBLIC:
-        row.visibility = EntryVisibility.PUBLIC
-        changed = True
-    if changed:
+    if await apply_publish(session, row):
         await session.commit()
         await session.refresh(row)
     return _to_read(row)

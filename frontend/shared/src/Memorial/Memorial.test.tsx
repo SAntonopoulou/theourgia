@@ -171,4 +171,104 @@ describe("MemorialModeSurface", () => {
     );
     expect(container.textContent).toContain("not yet");
   });
+
+  // ── v1-018 · executor key-share ─────────────────────────────────
+
+  it("hides the key-share block when the handler is absent (back-compat)", () => {
+    const { container } = render(
+      <MemorialModeSurface
+        config={makeConfig()}
+        onCheckIn={vi.fn()}
+        onSave={vi.fn()}
+        onTrigger={vi.fn()}
+        onReactivate={vi.fn()}
+      />,
+    );
+    expect(container.querySelector('[data-role="key-share"]')).toBeNull();
+  });
+
+  it("generates a key-share with the composed parameters and clears the secret", () => {
+    const onGenerate = vi.fn();
+    const { container } = render(
+      <MemorialModeSurface
+        config={makeConfig()}
+        onCheckIn={vi.fn()}
+        onSave={vi.fn()}
+        onTrigger={vi.fn()}
+        onReactivate={vi.fn()}
+        onGenerateKeyShare={onGenerate}
+      />,
+    );
+    const secret = container.querySelector(
+      '[data-role="key-share-secret"]',
+    ) as HTMLInputElement;
+    const generate = container.querySelector(
+      '[data-role="generate-key-share"]',
+    ) as HTMLButtonElement;
+
+    // Disabled until a secret is provided.
+    expect(generate.disabled).toBe(true);
+    fireEvent.change(secret, { target: { value: "vault-key-material" } });
+    expect(generate.disabled).toBe(false);
+
+    fireEvent.click(generate);
+    expect(onGenerate).toHaveBeenCalledTimes(1);
+    expect(onGenerate.mock.calls[0]![0]).toEqual({
+      secret: "vault-key-material",
+      shares: 3,
+      threshold: 2,
+    });
+    // The secret field clears after handing off.
+    expect(secret.value).toBe("");
+  });
+
+  it("refuses a threshold above the share count", () => {
+    const onGenerate = vi.fn();
+    const { container } = render(
+      <MemorialModeSurface
+        config={makeConfig()}
+        onCheckIn={vi.fn()}
+        onSave={vi.fn()}
+        onTrigger={vi.fn()}
+        onReactivate={vi.fn()}
+        onGenerateKeyShare={onGenerate}
+      />,
+    );
+    const secret = container.querySelector(
+      '[data-role="key-share-secret"]',
+    ) as HTMLInputElement;
+    const threshold = container.querySelector(
+      '[data-role="key-share-threshold"]',
+    ) as HTMLInputElement;
+    const generate = container.querySelector(
+      '[data-role="generate-key-share"]',
+    ) as HTMLButtonElement;
+
+    fireEvent.change(secret, { target: { value: "s" } });
+    fireEvent.change(threshold, { target: { value: "5" } });
+    expect(generate.disabled).toBe(true);
+  });
+
+  it("shows the one-time shares and the existing key-share status", () => {
+    const { container } = render(
+      <MemorialModeSurface
+        config={makeConfig({
+          key_share: { n: 3, k: 2, created_at: "2026-07-16T12:00:00Z" },
+        })}
+        onCheckIn={vi.fn()}
+        onSave={vi.fn()}
+        onTrigger={vi.fn()}
+        onReactivate={vi.fn()}
+        onGenerateKeyShare={vi.fn()}
+        generatedShares={["AQID", "AgME"]}
+      />,
+    );
+    const status = container.querySelector('[data-role="key-share-status"]');
+    expect(status?.textContent).toContain("2 of 3 shares");
+    const shares = container.querySelector('[data-role="generated-shares"]');
+    expect(shares).not.toBeNull();
+    expect(shares?.textContent).toContain("AQID");
+    expect(shares?.textContent).toContain("AgME");
+    expect(shares?.textContent).toContain("shown once and never stored");
+  });
 });

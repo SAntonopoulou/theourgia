@@ -331,6 +331,13 @@ class Entry(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     # visibility="public" and comments_enabled=True are surfaced.
     comments_enabled: bool = Field(default=False, nullable=False)
 
+    # v1-018 — posthumous publication flag (plan/15 §13). When the
+    # vault memorializes AND the owner enabled posthumous publications,
+    # the hourly memorial sweep publishes flagged, still-unpublished
+    # entries through the same code path as the publish endpoint.
+    # Sealed and closed-tradition entries are never auto-published.
+    publish_on_death: bool = Field(default=False, nullable=False)
+
 
 class EntryRevision(IDMixin, TimestampMixin, table=True):
     """One revision in the history of an :class:`Entry`.

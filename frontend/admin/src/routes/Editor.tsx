@@ -59,10 +59,21 @@ interface VisibilityChipProps {
   entryId: string | null;
   visibility: EntityVisibility;
   sealed: boolean;
-  onChange: (next: { visibility?: EntityVisibility; sealed?: boolean }) => void;
+  publishOnDeath: boolean;
+  onChange: (next: {
+    visibility?: EntityVisibility;
+    sealed?: boolean;
+    publish_on_death?: boolean;
+  }) => void;
 }
 
-function VisibilityChip({ entryId, visibility, sealed, onChange }: VisibilityChipProps) {
+function VisibilityChip({
+  entryId,
+  visibility,
+  sealed,
+  publishOnDeath,
+  onChange,
+}: VisibilityChipProps) {
   const [open, setOpen] = useState(false);
   const [downgradeTarget, setDowngradeTarget] = useState<EntityVisibility | null>(null);
   const [sealDialogOpen, setSealDialogOpen] = useState(false);
@@ -212,6 +223,43 @@ function VisibilityChip({ entryId, visibility, sealed, onChange }: VisibilityChi
                 <path d="M8 11V8a4 4 0 0 1 8 0v3" />
               </svg>
               {sealed ? "Sealed — click to unseal" : "Seal this entry"}
+            </button>
+          </div>
+          <div>
+            <div
+              style={{
+                fontFamily: "var(--font-ui)",
+                fontSize: 10.5,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "var(--ink-mute)",
+                marginBottom: 8,
+              }}
+            >
+              Memorial
+            </div>
+            <button
+              type="button"
+              onClick={() => onChange({ publish_on_death: !publishOnDeath })}
+              data-role="publish-on-death-toggle"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                width: "100%",
+                padding: "8px 10px",
+                border: "1px solid var(--line)",
+                borderRadius: "var(--r-sm)",
+                background: publishOnDeath ? "var(--accent-soft)" : "transparent",
+                color: "var(--ink)",
+                fontFamily: "var(--font-ui)",
+                fontSize: 12.5,
+                cursor: "pointer",
+              }}
+            >
+              {publishOnDeath
+                ? "Publishes after memorial trigger — click to disable"
+                : "Publish after memorial trigger"}
             </button>
           </div>
         </div>
@@ -369,6 +417,8 @@ export function Editor() {
   const [publishedAt, setPublishedAt] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<EntityVisibility>("personal");
   const [sealed, setSealed] = useState<boolean>(false);
+  // v1-018 — posthumous publication flag.
+  const [publishOnDeath, setPublishOnDeath] = useState<boolean>(false);
   // b108-2hw: editable title. Before this, entries were locked to
   // "Untitled entry" from create — no UI to rename. The topbar
   // breadcrumb read title from `detail.data.title` (read-only), and
@@ -392,6 +442,7 @@ export function Editor() {
       setPublishedAt(detail.data.published_at);
       setVisibility(detail.data.visibility);
       setSealed(detail.data.sealed);
+      setPublishOnDeath(detail.data.publish_on_death ?? false);
       setTitle(detail.data.title ?? "");
       setTags(detail.data.tags ?? []);
       setTraditionTags(detail.data.tradition_tags ?? []);
@@ -468,12 +519,20 @@ export function Editor() {
   );
 
   const onVisibilityChange = useMemo(
-    () => async (patch: { visibility?: EntityVisibility; sealed?: boolean }) => {
+    () =>
+      async (patch: {
+        visibility?: EntityVisibility;
+        sealed?: boolean;
+        publish_on_death?: boolean;
+      }) => {
       if (entryId === null) return;
       // Optimistic update — local state moves immediately so the chip
       // feels responsive; PATCH catches up in the background.
       if (patch.visibility !== undefined) setVisibility(patch.visibility);
       if (patch.sealed !== undefined) setSealed(patch.sealed);
+      if (patch.publish_on_death !== undefined) {
+        setPublishOnDeath(patch.publish_on_death);
+      }
       try {
         await apiMethods.updateEntry(entryId, patch);
       } catch (cause) {
@@ -547,6 +606,7 @@ export function Editor() {
           entryId={entryId}
           visibility={visibility}
           sealed={sealed}
+          publishOnDeath={publishOnDeath}
           onChange={onVisibilityChange}
         />
       ),
@@ -558,7 +618,7 @@ export function Editor() {
         />
       ),
     }),
-    [entryId, detail.data?.title, status, publishedAt, visibility, sealed, onVisibilityChange],
+    [entryId, detail.data?.title, status, publishedAt, visibility, sealed, publishOnDeath, onVisibilityChange],
   );
 
   if (entryId !== null && detail.status === "loading") {

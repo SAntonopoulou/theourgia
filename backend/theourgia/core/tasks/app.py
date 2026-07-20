@@ -112,6 +112,15 @@ def build_celery_app() -> Celery:
             "schedule": crontab(minute="*"),
             "options": {"queue": "default"},
         },
+        "theourgia.memorial.sweep": {
+            "task": "theourgia.core.tasks.memorial.run_memorial_sweep",
+            # Hourly — memorial state moves in days, so an hour of
+            # latency on the warning / trigger / posthumous release is
+            # invisible; every decision derives from persisted
+            # timestamps, so missed runs catch up on the next tick.
+            "schedule": crontab(minute=20),
+            "options": {"queue": "default"},
+        },
     }
 
     return app

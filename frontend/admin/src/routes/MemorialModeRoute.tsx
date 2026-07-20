@@ -28,6 +28,14 @@ function toastError(title: string, body: unknown): void {
   });
 }
 
+/** UTF-8-safe base64 — the key-share endpoint takes secret_b64. */
+function toBase64(value: string): string {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
 export function MemorialModeRoute() {
   useTopbar(
     () => ({
@@ -42,6 +50,8 @@ export function MemorialModeRoute() {
   const [config, setConfig] = useState<MemorialConfig | null>(null);
   const [confirmTrigger, setConfirmTrigger] = useState<boolean>(false);
   const [confirmReactivate, setConfirmReactivate] = useState<boolean>(false);
+  // v1-018 — shares from the latest generation; shown once, never stored.
+  const [generatedShares, setGeneratedShares] = useState<string[] | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -104,6 +114,24 @@ export function MemorialModeRoute() {
     }
   }, [load]);
 
+  const handleGenerateKeyShare = useCallback(
+    async (input: { secret: string; shares: number; threshold: number }) => {
+      try {
+        const result = await apiMethods.memorialKeyShare({
+          secret_b64: toBase64(input.secret),
+          shares: input.shares,
+          threshold: input.threshold,
+        });
+        setGeneratedShares(result.shares_b64);
+        await load();
+        toastOk("Key-share generated");
+      } catch (e) {
+        toastError("Could not generate the key-share", e);
+      }
+    },
+    [load],
+  );
+
   if (loading || !config) {
     return (
       <div style={{ padding: "var(--space-4)" }}>
@@ -121,6 +149,8 @@ export function MemorialModeRoute() {
         onSave={(p) => void handleSave(p)}
         onTrigger={() => setConfirmTrigger(true)}
         onReactivate={() => setConfirmReactivate(true)}
+        onGenerateKeyShare={(input) => void handleGenerateKeyShare(input)}
+        generatedShares={generatedShares}
       />
 
       <ConfirmDialog

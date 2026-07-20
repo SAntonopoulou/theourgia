@@ -31,7 +31,11 @@ def test_publish_source_promotes_visibility_to_public() -> None:
     appears on the /blog surface."""
     from inspect import getsource
 
-    src = getsource(entries_module.publish_entry)
+    # v1-018 extracted the transition to apply_publish (shared with
+    # the posthumous release sweep); guard the helper and pin that
+    # the endpoint still routes through it.
+    src = getsource(entries_module.apply_publish)
+    assert "apply_publish" in getsource(entries_module.publish_entry)
     assert "row.visibility != EntryVisibility.PUBLIC" in src
     assert "EntryVisibility.PUBLIC" in src
 
@@ -41,7 +45,11 @@ def test_publish_source_still_idempotent_on_timestamp() -> None:
     change — repeated Publish clicks keep the original timestamp."""
     from inspect import getsource
 
-    src = getsource(entries_module.publish_entry)
+    # v1-018 extracted the transition to apply_publish (shared with
+    # the posthumous release sweep); guard the helper and pin that
+    # the endpoint still routes through it.
+    src = getsource(entries_module.apply_publish)
+    assert "apply_publish" in getsource(entries_module.publish_entry)
     assert "row.published_at is None" in src
 
 
@@ -49,7 +57,11 @@ def test_publish_source_still_refuses_sealed() -> None:
     """The b108-2hm sealed guard must survive the b108-2ht change."""
     from inspect import getsource
 
-    src = getsource(entries_module.publish_entry)
+    # v1-018 extracted the transition to apply_publish (shared with
+    # the posthumous release sweep); guard the helper and pin that
+    # the endpoint still routes through it.
+    src = getsource(entries_module.apply_publish)
+    assert "apply_publish" in getsource(entries_module.publish_entry)
     assert "encryption_mode == EncryptionMode.SEALED" in src
 
 

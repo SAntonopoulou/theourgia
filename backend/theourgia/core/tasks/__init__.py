@@ -18,7 +18,14 @@ different broker swap the URL in their environment.
 from __future__ import annotations
 
 # Import side-effects: register tasks with the app
-from theourgia.core.tasks import backup, email, scheduler, transcription
+from theourgia.core.tasks import backup, email, memorial, scheduler, transcription
 from theourgia.core.tasks.app import celery_app
 
-__all__ = ["backup", "celery_app", "email", "scheduler", "transcription"]
+__all__ = [
+    "backup",
+    "celery_app",
+    "email",
+    "memorial",
+    "scheduler",
+    "transcription",
+]

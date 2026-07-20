@@ -84,12 +84,17 @@ def test_body_update_rejects_absurdly_large_bodies() -> None:
 def test_publish_source_refuses_sealed_entries() -> None:
     """Regression guard: sealed entries must not be publishable.
     Defence in depth on top of the SPA gate that already hides the
-    Publish button when sealed=true."""
+    Publish button when sealed=true.
+
+    v1-018 moved the transition into ``apply_publish`` — shared with
+    the memorial sweep's posthumous release — so the guard follows the
+    logic there, and the endpoint must still route through it."""
     from inspect import getsource
 
-    src = getsource(entries_module.publish_entry)
+    src = getsource(entries_module.apply_publish)
     assert "encryption_mode == EncryptionMode.SEALED" in src
     assert "Sealed entries cannot be published" in src
+    assert "apply_publish" in getsource(entries_module.publish_entry)
 
 
 def test_publish_source_is_idempotent() -> None:
@@ -98,7 +103,7 @@ def test_publish_source_is_idempotent() -> None:
     the record still says "published on {original date}"."""
     from inspect import getsource
 
-    src = getsource(entries_module.publish_entry)
+    src = getsource(entries_module.apply_publish)
     assert "row.published_at is None" in src
 
 

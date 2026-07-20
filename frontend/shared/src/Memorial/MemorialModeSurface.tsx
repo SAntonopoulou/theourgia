@@ -21,6 +21,13 @@ export type MemorialState =
   | "memorial_pending"
   | "memorialized";
 
+/** Stored key-share summary — parameters only, never share material. */
+export interface MemorialKeyShareInfo {
+  n: number;
+  k: number;
+  created_at: string;
+}
+
 export interface MemorialConfig {
   id: string;
   owner_id: string;
@@ -35,6 +42,10 @@ export interface MemorialConfig {
   state: MemorialState;
   days_until_warning: number | null;
   days_until_pending: number | null;
+  // v1-018 — optional so older fixtures keep validating.
+  warning_notified_at?: string | null;
+  executor_notified_at?: string | null;
+  key_share?: MemorialKeyShareInfo | null;
 }
 
 export interface MemorialModeSurfaceProps {
@@ -43,6 +54,18 @@ export interface MemorialModeSurfaceProps {
   onSave: (patch: Partial<MemorialConfig>) => void;
   onTrigger: () => void;
   onReactivate: () => void;
+  /**
+   * v1-018 — executor key-share. When provided, the executor section
+   * gains the generation flow; when absent the section stays as the
+   * plain contact fields (back-compat).
+   */
+  onGenerateKeyShare?: (input: {
+    secret: string;
+    shares: number;
+    threshold: number;
+  }) => void;
+  /** Shares generated this session — displayed once, never stored. */
+  generatedShares?: string[] | null;
   className?: string;
   style?: CSSProperties;
 }
@@ -67,6 +90,8 @@ export function MemorialModeSurface({
   onSave,
   onTrigger,
   onReactivate,
+  onGenerateKeyShare,
+  generatedShares,
   className,
   style,
 }: MemorialModeSurfaceProps) {
@@ -84,6 +109,10 @@ export function MemorialModeSurface({
   const [posthumous, setPosthumous] = useState<boolean>(
     config.posthumous_publications_enabled,
   );
+  // v1-018 — key-share form state.
+  const [keyShareSecret, setKeyShareSecret] = useState<string>("");
+  const [keyShareCount, setKeyShareCount] = useState<number>(3);
+  const [keyShareThreshold, setKeyShareThreshold] = useState<number>(2);
 
   const memorialized = config.state === "memorialized";
 
@@ -259,10 +288,143 @@ export function MemorialModeSurface({
               style={inputStyle}
             />
             <span style={hintStyle}>
-              Cryptographic key-share for executor unlock lands in a
-              future update. For now this is a contact field.
+              {onGenerateKeyShare
+                ? "If memorial mode ever activates, this address " +
+                  "receives a short factual notice with the guided steps."
+                : "Cryptographic key-share for executor unlock lands in " +
+                  "a future update. For now this is a contact field."}
             </span>
           </label>
+
+          {onGenerateKeyShare && (
+            <div data-role="key-share" style={{ marginTop: "var(--space-3)" }}>
+              <h4
+                style={{
+                  font: "var(--type-label)",
+                  color: "var(--ink)",
+                  marginBottom: "var(--space-2)",
+                }}
+              >
+                Executor key-share
+              </h4>
+              <p style={{ ...hintStyle, marginBottom: "var(--space-2)" }}>
+                Splits a secret you provide — your vault key material —
+                into shares for your executor(s). The shares appear once
+                and are never stored; only a fingerprint is kept so a
+                recovery can be checked later.
+              </p>
+              {config.key_share && (
+                <p
+                  data-role="key-share-status"
+                  style={{ ...hintStyle, marginBottom: "var(--space-2)" }}
+                >
+                  A key-share exists: {config.key_share.k} of{" "}
+                  {config.key_share.n} shares recover the secret, created{" "}
+                  {new Date(config.key_share.created_at).toLocaleDateString()}.
+                  Generating again replaces it — shares already handed out
+                  stop working.
+                </p>
+              )}
+              <label style={labelStyle}>
+                Secret to split
+                <input
+                  type="password"
+                  value={keyShareSecret}
+                  onChange={(e) => setKeyShareSecret(e.target.value)}
+                  placeholder="Paste the vault key material here"
+                  data-role="key-share-secret"
+                  style={inputStyle}
+                />
+                <span style={hintStyle}>
+                  Not stored. It is split into shares in one step and
+                  then discarded.
+                </span>
+              </label>
+              <label style={labelStyle}>
+                Shares to create
+                <input
+                  type="number"
+                  min={2}
+                  max={16}
+                  value={keyShareCount}
+                  onChange={(e) => setKeyShareCount(Number(e.target.value))}
+                  data-role="key-share-count"
+                  style={inputStyle}
+                />
+              </label>
+              <label style={labelStyle}>
+                Shares needed to recover
+                <input
+                  type="number"
+                  min={2}
+                  max={16}
+                  value={keyShareThreshold}
+                  onChange={(e) =>
+                    setKeyShareThreshold(Number(e.target.value))
+                  }
+                  data-role="key-share-threshold"
+                  style={inputStyle}
+                />
+                <span style={hintStyle}>
+                  Two of three is a sensible default: no single share
+                  opens anything, and one lost share is survivable.
+                </span>
+              </label>
+              <button
+                type="button"
+                disabled={
+                  !keyShareSecret ||
+                  keyShareThreshold > keyShareCount ||
+                  keyShareCount < 2 ||
+                  keyShareThreshold < 2
+                }
+                onClick={() => {
+                  onGenerateKeyShare({
+                    secret: keyShareSecret,
+                    shares: keyShareCount,
+                    threshold: keyShareThreshold,
+                  });
+                  setKeyShareSecret("");
+                }}
+                style={primaryButton}
+                data-role="generate-key-share"
+              >
+                Generate key-share
+              </button>
+              {generatedShares && generatedShares.length > 0 && (
+                <div
+                  data-role="generated-shares"
+                  style={{
+                    marginTop: "var(--space-3)",
+                    padding: "var(--space-3)",
+                    border: "1px solid var(--line-2)",
+                    borderRadius: "var(--radius-sm)",
+                    background: "var(--bg-2)",
+                  }}
+                >
+                  <p style={{ marginBottom: "var(--space-2)" }}>
+                    These shares are shown once and never stored. Give
+                    them to your executor(s) outside the app — paper in
+                    a safe place works well.
+                  </p>
+                  <ol
+                    style={{
+                      fontFamily: "var(--font-mono, monospace)",
+                      fontSize: 12,
+                      paddingLeft: "var(--space-4)",
+                      wordBreak: "break-all",
+                    }}
+                  >
+                    {generatedShares.map((share, i) => (
+                      <li key={i} style={{ marginBottom: 4 }}>
+                        {share}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+            </div>
+          )}
 
           <h3
             style={{

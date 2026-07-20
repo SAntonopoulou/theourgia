@@ -5,21 +5,22 @@ b108-2hg · FEATURES §18 (Digital inheritance / memorial mode).
 One row per user. Captures the check-in cadence, executor contact,
 the public "in memoriam" message, and — after a trigger — the
 timestamp the memorial mode came on. The state (active / warning
-/ pending / memorialized) is computed on the fly by the router;
-storing it would drift.
+/ pending / memorialized) is computed on the fly (see
+:mod:`theourgia.core.memorial`); storing it would drift.
 
-v1 covers **manual triggers only**. Automatic time-based triggers
-via a Celery beat task + cryptographic executor key-share land
-in a follow-up batch.
+v1-018 added the automatic time-based trigger (hourly Celery beat
+sweep in :mod:`theourgia.core.tasks.memorial`), the notification
+idempotency markers, and the executor key-share commitment envelope.
 """
 
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 from uuid import UUID
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field
 
 from theourgia.models.base import IDMixin, TimestampMixin
@@ -108,4 +109,34 @@ class MemorialConfig(IDMixin, TimestampMixin, table=True):
         default=None,
         sa_type=DateTime(timezone=True),
         sa_column_kwargs={"nullable": True},
+    )
+
+    # ── v1-018 follow-ups ─────────────────────────────────────────
+
+    # Idempotency marker: when the check-in reminder for the CURRENT
+    # lapse cycle was dispatched. Cleared on check-in so a future
+    # lapse can notify again. NULL = not yet notified this cycle.
+    warning_notified_at: Optional[datetime] = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"nullable": True},
+    )
+
+    # Idempotency marker: when the executor was told the vault entered
+    # memorial mode. Cleared on reactivate. NULL = not yet notified.
+    executor_notified_at: Optional[datetime] = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"nullable": True},
+    )
+
+    # Executor key-share commitment (v1-018). Stores ONLY the Shamir
+    # parameters and a SHA-256 commitment to the split secret — never
+    # the shares and never the secret itself. Shape:
+    #   {"v": 1, "algo": "shamir-gf256", "n": int, "k": int,
+    #    "commitment": "sha256:<hex>", "created_at": "<iso8601>"}
+    # See docs/architecture/memorial-key-share-threat-model.md.
+    key_share_envelope: Optional[dict[str, Any]] = Field(
+        default=None,
+        sa_column=Column(JSONB, nullable=True),
     )
