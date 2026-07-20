@@ -1,17 +1,22 @@
 """ORM models for cryptographic key material storage.
 
-Two tables:
+Three tables:
 
 - ``vault_key`` — per-vault data keys (DEKs) for Mode A, in wrapped form.
   At most one row per vault is ``active = true``; rotation creates a new
   active row and demotes the prior key (kept for decrypting older blobs
   until they have been re-encrypted with the new key).
 
+- ``key_rotation`` — one row per Mode A rotation run (v1-027 · Phase 15
+  B5). Tracks which key replaced which, plus the batched re-encryption
+  sweep's progress so a rotation is resumable and auditable. States are
+  plain strings (pending / running / done / failed) — no enums.
+
 - ``sealed_kdf_params`` — Argon2id parameters per sealed scope (typically
   per-user). The browser uses these together with the user's passphrase
   to derive the Mode B encryption key.
 
-Neither table holds plaintext key material; the wrapped DEK in
+None of these tables hold plaintext key material; the wrapped DEK in
 ``vault_key`` is encrypted by the server master key, and the KDF params
 in ``sealed_kdf_params`` are inputs to a passphrase-only derivation.
 """
@@ -30,6 +35,7 @@ from sqlalchemy import (
     Index,
     Integer,
     LargeBinary,
+    String,
     UniqueConstraint,
     func,
 )
@@ -37,7 +43,7 @@ from sqlmodel import Field
 
 from theourgia.models.base import IDMixin, TimestampMixin
 
-__all__ = ["VaultKey", "SealedKdfParams"]
+__all__ = ["VaultKey", "KeyRotation", "SealedKdfParams"]
 
 
 class VaultKey(IDMixin, TimestampMixin, table=True):
@@ -79,6 +85,79 @@ class VaultKey(IDMixin, TimestampMixin, table=True):
         default=None,
         sa_column=Column(DateTime(timezone=True), nullable=True),
         description="When this key was rotated out of active status",
+    )
+
+
+class KeyRotation(IDMixin, TimestampMixin, table=True):
+    """One Mode A vault-key rotation run (v1-027 · Phase 15 B5).
+
+    Lifecycle:
+      - ``pending`` — the new active key exists; the re-encryption sweep
+        has not started yet.
+      - ``running`` — the Celery sweep is re-encrypting envelopes in
+        batches. ``rows_done`` advances per committed batch.
+      - ``done`` — every Mode A envelope in the vault is under the new
+        key. The retired ``vault_key`` row is kept forever regardless.
+      - ``failed`` — the sweep stopped (e.g. the master key could not
+        unwrap a data key). Old envelopes are intact and decryptable;
+        the sweep may be resumed, or a later rotation's sweep picks the
+        stragglers up (the sweep migrates ALL retired-key envelopes,
+        not just this rotation's ``old_key_id``).
+
+    Never carries key material — only key row IDs and counters.
+    """
+
+    __tablename__ = "key_rotation"
+    __table_args__ = (
+        Index("ix_key_rotation_vault_state", "vault_id", "state"),
+    )
+
+    vault_id: UUID = Field(
+        sa_column=Column(ForeignKey("vault.id", ondelete="RESTRICT"), nullable=False, index=True),
+    )
+
+    # The demoted key (NULL for the initial-provision "rotation" that
+    # creates a vault's first data key) and its replacement.
+    old_key_id: Optional[UUID] = Field(
+        default=None,
+        sa_column=Column(ForeignKey("vault_key.id", ondelete="RESTRICT"), nullable=True),
+    )
+    new_key_id: Optional[UUID] = Field(
+        default=None,
+        sa_column=Column(ForeignKey("vault_key.id", ondelete="RESTRICT"), nullable=True),
+        description="NULL only when rotation failed before a new key was created",
+    )
+
+    # pending / running / done / failed — plain string, no enum.
+    state: str = Field(
+        default="pending",
+        sa_column=Column(String(16), nullable=False, server_default="pending"),
+    )
+
+    # Sweep progress. rows_total is recomputed as rows_done + remaining
+    # whenever the sweep (re)starts, so the arithmetic survives resumes.
+    rows_total: int = Field(
+        default=0,
+        sa_column=Column(Integer, nullable=False, server_default="0"),
+    )
+    rows_done: int = Field(
+        default=0,
+        sa_column=Column(Integer, nullable=False, server_default="0"),
+    )
+
+    started_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True),
+    )
+    finished_at: Optional[datetime] = Field(
+        default=None,
+        sa_column=Column(DateTime(timezone=True), nullable=True),
+    )
+
+    # Failure detail (safe operator-facing message; never key material).
+    error: Optional[str] = Field(
+        default=None,
+        sa_column=Column(String(500), nullable=True),
     )
 
 

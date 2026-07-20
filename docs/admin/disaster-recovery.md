@@ -121,7 +121,46 @@ If the federation keypair (`/var/lib/theourgia/federation.key` and `.pub`) is go
 
 This is unavoidable — federated cryptographic identity intentionally cannot be reissued without per-peer trust re-establishment.
 
-## 8. Post-incident
+## 8. Rotating vault data keys (Mode A)
+
+Real rotation tooling ships as of v1-027 (Phase 15 B5) — the earlier "no tooling exists" caveat no longer applies to vault data keys.
+
+**The key hierarchy, briefly:** `MASTER_ENCRYPTION_KEY` (env) wraps per-vault data keys (DEKs) stored in the `vault_key` table. Every Mode A envelope embeds the ID of the DEK that encrypted it, and retired DEKs are **never deleted**, so old content stays readable throughout and after a rotation.
+
+**How to rotate:**
+
+1. In the UI: Settings → Keys (`/settings/keys`) → Begin rotation. Or via the API (authenticated, `key.rotate` scope):
+
+```bash
+curl -fs -X POST -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8000/api/v1/keys/rotate
+```
+
+2. The new DEK becomes active immediately — new writes use it from that moment. A background Celery task then re-encrypts existing Mode A content from the retired key(s) to the new one, in committed batches.
+
+3. Watch progress and history:
+
+```bash
+curl -fs -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8000/api/v1/keys/rotation-status
+curl -fs -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8000/api/v1/keys/history
+```
+
+**Guarantees and failure behavior:**
+
+- A blob is only ever replaced in the same database transaction that writes its re-encrypted form. A crash mid-sweep leaves every blob decryptable under either the old or the new key — there is no lossy intermediate state.
+- A master key that cannot unwrap the current DEK fails the rotation **before anything changes**, marks it `failed`, and records an audit event (`kind=security`, `key.rotation.failed`).
+- The sweep is resumable and convergent: it migrates envelopes under **any** retired key, so an interrupted sweep is finished by re-dispatching `theourgia.core.tasks.key_rotation.run_key_rotation_sweep` with the rotation ID — or simply by the next rotation's sweep.
+- Start, finish, and failure are all audited (`key.rotation.started` / `.finished` / `.failed`).
+- Only one rotation per vault runs at a time (the API returns 409 while one is pending/running).
+
+**What this does NOT do:**
+
+- It does not rotate `MASTER_ENCRYPTION_KEY` itself. Re-wrapping the stored DEKs under a new master key remains a manual maintenance-window procedure — see the [breach notification runbook](./breach-notification-runbook.md) §6. After a master-key event, also rotate each vault's data key through this tooling to retire possibly-exposed DEKs.
+- It never touches Mode B (sealed) content — the server does not hold those keys.
+
+## 9. Post-incident
 
 After restore:
 
@@ -145,6 +184,7 @@ Recommended cadence post-1.0:
 | `restic check` reports errors | Repository corruption or partial upload | `restic rebuild-index` then retry; if it persists, restore from the prior snapshot |
 | `RESTIC_PASSWORD` rejected | Wrong passphrase | Double-check; if truly lost, repository is unrecoverable |
 | Postgres restore fails on schema mismatch | Newer code, older snapshot | Restore the dump, then run `alembic upgrade head` |
+| Key rotation stuck in `running` | Celery worker died mid-sweep | Re-dispatch `run_key_rotation_sweep` with the rotation ID (see §8); no data was lost — old envelopes remain decryptable |
 | Sealed content unreadable after restore | User passphrases not entered | Ask user to log in and enter their sealed-content passphrase; nothing for the operator to do |
 | Federation peers won't accept signatures | Lost federation keypair | See §7 above |
 

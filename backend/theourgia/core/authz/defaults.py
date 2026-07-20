@@ -33,7 +33,9 @@ __all__ = ["register_default_policies"]
 
 # Scopes that ANY authenticated user may perform globally (no resource
 # context required) — basic per-self operations like reading sessions,
-# updating their own password, enrolling in 2FA.
+# updating their own password, enrolling in 2FA. KEY_ROTATE is
+# per-self too: the keys router resolves the vault by ownership, so
+# the scope can only ever act on the caller's own vault (v1-027).
 _USER_SELF_SCOPES: frozenset[Scope] = frozenset(
     {
         Scope.SESSION_READ,
@@ -41,6 +43,7 @@ _USER_SELF_SCOPES: frozenset[Scope] = frozenset(
         Scope.USER_PASSWORD_CHANGE,
         Scope.USER_2FA_ENROLL,
         Scope.USER_2FA_DISABLE,
+        Scope.KEY_ROTATE,
     }
 )
 

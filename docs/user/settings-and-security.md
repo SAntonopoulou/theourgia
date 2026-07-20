@@ -59,8 +59,11 @@ show you your journal, search it, and back it up. Mode A protects you
 against stolen disks and leaked backups, not against the server itself.
 
 Mode A keys can be rotated at `/settings/keys`: a current-key card, a
-step-by-step rotation wizard, a history of retired keys, and an
-emergency revocation for when a key may have been exposed.
+step-by-step rotation wizard, and a history of retired keys. Rotation
+is also the remedy when a key may have been exposed — the new key
+takes over immediately, a background sweep re-encrypts your existing
+content, and the old key moves to your trusted history. Retired keys
+are kept (never deleted) so nothing you wrote ever becomes unreadable.
 
 ### Mode B — sealed, and only you hold the key
 
