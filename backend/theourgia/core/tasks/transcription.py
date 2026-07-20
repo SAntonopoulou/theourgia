@@ -23,7 +23,7 @@ from typing import Any
 from uuid import UUID
 
 from theourgia.core.config import get_settings
-from theourgia.core.db import session_scope
+from theourgia.core.db import task_session_scope
 from theourgia.core.storage.factory import build_storage_service
 from theourgia.core.tasks.app import celery_app
 from theourgia.core.transcription.factory import build_transcription_engine
@@ -77,7 +77,7 @@ async def _transcribe_audio_attachment_async(
 ) -> dict[str, Any]:
     settings = get_settings()
 
-    async with session_scope() as session:
+    async with task_session_scope() as session:
         attachment = await session.get(AudioAttachment, UUID(attachment_id))
         if attachment is None or attachment.deleted_at is not None:
             _log.info(

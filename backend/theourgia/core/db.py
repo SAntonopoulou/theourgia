@@ -25,7 +25,13 @@ from sqlalchemy.ext.asyncio import (
 
 from theourgia.core.config import get_settings
 
-__all__ = ["get_engine", "get_session", "get_sessionmaker", "session_scope"]
+__all__ = [
+    "get_engine",
+    "get_session",
+    "get_sessionmaker",
+    "session_scope",
+    "task_session_scope",
+]
 
 
 @lru_cache(maxsize=1)
@@ -96,6 +102,10 @@ async def session_scope() -> AsyncIterator[AsyncSession]:
 
     Behaves identically to :func:`get_session` but is usable outside of
     FastAPI dependency injection.
+
+    NOTE: Celery tasks must use :func:`task_session_scope` instead —
+    this scope's pooled engine binds to one event loop, and the
+    asyncio.run-per-task pattern crosses loops.
     """
     async with get_sessionmaker()() as session:
         try:
@@ -103,6 +113,45 @@ async def session_scope() -> AsyncIterator[AsyncSession]:
         except Exception:
             await session.rollback()
             raise
+
+
+@asynccontextmanager
+async def task_session_scope() -> AsyncIterator[AsyncSession]:
+    """Session scope for Celery tasks and other asyncio.run-per-call code.
+
+    The process-wide engine from :func:`get_engine` binds its connection
+    pool to the first event loop that uses it. Celery tasks each call
+    ``asyncio.run`` — a fresh loop per invocation — so pooled asyncpg
+    connections cross loops and raise ``attached to a different loop``
+    (observed live the first time the worker ever ran, v1-022). This
+    scope builds a loop-local engine with no pool and disposes it before
+    the loop closes. Commit remains the caller's responsibility, same as
+    :func:`session_scope`.
+    """
+    from sqlalchemy.pool import NullPool
+
+    settings = get_settings()
+    engine = create_async_engine(
+        str(settings.database_url),
+        echo=False,
+        poolclass=NullPool,
+        future=True,
+    )
+    try:
+        maker = async_sessionmaker(
+            bind=engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
+            autoflush=False,
+        )
+        async with maker() as session:
+            try:
+                yield session
+            except Exception:
+                await session.rollback()
+                raise
+    finally:
+        await engine.dispose()
 
 
 async def dispose_engine() -> None:

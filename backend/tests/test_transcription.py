@@ -3,7 +3,7 @@
 Tier 2 #10 / FEATURES §2 audio: opt-in local transcription. Follows the
 suite's DB-less style: pure unit tests for the ``core.transcription``
 engines + factory, task-level tests driving the async task body with a
-fake ``session_scope`` / storage / engine, and handler-level tests that
+fake ``task_session_scope`` / storage / engine, and handler-level tests that
 drive the real endpoint coroutines with fakes.
 
 The invariants pinned here:
@@ -159,7 +159,7 @@ def _wire_task(
     async def _fake_get(key: str) -> bytes:
         return audio_bytes
 
-    monkeypatch.setattr(task_module, "session_scope", _fake_scope)
+    monkeypatch.setattr(task_module, "task_session_scope", _fake_scope)
     monkeypatch.setattr(
         task_module,
         "build_storage_service",

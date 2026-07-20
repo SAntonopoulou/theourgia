@@ -318,11 +318,11 @@ def run_phase05_reminders(self) -> dict[str, dict[str, int]]:  # type: ignore[no
     """
     import asyncio
 
-    from theourgia.core.db import session_scope
+    from theourgia.core.db import task_session_scope
 
     async def _run() -> dict[str, dict[str, int]]:
         result: dict[str, dict[str, int]] = {}
-        async with session_scope() as session:
+        async with task_session_scope() as session:
             result["oaths"] = await check_oath_checkpoints(session)
             result["contracts"] = await check_contract_obligations(session)
             result["servitors"] = await check_servitor_feeding(session)

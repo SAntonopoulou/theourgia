@@ -13,7 +13,7 @@ import asyncio
 import logging
 
 from theourgia.core.config import get_settings
-from theourgia.core.db import session_scope
+from theourgia.core.db import task_session_scope
 from theourgia.core.federation.delivery_queue import drain_pending
 from theourgia.core.federation.identity import make_instance_id
 from theourgia.core.federation.keys import load_or_create_keypair
@@ -38,7 +38,7 @@ async def drain_federation_delivery() -> dict[str, int]:
     )
     sender_keyid = make_instance_id(settings.instance_id)
 
-    async with session_scope() as db:
+    async with task_session_scope() as db:
         return await drain_pending(
             db,
             sender_keyid=sender_keyid,

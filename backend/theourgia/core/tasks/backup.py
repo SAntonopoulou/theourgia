@@ -29,7 +29,7 @@ from theourgia.core.backups.policy import DEFAULT_POLICY
 from theourgia.core.backups.restic import ResticClient
 from theourgia.core.backups.status import BackupOutcome
 from theourgia.core.config import get_settings
-from theourgia.core.db import session_scope
+from theourgia.core.db import task_session_scope
 from theourgia.core.observability.metrics import (
     backup_bytes_transferred_total,
     backup_run_duration_seconds,
@@ -132,7 +132,7 @@ async def _run_scheduled_backup_async(*, incremental: bool) -> dict[str, Any]:
         backup_bytes_transferred_total.inc(summary.bytes_transferred)
 
     # Persist
-    async with session_scope() as session:
+    async with task_session_scope() as session:
         status_map = {
             BackupOutcome.SUCCESS: BackupRunStatus.SUCCESS,
             BackupOutcome.FAILURE: BackupRunStatus.FAILURE,

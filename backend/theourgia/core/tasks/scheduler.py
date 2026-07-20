@@ -105,10 +105,10 @@ def run_promote_scheduled_entries(self) -> dict[str, int]:  # type: ignore[no-un
     """
     import asyncio
 
-    from theourgia.core.db import session_scope
+    from theourgia.core.db import task_session_scope
 
     async def _run() -> int:
-        async with session_scope() as session:
+        async with task_session_scope() as session:
             return await promote_scheduled_entries(session)
 
     promoted = asyncio.run(_run())
