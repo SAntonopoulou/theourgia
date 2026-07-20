@@ -212,6 +212,19 @@ async def demo_signin(
                     detail="Incorrect password.",
                 )
 
+    # v1-030: every account gets exactly one default vault. Idempotent,
+    # so this also backfills pre-v1-030 accounts (like the operator's)
+    # on their next sign-in. Vault-scoped surfaces — federation actor,
+    # key rotation, per-vault voces — were silently dead without it.
+    from theourgia.core.vaults import ensure_vault
+
+    await ensure_vault(
+        db,
+        owner_id=user.id,
+        display_name=payload.magickal_name,
+        slug_hint=payload.magickal_name,
+    )
+
     now = datetime.now(tz=UTC)
     expires_at = now + SESSION_LIFETIME
     token = generate_token()
