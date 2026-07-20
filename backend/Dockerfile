@@ -87,13 +87,16 @@ FROM python:${PYTHON_VERSION}-slim-bookworm AS prod
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-# Minimal runtime system deps
+# Minimal runtime system deps. restic: the scheduled-backup task shells
+# out to the restic binary (core/backups/restic.py) from the celery
+# worker, which runs this same image.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libpq5 \
         tini \
         ca-certificates \
         curl \
+        restic \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 1000 theourgia \
     && useradd --uid 1000 --gid theourgia --shell /bin/bash --create-home theourgia

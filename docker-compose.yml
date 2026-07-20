@@ -114,7 +114,10 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: ["celery", "-A", "theourgia.workers.app", "worker", "--loglevel=info"]
+    # -A path is the real app module (theourgia.workers never existed —
+    # this exact string looped prod celery for 15k+ restarts). The worker
+    # MUST consume both queues: task_routes pins backups to its own queue.
+    command: ["celery", "-A", "theourgia.core.tasks.app:celery_app", "worker", "--loglevel=info", "-Q", "default,backups"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -126,6 +129,13 @@ services:
       THEOURGIA_MASTER_ENCRYPTION_KEY: ${THEOURGIA_MASTER_ENCRYPTION_KEY}
       DATABASE_URL: postgresql+asyncpg://${THEOURGIA_DB_USER:-theourgia}:${THEOURGIA_DB_PASSWORD}@postgres:5432/${THEOURGIA_DB_NAME:-theourgia}
       REDIS_URL: redis://redis:6379/0
+      # Backups run on this worker (the backups queue) — restic needs
+      # its repository, password, and the R2/S3 credentials here.
+      RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:-}
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-auto}
     restart: unless-stopped
     networks:
       - theourgia-internal
@@ -137,7 +147,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    command: ["celery", "-A", "theourgia.workers.app", "beat", "--loglevel=info"]
+    command: ["celery", "-A", "theourgia.core.tasks.app:celery_app", "beat", "--loglevel=info"]
     depends_on:
       postgres:
         condition: service_healthy
