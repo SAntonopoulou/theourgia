@@ -203,6 +203,13 @@ class DaemonClient:
             "DELETE", f"/installs/{install_id}/memory/{name}",
         )
 
+    async def cost_summary(
+        self, *, vault_id: str, window: str = "month",
+    ) -> dict[str, Any]:
+        return await self._request(
+            "GET", f"/costs/summary?vault_id={vault_id}&window={window}",
+        )
+
     async def query_audit(
         self,
         *,

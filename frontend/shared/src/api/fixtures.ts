@@ -6,7 +6,7 @@
  * connection.
  */
 
-import { NotFoundError } from "./errors.js";
+import { ApiError, NotFoundError } from "./errors.js";
 import type {
   AltarRecordWire,
   BookRecord,
@@ -91,6 +91,13 @@ import type {
 const ENTRY_BODIES: Map<string, string> = new Map();
 
 /**
+ * Monotonic suffix for created-entry ids. `Date.now()` alone collides
+ * when two creates land in the same millisecond, which made a fresh
+ * entry inherit a previous entry's meta (sealed!) state (v1-033).
+ */
+let ENTRY_ID_SEQ = 0;
+
+/**
  * Per-entry visibility + sealed + published_at + tag state for the
  * detail/PATCH fixtures. Defaults: personal · not-sealed · not-published
  * · untagged.
@@ -100,6 +107,28 @@ type EntryMeta = Pick<
   "visibility" | "sealed" | "published_at" | "tags" | "tradition_tags" | "publish_on_death"
 >;
 const ENTRY_META: Map<string, EntryMeta> = new Map();
+
+/**
+ * Sealed-envelope store (v1-033). One opaque envelope string per
+ * sealed row, keyed by id — set by the seal / sealed-create fixtures,
+ * read back (base64) by the ``/sealed-payload`` fixtures. Mirrors the
+ * backend: the plaintext is gone the moment the envelope lands.
+ */
+const ENTRY_SEALED: Map<string, string> = new Map();
+const OATH_SEALED: Map<string, string> = new Map();
+const INITIATION_SEALED: Map<string, string> = new Map();
+
+/**
+ * Seeded sealed fixture rows predate the payload store — hand back a
+ * syntactically valid envelope that no passphrase decrypts, which is
+ * exactly what a wrong-passphrase attempt looks like. Mock mode stays
+ * honest: nothing plaintext ever comes back for a sealed row.
+ */
+const UNDECRYPTABLE_ENVELOPE = JSON.stringify({
+  v: 1,
+  iv: "AAAAAAAAAAAAAAAA",
+  ct: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+});
 
 function entryMeta(id: string): EntryMeta {
   return (
@@ -545,7 +574,7 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     if (method === "POST") {
       const input = body as CreateEntryInput;
       const next: EntryRecord = {
-        id: String(Date.now()),
+        id: `${Date.now()}-${++ENTRY_ID_SEQ}`,
         title: input.title,
         type: input.type,
         excerpt: input.excerpt,
@@ -788,6 +817,54 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     return entryDetail(ENTRIES[idx]!);
   }
 
+  // /api/v1/entries/{id}/seal — Mode B one-way seal (v1-033).
+  // Mirrors the backend transaction: envelope stored, plaintext body
+  // gone, plaintext revisions purged. No unseal fixture exists.
+  const sealMatch = /^\/api\/v1\/entries\/(.+)\/seal$/.exec(bare ?? "");
+  if (sealMatch && method === "POST") {
+    const [, id] = sealMatch;
+    const idx = ENTRIES.findIndex((e) => e.id === id);
+    if (idx < 0) {
+      return new NotFoundError(problem(404, "Not Found", `Entry ${id} not found`));
+    }
+    const meta = entryMeta(id!);
+    if (meta.sealed) {
+      return new ApiError(409, problem(409, "Conflict", "This entry is already sealed."));
+    }
+    if (meta.visibility === "public") {
+      return new ApiError(
+        403,
+        problem(
+          403,
+          "Forbidden",
+          "Public entries cannot be sealed. Lower the visibility first — " +
+            "sealed content is never publicly visible.",
+        ),
+      );
+    }
+    const input = (body ?? {}) as { encrypted_payload?: string };
+    ENTRY_SEALED.set(id!, input.encrypted_payload ?? "");
+    ENTRY_BODIES.delete(id!);
+    ENTRY_REVISIONS.delete(id!);
+    ENTRY_META.set(id!, { ...meta, sealed: true });
+    ENTRIES[idx] = { ...ENTRIES[idx]!, updated_at: new Date().toISOString() };
+    return entryDetail(ENTRIES[idx]!);
+  }
+
+  // /api/v1/entries/{id}/sealed-payload — owner ciphertext read.
+  const sealedPayloadMatch = /^\/api\/v1\/entries\/(.+)\/sealed-payload$/.exec(bare ?? "");
+  if (sealedPayloadMatch && method === "GET") {
+    const [, id] = sealedPayloadMatch;
+    if (!ENTRIES.some((e) => e.id === id)) {
+      return new NotFoundError(problem(404, "Not Found", `Entry ${id} not found`));
+    }
+    if (!entryMeta(id!).sealed) {
+      return new ApiError(409, problem(409, "Conflict", "This entry is not sealed."));
+    }
+    const envelope = ENTRY_SEALED.get(id!) ?? UNDECRYPTABLE_ENVELOPE;
+    return { encrypted_payload_b64: btoa(envelope) };
+  }
+
   // /api/v1/entries/{id}/revisions/{revId}/restore — v1-028.
   // Mirrors the backend: current state pushed as a new revision FIRST,
   // then the old content applied (title + body only; visibility and
@@ -857,9 +934,11 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
       return null;
     }
     if (method === "PATCH") {
+      // NOTE: no ``sealed`` here — the real PATCH schema is
+      // extra=forbid and sealing routes through the dedicated
+      // POST /entries/{id}/seal endpoint (v1-033).
       const patch = (body ?? {}) as Partial<EntryRecord> & {
         visibility?: EntryMeta["visibility"];
-        sealed?: boolean;
         tags?: string[];
         tradition_tags?: string[];
         publish_on_death?: boolean;
@@ -873,11 +952,10 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
         updated_at: new Date().toISOString(),
       };
       ENTRIES[idx] = updated;
-      // Persist visibility / sealed / tags into the meta store so
-      // subsequent detail reads see the new values.
+      // Persist visibility / tags into the meta store so subsequent
+      // detail reads see the new values.
       if (
         patch.visibility !== undefined ||
-        patch.sealed !== undefined ||
         patch.tags !== undefined ||
         patch.tradition_tags !== undefined ||
         patch.publish_on_death !== undefined
@@ -886,7 +964,6 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
         ENTRY_META.set(id!, {
           ...existing,
           ...(patch.visibility !== undefined ? { visibility: patch.visibility } : {}),
-          ...(patch.sealed !== undefined ? { sealed: patch.sealed } : {}),
           ...(patch.tags !== undefined ? { tags: patch.tags } : {}),
           ...(patch.tradition_tags !== undefined ? { tradition_tags: patch.tradition_tags } : {}),
           ...(patch.publish_on_death !== undefined
@@ -1755,6 +1832,59 @@ function workshopFixture(method: string, bare: string, qs: string, body: unknown
         fixture.cost.over_reservation = next > reservation;
         return { ...fixture.cost };
       }
+    }
+  }
+
+  if (bare === "/api/v1/agents/costs/summary") {
+    if (method === "GET") {
+      const params = new URLSearchParams(qs);
+      const window = params.get("window") ?? "month";
+      return {
+        vault_id: "mock-vault",
+        window,
+        window_start: "2026-07-01T00:00:00+00:00",
+        totals: {
+          cost_usd: "3.10",
+          tokens_in: 512_000,
+          tokens_out: 128_000,
+          tokens_cache: 180_000,
+          tokens_fresh: 180_000,
+          tokens_resume: 640_000,
+          run_count: 12,
+        },
+        per_install: [
+          {
+            install_id: "mock-install-tutor",
+            display_name: "Study tutor",
+            kind: "study-tutor",
+            cost_usd: "1.80",
+            tokens_in: 300_000,
+            tokens_out: 80_000,
+            tokens_cache: 120_000,
+            tokens_fresh: 100_000,
+            tokens_resume: 400_000,
+            run_count: 7,
+            monthly_cap_usd: "10.00",
+            month_cost_usd: "1.80",
+            cap_used_pct: 18,
+          },
+          {
+            install_id: "mock-install-sync",
+            display_name: "Synchronicity reviewer",
+            kind: "synchronicity-reviewer",
+            cost_usd: "1.30",
+            tokens_in: 212_000,
+            tokens_out: 48_000,
+            tokens_cache: 60_000,
+            tokens_fresh: 80_000,
+            tokens_resume: 240_000,
+            run_count: 5,
+            monthly_cap_usd: "1.50",
+            month_cost_usd: "1.30",
+            cap_used_pct: 87,
+          },
+        ],
+      };
     }
   }
 
@@ -2755,9 +2885,27 @@ function beingsLedgerFixture(method: string, bare: string, qs: string, body: unk
         created_at: nowIso(),
         updated_at: nowIso(),
       };
+      // v1-033: keep the write-only envelope so the sealed-payload
+      // read can hand it back (base64) for client-side decrypt.
+      if (sealed && typeof input.encrypted_payload === "string") {
+        OATH_SEALED.set(row.id, input.encrypted_payload);
+      }
       LEDGER_OATHS.unshift(row);
       return row;
     }
+  }
+  // /api/v1/oaths/{id}/sealed-payload — owner ciphertext read (v1-033).
+  const oathSealedMatch = /^\/api\/v1\/oaths\/([^/]+)\/sealed-payload$/.exec(bare);
+  if (oathSealedMatch && method === "GET") {
+    const row = LEDGER_OATHS.find((o) => o.id === oathSealedMatch[1]);
+    if (!row) {
+      return new NotFoundError(problem(404, "Not Found", `Oath ${oathSealedMatch[1]} not found`));
+    }
+    if (!row.sealed) {
+      return new ApiError(409, problem(409, "Conflict", "This oath is not sealed."));
+    }
+    const envelope = OATH_SEALED.get(row.id) ?? UNDECRYPTABLE_ENVELOPE;
+    return { encrypted_payload_b64: btoa(envelope) };
   }
   const oathMatch = /^\/api\/v1\/oaths\/([^/]+)$/.exec(bare);
   if (oathMatch) {
@@ -2803,9 +2951,30 @@ function beingsLedgerFixture(method: string, bare: string, qs: string, body: unk
         created_at: nowIso(),
         updated_at: nowIso(),
       };
+      // v1-033: keep the write-only envelope so the sealed-payload
+      // read can hand it back (base64) for client-side decrypt.
+      if (typeof input.encrypted_payload === "string") {
+        INITIATION_SEALED.set(row.id, input.encrypted_payload);
+      }
       LEDGER_INITIATIONS.unshift(row);
       return row;
     }
+  }
+  // /api/v1/initiations/{id}/sealed-payload — owner ciphertext read
+  // (v1-033).
+  const initiationSealedMatch = /^\/api\/v1\/initiations\/([^/]+)\/sealed-payload$/.exec(bare);
+  if (initiationSealedMatch && method === "GET") {
+    const row = LEDGER_INITIATIONS.find((i) => i.id === initiationSealedMatch[1]);
+    if (!row) {
+      return new NotFoundError(
+        problem(404, "Not Found", `Initiation ${initiationSealedMatch[1]} not found`),
+      );
+    }
+    const envelope = INITIATION_SEALED.get(row.id);
+    if (!row.sealed && !envelope) {
+      return new ApiError(409, problem(409, "Conflict", "This initiation is not sealed."));
+    }
+    return { encrypted_payload_b64: btoa(envelope ?? UNDECRYPTABLE_ENVELOPE) };
   }
   const initiationMatch = /^\/api\/v1\/initiations\/([^/]+)$/.exec(bare);
   if (initiationMatch) {
@@ -3121,6 +3290,30 @@ function bundleImportResults(pkg: BundledPackageFixture): BundleImportItemResult
 function bundlesFixture(method: string, bare: string): unknown {
   if (bare === "/api/v1/bundles/installed" && method === "GET") {
     return { bundles: [...INSTALLED_BUNDLES] };
+  }
+
+  // DELETE /api/v1/bundles/installed/{id} — uninstall (v1-033).
+  // Removes the install record and NOTHING else: imported content
+  // stays (MBF tombstone-not-erasure), and the response says so.
+  const uninstallMatch = /^\/api\/v1\/bundles\/installed\/([^/]+)$/.exec(bare);
+  if (uninstallMatch && method === "DELETE") {
+    const idx = INSTALLED_BUNDLES.findIndex((b) => b.id === uninstallMatch[1]);
+    if (idx < 0) {
+      return new NotFoundError(
+        problem(404, "Not Found", `installed bundle ${uninstallMatch[1]} not found`),
+      );
+    }
+    const [removed] = INSTALLED_BUNDLES.splice(idx, 1);
+    return {
+      removed_id: removed!.id,
+      slug: removed!.slug,
+      version: removed!.version,
+      imported_content_retained: true,
+      detail:
+        "Install record removed. Content imported from this bundle " +
+        "(entities, templates, recipes, …) stays in your vault — bundle " +
+        "removal is a tombstone, not an erasure.",
+    };
   }
 
   if (bare === "/api/v1/bundles/bundled" && method === "GET") {

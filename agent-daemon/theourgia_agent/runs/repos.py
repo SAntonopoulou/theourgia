@@ -119,6 +119,98 @@ class DbRunRepo:
         async with self._sessionmaker() as session:
             return await session.get(AgentRun, run_id)
 
+    async def get_by_run_key(self, run_key: str) -> AgentRun | None:
+        """Fetch the LATEST row for a control-plane run id (0003's
+        ``run_key``; successive wakes of one install share it)."""
+        stmt = (
+            select(AgentRun)
+            .where(AgentRun.run_key == run_key)
+            .order_by(desc(AgentRun.started_at))
+            .limit(1)
+        )
+        async with self._sessionmaker() as session:
+            result = await session.execute(stmt)
+            return result.scalar_one_or_none()
+
+    async def update_totals_by_run_key(
+        self,
+        run_key: str,
+        *,
+        cost_usd: Decimal,
+        tokens_in: int,
+        tokens_out: int,
+        tokens_cache: int,
+        tokens_fresh: int,
+        tokens_resume: int,
+    ) -> AgentRun | None:
+        """Write-through of the live accumulator's running totals.
+
+        Called on every cost report so a daemon restart mid-run loses
+        at most the samples since the last report."""
+        async with self._sessionmaker() as session:
+            stmt = (
+                select(AgentRun)
+                .where(AgentRun.run_key == run_key)
+                .order_by(desc(AgentRun.started_at))
+                .limit(1)
+            )
+            run = (await session.execute(stmt)).scalar_one_or_none()
+            if run is None:
+                return None
+            run.cost_usd = cost_usd
+            run.tokens_in = tokens_in
+            run.tokens_out = tokens_out
+            run.tokens_cache = tokens_cache
+            run.tokens_fresh = tokens_fresh
+            run.tokens_resume = tokens_resume
+            await session.commit()
+            await session.refresh(run)
+            return run
+
+    async def mark_terminal_by_run_key(
+        self,
+        run_key: str,
+        *,
+        outcome: RunOutcome,
+        ended_at: datetime | None = None,
+    ) -> AgentRun | None:
+        async with self._sessionmaker() as session:
+            stmt = (
+                select(AgentRun)
+                .where(AgentRun.run_key == run_key)
+                .order_by(desc(AgentRun.started_at))
+                .limit(1)
+            )
+            run = (await session.execute(stmt)).scalar_one_or_none()
+            if run is None:
+                return None
+            run.outcome = outcome
+            run.ended_at = ended_at or datetime.now(tz=UTC)
+            await session.commit()
+            await session.refresh(run)
+            return run
+
+    async def summarise_window(
+        self,
+        *,
+        vault_id: str,
+        window_start: datetime,
+    ) -> list[tuple[AgentRun, AgentInstall]]:
+        """Every (run, install) pair for the vault started at or after
+        ``window_start`` — the cost-summary aggregation input."""
+        stmt = (
+            select(AgentRun, AgentInstall)
+            .join(AgentInstall, AgentRun.install_id == AgentInstall.id)
+            .where(
+                AgentInstall.vault_id == vault_id,
+                AgentRun.started_at >= window_start,
+            )
+            .order_by(desc(AgentRun.started_at))
+        )
+        async with self._sessionmaker() as session:
+            result = await session.execute(stmt)
+            return [(run, install) for run, install in result.all()]
+
     async def list_by_install(
         self, install_id: UUID, *, limit: int = 50,
     ) -> list[AgentRun]:

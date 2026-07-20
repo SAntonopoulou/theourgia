@@ -25,6 +25,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncEngine
 
+from theourgia_agent.agents.definitions import resolve_definition
 from theourgia_agent.api.routers.runs import (
     control_token_dependency,
     _check_control_token,
@@ -137,11 +138,17 @@ def create_installs_router() -> APIRouter:
                 status_code=status.HTTP_409_CONFLICT,
                 detail="install already exists for this vault + agent",
             )
+        # Validate the kind against the shipped-definition registry:
+        # known kinds are stored canonically (normalized slug); unknown
+        # kinds stay free-string CUSTOM kinds (back-compat — agent
+        # types are plugin-extensible, rejection would break that).
+        definition = resolve_definition(body.kind)
+        kind = definition.kind if definition is not None else body.kind
         row = AgentInstall(
             vault_id=body.vault_id,
             agent_id=body.agent_id,
             display_name=body.display_name,
-            kind=body.kind,
+            kind=kind,
             state=AgentInstallState.INACTIVE,
             monthly_cost_cap_usd=body.monthly_cost_cap_usd,
         )

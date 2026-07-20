@@ -27,4 +27,4 @@ The H10 Cluster C surfaces (12 surfaces · `frontend/shared/src/Agent*`) all con
 
 ## Status
 
-Scaffold landed. Models + crypto + cost-cap + config + systemd unit live. Next batches: SSE MCP server, claude-subprocess waker, alembic migration 0001, end-to-end tests.
+v1-complete (v1-031). MCP transport + dispatch + rule-52/53 filters, subprocess runner + launcher + at-wake/at-spend cost caps, installs + memory + audit + runs control plane, DB-persisted run accounting that survives daemon restart (alembic 0003), the six shipped agent definitions (`theourgia_agent/agents/definitions.py`), and the `/costs/summary` aggregation behind the C10 dashboard. The vault side (`POST /api/v1/mcp` + dedicated per-run bearer tokens) lives in the main backend — see `docs/dev/ai-agents.md` and ADR-0012. Deferred to v1.1: the waker's `--continue` resume window; write capabilities.

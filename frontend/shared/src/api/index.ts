@@ -11,6 +11,10 @@ export { api, NotImplementedError } from "./endpoints.js";
 export type { Api } from "./endpoints.js";
 export { defaultFixtures } from "./fixtures.js";
 export type {
+  AgentCostSummaryInstallRow,
+  AgentCostSummaryResponse,
+  AgentCostSummaryTotals,
+  AgentCostWindow,
   AltarRecordWire,
   BanishingLogRecord,
   BanishingMethodWire,

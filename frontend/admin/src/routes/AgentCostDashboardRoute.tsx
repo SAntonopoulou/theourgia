@@ -1,27 +1,66 @@
 /**
  * AgentCostDashboard — H10 C10 admin route (live data).
  *
- * Aggregates audit-log events to a global token + cost rollup. The
- * audit log doesn't yet carry token deltas per event (those live on
- * the run row); for v1 we surface the headline figures with "—" for
- * unknown breakdowns rather than fabricating them. The daemon's
- * install-list endpoint (queued) will replace this with per-install
- * accuracy.
+ * v1-031: wired to the daemon's cost aggregation via the vault proxy
+ * (GET /api/v1/agents/costs/summary). Real per-install cost + token
+ * figures, the rule-58 fresh/resume split, and the rule-56 monthly
+ * cap percentage replace the earlier audit-event approximation.
  *
  * Mounted at /agents-cost.
  */
 
+import { useQuery } from "@tanstack/react-query";
 import {
   AgentCostDashboardSurface,
+  type AgentCostSummaryInstallRow,
+  type AgentRowKind,
   type PerAgentRow,
   type TokenBreakdown,
   useTopbar,
 } from "@theourgia/shared";
-import { useQuery } from "@tanstack/react-query";
 
 import { apiMethods } from "../data/api.js";
 
 const ZERO: TokenBreakdown = { in_: 0, out_: 0, cache: 0 };
+
+const KIND_TO_ROW_KIND: Record<string, AgentRowKind> = {
+  "divination-companion": "divination",
+  "scrying-journal-partner": "divination",
+  "ritual-aide": "ritual",
+  "study-tutor": "study",
+  "correspondence-research-helper": "correspondence",
+  "synchronicity-reviewer": "synchronicity",
+};
+
+function rowKindFor(kind: string): AgentRowKind {
+  return KIND_TO_ROW_KIND[kind] ?? "archivist";
+}
+
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
+  return n.toLocaleString();
+}
+
+function formatUsd(value: string): string {
+  const n = Number.parseFloat(value);
+  return Number.isFinite(n) ? `$${n.toFixed(2)}` : "—";
+}
+
+function toPerAgentRow(row: AgentCostSummaryInstallRow): PerAgentRow {
+  const tokens = row.tokens_in + row.tokens_out + row.tokens_cache;
+  const hasCap = Number.parseFloat(row.monthly_cap_usd) > 0;
+  return {
+    id: row.install_id,
+    name: row.display_name,
+    kind: rowKindFor(row.kind),
+    costLabel: formatUsd(row.cost_usd),
+    tokensLabel: formatTokens(tokens),
+    freshResumeLabel: `${formatTokens(row.tokens_fresh)} / ${formatTokens(row.tokens_resume)}`,
+    capLabel: hasCap ? formatUsd(row.monthly_cap_usd) : "—",
+    capUsedPct: row.cap_used_pct,
+  };
+}
 
 export function AgentCostDashboardRoute() {
   useTopbar(() => ({
@@ -30,46 +69,29 @@ export function AgentCostDashboardRoute() {
   }));
 
   const query = useQuery({
-    queryKey: ["agent-cost-dashboard"],
-    queryFn: async () => apiMethods.queryAgentAudit({ limit: 500 }),
+    queryKey: ["agent-cost-summary", "month"],
+    queryFn: async () => apiMethods.getAgentCostSummary("month"),
     staleTime: 30_000,
   });
 
-  const events = query.data?.events ?? [];
-
-  // Per-install rollup: one PerAgentRow per unique install_id.
-  // The audit row doesn't carry per-call token deltas, so for v1
-  // we display "—" for tokens until the install-list endpoint lands.
-  const installs = new Map<string, number>();
-  for (const e of events) {
-    const id = e.install_id || e.run_id;
-    if (!id) continue;
-    if (e.event_type === "mcp.tools_call") {
-      installs.set(id, (installs.get(id) ?? 0) + 1);
-    } else if (!installs.has(id)) {
-      installs.set(id, 0);
-    }
-  }
-
-  const perAgent: PerAgentRow[] = [...installs.entries()].map(
-    ([id, callCount]) => ({
-      id,
-      name: id,
-      kind: "archivist" as const,  // placeholder until install-list lands
-      costLabel: "—",
-      tokensLabel: callCount > 0 ? `${callCount} calls` : "—",
-      freshResumeLabel: "—",
-      capLabel: "—",
-      capUsedPct: 0,
-    }),
-  );
+  const summary = query.data;
+  const totals = summary?.totals;
+  const totalTokens = totals ? totals.tokens_in + totals.tokens_out + totals.tokens_cache : 0;
 
   return (
     <AgentCostDashboardSurface
-      totalCostLabel="—"
-      totalTokensLabel={`${events.length} audit event${events.length === 1 ? "" : "s"}`}
-      totalTokenBreakdown={ZERO}
-      perAgent={perAgent}
+      totalCostLabel={totals ? formatUsd(totals.cost_usd) : "—"}
+      totalTokensLabel={totals ? formatTokens(totalTokens) : "—"}
+      totalTokenBreakdown={
+        totals
+          ? {
+              in_: totals.tokens_in,
+              out_: totals.tokens_out,
+              cache: totals.tokens_cache,
+            }
+          : ZERO
+      }
+      perAgent={(summary?.per_install ?? []).map(toPerAgentRow)}
     />
   );
 }

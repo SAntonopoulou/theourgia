@@ -6,6 +6,14 @@ shared control-plane token (`THEOURGIA_AGENT_CONTROL_TOKEN`) — this is
 the bridge between the vault's per-magician auth and the daemon's
 process-level trust.
 
+Run accounting persists through :class:`RunPersistence` (v1-031):
+every start / cost report / terminal outcome writes through to
+agent_run rows, so a daemon restart keeps the accounting — GET falls
+back to the persisted row when the live handle is gone, and DELETE of
+a persisted-but-orphaned running run marks it halted. In test /
+keyless-dev environments the persistence default is in-memory (same
+protocol, no Postgres).
+
 Endpoints:
   * POST   /runs                    — start a run; returns RunHandle or LaunchRefused
   * GET    /runs/{run_id}           — current status snapshot
@@ -26,9 +34,11 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
+from theourgia_agent.core.config import get_settings
 from theourgia_agent.mcp.capabilities import AgentCapability
 from theourgia_agent.mcp.sessions import MCPSessionRegistry
 from theourgia_agent.models.audit import AuditEventType
+from theourgia_agent.models.run import RunOutcome
 from theourgia_agent.runs.audit import (
     AuditRecord,
     AuditSink,
@@ -45,10 +55,17 @@ from theourgia_agent.runs.launcher import (
     LaunchRequest,
     plan_launch,
 )
+from theourgia_agent.runs.persistence import (
+    DbRunPersistence,
+    InMemoryRunPersistence,
+    PersistedRun,
+    RunPersistence,
+)
 from theourgia_agent.runs.subprocess_runner import (
     AsyncioSubprocessSpawner,
     RunHandle,
     RunRegistry,
+    RunStatus,
     SubprocessSpawner,
     execute_run,
 )
@@ -61,6 +78,7 @@ __all__ = [
     "run_registry_dependency",
     "subprocess_spawner_dependency",
     "audit_sink_dependency",
+    "run_persistence_dependency",
 ]
 
 
@@ -77,12 +95,13 @@ def control_token_dependency() -> str | None:
     return os.environ.get("THEOURGIA_AGENT_CONTROL_TOKEN")
 
 
-# These three dependencies hold process-wide singletons. Tests override
+# These dependencies hold process-wide singletons. Tests override
 # them via `app.dependency_overrides` to inject fresh state.
 _default_mcp_registry: MCPSessionRegistry | None = None
 _default_run_registry: RunRegistry | None = None
 _default_spawner: SubprocessSpawner | None = None
 _default_audit_sink: AuditSink | None = None
+_default_run_persistence: RunPersistence | None = None
 
 
 def mcp_registry_dependency() -> MCPSessionRegistry:
@@ -107,13 +126,40 @@ def subprocess_spawner_dependency() -> SubprocessSpawner:
 
 
 def audit_sink_dependency() -> AuditSink:
-    """Process-wide audit sink. In production this is a DbAuditSink
-    that writes through `core.db.session_scope`; the in-memory default
-    here keeps tests pure-Python and is also fine for early dev."""
+    """Process-wide audit sink.
+
+    Production (env != "test") wires the Postgres-backed DbAuditSink;
+    the test environment keeps the pure-Python in-memory sink so the
+    suite runs without a database. Tests override via
+    `app.dependency_overrides` either way."""
     global _default_audit_sink
     if _default_audit_sink is None:
-        _default_audit_sink = InMemoryAuditSink()
+        if get_settings().env == "test":
+            _default_audit_sink = InMemoryAuditSink()
+        else:
+            from theourgia_agent.core.db import get_engine
+            from theourgia_agent.runs.db_audit_sink import DbAuditSink
+
+            _default_audit_sink = DbAuditSink(engine=get_engine())
     return _default_audit_sink
+
+
+def run_persistence_dependency() -> RunPersistence:
+    """Process-wide run persistence (v1-031).
+
+    Production (env != "test") writes agent_run rows through the
+    repos so restart keeps the accounting. The test environment gets
+    a FRESH in-memory instance per request — no hidden cross-test
+    state; tests that exercise persistence override this dependency
+    with their own shared instance (or a DbRunPersistence)."""
+    if get_settings().env == "test":
+        return InMemoryRunPersistence()
+    global _default_run_persistence
+    if _default_run_persistence is None:
+        from theourgia_agent.core.db import get_engine
+
+        _default_run_persistence = DbRunPersistence(engine=get_engine())
+    return _default_run_persistence
 
 
 def _check_control_token(
@@ -136,6 +182,11 @@ def _check_control_token(
 class StartRunRequest(BaseModel):
     install_id: str
     vault_did: str
+    # The daemon-side vault id (agent_install.vault_id) — used by the
+    # in-memory persistence for cost-summary scoping; the DB
+    # persistence derives it from the install join. Optional for
+    # back-compat with older vault bridges.
+    vault_id: str = ""
     agent_slug: str
     task_text: str = Field(min_length=1, max_length=8000)
     granted_caps: list[str]
@@ -203,20 +254,53 @@ class CostSampleBody(BaseModel):
     cost_usd: Decimal
 
 
-def _snapshot_with_cost(
-    handle: RunHandle, *, reservation_usd: Decimal,
-) -> dict[str, Any]:
+def _snapshot_with_cost(handle: RunHandle) -> dict[str, Any]:
+    # The reservation lives on the handle's accumulator; the persisted
+    # agent_run row carries the same number for restart recovery.
     out = RunSnapshot.from_handle(
-        handle, reservation_usd=reservation_usd,
+        handle, reservation_usd=handle.cost.reservation_usd,
     ).to_dict()
     out["cost"] = handle.cost.snapshot()
     return out
 
 
-# Map handle.run_id → reservation_usd (cheap; only live runs are stored).
-# In production this lives in agent_run rows; the in-memory map is a
-# stopgap until the DB write-through lands.
-_reservations: dict[str, Decimal] = {}
+def _snapshot_from_persisted(persisted: PersistedRun) -> dict[str, Any]:
+    """GET fallback when the live handle is gone (daemon restarted).
+
+    The session token dies with the process — the persisted snapshot
+    reports it empty rather than pretending the MCP session survived."""
+    reservation = persisted.reserved_usd
+    return {
+        "run_id": persisted.run_key,
+        "session_token": "",
+        "status": persisted.outcome,
+        "started_at": persisted.started_at.isoformat(),
+        "ended_at": (
+            persisted.ended_at.isoformat()
+            if persisted.ended_at is not None
+            else None
+        ),
+        "returncode": None,
+        "reservation_usd": str(reservation),
+        "cost": {
+            "tokens_in": persisted.tokens_in,
+            "tokens_out": persisted.tokens_out,
+            "tokens_cache": persisted.tokens_cache,
+            "tokens_fresh": persisted.tokens_fresh,
+            "tokens_resume": persisted.tokens_resume,
+            "cost_usd": str(persisted.cost_usd),
+            "reservation_usd": str(reservation),
+            "remaining_usd": str(reservation - persisted.cost_usd),
+            "over_reservation": persisted.cost_usd > reservation,
+        },
+    }
+
+
+_STATUS_TO_OUTCOME = {
+    RunStatus.COMPLETED: RunOutcome.COMPLETED.value,
+    RunStatus.HALTED: RunOutcome.HALTED.value,
+    RunStatus.ERRORED: RunOutcome.ERRORED.value,
+}
 
 
 # ── router ────────────────────────────────────────────────────────────
@@ -234,6 +318,7 @@ def create_runs_router() -> APIRouter:
         run_registry: RunRegistry = Depends(run_registry_dependency),
         spawner: SubprocessSpawner = Depends(subprocess_spawner_dependency),
         audit_sink: AuditSink = Depends(audit_sink_dependency),
+        persistence: RunPersistence = Depends(run_persistence_dependency),
     ) -> JSONResponse:
         _check_control_token(x_daemon_auth, expected_token)
 
@@ -272,6 +357,44 @@ def create_runs_router() -> APIRouter:
             )
 
         assert isinstance(outcome, LaunchPlan)
+
+        # Persist BEFORE spawn: a run the daemon cannot account for is
+        # a run that must not wake (the DB persistence rejects unknown
+        # installs here; nothing has been spawned yet).
+        try:
+            await persistence.record_start(
+                run_key=outcome.session.run_id,
+                install_id=body.install_id,
+                vault_id=body.vault_id,
+                task_text=body.task_text,
+                scope_id=body.scope_id,
+                reserved_usd=outcome.reservation_usd,
+                started_at=audit_now(),
+            )
+        except ValueError as exc:
+            mcp_registry.drop(outcome.session.token)
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        async def persist_terminal(handle: RunHandle) -> None:
+            terminal = _STATUS_TO_OUTCOME.get(handle.status)
+            if terminal is None:
+                return
+            snapshot = handle.cost.snapshot()
+            await persistence.record_cost(
+                handle.run_id,
+                cost_usd=Decimal(str(snapshot["cost_usd"])),
+                tokens_in=handle.cost.tokens_in,
+                tokens_out=handle.cost.tokens_out,
+                tokens_cache=handle.cost.tokens_cache,
+                tokens_fresh=handle.cost.tokens_fresh,
+                tokens_resume=handle.cost.tokens_resume,
+            )
+            await persistence.record_terminal(
+                handle.run_id,
+                outcome=terminal,
+                ended_at=handle.ended_at,
+            )
+
         handle = await execute_run(
             plan=outcome,
             spawner=spawner,
@@ -279,8 +402,8 @@ def create_runs_router() -> APIRouter:
             run_registry=run_registry,
             audit_sink=audit_sink,
             vault_did=body.vault_did,
+            on_terminal=persist_terminal,
         )
-        _reservations[handle.run_id] = outcome.reservation_usd
         return JSONResponse(
             status_code=202,
             content=RunSnapshot.from_handle(
@@ -294,17 +417,18 @@ def create_runs_router() -> APIRouter:
         x_daemon_auth: str | None = Header(default=None),
         expected_token: str | None = Depends(control_token_dependency),
         run_registry: RunRegistry = Depends(run_registry_dependency),
+        persistence: RunPersistence = Depends(run_persistence_dependency),
     ) -> JSONResponse:
         _check_control_token(x_daemon_auth, expected_token)
         handle = run_registry.lookup(run_id)
-        if handle is None:
+        if handle is not None:
+            return JSONResponse(content=_snapshot_with_cost(handle))
+        # Restart recovery: no live handle, but the persisted row keeps
+        # the accounting (reservation + last reported cost totals).
+        persisted = await persistence.lookup(run_id)
+        if persisted is None:
             raise HTTPException(status_code=404, detail="run not found")
-        return JSONResponse(
-            content=_snapshot_with_cost(
-                handle,
-                reservation_usd=_reservations.get(run_id, Decimal("0")),
-            ),
-        )
+        return JSONResponse(content=_snapshot_from_persisted(persisted))
 
     @router.post("/{run_id}/cost")
     async def report_cost(
@@ -314,6 +438,7 @@ def create_runs_router() -> APIRouter:
         expected_token: str | None = Depends(control_token_dependency),
         run_registry: RunRegistry = Depends(run_registry_dependency),
         audit_sink: AuditSink = Depends(audit_sink_dependency),
+        persistence: RunPersistence = Depends(run_persistence_dependency),
     ) -> JSONResponse:
         """Subprocess wrapper posts incremental cost samples here.
 
@@ -332,9 +457,24 @@ def create_runs_router() -> APIRouter:
             tokens_resume=body.tokens_resume,
             cost_usd=body.cost_usd,
         )
+
+        async def write_through_totals() -> None:
+            # Restart resilience: a daemon restart mid-run loses at
+            # most the samples since the last report.
+            await persistence.record_cost(
+                run_id,
+                cost_usd=handle.cost.cost_usd,
+                tokens_in=handle.cost.tokens_in,
+                tokens_out=handle.cost.tokens_out,
+                tokens_cache=handle.cost.tokens_cache,
+                tokens_fresh=handle.cost.tokens_fresh,
+                tokens_resume=handle.cost.tokens_resume,
+            )
+
         try:
             await handle.cost.record(sample)
         except CostExceededReservation as exc:
+            await write_through_totals()
             await audit_sink.emit(
                 AuditRecord(
                     vault_did="",
@@ -358,6 +498,7 @@ def create_runs_router() -> APIRouter:
                     "halted": True,
                 },
             )
+        await write_through_totals()
         return JSONResponse(content=handle.cost.snapshot())
 
     @router.delete("/{run_id}")
@@ -366,14 +507,33 @@ def create_runs_router() -> APIRouter:
         x_daemon_auth: str | None = Header(default=None),
         expected_token: str | None = Depends(control_token_dependency),
         run_registry: RunRegistry = Depends(run_registry_dependency),
+        persistence: RunPersistence = Depends(run_persistence_dependency),
     ) -> JSONResponse:
         _check_control_token(x_daemon_auth, expected_token)
         handle = run_registry.lookup(run_id)
-        if handle is None:
+        if handle is not None:
+            await handle.terminate()
+            return JSONResponse(
+                content={"run_id": run_id, "status": handle.status.value},
+            )
+        # Orphan cleanup: a run persisted as running whose process died
+        # with a previous daemon incarnation. Mark it halted so the
+        # accounting settles.
+        persisted = await persistence.lookup(run_id)
+        if persisted is None:
             raise HTTPException(status_code=404, detail="run not found")
-        await handle.terminate()
+        if persisted.outcome == RunOutcome.RUNNING.value:
+            await persistence.record_terminal(
+                run_id, outcome=RunOutcome.HALTED.value,
+            )
+            return JSONResponse(
+                content={
+                    "run_id": run_id,
+                    "status": RunOutcome.HALTED.value,
+                },
+            )
         return JSONResponse(
-            content={"run_id": run_id, "status": handle.status.value},
+            content={"run_id": run_id, "status": persisted.outcome},
         )
 
     @router.get("/{run_id}/stream")

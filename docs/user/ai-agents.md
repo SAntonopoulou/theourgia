@@ -38,16 +38,21 @@ about your work is hidden from you.
 
 ## What agents can never read
 
-Two exclusions are enforced in the agent daemon itself, below the level
-of any setting:
+Two exclusions are enforced twice — first inside the vault itself,
+which never hands the excluded rows out, and again in the agent
+daemon as a second pass — below the level of any setting:
 
 - **Sealed content.** Sealed rows are encrypted with a key derived from
-  your passphrase on your device. The daemon holds no decryption keys,
-  so it could not pass sealed content to an agent even if you asked it
-  to. Sealed records are filtered out before any agent sees a listing.
+  your passphrase on your device. The vault excludes sealed rows from
+  every agent-facing read at the database query, and the daemon holds
+  no decryption keys besides, so it could not pass sealed content to an
+  agent even if you asked it to.
 - **Closed-tradition content.** Anything tagged as belonging to a
   closed tradition is removed from agent-visible results, regardless of
   what capabilities the agent was granted.
+
+Agent reads are also read-only: in this version there is no way for an
+agent to write into your vault at all.
 
 ## Running tasks and watching them work
 

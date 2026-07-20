@@ -38,6 +38,17 @@ class AgentRun(IDMixin, TimestampMixin, table=True):
         ),
     )
 
+    # The control-plane run id (the key in POST/GET/DELETE /runs/{id}
+    # and in audit rows). Distinct from the row's own UUID so the wire
+    # id stays whatever the launcher issued. NOT unique — the control
+    # plane reuses the install id as run id, so successive wakes share
+    # a run_key; keyed lookups resolve to the latest row. Nullable
+    # only for rows written before alembic 0003.
+    run_key: str | None = Field(
+        default=None,
+        sa_column=Column(String(64), nullable=True),
+    )
+
     # The user's task description (rule 51 — magician initiates).
     task_text: str = Field(sa_column=Column(String(8000), nullable=False))
 

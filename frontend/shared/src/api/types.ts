@@ -215,14 +215,31 @@ export interface CreateEntryInput {
   body?: string;
   /** Personal · Viewer · Hub · Public. Defaults to "personal" server-side. */
   visibility?: EntityVisibility;
-  /** Client-side-encrypted body. Defaults false. */
-  sealed?: boolean;
   /** Free-form flexible tags (v1-001). Defaults to [] server-side. */
   tags?: string[];
   /** Tradition tags (Hellenic, Thelemic, ...). Defaults to []. */
   tradition_tags?: string[];
   /** Publish when memorial mode activates (v1-018). Defaults false. */
   publish_on_death?: boolean;
+}
+
+/**
+ * Input for ``POST /api/v1/entries/{id}/seal`` (v1-033). The value is
+ * the opaque envelope string built client-side by ``sealToEnvelope``
+ * — never plaintext. Sealing is one-way server-side: there is no
+ * unseal endpoint, only the owner-gated ciphertext read.
+ */
+export interface SealEntryInput {
+  encrypted_payload: string;
+}
+
+/**
+ * Response of the ``/sealed-payload`` reads (entries, oaths,
+ * initiations — v1-033): base64 ciphertext only, never plaintext.
+ * Decrypt client-side with ``decryptSealedPayloadB64``.
+ */
+export interface SealedPayloadRead {
+  encrypted_payload_b64: string;
 }
 
 /** Counts within a single time window. */
@@ -1282,6 +1299,9 @@ export interface RegistryPluginCard {
   homepage: string | null;
   updated_at: string;
   tombstoned: boolean;
+  /** Newest accepted release, or null when nothing is accepted yet
+   *  (v1-032 — powers the marketplace version chip). */
+  latest_version?: string | null;
 }
 
 export interface RegistryPluginListResponse {
@@ -1322,6 +1342,46 @@ export interface CreateAgentInstallInput {
   display_name: string;
   kind: string;
   monthly_cost_cap_usd: string;
+}
+
+// ── Agent cost summary (v1-031 · C10 dashboard) ─────────────────────────
+
+export type AgentCostWindow = "day" | "week" | "month";
+
+export interface AgentCostSummaryTotals {
+  cost_usd: string;
+  tokens_in: number;
+  tokens_out: number;
+  tokens_cache: number;
+  tokens_fresh: number;
+  tokens_resume: number;
+  run_count: number;
+}
+
+export interface AgentCostSummaryInstallRow {
+  install_id: string;
+  display_name: string;
+  kind: string;
+  /** Cost within the requested window. */
+  cost_usd: string;
+  tokens_in: number;
+  tokens_out: number;
+  tokens_cache: number;
+  tokens_fresh: number;
+  tokens_resume: number;
+  run_count: number;
+  monthly_cap_usd: string;
+  /** Month-to-date spend — the cap chip's numerator regardless of window. */
+  month_cost_usd: string;
+  cap_used_pct: number;
+}
+
+export interface AgentCostSummaryResponse {
+  vault_id: string;
+  window: AgentCostWindow;
+  window_start: string;
+  totals: AgentCostSummaryTotals;
+  per_install: AgentCostSummaryInstallRow[];
 }
 
 export interface MemoryFile {
@@ -2036,6 +2096,19 @@ export interface InstalledBundleRead {
 
 export interface InstalledBundleListResponse {
   bundles: InstalledBundleRead[];
+}
+
+/**
+ * Response of ``DELETE /api/v1/bundles/installed/{id}`` (v1-033).
+ * Explicit about the MBF tombstone-not-erasure rule: only the
+ * install record is removed; imported content stays in the vault.
+ */
+export interface BundleUninstallResponse {
+  removed_id: string;
+  slug: string;
+  version: string;
+  imported_content_retained: boolean;
+  detail: string;
 }
 
 /** One of the seven bundled content packages —

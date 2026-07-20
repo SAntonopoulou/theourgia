@@ -28,6 +28,11 @@ class AgentDaemonSettings(BaseSettings):
     listen_host: str = Field(default="127.0.0.1")
     listen_port: int = Field(default=8002)
 
+    # Deployment environment. "test" (set by the test suite via
+    # THEOURGIA_AGENT_ENV) keeps the default persistence + audit sinks
+    # in-memory; anything else wires the Postgres-backed defaults.
+    env: str = Field(default="production")
+
     # ── Data ──────────────────────────────────────────────────────────
     # Distinct DB from the vault. The daemon does NOT touch
     # vault content directly — only via MCP calls served by the vault.

@@ -22,7 +22,7 @@ from __future__ import annotations
 import asyncio
 import enum
 import signal
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -239,12 +239,18 @@ async def execute_run(
     run_registry: RunRegistry,
     audit_sink: AuditSink | None = None,
     vault_did: str = "",
+    on_terminal: Callable[[RunHandle], Awaitable[None]] | None = None,
 ) -> RunHandle:
     """Spawn the subprocess, start pump tasks, register the run.
 
     Returns immediately with a handle; the run continues in the
     background. The handle's `transcript.aiter()` is what the SSE
     /runs/{id}/stream endpoint subscribes to.
+
+    ``on_terminal`` (optional) is awaited once with the handle after
+    the run reaches a terminal status — the runs router uses it to
+    write the outcome through to persistence. Failures are swallowed
+    (persistence must never mask the run's own terminal handling).
     """
     sink: AuditSink = audit_sink or NullAuditSink()
     transcript = TranscriptStream()
@@ -332,6 +338,13 @@ async def execute_run(
                         ),
                     ),
                 )
+            if on_terminal is not None:
+                try:
+                    await on_terminal(handle)
+                except Exception:  # noqa: BLE001 — persistence must not
+                    # mask the terminal transition; the audit row above
+                    # already recorded the outcome.
+                    pass
 
     handle._task = asyncio.create_task(supervise())
     return handle

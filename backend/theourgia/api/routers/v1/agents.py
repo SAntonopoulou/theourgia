@@ -26,7 +26,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 
-from theourgia.api.deps import CurrentUser
+from theourgia.api.deps import CurrentUser, DBSession
 from theourgia.core.agents.daemon_client import (
     DaemonClient,
     DaemonError,
@@ -34,6 +34,7 @@ from theourgia.core.agents.daemon_client import (
     DaemonRefused,
     DaemonUnreachable,
 )
+from theourgia.core.agents.mcp_tokens import mint_mcp_token
 from theourgia.core.config import get_settings
 from theourgia.models.identity import User
 
@@ -141,6 +142,7 @@ class InstallStateBody(BaseModel):
 async def start_run(
     body: StartRunBody,
     user: CurrentUser,
+    session: DBSession,
     daemon: Annotated[DaemonClient, Depends(get_daemon_client)],
 ) -> JSONResponse:
     """Start an agent run — proxies to daemon POST /runs.
@@ -149,14 +151,20 @@ async def start_run(
     holds the cap state, MCP session, subprocess.
     """
     vault_did = _vault_did_for_user(user)
+    # Mint the dedicated per-run MCP bearer the daemon presents when it
+    # dials back into POST /api/v1/mcp. NOT the caller's session token:
+    # the MCP token resolves only on the read-only MCP endpoint.
+    # Commit before handing it over so the daemon's dial-back cannot
+    # race the insert.
+    mcp_token = await mint_mcp_token(
+        session, user_id=user.id, install_id=body.install_id,
+    )
+    await session.commit()
     daemon_body: dict[str, Any] = {
         **body.model_dump(),
         "vault_did": vault_did,
-        # The daemon's MCP layer needs a vault session token to dial
-        # back into the vault's MCP. For now we mint a per-run token
-        # derived from the user's existing session; production will
-        # use a short-lived signed token (Phase 15 hardening).
-        "vault_session_token": f"vault-sess-{user.id}",
+        "vault_id": _vault_id_for_user(user),
+        "vault_session_token": mcp_token,
     }
     try:
         result = await daemon.start_run(daemon_body)
@@ -366,6 +374,28 @@ async def write_install_memory(
     try:
         result = await daemon.write_install_memory(
             install_id, name, payload.body,
+        )
+    except DaemonError as exc:
+        raise _handle_daemon_error(exc) from exc
+    return JSONResponse(content=result)
+
+
+@router.get("/costs/summary")
+async def cost_summary(
+    user: CurrentUser,
+    daemon: Annotated[DaemonClient, Depends(get_daemon_client)],
+    window: str = "month",
+) -> JSONResponse:
+    """Aggregated cost + token rollup for the C10 dashboard — proxies
+    to daemon GET /costs/summary scoped to the caller's vault."""
+    if window not in ("day", "week", "month"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="window must be one of: day, week, month",
+        )
+    try:
+        result = await daemon.cost_summary(
+            vault_id=_vault_id_for_user(user), window=window,
         )
     except DaemonError as exc:
         raise _handle_daemon_error(exc) from exc

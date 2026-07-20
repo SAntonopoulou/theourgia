@@ -10,6 +10,8 @@
 import type { ApiClient } from "./client.js";
 import type {
   AgentAuditQueryResponse,
+  AgentCostSummaryResponse,
+  AgentCostWindow,
   AgentInstallListResponse,
   AgentInstallSnapshot,
   AgentInstallState,
@@ -23,6 +25,7 @@ import type {
   BookRecord,
   BundleImportResponse,
   BundlePreviewResponse,
+  BundleUninstallResponse,
   BundledPackageListResponse,
   BundledVoce,
   CastHoraryInput,
@@ -106,6 +109,8 @@ import type {
   RegistrySubmission,
   RegistrySubmissionListResponse,
   ScryingSessionRecord,
+  SealEntryInput,
+  SealedPayloadRead,
   SearchEntriesQuery,
   SearchEntriesResponse,
   ServitorKindWire,
@@ -941,6 +946,35 @@ export function api(client: ApiClient) {
     },
 
     /**
+     * Seal an entry (v1-033, Mode B). The body was already encrypted
+     * on this device (`sealToEnvelope`); the server stores the
+     * ciphertext, NULLs the plaintext body, and purges plaintext
+     * revisions in the same transaction. One-way server-side — there
+     * is no unseal endpoint; reads go through `getEntrySealedPayload`
+     * and decrypt client-side.
+     */
+    sealEntry(id: string, input: SealEntryInput): Promise<EntryDetailRecord> {
+      return client.request<EntryDetailRecord>(`/api/v1/entries/${id}/seal`, {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    /**
+     * Ciphertext of a sealed entry (owner-only, base64). Decrypt in
+     * memory with the vault passphrase via `decryptSealedPayloadB64`
+     * — the row stays sealed; this is read-only.
+     */
+    getEntrySealedPayload(
+      id: string,
+      opts?: { signal?: AbortSignal },
+    ): Promise<SealedPayloadRead> {
+      return client.request<SealedPayloadRead>(`/api/v1/entries/${id}/sealed-payload`, {
+        signal: opts?.signal,
+      });
+    },
+
+    /**
      * Version history (v1-028) — newest-first revision list. Sealed
      * entries 403 (they keep no server-readable history).
      */
@@ -1291,6 +1325,21 @@ export function api(client: ApiClient) {
       return client.request<OathRead>(`/api/v1/oaths/${id}`, { signal: opts?.signal });
     },
 
+    /**
+     * Ciphertext of a sealed oath (owner-only, base64 — v1-033).
+     * Decrypt in memory with the vault passphrase via
+     * `decryptSealedPayloadB64` (the SealUnlock flow). Never
+     * plaintext; non-sealed rows 409.
+     */
+    getOathSealedPayload(
+      id: string,
+      opts?: { signal?: AbortSignal },
+    ): Promise<SealedPayloadRead> {
+      return client.request<SealedPayloadRead>(`/api/v1/oaths/${id}/sealed-payload`, {
+        signal: opts?.signal,
+      });
+    },
+
     createOath(input: CreateOathInput): Promise<OathRead> {
       return client.request<OathRead>("/api/v1/oaths", {
         method: "POST",
@@ -1328,6 +1377,21 @@ export function api(client: ApiClient) {
 
     getInitiation(id: string, opts?: { signal?: AbortSignal }): Promise<InitiationRead> {
       return client.request<InitiationRead>(`/api/v1/initiations/${id}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    /**
+     * Ciphertext of a sealed initiation (owner-only, base64 —
+     * v1-033). Decrypt in memory with the vault passphrase via
+     * `decryptSealedPayloadB64` (the per-read SealUnlock flow).
+     * Never plaintext; rows without ciphertext 409.
+     */
+    getInitiationSealedPayload(
+      id: string,
+      opts?: { signal?: AbortSignal },
+    ): Promise<SealedPayloadRead> {
+      return client.request<SealedPayloadRead>(`/api/v1/initiations/${id}/sealed-payload`, {
         signal: opts?.signal,
       });
     },
@@ -2090,6 +2154,12 @@ export function api(client: ApiClient) {
       );
     },
 
+    getAgentCostSummary(window: AgentCostWindow = "month"): Promise<AgentCostSummaryResponse> {
+      return client.request<AgentCostSummaryResponse>(
+        `/api/v1/agents/costs/summary?window=${window}`,
+      );
+    },
+
     // ── Registry browse (H10 A1 + C2) ─────────────────────────────
 
     listRegistryPlugins(params?: {
@@ -2255,6 +2325,18 @@ export function api(client: ApiClient) {
     bundlesInstalled(opts?: { signal?: AbortSignal }): Promise<InstalledBundleListResponse> {
       return client.request<InstalledBundleListResponse>("/api/v1/bundles/installed", {
         signal: opts?.signal,
+      });
+    },
+
+    /**
+     * Uninstall an install record (v1-033). Removes the record and
+     * NOTHING else: imported content (entities, templates, recipes)
+     * stays in the vault — bundle removal is a tombstone, not an
+     * erasure. The response says so explicitly.
+     */
+    bundleUninstall(id: string): Promise<BundleUninstallResponse> {
+      return client.request<BundleUninstallResponse>(`/api/v1/bundles/installed/${id}`, {
+        method: "DELETE",
       });
     },
 

@@ -36,6 +36,9 @@ from theourgia.api.routers.v1 import (
 from theourgia.api.routers.v1 import (
     federation_audit as v1_federation_audit,
 )
+from theourgia.api.routers.v1 import (
+    hub_aggregates as v1_hub_aggregates,
+)
 from theourgia.api.routers.v1 import sso as v1_sso
 from theourgia.api.routers.v1 import activitypub as v1_activitypub
 from theourgia.api.routers.v1 import identities as v1_identities
@@ -98,6 +101,7 @@ from theourgia.api.routers.v1 import user_audit as v1_user_audit
 from theourgia.api.routers.v1 import user_sessions as v1_user_sessions
 from theourgia.api.routers.v1 import keys as v1_keys
 from theourgia.api.routers.v1 import agents as v1_agents
+from theourgia.api.routers.v1 import vault_mcp as v1_vault_mcp
 from theourgia.api.routers.v1 import federation_inbox as v1_federation_inbox
 from theourgia.api.routers.v1 import federation_peers as v1_federation_peers
 from theourgia.api.routers.v1 import activitypub_actor as ap_actor
@@ -247,6 +251,10 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(
         v1_federation_audit.router, tags=["federation"],
     )
+    # Cross-vault DP aggregates (v1-033 · Tier 3 #20)
+    v1.include_router(
+        v1_hub_aggregates.router, tags=["federation"],
+    )
     v1.include_router(v1_sso.router, tags=["federation"])
     v1.include_router(v1_activitypub.router, tags=["federation"])
     # Phase 14 Plugin Ecosystem
@@ -261,6 +269,9 @@ def register_routers(app: FastAPI) -> None:
     # Mode A vault-key rotation (v1-027 · Phase 15 B5)
     v1.include_router(v1_keys.router, tags=["hardening"])
     v1.include_router(v1_agents.router, tags=["agents"])
+    # Vault-side MCP (Phase 16 close-out) — the endpoint the agent
+    # daemon dials for scoped, read-only vault reads.
+    v1.include_router(v1_vault_mcp.router, tags=["agents"])
     v1.include_router(v1_federation_inbox.router, tags=["federation"])
     v1.include_router(v1_federation_peers.router, tags=["federation"])
     v1.include_router(v1_registry_bridge.router, tags=["registry"])

@@ -43,6 +43,18 @@ AUTH_REQUIRED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
         "00000000-0000-0000-0000-000000000001/restore",
         None,
     ),
+    # Entry seal (v1-033). Doubly important: the sealed-payload read
+    # hands out vault ciphertext.
+    (
+        "POST",
+        "/api/v1/entries/00000000-0000-0000-0000-000000000000/seal",
+        {"encrypted_payload": "{}"},
+    ),
+    (
+        "GET",
+        "/api/v1/entries/00000000-0000-0000-0000-000000000000/sealed-payload",
+        None,
+    ),
     # Traditions (v1-001).
     ("GET", "/api/v1/traditions/closed-slugs", None),
     # Entities + alias-graph + views.
@@ -109,6 +121,18 @@ AUTH_REQUIRED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
         "encryption_mode": "sealed",
         "encrypted_payload": "AAAA",
     }),
+    # Sealed-payload reads (v1-033) — vault ciphertext, owner-only.
+    (
+        "GET",
+        "/api/v1/oaths/00000000-0000-0000-0000-000000000000/sealed-payload",
+        None,
+    ),
+    (
+        "GET",
+        "/api/v1/initiations/00000000-0000-0000-0000-000000000000/"
+        "sealed-payload",
+        None,
+    ),
     ("POST", "/api/v1/contracts", {
         "entity_id": "00000000-0000-0000-0000-000000000001",
         "title": "t",
@@ -195,6 +219,12 @@ AUTH_REQUIRED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("GET", "/api/v1/wellbeing/nudge", None),
     # Magickal bundles (v1-011, ADR-0011).
     ("GET", "/api/v1/bundles/installed", None),
+    # Uninstall (v1-033) — record-only removal, owner-gated.
+    (
+        "DELETE",
+        "/api/v1/bundles/installed/00000000-0000-0000-0000-000000000000",
+        None,
+    ),
     ("POST", "/api/v1/bundles/preview", None),
     ("GET", "/api/v1/bundles/export?type=pantheon", None),
     # Bundled content packages (v1-020).
@@ -213,12 +243,49 @@ AUTH_REQUIRED_ENDPOINTS: list[tuple[str, str, dict | None]] = [
     ("POST", "/api/v1/keys/rotate", None),
     ("GET", "/api/v1/keys/rotation-status", None),
     ("GET", "/api/v1/keys/history", None),
+    # Vault-side MCP (v1-031 · Phase 16 close-out). Doubly important:
+    # this is the agent daemon's read window into vault content — it
+    # must resolve ONLY a live agent MCP bearer token.
+    ("POST", "/api/v1/mcp", {
+        "jsonrpc": "2.0", "method": "read.entries", "params": {}, "id": 1,
+    }),
+    # Agent cost dashboard proxy (v1-031).
+    ("GET", "/api/v1/agents/costs/summary", None),
     # Federation peer directory (v1-026). Operator-facing; auth runs
     # before the transport-disabled 503 check.
     ("GET", "/api/v1/federation/peers", None),
     ("POST", "/api/v1/federation/peers", {
         "base_url": "https://peer.example.com",
     }),
+    # Group rituals (v1-031). The declare-egregore path writes an
+    # entity into the caller's vault — never anonymous.
+    ("POST", "/api/v1/group-rituals", {
+        "title": "t", "scheduled_for_utc": "2026-01-01T00:00:00Z",
+    }),
+    ("GET", "/api/v1/group-rituals", None),
+    (
+        "POST",
+        "/api/v1/group-rituals/00000000-0000-0000-0000-000000000000/"
+        "declare-egregore",
+        {"name": "e"},
+    ),
+    (
+        "GET",
+        "/api/v1/group-rituals/00000000-0000-0000-0000-000000000000/"
+        "fragments",
+        None,
+    ),
+    # Plugin lifecycle + install-from-registry (v1-032). Doubly
+    # important: install-from-registry writes code to disk — auth runs
+    # before any registry fetch or unpack.
+    ("GET", "/api/v1/plugins/installed", None),
+    ("POST", "/api/v1/plugins/install-from-registry", {
+        "slug": "example-cipher",
+    }),
+    ("GET", "/api/v1/plugins/registry/search", None),
+    # Registry SSO assertion minting (v1-032) — a signed identity
+    # assertion must never be mintable anonymously.
+    ("POST", "/api/v1/sso/registry-assertion", None),
 ]
 
 
