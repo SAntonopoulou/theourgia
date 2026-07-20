@@ -29,8 +29,13 @@
 :80 {
     encode gzip zstd
 
-    # Health check endpoint
-    respond /healthz "ok" 200
+    # Health check endpoint. Must be a handle block: a bare respond
+    # loses to the SPA catch-all handle in Caddy's directive ordering,
+    # which 404s unknown paths — the container healthcheck failed on
+    # exactly this for 10+ days (v1-025).
+    handle /healthz {
+        respond "ok" 200
+    }
 
     # Backend API routes
     handle /api/* {
