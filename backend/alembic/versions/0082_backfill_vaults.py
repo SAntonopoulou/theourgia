@@ -10,6 +10,10 @@ against the global unique slug constraint.
 The sign-in path (v1-030) provisions vaults going forward and is
 idempotent; this migration repairs accounts that exist already.
 
+Uses ``sa.text()`` with named bindparams throughout: alembic runs
+migrations over asyncpg (see ``env.py``), whose paramstyle is ``$1``
+positional — the psycopg ``%(name)s`` style fails there (v1-030b).
+
 Revision ID: 0082
 Revises: 0081
 Create Date: 2026-07-20
@@ -20,6 +24,7 @@ from __future__ import annotations
 import re
 from typing import Sequence, Union
 
+import sqlalchemy as sa
 from alembic import op
 
 revision: str = "0082"
@@ -37,20 +42,33 @@ def _slug(name: str) -> str:
 
 def upgrade() -> None:
     bind = op.get_bind()
-    rows = bind.exec_driver_sql(
-        """
-        SELECT u.id, u.email
-        FROM "user" u
-        WHERE NOT EXISTS (
-            SELECT 1 FROM vault v WHERE v.owner_id = u.id
+    rows = bind.execute(
+        sa.text(
+            """
+            SELECT u.id, u.email
+            FROM "user" u
+            WHERE NOT EXISTS (
+                SELECT 1 FROM vault v WHERE v.owner_id = u.id
+            )
+            """
         )
-        """
     ).fetchall()
 
     taken = {
         r[0]
-        for r in bind.exec_driver_sql("SELECT slug FROM vault").fetchall()
+        for r in bind.execute(sa.text("SELECT slug FROM vault")).fetchall()
     }
+
+    insert = sa.text(
+        """
+        INSERT INTO vault
+            (id, owner_id, slug, display_name, description,
+             public_face_enabled, created_at, updated_at)
+        VALUES
+            (gen_random_uuid(), :owner, :slug, :disp, '',
+             false, now(), now())
+        """
+    )
 
     for user_id, email in rows:
         local = (email or "").split("@", 1)[0]
@@ -61,15 +79,8 @@ def upgrade() -> None:
             n += 1
             slug = f"{base}-{n}"
         taken.add(slug)
-        bind.exec_driver_sql(
-            """
-            INSERT INTO vault
-                (id, owner_id, slug, display_name, description,
-                 public_face_enabled, created_at, updated_at)
-            VALUES
-                (gen_random_uuid(), %(owner)s, %(slug)s, %(disp)s, '',
-                 false, now(), now())
-            """,
+        bind.execute(
+            insert,
             {"owner": user_id, "slug": slug, "disp": local or slug},
         )
 
