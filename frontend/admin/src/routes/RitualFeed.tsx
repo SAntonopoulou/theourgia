@@ -22,7 +22,8 @@ import { apiClient } from "../data/api.js";
 
 interface WireRitual {
   id: string;
-  organizer_id: string;
+  /** Null on a mirror row — organized on another instance. */
+  organizer_id: string | null;
   hub_id: string | null;
   title: string;
   description: string | null;
@@ -196,36 +197,29 @@ export function RitualFeed() {
     void load();
   }, [load]);
 
-  const handleRespond = useCallback(
-    async (r: WireRitual, response: "accepted" | "declined") => {
-      try {
-        await apiClient.request<Record<string, unknown>>(
-          `/api/v1/group-rituals/${encodeURIComponent(r.id)}/respond`,
-          { method: "POST", json: { response } },
-        );
-        Toast.push({
-          tone: "success",
-          title: response === "accepted" ? "RSVP: going" : "RSVP: can't attend",
-          body: `“${r.title}”`,
-        });
-      } catch (e) {
-        Toast.push({
-          tone: "error",
-          title: "Couldn't RSVP",
-          body: e instanceof Error ? e.message : String(e),
-        });
-      }
-    },
-    [],
-  );
+  const handleRespond = useCallback(async (r: WireRitual, response: "accepted" | "declined") => {
+    try {
+      await apiClient.request<Record<string, unknown>>(
+        `/api/v1/group-rituals/${encodeURIComponent(r.id)}/respond`,
+        { method: "POST", json: { response } },
+      );
+      Toast.push({
+        tone: "success",
+        title: response === "accepted" ? "RSVP: going" : "RSVP: can't attend",
+        body: `“${r.title}”`,
+      });
+    } catch (e) {
+      Toast.push({
+        tone: "error",
+        title: "Couldn't RSVP",
+        body: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }, []);
 
   const now = Date.now();
-  const upcoming = (rituals ?? []).filter(
-    (r) => new Date(r.scheduled_for_utc).getTime() >= now,
-  );
-  const past = (rituals ?? []).filter(
-    (r) => new Date(r.scheduled_for_utc).getTime() < now,
-  );
+  const upcoming = (rituals ?? []).filter((r) => new Date(r.scheduled_for_utc).getTime() >= now);
+  const past = (rituals ?? []).filter((r) => new Date(r.scheduled_for_utc).getTime() < now);
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "22px 26px 80px" }}>
@@ -258,8 +252,8 @@ export function RitualFeed() {
               textAlign: "center",
             }}
           >
-            No upcoming group rituals. Propose one to invite others, or accept
-            an invitation when it arrives.
+            No upcoming group rituals. Propose one to invite others, or accept an invitation when it
+            arrives.
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

@@ -1,6 +1,7 @@
-"""Group ritual + participant + fragment + reflection (B139).
+"""Group ritual + participant + fragment + reflection (B139 + v1-033).
 
-Per ``plan/12-batches-backend.md`` § B139.
+Per ``plan/12-batches-backend.md`` § B139; cross-instance columns per
+``docs/developer/federation-protocol.md`` §4.7/§4.8 (v1-033).
 
 The H08 group-ritual surface trio (scheduler · coordination ·
 post-mortem) drives the schema below.
@@ -16,6 +17,24 @@ Honesty rules wired here:
     non-DRAFT.
   · ``location_detail`` is only meaningful for ``PHYSICAL``
     location; ``DISPERSED`` is the default.
+
+Cross-instance additions (v1-033):
+
+  · ``origin_did`` + ``origin_ritual_id`` — set ONLY on mirror rows
+    created from an inbound ``ritual.schedule`` envelope. A mirror
+    has ``organizer_id IS NULL``: no local user can PATCH / start /
+    close it — those transitions arrive from the origin instance.
+  · ``egregore_name`` — the ritual declares itself an egregore
+    creation event (plan/12 §"Egregore creation flow"). Frozen with
+    the rest of the script once the ritual leaves DRAFT. At close,
+    the resulting EGREGORE entity is registered in every
+    participating vault — local directly, remote via
+    ``ritual.update`` / ``update_kind=egregore_registration``.
+  · ``GroupRitualRemoteParticipant`` — the cross-instance roster.
+    Remote practitioners are vault DIDs, never local user rows.
+  · Fragments / reflections can be authored remotely:
+    ``author_id`` is nullable and ``author_did`` carries the remote
+    vault DID. Exactly one of the two is set.
 """
 
 from __future__ import annotations
@@ -34,8 +53,10 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlmodel import Enum as SQLEnum
 from sqlmodel import Field, SQLModel
 
@@ -44,6 +65,7 @@ from theourgia.models.base import IDMixin, SoftDeleteMixin, TimestampMixin
 __all__ = [
     "GroupRitual",
     "GroupRitualParticipant",
+    "GroupRitualRemoteParticipant",
     "GroupRitualFragment",
     "GroupRitualReflection",
     "GroupRitualLocation",
@@ -74,20 +96,31 @@ class ParticipantStatus(str, enum.Enum):
 
 
 class GroupRitual(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
-    """A scheduled group working — single-vault state in B139.
-    Cross-instance broadcast lands in Phase 12.5 transport."""
+    """A scheduled group working.
+
+    Locally organized rituals carry ``organizer_id``; mirror rows
+    created from an inbound ``ritual.schedule`` envelope carry
+    ``origin_did`` + ``origin_ritual_id`` instead (v1-033).
+    """
 
     __tablename__ = "group_ritual"
     __table_args__ = (
         Index("ix_group_ritual_organizer", "organizer_id"),
         Index("ix_group_ritual_hub", "hub_id"),
         Index("ix_group_ritual_status", "status"),
+        Index(
+            "ux_group_ritual_origin_ritual",
+            "origin_ritual_id",
+            unique=True,
+            postgresql_where=text("origin_ritual_id IS NOT NULL"),
+        ),
     )
 
-    organizer_id: UUID = Field(
+    organizer_id: Optional[UUID] = Field(
+        default=None,
         sa_column=Column(
             ForeignKey("user.id", ondelete="CASCADE"),
-            nullable=False,
+            nullable=True,
         ),
     )
     hub_id: Optional[UUID] = Field(
@@ -136,6 +169,36 @@ class GroupRitual(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
         sa_column=Column(
             ForeignKey("entity.id", ondelete="SET NULL"),
             nullable=True,
+        ),
+    )
+
+    egregore_name: Optional[str] = Field(
+        default=None,
+        sa_column=Column(String(256), nullable=True),
+        description=(
+            "When set, the ritual declares itself an egregore creation "
+            "event. At close the resulting EGREGORE entity is registered "
+            "in every participating vault. Frozen once the ritual leaves "
+            "DRAFT, like the rest of the script."
+        ),
+    )
+
+    # ── Cross-instance mirror columns (v1-033) ─────────────────────
+    origin_did: Optional[str] = Field(
+        default=None,
+        sa_column=Column(String(255), nullable=True),
+        description=(
+            "Organizer vault DID on the origin instance. Set ONLY on "
+            "mirror rows created from an inbound ritual.schedule."
+        ),
+    )
+
+    origin_ritual_id: Optional[UUID] = Field(
+        default=None,
+        sa_column=Column(PGUUID(as_uuid=True), nullable=True),
+        description=(
+            "The origin instance's ritual id — the id every "
+            "ritual.update envelope references on the wire."
         ),
     )
 
@@ -194,9 +257,40 @@ class GroupRitualParticipant(SQLModel, table=True):
     )
 
 
+class GroupRitualRemoteParticipant(SQLModel, table=True):
+    """Cross-instance roster row — a remote practitioner named by
+    vault DID (v1-033). Local practitioners never appear here; they
+    are :class:`GroupRitualParticipant` rows."""
+
+    __tablename__ = "group_ritual_remote_participant"
+    __table_args__ = (
+        PrimaryKeyConstraint(
+            "ritual_id", "did",
+            name="pk_group_ritual_remote_participant",
+        ),
+    )
+
+    ritual_id: UUID = Field(
+        sa_column=Column(
+            ForeignKey("group_ritual.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+    )
+    did: str = Field(sa_column=Column(String(255), nullable=False))
+    role_in_ritual: Optional[str] = Field(
+        default=None, sa_column=Column(String(120), nullable=True),
+    )
+    invited_at: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False),
+    )
+
+
 class GroupRitualFragment(IDMixin, TimestampMixin, table=True):
     """One participant's contribution during the live ritual.
-    Append-only — no update / delete affordance."""
+    Append-only — no update / delete affordance.
+
+    Exactly one of ``author_id`` (local) / ``author_did`` (remote,
+    v1-033) is set."""
 
     __tablename__ = "group_ritual_fragment"
     __table_args__ = (
@@ -209,11 +303,15 @@ class GroupRitualFragment(IDMixin, TimestampMixin, table=True):
             nullable=False,
         ),
     )
-    author_id: UUID = Field(
+    author_id: Optional[UUID] = Field(
+        default=None,
         sa_column=Column(
             ForeignKey("user.id", ondelete="CASCADE"),
-            nullable=False,
+            nullable=True,
         ),
+    )
+    author_did: Optional[str] = Field(
+        default=None, sa_column=Column(String(255), nullable=True),
     )
     body: str = Field(sa_column=Column(Text(), nullable=False))
     posted_at_utc: datetime = Field(
@@ -222,7 +320,12 @@ class GroupRitualFragment(IDMixin, TimestampMixin, table=True):
 
 
 class GroupRitualReflection(IDMixin, TimestampMixin, table=True):
-    """Post-ritual write-once reflection. One per participant."""
+    """Post-ritual write-once reflection. One per participant.
+
+    Local authors are deduplicated by the UniqueConstraint on
+    ``(ritual_id, author_id)``; remote authors (``author_did`` set,
+    ``author_id`` NULL — v1-033) are deduplicated at the inbox
+    handler because SQL NULLs never collide in a unique index."""
 
     __tablename__ = "group_ritual_reflection"
     __table_args__ = (
@@ -239,10 +342,14 @@ class GroupRitualReflection(IDMixin, TimestampMixin, table=True):
             nullable=False,
         ),
     )
-    author_id: UUID = Field(
+    author_id: Optional[UUID] = Field(
+        default=None,
         sa_column=Column(
             ForeignKey("user.id", ondelete="CASCADE"),
-            nullable=False,
+            nullable=True,
         ),
+    )
+    author_did: Optional[str] = Field(
+        default=None, sa_column=Column(String(255), nullable=True),
     )
     body: str = Field(sa_column=Column(Text(), nullable=False))

@@ -15,9 +15,9 @@ import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 
 import {
+  GroupRitualCoordinationSurface,
   type GroupRitualFragment,
   type GroupRitualParticipant,
-  GroupRitualCoordinationSurface,
   type GroupRitualStatus,
   useTopbar,
 } from "@theourgia/shared";
@@ -41,9 +41,13 @@ const BACKEND_TO_SURFACE_STATUS: Record<RitualStatus, GroupRitualStatus> = {
 };
 
 function toSurfaceFragment(f: ApiFragment): GroupRitualFragment {
+  // Remote authors carry a vault DID; local ones a user id.
+  const did = f.author_did
+    ? (f.author_did.split(":").pop() ?? f.author_did)
+    : (f.author_id ?? "·").slice(0, 8);
   return {
     id: f.id,
-    did: f.author_id.slice(0, 8),
+    did,
     time: new Date(f.posted_at_utc).toLocaleTimeString(undefined, {
       hour: "2-digit",
       minute: "2-digit",
@@ -87,10 +91,13 @@ export function GroupRitualCoordination() {
 
   const r = ritual.data;
   const scheduled = new Date(r.scheduled_for_utc);
+  // A mirror row has no local organizer — origin_did names the
+  // remote one.
+  const organizerRef = r.organizer_id ?? r.origin_did ?? "·";
   const participants: GroupRitualParticipant[] = [
     {
-      id: r.organizer_id,
-      initial: (r.organizer_id[0] ?? "·").toUpperCase(),
+      id: organizerRef,
+      initial: (organizerRef[0] ?? "·").toUpperCase(),
       name: "Organizer",
       presence: r.status === "in_progress" ? "in-ritual" : "joined",
     },

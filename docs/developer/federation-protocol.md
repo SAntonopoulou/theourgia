@@ -320,6 +320,12 @@ Reverses a prior `Push` / `Mirror` / capability grant / membership.
 
 A hub officer schedules a group ritual.
 
+> **Wire key (v1-033):** the native inbox dispatches on the body's
+> `type` field; `RitualSchedule` travels as `"type": "ritual.schedule"`.
+> The receiving instance creates a local mirror ritual (no local
+> organizer) for every roster DID that resolves to one of its vaults,
+> idempotently per `ritual_id`.
+
 ```json
 {
   "message_type": "RitualSchedule",
@@ -359,7 +365,16 @@ Fragment posts during a ritual + the post-mortem assembly.
 }
 ```
 
-`update_kind` ∈ `{fragment, completion, postmortem_entry, egregore_registration}`.
+`update_kind` ∈ `{start, fragment, completion, postmortem_entry, egregore_registration}`.
+
+> **Wire key (v1-033):** `RitualUpdate` travels as
+> `"type": "ritual.update"`. `start` (added in v1-033) is sent by the
+> origin when the organizer begins the working, so participant
+> instances open their mirrors for fragment posting; `completion` and
+> `egregore_registration` are likewise origin-only, while `fragment`
+> and `postmortem_entry` also flow from participant instances back to
+> the origin. `egregore_registration` registers the declared EGREGORE
+> entity in every participating vault on the receiving instance.
 
 **Frozen once final:** the H08 honesty rule 22 applies — once a ritual is in `COMPLETED` state, the script + voces + correspondences are FROZEN. A `RitualUpdate` envelope with `update_kind=fragment` on a completed ritual MUST be rejected.
 

@@ -11,8 +11,8 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import {
   type GroupRitualFrozenFragment,
-  type GroupRitualReflection,
   GroupRitualPostMortemSurface,
+  type GroupRitualReflection,
   useTopbar,
 } from "@theourgia/shared";
 
@@ -27,10 +27,16 @@ import {
   useReflections,
 } from "../lib/groupRituals.js";
 
+/** Remote authors carry a vault DID; local ones a user id. */
+function authorLabel(authorId: string | null, authorDid: string | null): string {
+  if (authorDid) return authorDid.split(":").pop() ?? authorDid;
+  return (authorId ?? "·").slice(0, 8);
+}
+
 function toFragment(f: ApiFragment): GroupRitualFrozenFragment {
   return {
     id: f.id,
-    did: f.author_id.slice(0, 8),
+    did: authorLabel(f.author_id, f.author_did),
     time: new Date(f.posted_at_utc).toLocaleTimeString(undefined, {
       hour: "2-digit",
       minute: "2-digit",
@@ -40,10 +46,11 @@ function toFragment(f: ApiFragment): GroupRitualFrozenFragment {
 }
 
 function toReflection(r: ApiReflection): GroupRitualReflection {
+  const label = authorLabel(r.author_id, r.author_did);
   return {
-    participantId: r.author_id,
-    initial: (r.author_id[0] ?? "·").toUpperCase(),
-    name: "Participant",
+    participantId: r.author_id ?? r.author_did ?? r.id,
+    initial: (label[0] ?? "·").toUpperCase(),
+    name: r.author_did ? label : "Participant",
     body: r.body,
   };
 }
@@ -120,7 +127,7 @@ export function GroupRitualPostMortem() {
         egregore={
           r.egregore_entity_id
             ? {
-                entityName: "Egregore",
+                entityName: r.egregore_name ?? "Egregore",
                 entityHref: `/entities/${r.egregore_entity_id}`,
               }
             : undefined

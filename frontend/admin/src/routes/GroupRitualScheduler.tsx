@@ -17,16 +17,17 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
-  GroupRitualSchedulerSurface,
   type GroupRitualLocationKind,
+  GroupRitualSchedulerSurface,
   useTopbar,
 } from "@theourgia/shared";
 
 import { SurfaceError } from "../lib/SurfaceError.js";
-import {
-  type RitualLocation,
-  useCreateRitual,
-} from "../lib/groupRituals.js";
+import { apiPost } from "../lib/api.js";
+import { type RitualLocation, useCreateRitual } from "../lib/groupRituals.js";
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DID_RE = /^did:theourgia:/;
 
 // Surface kind ↔ backend kind. Surface uses 3 keys (dispersed / virtual /
 // physical); backend uses 3 keys (dispersed / convergent / hybrid).
@@ -47,8 +48,7 @@ export function GroupRitualScheduler() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [localDatetime, setLocalDatetime] = useState("");
-  const [locationKind, setLocationKind] =
-    useState<GroupRitualLocationKind>("dispersed");
+  const [locationKind, setLocationKind] = useState<GroupRitualLocationKind>("dispersed");
   const [locationAddress, setLocationAddress] = useState("");
   const [locationUrl, setLocationUrl] = useState("");
   const [participants, setParticipants] = useState<string[]>([]);
@@ -129,20 +129,12 @@ export function GroupRitualScheduler() {
         locationUrl={locationUrl}
         onLocationUrlChange={setLocationUrl}
         participants={participants}
-        onAddParticipant={(entry) =>
-          setParticipants((prev) => [...prev, entry])
-        }
-        onRemoveParticipant={(idx) =>
-          setParticipants((prev) => prev.filter((_, i) => i !== idx))
-        }
+        onAddParticipant={(entry) => setParticipants((prev) => [...prev, entry])}
+        onRemoveParticipant={(idx) => setParticipants((prev) => prev.filter((_, i) => i !== idx))}
         correspondences={correspondences}
-        onAddCorrespondence={() =>
-          setCorrespondences((prev) => [...prev, "New item"])
-        }
+        onAddCorrespondence={() => setCorrespondences((prev) => [...prev, "New item"])}
         onRemoveCorrespondence={(idx) =>
-          setCorrespondences((prev) =>
-            prev.filter((_, i) => i !== idx),
-          )
+          setCorrespondences((prev) => prev.filter((_, i) => i !== idx))
         }
         script={script}
         onScriptChange={setScript}
@@ -154,8 +146,7 @@ export function GroupRitualScheduler() {
               description: description || null,
               scheduled_for_utc: utcIso,
               location: SURFACE_KIND_TO_BACKEND[locationKind],
-              location_detail:
-                locationAddress || locationUrl || null,
+              location_detail: locationAddress || locationUrl || null,
               shared_script: script || null,
               correspondences_payload: { items: correspondences },
             },
@@ -172,13 +163,33 @@ export function GroupRitualScheduler() {
               description: description || null,
               scheduled_for_utc: utcIso,
               location: SURFACE_KIND_TO_BACKEND[locationKind],
-              location_detail:
-                locationAddress || locationUrl || null,
+              location_detail: locationAddress || locationUrl || null,
               shared_script: script || null,
               correspondences_payload: { items: correspondences },
             },
             {
-              onSuccess: (data) => navigate(`/group-rituals/${data.id}`),
+              onSuccess: async (data) => {
+                // Rule 5: free-form DID input. Vault-DID entries
+                // invite cross-instance (a signed ritual.schedule
+                // queues per peer); UUID entries invite local users.
+                // Anything else stays a display-only chip — there is
+                // no name-lookup endpoint to resolve it against.
+                const entries = participants.map((p) => p.trim());
+                const remoteDids = entries.filter((p) => DID_RE.test(p));
+                const userIds = entries.filter((p) => UUID_RE.test(p));
+                if (remoteDids.length > 0 || userIds.length > 0) {
+                  try {
+                    await apiPost(`/group-rituals/${data.id}/invite`, {
+                      user_ids: userIds,
+                      remote_dids: remoteDids,
+                    });
+                  } catch {
+                    // The ritual draft exists; the invite can be
+                    // retried from its page. Never strand navigation.
+                  }
+                }
+                navigate(`/group-rituals/${data.id}`);
+              },
             },
           );
         }}

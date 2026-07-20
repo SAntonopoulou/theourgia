@@ -17,6 +17,21 @@ Kinds that PROCESS in v1:
     moderation queue (the b108-2gw comment substrate; per spec §6.4 /
     H08 rule 27 federated comments default to MANUAL approval and are
     invisible until the vault owner approves).
+  · ``ritual.schedule`` (v1-033, spec §4.7) — creates a local MIRROR
+    :class:`GroupRitual` (``organizer_id`` NULL, ``origin_did`` +
+    ``origin_ritual_id`` set) plus participant rows + in-app
+    notifications for every roster DID that resolves to a vault on
+    this instance. Idempotent per origin ritual id — retried and
+    per-participant duplicate envelopes converge on one mirror.
+  · ``ritual.update`` (v1-033, spec §4.8) — start / fragment /
+    completion / postmortem_entry / egregore_registration against the
+    mirror (from the origin instance) or against a locally organized
+    ritual (fragments + reflections from participant instances).
+    ``update_kind=fragment`` on a COMPLETED ritual is refused with the
+    verbatim ``ritual_frozen`` reason (H08 rule 22 / spec §10.5);
+    post-mortem reflections stay accepted, exactly one per author.
+    ``egregore_registration`` registers the EGREGORE entity in every
+    local participating vault (plan/12 egregore creation flow).
 
 Everything else is marked SKIPPED with a persisted reason:
 
@@ -42,7 +57,14 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from theourgia.core.config import get_settings
 from theourgia.core.federation.ap_outbound import enqueue_accept_for_follow
+from theourgia.core.federation.identity import (
+    ActorKind,
+    InvalidDIDError,
+    parse_actor_id,
+)
+from theourgia.core.federation.ritual_outbound import RITUAL_UPDATE_KINDS
 from theourgia.models.activitypub import (
     ActivityPubFollower,
     ActivityPubFollowRequest,
@@ -51,12 +73,25 @@ from theourgia.models.activitypub import (
     FollowRequestState,
 )
 from theourgia.models.comment import Comment, CommentState, CommentTargetKind
+from theourgia.models.entities import Entity, EntityKind
 from theourgia.models.entries import Entry
 from theourgia.models.federation_activity import (
     FederationActivity,
     FederationActivityKind,
     FederationActivityStatus,
 )
+from theourgia.models.group_ritual import (
+    GroupRitual,
+    GroupRitualFragment,
+    GroupRitualLocation,
+    GroupRitualParticipant,
+    GroupRitualReflection,
+    GroupRitualRemoteParticipant,
+    GroupRitualStatus,
+    ParticipantStatus,
+)
+from theourgia.models.identity import Vault
+from theourgia.models.notifications import Notification
 
 __all__ = [
     "process_activity",
@@ -297,10 +332,424 @@ async def _handle_note_create(
     return (FederationActivityStatus.PROCESSED, None)
 
 
+# ── Group rituals (v1-033, spec §4.7 / §4.8) ────────────────────────
+
+
+_RITUAL_FROZEN_REASON = (
+    "ritual_frozen: fragments are rejected once a ritual is COMPLETED "
+    "(H08 rule 22 / spec §10.5)"
+)
+
+
+def _parse_wire_datetime(raw: object) -> datetime | None:
+    """ISO-8601 with Z tolerance. None on any malformation — the
+    caller decides between SKIPPED and a server-side fallback."""
+    if not isinstance(raw, str) or not raw:
+        return None
+    try:
+        parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=UTC)
+    return parsed
+
+
+def _wire_body(activity: FederationActivity) -> dict | None:
+    body = (activity.body_json or {}).get("body")
+    return body if isinstance(body, dict) else None
+
+
+def _did_host(did: str) -> str | None:
+    try:
+        host, _, _ = parse_actor_id(did)
+    except InvalidDIDError:
+        return None
+    return host
+
+
+async def _local_owner_for_did(db: AsyncSession, did: str) -> UUID | None:
+    """Resolve a wire participant DID to a local vault owner.
+
+    Only vault DIDs whose host is THIS instance resolve; everything
+    else (other hosts, hub DIDs, malformed strings) returns None.
+    """
+    try:
+        host, kind, slug = parse_actor_id(did)
+    except InvalidDIDError:
+        return None
+    if host != get_settings().instance_id or kind is not ActorKind.VAULT:
+        return None
+    vault = (
+        await db.execute(select(Vault).where(Vault.slug == slug))
+    ).scalars().first()
+    return vault.owner_id if vault is not None else None
+
+
+async def _handle_ritual_schedule(
+    db: AsyncSession, activity: FederationActivity, now: datetime,
+) -> tuple[FederationActivityStatus, str | None]:
+    body = _wire_body(activity)
+    if body is None:
+        return (
+            FederationActivityStatus.SKIPPED,
+            "ritual.schedule carries no body",
+        )
+    try:
+        origin_ritual_id = UUID(str(body.get("ritual_id")))
+    except ValueError:
+        return (
+            FederationActivityStatus.SKIPPED,
+            "ritual.schedule has no valid ritual_id",
+        )
+    title = body.get("title")
+    if not isinstance(title, str) or not title.strip():
+        return (
+            FederationActivityStatus.SKIPPED,
+            "ritual.schedule has no title",
+        )
+    scheduled_for = _parse_wire_datetime(body.get("scheduled_for_utc"))
+    if scheduled_for is None:
+        return (
+            FederationActivityStatus.SKIPPED,
+            "ritual.schedule has no valid scheduled_for_utc",
+        )
+
+    raw_participants = body.get("participants")
+    roster: list[tuple[str, str | None]] = []
+    if isinstance(raw_participants, list):
+        for entry in raw_participants:
+            if not isinstance(entry, dict):
+                continue
+            did = entry.get("did")
+            if not isinstance(did, str) or not did:
+                continue
+            role = entry.get("role")
+            roster.append((did, role if isinstance(role, str) else None))
+
+    local: list[tuple[UUID, str | None]] = []
+    seen_owner_ids: set[UUID] = set()
+    for did, role in roster:
+        owner_id = await _local_owner_for_did(db, did)
+        if owner_id is None or owner_id in seen_owner_ids:
+            continue
+        seen_owner_ids.add(owner_id)
+        local.append((owner_id, role))
+    if not local:
+        return (
+            FederationActivityStatus.SKIPPED,
+            "ritual.schedule names no participant on this instance",
+        )
+
+    mirror = (
+        await db.execute(
+            select(GroupRitual).where(
+                GroupRitual.origin_ritual_id == origin_ritual_id,
+                GroupRitual.deleted_at.is_(None),
+            )
+        )
+    ).scalars().first()
+    if mirror is None:
+        organizer_did = body.get("organizer_did")
+        if not isinstance(organizer_did, str) or not organizer_did:
+            organizer_did = activity.sender_did
+        try:
+            location = GroupRitualLocation(body.get("location_kind"))
+        except ValueError:
+            location = GroupRitualLocation.DISPERSED
+        description = body.get("description")
+        location_detail = body.get("location_detail")
+        shared_script = body.get("shared_script")
+        correspondences = body.get("correspondences")
+        egregore_name = body.get("egregore_name")
+        mirror = GroupRitual(
+            organizer_id=None,
+            hub_id=None,
+            title=title.strip()[:300],
+            description=(
+                description if isinstance(description, str) else None
+            ),
+            scheduled_for_utc=scheduled_for,
+            location=location,
+            location_detail=(
+                location_detail[:500]
+                if isinstance(location_detail, str)
+                else None
+            ),
+            shared_script=(
+                shared_script if isinstance(shared_script, str) else None
+            ),
+            correspondences_payload=(
+                dict(correspondences)
+                if isinstance(correspondences, dict)
+                else {}
+            ),
+            egregore_name=(
+                egregore_name[:256]
+                if isinstance(egregore_name, str) and egregore_name
+                else None
+            ),
+            origin_did=organizer_did[:255],
+            origin_ritual_id=origin_ritual_id,
+            status=GroupRitualStatus.INVITED,
+        )
+        db.add(mirror)
+
+    existing_user_ids = set(
+        (
+            await db.execute(
+                select(GroupRitualParticipant.user_id).where(
+                    GroupRitualParticipant.ritual_id == mirror.id,
+                )
+            )
+        ).scalars().all()
+    )
+    for owner_id, role in local:
+        if owner_id in existing_user_ids:
+            continue
+        db.add(
+            GroupRitualParticipant(
+                ritual_id=mirror.id,
+                user_id=owner_id,
+                role_in_ritual=role[:120] if role else None,
+            )
+        )
+        db.add(
+            Notification(
+                user_id=owner_id,
+                template_name="group_ritual_schedule",
+                kind="group_ritual",
+                subject=f"Group ritual invitation: {title.strip()}"[:500],
+                body_text=(
+                    f"You are invited to the group ritual "
+                    f"“{title.strip()}”, scheduled for "
+                    f"{scheduled_for.isoformat()} (UTC), organized from "
+                    f"another instance ({mirror.origin_did}). Respond "
+                    f"from your group rituals list."
+                ),
+                action_url="/group-rituals",
+                action_label="View group rituals",
+            )
+        )
+    return (FederationActivityStatus.PROCESSED, None)
+
+
+async def _handle_ritual_update(  # noqa: PLR0911, PLR0912 — op dispatch
+    db: AsyncSession, activity: FederationActivity, now: datetime,
+) -> tuple[FederationActivityStatus, str | None]:
+    body = _wire_body(activity)
+    if body is None:
+        return (
+            FederationActivityStatus.SKIPPED,
+            "ritual.update carries no body",
+        )
+    try:
+        wire_ritual_id = UUID(str(body.get("ritual_id")))
+    except ValueError:
+        return (
+            FederationActivityStatus.SKIPPED,
+            "ritual.update has no valid ritual_id",
+        )
+    update_kind = body.get("update_kind")
+    if update_kind not in RITUAL_UPDATE_KINDS:
+        return (
+            FederationActivityStatus.SKIPPED,
+            f"unknown update_kind {update_kind!r}",
+        )
+
+    # Mirror rows match on the origin's id; locally organized rituals
+    # match on our own id (remote participants echo it back).
+    row = (
+        await db.execute(
+            select(GroupRitual).where(
+                GroupRitual.origin_ritual_id == wire_ritual_id,
+                GroupRitual.deleted_at.is_(None),
+            )
+        )
+    ).scalars().first()
+    if row is None:
+        row = (
+            await db.execute(
+                select(GroupRitual).where(
+                    GroupRitual.id == wire_ritual_id,
+                    GroupRitual.origin_ritual_id.is_(None),
+                    GroupRitual.deleted_at.is_(None),
+                )
+            )
+        ).scalars().first()
+    if row is None:
+        return (
+            FederationActivityStatus.SKIPPED,
+            "no local ritual for this update",
+        )
+    is_mirror = row.origin_ritual_id is not None
+
+    sender_host = _did_host(activity.sender_did)
+    if sender_host is None:
+        return (
+            FederationActivityStatus.SKIPPED,
+            "ritual.update sender is not a native peer DID",
+        )
+    if is_mirror:
+        origin_host = _did_host(row.origin_did or "")
+        if origin_host is None or sender_host != origin_host:
+            return (
+                FederationActivityStatus.SKIPPED,
+                "only the origin instance may update a mirrored ritual",
+            )
+    else:
+        roster = (
+            await db.execute(
+                select(GroupRitualRemoteParticipant.did).where(
+                    GroupRitualRemoteParticipant.ritual_id == row.id,
+                )
+            )
+        ).scalars().all()
+        participant_hosts = {
+            host for host in (_did_host(did) for did in roster) if host
+        }
+        if sender_host not in participant_hosts:
+            return (
+                FederationActivityStatus.SKIPPED,
+                "sender is not a participant instance of this ritual",
+            )
+        if update_kind in ("start", "completion", "egregore_registration"):
+            return (
+                FederationActivityStatus.SKIPPED,
+                f"only the origin instance may send {update_kind}",
+            )
+
+    if update_kind == "start":
+        if row.status in (
+            GroupRitualStatus.IN_PROGRESS,
+            GroupRitualStatus.COMPLETED,
+        ):
+            return (FederationActivityStatus.PROCESSED, None)
+        row.status = GroupRitualStatus.IN_PROGRESS
+        db.add(row)
+        return (FederationActivityStatus.PROCESSED, None)
+
+    if update_kind == "completion":
+        row.status = GroupRitualStatus.COMPLETED
+        db.add(row)
+        return (FederationActivityStatus.PROCESSED, None)
+
+    if update_kind == "fragment":
+        if row.status == GroupRitualStatus.COMPLETED:
+            return (FederationActivityStatus.SKIPPED, _RITUAL_FROZEN_REASON)
+        fragment_body = body.get("fragment_body")
+        if not isinstance(fragment_body, str) or not fragment_body.strip():
+            return (
+                FederationActivityStatus.SKIPPED,
+                "fragment carries no body text",
+            )
+        author_did = body.get("author_did")
+        if not isinstance(author_did, str) or not author_did:
+            author_did = activity.sender_did
+        if is_mirror and row.status == GroupRitualStatus.INVITED:
+            # At-least-once delivery can reorder start + first fragment.
+            row.status = GroupRitualStatus.IN_PROGRESS
+            db.add(row)
+        posted_at = _parse_wire_datetime(body.get("posted_at_utc")) or now
+        db.add(
+            GroupRitualFragment(
+                ritual_id=row.id,
+                author_id=None,
+                author_did=author_did[:255],
+                body=fragment_body[:4000],
+                posted_at_utc=posted_at,
+            )
+        )
+        return (FederationActivityStatus.PROCESSED, None)
+
+    if update_kind == "postmortem_entry":
+        reflection_body = body.get("reflection_body")
+        if (
+            not isinstance(reflection_body, str)
+            or not reflection_body.strip()
+        ):
+            return (
+                FederationActivityStatus.SKIPPED,
+                "postmortem_entry carries no body text",
+            )
+        author_did = body.get("author_did")
+        if not isinstance(author_did, str) or not author_did:
+            author_did = activity.sender_did
+        existing = (
+            await db.execute(
+                select(GroupRitualReflection).where(
+                    GroupRitualReflection.ritual_id == row.id,
+                    GroupRitualReflection.author_did == author_did[:255],
+                )
+            )
+        ).scalars().first()
+        if existing is not None:
+            # Write-once per author — retries converge, never duplicate.
+            return (FederationActivityStatus.PROCESSED, None)
+        db.add(
+            GroupRitualReflection(
+                ritual_id=row.id,
+                author_id=None,
+                author_did=author_did[:255],
+                body=reflection_body[:4000],
+            )
+        )
+        return (FederationActivityStatus.PROCESSED, None)
+
+    # egregore_registration (mirror only — origin sends it at close).
+    name = body.get("egregore_name")
+    if not isinstance(name, str) or not name.strip():
+        name = row.egregore_name
+    if not name:
+        return (
+            FederationActivityStatus.SKIPPED,
+            "egregore_registration carries no egregore name",
+        )
+    participants = (
+        await db.execute(
+            select(GroupRitualParticipant).where(
+                GroupRitualParticipant.ritual_id == row.id,
+            )
+        )
+    ).scalars().all()
+    origin_tag = f"group-ritual:{wire_ritual_id}"
+    first_entity: Entity | None = None
+    for participant in participants:
+        if participant.status == ParticipantStatus.DECLINED:
+            continue
+        entity = (
+            await db.execute(
+                select(Entity).where(
+                    Entity.owner_id == participant.user_id,
+                    Entity.origin == origin_tag,
+                    Entity.deleted_at.is_(None),
+                )
+            )
+        ).scalars().first()
+        if entity is None:
+            entity = Entity(
+                name=name.strip()[:256],
+                kind=EntityKind.EGREGORE,
+                owner_id=participant.user_id,
+                origin=origin_tag,
+            )
+            db.add(entity)
+        if first_entity is None:
+            first_entity = entity
+    if first_entity is not None and row.egregore_entity_id is None:
+        row.egregore_entity_id = first_entity.id
+        if not row.egregore_name:
+            row.egregore_name = name.strip()[:256]
+        db.add(row)
+    return (FederationActivityStatus.PROCESSED, None)
+
+
 _HANDLERS = {
     FederationActivityKind.FOLLOW_REQUEST: _handle_follow_request,
     FederationActivityKind.FOLLOW_UNDO: _handle_follow_undo,
     FederationActivityKind.NOTE_CREATE: _handle_note_create,
+    FederationActivityKind.RITUAL_SCHEDULE: _handle_ritual_schedule,
+    FederationActivityKind.RITUAL_UPDATE: _handle_ritual_update,
 }
 
 

@@ -150,6 +150,23 @@ class Settings(BaseSettings):
     """Sliding window for replay-nonce uniqueness. Five minutes by default
     — matches the RFC 9421 recommended skew + a small buffer."""
 
+    # ── Cross-vault aggregate analytics (DP, v1-033) ──────────────────────
+    analytics_dp_epsilon: float = Field(
+        default=1.0,
+        alias="THEOURGIA_ANALYTICS_DP_EPSILON",
+    )
+    """Laplace privacy budget for hub aggregate queries. Fixed
+    server-side — callers cannot choose their own epsilon, so repeated
+    querying cannot ratchet the noise down. Surfaced verbatim in every
+    aggregate response (honesty rule: the reader judges the noise)."""
+    analytics_dp_min_cohort: int = Field(
+        default=5,
+        alias="THEOURGIA_ANALYTICS_DP_MIN_COHORT",
+    )
+    """Minimum opted-in cohort before ANY aggregate — noised or not —
+    is returned. Below this the query is refused outright
+    (:class:`CohortTooSmall`); never lowered per-query."""
+
     # ── Backups ───────────────────────────────────────────────────────────
     restic_repository: str = Field(default="", alias="RESTIC_REPOSITORY")
     """Restic repository URL. Empty disables scheduled backups."""
@@ -314,6 +331,15 @@ class Settings(BaseSettings):
     # When unset, the H10 A-cluster marketplace browse routes return 503.
     registry_url: str | None = Field(
         default=None, alias="THEOURGIA_REGISTRY_URL",
+    )
+    # Directory where installed plugin packages live — the root
+    # `PluginLoader.discover_manifests` scans at startup and the
+    # install-from-registry bridge unpacks into. Default is the
+    # in-repo `plugins/` directory (where the reference plugins live);
+    # production deployments point this at a writable data dir
+    # (e.g. /var/lib/theourgia/plugins).
+    plugins_dir: Path = Field(
+        default=Path("plugins"), alias="THEOURGIA_PLUGINS_DIR",
     )
     # Operator's author DID at the registry — used to sign A-cluster
     # author-protected calls (submit / list-submissions / advisory).

@@ -66,6 +66,14 @@ class FederationActivityKind(str, enum.Enum):
     LINEAGE_ATTEST = "lineage.attest"
     LINEAGE_COUNTERSIGN = "lineage.countersign"
 
+    # Cross-instance group rituals (spec §4.7 / §4.8 — v1-033).
+    # ``ritual.schedule`` carries the RitualSchedule op; ``ritual.update``
+    # carries every RitualUpdate op (update_kind in the body selects
+    # start / fragment / completion / postmortem_entry /
+    # egregore_registration).
+    RITUAL_SCHEDULE = "ritual.schedule"
+    RITUAL_UPDATE = "ritual.update"
+
     # Unknown kinds get the catchall — the inbox accepts but flags for
     # operator review (rule: don't crash on unknown peer types).
     UNKNOWN = "unknown"
