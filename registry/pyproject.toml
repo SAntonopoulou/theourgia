@@ -31,6 +31,8 @@ dependencies = [
     "pydantic >=2.10,<3.0",
     "pydantic-settings >=2.6,<3.0",
     "cryptography >=44.0,<45.0",
+    # SSO bridge — fetching the trusted vault's well-known actor doc.
+    "httpx >=0.28,<1.0",
 ]
 
 [project.optional-dependencies]
