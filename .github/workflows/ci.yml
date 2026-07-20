@@ -1,19 +1,16 @@
 # Theourgia CI workflow
 #
-# **PARED DOWN AS OF 2026-06-21.** During v0.x development we run the
-# full test suite locally before every push (see
-# feedback_run_tests_as_you_develop in project memory) and don't want
-# to burn Actions minutes on every commit. This file keeps the small,
-# cheap, security-relevant jobs running on push:
+# **v1.0 re-enable (2026-07-20).** Through v0.x this ran only the three
+# cheap security jobs (identity/secret/telemetry) because the full suite
+# ran locally before every push. For v1.0 the enforcing test + typecheck
+# gates come back on, run against a real pgvector Postgres.
 #
-#   - identity-guard      — prevents OGirly/ShihoSakura attribution mistakes
-#   - secret-scan         — gitleaks for committed-secrets detection
-#   - no-telemetry-verify — enforces the zero-telemetry promise
-#
-# Everything else (python-lint, python-test, ts-lint, ts-typecheck,
-# markdown-lint, dep-audit, docker-build) is **disabled** and will be
-# re-enabled once we reach v1.0. The history is preserved at
-# 6afc51a (the cache substrate commit) for the full job set.
+# Lint (ruff/mypy/biome) runs ADVISORY (continue-on-error) rather than
+# blocking: the repo carries a large default-config lint baseline that is
+# a v1.x cleanup effort, not a v1.0 blocker. The advisory jobs surface
+# the signal without gating the merge; the enforcing gates are the tests,
+# the typecheck, and the security jobs. The full strict job set is
+# preserved at commit 6afc51a.
 
 name: ci
 
@@ -24,7 +21,6 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Cancel in-progress runs of this workflow for the same ref on new pushes
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -37,37 +33,27 @@ env:
   UV_VERSION: "0.5.13"
 
 jobs:
-  # ────────────────────────────────────────────────────────────────────────
-  # Identity guard — verify any commits in the PR/push are attributed to an
-  # allowlisted SAntonopoulou email. Prevents the OGirly attribution mistake.
-  # ────────────────────────────────────────────────────────────────────────
+  # ── Security (always enforcing) ─────────────────────────────────────────
   identity:
     name: identity-guard
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Verify commit authors
         run: |
           set -euo pipefail
           ALLOWED=("santonopoulou@protonmail.com" "s.willowood@acg.edu" "sophia@opaseltd.com")
-
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
           else
             range="${{ github.event.before }}..${{ github.event.after }}"
           fi
-
-          # Handle initial push (before is all zeros)
           if [[ "$range" == "0000000000000000000000000000000000000000..."* ]]; then
             range="HEAD~1..HEAD"
           fi
-
           mapfile -t emails < <(git log --format=%ae "$range" 2>/dev/null | sort -u)
-
           for email in "${emails[@]}"; do
             ok=false
             for allowed in "${ALLOWED[@]}"; do
@@ -75,20 +61,14 @@ jobs:
             done
             if ! $ok; then
               echo "::error::commit author '$email' is not on the SAntonopoulou allowlist"
-              echo "Allowed: ${ALLOWED[*]}"
               exit 1
             fi
-            echo "✓ $email"
+            echo "OK $email"
           done
 
-  # ────────────────────────────────────────────────────────────────────────
-  # Secret scanning (gitleaks) — fast, cheap, security-critical.
-  # ────────────────────────────────────────────────────────────────────────
   secret-scan:
     name: secret-scan
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
@@ -97,29 +77,126 @@ jobs:
         env:
           GITLEAKS_NOTIFY_USER_LIST: "@SAntonopoulou"
 
-  # ────────────────────────────────────────────────────────────────────────
-  # Zero-telemetry verifier — runs the script that enforces our promise.
-  # Cheap; protects a load-bearing project commitment.
-  # ────────────────────────────────────────────────────────────────────────
   no-telemetry:
     name: no-telemetry-verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: astral-sh/setup-uv@v3
         with:
           version: ${{ env.UV_VERSION }}
-
       - run: uv python install ${{ env.PYTHON_VERSION }}
-
       - name: Run verifier
         working-directory: backend
         run: |
-          if [ -f theourgia/scripts/verify_zero_telemetry.py ]; then
-            uv sync --all-extras --dev
-            uv run python -m theourgia.scripts.verify_zero_telemetry
-          else
-            echo "Zero-telemetry verifier not yet implemented."
-            echo "This step will become enforcing once the script lands."
-          fi
+          uv sync --all-extras --dev
+          uv run python -m theourgia.scripts.verify_zero_telemetry
+
+  # ── Enforcing gates ─────────────────────────────────────────────────────
+  backend-test:
+    name: backend-test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        # pgvector build required — migration 0001 CREATE EXTENSION vector.
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: theourgia
+          POSTGRES_PASSWORD: theourgia
+          POSTGRES_DB: theourgia_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U theourgia"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgresql+asyncpg://theourgia:theourgia@localhost:5432/theourgia_test
+      THEOURGIA_TEST_DATABASE_URL: postgresql+asyncpg://theourgia:theourgia@localhost:5432/theourgia_test
+      REDIS_URL: redis://localhost:6379/0
+      THEOURGIA_ENV: test
+      THEOURGIA_SECRET_KEY: ci-test-secret-key-not-for-any-real-deployment
+      THEOURGIA_MASTER_ENCRYPTION_KEY: ci-test-master-key-not-for-any-real-deployment
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - run: uv python install ${{ env.PYTHON_VERSION }}
+      - name: Sync deps
+        working-directory: backend
+        run: uv sync --all-extras --dev
+      - name: Migrate test database (proves the chain replays from zero)
+        working-directory: backend
+        run: uv run alembic upgrade head
+      - name: pytest
+        working-directory: backend
+        run: uv run pytest -q
+
+  frontend-typecheck:
+    name: frontend-typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile=false
+      - name: tsc (per workspace)
+        run: pnpm -r exec tsc --noEmit
+
+  frontend-test:
+    name: frontend-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile=false
+      - name: vitest (shared + admin)
+        run: pnpm -r test
+
+  # ── Advisory (non-blocking until the v1.x lint-baseline cleanup) ─────────
+  lint:
+    name: lint-advisory
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: ${{ env.UV_VERSION }}
+      - run: uv python install ${{ env.PYTHON_VERSION }}
+      - name: Sync deps
+        working-directory: backend
+        run: uv sync --all-extras --dev
+      - name: Ruff
+        working-directory: backend
+        run: uv run ruff check . || true
+      - name: mypy
+        working-directory: backend
+        run: uv run mypy theourgia || true
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile=false
+      - name: Biome
+        run: pnpm exec biome check . || true

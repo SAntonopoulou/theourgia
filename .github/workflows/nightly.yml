@@ -10,8 +10,9 @@ name: nightly
 
 on:
   # Re-enable post-v1.0:
-  # schedule:
-  #   - cron: "0 3 * * *"
+  # v1.0: nightly deep-audit cron re-enabled 2026-07-20.
+  schedule:
+    - cron: "0 3 * * *"
   workflow_dispatch:
 
 permissions:
