@@ -169,14 +169,54 @@ describe("endpoints — mock mode", () => {
     await expect(buildMock().getEntryDetail("does-not-exist")).rejects.toThrow(/not found/i);
   });
 
-  it("updateEntry persists visibility + sealed back into getEntryDetail", async () => {
+  it("updateEntry persists visibility back into getEntryDetail", async () => {
     const m = buildMock();
     const list = await m.listEntries();
     const first = list[0]!;
-    await m.updateEntry(first.id, { visibility: "viewer", sealed: true });
+    await m.updateEntry(first.id, { visibility: "viewer" });
     const detail = await m.getEntryDetail(first.id);
     expect(detail.visibility).toBe("viewer");
+    // Sealing is NOT a PATCHable boolean — it routes through the
+    // dedicated sealEntry endpoint (v1-033).
+    expect(detail.sealed).toBe(false);
+  });
+
+  it("sealEntry stores the envelope, drops the body, and purges history", async () => {
+    const m = buildMock();
+    const created = await m.createEntry({
+      title: "To be sealed",
+      type: "working",
+      excerpt: "",
+      glyph: "feather",
+    });
+    const docJson = JSON.stringify({ type: "doc", content: [] });
+    await m.updateEntryBody(created.id, { body: docJson });
+    const envelope = JSON.stringify({ v: 1, iv: "aXY=", ct: "Y3Q=" });
+    const sealed = await m.sealEntry(created.id, { encrypted_payload: envelope });
+    expect(sealed.sealed).toBe(true);
+    // Plaintext gone from the detail read.
+    const detail = await m.getEntryDetail(created.id);
     expect(detail.sealed).toBe(true);
+    expect(detail.body).toBe("");
+    // The ciphertext round-trips through the sealed-payload read.
+    const payload = await m.getEntrySealedPayload(created.id);
+    expect(atob(payload.encrypted_payload_b64)).toBe(envelope);
+  });
+
+  it("sealEntry refuses a second seal; sealed-payload 409s for unsealed rows", async () => {
+    const m = buildMock();
+    const created = await m.createEntry({
+      title: "Sealed once",
+      type: "note",
+      excerpt: "",
+      glyph: "feather",
+    });
+    await expect(m.getEntrySealedPayload(created.id)).rejects.toThrow(/not sealed/i);
+    const envelope = JSON.stringify({ v: 1, iv: "aXY=", ct: "Y3Q=" });
+    await m.sealEntry(created.id, { encrypted_payload: envelope });
+    await expect(m.sealEntry(created.id, { encrypted_payload: envelope })).rejects.toThrow(
+      /already sealed/i,
+    );
   });
 
   it("getChart returns placements + houses + aspects + attribution", async () => {
@@ -388,6 +428,40 @@ describe("endpoints — relational ledger (v1-019)", () => {
     expect(open.text).toBe("kept in the open");
   });
 
+  it("getOathSealedPayload round-trips the sealed envelope; unsealed rows 409", async () => {
+    const m = buildMock();
+    const envelope = JSON.stringify({ v: 1, iv: "aXY=", ct: "Y3Q=" });
+    const sealed = await m.createOath({
+      kind: "self",
+      taken_at: "2026-06-22T00:00:00Z",
+      encryption_mode: "sealed",
+      encrypted_payload: envelope,
+    });
+    const payload = await m.getOathSealedPayload(sealed.id);
+    expect(atob(payload.encrypted_payload_b64)).toBe(envelope);
+    // The read hands back ciphertext only — never a text field.
+    expect("text" in payload).toBe(false);
+    const open = await m.createOath({
+      kind: "community",
+      taken_at: "2026-06-22T00:00:00Z",
+      text: "open vow",
+      encryption_mode: "none",
+    });
+    await expect(m.getOathSealedPayload(open.id)).rejects.toThrow(/not sealed/i);
+  });
+
+  it("getInitiationSealedPayload round-trips the sealed envelope", async () => {
+    const m = buildMock();
+    const envelope = JSON.stringify({ v: 1, iv: "aXY=", ct: "Y3Q=" });
+    const created = await m.createInitiation({
+      tradition: "Hellenic mystery",
+      encryption_mode: "sealed",
+      encrypted_payload: envelope,
+    });
+    const payload = await m.getInitiationSealedPayload(created.id);
+    expect(atob(payload.encrypted_payload_b64)).toBe(envelope);
+  });
+
   it("listInitiations is minimal + always sealed, all four statuses", async () => {
     const rows = await buildMock().listInitiations();
     const statuses = new Set(rows.map((i) => i.status));
@@ -489,6 +563,23 @@ describe("endpoints — magickal bundles (v1-020)", () => {
     );
   });
 
+  it("bundleUninstall removes the record and documents the retention rule", async () => {
+    const m = buildMock();
+    const r = await m.bundledImport("classic-tarot-spreads");
+    const before = await m.bundlesInstalled();
+    const response = await m.bundleUninstall(r.installed_bundle_id);
+    expect(response.removed_id).toBe(r.installed_bundle_id);
+    expect(response.imported_content_retained).toBe(true);
+    expect(response.detail).toContain("tombstone, not an erasure");
+    const after = await m.bundlesInstalled();
+    expect(after.bundles.length).toBe(before.bundles.length - 1);
+    expect(after.bundles.some((b) => b.id === r.installed_bundle_id)).toBe(false);
+  });
+
+  it("bundleUninstall with an unknown id rejects NotFound", async () => {
+    await expect(buildMock().bundleUninstall("ib-does-not-exist")).rejects.toThrow(/not found/i);
+  });
+
   it("bundlesPreview returns the manifest + unsigned warning (warn, never block)", async () => {
     const file = new Blob(["fake-mbf"], { type: "application/zip" });
     const r = await buildMock().bundlesPreview(file);
@@ -579,6 +670,28 @@ describe("endpoints — federation peer directory (v1-026)", () => {
     await m.removeFederationPeer(created.id);
     const listed = await m.listFederationPeers();
     expect(listed.some((p) => p.id === created.id)).toBe(false);
+  });
+
+  it("getAgentCostSummary returns totals + per-install rows (v1-031)", async () => {
+    const m = buildMock();
+    const summary = await m.getAgentCostSummary();
+    expect(summary.window).toBe("month");
+    expect(summary.totals.cost_usd).toBe("3.10");
+    expect(summary.totals.run_count).toBeGreaterThan(0);
+    expect(summary.per_install.length).toBeGreaterThanOrEqual(2);
+    const row = summary.per_install[0]!;
+    expect(row.display_name).toBeTruthy();
+    // Rule 58 — the fresh/resume split is first-class on every row.
+    expect(row.tokens_fresh).toBeGreaterThan(0);
+    expect(row.tokens_resume).toBeGreaterThan(0);
+    // Rule 56 — the monthly cap percentage rides along.
+    expect(typeof row.cap_used_pct).toBe("number");
+  });
+
+  it("getAgentCostSummary forwards the requested window", async () => {
+    const m = buildMock();
+    const summary = await m.getAgentCostSummary("week");
+    expect(summary.window).toBe("week");
   });
 });
 

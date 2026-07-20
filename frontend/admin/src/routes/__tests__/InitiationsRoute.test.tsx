@@ -1,10 +1,12 @@
 /**
- * Initiations route tests (v1-019).
+ * Initiations route tests (v1-019 · unlock wiring v1-033).
  *
  * Covered: sparse list from fixtures with all four
  * InitiationStatusPill variants · SealedContentsBlock renders in the
  * detail (never any sealed field value) · empty state · the record
- * drawer encrypts client-side and posts to /initiations.
+ * drawer encrypts client-side and posts to /initiations · "Unlock to
+ * view" fetches the selected row's ciphertext and decrypts in memory
+ * (crypto mocked) · the per-read reveal clears on selection change.
  */
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -42,6 +44,17 @@ const mocks = vi.hoisted(() => {
     INITIATIONS,
     listInitiations: vi.fn(() => Promise.resolve(INITIATIONS)),
     createInitiation: vi.fn((_input: unknown) => Promise.resolve(INITIATIONS[0])),
+    getInitiationSealedPayload: vi.fn(() =>
+      Promise.resolve({ encrypted_payload_b64: "c2VhbGVkLWVudmVsb3Bl" }),
+    ),
+    decryptSealedPayloadB64: vi.fn(() =>
+      Promise.resolve({
+        grade_or_degree: "First torch of the mysteries",
+        received_at: "2026-03-20",
+        location: "The grove",
+        experience_notes: null,
+      }),
+    ),
   };
 });
 
@@ -50,10 +63,22 @@ vi.mock("../../data/api.js", () => ({
   apiMethods: {
     listInitiations: mocks.listInitiations,
     createInitiation: mocks.createInitiation,
+    getInitiationSealedPayload: mocks.getInitiationSealedPayload,
   },
   API_MODE: "mock" as const,
   API_BASE_URL: "",
 }));
+
+// The decrypt helper is mocked (600k-iteration PBKDF2 is not the
+// subject under test); the record drawer's ENCRYPT path deliberately
+// keeps the real sealToEnvelope.
+vi.mock("@theourgia/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@theourgia/shared")>();
+  return {
+    ...actual,
+    decryptSealedPayloadB64: mocks.decryptSealedPayloadB64,
+  };
+});
 
 import { InitiationsRoute } from "../InitiationsRoute.js";
 
@@ -173,5 +198,36 @@ describe("InitiationsRoute", () => {
     expect(envelope.iv?.length).toBeGreaterThan(0);
     // The sealed grade never appears in the ciphertext envelope.
     expect(String(payload.encrypted_payload)).not.toContain("First torch");
+  });
+
+  it("Unlock to view fetches + decrypts the selected row's sealed fields", async () => {
+    renderRoute();
+    await flush();
+
+    fireEvent.click(screen.getByRole("button", { name: "Unlock to view" }));
+    fireEvent.change(screen.getByPlaceholderText("Passphrase"), {
+      target: { value: "correct horse battery staple" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Unlock" }));
+    for (let i = 0; i < 40 && mocks.decryptSealedPayloadB64.mock.calls.length === 0; i++) {
+      await flush();
+    }
+
+    // Ciphertext fetched for the SELECTED row, decrypted in memory.
+    expect(mocks.getInitiationSealedPayload).toHaveBeenCalledWith("init-active");
+    expect(mocks.decryptSealedPayloadB64).toHaveBeenCalledWith(
+      "c2VhbGVkLWVudmVsb3Bl",
+      "correct horse battery staple",
+    );
+    // The revealed panel shows the decrypted fields with the drawer's
+    // field labels; absent fields render an honest em dash.
+    expect(screen.getByText("First torch of the mysteries")).toBeInTheDocument();
+    expect(screen.getByText("Grade or degree")).toBeInTheDocument();
+    expect(screen.getByText("The grove")).toBeInTheDocument();
+
+    // Per-read: selecting another row re-seals the detail.
+    fireEvent.click(screen.getByText("Rosicrucian order"));
+    expect(screen.queryByText("First torch of the mysteries")).not.toBeInTheDocument();
+    expect(document.querySelector('[data-component="sealed-contents-block"]')).not.toBeNull();
   });
 });

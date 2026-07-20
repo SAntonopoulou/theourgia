@@ -1,10 +1,13 @@
 /**
- * Oaths route tests (v1-019).
+ * Oaths route tests (v1-019 · unlock wiring v1-033).
  *
  * Covered: card grid from fixtures with all five OathStatusPill
  * variants · sealed rows render the sealed CTA and never plaintext ·
  * kind segments filter · designed empty state · the take-oath drawer
- * posts to /oaths (unsealed path exercises the make-public confirm).
+ * posts to /oaths (unsealed path exercises the make-public confirm) ·
+ * the SealUnlock passphrase fetches each sealed oath's ciphertext and
+ * decrypts it in memory (crypto mocked) · a passphrase that does not
+ * decrypt shows the inline error and reveals nothing.
  */
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -58,6 +61,10 @@ const mocks = vi.hoisted(() => {
     listOaths: vi.fn(() => Promise.resolve(OATHS)),
     listEntities: vi.fn(() => Promise.resolve([])),
     createOath: vi.fn((_input: unknown) => Promise.resolve(OATHS[1])),
+    getOathSealedPayload: vi.fn(() =>
+      Promise.resolve({ encrypted_payload_b64: "c2VhbGVkLWVudmVsb3Bl" }),
+    ),
+    decryptSealedPayloadB64: vi.fn(() => Promise.resolve({ text: "THE REVEALED VOW" })),
   };
 });
 
@@ -67,10 +74,21 @@ vi.mock("../../data/api.js", () => ({
     listOaths: mocks.listOaths,
     listEntities: mocks.listEntities,
     createOath: mocks.createOath,
+    getOathSealedPayload: mocks.getOathSealedPayload,
   },
   API_MODE: "mock" as const,
   API_BASE_URL: "",
 }));
+
+// The 600k-iteration PBKDF2 is not the subject under test — the
+// decrypt helper is mocked; the fetch + reveal wiring is real.
+vi.mock("@theourgia/shared", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@theourgia/shared")>();
+  return {
+    ...actual,
+    decryptSealedPayloadB64: mocks.decryptSealedPayloadB64,
+  };
+});
 
 import { OathsRoute } from "../OathsRoute.js";
 
@@ -188,5 +206,50 @@ describe("OathsRoute", () => {
     expect(payload.encryption_mode).toBe("none");
     expect(payload.text).toBe("To rise with the sun for one lunar month.");
     expect(payload.kind).toBe("self");
+  });
+
+  it("unlock fetches each sealed oath's ciphertext and decrypts it in memory", async () => {
+    renderRoute();
+    await flush();
+
+    // The sealed CTA opens the SealUnlock prompt.
+    fireEvent.click(screen.getAllByText("Sealed — tap to read")[0]!.closest("button")!);
+    fireEvent.change(screen.getByPlaceholderText("Passphrase"), {
+      target: { value: "correct horse battery staple" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Unlock" }));
+    for (let i = 0; i < 40 && mocks.decryptSealedPayloadB64.mock.calls.length < 3; i++) {
+      await flush();
+    }
+
+    // One ciphertext fetch + one in-memory decrypt per sealed row.
+    expect(mocks.getOathSealedPayload).toHaveBeenCalledTimes(3);
+    expect(mocks.decryptSealedPayloadB64).toHaveBeenCalledWith(
+      "c2VhbGVkLWVudmVsb3Bl",
+      "correct horse battery staple",
+    );
+    // The decrypted vows render on the previously sealed cards.
+    expect(screen.getAllByText("THE REVEALED VOW")).toHaveLength(3);
+    // Locking drops the decrypted texts again.
+    fireEvent.click(screen.getByRole("button", { name: "Vault unlocked — lock the vault" }));
+    expect(screen.queryByText("THE REVEALED VOW")).not.toBeInTheDocument();
+  });
+
+  it("a passphrase that does not decrypt shows the inline error and reveals nothing", async () => {
+    mocks.decryptSealedPayloadB64.mockRejectedValueOnce(new Error("OperationError"));
+    renderRoute();
+    await flush();
+
+    fireEvent.click(screen.getAllByText("Sealed — tap to read")[0]!.closest("button")!);
+    fireEvent.change(screen.getByPlaceholderText("Passphrase"), {
+      target: { value: "not the right one" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Unlock" }));
+    for (let i = 0; i < 40 && screen.queryByRole("alert") === null; i++) {
+      await flush();
+    }
+
+    expect(screen.getByText("Passphrase didn't decrypt — try again.")).toBeInTheDocument();
+    expect(screen.queryByText("THE REVEALED VOW")).not.toBeInTheDocument();
   });
 });

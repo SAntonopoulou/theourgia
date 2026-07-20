@@ -1,16 +1,18 @@
 /**
- * Bundle library + detail route tests (v1-020).
+ * Bundle library + detail route tests (v1-020 · remove wiring v1-033).
  *
  * Covered: installed cards render from the live-shaped
  * ``bundlesInstalled`` response (name · version · author · citation
  * chip · data summary) · empty state · fetch-error banner · detail
  * about/data-shape sections from the matched record · detail
- * not-found state. Update/Remove stay honest toasts — no backend
- * endpoint exists for them, and no test pretends otherwise.
+ * not-found state · Remove confirms through the house ConfirmDialog
+ * and calls ``bundleUninstall`` (record only — imported content
+ * stays; the toast repeats the backend's retention statement).
+ * Update stays an honest toast — no backend endpoint exists for it.
  */
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import {
   ActingAsProvider,
   AuthProvider,
@@ -67,6 +69,18 @@ const mocks = vi.hoisted(() => {
   return {
     INSTALLED,
     bundlesInstalled: vi.fn(() => Promise.resolve(INSTALLED)),
+    bundleUninstall: vi.fn(() =>
+      Promise.resolve({
+        removed_id: "ib-1",
+        slug: "hellenic-pantheon",
+        version: "1.0.0",
+        imported_content_retained: true,
+        detail:
+          "Install record removed. Content imported from this bundle " +
+          "(entities, templates, recipes, …) stays in your vault — bundle " +
+          "removal is a tombstone, not an erasure.",
+      }),
+    ),
   };
 });
 
@@ -74,6 +88,7 @@ vi.mock("../../data/api.js", () => ({
   apiClient: { request: () => Promise.resolve([]) },
   apiMethods: {
     bundlesInstalled: mocks.bundlesInstalled,
+    bundleUninstall: mocks.bundleUninstall,
   },
   API_MODE: "mock" as const,
   API_BASE_URL: "",
@@ -153,6 +168,45 @@ describe("BundleLibrary", () => {
 
     expect(screen.getByText("Couldn't load your installed bundles.")).toBeInTheDocument();
     expect(screen.getByText("boom")).toBeInTheDocument();
+  });
+
+  it("Remove confirms through the house dialog, deletes, and repeats the retention rule", async () => {
+    renderAt("/bundles");
+    await flush();
+
+    // Kebab → Remove opens the ConfirmDialog; nothing deleted yet.
+    fireEvent.click(screen.getAllByRole("button", { name: "Bundle actions" })[0]!);
+    fireEvent.click(screen.getByText("Remove"));
+    expect(mocks.bundleUninstall).not.toHaveBeenCalled();
+    const confirm = await screen.findByText("Remove Hellenic Pantheon?");
+    expect(confirm).toBeInTheDocument();
+    expect(screen.getByText(/removal is a tombstone, not an erasure/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove bundle" }));
+    await flush();
+
+    expect(mocks.bundleUninstall).toHaveBeenCalledWith("ib-1");
+    // Toast repeats the backend's own retention statement.
+    expect(screen.getByText("Bundle removed")).toBeInTheDocument();
+    expect(screen.getAllByText(/tombstone, not an erasure/).length).toBeGreaterThanOrEqual(1);
+    // The list refreshed after the delete (initial load + refresh).
+    expect(mocks.bundlesInstalled).toHaveBeenCalledTimes(2);
+  });
+
+  it("cancelling the Remove dialog never calls the endpoint", async () => {
+    renderAt("/bundles");
+    await flush();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Bundle actions" })[0]!);
+    fireEvent.click(screen.getByText("Remove"));
+    const dialog = await screen.findByText("Remove Hellenic Pantheon?");
+    expect(dialog).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await flush();
+
+    expect(mocks.bundleUninstall).not.toHaveBeenCalled();
+    // The record is still listed.
+    expect(screen.getByText("Hellenic Pantheon")).toBeInTheDocument();
   });
 });
 

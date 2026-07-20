@@ -118,6 +118,28 @@ async def test_query_audit_forwards_params() -> None:
 
 
 @pytest.mark.asyncio
+async def test_cost_summary_forwards_vault_and_window() -> None:
+    captured: dict = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["url"] = str(request.url)
+        return httpx.Response(
+            200,
+            json={"vault_id": "v1", "window": "week", "per_install": []},
+        )
+
+    client, http = _make_client(handler)
+    try:
+        result = await client.cost_summary(vault_id="v1", window="week")
+    finally:
+        await http.aclose()
+    assert result["window"] == "week"
+    assert "/costs/summary" in captured["url"]
+    assert "vault_id=v1" in captured["url"]
+    assert "window=week" in captured["url"]
+
+
+@pytest.mark.asyncio
 async def test_daemon_refused_preserves_status_and_payload() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(

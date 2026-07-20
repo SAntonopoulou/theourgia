@@ -14,12 +14,14 @@ import { describe, expect, it } from "vitest";
 import {
   base64ToBytes,
   bytesToBase64,
+  decryptSealedPayloadB64,
   decryptVaultPayload,
   decryptVaultPayloadWithSalt,
   deriveVaultKey,
   encryptVaultPayload,
   encryptVaultPayloadWithSalt,
   generateVaultSalt,
+  sealToEnvelope,
 } from "./vaultCrypto.js";
 
 describe("vaultCrypto", () => {
@@ -46,11 +48,7 @@ describe("vaultCrypto", () => {
     const wrongKey = await deriveVaultKey("not the right one", salt);
     const sealed = await encryptVaultPayload({ secret: 1 }, goodKey);
     await expect(
-      decryptVaultPayload(
-        sealed.encrypted_payload_b64,
-        sealed.encryption_iv_b64,
-        wrongKey,
-      ),
+      decryptVaultPayload(sealed.encrypted_payload_b64, sealed.encryption_iv_b64, wrongKey),
     ).rejects.toThrow();
   });
 
@@ -62,9 +60,7 @@ describe("vaultCrypto", () => {
     const bytes = base64ToBytes(sealed.encrypted_payload_b64);
     bytes[0] = (bytes[0]! + 1) & 0xff;
     const tampered = bytesToBase64(bytes);
-    await expect(
-      decryptVaultPayload(tampered, sealed.encryption_iv_b64, key),
-    ).rejects.toThrow();
+    await expect(decryptVaultPayload(tampered, sealed.encryption_iv_b64, key)).rejects.toThrow();
   });
 
   it("produces different ciphertext for the same plaintext (random IV)", async () => {
@@ -84,11 +80,7 @@ describe("vaultCrypto", () => {
     const keyB = await deriveVaultKey("same passphrase", saltB);
     const sealed = await encryptVaultPayload({ s: 1 }, keyA);
     await expect(
-      decryptVaultPayload(
-        sealed.encrypted_payload_b64,
-        sealed.encryption_iv_b64,
-        keyB,
-      ),
+      decryptVaultPayload(sealed.encrypted_payload_b64, sealed.encryption_iv_b64, keyB),
     ).rejects.toThrow();
   });
 
@@ -114,10 +106,7 @@ describe("vaultCrypto", () => {
       back_svg: "<svg>B</svg>",
       components: { sigil_ids: ["s1"] },
     };
-    const sealed = await encryptVaultPayloadWithSalt(
-      payload,
-      "correct horse battery staple",
-    );
+    const sealed = await encryptVaultPayloadWithSalt(payload, "correct horse battery staple");
     const decrypted = await decryptVaultPayloadWithSalt(
       sealed.encrypted_payload_b64,
       sealed.encryption_iv_b64,
@@ -127,10 +116,7 @@ describe("vaultCrypto", () => {
   });
 
   it("envelope rejects the wrong passphrase", async () => {
-    const sealed = await encryptVaultPayloadWithSalt(
-      { secret: 1 },
-      "the right one",
-    );
+    const sealed = await encryptVaultPayloadWithSalt({ secret: 1 }, "the right one");
     await expect(
       decryptVaultPayloadWithSalt(
         sealed.encrypted_payload_b64,
@@ -151,8 +137,40 @@ describe("vaultCrypto", () => {
   it("envelope rejects malformed (too-short) ciphertext", async () => {
     // Less than 16 bytes — can't contain a salt.
     const tiny = bytesToBase64(new Uint8Array([1, 2, 3, 4]));
-    await expect(
-      decryptVaultPayloadWithSalt(tiny, "QQ==", "any passphrase"),
-    ).rejects.toThrow(/too short/i);
+    await expect(decryptVaultPayloadWithSalt(tiny, "QQ==", "any passphrase")).rejects.toThrow(
+      /too short/i,
+    );
+  });
+
+  // ── Sealed-envelope wrapper (v1-033) ──────────────────────────
+
+  it("sealToEnvelope → sealed-payload b64 → decryptSealedPayloadB64 round-trips", async () => {
+    const value = { text: "By this vow I bind the working." };
+    const envelope = await sealToEnvelope(value, "correct horse battery staple");
+    // The wire carries base64 of the envelope string — as the
+    // /sealed-payload endpoints return it.
+    const b64 = bytesToBase64(new TextEncoder().encode(envelope));
+    const decrypted = await decryptSealedPayloadB64<typeof value>(
+      b64,
+      "correct horse battery staple",
+    );
+    expect(decrypted).toEqual(value);
+  });
+
+  it("decryptSealedPayloadB64 rejects the wrong passphrase", async () => {
+    const envelope = await sealToEnvelope({ secret: true }, "the right one");
+    const b64 = bytesToBase64(new TextEncoder().encode(envelope));
+    await expect(decryptSealedPayloadB64(b64, "not the right one")).rejects.toThrow();
+  });
+
+  it("decryptSealedPayloadB64 rejects a payload that is not an envelope", async () => {
+    const b64 = bytesToBase64(new TextEncoder().encode("not-json-at-all"));
+    await expect(decryptSealedPayloadB64(b64, "any passphrase")).rejects.toThrow(
+      /not a recognised envelope/i,
+    );
+    const wrongShape = bytesToBase64(new TextEncoder().encode(JSON.stringify({ v: 2 })));
+    await expect(decryptSealedPayloadB64(wrongShape, "any passphrase")).rejects.toThrow(
+      /not a recognised envelope/i,
+    );
   });
 });

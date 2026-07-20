@@ -103,6 +103,15 @@ class PluginInstall(IDMixin, TimestampMixin, table=True):
         sa_column=Column(LargeBinary, nullable=True),
         description="Public key that signed the manifest",
     )
+    artifact_sha256: Optional[str] = Field(
+        default=None,
+        sa_column=Column(String(64), nullable=True),
+        description=(
+            "Hex SHA-256 of the release archive this install came from "
+            "(registry installs only). Forensic pin: lets an operator "
+            "later prove which exact bytes were installed."
+        ),
+    )
 
     # The full manifest as JSON for forensic reference
     manifest_json: dict[str, object] = Field(
