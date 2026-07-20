@@ -6,6 +6,7 @@ import "../styles/global.css";
 // the source. The workspace ``?raw`` import resolves via Vite at build
 // time and stays correct in both dev and build.
 import sprite from "@theourgia/shared/tokens/theourgia-icons.svg?raw";
+import CookieNotice from "../components/CookieNotice.astro";
 
 interface Props {
   title?: string;
@@ -41,5 +42,6 @@ const { title = "Theourgia" } = Astro.props;
   <body>
     <div aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden" set:html={sprite} />
     <slot />
+    <CookieNotice />
   </body>
 </html>

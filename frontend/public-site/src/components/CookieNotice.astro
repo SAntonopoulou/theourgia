@@ -1,0 +1,168 @@
+---
+/**
+ * CookieNotice — honest cookie notice for every public surface.
+ *
+ * Mounted once in ``BaseLayout.astro`` so it appears on Landing, Blog,
+ * Essay, Vault, Hubs, Self-host, Federation, Newsletter, Foundations
+ * and the Style Guide.
+ *
+ * This is a NOTICE, not a consent gate. Theourgia's zero-telemetry
+ * promise means the only cookie the platform ever sets is a single
+ * first-party session cookie (``theourgia_session``) — HttpOnly,
+ * Secure, and strictly essential, set only once you sign in. There are
+ * no analytics, advertising, or third-party cookies, so there is
+ * nothing to accept or reject; a reject toggle over an essential
+ * session cookie would be meaningless. The copy says exactly that and
+ * nothing more (see ``docs/admin/privacy-policy-template.md`` §9 and
+ * ``docs/site/.../start/privacy.md`` for the canonical wording).
+ *
+ * Persistence is deliberately cookie-free: the "you have seen this"
+ * flag lives in first-party ``localStorage`` under the same
+ * ``theourgia.*`` namespace the theme/mode toggles use — the honest
+ * irony being that the notice about our one essential cookie needs no
+ * cookie of its own.
+ *
+ * Accessibility: a labelled (non-modal) region that never traps or
+ * steals focus, a real <button> dismiss (Enter/Space native), Escape
+ * to dismiss, and no motion under ``prefers-reduced-motion``.
+ *
+ * NOTE FOR DESIGNER: no ``.dc.html`` exists for a cookie notice. This
+ * is built strictly on shipped tokens (no invented visual language)
+ * and factual copy — please review tone + placement when convenient.
+ */
+
+// localStorage key — bumping the suffix re-shows the notice if the
+// factual copy ever materially changes.
+const ACK_KEY = "theourgia.cookieNoticeAck.v1";
+const PRIVACY_HREF = "https://docs.theourgia.com/start/privacy/";
+---
+
+<aside
+  id="om-cookie-notice"
+  role="region"
+  aria-label="Cookie notice"
+  hidden
+  data-ack-key={ACK_KEY}
+  style="position:fixed;left:0;right:0;bottom:0;z-index:90;background:var(--bg-2);border-top:1px solid var(--line);box-shadow:var(--shadow-lg)"
+>
+  <div
+    class="om-cookie-wrap"
+    style="max-width:1180px;margin:0 auto;padding:16px clamp(16px,5vw,28px);display:flex;align-items:center;gap:clamp(16px,4vw,40px);flex-wrap:wrap"
+  >
+    <div style="flex:1 1 380px;min-width:0">
+      <div
+        style="font-family:var(--font-ui);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:8px"
+      >
+        Cookies
+      </div>
+      <p style="margin:0;font-family:var(--font-ui);font-size:14px;line-height:1.6;color:var(--ink-soft);max-width:78ch">
+        Theourgia uses one cookie: a first-party session cookie that keeps you
+        signed in. It is strictly essential — there is no tracking to consent
+        to, and nothing to switch off. No analytics, advertising, or
+        third-party cookies are ever set.
+      </p>
+      <p style="margin:8px 0 0;font-family:var(--font-ui);font-size:12px;line-height:1.55;color:var(--ink-mute)">
+        This notice remembers itself in your browser's local storage — no
+        cookie needed for the notice itself.
+      </p>
+    </div>
+    <div
+      style="flex:0 0 auto;display:flex;align-items:center;gap:16px;flex-wrap:wrap"
+    >
+      <a
+        href={PRIVACY_HREF}
+        rel="noopener"
+        class="om-cookie-link"
+        style="font-family:var(--font-ui);font-size:13.5px;color:var(--accent);text-decoration:none;white-space:nowrap"
+      >
+        Read the privacy note →
+      </a>
+      <button
+        type="button"
+        data-cookie-ack
+        aria-label="Acknowledge cookie notice and dismiss it"
+        class="om-cookie-ack"
+        style="padding:9px 18px;border:1px solid var(--accent);border-radius:var(--r-md);background:var(--accent);color:var(--accent-ink);font-family:var(--font-ui);font-weight:700;font-size:13px;letter-spacing:.01em;cursor:pointer;white-space:nowrap"
+      >
+        Acknowledge
+      </button>
+    </div>
+  </div>
+</aside>
+
+<script is:inline data-cookie-notice-reveal>
+  // Reveal synchronously (before paint) only when unacknowledged, so a
+  // returning visitor never sees a flash of the notice. Starts hidden;
+  // this either unhides it or leaves it hidden — never the reverse.
+  (function () {
+    if (typeof document === "undefined") return;
+    var el = document.getElementById("om-cookie-notice");
+    if (!el) return;
+    var key = el.getAttribute("data-ack-key") || "theourgia.cookieNoticeAck.v1";
+    var acked = false;
+    try {
+      acked = localStorage.getItem(key) === "1";
+    } catch (_) {
+      acked = false; // storage blocked (private mode) — show the notice
+    }
+    if (!acked) el.hidden = false;
+  })();
+</script>
+
+<style>
+  /* Rise on appear (when `hidden` is removed, display flips and the
+     animation plays). The site-wide reduced-motion reset in global.css
+     already neutralizes this; the explicit rule below states the intent. */
+  @keyframes om-cookie-rise {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  #om-cookie-notice { animation: om-cookie-rise 260ms ease; }
+  @media (prefers-reduced-motion: reduce) {
+    #om-cookie-notice { animation: none; }
+  }
+
+  .om-cookie-link:hover { text-decoration: underline; }
+  .om-cookie-ack:hover { opacity: 0.9; }
+  .om-cookie-ack:focus-visible,
+  .om-cookie-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+</style>
+
+<script>
+  // Dismiss wiring. Idempotent across multiple imports (there is only
+  // one per page today, but the guard mirrors PublicChrome's pattern).
+  declare global {
+    interface Window { __theourgiaCookieNoticeWired?: boolean }
+  }
+
+  if (!window.__theourgiaCookieNoticeWired) {
+    window.__theourgiaCookieNoticeWired = true;
+
+    const notice = () => document.getElementById("om-cookie-notice");
+
+    const acknowledge = () => {
+      const el = notice();
+      if (!el || el.hidden) return;
+      const key = el.getAttribute("data-ack-key") ?? "theourgia.cookieNoticeAck.v1";
+      try { localStorage.setItem(key, "1"); } catch (_) { /* storage blocked — dismiss for this view */ }
+      el.hidden = true;
+    };
+
+    document.addEventListener("click", (event) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("[data-cookie-ack]")) acknowledge();
+    });
+
+    // Escape dismisses while the notice is visible. Focus is never
+    // trapped or moved into the notice, so this only fires when nothing
+    // more specific (a dialog) has already handled the key.
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      const el = notice();
+      if (el && !el.hidden) acknowledge();
+    });
+  }
+</script>
