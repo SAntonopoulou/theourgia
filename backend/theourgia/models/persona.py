@@ -85,7 +85,11 @@ class Persona(IDMixin, TimestampMixin, table=True):
 
     kind: PersonaKind = Field(
         sa_column=Column(
-            SQLEnum(PersonaKind, name="persona_kind"),
+            SQLEnum(
+                PersonaKind,
+                name="persona_kind",
+                values_callable=lambda obj: [m.value for m in obj],
+            ),
             nullable=False,
         ),
         description="default (auto-created, one per user) or secondary",

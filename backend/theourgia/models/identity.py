@@ -376,7 +376,11 @@ class Membership(IDMixin, TimestampMixin, table=True):
 
     role: MembershipRole = Field(
         sa_column=Column(
-            SQLEnum(MembershipRole, name="membership_role"),
+            SQLEnum(
+                MembershipRole,
+                name="membership_role",
+                values_callable=lambda obj: [m.value for m in obj],
+            ),
             nullable=False,
         ),
     )

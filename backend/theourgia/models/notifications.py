@@ -100,7 +100,11 @@ class Notification(IDMixin, TimestampMixin, table=True):
     read_state: NotificationReadState = Field(
         default=NotificationReadState.UNREAD,
         sa_column=Column(
-            SQLEnum(NotificationReadState, name="notification_read_state"),
+            SQLEnum(
+                NotificationReadState,
+                name="notification_read_state",
+                values_callable=lambda obj: [m.value for m in obj],
+            ),
             nullable=False,
             server_default="unread",
         ),

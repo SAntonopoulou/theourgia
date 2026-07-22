@@ -67,7 +67,11 @@ class OutboxEvent(IDMixin, TimestampMixin, table=True):
     status: OutboxStatus = Field(
         default=OutboxStatus.PENDING,
         sa_column=Column(
-            SQLEnum(OutboxStatus, name="outbox_status"),
+            SQLEnum(
+                OutboxStatus,
+                name="outbox_status",
+                values_callable=lambda obj: [m.value for m in obj],
+            ),
             nullable=False,
             server_default="pending",
         ),

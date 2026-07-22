@@ -78,7 +78,11 @@ class EmailLog(IDMixin, TimestampMixin, table=True):
 
     status: EmailLogStatus = Field(
         sa_column=Column(
-            SQLEnum(EmailLogStatus, name="email_log_status"),
+            SQLEnum(
+                EmailLogStatus,
+                name="email_log_status",
+                values_callable=lambda obj: [m.value for m in obj],
+            ),
             nullable=False,
         ),
     )

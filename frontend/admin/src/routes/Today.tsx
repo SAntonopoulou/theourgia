@@ -27,6 +27,7 @@ import {
   TopbarSearch,
   useApiCall,
   useCelestial,
+  useNarrowLayout,
   useSession,
   useTopbar,
 } from "@theourgia/shared";
@@ -337,6 +338,10 @@ function QuickCapture({
 }) {
   const [captureType, setCaptureType] = useState<CaptureType>("synchronicity");
   const [visibility, setVisibility] = useState<Visibility>("personal");
+  // v1-053: five segments at full padding are ~4px wider than a 390px
+  // phone; tighten the padding on narrow screens and let the group
+  // scroll on its own axis as the fallback floor.
+  const narrow = useNarrowLayout();
 
   return (
     <article style={cardStyle({ padding: 20 })}>
@@ -423,7 +428,9 @@ function QuickCapture({
             display: "flex",
             border: "1px solid var(--line)",
             borderRadius: "var(--r-md, 6px)",
-            overflow: "hidden",
+            overflowX: "auto",
+            overflowY: "hidden",
+            maxWidth: "100%",
             fontFamily: "var(--font-ui)",
             fontSize: 12.5,
           }}
@@ -438,7 +445,9 @@ function QuickCapture({
                 onClick={() => setVisibility(opt.value)}
                 aria-pressed={selected}
                 style={{
-                  padding: "7px 12px",
+                  padding: narrow ? "7px 9px" : "7px 12px",
+                  whiteSpace: "nowrap",
+                  flex: "none",
                   borderLeft: i === 0 ? "none" : "1px solid var(--line)",
                   background: selected ? "var(--accent-soft)" : "transparent",
                   color: selected ? "var(--ink)" : "var(--ink-soft)",

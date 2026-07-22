@@ -75,9 +75,17 @@ class PluginInstall(IDMixin, TimestampMixin, table=True):
     )
 
     # Lifecycle
+    # values_callable: the DB enum holds the lowercase VALUES
+    # ("active"); without it SQLAlchemy binds the member NAMES
+    # ("ACTIVE") and every state-filtered query fails — seen live as
+    # `theourgia.plugins.startup_skipped` on each prod boot (v1-053).
     state: PluginState = Field(
         sa_column=Column(
-            SQLEnum(PluginState, name="plugin_state"),
+            SQLEnum(
+                PluginState,
+                name="plugin_state",
+                values_callable=lambda obj: [m.value for m in obj],
+            ),
             nullable=False,
             server_default=PluginState.INSTALLED.value,
         ),
@@ -148,7 +156,11 @@ class PluginCapabilityGrant(IDMixin, TimestampMixin, table=True):
 
     capability: Capability = Field(
         sa_column=Column(
-            SQLEnum(Capability, name="plugin_capability"),
+            SQLEnum(
+                Capability,
+                name="plugin_capability",
+                values_callable=lambda obj: [m.value for m in obj],
+            ),
             nullable=False,
         ),
     )

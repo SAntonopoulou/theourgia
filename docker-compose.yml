@@ -141,6 +141,16 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-auto}
+    # Override the image's baked-in HEALTHCHECK (curl :8000/healthz —
+    # correct for the API service, meaningless here: no HTTP server in
+    # this container, so prod showed "unhealthy" while tasks succeeded
+    # (v1-053). Ping THIS worker over the broker instead.
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A theourgia.core.tasks.app:celery_app inspect ping -d celery@$$(hostname) --timeout 10"]
+      interval: 60s
+      timeout: 15s
+      start_period: 30s
+      retries: 3
     restart: unless-stopped
     networks:
       - theourgia-internal
@@ -168,6 +178,11 @@ services:
       # v1-033: same instance-identity passthrough as the worker.
       THEOURGIA_BASE_URL: ${THEOURGIA_BASE_URL:-https://theourgia.example.com}
       THEOURGIA_INSTANCE_ID: ${THEOURGIA_INSTANCE_ID:-theourgia.example.com}
+    # Disable the image's HTTP HEALTHCHECK — beat serves nothing and
+    # exposes no ping; a wrong probe reads as "unhealthy" forever
+    # (v1-053). Liveness is the process itself + restart policy.
+    healthcheck:
+      disable: true
     restart: unless-stopped
     networks:
       - theourgia-internal

@@ -85,7 +85,11 @@ class Upload(IDMixin, TimestampMixin, table=True):
     status: UploadStatus = Field(
         default=UploadStatus.ACTIVE,
         sa_column=Column(
-            SQLEnum(UploadStatus, name="upload_status"),
+            SQLEnum(
+                UploadStatus,
+                name="upload_status",
+                values_callable=lambda obj: [m.value for m in obj],
+            ),
             nullable=False,
             server_default="active",
         ),
