@@ -28,7 +28,7 @@
 // Version is a wall-clock date bumped on every deploy that touches the
 // SW. The activate handler clears any prior caches whose keys don't
 // end in this string, so a stale shell can't linger past one visit.
-const VERSION = "v4-2026-07-20";
+const VERSION = "v5-2026-07-22";
 const SHELL_CACHE = `theo-shell-${VERSION}`;
 const RUNTIME_CACHE = `theo-runtime-${VERSION}`;
 
