@@ -69,6 +69,9 @@ const {
       ))}
     </nav>
     <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+      <button type="button" class="om-pubmenu-btn" data-pubmenu-toggle aria-label="Open navigation" aria-expanded="false" aria-controls="om-pubmenu" style="display:none;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);color:var(--ink-soft);cursor:pointer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+      </button>
       <div role="group" aria-label="Theme" class="om-pubseg theme-cycler" style="display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2)">
         <button type="button" data-theme-pick="base" class="seg-btn" style="padding:6px 13px;font-family:var(--font-ui);font-size:12.5px;letter-spacing:.04em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Base</button>
         <button type="button" data-theme-pick="hellenic" class="seg-btn" style="padding:6px 13px;font-family:var(--font-ui);font-size:12.5px;letter-spacing:.04em;color:var(--ink-mute);background:transparent;border:1px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s ease">Hellenic</button>
@@ -84,12 +87,27 @@ const {
       )}
     </div>
   </div>
+  <nav id="om-pubmenu" class="om-pubmenu" aria-label="Site navigation" hidden style="border-top:1px solid var(--line);background:var(--bg)">
+    <div style={`max-width:${maxWidth};margin:0 auto;padding:6px clamp(16px,5vw,28px) 12px;display:flex;flex-direction:column`}>
+      {nav.map((item) => (
+        <a
+          href={item.href}
+          class="pub-nav-link"
+          aria-current={active && item.label.toLowerCase() === active.toLowerCase() ? "page" : undefined}
+          style={`display:flex;align-items:center;min-height:44px;text-decoration:none;font-family:var(--font-ui);font-size:15px;color:${active && item.label.toLowerCase() === active.toLowerCase() ? "var(--ink)" : "var(--ink-soft)"}`}
+        >
+          {item.label}
+        </a>
+      ))}
+    </div>
+  </nav>
 </header>
 
 <style>
   .pub-nav-link { transition: color 0.15s ease; }
   .pub-nav-link:hover { color: var(--ink); }
   .pub-cta-primary:hover { opacity: 0.9; }
+  .pub-cta-primary { white-space: nowrap; }
   .seg-btn[data-selected="true"] {
     color: var(--ink) !important;
     background: var(--accent-soft) !important;
@@ -103,7 +121,15 @@ const {
    * still collapse at ≤860; a proper hamburger menu for the marketing pages
    * on true-mobile is the follow-up. */
   @media (max-width: 1024px) { .om-pubseg { display: none !important; } }
-  @media (max-width: 860px) { .om-pubnav { display: none !important; } }
+  /* Disclosure menu button replaces the hidden section-nav (per the
+   * Landing .dc.html production note): the button shows exactly when
+   * .om-pubnav hides, and the panel can never linger open on wide
+   * screens after a resize. */
+  @media (max-width: 860px) {
+    .om-pubnav { display: none !important; }
+    .om-pubmenu-btn { display: inline-flex !important; }
+  }
+  @media (min-width: 861px) { .om-pubmenu { display: none !important; } }
   @media (max-width: 600px) { .om-pubwrap { gap: 12px !important; } }
 </style>
 
@@ -163,9 +189,34 @@ const {
       });
     };
 
+    // Disclosure nav menu (WAI-ARIA disclosure pattern, per the Landing
+    // .dc.html production note). Open/close via the hamburger; close on
+    // link click, outside click, or Escape (focus returns to the button).
+    const menuEl = () => document.getElementById("om-pubmenu");
+    const menuBtn = () => document.querySelector<HTMLElement>("[data-pubmenu-toggle]");
+    const menuOpen = () => { const m = menuEl(); return !!m && !m.hidden; };
+    const setMenu = (open: boolean) => {
+      const m = menuEl();
+      const b = menuBtn();
+      if (!m || !b) return;
+      m.hidden = !open;
+      b.setAttribute("aria-expanded", open ? "true" : "false");
+      b.setAttribute("aria-label", open ? "Close navigation" : "Open navigation");
+    };
+
     document.addEventListener("click", (event) => {
       const target = event.target as HTMLElement | null;
       if (!target) return;
+      const toggle = target.closest<HTMLElement>("[data-pubmenu-toggle]");
+      if (toggle) {
+        setMenu(!menuOpen());
+        return;
+      }
+      if (menuOpen()) {
+        // A menu link click closes the menu and lets navigation proceed;
+        // any click outside the header closes it too.
+        if (target.closest("#om-pubmenu a") || !target.closest("header")) setMenu(false);
+      }
       const themePick = target.closest<HTMLElement>("[data-theme-pick]");
       if (themePick) {
         const t = themePick.getAttribute("data-theme-pick") as Theme | null;
@@ -174,6 +225,13 @@ const {
       }
       const modeToggle = target.closest<HTMLElement>("[data-mode-toggle]");
       if (modeToggle) setMode(getMode() === "dark" ? "light" : "dark");
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && menuOpen()) {
+        setMenu(false);
+        menuBtn()?.focus();
+      }
     });
 
     sync();
