@@ -29,6 +29,7 @@ import type {
   BundledPackageListResponse,
   BundledVoce,
   CastHoraryInput,
+  AstroEventsResponse,
   ChartRequestInput,
   ChartResponse,
   CircleRecord,
@@ -942,6 +943,24 @@ export function api(client: ApiClient) {
         house_system: input.house_system ?? "placidus",
       });
       return client.request<ChartResponse>(`/api/v1/astro/chart?${qs.toString()}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    /**
+     * Astronomical + festival events in a tz-aware ISO range. Feeds
+     * the Calendar surface's month grid and agenda (v1-051).
+     */
+    getEvents(
+      input: { start: string; end: string; includeFestivals?: boolean },
+      opts?: { signal?: AbortSignal },
+    ): Promise<AstroEventsResponse> {
+      const qs = new URLSearchParams({
+        start: input.start,
+        end: input.end,
+        include_festivals: String(input.includeFestivals ?? true),
+      });
+      return client.request<AstroEventsResponse>(`/api/v1/events?${qs.toString()}`, {
         signal: opts?.signal,
       });
     },

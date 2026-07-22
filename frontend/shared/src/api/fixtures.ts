@@ -804,6 +804,71 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     };
   }
 
+  // /api/v1/events — deterministic June-2026 snapshot (the Calendar
+  // .dc.html's demo month), whatever range was requested.
+  if (bare === "/api/v1/events" && method === "GET") {
+    const srcOvid = {
+      kind: "primary", title: "Fasti VI.249–348", author: "Ovid",
+      year: 8, locator: "VI.249", notes: "The fullest surviving account of the rites.",
+    };
+    const srcBNP = {
+      kind: "scholarly", title: "Religions of Rome, I", author: "Beard, North & Price",
+      year: 1998, locator: "pp. 51–52", notes: "",
+    };
+    const srcHesiod = {
+      kind: "primary", title: "Works and Days, l.770", author: "Hesiod",
+      year: -700, locator: "770", notes: "“the first of the month … a holy day.”",
+    };
+    const srcHutton = {
+      kind: "scholarly", title: "The Stations of the Sun", author: "Ronald Hutton",
+      year: 1996, locator: "ch. 31", notes: "How much of the midsummer fire is medieval, not ancient.",
+    };
+    return {
+      start: "2026-06-01T00:00:00+00:00",
+      end: "2026-07-01T00:00:00+00:00",
+      astronomical: [
+        { kind: "last-quarter", instant: "2026-06-08T12:00:00+00:00", body: "moon", sign: "Pisces", meta: {} },
+        { kind: "new-moon", instant: "2026-06-15T12:00:00+00:00", body: "moon", sign: "Gemini", meta: {} },
+        { kind: "solstice", instant: "2026-06-21T12:00:00+00:00", body: "sun", sign: "Cancer", meta: {} },
+        { kind: "first-quarter", instant: "2026-06-22T12:00:00+00:00", body: "moon", sign: "Virgo", meta: {} },
+        { kind: "full-moon", instant: "2026-06-29T12:00:00+00:00", body: "moon", sign: "Sagittarius", meta: {} },
+      ],
+      festivals: [
+        {
+          festival_id: "vestalia", name: "Vestalia", tradition: "roman",
+          label: "7–15 June", start: "2026-06-07T00:00:00+00:00", end: "2026-06-15T23:59:59+00:00",
+          description: "The festival of Vesta, when the penus Vestae — the inner store of the goddess’s temple — was opened to the matrons of Rome.",
+          practice: "Mola salsa offered and the hearth honoured through the week; on the Ides the temple was ritually swept and the sweepings carried to the Tiber.",
+          sources: [srcOvid, srcBNP], source_count: 2,
+        },
+        {
+          festival_id: "deipnon", name: "Deipnon", tradition: "hekatean",
+          label: "dark of the moon", start: "2026-06-14T00:00:00+00:00", end: "2026-06-14T23:59:59+00:00",
+          description: "Hekate’s Supper, laid at a three-way crossing on the last night of the lunar month, when the moon has gone dark.",
+          practice: "A meal — eggs, garlic, sprat, a cake — set down at the crossroads and not looked back upon; the house purged for the month’s turning.",
+          sources: [
+            { kind: "primary", title: "Against Conon §39", author: "Demosthenes", year: -341, locator: "§39", notes: "On the crossroads suppers of Hekate." },
+          ], source_count: 1,
+        },
+        {
+          festival_id: "noumenia", name: "Noumenia", tradition: "greek",
+          label: "first crescent", start: "2026-06-16T00:00:00+00:00", end: "2026-06-16T23:59:59+00:00",
+          description: "The first visible sliver of the new moon — the first day of the Hellenic month, sacred to the gods of the household.",
+          practice: "The hearth re-lit; Hestia, Apollon Noumenios and Zeus Herkeios honoured; the home set in order for the new month.",
+          sources: [srcHesiod], source_count: 1,
+        },
+        {
+          festival_id: "litha", name: "Litha · Midsummer", tradition: "wheel-of-the-year",
+          label: "summer solstice", start: "2026-06-21T00:00:00+00:00", end: "2026-06-21T23:59:59+00:00",
+          description: "The Wheel’s midsummer station — the longest day, the sun at the height of its strength before the turn toward winter.",
+          practice: "Bonfires kept through the short night; herbs gathered at their peak; the sun’s zenith marked and its decline acknowledged.",
+          sources: [srcHutton], source_count: 1,
+        },
+      ],
+      attribution: "Swiss Ephemeris (mock fixture)",
+    };
+  }
+
   // /api/v1/entries/{id}/publish — sets published_at, returns detail.
   const publishMatch = /^\/api\/v1\/entries\/(.+)\/publish$/.exec(bare ?? "");
   if (publishMatch && method === "POST") {

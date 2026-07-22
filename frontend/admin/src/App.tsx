@@ -168,6 +168,11 @@ const FamilyTreeRoute = lazy(() =>
     default: m.FamilyTreeRoute,
   })),
 );
+const CalendarRoute = lazy(() =>
+  import("./routes/CalendarRoute.js").then((m) => ({
+    default: m.CalendarRoute,
+  })),
+);
 const DeckDesignerRoute = lazy(() =>
   import("./routes/DeckDesignerRoute.js").then((m) => ({
     default: m.DeckDesignerRoute,
@@ -818,16 +823,7 @@ function ShellRoutes() {
             <Route path="/pilgrimage-routes" element={<PilgrimageRoutesRoute />} />
             <Route path="/memorial-mode" element={<MemorialModeRoute />} />
             <Route path="/settings/password" element={<AccountPasswordRoute />} />
-            <Route
-              path="/calendar"
-              element={
-                <Placeholder
-                  glyph="moon"
-                  title="Calendar"
-                  body="Multi-tradition calendar — feasts, planetary days, lunation arc. The dedicated .dc.html for this surface hasn't shipped from the design hand-off yet; Scheduler covers content publishing, not the magickal calendar."
-                />
-              }
-            />
+            <Route path="/calendar" element={<CalendarRoute />} />
             <Route path="/divination" element={<Divination />} />
             <Route path="/divination/tarot" element={<TarotRoute />} />
             <Route path="/divination/iching" element={<IChingRoute />} />

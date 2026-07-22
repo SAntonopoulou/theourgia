@@ -222,6 +222,54 @@ export interface ChartResponse {
   attribution: string;
 }
 
+/** One astronomical event from ``GET /api/v1/events``. */
+export interface AstroEventRead {
+  /** "new-moon" · "first-quarter" · "full-moon" · "last-quarter" ·
+   *  "ingress" · "solstice" · "equinox" · "conjunction" · … */
+  kind: string;
+  /** tz-aware ISO instant. */
+  instant: string;
+  body: string | null;
+  sign: string | null;
+  meta: Record<string, unknown>;
+}
+
+/** Citation row on a festival (v1-051). */
+export interface FestivalSourceRead {
+  kind: "primary" | "scholarly" | "community";
+  title: string;
+  author: string;
+  year: number | null;
+  locator: string;
+  notes: string;
+}
+
+/** One festival instance from ``GET /api/v1/events``. */
+export interface FestivalEventRead {
+  festival_id: string;
+  name: string;
+  /** Backend Tradition value: "wheel-of-the-year" · "greek" · "roman" ·
+   *  "hekatean" · "thelemic" · "hindu" · "egyptian" · "custom". */
+  tradition: string;
+  label: string;
+  /** tz-aware ISO range covering the whole observance. */
+  start: string;
+  end: string;
+  description: string;
+  practice: string;
+  sources: FestivalSourceRead[];
+  source_count: number;
+}
+
+/** Response from ``GET /api/v1/events``. */
+export interface AstroEventsResponse {
+  start: string;
+  end: string;
+  astronomical: AstroEventRead[];
+  festivals: FestivalEventRead[];
+  attribution: string;
+}
+
 /** Input for ``POST /api/v1/entries``. */
 export interface CreateEntryInput {
   title: string;

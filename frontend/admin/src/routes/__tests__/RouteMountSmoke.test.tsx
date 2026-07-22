@@ -262,6 +262,10 @@ const ROUTES: ReadonlyArray<[string, () => Promise<{ Component: React.ComponentT
     "KeyRotationRoute",
     () => import("../KeyRotationRoute.js").then((m) => ({ Component: m.KeyRotationRoute })),
   ],
+  [
+    "CalendarRoute",
+    () => import("../CalendarRoute.js").then((m) => ({ Component: m.CalendarRoute })),
+  ],
 ];
 
 describe("route mount smoke suite", () => {

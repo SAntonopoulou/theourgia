@@ -229,6 +229,15 @@ def test_events_returns_astronomical_and_festivals(client: TestClient) -> None:
     assert len(body["festivals"]) >= 3
     # Festivals carry source counts so the UI can flag well-cited entries.
     assert all(f["source_count"] >= 1 for f in body["festivals"])
+    # v1-051: the Calendar detail rail needs the observance + the full
+    # attestation chain, not just a count.
+    for f in body["festivals"]:
+        assert "practice" in f
+        assert len(f["sources"]) == f["source_count"]
+        for s in f["sources"]:
+            assert s["kind"] in {"primary", "scholarly", "community"}
+            assert s["title"]
+            assert s["author"]
 
 
 def test_events_rejects_inverted_range(client: TestClient) -> None:

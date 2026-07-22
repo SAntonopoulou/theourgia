@@ -479,6 +479,17 @@ class EventRead(BaseModel):
     meta: dict[str, object | None]
 
 
+class FestivalSourceRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: str
+    title: str
+    author: str
+    year: int | None
+    locator: str
+    notes: str
+
+
 class FestivalRead(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -489,6 +500,12 @@ class FestivalRead(BaseModel):
     start: datetime
     end: datetime
     description: str
+    # The Calendar surface's detail rail shows the observance and the
+    # full attestation chain, so the wire model carries both (v1-051).
+    # ``source_count`` predates ``sources`` and is kept for callers
+    # that only badge a count.
+    practice: str
+    sources: list[FestivalSourceRead]
     source_count: int
 
 
@@ -532,6 +549,18 @@ async def events(
                         start=instance.start,
                         end=instance.end,
                         description=festival.description,
+                        practice=festival.practice_notes,
+                        sources=[
+                            FestivalSourceRead(
+                                kind=s.kind.value,
+                                title=s.title,
+                                author=s.author,
+                                year=s.year,
+                                locator=s.locator,
+                                notes=s.notes,
+                            )
+                            for s in festival.sources
+                        ],
                         source_count=len(festival.sources),
                     ))
     festivals_list.sort(key=lambda f: f.start)

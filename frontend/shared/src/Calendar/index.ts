@@ -1,3 +1,13 @@
+export { CalendarSurface } from "./CalendarSurface.js";
+export type {
+  AstroKindGroup,
+  CalendarAstroEvent,
+  CalendarFestivalInstance,
+  CalendarSurfaceProps,
+} from "./CalendarSurface.js";
+
+export { FESTIVAL_GLYPHS, TRADITION_GLYPHS, festivalGlyph } from "./glyphs.js";
+
 export { CitationKindBadge } from "./CitationKindBadge.js";
 export type { CitationKindBadgeProps } from "./CitationKindBadge.js";
 

@@ -124,10 +124,16 @@ def lunar_phases_in_range(start: datetime, end: datetime) -> list[AstroEvent]:
             )
             if delta_prev < 0 <= delta_curr:
                 jd_exact = _bisect_phase(_to_jd(t), _to_jd(t_next), target)
+                # The Calendar surface subtitles each phase "Moon in
+                # {sign}" (v1-051), so carry the moon's sign at the
+                # exact instant.
+                moon_pos, _ = swe.calc_ut(jd_exact, swe.MOON, swe.FLG_MOSEPH)
                 events.append(
                     AstroEvent(
                         kind=kind,
                         instant=_from_jd(jd_exact),
+                        body="moon",
+                        sign=sign_of(moon_pos[0]).sign_name,
                     )
                 )
         prev_angle = angle

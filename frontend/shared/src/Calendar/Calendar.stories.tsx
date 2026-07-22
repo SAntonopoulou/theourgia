@@ -19,6 +19,11 @@ import {
   MonthGrid,
   type MonthWeek,
 } from "./MonthGrid.js";
+import {
+  CalendarSurface,
+  type CalendarAstroEvent,
+  type CalendarFestivalInstance,
+} from "./CalendarSurface.js";
 
 const meta = {
   title: "Calendar",
@@ -322,4 +327,95 @@ export const MonthGrid_Empty: Story = {
       </Frame>
     );
   },
+};
+
+// ─── CalendarSurface — the full page body (v1-051) ──────────────────
+
+const JUNE_FESTS: CalendarFestivalInstance[] = [
+  {
+    id: "vestalia:2026-06-07",
+    festivalId: "vestalia",
+    name: "Vestalia",
+    tradition: "roman",
+    glyph: "⚶",
+    label: "7–15 June",
+    startDate: "2026-06-07",
+    endDate: "2026-06-15",
+    description:
+      "The festival of Vesta, when the penus Vestae — the inner store of the goddess's temple — was opened to the matrons of Rome.",
+    practice:
+      "Mola salsa offered and the hearth honoured through the week; on the Ides the temple was ritually swept.",
+    sources: [
+      {
+        kind: "primary",
+        title: "Fasti VI.249–348",
+        author: "Ovid",
+        year: "8 CE",
+        loc: "VI.249",
+        note: "The fullest surviving account of the rites.",
+      },
+    ],
+  },
+  {
+    id: "litha:2026-06-21",
+    festivalId: "litha",
+    name: "Litha · Midsummer",
+    tradition: "woty",
+    glyph: "☀",
+    label: "summer solstice",
+    startDate: "2026-06-21",
+    endDate: "2026-06-21",
+    description:
+      "The Wheel's midsummer station — the longest day, the sun at the height of its strength before the turn toward winter.",
+    practice: "Bonfires kept through the short night; herbs gathered at their peak.",
+    sources: [
+      {
+        kind: "scholarly",
+        title: "The Stations of the Sun",
+        author: "Ronald Hutton",
+        year: "1996",
+        loc: "ch. 31",
+      },
+    ],
+  },
+];
+
+const JUNE_ASTRO: CalendarAstroEvent[] = [
+  {
+    id: "a-lq",
+    date: "2026-06-08",
+    glyph: "◑",
+    label: "Last quarter",
+    name: "Last quarter moon",
+    sub: "Moon in Pisces",
+    description:
+      "The waning half-moon. Traditionally a time for release, banishing and the closing of works.",
+    kindGroup: "lunation",
+  },
+  {
+    id: "a-solstice",
+    date: "2026-06-21",
+    glyph: "☀",
+    label: "Summer solstice",
+    name: "Summer solstice",
+    sub: "Sun enters Cancer",
+    description:
+      "The Sun reaches its greatest northern declination and ingresses Cancer — the cardinal turn of the solar year.",
+    kindGroup: "solar",
+  },
+];
+
+export const Surface_June2026: Story = {
+  name: "CalendarSurface · June 2026 (design demo month)",
+  render: () => (
+    <div style={{ background: "var(--bg)" }}>
+      <CalendarSurface
+        festivals={JUNE_FESTS}
+        astro={JUNE_ASTRO}
+        initialYear={2026}
+        initialMonth={6}
+        today="2026-06-21"
+      />
+    </div>
+  ),
 };
