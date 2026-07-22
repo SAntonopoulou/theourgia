@@ -8,40 +8,48 @@ Last updated: **2026-07-20** (v1.0 close-out run in progress — see below).
 
 ---
 
-## ▶▶ RESUME HERE — 2026-07-20 night (responsive sweep + prod deploy)
+## ▶▶ RESUME HERE — 2026-07-22 (calendar + follow-ups closed + deployed)
 
-**Prod is now current and stable at HEAD (`71c713d`, DB `0085`).** Tonight
-did the responsive/mobile UX sweep (v1-050) and caught prod up from 21
-commits behind (`dc22932`, DB 0082). RestartCount=0 on every service —
-**no restart loop**; `/`, `/healthz` 200, `/api/v1/entities` 401, SW v4
-served. pg_dump safety backup at `/srv/theourgia/prod/backups-manual/pre-v1050-*`.
+**Prod is current and stable at HEAD (`4d187d6`, DB `0085`, SW v5).**
+RestartCount=0 on every service · celery now reports **healthy** (real
+broker ping) · beat has no probe by design · backend boots with **zero**
+`startup_skipped` errors · `/api/v1/events` live with practice + full
+attestation chains. Backup: `/srv/theourgia/prod/backups-manual/pre-v1053-*`.
 
-**Shipped + deployed tonight:** topbar clip fix (`.om-topbar-actions`
-`0 0 auto`) on every surface · heavy topbar chrome hidden ≤1024 (tablet) ·
-new `useNarrowLayout` hook · pane-stacking on MagicSquares/Gematria/Analytics ·
-public-site nav no longer clips on tiled ~960px windows · SW VERSION v3→v4.
-Full detector triage: **98 routes × 4 widths, only 1 trivial 4px offender.**
+**Shipped + deployed 2026-07-22:**
+- **Calendar surface (v1-052)** — H01-H03's lost surface, composed
+  end-to-end per `Theourgia Calendar.dc.html`: CalendarSurface (month grid ·
+  multi-day bars · agenda view · tradition/kind filters · Today/festival/
+  astro rail cards · citation legend) live at `/calendar` against
+  `GET /api/v1/events` (26-festival registry + real ephemeris; lunar phases
+  now carry moon sign; festivals expose practice + sources). 55 new tests.
+- **Public-site disclosure menu (v1-051)** — the Landing .dc.html
+  production note realized; nav reachable below 860px; vault card + hero
+  stack at 720; CTA nowrap.
+- **All four 07-20 follow-ups closed (v1-053)**: all 8 PG enum columns get
+  `values_callable` (class fix — proven by live queries on a from-zero-
+  migrated Postgres; SQLite suite can't see this class) · celery/beat
+  healthchecks corrected in compose · Sealed chip fixed.
+- **Final responsive triage: 98 routes × 4 widths = 393 checks, ZERO
+  offenders.** Suites: 3599 backend · 3216 shared · 124 admin.
 
 **Verify harness:** `.sweep-mobshot.mjs` at repo root (run from repo root;
-`SHOTS=0` = fast triage; `WIDTHS=...`). Detector is a FLOOR — screenshot-verify.
+`SHOTS=0` = fast triage; `WIDTHS=...`). Detector is a FLOOR — screenshot-
+verify. Local verify stack: `theourgia-verify-verify-pg-1` (127.0.0.1:5534,
+db `theourgia_verify` at 0085, user/pass theourgia/theourgia) +
+`verify-redis-1` (6380) left running; backend env aliases are
+`DATABASE_URL`/`REDIS_URL` (NOT THEOURGIA_-prefixed).
 
-**FOUR OPEN FOLLOW-UPS (do these first):**
-1. **Public-site mobile hamburger menu** — below 860px `.om-pubnav` links
-   vanish with no menu; unreachable on true mobile/small tiles. Add a toggle
-   menu to `PublicChrome.astro`. (Tonight's fix only stopped the ~960px clip.)
-2. **plugin_state enum** — backend logs `invalid input value for enum
-   plugin_state: "ACTIVE"` every startup (code sends uppercase NAME, DB labels
-   are lowercase). Caught/skipped, non-blocking. Fix: `Enum(...,
-   values_callable=lambda e:[x.value for x in e])` on the column.
-3. **Celery healthcheck wrong** — curls `localhost:8000` inside celery
-   containers (no HTTP there) → "unhealthy" though tasks succeed. Fix or drop it.
-4. **`/` "Sealed" chip** 4px clip @390 (below fold) + finish the broader
-   VISUAL spot-check pass across admin surfaces (release gate).
+**NEXT (the remaining v1.0.0 gate items):**
+1. **#40 hardening leftovers** — a11y re-sweep of new surfaces (Calendar!),
+   perf profiling, crypto review completion.
+2. **#20 release engineering** — version bump 0.0.0-dev→1.0.0 across ~10
+   files · CHANGELOG `[1.0.0]` cut.
+3. **#21 FEATURES.md evidence-backed audit** (DO LAST before tag).
+4. **#22 tag `v1.0.0`** + deploy + launch report. Release is the LAST step.
+5. (#41 external validation items remain operator decisions.)
 
-Then v1.0.0 release remains LAST: FEATURES.md evidence audit → version bump
-0.0.0-dev→1.0.0 → CHANGELOG → tag `v1.0.0`.
-
-Full session detail: memory `project_2026_07_20_responsive_sweep_deploy`.
+Full session detail: memory `project_2026_07_22_calendar_and_followups`.
 
 ---
 
