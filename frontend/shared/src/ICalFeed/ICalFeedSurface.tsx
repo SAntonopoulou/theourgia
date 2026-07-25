@@ -239,6 +239,7 @@ export function ICalFeedSurface({
       style={{
         display: "grid",
         gridTemplateRows: "auto 1fr",
+        gridAutoColumns: "minmax(0, 1fr)",
         minWidth: 0,
         minHeight: 0,
         height: "100%",

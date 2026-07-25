@@ -259,13 +259,17 @@ export function AgentCostDashboardSurface({
         {HEADERS.perAgent}
       </div>
       <div
+        className="scroll"
         style={{
           borderWidth: 1,
           borderStyle: "solid",
           borderColor: "var(--line)",
           borderRadius: "var(--r-md)",
           background: "var(--bg-2)",
-          overflow: "hidden",
+          // Phones: the fixed-column table scrolls sideways inside the
+          // card rather than clipping at the viewport (8/8 sweep).
+          overflowX: "auto",
+          overflowY: "hidden",
           marginBottom: 28,
         }}
       >
@@ -274,6 +278,7 @@ export function AgentCostDashboardSurface({
             display: "grid",
             gridTemplateColumns: "1.4fr 70px 90px 1.2fr 110px",
             gap: 14,
+            minWidth: 560,
             padding: "10px 16px",
             borderBottomWidth: 1,
             borderBottomStyle: "solid",
@@ -300,6 +305,7 @@ export function AgentCostDashboardSurface({
               display: "grid",
               gridTemplateColumns: "1.4fr 70px 90px 1.2fr 110px",
               gap: 14,
+              minWidth: 560,
               padding: "13px 16px",
               borderBottomWidth: idx < perAgent.length - 1 ? 1 : 0,
               borderBottomStyle: "solid",

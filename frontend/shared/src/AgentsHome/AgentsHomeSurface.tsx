@@ -68,6 +68,9 @@ const NAV_ROW: CSSProperties = {
   display: "flex",
   gap: 2,
   padding: "8px 24px",
+  // Phones: five tabs don't fit 390 — scroll the strip, never clip it
+  // (8/8 sweep).
+  overflowX: "auto",
   borderBottomWidth: 1,
   borderBottomStyle: "solid",
   borderBottomColor: "var(--line)",

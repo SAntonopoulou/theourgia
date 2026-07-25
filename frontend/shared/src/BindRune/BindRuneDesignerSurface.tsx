@@ -403,7 +403,7 @@ export function BindRuneDesignerSurface({
       </header>
 
       <div className="br-panes" style={PANES_STYLE}>
-        <aside className="scroll" style={RAIL_STYLE}>
+        <aside className="scroll br-side" style={RAIL_STYLE}>
           <label
             style={{
               display: "block",

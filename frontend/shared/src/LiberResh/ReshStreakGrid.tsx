@@ -99,7 +99,10 @@ export function ReshStreakGrid({
           flexWrap: "wrap",
         }}
       >
-        <div style={{ flex: "none" }}>
+        {/* flex 0 1 auto + minWidth 0 (NOT flex:none): the subtitle is a
+            full sentence — at 390px an unshrinkable block rides ~200px past
+            the card edge (8/8 responsive sweep). */}
+        <div style={{ flex: "0 1 auto", minWidth: 0 }}>
           <div
             style={{
               display: "flex",

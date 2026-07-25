@@ -397,6 +397,7 @@ export function PublicationEditorSurface({
       style={{
         display: "grid",
         gridTemplateRows: "auto 1fr auto",
+        gridAutoColumns: "minmax(0, 1fr)",
         minWidth: 0,
         minHeight: 0,
         height: "100%",
@@ -517,10 +518,10 @@ export function PublicationEditorSurface({
         </div>
       </header>
 
-      <div style={PANES_STYLE}>
+      <div className="pe-cols" style={PANES_STYLE}>
         {/* Chapter rail (books only) */}
         {isBook ? (
-          <aside className="scroll" aria-label="Chapters" style={CHAPTER_RAIL}>
+          <aside className="scroll pe-side" aria-label="Chapters" style={CHAPTER_RAIL}>
             <div style={EYEBROW}>{PE_CHAPTERS_EYEBROW}</div>
             <div
               style={{
@@ -699,7 +700,7 @@ export function PublicationEditorSurface({
 
         {/* Metadata rail */}
         <aside
-          className="scroll"
+          className="scroll pe-side"
           aria-label="Publication metadata"
           style={META_RAIL}
         >

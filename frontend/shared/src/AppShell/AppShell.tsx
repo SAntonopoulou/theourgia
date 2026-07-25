@@ -112,6 +112,10 @@ export function AppShell({ topbar, nav, children }: AppShellProps) {
         style={{
           display: "grid",
           gridTemplateRows: "auto 1fr",
+          // The implicit column must NOT auto-size to the widest row
+          // (an overlong topbar was expanding this to its min-content,
+          // dragging every surface past the viewport — 8/8 sweep).
+          gridTemplateColumns: "minmax(0, 1fr)",
           minWidth: 0,
         }}
       >

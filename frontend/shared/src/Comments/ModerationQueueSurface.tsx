@@ -157,6 +157,8 @@ export function ModerationQueueSurface({
         style={{
           display: "flex",
           gap: 4,
+          // Phones: the five state tabs scroll rather than clip (8/8 sweep).
+          overflowX: "auto",
           borderBottom: "1px solid var(--line)",
           marginBottom: 20,
         }}

@@ -279,6 +279,8 @@ export function StudiesIndexSurface({
           display: "flex",
           alignItems: "center",
           gap: 14,
+          // Phones: search + "New study" wrap under the title (8/8 sweep).
+          flexWrap: "wrap",
           padding: "13px 24px",
           borderBottom: "1px solid var(--line)",
           background: "var(--bg)",
@@ -314,7 +316,7 @@ export function StudiesIndexSurface({
             gap: 10,
           }}
         >
-          <div style={{ position: "relative", flex: "0 0 220px" }}>
+          <div style={{ position: "relative", flex: "0 1 220px", minWidth: 120 }}>
             <span
               style={{
                 position: "absolute",

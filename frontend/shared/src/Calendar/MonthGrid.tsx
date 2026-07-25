@@ -345,7 +345,7 @@ export function MonthGrid({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(7, 1fr)",
+          gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
           borderBottomWidth: 1,
           borderBottomStyle: "solid",
           borderBottomColor: "var(--line-2)",
@@ -385,7 +385,7 @@ export function MonthGrid({
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(7, 1fr)",
+                gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
               }}
             >
               {week.days.map((day, col) => (

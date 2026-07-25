@@ -170,7 +170,9 @@ export function RegistryPublicHomeSurface({
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
+            // Phones: the three tier cards stack instead of crushing
+            // (8/8 sweep).
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
             gap: 18,
           }}
         >
@@ -287,7 +289,8 @@ export function RegistryPublicHomeSurface({
       <section
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          // Phones: the two recent columns stack (8/8 sweep).
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
           gap: 30,
           marginBottom: 54,
         }}

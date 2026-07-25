@@ -160,13 +160,17 @@ export function PluginStatusDashboardSurface({
           <section data-field="active-section">
             <h2 style={sectionHeading()}>{PSD_SECTION_ACTIVE}</h2>
             <div
+              className="scroll"
               style={{
                 borderWidth: 1,
                 borderStyle: "solid",
                 borderColor: "var(--line)",
                 borderRadius: "var(--r-md)",
                 background: "var(--bg-2)",
-                overflow: "hidden",
+                // Phones: the fixed-column table scrolls sideways inside
+                // the card rather than clipping (8/8 sweep).
+                overflowX: "auto",
+                overflowY: "hidden",
               }}
             >
               <div
@@ -174,6 +178,7 @@ export function PluginStatusDashboardSurface({
                   display: "grid",
                   gridTemplateColumns: "1fr auto auto auto",
                   gap: 16,
+                  minWidth: 430,
                   padding: "10px 16px",
                   borderBottom: "1px solid var(--line)",
                   fontFamily: "var(--font-ui)",
@@ -202,6 +207,7 @@ export function PluginStatusDashboardSurface({
                     display: "grid",
                     gridTemplateColumns: "1fr auto auto auto",
                     gap: 16,
+                    minWidth: 430,
                     padding: "12px 16px",
                     borderBottomWidth: i < active.length - 1 ? 1 : 0,
                     borderBottomStyle: "solid",

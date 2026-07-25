@@ -55,7 +55,7 @@ function Subnav({
 }) {
   return (
     <nav
-      className="scroll"
+      className="scroll st-side"
       style={{
         flex: "none",
         width: 212,
@@ -730,7 +730,16 @@ export function Settings() {
   );
 
   return (
-    <div style={{ margin: "0 -28px", display: "flex", minHeight: 0 }}>
+    <div
+      className="st-cols"
+      style={{
+        // Cancels the shell padding exactly — a hardcoded -28px overshoots
+        // on phones where --shell-pad is 16 (8/8 sweep).
+        margin: "0 calc(-1 * var(--shell-pad, 28px))",
+        display: "flex",
+        minHeight: 0,
+      }}
+    >
       <Subnav active={section} onChange={setSection} />
       <div
         className="scroll"

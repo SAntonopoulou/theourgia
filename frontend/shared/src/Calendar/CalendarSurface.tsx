@@ -802,7 +802,20 @@ export function CalendarSurface({
           {view === "month" ? (
             <div
               className="cal-scroll"
-              style={narrow ? { overflowX: "auto", overflowY: "hidden" } : undefined}
+              // Narrow: the wrapper becomes both the horizontal scroller
+              // AND the rounded clip. MonthGrid's own overflow:hidden must
+              // switch off here — an overflow-hidden box BETWEEN the cells
+              // and the scroller reads as a hard clip, not a scroll
+              // (8/8 responsive sweep).
+              style={
+                narrow
+                  ? {
+                      overflowX: "auto",
+                      overflowY: "hidden",
+                      borderRadius: "var(--r-lg, 14px)",
+                    }
+                  : undefined
+              }
             >
               <MonthGrid
                 className="cal-grid"
@@ -810,7 +823,7 @@ export function CalendarSurface({
                 weeks={grid.weeks}
                 onSelectFestival={(f) => selectFest(f.id)}
                 onSelectAstro={(a) => selectAstro(a.id)}
-                style={narrow ? { minWidth: 680 } : undefined}
+                style={narrow ? { minWidth: 680, overflow: "visible" } : undefined}
               />
             </div>
           ) : (

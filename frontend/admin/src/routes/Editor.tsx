@@ -1210,7 +1210,15 @@ export function Editor() {
 
   return (
     <div
-      style={{ display: "flex", flexDirection: "column", minHeight: 0, flex: 1, margin: "0 -28px" }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
+        flex: 1,
+        // Cancels the shell padding exactly — a hardcoded -28px overshoots
+        // on phones where --shell-pad is 16 (8/8 sweep).
+        margin: "0 calc(-1 * var(--shell-pad, 28px))",
+      }}
     >
       <div
         style={{

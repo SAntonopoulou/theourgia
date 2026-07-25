@@ -233,9 +233,15 @@ select:focus-visible {
     padding-left: 14px !important;
     padding-right: 14px !important;
     gap: 10px !important;
+    /* Phones: the actions cluster must not SHRINK (v1-050) but it may
+     * WRAP under the title row when a surface mounts wide before/after
+     * slots (Editor, Oaths — 8/8 sweep). */
+    flex-wrap: wrap;
   }
   .om-topbar-actions {
     gap: 8px !important;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -366,6 +372,64 @@ select:focus-visible {
 @media (max-width: 640px) {
   .tk-cols {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── 8/8 sweep · workbench side rails stack on phones ───────────────────────
+ * Rows built as [fixed rail · flexible pane · fixed rail] cannot fit 390 —
+ * below 720 the rails become full-width bands stacked with the pane, and
+ * the row itself becomes the scroller. Inline styles carry the desktop
+ * values; !important is required to override them (same convention as the
+ * .td-two / .tk-cols blocks above). */
+@media (max-width: 720px) {
+  .tr-cols,
+  .pe-cols,
+  .qb-cols,
+  .sg-panes,
+  .tl-panes,
+  .ci-panes,
+  .br-panes {
+    flex-direction: column !important;
+    overflow-y: auto !important;
+  }
+  .tr-cols > .tr-side,
+  .pe-cols > .pe-side,
+  .qb-cols > .qb-side,
+  .sg-panes > .sg-side,
+  .tl-panes > .tl-side,
+  .ci-panes > .ci-side,
+  .br-panes > .br-side {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    max-height: 280px;
+    border-left: none !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--line);
+  }
+  /* Stacked canvases keep a workable height instead of collapsing. */
+  .sg-panes > :not(.sg-side),
+  .tl-panes > :not(.tl-side),
+  .ci-panes > :not(.ci-side),
+  .br-panes > :not(.br-side) {
+    min-height: 320px;
+  }
+}
+@media (max-width: 640px) {
+  .st-cols {
+    flex-direction: column !important;
+    overflow-y: auto !important;
+  }
+  .st-cols > .st-side {
+    width: auto !important;
+    border-right: none !important;
+    border-bottom: 1px solid var(--line);
+  }
+}
+/* Pilgrimage route designer: [list 240 · map 1fr · editor 260] stacks to a
+ * single column when the three tracks cannot fit (8/8 sweep). */
+@media (max-width: 900px) {
+  .pr-cols {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }
 

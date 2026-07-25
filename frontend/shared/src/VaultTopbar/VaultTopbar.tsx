@@ -181,6 +181,10 @@ export function VaultTopbar({ onMenuToggle, navOpen, actingAs }: VaultTopbarProp
         alignItems: "center",
         gap: 18,
         padding: "14px 28px",
+        // Grid-item automatic minimum would floor the topbar at its
+        // min-content width and push it past the viewport on phones;
+        // min-width 0 lets the title block absorb the squeeze instead.
+        minWidth: 0,
         ...toneStyles,
       }}
     >

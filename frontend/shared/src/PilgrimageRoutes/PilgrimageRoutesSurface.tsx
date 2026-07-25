@@ -93,7 +93,7 @@ export function PilgrimageRoutesSurface({
 
   return (
     <div
-      className={className}
+      className={`pr-cols${className ? ` ${className}` : ""}`}
       data-component="pilgrimage-routes"
       style={{
         display: "grid",

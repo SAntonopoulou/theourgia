@@ -60,9 +60,8 @@ export function AutoStampChip({
     background: "var(--bg-sunk)",
     border: "1px solid var(--line)",
     maxWidth: "100%",
+    minWidth: 0,
     overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
     cursor: "pointer",
     ...style,
   };
@@ -105,7 +104,18 @@ export function AutoStampChip({
           <circle cx="12" cy="12" r="4" />
           <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4" />
         </svg>
-        {label}
+        {/* text-overflow only works on a block box — a nowrap label set
+            directly on the flex button clipped with no ellipsis and kept
+            a huge min-content width (8/8 responsive sweep). */}
+        <span
+          style={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {label}
+        </span>
       </button>
     );
   }
