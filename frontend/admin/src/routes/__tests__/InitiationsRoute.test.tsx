@@ -163,7 +163,7 @@ describe("InitiationsRoute", () => {
     expect(screen.getByText("No initiations recorded.")).toBeInTheDocument();
   });
 
-  it("seals client-side and posts to /initiations", async () => {
+  it("seals client-side and posts to /initiations", { timeout: 20_000 }, async () => {
     renderRoute();
     await flush();
 
@@ -183,8 +183,12 @@ describe("InitiationsRoute", () => {
     const unlock = screen.getByPlaceholderText("Passphrase");
     fireEvent.change(unlock, { target: { value: "correct horse battery staple" } });
     fireEvent.click(screen.getByRole("button", { name: "Unlock" }));
-    // PBKDF2 + AES-GCM run async — poll until the POST lands.
-    for (let i = 0; i < 40 && mocks.createInitiation.mock.calls.length === 0; i++) {
+    // PBKDF2 + AES-GCM run async — poll until the POST lands. The
+    // 600k-iteration KDF is deliberately slow, so wait on a wall-clock
+    // deadline rather than a fixed iteration count: a loaded machine
+    // could otherwise exhaust the loop before the seal finishes.
+    const deadline = Date.now() + 15_000;
+    while (mocks.createInitiation.mock.calls.length === 0 && Date.now() < deadline) {
       await flush();
       await new Promise((r) => setTimeout(r, 25));
     }

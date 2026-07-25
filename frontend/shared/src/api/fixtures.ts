@@ -647,6 +647,57 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     }
   }
 
+  if (bare === "/api/v1/identities" && method === "GET") {
+    // Mirrors the backend guarantee: every account has one default
+    // persona. Neutral name — no fabricated people in mock mode.
+    return [
+      {
+        id: "identity-default",
+        handle: "practitioner",
+        display_name: "Practitioner",
+        kind: "default",
+        bio: "",
+        is_active: true,
+        public_face_enabled: false,
+      },
+    ];
+  }
+
+  if (bare === "/api/v1/resh/today" && method === "GET") {
+    const today = new Date().toISOString().slice(0, 10);
+    const at = (hour: number) => `${today}T${String(hour).padStart(2, "0")}:00:00Z`;
+    return {
+      civil_date: today,
+      streak_days: 0,
+      stations: [
+        { transition: "sunrise", at: at(6), godform: "Ra", direction: "the East", short_invocation: "Hail unto Thee who art Ra in Thy rising", observed_at: null, note: null },
+        { transition: "noon", at: at(12), godform: "Ahathoor", direction: "the South", short_invocation: "Hail unto Thee who art Ahathoor in Thy triumphing", observed_at: null, note: null },
+        { transition: "sunset", at: at(18), godform: "Tum", direction: "the West", short_invocation: "Hail unto Thee who art Tum in Thy setting", observed_at: null, note: null },
+        { transition: "midnight", at: at(0), godform: "Khephra", direction: "the North", short_invocation: "Hail unto Thee who art Khephra in Thy hiding", observed_at: null, note: null },
+      ],
+    };
+  }
+
+  if (bare === "/api/v1/resh/adorations") {
+    if (method === "GET") return [];
+    if (method === "POST") {
+      const input = (body ?? {}) as { transition?: string; civil_date?: string | null; note?: string | null };
+      const now = new Date().toISOString();
+      return {
+        id: `adoration-${Date.now()}`,
+        civil_date: input.civil_date ?? now.slice(0, 10),
+        transition: input.transition ?? "sunrise",
+        observed_at: now,
+        note: input.note ?? null,
+        location_label: null,
+        entry_id: null,
+        owner_id: null,
+        created_at: now,
+        updated_at: now,
+      };
+    }
+  }
+
   if (bare === "/api/v1/wellbeing/nudge") {
     if (method === "GET") return wellbeingNudgeRead();
     if (method === "PUT") {

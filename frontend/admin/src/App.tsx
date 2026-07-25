@@ -61,6 +61,11 @@ const DailyPracticeRoute = lazy(() =>
     default: m.DailyPracticeRoute,
   })),
 );
+const LiberReshRoute = lazy(() =>
+  import("./routes/LiberReshRoute.js").then((m) => ({
+    default: m.LiberReshRoute,
+  })),
+);
 const CommentModerationRoute = lazy(() =>
   import("./routes/CommentModerationRoute.js").then((m) => ({
     default: m.CommentModerationRoute,
@@ -115,9 +120,6 @@ const VocesLibraryRoute = lazy(() =>
   import("./routes/VocesLibraryRoute.js").then((m) => ({
     default: m.VocesLibraryRoute,
   })),
-);
-const Divination = lazy(() =>
-  import("./routes/Divination.js").then((m) => ({ default: m.Divination })),
 );
 const DivinationMiscRoute = lazy(() =>
   import("./routes/DivinationMiscRoute.js").then((m) => ({
@@ -442,14 +444,12 @@ const LineageAdmin = lazy(() =>
     default: m.LineageAdmin,
   })),
 );
-const Oracle = lazy(() => import("./routes/Oracle.js").then((m) => ({ default: m.Oracle })));
 const Templates = lazy(() =>
   import("./routes/Templates.js").then((m) => ({ default: m.Templates })),
 );
 const Wellbeing = lazy(() =>
   import("./routes/Wellbeing.js").then((m) => ({ default: m.Wellbeing })),
 );
-const Workshop = lazy(() => import("./routes/Workshop.js").then((m) => ({ default: m.Workshop })));
 const Journal = lazy(() => import("./routes/Journal.js").then((m) => ({ default: m.Journal })));
 const Library = lazy(() => import("./routes/Library.js").then((m) => ({ default: m.Library })));
 const BindRuneRoute = lazy(() =>
@@ -799,6 +799,7 @@ function ShellRoutes() {
             <Route path="/library" element={<Library />} />
             <Route path="/synchronicities" element={<SynchronicityLogRoute />} />
             <Route path="/daily-practice" element={<DailyPracticeRoute />} />
+            <Route path="/daily-practice/resh" element={<LiberReshRoute />} />
             <Route path="/practice-logs" element={<PracticeLogsRoute />} />
             <Route path="/entities" element={<Entities />} />
             {/* v1-019 — Beings-ledger cluster (BeingsTabs secondary nav). */}
@@ -824,7 +825,10 @@ function ShellRoutes() {
             <Route path="/memorial-mode" element={<MemorialModeRoute />} />
             <Route path="/settings/password" element={<AccountPasswordRoute />} />
             <Route path="/calendar" element={<CalendarRoute />} />
-            <Route path="/divination" element={<Divination />} />
+            {/* The old /divination hub scaffold is gone; the canonical
+              divination surface is /divination/tarot (H04). Keep the bare
+              URL alive for bookmarks. */}
+            <Route path="/divination" element={<Navigate to="/divination/tarot" replace />} />
             <Route path="/divination/tarot" element={<TarotRoute />} />
             <Route path="/divination/iching" element={<IChingRoute />} />
             <Route path="/divination/geomancy" element={<GeomancyRoute />} />
@@ -931,8 +935,6 @@ function ShellRoutes() {
             <Route path="/editor/:id" element={<Editor />} />
             <Route path="/templates" element={<Templates />} />
             <Route path="/health" element={<Health />} />
-            <Route path="/workshop" element={<Workshop />} />
-            <Route path="/oracle" element={<Oracle />} />
             <Route path="/transliterations" element={<TransliterationUtilityRoute />} />
             <Route path="/settings" element={<AccountSettingsRoute />} />
             <Route path="/settings/data-export" element={<DataExportRequestRoute />} />

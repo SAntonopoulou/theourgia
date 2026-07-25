@@ -53,6 +53,7 @@ import type {
   CreatePendulumReadingInput,
   CreatePracticeInput,
   CreateRecurringOfferingInput,
+  CreateReshAdorationInput,
   CreateServitorInput,
   CreateServitorTaskInput,
   CreateSigilInput,
@@ -80,6 +81,7 @@ import type {
   HealthStatus,
   HealthSummary,
   HoraryReadingRecord,
+  IdentityRead,
   InitiationRead,
   InitiationStatusWire,
   InstalledBundleListResponse,
@@ -106,6 +108,9 @@ import type {
   PromotePluginInput,
   RecurringOfferingRead,
   RegistryAdvisory,
+  ReshAdorationRead,
+  ReshTodayRead,
+  ReshTransitionWire,
   RegistryAuthorRead,
   RegistryPluginListResponse,
   RegistrySubmission,
@@ -1440,6 +1445,61 @@ export function api(client: ApiClient) {
 
     deleteInitiation(id: string): Promise<void> {
       return client.request<void>(`/api/v1/initiations/${id}`, { method: "DELETE" });
+    },
+
+    /**
+     * The signed-in user's personas — ``GET /api/v1/identities``.
+     * Read-only: persona mutations live in the admin substrate and
+     * are not exposed through this client yet.
+     */
+    listIdentities(opts?: { signal?: AbortSignal }): Promise<IdentityRead[]> {
+      return client.request<IdentityRead[]>("/api/v1/identities", {
+        signal: opts?.signal,
+      });
+    },
+
+    /** Four stations for the day + observed markers + streak. */
+    reshToday(opts: {
+      lat: number;
+      lng: number;
+      date?: string;
+      tz?: string;
+      signal?: AbortSignal;
+    }): Promise<ReshTodayRead> {
+      const params = new URLSearchParams({
+        lat: String(opts.lat),
+        lng: String(opts.lng),
+      });
+      if (opts.date) params.set("date", opts.date);
+      if (opts.tz) params.set("tz", opts.tz);
+      return client.request<ReshTodayRead>(`/api/v1/resh/today?${params.toString()}`, {
+        signal: opts.signal,
+      });
+    },
+
+    listReshAdorations(opts?: {
+      since?: string;
+      until?: string;
+      transition?: ReshTransitionWire;
+      limit?: number;
+      signal?: AbortSignal;
+    }): Promise<ReshAdorationRead[]> {
+      const params = new URLSearchParams();
+      if (opts?.since) params.set("since", opts.since);
+      if (opts?.until) params.set("until", opts.until);
+      if (opts?.transition) params.set("transition", opts.transition);
+      if (opts?.limit !== undefined) params.set("limit", String(opts.limit));
+      const qs = params.toString();
+      return client.request<ReshAdorationRead[]>(`/api/v1/resh/adorations${qs ? `?${qs}` : ""}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    createReshAdoration(input: CreateReshAdorationInput): Promise<ReshAdorationRead> {
+      return client.request<ReshAdorationRead>("/api/v1/resh/adorations", {
+        method: "POST",
+        json: input,
+      });
     },
 
     listServitors(opts?: {

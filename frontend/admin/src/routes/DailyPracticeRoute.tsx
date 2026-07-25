@@ -234,7 +234,7 @@ export function DailyPracticeRoute() {
       onSkip={handleSkip}
       onReset={handleReset}
       onDefine={handleDefine}
-      liberReshHref="/"
+      liberReshHref="/daily-practice/resh"
     />
   );
 }

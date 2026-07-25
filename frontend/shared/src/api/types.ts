@@ -2215,3 +2215,73 @@ export interface FederationPeerRead {
 export interface FederationPeerCreated extends FederationPeerRead {
   capability_token: string | null;
 }
+
+// ─── Identities (personas) ──────────────────────────────────────────────────
+
+/**
+ * One persona of the signed-in user — ``GET /api/v1/identities``.
+ * Read-only for the journaling layer: mutation routes live in the
+ * persona admin substrate and are not exposed here.
+ */
+export interface IdentityRead {
+  id: string;
+  handle: string;
+  display_name: string;
+  /** "default" | "secondary". */
+  kind: string;
+  bio: string;
+  is_active: boolean;
+  public_face_enabled: boolean;
+}
+
+// ─── Liber Resh ─────────────────────────────────────────────────────────────
+
+/** The four solar stations, as the wire spells them. */
+export type ReshTransitionWire = "sunrise" | "noon" | "sunset" | "midnight";
+
+/** One station of the day — element of ``ReshTodayRead.stations``. */
+export interface ReshStationRead {
+  transition: ReshTransitionWire;
+  /** ISO instant of the transition; null when the polar fallback ate
+   *  sunrise/sunset. */
+  at: string | null;
+  godform: string;
+  direction: string;
+  short_invocation: string;
+  /** ISO instant the practitioner marked it observed, else null. */
+  observed_at: string | null;
+  note: string | null;
+}
+
+/** ``GET /api/v1/resh/today?lat=&lng=&date=&tz=``. */
+export interface ReshTodayRead {
+  civil_date: string;
+  stations: ReshStationRead[];
+  /** Consecutive days ending today with all four (or polar two) observed. */
+  streak_days: number;
+}
+
+/** One recorded adoration — ``GET /api/v1/resh/adorations``. */
+export interface ReshAdorationRead {
+  id: string;
+  civil_date: string;
+  transition: ReshTransitionWire;
+  observed_at: string;
+  note: string | null;
+  location_label: string | null;
+  entry_id: string | null;
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Input for ``POST /api/v1/resh/adorations``. */
+export interface CreateReshAdorationInput {
+  transition: ReshTransitionWire;
+  /** Local civil date (YYYY-MM-DD); server defaults to today (UTC). */
+  civil_date?: string | null;
+  observed_at?: string | null;
+  note?: string | null;
+  location_label?: string | null;
+  entry_id?: string | null;
+}
