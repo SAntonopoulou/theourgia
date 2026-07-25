@@ -14,6 +14,13 @@ THE critical honesty rules covered:
     years.
   * The four formerly-dead toggles (resh / lunar / planetary hours /
     custom cron) now EMIT real events from the Phase 03 engines.
+  * Rite-station events speak the FEED OWNER's configured labels
+    (hellenic preset ships as default) via the same resolution path
+    as /api/v1/resh; no user context falls back to the canonical
+    Thelemic labels.
+  * The Hekatean observances (Deipnon / Noumenia / Agathos Daimon)
+    ride the lunar toggle and carry their Attic month/day in the
+    event description.
 """
 
 from __future__ import annotations
@@ -36,6 +43,7 @@ from theourgia.core.calendar.feed_walker import (
     _group_sealed_by_date,
     _lunar_events,
     _next_anniversary_in_window,
+    _observance_events,
     _pilgrimage_to_event,
     _planetary_hour_events,
     _resh_events,
@@ -45,6 +53,9 @@ from theourgia.core.calendar.ical_serializer import (
     CalendarEvent,
     SealedDayMarker,
 )
+from theourgia.core.calendars.attic import attic_context
+from theourgia.core.resh.adorations import stations_for_preset
+from theourgia.core.resh.user_config import resolve_rite_config
 from theourgia.models.entries import EncryptionMode, EntryType
 from theourgia.models.pilgrimage_sites import SiteKind
 
@@ -561,3 +572,239 @@ def test_custom_events_capped() -> None:
     """An every-minute cron is capped, not served as ~100k VEVENTs."""
     events = _custom_events(_feed("* * * * *"), now=_NOW)
     assert len(events) == CUSTOM_EVENT_CAP
+
+
+# ── Rite config resolution (the iCal ↔ API shared path) ──────────
+
+
+class _SettingsResult:
+    def __init__(self, rows) -> None:
+        self._rows = rows
+
+    def scalars(self):
+        return self
+
+    def all(self):
+        return self._rows
+
+
+class _SettingsDb:
+    """Serves the given user-setting rows to any query."""
+
+    def __init__(self, rows) -> None:
+        self._rows = rows
+
+    async def execute(self, stmt):
+        return _SettingsResult(self._rows)
+
+
+def _setting(key: str, value_json: str) -> SimpleNamespace:
+    return SimpleNamespace(key=key, value_json=value_json)
+
+
+async def test_resolve_rite_config_defaults_to_hellenic() -> None:
+    """An unconfigured user resolves to the shipped default — the
+    hellenic preset — exactly like GET /api/v1/resh/config."""
+    config = await resolve_rite_config(_SettingsDb([]), uuid4())
+    assert config.preset == "hellenic"
+    stations = config.effective_stations()
+    sunrise = stations[feed_walker.Transition.SUNRISE]
+    assert "Hekate Phosphoros" in sunrise.godform
+
+
+async def test_resolve_rite_config_reads_thelemic_preset() -> None:
+    db = _SettingsDb([_setting("resh.preset", '"thelemic"')])
+    config = await resolve_rite_config(db, uuid4())
+    assert config.preset == "thelemic"
+    stations = config.effective_stations()
+    assert stations[feed_walker.Transition.SUNRISE].godform == "Ra Hoor Khuit"
+
+
+async def test_resolve_rite_config_applies_station_overrides() -> None:
+    db = _SettingsDb([
+        _setting(
+            "resh.stations",
+            '{"noon": {"godform": "Helios Basileus"}}',
+        ),
+    ])
+    config = await resolve_rite_config(db, uuid4())
+    stations = config.effective_stations()
+    noon = stations[feed_walker.Transition.NOON]
+    assert noon.godform == "Helios Basileus"
+    # Un-overridden fields keep the preset's values.
+    assert noon.direction == "Centre"
+
+
+async def test_resolve_rite_config_malformed_rows_fall_back() -> None:
+    """Broken JSON / unknown preset never raise — defaults win."""
+    db = _SettingsDb([
+        _setting("resh.preset", "{not json"),
+        _setting("resh.stations", '"not a dict"'),
+    ])
+    config = await resolve_rite_config(db, uuid4())
+    assert config.preset == "hellenic"
+    assert config.overrides == {}
+
+
+async def test_resolve_rite_config_unknown_preset_falls_back() -> None:
+    db = _SettingsDb([_setting("resh.preset", '"golden-dawn"')])
+    config = await resolve_rite_config(db, uuid4())
+    assert config.preset == "hellenic"
+
+
+# ── Rite emission with configured labels ─────────────────────────
+
+
+def test_resh_events_hellenic_labels_for_configured_user() -> None:
+    """The operator's calendar export speaks her Hellenic labels —
+    godform in the summary AND the description, per station."""
+    events = _resh_events(
+        *_ATHENS,
+        stations=stations_for_preset("hellenic"),
+        preset="hellenic",
+        now=_NOW,
+    )
+    sunrise = next(e for e in events if "sunrise" in e.uid)
+    assert "Hekate Phosphoros" in sunrise.summary
+    assert "Hekate Phosphoros" in sunrise.description
+    assert "East" in sunrise.description
+    noon = next(e for e in events if "noon" in e.uid)
+    assert "Apollo" in noon.summary
+    sunset = next(e for e in events if "sunset" in e.uid)
+    assert "Hekate Enodia" in sunset.summary
+    midnight = next(e for e in events if "midnight" in e.uid)
+    assert "Persephone" in midnight.summary
+
+
+def test_resh_events_hellenic_never_says_liber_resh() -> None:
+    """Internal consistency: the hellenic preset's summaries carry
+    the generalized rite title, not the Thelemic one, and no
+    Thelemic godform leaks through."""
+    events = _resh_events(
+        *_ATHENS,
+        stations=stations_for_preset("hellenic"),
+        preset="hellenic",
+        now=_NOW,
+    )
+    assert events
+    for e in events:
+        assert "Liber Resh" not in e.summary
+        assert e.summary.startswith("Four-Station Rite — ")
+        assert "Ra Hoor Khuit" not in e.summary
+        assert "Khephra" not in e.summary
+
+
+def test_resh_events_thelemic_preset_keeps_classical_labels() -> None:
+    """A user who configures the thelemic preset still gets Liber
+    Resh proper."""
+    events = _resh_events(
+        *_ATHENS,
+        stations=stations_for_preset("thelemic"),
+        preset="thelemic",
+        now=_NOW,
+    )
+    sunrise = next(e for e in events if "sunrise" in e.uid)
+    assert sunrise.summary.startswith("Liber Resh — sunrise")
+    assert "Ra Hoor Khuit" in sunrise.summary
+    midnight = next(e for e in events if "midnight" in e.uid)
+    assert "Khephra" in midnight.summary
+
+
+def test_resh_events_fallback_without_user_context_is_thelemic() -> None:
+    """No user context (stations=None) = the documented fallback:
+    byte-identical to the explicit thelemic emission (the pre-preset
+    behavior)."""
+    fallback = _resh_events(*_ATHENS, now=_NOW)
+    thelemic = _resh_events(
+        *_ATHENS,
+        stations=stations_for_preset("thelemic"),
+        preset="thelemic",
+        now=_NOW,
+    )
+    assert [e.summary for e in fallback] == [e.summary for e in thelemic]
+    assert [e.description for e in fallback] == [
+        e.description for e in thelemic
+    ]
+    assert fallback[0].summary.startswith("Liber Resh — ")
+
+
+def test_walker_resolves_owner_rite_config_in_source() -> None:
+    """walk_feed_data MUST thread the feed owner's rite config into
+    the resh emission — a future commit that reverts to the
+    hardcoded labels gets caught."""
+    src = inspect.getsource(feed_walker.walk_feed_data)
+    resh_idx = src.index("feed.include_resh")
+    lunar_idx = src.index("feed.include_lunar_events")
+    resh_branch = src[resh_idx:lunar_idx]
+    assert "resolve_rite_config" in resh_branch
+    assert "effective_stations" in resh_branch
+
+
+# ── Hekatean observances (Deipnon / Noumenia / Agathos Daimon) ───
+
+
+def test_observance_events_emit_the_monthly_arc() -> None:
+    """The 10-week window spans ≥2 lunations → each observance of
+    the Deipnon → Noumenia → Agathos Daimon arc appears ≥2 times."""
+    events = _observance_events(now=_NOW)
+    summaries = [e.summary for e in events]
+    assert set(summaries) == {"Deipnon", "Noumenia", "Agathos Daimon"}
+    for label in ("Deipnon", "Noumenia", "Agathos Daimon"):
+        assert summaries.count(label) >= 2
+
+
+def test_observance_events_are_all_day_and_namespaced() -> None:
+    events = _observance_events(now=_NOW)
+    uids = [e.uid for e in events]
+    assert len(uids) == len(set(uids))
+    for e in events:
+        assert e.is_all_day is True
+        assert e.location == ""
+        assert e.uid.startswith("observance-")
+        assert e.uid.endswith("@theourgia")
+
+
+def test_observance_descriptions_carry_attic_date() -> None:
+    """Each observance's description carries its Attic month/day —
+    the SAME reckoning today-context serves (attic_context)."""
+    events = _observance_events(now=_NOW)
+    assert events
+    for e in events:
+        ctx = attic_context(e.start.date())
+        assert "Attic date: " in e.description
+        assert (
+            f"Attic date: {ctx.day} {ctx.month_name} {ctx.year_span}."
+            in e.description
+        )
+
+
+def test_observance_noumenia_is_attic_day_one() -> None:
+    """Consistency lock: a Noumenia event always lands on Attic day
+    1 (and Agathos Daimon on day 2) — the feed and the Attic
+    calendar can never disagree."""
+    events = _observance_events(now=_NOW)
+    for e in events:
+        ctx = attic_context(e.start.date())
+        if e.summary == "Noumenia":
+            assert ctx.day == 1
+        elif e.summary == "Agathos Daimon":
+            assert ctx.day == 2
+        else:  # Deipnon — the month's last day
+            assert ctx.day == ctx.month_length
+
+
+def test_observance_events_within_window() -> None:
+    lower, upper = _window_bounds(_NOW)
+    for e in _observance_events(now=_NOW):
+        assert lower.date() <= e.start.date() <= upper.date()
+
+
+def test_walker_emits_observances_under_lunar_toggle_in_source() -> None:
+    """The observances ride include_lunar_events (they ARE the lunar
+    month's hinge days) — no new toggle, no silent drop."""
+    src = inspect.getsource(feed_walker.walk_feed_data)
+    lunar_idx = src.index("feed.include_lunar_events")
+    custom_idx = src.index("feed.include_custom")
+    lunar_branch = src[lunar_idx:custom_idx]
+    assert "_lunar_events" in lunar_branch
+    assert "_observance_events" in lunar_branch

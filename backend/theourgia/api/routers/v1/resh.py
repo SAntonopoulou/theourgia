@@ -31,16 +31,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.resh import (
-    DEFAULT_MINIMUM_VIABLE_STATION,
     DEFAULT_MODE,
-    DEFAULT_PRESET,
     Adoration as StationDef,
     AdorationLog,
     Transition,
     compute_transitions,
     invocation_forms,
-    stations_for_preset,
     streak_at_date,
+)
+from theourgia.core.resh.user_config import (
+    MIN_STATION_KEY,
+    PRESET_KEY,
+    STATIONS_KEY,
+    apply_station_overrides,
+    resolve_rite_config,
 )
 from theourgia.models.resh import Adoration as AdorationModel
 from theourgia.models.resh import ReshMode, ReshTransition
@@ -54,12 +58,6 @@ router = APIRouter()
 TransitionLiteral = Literal["sunrise", "noon", "sunset", "midnight"]
 ModeLiteral = Literal["home", "xenos"]
 PresetLiteral = Literal["hellenic", "thelemic"]
-
-PRESET_KEY = "resh.preset"
-STATIONS_KEY = "resh.stations"
-MIN_STATION_KEY = "resh.minimum_viable_station"
-
-_STATION_OVERRIDE_FIELDS = ("godform", "direction", "short_invocation")
 
 
 class StationOverride(BaseModel):
@@ -231,50 +229,21 @@ def _to_read(row: AdorationModel) -> AdorationRead:
 
 
 async def _load_rite_config(db: AsyncSession, user_id) -> RiteConfig:
-    """Read the caller's rite configuration from the ``user_setting``
-    table (same well-known-key pattern as the location + calendar
-    settings). Malformed rows fall back to defaults — never raise.
+    """Read the caller's rite configuration.
+
+    Resolution (settings keys, validation, fallbacks) lives in
+    :func:`theourgia.core.resh.user_config.resolve_rite_config` — the
+    SAME path the iCal feed walker uses, so the API and the calendar
+    export can never disagree about a user's stations.
     """
-    stmt = select(UserSetting).where(
-        UserSetting.user_id == user_id,
-        UserSetting.key.in_((PRESET_KEY, STATIONS_KEY, MIN_STATION_KEY)),
-    )
-    rows = (await db.execute(stmt)).scalars().all()
-    values: dict[str, object] = {}
-    for row in rows:
-        try:
-            values[row.key] = json.loads(row.value_json)
-        except (ValueError, TypeError):
-            continue
-
-    preset = values.get(PRESET_KEY)
-    if preset not in ("hellenic", "thelemic"):
-        preset = DEFAULT_PRESET
-
-    min_station = values.get(MIN_STATION_KEY)
-    if min_station not in {t.value for t in Transition}:
-        min_station = DEFAULT_MINIMUM_VIABLE_STATION.value
-
-    overrides: dict[str, StationOverride] = {}
-    raw_stations = values.get(STATIONS_KEY)
-    if isinstance(raw_stations, dict):
-        for key, val in raw_stations.items():
-            if key not in {t.value for t in Transition}:
-                continue
-            if not isinstance(val, dict):
-                continue
-            fields = {
-                f: val[f]
-                for f in _STATION_OVERRIDE_FIELDS
-                if isinstance(val.get(f), str)
-            }
-            if fields:
-                overrides[key] = StationOverride(**fields)
-
+    resolved = await resolve_rite_config(db, user_id)
     config = RiteConfig(
-        preset=preset,  # type: ignore[arg-type]
-        minimum_viable_station=min_station,  # type: ignore[arg-type]
-        stations=overrides,  # type: ignore[arg-type]
+        preset=resolved.preset,  # type: ignore[arg-type]
+        minimum_viable_station=resolved.minimum_viable_station.value,  # type: ignore[arg-type]
+        stations={
+            t.value: StationOverride(**fields)
+            for t, fields in resolved.overrides.items()
+        },  # type: ignore[arg-type]
     )
     config.effective_stations = _station_forms(config)  # type: ignore[assignment]
     return config
@@ -286,18 +255,15 @@ def _effective_stations(config: RiteConfig) -> dict[Transition, StationDef]:
     A ``short_invocation`` override is a plain string and replaces the
     preset's invocation for BOTH modes; without one, the preset's form
     (single string or per-mode mapping) passes through untouched.
+    Delegates to the shared core layering helper.
     """
-    stations = stations_for_preset(config.preset)
-    for key, override in config.stations.items():
-        t = Transition(key)
-        base = stations[t]
-        stations[t] = StationDef(
-            transition=t,
-            godform=override.godform or base.godform,
-            direction=override.direction or base.direction,
-            short_invocation=override.short_invocation or base.short_invocation,
-        )
-    return stations
+    return apply_station_overrides(
+        config.preset,
+        {
+            Transition(key): override.model_dump(exclude_none=True)
+            for key, override in config.stations.items()
+        },
+    )
 
 
 def _station_forms(config: RiteConfig) -> dict[str, StationForms]:

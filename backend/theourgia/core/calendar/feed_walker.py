@@ -12,10 +12,20 @@ The emission paths, one per ``include_*`` toggle:
 * **Pilgrimage anniversaries** — :class:`PilgrimageSite` rows where
   ``sealed == False``. The site's ``created_at`` recurs annually; we
   emit a single event for the next anniversary in the window.
-* **Resh stations** — the four Liber Resh solar transitions per day,
-  from :mod:`theourgia.core.resh.adorations` (Phase 03 sun times).
+* **Rite stations** — the four solar transitions per day, from
+  :mod:`theourgia.core.resh.adorations` (Phase 03 sun times). Station
+  labels come from the FEED OWNER's rite configuration (the
+  ``resh.*`` settings keys), resolved through the SAME path the
+  ``/api/v1/resh/*`` endpoints use
+  (:func:`theourgia.core.resh.user_config.resolve_rite_config`) — the
+  operator's Hellenic preset exports Hellenic labels. Callers without
+  user context fall back to the canonical Thelemic labels (see
+  :func:`_resh_events`).
 * **Lunar events** — new / quarter / full moons from
-  :func:`theourgia.core.astro.events.lunar_phases_in_range`.
+  :func:`theourgia.core.astro.events.lunar_phases_in_range`, plus the
+  Hekatean monthly observances (Deipnon / Noumenia / Agathos Daimon)
+  with their Attic month/day in the description, from
+  :func:`theourgia.core.calendars.attic.attic_context`.
 * **Planetary hours** — :mod:`theourgia.core.astro.planetary_hours`,
   bounded to one week ahead (24 events/day; the full ten-week window
   would be ~1.7k VEVENTs).
@@ -38,7 +48,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
-from typing import Iterable
+from typing import Iterable, Mapping
 from uuid import UUID
 
 from sqlalchemy import select
@@ -55,10 +65,14 @@ from theourgia.core.calendar.ical_serializer import (
     CalendarEvent,
     SealedDayMarker,
 )
+from theourgia.core.calendars.attic import attic_context
 from theourgia.core.resh.adorations import (
+    Adoration,
+    Transition,
     adoration_for_transition,
     compute_transitions,
 )
+from theourgia.core.resh.user_config import resolve_rite_config
 from theourgia.models.entries import EncryptionMode, Entry, EntryType
 from theourgia.models.ical_feed import ICalFeed
 from theourgia.models.pilgrimage_sites import PilgrimageSite
@@ -80,6 +94,7 @@ __all__ = [
     "_next_anniversary_in_window",
     "_resh_events",
     "_lunar_events",
+    "_observance_events",
     "_planetary_hour_events",
     "_custom_events",
     "_feed_location",
@@ -364,22 +379,48 @@ async def _feed_location(
     return (lat, lng)
 
 
-# ── Resh stations ──────────────────────────────────────────────────
+# ── Rite stations (né Liber Resh) ──────────────────────────────────
+
+
+# What the rite is CALLED in the event summary, per preset. The
+# thelemic preset keeps the classical name; anything else gets the
+# generalized four-station framing (matches the Today surfaces).
+_RITE_TITLES: dict[str, str] = {
+    "thelemic": "Liber Resh",
+    "hellenic": "Four-Station Rite",
+}
+_FALLBACK_RITE_TITLE = "Liber Resh"
 
 
 def _resh_events(
     latitude: float,
     longitude: float,
     *,
+    stations: Mapping[Transition, Adoration] | None = None,
+    preset: str | None = None,
     now: datetime | None = None,
 ) -> list[CalendarEvent]:
-    """The four Liber Resh solar transitions for every day in the
-    walk window, computed from real sun times at the given location.
+    """The four solar transitions for every day in the walk window,
+    computed from real sun times at the given location.
+
+    ``stations`` carries the feed owner's resolved rite stations
+    (preset + overrides — see
+    :meth:`theourgia.core.resh.user_config.ResolvedRiteConfig.effective_stations`)
+    and ``preset`` names the preset for the summary title.
+
+    FALLBACK (documented): with no user context — ``stations`` is
+    ``None`` — this emits the canonical Thelemic labels via
+    :func:`adoration_for_transition` under the "Liber Resh" title,
+    exactly the pre-preset behavior.
 
     Polar days silently drop the sunrise/sunset stations (the
     adorations module returns ``None`` for them); noon and midnight
     are always defined.
     """
+    if stations is None:
+        title = _FALLBACK_RITE_TITLE
+    else:
+        title = _RITE_TITLES.get(preset or "", "Four-Station Rite")
     lower, upper = _window_bounds(now)
     events: list[CalendarEvent] = []
     d = lower.date()
@@ -388,7 +429,10 @@ def _resh_events(
         for transition, instant in transitions.as_pairs():
             if not (lower <= instant <= upper):
                 continue
-            adoration = adoration_for_transition(transition)
+            if stations is None:
+                adoration = adoration_for_transition(transition)
+            else:
+                adoration = stations[transition]
             events.append(
                 CalendarEvent(
                     uid=(
@@ -396,7 +440,7 @@ def _resh_events(
                         "@theourgia"
                     ),
                     summary=(
-                        f"Liber Resh — {transition.value} "
+                        f"{title} — {transition.value} "
                         f"({adoration.godform})"
                     ),
                     start=instant,
@@ -445,6 +489,72 @@ def _lunar_events(*, now: datetime | None = None) -> list[CalendarEvent]:
                 is_all_day=False,
             )
         )
+    return events
+
+
+# ── Hekatean observances (Deipnon / Noumenia / Agathos Daimon) ─────
+
+
+# Display labels + one-line glosses for the monthly observance arc.
+# The keys are the ``observance`` values ``attic_context`` reports.
+_OBSERVANCE_LABELS: dict[str, str] = {
+    "deipnon": "Deipnon",
+    "noumenia": "Noumenia",
+    "agathos_daimon": "Agathos Daimon",
+}
+_OBSERVANCE_GLOSSES: dict[str, str] = {
+    "deipnon": (
+        "Hekate's supper — the dark-moon day closing the month."
+    ),
+    "noumenia": (
+        "First crescent — the new lunar month begins."
+    ),
+    "agathos_daimon": (
+        "Libation to the household's Good Spirit — 2nd of the month."
+    ),
+}
+
+
+def _observance_events(
+    *, now: datetime | None = None,
+) -> list[CalendarEvent]:
+    """The Hekatean monthly observances in the walk window, as
+    all-day events.
+
+    Dating comes from :func:`theourgia.core.calendars.attic.attic_context`
+    — the same astronomical new-moon reckoning the ``today-context``
+    endpoint serves, so day 1 here is always the Noumenia day there —
+    and each event's DESCRIPTION carries the Attic month/day
+    (``"Attic date: {day} {month} {year_span}."``) so the export stays
+    internally consistent with the operator's Hellenic reckoning.
+    """
+    lower, upper = _window_bounds(now)
+    events: list[CalendarEvent] = []
+    d = lower.date()
+    while d <= upper.date():
+        ctx = attic_context(d)
+        if ctx.observance is not None:
+            slug = ctx.observance.replace("_", "-")
+            events.append(
+                CalendarEvent(
+                    uid=(
+                        f"observance-{slug}-{d.isoformat()}"
+                        "@theourgia"
+                    ),
+                    summary=_OBSERVANCE_LABELS[ctx.observance],
+                    start=datetime(
+                        d.year, d.month, d.day, tzinfo=timezone.utc,
+                    ),
+                    description=(
+                        f"{_OBSERVANCE_GLOSSES[ctx.observance]} "
+                        f"Attic date: {ctx.day} {ctx.month_name} "
+                        f"{ctx.year_span}."
+                    ),
+                    location="",
+                    is_all_day=True,
+                )
+            )
+        d += timedelta(days=1)
     return events
 
 
@@ -546,8 +656,10 @@ async def walk_feed_data(
     * ``include_pilgrimage_anniversaries`` → site anniversaries
       (non-sealed only).
     * ``include_resh`` → the four daily solar transitions at the
-      practitioner's stored location.
-    * ``include_lunar_events`` → new / quarter / full moons.
+      practitioner's stored location, labeled per the FEED OWNER's
+      rite configuration (same resolution path as ``/api/v1/resh``).
+    * ``include_lunar_events`` → new / quarter / full moons, plus the
+      Hekatean observances with their Attic date.
     * ``include_planetary_hours`` → the true planetary hours, one
       week ahead.
     * ``include_custom`` → the ``custom_cron`` expression expanded.
@@ -576,8 +688,19 @@ async def walk_feed_data(
     if feed.include_resh or feed.include_planetary_hours:
         latitude, longitude = await _feed_location(db, feed.owner_id)
         if feed.include_resh:
+            # The feed is a per-user token — the owner IS the user
+            # context. Resolve her rite configuration through the
+            # same path as /api/v1/resh so the export speaks the
+            # configured labels (Hellenic preset by default).
+            rite = await resolve_rite_config(db, feed.owner_id)
             events.extend(
-                _resh_events(latitude, longitude, now=now),
+                _resh_events(
+                    latitude,
+                    longitude,
+                    stations=rite.effective_stations(),
+                    preset=rite.preset,
+                    now=now,
+                ),
             )
         if feed.include_planetary_hours:
             events.extend(
@@ -586,6 +709,7 @@ async def walk_feed_data(
 
     if feed.include_lunar_events:
         events.extend(_lunar_events(now=now))
+        events.extend(_observance_events(now=now))
 
     if feed.include_custom:
         events.extend(_custom_events(feed, now=now))
