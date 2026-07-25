@@ -163,6 +163,45 @@ def register_default_settings(
         registry=target,
     )
 
+    # ── Four-station daily rite (Sprint I-A) ─────────────────────────
+    # The generalized Liber Resh: which preset names the stations,
+    # any per-station overrides, and which station anchors the streak.
+    register_setting(
+        "resh.preset",
+        value_type=str,
+        default="hellenic",
+        description=(
+            "Named station preset for the four-station daily rite. "
+            "'hellenic' (Hekate/Apollo/Persephone — the default) or "
+            "'thelemic' (classical Liber Resh)."
+        ),
+        allowed_values=("hellenic", "thelemic"),
+        registry=target,
+    )
+    register_setting(
+        "resh.stations",
+        value_type=dict,
+        default={},
+        description=(
+            "Per-station overrides on top of the preset (JSON object "
+            "keyed by transition — sunrise/noon/sunset/midnight — "
+            "each value an object with any of godform, direction, "
+            "short_invocation)."
+        ),
+        registry=target,
+    )
+    register_setting(
+        "resh.minimum_viable_station",
+        value_type=str,
+        default="sunset",
+        description=(
+            "The streak-anchoring station: the streak counts any day "
+            "this station is observed; the others carry no penalty."
+        ),
+        allowed_values=("sunrise", "noon", "sunset", "midnight"),
+        registry=target,
+    )
+
     # ── Editor (Phase 04+ but the key exists from day one) ───────────
     register_setting(
         "editor.font_family",

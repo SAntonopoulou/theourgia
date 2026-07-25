@@ -1,6 +1,7 @@
 """Hekatean lunar observances.
 
-Two monthly observances tied to the lunar cycle:
+Three monthly observances tied to the lunar cycle — the monthly arc
+Deipnon → Noumenia → Agathos Daimon:
 
 * **Deipnon (Δεῖπνον)** — Hekate's supper. The day before the new
   moon (i.e. when the moon is dark), supper offerings are left at the
@@ -11,6 +12,11 @@ Two monthly observances tied to the lunar cycle:
   The Hellenic month begins; offerings to the gods of the household
   hearth (Hestia, Apollo Agyieus, Hermes Propylaios). Attested
   throughout Plato and the *Iliad*.
+* **Agathos Daimon (Ἀγαθὸς Δαίμων)** — the second day of the lunar
+  month, the day after Noumenia. Libations (traditionally unmixed
+  wine) to the Good Spirit of the household, often figured as a
+  serpent. Attested in Aristophanes' *Wasps* and the scholia on the
+  Athenian month.
 
 These observances were household, not civic; the documentary record
 is patchier than for the Athenian state festivals. Where modern
@@ -20,9 +26,11 @@ is noted in `practice_notes`.
 For dating purposes we use the astronomical new moon: Deipnon is the
 24-hour window ending at the new moon instant; Noumenia is the
 24-hour window beginning at sunset of the day after the new moon
-(when the first crescent is typically visible). The actual visibility
-date varies by latitude + atmospherics; practitioners often observe
-on the first day they personally see the crescent.
+(when the first crescent is typically visible); Agathos Daimon is the
+24-hour window that follows Noumenia (the 2nd of the lunar month).
+The actual visibility date varies by latitude + atmospherics;
+practitioners often observe on the first day they personally see the
+crescent.
 """
 
 from __future__ import annotations
@@ -148,6 +156,24 @@ def _noumenia_compute(year: int) -> list[FestivalInstance]:
     ]
 
 
+def _agathos_daimon_compute(year: int) -> list[FestivalInstance]:
+    """Agathos Daimon: the 24-hour window after Noumenia's — the 2nd
+    day of the lunar month (Deipnon → Noumenia → Agathos Daimon).
+    """
+    return [
+        FestivalInstance(
+            festival_id="agathos-daimon",
+            label=(
+                f"Agathos Daimon · "
+                f"{(nm + timedelta(days=2)).strftime('%B %Y')} 2nd of the month"
+            ),
+            start=nm + timedelta(days=2),
+            end=nm + timedelta(days=3),
+        )
+        for nm in _find_new_moons_in_year(year)
+    ]
+
+
 register_festival(Festival(
     id="deipnon",
     name="Deipnon",
@@ -198,4 +224,51 @@ register_festival(Festival(
         ),
     ),
     compute=_noumenia_compute,
+))
+
+
+register_festival(Festival(
+    id="agathos-daimon",
+    name="Agathos Daimon",
+    tradition=Tradition.HEKATEAN,
+    description=(
+        "The Good Spirit's day — the 2nd of the lunar month, the day "
+        "after Noumenia. A libation of unmixed wine to the Agathos "
+        "Daimon of the household, the serpent-figured guardian of "
+        "hearth and stores."
+    ),
+    practice_notes=(
+        "The second day of the Athenian month was sacred to the "
+        "Agathos Daimon; a small libation of neat wine closed the "
+        "monthly opening arc Deipnon → Noumenia → Agathos Daimon. "
+        "Modern Hellenist practice keeps the household focus: a "
+        "libation and a word of thanks to the house-spirit, often "
+        "paired with Zeus Ktesios at the store-cupboard."
+    ),
+    sources=_HEKATEAN_SOURCES + (
+        Citation(
+            title="Wasps",
+            author="Aristophanes",
+            year=-422,
+            kind=CitationKind.PRIMARY,
+            locator="line 525",
+            notes=(
+                "The toast 'to the Agathos Daimon' attests the "
+                "libation practice; the scholia tie the observance to "
+                "the 2nd of the month."
+            ),
+        ),
+        Citation(
+            title="Moralia, 'Table Talk'",
+            author="Plutarch",
+            year=100,
+            kind=CitationKind.PRIMARY,
+            locator="3.7 (655e)",
+            notes=(
+                "Plutarch records the custom of tasting the new wine "
+                "with a libation to the Agathos Daimon."
+            ),
+        ),
+    ),
+    compute=_agathos_daimon_compute,
 ))

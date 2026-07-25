@@ -1,7 +1,21 @@
-"""Liber Resh — computation + adoration registry.
+"""The four-station daily rite — computation + station registry.
 
-Pure-data this batch. The journal integration lands when Phase 04
-wires the entry persistence model.
+Historically shipped as Liber Resh (the Thelemic solar adorations);
+generalized into a configurable four-station daily rite. The four
+solar *transitions* (sunrise / noon / sunset / midnight) are the
+structural skeleton; the *stations* — which deity is honored at each
+transition, with what invocation — come from a preset:
+
+* ``"hellenic"`` (the default preset) — the operator's set: Hekate
+  Phosphoros at dawn, Apollo at noon, Hekate Enodia Kleidouchos at
+  dusk, Persephone at night.
+* ``"thelemic"`` — the classical Liber Resh godforms (Ra, Ahathoor,
+  Tum, Khephra).
+
+Streaks follow the *minimum-viable-station* rule: one station of the
+four (default: dusk) anchors the practice; the streak counts any day
+that station is observed, and the other three are kept or not
+without penalty.
 """
 
 from __future__ import annotations
@@ -15,10 +29,15 @@ from theourgia.core.astro.sun_times import compute_sun_times
 __all__ = [
     "Adoration",
     "AdorationLog",
+    "DEFAULT_MINIMUM_VIABLE_STATION",
+    "DEFAULT_PRESET",
     "DailyTransitions",
+    "PRESETS",
     "Transition",
     "adoration_for_transition",
     "compute_transitions",
+    "station_for_transition",
+    "stations_for_preset",
     "streak_at_date",
 ]
 
@@ -32,7 +51,7 @@ class Transition(str, Enum):
 
 @dataclass(frozen=True, slots=True)
 class Adoration:
-    """One of the four canonical adorations.
+    """One of the four stations of the daily rite.
 
     The text is intentionally minimal in this module — full liturgy
     belongs in the user's chosen prayer book / `Liber CC` plugin.
@@ -41,7 +60,7 @@ class Adoration:
     """
 
     transition: Transition
-    godform: str  # "Ra Hoor Khuit", "Hadit", "Tum", "Khephra"
+    godform: str  # "Hekate Phosphoros — the Return", "Ra Hoor Khuit", …
     direction: str  # "East", "Centre", "West", "Below"
     short_invocation: str  # opening line of the adoration
 
@@ -74,9 +93,82 @@ _CANONICAL_ADORATIONS: dict[Transition, Adoration] = {
 }
 
 
+_HELLENIC_ADORATIONS: dict[Transition, Adoration] = {
+    Transition.SUNRISE: Adoration(
+        transition=Transition.SUNRISE,
+        godform="Hekate Phosphoros — the Return",
+        direction="East",
+        short_invocation=(
+            "Hail Hekate Phosphoros, torch-bearer, who leads the soul "
+            "back into the light."
+        ),
+    ),
+    Transition.NOON: Adoration(
+        transition=Transition.NOON,
+        godform="Apollo — the Good / the Augoeides",
+        direction="Centre",
+        short_invocation=(
+            "Hail Apollo, the Good, the shining Augoeides at the "
+            "height of day."
+        ),
+    ),
+    Transition.SUNSET: Adoration(
+        transition=Transition.SUNSET,
+        godform="Hekate Enodia, Kleidouchos — the Descent",
+        direction="West",
+        short_invocation=(
+            "Hail Hekate Enodia, Kleidouchos, keeper of the keys at "
+            "the road's turning; guide the descent."
+        ),
+    ),
+    Transition.MIDNIGHT: Adoration(
+        transition=Transition.MIDNIGHT,
+        godform="Persephone — the Journey",
+        direction="Below",
+        short_invocation=(
+            "Hail Persephone, queen below, companion of the journey "
+            "through the dark."
+        ),
+    ),
+}
+
+
+# Named presets. ``"hellenic"`` ships as the default (the operator's
+# practice); ``"thelemic"`` remains available for Liber Resh proper.
+PRESETS: dict[str, dict[Transition, Adoration]] = {
+    "hellenic": _HELLENIC_ADORATIONS,
+    "thelemic": _CANONICAL_ADORATIONS,
+}
+
+DEFAULT_PRESET = "hellenic"
+
+# The streak-anchoring station (see :func:`streak_at_date`).
+DEFAULT_MINIMUM_VIABLE_STATION = Transition.SUNSET
+
+
 def adoration_for_transition(transition: Transition) -> Adoration:
-    """The canonical Thelemic adoration for a given transition."""
+    """The canonical Thelemic adoration for a given transition.
+
+    Kept for the Thelemic preset + backward compatibility; preset-aware
+    callers use :func:`station_for_transition`.
+    """
     return _CANONICAL_ADORATIONS[transition]
+
+
+def stations_for_preset(preset: str = DEFAULT_PRESET) -> dict[Transition, Adoration]:
+    """The four stations of a named preset. ``KeyError`` if unknown."""
+    if preset not in PRESETS:
+        raise KeyError(
+            f"No rite preset named {preset!r}. Known: {sorted(PRESETS)}."
+        )
+    return dict(PRESETS[preset])
+
+
+def station_for_transition(
+    transition: Transition, *, preset: str = DEFAULT_PRESET,
+) -> Adoration:
+    """The station a given preset assigns to a transition."""
+    return stations_for_preset(preset)[transition]
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,29 +234,44 @@ class AdorationLog:
 def streak_at_date(
     log: list[AdorationLog],
     target_date: date_cls,
+    *,
+    minimum_viable_station: Transition = DEFAULT_MINIMUM_VIABLE_STATION,
 ) -> int:
-    """How many consecutive days ending at ``target_date`` have all
-    four adorations been performed?
+    """How many consecutive days ending at ``target_date`` was the
+    minimum-viable station observed?
 
-    The streak resets on the first day with fewer than four. For days
-    where the Sun never rises/sets (polar fallback), only NOON +
-    MIDNIGHT are required.
+    The minimum-viable-station rule: one of the four stations
+    (default: dusk / sunset) anchors the practice. A day counts
+    toward the streak when THAT station was observed; the other three
+    are kept or not without penalty. The streak resets on the first
+    day the anchor station is missing.
+
+    Polar fallback: when the anchor is sunrise or sunset and the day
+    has neither horizon observation (the Sun never rose/set — those
+    transitions don't exist that day), observing NOON + MIDNIGHT
+    keeps the streak.
     """
     by_date: dict[date_cls, set[Transition]] = {}
     for entry in log:
         by_date.setdefault(entry.civil_date, set()).add(entry.transition)
 
+    horizon_anchor = minimum_viable_station in (
+        Transition.SUNRISE, Transition.SUNSET,
+    )
+
     streak = 0
     d = target_date
     while True:
         transitions = by_date.get(d, set())
-        # If we don't have all four for this day, streak ends.
-        if not {Transition.SUNRISE, Transition.NOON, Transition.SUNSET, Transition.MIDNIGHT} <= transitions:
-            # Allow polar-fallback days: noon + midnight is enough.
-            # (Sunrise + sunset are None on those days; the user can
-            # still observe the meridian transitions.)
-            polar_fallback = {Transition.NOON, Transition.MIDNIGHT} <= transitions and (
-                Transition.SUNRISE not in transitions and Transition.SUNSET not in transitions
+        if minimum_viable_station not in transitions:
+            # Polar-fallback days: no horizon transitions exist, so a
+            # horizon anchor can't be observed — noon + midnight (the
+            # meridian pair) is enough.
+            polar_fallback = (
+                horizon_anchor
+                and {Transition.NOON, Transition.MIDNIGHT} <= transitions
+                and Transition.SUNRISE not in transitions
+                and Transition.SUNSET not in transitions
             )
             if not polar_fallback:
                 break

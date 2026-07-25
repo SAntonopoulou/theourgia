@@ -28,7 +28,7 @@ from sqlmodel import Field
 
 from theourgia.models.base import IDMixin, SoftDeleteMixin, TimestampMixin
 
-__all__ = ["Adoration", "ReshTransition"]
+__all__ = ["Adoration", "ReshMode", "ReshTransition"]
 
 
 class ReshTransition(str, enum.Enum):
@@ -36,6 +36,18 @@ class ReshTransition(str, enum.Enum):
     NOON = "noon"
     SUNSET = "sunset"
     MIDNIGHT = "midnight"
+
+
+class ReshMode(str, enum.Enum):
+    """Which liturgy form the observance used.
+
+    The operator runs different forms of the rite when at home (in
+    Greece) vs abroad — ``home`` vs ``xenos`` — recorded per
+    observance so the journal reflects which form was performed.
+    """
+
+    HOME = "home"
+    XENOS = "xenos"
 
 
 class Adoration(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
@@ -68,6 +80,20 @@ class Adoration(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
         sa_type=DateTime(timezone=True),
         sa_column_kwargs={"nullable": False},
         description="When the practitioner actually performed the adoration.",
+    )
+
+    mode: ReshMode = Field(
+        default=ReshMode.HOME,
+        sa_column=Column(
+            SQLEnum(
+                ReshMode,
+                name="resh_mode",
+                values_callable=lambda obj: [m.value for m in obj],
+            ),
+            nullable=False,
+            server_default="home",
+        ),
+        description="Liturgy form used: 'home' (in Greece) or 'xenos' (abroad).",
     )
 
     note: Optional[str] = Field(

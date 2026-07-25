@@ -1,4 +1,4 @@
-"""Liber Resh tests."""
+"""Four-station daily rite (Liber Resh) tests."""
 
 from __future__ import annotations
 
@@ -7,10 +7,15 @@ from datetime import UTC, date, datetime, timedelta
 import pytest
 
 from theourgia.core.resh import (
+    DEFAULT_MINIMUM_VIABLE_STATION,
+    DEFAULT_PRESET,
+    PRESETS,
     AdorationLog,
     Transition,
     adoration_for_transition,
     compute_transitions,
+    station_for_transition,
+    stations_for_preset,
     streak_at_date,
 )
 
@@ -62,7 +67,51 @@ def test_midnight_adoration_is_khephra() -> None:
     assert a.direction == "Below"
 
 
-# ───── Streak ───────────────────────────────────────────────────────────
+# ───── Presets ──────────────────────────────────────────────────────────
+
+
+def test_default_preset_is_hellenic() -> None:
+    assert DEFAULT_PRESET == "hellenic"
+    assert set(PRESETS) == {"hellenic", "thelemic"}
+
+
+def test_hellenic_preset_stations() -> None:
+    """The operator's set: Hekate Phosphoros / Apollo / Hekate Enodia
+    Kleidouchos / Persephone."""
+    stations = stations_for_preset("hellenic")
+    assert stations[Transition.SUNRISE].godform == "Hekate Phosphoros — the Return"
+    assert stations[Transition.NOON].godform == "Apollo — the Good / the Augoeides"
+    assert stations[Transition.SUNSET].godform == "Hekate Enodia, Kleidouchos — the Descent"
+    assert stations[Transition.MIDNIGHT].godform == "Persephone — the Journey"
+
+
+def test_thelemic_preset_matches_canonical_adorations() -> None:
+    stations = stations_for_preset("thelemic")
+    for t in Transition:
+        assert stations[t] == adoration_for_transition(t)
+
+
+def test_every_preset_covers_all_four_transitions() -> None:
+    for preset, stations in PRESETS.items():
+        assert set(stations) == set(Transition), preset
+        for t, station in stations.items():
+            assert station.transition is t
+            assert station.godform
+            assert station.direction
+            assert station.short_invocation
+
+
+def test_station_for_transition_defaults_to_hellenic() -> None:
+    a = station_for_transition(Transition.SUNSET)
+    assert "Enodia" in a.godform
+
+
+def test_stations_for_preset_rejects_unknown() -> None:
+    with pytest.raises(KeyError):
+        stations_for_preset("golden-dawn")
+
+
+# ───── Streak (minimum-viable-station rule) ─────────────────────────────
 
 
 def _log(
@@ -95,17 +144,61 @@ def test_streak_accumulates_consecutive_days() -> None:
     assert streak_at_date(log, date(2026, 6, 21)) == 5
 
 
-def test_streak_resets_on_partial_day() -> None:
-    """A day with only 2 of 4 adorations breaks the streak."""
+def test_default_minimum_viable_station_is_dusk() -> None:
+    assert DEFAULT_MINIMUM_VIABLE_STATION is Transition.SUNSET
+
+
+def test_streak_counts_day_with_only_the_anchor_station() -> None:
+    """The minimum-viable-station rule: dusk alone keeps the day."""
+    log = _log(date(2026, 6, 21), [Transition.SUNSET])
+    assert streak_at_date(log, date(2026, 6, 21)) == 1
+
+
+def test_streak_breaks_when_anchor_station_missing() -> None:
+    """Three of four observed — but not dusk — breaks the streak."""
     log: list[AdorationLog] = []
     log.extend(_log(date(2026, 6, 20), list(Transition)))  # complete
-    log.extend(_log(date(2026, 6, 21), [Transition.NOON, Transition.SUNSET]))  # partial
+    log.extend(_log(
+        date(2026, 6, 21),
+        [Transition.SUNRISE, Transition.NOON, Transition.MIDNIGHT],
+    ))
+    assert streak_at_date(log, date(2026, 6, 21)) == 0
+
+
+def test_streak_other_stations_carry_no_penalty() -> None:
+    """Dusk-only days and full days chain equally."""
+    log: list[AdorationLog] = []
+    log.extend(_log(date(2026, 6, 19), list(Transition)))  # full day
+    log.extend(_log(date(2026, 6, 20), [Transition.SUNSET]))  # dusk only
+    log.extend(_log(date(2026, 6, 21), [Transition.SUNSET, Transition.NOON]))
+    assert streak_at_date(log, date(2026, 6, 21)) == 3
+
+
+def test_streak_with_custom_anchor_station() -> None:
+    """The anchor is configurable — e.g. midnight-keepers."""
+    log: list[AdorationLog] = []
+    log.extend(_log(date(2026, 6, 20), [Transition.MIDNIGHT]))
+    log.extend(_log(date(2026, 6, 21), [Transition.MIDNIGHT]))
+    assert streak_at_date(
+        log, date(2026, 6, 21),
+        minimum_viable_station=Transition.MIDNIGHT,
+    ) == 2
+    # Under the dusk default the same log scores zero.
     assert streak_at_date(log, date(2026, 6, 21)) == 0
 
 
 def test_streak_allows_polar_fallback_noon_and_midnight() -> None:
-    """When sunrise/sunset are skipped (polar fallback), noon + midnight
-    is enough to maintain the streak.
+    """When neither horizon transition exists (polar day/night), noon +
+    midnight is enough to maintain a horizon-anchored streak.
     """
     log = _log(date(2026, 6, 21), [Transition.NOON, Transition.MIDNIGHT])
     assert streak_at_date(log, date(2026, 6, 21)) == 1
+
+
+def test_polar_fallback_not_applied_for_meridian_anchor() -> None:
+    """A noon anchor gets no fallback — noon either happened or not."""
+    log = _log(date(2026, 6, 21), [Transition.MIDNIGHT])
+    assert streak_at_date(
+        log, date(2026, 6, 21),
+        minimum_viable_station=Transition.NOON,
+    ) == 0

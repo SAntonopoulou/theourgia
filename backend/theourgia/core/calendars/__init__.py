@@ -25,7 +25,9 @@ calendars looking at the same instant must always agree on *when*
 they're looking at — they only disagree on *how* to spell it.
 
 The first batch shipped Gregorian, Julian, Hebrew, and Thelemic;
-v1-016 added Islamic (civil), Coptic, Mayan, and French Republican.
+v1-016 added Islamic (civil), Coptic, Mayan, and French Republican;
+Sprint I-A added the Attic lunar reckoning (months from Noumenia,
+year from the first Noumenia after the summer solstice).
 The remaining calendars in `plan/03-time-and-cosmos.md` §1 land in
 follow-up batches; the substrate is the same for each.
 """
@@ -48,6 +50,7 @@ from theourgia.core.calendars import islamic as _islamic  # noqa: F401
 from theourgia.core.calendars import coptic as _coptic  # noqa: F401
 from theourgia.core.calendars import mayan as _mayan  # noqa: F401
 from theourgia.core.calendars import french_republican as _french_republican  # noqa: F401
+from theourgia.core.calendars import attic as _attic  # noqa: F401
 
 __all__ = [
     "Calendar",

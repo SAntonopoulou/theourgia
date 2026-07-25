@@ -53,7 +53,18 @@ from theourgia.core.astro.planetary_hours import (
     current_planetary_hour,
     day_ruler,
 )
+from theourgia.core.astro.profections import (
+    TRADITIONAL_RULERS,
+    Profection,
+    age_at,
+    profection_for_date,
+)
 from theourgia.core.astro.sun_times import SunTimes, compute_sun_times
+from theourgia.core.astro.transits import (
+    DEFAULT_TRANSIT_ORB,
+    TransitAspect,
+    transits_to_natal,
+)
 from theourgia.core.astro.zodiac import (
     SIGNS,
     Ayanamsa,
@@ -68,13 +79,18 @@ __all__ = [
     "Ayanamsa",
     "ChartRequest",
     "ChartResult",
+    "DEFAULT_TRANSIT_ORB",
     "PLANET_GLYPH",
     "Placement",
     "Planet",
     "PlanetaryHour",
+    "Profection",
     "SIGNS",
     "SunTimes",
+    "TRADITIONAL_RULERS",
+    "TransitAspect",
     "Zodiac",
+    "age_at",
     "compute_chart",
     "compute_planetary_hours",
     "compute_sun_times",
@@ -83,5 +99,7 @@ __all__ = [
     "events_in_range",
     "lunar_phases_in_range",
     "planetary_ingresses_in_range",
+    "profection_for_date",
     "sign_of",
+    "transits_to_natal",
 ]

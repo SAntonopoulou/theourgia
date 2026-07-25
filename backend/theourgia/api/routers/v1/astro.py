@@ -1,13 +1,18 @@
 """Astrology + calendar + events HTTP endpoints (Phase 03 Batch 27).
 
-Six endpoints per `plan/03-time-and-cosmos.md` §8:
+Six endpoints per `plan/03-time-and-cosmos.md` §8, plus the Sprint
+I-A additions (profections, transits-to-natal, today-context):
 
 * ``GET  /api/v1/calendar/today``         — multi-calendar today
 * ``GET  /api/v1/astro/chart``            — compute and return a chart
 * ``GET  /api/v1/astro/now``              — current sky state (compact chart)
 * ``GET  /api/v1/astro/planetary-hours``  — for a date + location
+* ``GET  /api/v1/astro/profections``      — annual profection + year lord
+* ``GET  /api/v1/astro/transits``         — transiting aspects to natal
 * ``POST /api/v1/astro/election/search``  — election finder
 * ``GET  /api/v1/events``                 — astronomical + festival events
+* ``GET  /api/v1/events/today-context``   — Attic lunar day + observance
+  state + moon phase for the Today chip
 
 Mounted at the v1 prefix in ``routers/__init__.py``. No auth gates
 this phase — astrology data is public-by-default; the user's saved
@@ -51,6 +56,9 @@ from theourgia.core.election import (
 )
 from theourgia.core.astro.aspects import AspectKind
 from theourgia.core.astro.planetary_hours import Planet
+from theourgia.core.astro.profections import profection_for_date
+from theourgia.core.astro.transits import DEFAULT_TRANSIT_ORB, transits_to_natal
+from theourgia.core.calendars.attic import attic_context
 from theourgia.core.festivals import festivals_for_year, get_festival
 
 __all__ = ["router"]
@@ -321,6 +329,144 @@ async def astro_planetary_hours(
 
 
 # ════════════════════════════════════════════════════════════════════════
+# /astro/profections and /astro/transits
+# ════════════════════════════════════════════════════════════════════════
+
+
+class ProfectionResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    birth: datetime
+    on_date: date_cls
+    age: int
+    profected_house: int
+    profected_sign: int
+    profected_sign_name: str
+    year_lord: str
+    ascendant_sign: int
+    ascendant_sign_name: str
+    attribution: str
+
+
+@router.get(
+    "/astro/profections",
+    response_model=ProfectionResponse,
+    tags=["astro"],
+)
+async def astro_profections(
+    birth: datetime,
+    latitude: float = Query(ge=-90.0, le=90.0),
+    longitude: float = Query(ge=-180.0, le=180.0),
+    on_date: date_cls | None = Query(
+        default=None,
+        description="The date to profect to; defaults to today (UTC).",
+    ),
+) -> ProfectionResponse:
+    """Annual profection: whole-sign house arithmetic from the natal
+    Ascendant + birthday. The year lord is the profected sign's
+    TRADITIONAL ruler (Mars→Scorpio, Saturn→Aquarius, Jupiter→Pisces).
+    """
+    if birth.tzinfo is None:
+        birth = birth.replace(tzinfo=UTC)
+    target = on_date or datetime.now(tz=UTC).date()
+    natal = compute_chart(ChartRequest(
+        instant=birth,
+        latitude=latitude,
+        longitude=longitude,
+        house_system=HouseSystem.WHOLE_SIGN,
+    ))
+    asc = natal.ascendant
+    try:
+        prof = profection_for_date(birth.date(), target, asc.sign)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    return ProfectionResponse(
+        birth=birth,
+        on_date=target,
+        age=prof.age,
+        profected_house=prof.profected_house,
+        profected_sign=prof.profected_sign,
+        profected_sign_name=prof.profected_sign_name,
+        year_lord=prof.year_lord.value,
+        ascendant_sign=asc.sign,
+        ascendant_sign_name=asc.sign_name,
+        attribution=ATTRIBUTION,
+    )
+
+
+class TransitAspectRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    transiting_body: str
+    natal_body: str
+    kind: str
+    angle: float
+    orb: float
+
+
+class TransitsResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    birth: datetime
+    instant: datetime
+    orb: float
+    aspects: list[TransitAspectRead]
+    attribution: str
+
+
+@router.get(
+    "/astro/transits",
+    response_model=TransitsResponse,
+    tags=["astro"],
+)
+async def astro_transits(
+    birth: datetime,
+    latitude: float = Query(ge=-90.0, le=90.0),
+    longitude: float = Query(ge=-180.0, le=180.0),
+    when: datetime | None = Query(
+        default=None,
+        description="Instant of the transiting sky; defaults to now.",
+    ),
+    orb: float = Query(default=DEFAULT_TRANSIT_ORB, gt=0.0, le=15.0),
+) -> TransitsResponse:
+    """Transiting planet longitudes vs natal positions — the classical
+    aspects (0/60/90/120/180) within the requested orb (default 3°)."""
+    if birth.tzinfo is None:
+        birth = birth.replace(tzinfo=UTC)
+    instant = when or datetime.now(tz=UTC)
+    if instant.tzinfo is None:
+        instant = instant.replace(tzinfo=UTC)
+
+    natal = compute_chart(ChartRequest(
+        instant=birth, latitude=latitude, longitude=longitude,
+    ))
+    transiting = compute_chart(ChartRequest(
+        instant=instant, latitude=latitude, longitude=longitude,
+    ))
+    natal_lons = {p.body.id: p.tropical.longitude for p in natal.placements}
+    transit_lons = {
+        p.body.id: p.tropical.longitude for p in transiting.placements
+    }
+    hits = transits_to_natal(natal_lons, transit_lons, orb=orb)
+    return TransitsResponse(
+        birth=birth,
+        instant=instant,
+        orb=orb,
+        aspects=[
+            TransitAspectRead(
+                transiting_body=h.transiting_body,
+                natal_body=h.natal_body,
+                kind=h.kind.value,
+                angle=h.angle,
+                orb=h.orb,
+            )
+            for h in hits
+        ],
+        attribution=ATTRIBUTION,
+    )
+
+
+# ════════════════════════════════════════════════════════════════════════
 # /astro/election/search
 # ════════════════════════════════════════════════════════════════════════
 
@@ -579,5 +725,84 @@ async def events(
             for e in astro
         ],
         festivals=festivals_list,
+        attribution=ATTRIBUTION,
+    )
+
+
+# ════════════════════════════════════════════════════════════════════════
+# /events/today-context
+# ════════════════════════════════════════════════════════════════════════
+
+
+class AtticDateRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    year: int
+    year_span: str
+    month: int
+    month_name: str
+    day: int
+    month_length: int
+    is_intercalary_year: bool
+
+
+class MoonPhaseRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    phase_angle: float  # Sun-Moon elongation, degrees 0..360
+    phase_name: str  # eight-phase name ("Waxing crescent", …)
+
+
+class TodayContextResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    date: date_cls
+    attic: AtticDateRead
+    observance: Literal["deipnon", "noumenia", "agathos_daimon"] | None
+    moon: MoonPhaseRead
+    attribution: str
+
+
+@router.get(
+    "/events/today-context",
+    response_model=TodayContextResponse,
+    tags=["astro"],
+)
+async def events_today_context(
+    on_date: date_cls | None = Query(
+        default=None,
+        description="Civil (UTC) date to resolve; defaults to today.",
+        alias="date",
+    ),
+) -> TodayContextResponse:
+    """The Today chip's cheap lunar-day lookup: what Attic lunar day is
+    it, and what observance state — Deipnon (the dark-moon day closing
+    the month), Noumenia (day 1), Agathos Daimon (day 2), or none.
+    Includes coarse moon-phase info so the chip can render a glyph
+    without a second call.
+    """
+    from theourgia.core.astro.events import _moon_phase_angle, _to_jd
+    from theourgia.core.entries.autostamp import moon_phase_name
+
+    d = on_date or datetime.now(tz=UTC).date()
+    ctx = attic_context(d)
+    noon = datetime(d.year, d.month, d.day, 12, tzinfo=UTC)
+    angle = _moon_phase_angle(_to_jd(noon))
+    return TodayContextResponse(
+        date=d,
+        attic=AtticDateRead(
+            year=ctx.year,
+            year_span=ctx.year_span,
+            month=ctx.month,
+            month_name=ctx.month_name,
+            day=ctx.day,
+            month_length=ctx.month_length,
+            is_intercalary_year=ctx.is_intercalary_year,
+        ),
+        observance=ctx.observance,  # type: ignore[arg-type]
+        moon=MoonPhaseRead(
+            phase_angle=angle,
+            phase_name=moon_phase_name(angle),
+        ),
         attribution=ATTRIBUTION,
     )

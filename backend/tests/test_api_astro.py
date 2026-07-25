@@ -262,3 +262,179 @@ def test_events_skips_festivals_when_disabled(client: TestClient) -> None:
     )
     assert resp.status_code == 200
     assert resp.json()["festivals"] == []
+
+
+def test_events_include_agathos_daimon(client: TestClient) -> None:
+    """The monthly arc emits all three Hekatean observances."""
+    resp = client.get(
+        "/api/v1/events",
+        params={
+            "start": "2026-07-01T00:00:00Z",
+            "end": "2026-08-01T00:00:00Z",
+        },
+    )
+    assert resp.status_code == 200
+    ids = {f["festival_id"] for f in resp.json()["festivals"]}
+    assert {"deipnon", "noumenia", "agathos-daimon"} <= ids
+
+
+# ───── /events/today-context ────────────────────────────────────────────
+
+
+def test_today_context_default_is_today(client: TestClient) -> None:
+    resp = client.get("/api/v1/events/today-context")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["date"] == datetime.now(tz=UTC).date().isoformat()
+    attic = body["attic"]
+    assert 1 <= attic["month"] <= 13
+    assert 1 <= attic["day"] <= attic["month_length"]
+    assert attic["month_length"] in (29, 30)
+    assert body["observance"] in (
+        None, "deipnon", "noumenia", "agathos_daimon",
+    )
+    assert body["moon"]["phase_name"]
+    assert 0 <= body["moon"]["phase_angle"] < 360
+    assert "Swiss Ephemeris" in body["attribution"]
+
+
+def test_today_context_resolves_a_noumenia_day(client: TestClient) -> None:
+    """2026-07-15 is 1 Hekatombaion 2026/27 (first Noumenia after the
+    2026 summer solstice)."""
+    resp = client.get(
+        "/api/v1/events/today-context", params={"date": "2026-07-15"},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["attic"]["month_name"] == "Hekatombaion"
+    assert body["attic"]["day"] == 1
+    assert body["attic"]["year_span"] == "2026/2027"
+    assert body["observance"] == "noumenia"
+    # …and the next two days complete the arc.
+    day2 = client.get(
+        "/api/v1/events/today-context", params={"date": "2026-07-16"},
+    ).json()
+    assert day2["observance"] == "agathos_daimon"
+
+
+def test_today_context_mid_month_has_no_observance(client: TestClient) -> None:
+    resp = client.get(
+        "/api/v1/events/today-context", params={"date": "2026-07-29"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["observance"] is None
+
+
+# ───── /astro/profections ───────────────────────────────────────────────
+
+
+def test_profections_returns_year_lord(client: TestClient) -> None:
+    resp = client.get(
+        "/api/v1/astro/profections",
+        params={
+            "birth": "1990-06-15T08:30:00Z",
+            "latitude": ATHENS_LAT,
+            "longitude": ATHENS_LON,
+            "on_date": "2026-07-24",
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["age"] == 36
+    assert body["profected_house"] == 1  # 36 mod 12 → back to the 1st
+    assert body["profected_sign"] == body["ascendant_sign"]
+    assert body["year_lord"] in {
+        "saturn", "jupiter", "mars", "sun", "venus", "mercury", "moon",
+    }
+    assert "Swiss Ephemeris" in body["attribution"]
+
+
+def test_profections_uses_traditional_rulership(client: TestClient) -> None:
+    """Pick a birth whose age-9 profection lands in Aquarius from a
+    Gemini Ascendant — the year lord must be Saturn, never Uranus."""
+    resp = client.get(
+        "/api/v1/astro/profections",
+        params={
+            "birth": "1990-06-15T08:30:00Z",
+            "latitude": ATHENS_LAT,
+            "longitude": ATHENS_LON,
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    # Whichever sign it profects to, the lord is one of the seven.
+    assert body["year_lord"] != "uranus"
+    assert body["year_lord"] != "neptune"
+    assert body["year_lord"] != "pluto"
+
+
+def test_profections_rejects_date_before_birth(client: TestClient) -> None:
+    resp = client.get(
+        "/api/v1/astro/profections",
+        params={
+            "birth": "1990-06-15T08:30:00Z",
+            "latitude": ATHENS_LAT,
+            "longitude": ATHENS_LON,
+            "on_date": "1980-01-01",
+        },
+    )
+    assert resp.status_code == 422
+
+
+# ───── /astro/transits ──────────────────────────────────────────────────
+
+
+def test_transits_to_natal_shape(client: TestClient) -> None:
+    resp = client.get(
+        "/api/v1/astro/transits",
+        params={
+            "birth": "1990-06-15T08:30:00Z",
+            "latitude": ATHENS_LAT,
+            "longitude": ATHENS_LON,
+            "when": "2026-07-24T12:00:00Z",
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["orb"] == 3.0  # default
+    assert body["aspects"], "a full sky vs a full natal always aspects"
+    kinds = {
+        "conjunction", "sextile", "square", "trine", "opposition",
+    }
+    for aspect in body["aspects"]:
+        assert aspect["kind"] in kinds
+        assert aspect["orb"] <= 3.0
+    # Sorted by tightness.
+    orbs = [a["orb"] for a in body["aspects"]]
+    assert orbs == sorted(orbs)
+    assert "Swiss Ephemeris" in body["attribution"]
+
+
+def test_transits_orb_is_configurable(client: TestClient) -> None:
+    params = {
+        "birth": "1990-06-15T08:30:00Z",
+        "latitude": ATHENS_LAT,
+        "longitude": ATHENS_LON,
+        "when": "2026-07-24T12:00:00Z",
+    }
+    tight = client.get(
+        "/api/v1/astro/transits", params={**params, "orb": 1.0},
+    ).json()
+    wide = client.get(
+        "/api/v1/astro/transits", params={**params, "orb": 6.0},
+    ).json()
+    assert len(wide["aspects"]) >= len(tight["aspects"])
+    assert all(a["orb"] <= 1.0 for a in tight["aspects"])
+
+
+def test_transits_rejects_non_positive_orb(client: TestClient) -> None:
+    resp = client.get(
+        "/api/v1/astro/transits",
+        params={
+            "birth": "1990-06-15T08:30:00Z",
+            "latitude": ATHENS_LAT,
+            "longitude": ATHENS_LON,
+            "orb": 0.0,
+        },
+    )
+    assert resp.status_code == 422

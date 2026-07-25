@@ -194,6 +194,28 @@ def test_noumenia_follows_deipnon() -> None:
         assert n.start > d.end
 
 
+def test_agathos_daimon_occurs_every_lunar_month() -> None:
+    """The third day of the monthly arc — one per new moon."""
+    instances = get_festival("agathos-daimon").compute(YEAR)
+    assert 12 <= len(instances) <= 13
+
+
+def test_agathos_daimon_is_the_day_after_noumenia() -> None:
+    """Deipnon → Noumenia → Agathos Daimon: the Agathos Daimon window
+    begins exactly where Noumenia's ends (the 2nd of the lunar month)."""
+    noumenias = get_festival("noumenia").compute(YEAR)
+    agathoi = get_festival("agathos-daimon").compute(YEAR)
+    for n, a in zip(noumenias, agathoi, strict=False):
+        assert a.start == n.end
+        assert (a.end - a.start).days == 1
+
+
+def test_agathos_daimon_is_hekatean_tradition() -> None:
+    festival = get_festival("agathos-daimon")
+    assert festival.tradition is Tradition.HEKATEAN
+    assert any(c.kind is CitationKind.PRIMARY for c in festival.sources)
+
+
 # ───── Greek attic month windows ────────────────────────────────────────
 
 

@@ -63,7 +63,7 @@ def test_adoration_model_columns() -> None:
 
     for col in (
         "civil_date", "transition", "observed_at", "note",
-        "location_label", "entry_id", "owner_id",
+        "location_label", "entry_id", "owner_id", "mode",
     ):
         assert hasattr(Adoration, col), f"Adoration missing {col!r}"
 
@@ -90,6 +90,11 @@ def test_resh_today_response_shape() -> None:
     )
     assert today.streak_days == 3
     assert today.stations[0].transition == "sunrise"
+    # Sprint I-A additions default sensibly for legacy constructors.
+    assert today.preset == "hellenic"
+    assert today.minimum_viable_station == "sunset"
+    assert today.mode is None
+    assert today.stations[0].mode is None
 
 
 def test_adoration_create_payload_minimal() -> None:
@@ -110,6 +115,61 @@ def test_adoration_create_rejects_invalid_transition() -> None:
         AdorationCreate(transition="dawn")  # type: ignore[arg-type]
 
 
+def test_adoration_create_mode_defaults_home() -> None:
+    from pydantic import ValidationError
+
+    from theourgia.api.routers.v1.resh import AdorationCreate
+
+    p = AdorationCreate(transition="sunset")
+    assert p.mode == "home"
+    p2 = AdorationCreate(transition="sunset", mode="xenos")
+    assert p2.mode == "xenos"
+    with pytest.raises(ValidationError):
+        AdorationCreate(transition="sunset", mode="travelling")  # type: ignore[arg-type]
+
+
+def test_resh_mode_enum_has_home_and_xenos() -> None:
+    from theourgia.models.resh import ReshMode
+
+    assert {m.value for m in ReshMode} == {"home", "xenos"}
+
+
+def test_rite_config_defaults_and_effective_stations() -> None:
+    """The Hellenic preset ships as default; overrides layer on top."""
+    from theourgia.api.routers.v1.resh import (
+        RiteConfig,
+        StationOverride,
+        _effective_stations,
+    )
+    from theourgia.core.resh import Transition
+
+    config = RiteConfig(preset="hellenic", minimum_viable_station="sunset")
+    stations = _effective_stations(config)
+    assert "Phosphoros" in stations[Transition.SUNRISE].godform
+    assert "Persephone" in stations[Transition.MIDNIGHT].godform
+
+    overridden = RiteConfig(
+        preset="hellenic",
+        minimum_viable_station="sunset",
+        stations={"noon": StationOverride(godform="Helios Basileus")},
+    )
+    stations2 = _effective_stations(overridden)
+    assert stations2[Transition.NOON].godform == "Helios Basileus"
+    # Untouched fields fall through to the preset.
+    assert stations2[Transition.NOON].direction == "Centre"
+    assert stations2[Transition.SUNRISE] == stations[Transition.SUNRISE]
+
+
+def test_rite_config_thelemic_preset_available() -> None:
+    from theourgia.api.routers.v1.resh import RiteConfig, _effective_stations
+    from theourgia.core.resh import Transition
+
+    config = RiteConfig(preset="thelemic", minimum_viable_station="sunset")
+    stations = _effective_stations(config)
+    assert "Ra" in stations[Transition.SUNRISE].godform
+    assert stations[Transition.MIDNIGHT].godform == "Khephra"
+
+
 def test_resh_today_query_validates_lat_lng() -> None:
     """Router-level constraint: lat in [-90, 90], lng in [-180, 180].
     Tested via the route function's signature; we sample one bad pair
@@ -121,6 +181,9 @@ def test_resh_today_query_validates_lat_lng() -> None:
     paths = {route.path for route in router.routes}
     assert "/resh/today" in paths
     assert "/resh/adorations" in paths
+    # Sprint I-A: the streak + config endpoints the docstring promises.
+    assert "/resh/streak" in paths
+    assert "/resh/config" in paths
 
 
 # ───── Today ledger payload shapes ────────────────────────────────────
