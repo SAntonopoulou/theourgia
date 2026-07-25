@@ -1,21 +1,24 @@
-"""Persona model — multi-identity layer above User.
+"""Persona model — multi-identity layer above User (dormant substrate).
 
-Every user has at least one Persona — the ``default`` one auto-created
-at signup. Users who want separate practice contexts (public teaching
-face vs. intimate working face) create additional Personas.
+HONESTY NOTE (2026-07 Day-1 review): this model is currently a
+**dormant substrate with no consumers**. Reality check against the
+original design claims:
 
-Personas are the federation-actor + sealed-key + social-face boundary.
-Content tables that ship from Phase 02 onward reference ``owner_persona_id``
-so future features write to the right ownership layer from the start.
+* No content table references ``owner_persona_id`` — every shipped
+  content table keys ownership on ``owner_id`` (user) or ``vault_id``.
+  The authz layer (:mod:`theourgia.core.authz.policies`) *would*
+  honour an ``owner_persona_id`` column if one existed, but none do.
+* Personas are NOT auto-created at signup — the sign-in path
+  provisions a default :class:`~theourgia.models.identity.Vault`
+  (``ensure_vault``), not a Persona. Most accounts have zero persona
+  rows; the few call sites that read Personas (publication PDF author
+  byline, session ``active_persona_id``, entry
+  ``authored_by_persona_id``) all tolerate their absence.
 
-The original Phase 01 ``Vault`` model continues to exist and continues
-to reference User directly — it's the data-container layer beneath
-Persona. A future migration may consolidate Vault into Persona; for
-now they coexist, with Persona being the canonical ownership target
-for new content tables.
-
-See ``plan/persona-decision-2026-06-21.md`` for the full architectural
-rationale.
+The table + migration are kept for schema stability and for the
+multi-identity design to grow into (see
+``plan/persona-decision-2026-06-21.md``). The ``Vault`` model remains
+the layer public surfaces actually read for display names today.
 """
 
 from __future__ import annotations
@@ -59,13 +62,12 @@ class PersonaKind(str, enum.Enum):
 class Persona(IDMixin, TimestampMixin, table=True):
     """A user's social / content / federation identity.
 
-    A single user (auth principal) may have multiple Personas. Each
-    Persona is a separate federation actor, owns its own content, and
-    derives its own sealed-encryption keys. Users switch personas
-    within their session without re-authenticating.
-
-    See the decision doc for the full design rationale and migration
-    path for content tables.
+    DESIGN INTENT (not yet realized — see the module-level honesty
+    note): a single user (auth principal) may have multiple Personas,
+    each a separate federation actor owning its own content and
+    sealed-encryption keys. Today no content table references
+    personas and no signup path creates one; the model is retained
+    substrate, not live behaviour.
     """
 
     __tablename__ = "persona"

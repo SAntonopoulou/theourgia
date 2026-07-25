@@ -13,8 +13,13 @@ Honesty rules:
     the practitioner edits a snapshot later, the route replaces it
     with ``source: "manual"``.
   * The location-precision floor is enforced HERE before any
-    provider sees lat/lng. If the floor is "hidden", providers are
-    called with ``location=None`` so they cannot leak.
+    provider sees the EVENT's lat/lng. If the floor is "hidden",
+    the event location reaches no provider — it cannot leak.
+  * When the event carries no usable location, the route may supply
+    the practitioner's stored home location
+    (``fallback_astro_location``) for the astro provider's
+    geo-dependent fields only. It is never persisted to the row and
+    the weather provider never sees it.
   * The weather provider is optional. When absent, the response's
     ``weather_snapshot`` is ``None`` (not an empty object) so the
     frontend can distinguish "no weather provider configured" from
@@ -167,21 +172,37 @@ def autotag_synchronicity(
     astro_provider: AstroProvider,
     calendar_provider: CalendarProvider,
     weather_provider: WeatherProvider | None = None,
+    fallback_astro_location: tuple[float, float] | None = None,
 ) -> AutotagResult:
     """Compute the astro / calendar / weather snapshots at
     ``occurred_at`` for the given location.
 
     The location-precision floor is applied BEFORE any provider
-    sees lat/lng. ``country`` and ``hidden`` precisions zero out
-    the location entirely (None / None) so providers cannot leak
-    precise positioning even if their inputs accept floats.
+    sees the event's lat/lng. ``country`` and ``hidden`` precisions
+    zero out the event location entirely (None / None) so providers
+    cannot leak precise positioning even if their inputs accept
+    floats.
+
+    ``fallback_astro_location`` is the practitioner's stored home
+    location (the ``astro.lat`` / ``astro.lng`` user settings). It is
+    used ONLY for the astro provider's geo-dependent fields (e.g.
+    planetary hour) when the event carries no usable location, it is
+    never written back into the row, and the weather provider never
+    sees it (weather at home for an event elsewhere would be wrong).
     """
     safe_lat, safe_lng = apply_precision_floor(
         location_lat, location_lng, location_precision,
     )
 
+    astro_lat, astro_lng = safe_lat, safe_lng
+    if (
+        (astro_lat is None or astro_lng is None)
+        and fallback_astro_location is not None
+    ):
+        astro_lat, astro_lng = fallback_astro_location
+
     astro_raw = astro_provider.snapshot_at(
-        occurred_at, latitude=safe_lat, longitude=safe_lng,
+        occurred_at, latitude=astro_lat, longitude=astro_lng,
     )
     calendar_raw = calendar_provider.stamp_at(occurred_at)
 

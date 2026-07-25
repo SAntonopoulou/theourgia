@@ -1,0 +1,70 @@
+Theourgia {{ .Chart.AppVersion }} — release {{ .Release.Name }} in namespace {{ .Release.Namespace }}.
+
+This chart is community-supported. Docker Compose is the primary,
+first-class deployment path; see docs/admin/kubernetes.md in the
+repository for the operator guide.
+
+{{- if not .Values.secrets.existingSecret }}
+{{- if not .Values.secrets.secretKey }}
+
+WARNING: secrets.secretKey is empty. The backend will refuse to start
+until THEOURGIA_SECRET_KEY is set. Generate one with:
+  openssl rand -base64 64
+{{- end }}
+{{- if not .Values.secrets.masterEncryptionKey }}
+
+WARNING: secrets.masterEncryptionKey is empty. The backend will refuse to
+start until THEOURGIA_MASTER_ENCRYPTION_KEY is set. Generate one with:
+  openssl rand -base64 64
+Back this key up outside the cluster — losing it makes all Mode A
+(server-side encrypted) content permanently unreadable.
+{{- end }}
+{{- if not (include "theourgia.databaseUrl" .) }}
+
+WARNING: no PostgreSQL configured. Set postgresql.external.url (recommended)
+or postgresql.internal.enabled=true (evaluation only).
+{{- end }}
+{{- if not (include "theourgia.redisUrl" .) }}
+
+WARNING: no Redis configured. Set redis.external.url (recommended) or
+redis.internal.enabled=true (evaluation only).
+{{- end }}
+{{- if and .Values.postgresql.internal.enabled (not .Values.postgresql.internal.auth.password) }}
+
+WARNING: postgresql.internal.enabled is true but
+postgresql.internal.auth.password is empty.
+{{- end }}
+{{- if and .Values.agentDaemon.enabled (or (not .Values.secrets.agentControlToken) (not .Values.secrets.agentHkdfSalt) (not .Values.agentDaemon.databaseUrl)) }}
+
+WARNING: agentDaemon.enabled is true but one or more of
+secrets.agentControlToken, secrets.agentHkdfSalt, agentDaemon.databaseUrl
+is empty. The daemon needs all three (and its database must NOT be the
+vault database).
+{{- end }}
+{{- if and .Values.registry.enabled (not .Values.registry.databaseUrl) }}
+
+WARNING: registry.enabled is true but registry.databaseUrl is empty.
+{{- end }}
+{{- end }}
+{{- if and .Values.postgresql.internal.enabled (eq .Values.migrations.hooks "pre-install,pre-upgrade") }}
+
+NOTE: with postgresql.internal.enabled, the FIRST install deadlocks on the
+default pre-install migration hook (the database does not exist yet when
+the hook runs). Install with:
+  --set migrations.hooks="post-install\,pre-upgrade"
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+
+Ingress: https://{{ .Values.ingress.host }} -> frontend (which proxies
+/api, /federation, /.well-known, /users, and /ws to the backend).
+{{- else }}
+
+No Ingress is enabled. To reach the instance locally:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "theourgia.fullname" . }}-frontend 8080:80
+then open http://localhost:8080
+{{- end }}
+
+Verify the deployment:
+  kubectl -n {{ .Release.Namespace }} get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+  kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "theourgia.fullname" . }}-backend -- curl -fs http://localhost:8000/readyz

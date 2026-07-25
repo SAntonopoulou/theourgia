@@ -71,6 +71,27 @@ class Settings(BaseSettings):
             if n.strip()
         )
 
+    # ── Public profile fallbacks ──────────────────────────────────────────
+    # The public feed + public-vault surfaces read the owner's display
+    # name from their default Vault row. These fallbacks exist ONLY for
+    # the (normally unreachable) case where content exists but the
+    # owner's vault row does not — e.g. rows created before the
+    # v1-030 ensure-vault backfill ran. They are operator-configurable
+    # so the label is never an inline literal in a router.
+    profile_display_name_fallback: str = Field(
+        default="Soror Ευ. Α.",
+        alias="THEOURGIA_PROFILE_DISPLAY_NAME_FALLBACK",
+    )
+    """Author / profile label served when the owner has no vault row.
+    Defaults to the founding single-practitioner instance's operator
+    label; self-hosters should set their own."""
+    public_license_label: str = Field(
+        default="AGPL-3.0", alias="THEOURGIA_PUBLIC_LICENSE_LABEL"
+    )
+    """Site-software license label shown on the public vault page.
+    This is the AGPLv3 credit for the Theourgia software itself —
+    per-publication content licenses ride on each publication."""
+
     # ── Cryptography ──────────────────────────────────────────────────────
     # Required in non-test environments. Generate with: openssl rand -base64 64
     secret_key: SecretStr = Field(default=SecretStr(""), alias="THEOURGIA_SECRET_KEY")

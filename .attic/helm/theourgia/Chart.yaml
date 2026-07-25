@@ -1,0 +1,35 @@
+apiVersion: v2
+name: theourgia
+description: >-
+  Community-supported Helm chart for Theourgia, the free-software toolkit
+  for practicing magicians. Docker Compose remains the primary, first-class
+  deployment path; this chart exists for operators who already run
+  Kubernetes and know how to hold it.
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+kubeVersion: ">=1.25.0-0"
+home: https://theourgia.com
+sources:
+  - https://github.com/SAntonopoulou/theourgia
+keywords:
+  - journal
+  - grimoire
+  - astrology
+  - divination
+  - self-hosted
+  - agpl
+maintainers:
+  - name: Theourgia contributors
+    url: https://github.com/SAntonopoulou/theourgia
+annotations:
+  artifacthub.io/license: AGPL-3.0-or-later
+  theourgia.com/license-note: >-
+    Theourgia is licensed under the GNU Affero General Public License v3.0
+    or later. If you run a modified version of Theourgia for users over a
+    network, the AGPL requires you to offer those users the corresponding
+    source. This chart deploys unmodified upstream images by default.
+  theourgia.com/support: >-
+    Community-supported. The reference deployment is Docker Compose
+    (docker-compose.yml + docker-compose.prod.yml at the repository root);
+    issues specific to Kubernetes are triaged best-effort.

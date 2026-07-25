@@ -1,0 +1,105 @@
+{{- /*
+Optional single-replica PostgreSQL — EVALUATION ONLY, default off.
+
+This is not a production database: no replication, no automated backups,
+no failover, no tuning. For production point postgresql.external.url at a
+managed PostgreSQL service or an operator-managed cluster (CloudNativePG,
+Zalando postgres-operator, Crunchy PGO).
+*/ -}}
+{{- if .Values.postgresql.internal.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "theourgia.postgresqlHost" . }}
+  labels:
+    {{- include "theourgia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "theourgia.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+  ports:
+    - name: postgresql
+      port: 5432
+      targetPort: postgresql
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "theourgia.postgresqlHost" . }}
+  labels:
+    {{- include "theourgia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgresql
+spec:
+  serviceName: {{ include "theourgia.postgresqlHost" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "theourgia.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgresql
+  template:
+    metadata:
+      labels:
+        {{- include "theourgia.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: postgresql
+    spec:
+      containers:
+        - name: postgresql
+          image: {{ .Values.postgresql.internal.image }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: postgresql
+              containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.postgresql.internal.auth.username | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "theourgia.secretName" . }}
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              value: {{ .Values.postgresql.internal.auth.database | quote }}
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U {{ .Values.postgresql.internal.auth.username }} -d {{ .Values.postgresql.internal.auth.database }}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U {{ .Values.postgresql.internal.auth.username }} -d {{ .Values.postgresql.internal.auth.database }}
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          {{- with .Values.postgresql.internal.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.postgresql.internal.storage }}
+        {{- with .Values.postgresql.internal.storageClassName }}
+        storageClassName: {{ . }}
+        {{- end }}
+{{- end }}

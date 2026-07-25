@@ -1,0 +1,79 @@
+{{- /*
+Alembic migrations, run as a Helm hook Job with the backend image.
+
+Default hooks are "pre-install,pre-upgrade" (see values.yaml for the
+internal-PostgreSQL caveat). Because pre-install hooks run before any
+regular release resource exists, the Job cannot reference the
+chart-managed Secret — so when secrets.existingSecret is unset the chart
+renders a small companion hook Secret carrying only DATABASE_URL, deleted
+again once the Job succeeds. With secrets.existingSecret set, the Job
+references your Secret directly.
+
+A failed migration Job is intentionally left in place for debugging
+(hook-delete-policy omits hook-failed).
+*/ -}}
+{{- if .Values.migrations.enabled }}
+{{- if not .Values.secrets.existingSecret }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "theourgia.fullname" . }}-migrations
+  labels:
+    {{- include "theourgia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrations
+  annotations:
+    "helm.sh/hook": {{ .Values.migrations.hooks | quote }}
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+type: Opaque
+stringData:
+  DATABASE_URL: {{ include "theourgia.databaseUrl" . | quote }}
+---
+{{- end }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "theourgia.fullname" . }}-migrations
+  labels:
+    {{- include "theourgia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrations
+  annotations:
+    "helm.sh/hook": {{ .Values.migrations.hooks | quote }}
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds }}
+  template:
+    metadata:
+      labels:
+        {{- include "theourgia.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: migrations
+    spec:
+      restartPolicy: Never
+      {{- include "theourgia.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: migrations
+          image: {{ include "theourgia.image" (dict "image" .Values.backend.image "chart" .Chart) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - alembic
+            - upgrade
+            - head
+          env:
+            - name: THEOURGIA_ENV
+              value: {{ .Values.config.env | quote }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  {{- if .Values.secrets.existingSecret }}
+                  name: {{ .Values.secrets.existingSecret }}
+                  {{- else }}
+                  name: {{ include "theourgia.fullname" . }}-migrations
+                  {{- end }}
+                  key: DATABASE_URL
+          {{- with .Values.migrations.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

@@ -1,0 +1,54 @@
+{{- /*
+Ingress — disabled by default. All traffic for `ingress.host` goes to the
+frontend Service; the frontend's bundled Caddy performs the path routing
+(static site vs /api vs /federation vs /ws websockets), exactly as the
+Docker Compose deployment does behind the host Caddy. If registry.enabled
+and ingress.registryHost are both set, a second vhost routes to the
+registry (the plugins.<domain> pattern from Caddyfile.example).
+
+The agent daemon is deliberately NOT routable here — it must never be
+exposed outside the cluster.
+*/ -}}
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "theourgia.fullname" . }}
+  labels:
+    {{- include "theourgia.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.ingress.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "theourgia.fullname" . }}-frontend
+                port:
+                  number: 80
+    {{- if and .Values.registry.enabled .Values.ingress.registryHost }}
+    - host: {{ .Values.ingress.registryHost | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "theourgia.fullname" . }}-registry
+                port:
+                  number: 8003
+    {{- end }}
+{{- end }}

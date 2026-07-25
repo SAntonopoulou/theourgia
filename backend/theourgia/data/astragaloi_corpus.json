@@ -1,0 +1,1489 @@
+{
+  "meta": {
+    "title": "Astragaloi Data Corpus — the 56 casts of the five-knucklebone oracle",
+    "assembled": "2026-07-25, for the theourgia platform, from the hellinismos-grimoire notes (transcription only; nothing invented)",
+    "mechanics": "Five astragaloi (knucklebones); each lands on one of four faces valued 1, 3, 4 or 6 (opposite faces sum to 7; never 2 or 5). 56 distinct unordered combinations; sums run 5–30, with 6 and 29 impossible.",
+    "sources": {
+      "grimoire_files": [
+        "notes/oracle-verses-translation.md (rebuilt 2026-07-24; Greek base text + the Order's draft renderings + apparatus)",
+        "notes/oracle-astragaloi-castsheet.md (valence key, condensed Graf English)",
+        "notes/oracle-astragaloi.md (attested-56 table, provenance & cautions, sourcing sweep)",
+        "notes/oracle-tetraktys-dice.md (tetraktys overlay: sphere/octave/ground per cast)",
+        "scripts/gen_oracle56.py (deterministic 56-cast table, Session 16)"
+      ],
+      "scholarship": [
+        "Heinevetter 1912 (public domain — the base Greek text as transcribed)",
+        "Nollé, Kleinasiatische Losorakel (Vestigia 57, 2007) — the standard edition; collation PENDING (Sophia in Greece)",
+        "Fritz Graf, 'Rolling the Dice for an Answer', in Johnston & Struck (eds.), Mantikê (Brill 2005), 51–97 — the English verses",
+        "Kaibel, Epigr. gr. 1038; RE s.v. Astragalomanteia; Costanza, QRO 15 (2023) 21–42"
+      ]
+    },
+    "legend": {
+      "valence": {
+        "✓": "favourable",
+        "⏳": "cautionary (castsheet legend: 'wait / not yet')",
+        "✗": "unfavourable",
+        "mixed": "allowed by the schema but unused — the castsheet legend has only the three keys above"
+      },
+      "greek_sigla": "[] = restored, () = variant from a sister copy, ⟨⟩ = conjecture (Heinevetter's sigla); – – – = lacuna",
+      "witness_sigla": "A=Adalia, O=Ormele, E=Enevre, Y=Yarishli, K=Kosagatsch, S=Sagalassos, T=Termessos",
+      "face_letters": "Α=1 (χῖος, 'the dog'), Γ=3, Δ=4, Ϛ=6 (κῷος)"
+    },
+    "tetraktys_overlay": "The Order's own composition (Session 16), NOT attested tradition: sphere = sum mod 10 (0→10); octave = luminous (sum ≤10) / embodied (11–20) / chthonic (21–30); ground_element = the sphere-row's element, Scheme A (locked): 1=Fire, 2–3=Air, 4–6=Water, 7–10=Earth.",
+    "verse_policy": {
+      "verse_greek": "Heinevetter text verbatim from oracle-verses-translation.md, diacritics and apparatus markers preserved (including the stone's throw-letter/numeral/god-genitive header line); null where not preserved in Heinevetter's witnesses (awaits Nollé). XI is from Costanza/Nollé, not Heinevetter's witnesses.",
+      "verse_english": "The Order's draft rendering from the Greek (every 'Final (Sophia)' line was blank at assembly); where the draft is absent or fragmentary, the Graf-derived English of the attested-56 table is used instead and flagged in that cast's notes."
+    },
+    "caveats": [
+      "All translations are drafts pending Sophia's collation of Nollé 2007 (the standard edition); her corrected line is final and none exist yet.",
+      "Two provisional throw corrections, to verify against Nollé in print: XXVI (Hermes the Saviour, sum 17) was recorded as 1·6·6·3·4 (=20) and is corrected to 6·4·3·3·1 on sum-consistency grounds; XIII (The Seasons, sum 13) was recorded as 3·3·3·3·1 (a duplicate of XII) and is assigned 4·4·3·1·1 — but Heinevetter's restored throw [ΓΓΓΓ]Α supports the INVERSE assignment (Seasons to 3·3·3·3·1, Zeus & Athena to 4·4·3·1·1). Nollé decides.",
+      "XXXVII: the surviving Greek does NOT correspond to Graf's English ('the sun has set…') — must collate.",
+      "God-name variants pending collation: VI (Εὐδαίμων vs Φρονίμη), XIX (Ἀγαθή vs Σωτήρ), XXVIII (Τίσις vs Νέμεσις), XXXI (Ἱκέσιος vs Μέγιστος), XXXV (Κερδένπορος vs Κερδῷος), XXXVIII (stone Νεμέσεως vs later Σελήνη), XXXIX (stone Διὸς νεκρῶν κηδεμόνος vs later Διόσκουροι), XLII (stone Ἡλίου Φωσφόρου), XLVI (stone Ἄρεως Θουρίου vs modern Δεινός), XLVIII (stone Εὐφροσύνης vs modern Εὐδαιμονία).",
+      "Which broad face is physically 3 vs 4 is uncertain (sources disagree) — the numbers are certain, the face isn't; decide once per bone-set and keep it consistent.",
+      "NOT ancient: the popular 'Apollo & Hermes, lead the way' invocation (Opsopaus 1995); and the 'dog = worst / Aphrodite = best' valuation belongs to the four-bone gaming throw, not this oracle.",
+      "Valence keys are the Order's calls from Graf's verses; Sophia may re-classify.",
+      "The tetraktys overlay (sphere/octave/ground) reflects the Order's map because it was built to — coherence, not attested correspondence."
+    ],
+    "proem": {
+      "greek": "οἵδε χρη]σ[μ]οὶ Ἀπόλ[λ]ωνος Πυ[θ]ίου ἐν[ὶ] πέντ[ε\nἀσ[τρα]γάλοις, το[ῦ χ]ρ[ὴ αἰεὶ φω]ν[ῆς ἐπακοῦσαι.",
+      "english_draft": "These are the oracles of Pythian Apollo in five knucklebones,\nwhose voice one must ever heed.",
+      "note": "Unknown to the castsheet until now; candidate for the appendix headnote. Kaibel's ΛΥΚΙΟΥ rejected by Heinevetter."
+    },
+    "gaps": {
+      "verse_greek_missing": [
+        "VIII",
+        "IX",
+        "X",
+        "XII",
+        "XXIII",
+        "XXIV",
+        "XXV",
+        "XXVI",
+        "XXVII",
+        "XL"
+      ],
+      "verse_greek_missing_count": 10,
+      "verse_greek_fragmentary": [
+        "VII",
+        "XXII",
+        "XXXVI",
+        "XXXVII",
+        "XXXVIII"
+      ],
+      "verse_greek_contested_assignment": [
+        "XII",
+        "XIII"
+      ],
+      "verse_english_from_graf_fallback": [
+        "VII",
+        "VIII",
+        "IX",
+        "X",
+        "XII",
+        "XXII",
+        "XXIII",
+        "XXIV",
+        "XXV",
+        "XXVI",
+        "XXVII",
+        "XXXVI",
+        "XXXVII",
+        "XXXVIII",
+        "XL"
+      ],
+      "verse_english_from_graf_fallback_count": 15,
+      "valence_missing": [],
+      "god_missing": [],
+      "final_sophia_renderings": "all 56 'Final (Sophia)' lines blank at assembly — no English here is her final text"
+    },
+    "counts": {
+      "casts": 56,
+      "sums_present": [
+        5,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        30
+      ],
+      "impossible_sums": [
+        6,
+        29
+      ],
+      "valence_distribution": {
+        "favourable": 29,
+        "unfavourable": 14,
+        "cautionary": 13
+      },
+      "octave_distribution": {
+        "luminous": 6,
+        "embodied": 34,
+        "chthonic": 16
+      }
+    }
+  },
+  "casts": [
+    {
+      "faces": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "sum": 5,
+      "oracle_number": "I",
+      "god": {
+        "greek": "Ζεὺς Ὀλύμπιος",
+        "english": "Zeus Olympios"
+      },
+      "verse_greek": "Α]Α[ΑΑΑ]   Ε   Διὸς Ὀ[λυ]μ[π]ίου.\n⟨πάντες ὁμοῦ χεῖοι, Φοίβου φωνῆς ἐπάκουσον.⟩\nΖεὺς σωτὴρ] ἀγαθὴν βουλὴν σαῖσι [φ]ρεσὶ [δ]ώ[σ]ε⟨ι⟩,\nδώσε⟨ι⟩ δ᾿ εὐφροσύνην [καὶ δώσει π]άνθ᾿ [ὅσ᾿ ἂν] εὔχ[η,\nἀλ[λ]᾿ Ἀφροδείτην εἱ[λάσ]κου καὶ [Μαιάδος] υἱόν.",
+      "verse_english": "— All dogs together: hearken to the voice of Phoibos. —\nZeus the saviour will give good counsel to your mind;\nhe will give gladness, and give all that you pray for —\nbut propitiate Aphrodite and the son of Maia.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 5,
+        "octave": "luminous",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: (Heinevetter p. 4; collated w/ Kaibel 1038 & RE — MATCHES). throw-verse wholly conjectural (H. after LVI 2); Ζεὺς σωτήρ restored by Heinevetter; the god's stone-title is Διὸς Ὀλυμπίου."
+    },
+    {
+      "faces": [
+        3,
+        1,
+        1,
+        1,
+        1
+      ],
+      "sum": 7,
+      "oracle_number": "II",
+      "god": {
+        "greek": "Ἀθηνᾶ Ἀρεία",
+        "english": "Athena Areia"
+      },
+      "verse_greek": "Α[ΑΑΑ]Γ   Ζ   Ἀ[θ]ηνᾶς Ἀρείας.\n([τέσσαρες εἰ μοῦνοι καὶ εἷς τρ]εῖ⟨ο⟩ς, τάδε φράζει)·\nἔ[χ]θραν καὶ κακότητα φυγὼν ἥξεις πο[τ]᾿ ἐς ἆθλα,\nἥξεις κ⟨αὶ⟩ [σ]ώσει σ[ε] θεὰ γλαυκῶπις Ἀθήνη,\nβουλὴ δ᾿ ἔσται σοι καταθύμι(ος, ἣν ἐπι)βάλλῃ.",
+      "verse_english": "— Four alone, and a single three: this it declares. —\nFleeing enmity and malice you shall come at last to your prize;\nyou shall come, and the grey-eyed goddess Athena will save you;\nand the plan you set your hand to shall be after your heart.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 7,
+        "octave": "luminous",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 5; collated w/ RE — MATCHES). throw-verse from S, restored by Foerster; σώσει σε Skutsch; καταθύμιος cf. Od. 22.392, Theognis 1238."
+    },
+    {
+      "faces": [
+        4,
+        1,
+        1,
+        1,
+        1
+      ],
+      "sum": 8,
+      "oracle_number": "III",
+      "god": {
+        "greek": "Μοῖραι",
+        "english": "Moirai"
+      },
+      "verse_greek": "Α[ΑΑ]ΑΔ   Η   Μοιρῶν.\n(τέσσα[ρα δ᾿ εἷς π)είπτων καὶ μοῦνοι τέσσαρε[ς ἑξῆς]),\n(π)ρᾶ(ξ)ιν (μὴ π)ρά[ξῃς], ἣν πράσσεις, οὐ γὰρ (ἄμεινον).\n[ἀ]μφὶ δὲ κάμνοντος χαλεπὸν καὶ ἀ(μήχανον ἔ)σται.\n[δ]εῖ δὲ ἀπόδημον ἱκέσθαι ⟨νῦν⟩, χρόνῳ οὐ κ)ακὸν ἔσται.",
+      "verse_english": "— One falling four, and four ones in a row. —\nDo not do the deed that you are doing, for it is not for the better;\nand for one who is sick it will go hard and past all help;\nbut the traveller must set out ⟨now⟩: in time there will be no harm.",
+      "valence": "unfavourable",
+      "tetraktys": {
+        "sphere": 8,
+        "octave": "luminous",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 6; K, O, partly S). 3) K/S μὴ πρᾶσσε against metre; Skutsch πράσσειν, Foerster πράξῃς; H. repairs by transposition. 4) ἀμφί (K, O); Foerster ἀντί. 5) Foerster's νῦν and οὐ."
+    },
+    {
+      "faces": [
+        3,
+        3,
+        1,
+        1,
+        1
+      ],
+      "sum": 9,
+      "oracle_number": "IV",
+      "god": {
+        "greek": "Ἀετὸς Διός",
+        "english": "Zeus' Eagle"
+      },
+      "verse_greek": "ΓΓΑ[ΑΑ]   Θ   Ἀετοῦ Διό(ς).\n(εἰ δέ κε πείπτωσιν δύο τρεῖοι, τρ[ε]ῖς δ᾿ ἅμα μοῦνοι,)\n(ἀετ)ὸς ὑψιπέτης ἐπὶ δεξιὰ χ(ειρὸς ὁδείτῃ)\n[δώσε]ι μαντείαν ἀ(γ)α(θ)ήν, σὺν Ζηνὶ (μεγίστῳ)\n(τ)ε(ύ)ξῃ ἐ(φ᾿ ἣν) ὁρμᾷς πρᾶξιν· μη(θ)ὲν (δ)ὲ (φοβ)ηθῇς.",
+      "verse_english": "— And if two threes fall, and three ones together: —\na high-flying eagle upon the traveller's right hand\nwill give a good oracle: with Zeus the greatest\nyou shall achieve the deed you set out upon. Fear nothing.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 9,
+        "octave": "luminous",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 6; O and K). 3) ἀετὸς ὑψιπέτης cf. Il. 12.201, 232; Od. 24.243. 4-5) Skutsch: σὺν Ζηνὶ μεγίστῳ τεύξει, ἐφ᾿ ἥν…; restorations largely from O."
+    },
+    {
+      "faces": [
+        6,
+        1,
+        1,
+        1,
+        1
+      ],
+      "sum": 10,
+      "oracle_number": "V",
+      "god": {
+        "greek": "Δαίμων Μέγιστος",
+        "english": "Daimon Megistos"
+      },
+      "verse_greek": "ϚΑΑΑΑ   Ι   Δαίμονος Μεγίστου.\n⟨εἷς ὢν ἑ⟩ξείτ[η]ς καὶ⟩ μοῦνοι τέσσαρες ὄντες,\nδαίμονι ἥντιν᾿ ἔχει(ς) εὐχὴν ἀποδόντι σοι ἔσται\nβέλτειον, εἰ μέλλεις πράσσειν κατὰ νοῦν ἃ (μ)εριμνᾷς.\nΔημήτηρ γάρ σοι καὶ Ζεὺς [σ]ωτῆρες ἔσονται.",
+      "verse_english": "— One being a six, and four being ones: —\nwhatever vow you hold, pay it to the daimon, and it shall be\nthe better for you, if you would bring what you ponder to pass as you intend;\nfor Demeter and Zeus shall be your saviours.",
+      "valence": "cautionary",
+      "tetraktys": {
+        "sphere": 10,
+        "octave": "luminous",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 7; O and K). 2) wanting in K; O's text restored by Skutsch. 4) K: ἣν μέλλεις (Petersen); βέλτειον with ει for ι, measured short."
+    },
+    {
+      "faces": [
+        4,
+        3,
+        1,
+        1,
+        1
+      ],
+      "sum": 10,
+      "oracle_number": "VI",
+      "god": {
+        "greek": "Τύχη Εὐδαίμων / Φρονίμη",
+        "english": "Caring Fortune"
+      },
+      "verse_greek": "ΑΑΑΔΓ   Ι   Τύχη[ς Εὐ]δαίμονος.\nεἰ δέ κε τρ⟨ε⟩ῖς μοῦνο[ι, εἷς] τέσσαρα, τρία ὁ πένπτος,\nτὴν [πρᾶ]ξιν ⟨σύ γε⟩ μὴ [π]ράξῃς, ἣν νῦν ἐπιβάλλῃ,\n[νῦν] τ᾿ ἐν νούσῳ ἐόντα θεοὶ κατέχο[υσι σε]αυτὸν\nτόν τε πόνον λύσου[σίν σ]οι καὶ οὐθὲν κακὸν ἔσται.",
+      "verse_english": "— And if three are ones, one a four, and the fifth a three: —\ndo not you do the deed you now set your hand to;\nfor now, while you are in sickness, the gods keep guard over you,\nand they will loose your toil, and nothing bad shall be.",
+      "valence": "cautionary",
+      "tetraktys": {
+        "sphere": 10,
+        "octave": "luminous",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 7; O only). the goddess: H. [Εὐ]δαίμονος; modern lists Φρονίμη — collate. 3) σύ γε Skutsch. 4) νῦν τ᾿, σεαυτόν Foerster; κατέχειν = guard (Xen. Cyr. 2.1.1). 5) λύσουσι θεοί Skutsch."
+    },
+    {
+      "faces": [
+        3,
+        3,
+        3,
+        1,
+        1
+      ],
+      "sum": 11,
+      "oracle_number": "VII",
+      "god": {
+        "greek": "Νίκη",
+        "english": "Victory"
+      },
+      "verse_greek": "ΓΓΓΑ]Α   ΙΑ   Νείκης.\nεἰ δέ κε τρεῖς [τρία πείπτωσ]ιν, χεῖοι δὲ δύ᾿ ἄλλο[ι],\n[– – – – λή]ψῃ δ᾿ ἃ θέλεις τα – – – –\n[– – – τειμιτόν σε – – [πάντων τε] κρατή[σεις,\n[βουλὴ δ᾿ ἔσται σοὶ καταθύ]μιο[ς, ἣν ἐπιβάλλῃ].",
+      "verse_english": "You will win and take what you wish; the daimon makes you honoured; you'll overcome your enemies.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 1,
+        "octave": "embodied",
+        "ground_element": "Fire"
+      },
+      "notes": "Greek source: (Heinevetter p. 8; O only, lacunose). 2) H. after XLIII 2; 5) supplied after II 5. Full text awaits Nollé. English verse is Graf-derived (attested-56 table); the Order's draft rendering from the Greek is absent or fragmentary here. Greek fragmentary/lacunose as transcribed."
+    },
+    {
+      "faces": [
+        4,
+        4,
+        1,
+        1,
+        1
+      ],
+      "sum": 11,
+      "oracle_number": "VIII",
+      "god": {
+        "greek": "Νίκη Χαίρουσα",
+        "english": "Joyful Victory"
+      },
+      "verse_greek": null,
+      "verse_english": "Do all your business -- it turns out well. The sick will rise; the one abroad returns home.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 1,
+        "octave": "embodied",
+        "ground_element": "Fire"
+      },
+      "notes": "Greek source: NOT PRESERVED in Heinevetter's witnesses. Text awaits Nollé. English verse is Graf-derived (attested-56 table); the Order's draft rendering from the Greek is absent or fragmentary here."
+    },
+    {
+      "faces": [
+        4,
+        3,
+        3,
+        1,
+        1
+      ],
+      "sum": 12,
+      "oracle_number": "IX",
+      "god": {
+        "greek": "Ἀσκληπιός",
+        "english": "Asklepios"
+      },
+      "verse_greek": null,
+      "verse_english": "A storm about your business, but it ends well; the sick freed; the traveller brought safely home.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 2,
+        "octave": "embodied",
+        "ground_element": "Air"
+      },
+      "notes": "Greek source: NOT PRESERVED in Heinevetter's witnesses. Text awaits Nollé. English verse is Graf-derived (attested-56 table); the Order's draft rendering from the Greek is absent or fragmentary here."
+    },
+    {
+      "faces": [
+        6,
+        3,
+        1,
+        1,
+        1
+      ],
+      "sum": 12,
+      "oracle_number": "X",
+      "god": {
+        "greek": "Τύχη Κυβερνῆτις",
+        "english": "Steering Tyche"
+      },
+      "verse_greek": null,
+      "verse_english": "Don't yet hurry to go -- it's impossible; wait. Rushing does great damage; waiting accomplishes everything.",
+      "valence": "cautionary",
+      "tetraktys": {
+        "sphere": 2,
+        "octave": "embodied",
+        "ground_element": "Air"
+      },
+      "notes": "Greek source: NOT PRESERVED in Heinevetter's witnesses. Text awaits Nollé. English verse is Graf-derived (attested-56 table); the Order's draft rendering from the Greek is absent or fragmentary here."
+    },
+    {
+      "faces": [
+        6,
+        4,
+        1,
+        1,
+        1
+      ],
+      "sum": 13,
+      "oracle_number": "XI",
+      "god": {
+        "greek": "Ἀφροδίτη",
+        "english": "Aphrodite"
+      },
+      "verse_greek": "στέλλε, ὅπου χρῄζεις· χαίρων σὺ γὰρ οἴκαδ᾿ ἀφίξῃ\nεὑρὼν καὶ πράξας, ὅσσα φρεσὶ σῇσι μενοινᾷς·\nἀλλ᾿ Ἀφροδίτην ἱλάσκου καὶ Μαιάδος υἱόν.",
+      "verse_english": "Set out wherever you will: rejoicing you shall come home,\nhaving found and accomplished all that your heart intends —\nbut propitiate Aphrodite and the son of Maia.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 3,
+        "octave": "embodied",
+        "ground_element": "Air"
+      },
+      "notes": "Greek source: (Costanza p. 27 / Nollé p. 138 — NOT preserved in Heinevetter's witnesses)."
+    },
+    {
+      "faces": [
+        3,
+        3,
+        3,
+        3,
+        1
+      ],
+      "sum": 13,
+      "oracle_number": "XII",
+      "god": {
+        "greek": "Ζεὺς καὶ Ἀθηνᾶ",
+        "english": "Zeus & Athena"
+      },
+      "verse_greek": null,
+      "verse_english": "You're fit for every business; the sick easily saved; all the other oracles are well.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 3,
+        "octave": "embodied",
+        "ground_element": "Air"
+      },
+      "notes": "Greek not preserved for this throw; the sum-13 assignment is contested (Heinevetter p. 8): his oracle XIII carries the wait-verse under the restored throw [ΓΓΓΓ]Α = 3·3·3·3·1, his apparatus allowing 'XI or XII' instead; his XII (= 4·4·3·1·1) has no preserved text. If his restoration stands, the Seasons belong to 3·3·3·3·1 and Zeus & Athena to 4·4·3·1·1 — the inverse of the Order's provisional repair (commit 27f6cea). Nollé decides; nothing final here. English verse is Graf-derived (attested-56 table); the Order's draft rendering from the Greek is absent or fragmentary here."
+    },
+    {
+      "faces": [
+        4,
+        4,
+        3,
+        1,
+        1
+      ],
+      "sum": 13,
+      "oracle_number": "XIII",
+      "god": {
+        "greek": "Ὧραι",
+        "english": "The Seasons"
+      },
+      "verse_greek": "[ΓΓΓΓ]Α   [ΙΓ]   (god's name lost)\n⟨μοῦνος δ᾿ εἷς πείπτων καὶ τρεῖοι τέσσαρες ἑξῆς,⟩\n– – – – ς καὶ ἀμήχα[νον – – –\n[β]ουλὴν ἣν πράσσεις θεὸς οὐκ ἐᾷ· ἀλλ᾿ ἀνάμεινον,\n[δ]εινὸν δὲ εἰς ἔριν ἔρχεσθαι καὶ ἀγῶνα δίκην [τ]ε.",
+      "verse_english": "— One falling alone as a dog, and threes four in a row: —\n…and helpless…\nthe plan you pursue the god does not allow: wait;\nand terrible it is to enter strife, and contest, and the law.",
+      "valence": "cautionary",
+      "tetraktys": {
+        "sphere": 3,
+        "octave": "embodied",
+        "ground_element": "Air"
+      },
+      "notes": "Greek source: the wait-verse printed under XII's apparatus may belong HERE (our provisional repair) or to 3·3·3·3·1 (Heinevetter's restored throw). line 2 restored after III 2; δίκην δέ → δίκην τε Skutsch after LI 5. Assignment contested — see XII. The wait-verse transcribed here is printed under XII's apparatus in the translation file; it may belong here (the Order's provisional repair) or to 3·3·3·3·1 (Heinevetter's restored throw). Nollé decides."
+    },
+    {
+      "faces": [
+        4,
+        3,
+        3,
+        3,
+        1
+      ],
+      "sum": 14,
+      "oracle_number": "XIV",
+      "god": {
+        "greek": "Ποσειδῶν",
+        "english": "Poseidon"
+      },
+      "verse_greek": "[Α]ΓΓΓΔ   ΙΔ   – – – – –\n⟨εἷς χεῖος καὶ τρεῖς τρεῖοι καὶ τέσσαρ᾿ ὁ πέμπτος,⟩\nλακτίζεις πρὸς κέντρα, πρὸ[ς ἀ]ντία κύματα μοχθεῖς,\nἰχθὺν ἐν πελάγει [ζ]ητεῖς· μὴ σπεῦδ᾿ ἐ(π)ὶ πρᾶξιν.\nοὔ σοι χρήσι[μ]όν ἐστι θεοὺς βιάσασθαι ἀκαίρως.",
+      "verse_english": "— One dog, and three threes, and the fifth a four: —\nyou kick against the goads; you strain against opposing waves;\nyou seek a fish in the open sea. Do not hasten to the deed:\nit profits you nothing to force the gods out of season.",
+      "valence": "unfavourable",
+      "tetraktys": {
+        "sphere": 4,
+        "octave": "embodied",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: (Heinevetter p. 9; K, Y, partly S — the god's name lost in all three). god's name wanting (Poseidon from the later tradition). 2) after XXI 2, XLVII 2. 3) proverbial (NT parallel noted by H.)."
+    },
+    {
+      "faces": [
+        6,
+        3,
+        3,
+        1,
+        1
+      ],
+      "sum": 14,
+      "oracle_number": "XV",
+      "god": {
+        "greek": "Δαίμων",
+        "english": "Daimon"
+      },
+      "verse_greek": "[Ϛ]ΑΑΓΓ   ΙΔ   – – – – –\n⟨εἷς ὢν ἑξείτης, δύο μοῦνοι καὶ δύο τρεῖοι,⟩\nμήτε σὺ φρικτὰ νόει μήτ᾿ ἀντία δαίμονος ἔρχου\n(δεινὰ φρον[ῶν])· οὐθὲν γὰρ ὀνήσιμόν ἐστιν ἀπ᾿ αὐτοῦ,\nοὐδ᾿ ὁδὸν [ἥ]ν στείχεις, κέρδος τί σοί ἐστιν ἀπ᾿ αὐτῆς.",
+      "verse_english": "— One being a six, two ones, and two threes: —\nneither think dreadful thoughts, nor go against the daimon\npurposing dire things: for nothing profitable comes of it,\nnor from the road you walk is there any gain for you.",
+      "valence": "unfavourable",
+      "tetraktys": {
+        "sphere": 4,
+        "octave": "embodied",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: (Heinevetter p. 9; complete in Y, partly S; K, O scraps). 2) after XLVI 2. 3) μήτε Foerster; S δαίμοσιν. 4) δεινὰ φρονῶν from S over Y's πάντα φρονεῖν."
+    },
+    {
+      "faces": [
+        4,
+        4,
+        4,
+        1,
+        1
+      ],
+      "sum": 14,
+      "oracle_number": "XVI",
+      "god": {
+        "greek": "Ἀγαθὸς Δαίμων",
+        "english": "Agathos Daimon"
+      },
+      "verse_greek": "Δ]ΔΔΑΑ   ΙΔ   Ἀγαθ[οῦ Δαίμον]ος.\nεἰ δέ κε πείπτωσ[ιν τρία τ]έσσαρ(α) καὶ δύο μοῦνο[ι,\nἡγεμ]ονεύσει σοι δαίμων ὁδὸ[ν, ἣν ἐπ]ιβάλλῃ,\nπένψει δ᾿ εἰς ἀγα(θό)ν σε φιλομμειδὴς Ἀφροδείτη.\nπολλοῖς σ]ὺν καρποῖς (στεί[ξεις]) καὶ ἀπήμον(ι μ)οίρῃ.",
+      "verse_english": "— And if three fours fall, and two ones: —\nthe Daimon will lead you on the road you set your hand to;\nand smile-loving Aphrodite will send you toward the good;\nwith many fruits you shall walk, and with a fate unharmed.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 4,
+        "octave": "embodied",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: (Heinevetter p. 10; O, partly S — COLLATED against Costanza/Nollé). line 5 VARIES: H. πολλοῖς σὺν καρποῖς στείξεις; Costanza/Nollé σὺν καρποῖς ὕπαγε. Sophia decides at collation. πένψει = πέμψει."
+    },
+    {
+      "faces": [
+        4,
+        4,
+        3,
+        3,
+        1
+      ],
+      "sum": 15,
+      "oracle_number": "XVII",
+      "god": {
+        "greek": "Ζεὺς Σωτήρ",
+        "english": "Zeus Savior"
+      },
+      "verse_greek": "ΑΓΓΔΔ   ΙΕ   Διὸς Σωτῆρο[ς.\n(εἷς χεῖος, τρεῖα πείπτοντες δύο, τέσσαρα δοιά,)\nἣν ἐπιβάλλῃ ⟨νῦν⟩ πρᾶξιν, θαρρῶν ἴθι, (πρᾶσσε).\nἐνχείρει, καλὰ ⟨γὰρ⟩ μαντεῖα θ[ε]οὶ τάδ᾿ ἔφηναν,\nμη[δ]ὲ π[ο]ν[εῖ]ν ἀλέου· οὐθὲν γάρ σοι κακὸν ἔσται.",
+      "verse_english": "— One dog, two falling as threes, and fours a pair: —\nthe deed you now set your hand to — go to it with courage; do it;\nset your hand to the work, for the gods have shown fair oracles here;\nand do not shrink from toil: for nothing bad shall come to you.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 5,
+        "octave": "embodied",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: (Heinevetter p. 10; complete in O, S has line 2). 2) from S; δοιά epic. 3) νῦν H. after VI 3; πρᾶσσε (S) over δρᾶσε (O). 4) γάρ Skutsch, σοι Foerster. 5) μηδὲ πονεῖν Foerster."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        1,
+        1,
+        1
+      ],
+      "sum": 15,
+      "oracle_number": "XVIII",
+      "god": {
+        "greek": "Ζεὺς Ἄμμων",
+        "english": "Zeus Ammon"
+      },
+      "verse_greek": "ΑΑΑϚϚ   ΙΕ   Διὸς Ἄμμωνος.\n⟨εἰ δέ κε πείπτωσιν⟩ μοῦνοι τρεῖς καὶ δύ[ο ξ]εῖται,\nἣν φρεσ[ὶ]ν ὁρμαίνεις [ὁδόν, εἰς τ]αύτην ἴθι θαρρῶν,\nπᾶν δὲ [θεὸς] δώσει· πράξεις δ᾿ ὅσα θ[υμὸς ἀνώγει\nπάντα, Ζεὺς δ᾿] ὑψιβρεμέτης σωτήρ [σοι ἐπέστα]ι.",
+      "verse_english": "— And if there fall three ones and two sixes: —\nthe road you turn over in your mind — go upon it with courage;\ngod will grant everything: you shall accomplish all your heart commands;\nand high-thundering Zeus shall stand beside you as saviour.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 5,
+        "octave": "embodied",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: (Heinevetter p. 11; O only — lines 4-5 \"wholly doubtful\", a pillar stood in the lacuna). 3) ὁδόν εἰς Foerster. 4-5) Foerster, flagged wholly uncertain."
+    },
+    {
+      "faces": [
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "sum": 15,
+      "oracle_number": "XIX",
+      "god": {
+        "greek": "Τύχη Σωτήρ / [Ἀγαθή]",
+        "english": "Tyche the Savior"
+      },
+      "verse_greek": "ΓΓΓΓΓ   ΙΕ   Τύχης [Ἀγαθῆς.]\nε]ἰ πάντες τρεῖοι, ⟨Φοίβου φωνῆς ἐπάκουσον.⟩\nἥ [τ]ε [τεκοῦ]σα βρέφος ξ[η]ροὺς ⟨μαστοὺς⟩ ἔχει ⟨ἄμφω,⟩\nἀλλ]ὰ πάλιν βλ[ά]στησε καὶ ἄ[φθονον ἔσχε γ]άλακτος,\nκα[ί π]οτε ⟨πάντα καλῶς⟩ ἕξεις [πε]ρὶ ὧν μ᾿ἐπερωτᾷς.",
+      "verse_english": "— If all are threes: hearken to the voice of Phoibos. —\nShe who bore a babe had both her breasts run dry,\nyet she flowered again and had abundance of milk;\nand in time you shall have all well concerning what you ask me.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 5,
+        "octave": "embodied",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: (Heinevetter p. 11; O only; 3-5 Foerster's fragmentary repair). title: [Ἀγαθῆς] doubtful (H.); modern lists Σωτήρ — collate. First person (μ᾿ ἐπερωτᾷς)."
+    },
+    {
+      "faces": [
+        6,
+        4,
+        3,
+        1,
+        1
+      ],
+      "sum": 15,
+      "oracle_number": "XX",
+      "god": {
+        "greek": "Ζεὺς Ξένιος",
+        "english": "Zeus Xenios"
+      },
+      "verse_greek": "ΔΓϚΑΑ   [ΙΕ]   Διὸς ξενίου\nτετρώ[ο]ς, τρ[ε]ῖος καὶ ξεῖθος κ[αὶ] δύ[ο] μοῦνοι,\nπρᾶξιν ἐφ᾿ ἣν μέλλεις, μὴ σπεῦδ᾿, οὔπω γὰρ ὁ καιρός,\nκαὶ ἐν νούσῳ [σ]έ [γ᾿] ἐόντα θεοὶ σώζο[υσιν ἑ]τοίμως,\nκαὶ τὸν ἐν ἄλλῃ χώ[ρᾳ ὁδοῦ] λήξειν θεὸς αὐδᾷ.",
+      "verse_english": "— A four, a three, and a six, and two ones: —\nthe deed you intend — do not hasten: the moment is not yet come;\nand you who lie in sickness the gods stand ready to save;\nand for him in another land, the god declares his road shall end.",
+      "valence": "cautionary",
+      "tetraktys": {
+        "sphere": 5,
+        "octave": "embodied",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: (Heinevetter p. 12; O only). 3) the stone's ἰέναι an intruded gloss. 5) ὁδοῦ Kaibel; cf. XLIII 5, XLIV 5, LVI 5."
+    },
+    {
+      "faces": [
+        6,
+        3,
+        3,
+        3,
+        1
+      ],
+      "sum": 16,
+      "oracle_number": "XXI",
+      "god": {
+        "greek": "Ἡρακλῆς",
+        "english": "Herakles"
+      },
+      "verse_greek": "ϚΓΓΓΑ   [ΙϚ   Ἡρακ]λέους.\nεἷς ξεῖτος καὶ τρεῖ[ς τρεῖοι] καὶ μοῦνος ⟨ὁ πέμπτος,⟩\nοὔπω και[ρός, ἄγαν σπ]εύδεις δὲ σύ, μὴ κενὰ [πράξῃς\nμηδ᾿ ὥς τίς τε λέων τυφλὴν [ἐκύησε λοχ]είην.\nἥσυχα βουλεύου κ[αί σοι θεὸς ἡ]γεμονεύσει.",
+      "verse_english": "— One six, and three threes, and the fifth a one: —\nthe moment is not yet; you hasten overmuch. Do nothing in vain,\nnor be as the lion that whelped a blind litter:\ntake counsel calmly, and the god will lead you.",
+      "valence": "cautionary",
+      "tetraktys": {
+        "sphere": 6,
+        "octave": "embodied",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: (Heinevetter p. 12; O only). ⚠ H. λέων (lion; blind cubs, Aelian HA 4.34) vs Graf's bitch — see XXXII, where O's κύων is exposed as corruption. Collate Nollé at both."
+    },
+    {
+      "faces": [
+        6,
+        4,
+        4,
+        1,
+        1
+      ],
+      "sum": 16,
+      "oracle_number": "XXII",
+      "god": {
+        "greek": "Ἄρης",
+        "english": "Ares"
+      },
+      "verse_greek": "ϚΔΔΑΑ   ΙϚ   – – – – –\nεἷς ξεῖ]θος [καὶ τεσσάρ]εοι δύ[ο καὶ δύο μοῦνοι.",
+      "verse_english": "Why hurry? Wait -- the moment isn't come. Rushing pursues what isn't ready. Wait a while and you'll succeed.",
+      "valence": "cautionary",
+      "tetraktys": {
+        "sphere": 6,
+        "octave": "embodied",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: (Heinevetter p. 12; O only — TWO LINES survive). god's name lost (Ares from later witnesses). English verse is Graf-derived (attested-56 table); the Order's draft rendering from the Greek is absent or fragmentary here. Greek fragmentary/lacunose as transcribed."
+    },
+    {
+      "faces": [
+        4,
+        3,
+        3,
+        3,
+        3
+      ],
+      "sum": 16,
+      "oracle_number": "XXIII",
+      "god": {
+        "greek": "Κρόνος",
+        "english": "Kronos"
+      },
+      "verse_greek": null,
+      "verse_english": "Scorpions block your way; don't hurry; what you wish comes later. Neither buy nor sell now.",
+      "valence": "unfavourable",
+      "tetraktys": {
+        "sphere": 6,
+        "octave": "embodied",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: NOT PRESERVED in Heinevetter (his XXIII–XXVII group: \"if not in T, not preserved\"). His XXIV carries this throw. Awaits Nollé. English verse is Graf-derived (attested-56 table); the Order's draft rendering from the Greek is absent or fragmentary here."
+    },
+    {
+      "faces": [
+        4,
+        4,
+        4,
+        3,
+        1
+      ],
+      "sum": 16,
+      "oracle_number": "XXIV",
+      "god": {
+        "greek": "Ἀπόλλων Δελφικός",
+        "english": "Apollo Delphikos"
+      },
+      "verse_greek": null,
+      "verse_english": "Don't make haste; rushing mindlessly damages you; staying put, blameless time performs everything.",
+      "valence": "cautionary",
+      "tetraktys": {
+        "sphere": 6,
+        "octave": "embodied",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: NOT PRESERVED in Heinevetter. His XXIII carries this throw. Awaits Nollé. English verse is Graf-derived (attested-56 table); the Order's draft rendering from the Greek is absent or fragmentary here."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        3,
+        1,
+        1
+      ],
+      "sum": 17,
+      "oracle_number": "XXV",
+      "god": {
+        "greek": "Ἶσις Σωτήρ",
+        "english": "Isis the Savior"
+      },
+      "verse_greek": null,
+      "verse_english": "Enter, receive the voice from the tripod! Ripe for marriage; you'll marry and return home, achieving all.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 7,
+        "octave": "embodied",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: NOT PRESERVED in Heinevetter. His XXVII carries this throw. Awaits Nollé. English verse is Graf-derived (attested-56 table); the Order's draft rendering from the Greek is absent or fragmentary here."
+    },
+    {
+      "faces": [
+        6,
+        4,
+        3,
+        3,
+        1
+      ],
+      "sum": 17,
+      "oracle_number": "XXVI",
+      "god": {
+        "greek": "Ἑρμῆς Σωτήρ",
+        "english": "Hermes the Savior"
+      },
+      "verse_greek": null,
+      "verse_english": "I see nothing painful; don't think small; go forward with courage. Your vow fulfilled; a perfect occasion.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 7,
+        "octave": "embodied",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: NOT PRESERVED in Heinevetter (his XXVI). The throw our provenance note corrected. Awaits Nollé. Throw corrected by the Order: recorded in the source note as 1·6·6·3·4 (= 20); the only unused size-5 multiset of {1,3,4,6} summing to 17 is 6·4·3·3·1 — corrected on sum-consistency grounds, provisional until Nollé's Greek is collated. English verse is Graf-derived (attested-56 table); the Order's draft rendering from the Greek is absent or fragmentary here."
+    },
+    {
+      "faces": [
+        4,
+        4,
+        3,
+        3,
+        3
+      ],
+      "sum": 17,
+      "oracle_number": "XXVII",
+      "god": {
+        "greek": "Σάραπις",
+        "english": "Sarapis"
+      },
+      "verse_greek": null,
+      "verse_english": "Take courage and fight; Zeus Ktesios helps you; you'll master your opponent and be given happy works.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 7,
+        "octave": "embodied",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: NOT PRESERVED in Heinevetter. His XXV carries this throw. Awaits Nollé. English verse is Graf-derived (attested-56 table); the Order's draft rendering from the Greek is absent or fragmentary here."
+    },
+    {
+      "faces": [
+        4,
+        4,
+        4,
+        4,
+        1
+      ],
+      "sum": 17,
+      "oracle_number": "XXVIII",
+      "god": {
+        "greek": "Νέμεσις / Τίσις",
+        "english": "Nemesis"
+      },
+      "verse_greek": "[ΑΔΔΔΔ   ΙΖ]   – – – – –\n([εἰ δέ κε εἷς χεῖος καὶ τέσσαρα] πάντες [ἐφεξῆς,])\nνῦν σοι πάντα τελεῖ δαίμων καὶ (ἐς) ὀρθὸν ὁδηγεῖ.\nπράξεις πᾶν κατὰ νοῦν. ⟨τῷ⟩ μηκέτι τρῦχε σεαυτόν.\n⟨πάντων⟩ (ἐν)τεύ[ξ]ῃ σύ [γ᾿] ἀμέμπτως ὧν ἐπιθυμεῖς.",
+      "verse_english": "— If one is the dog, and all the rest are fours in a row: —\nnow the daimon accomplishes all for you, and guides you aright;\nyou shall do everything after your mind — so wear yourself no longer;\nyou shall attain, blameless, all that you desire.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 7,
+        "octave": "embodied",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 13; Y, line-ends in T — the goddess's name lost). name wanting in Y (Greek lists Τίσις; Graf Nemesis — collate). Lines 3-5 parallel Colossae 1-3 and seven-astragal Termessos IV 2."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        4,
+        1,
+        1
+      ],
+      "sum": 18,
+      "oracle_number": "XXIX",
+      "god": {
+        "greek": "Ἀδράστεια",
+        "english": "Adrasteia"
+      },
+      "verse_greek": "[ϚϚΔΑΑ   ΙΗ]   (Ἀδραστείας.)\n([εἰ δὲ δύο ξεῖται, δύο μοῦνοι, τέσσαρ᾿] ὁ πέμπτος,)\nεὖ πρ]ᾶξιν ταύτην [πράξεις] ([καὶ] ἐπέσται) ὁ Καιρός\nἐν γενέσει [σώζω]ν καὶ ὁ κίνδυνος παρά(κειται)\nκαὶ περὶ τῶν ἄλλων μαν[τειῶν] ἐστι καλῶς σοι.",
+      "verse_english": "— If two are sixes, two ones, and the fifth a four: —\nthis deed you shall do well, and the Moment shall attend it,\nsaving at the birth of the matter, though danger lies close beside;\nand as for the other oracles, it is well with you.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 8,
+        "octave": "embodied",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 13; O and T — the name from T). ὁ Καιρός personified (Foerster); Sterrett/Cousin's μὴ πράξῃς rejected by H. as against the sense."
+    },
+    {
+      "faces": [
+        6,
+        4,
+        4,
+        3,
+        1
+      ],
+      "sum": 18,
+      "oracle_number": "XXX",
+      "god": {
+        "greek": "Ζεὺς Κεραύνιος",
+        "english": "Zeus of the Lightning"
+      },
+      "verse_greek": "ΑϚΔΔΓ   [ΙΗ]   Διὸς Κ]εραυνίου.\nεἷς μοῦνος, [ξεῖτ]ος, δύ[ο τέσσαρα], τρεῖος ὁ πέμπτος,\nοὐκ ἔστιν πράξοντα κατὰ γνώμην ἃ μεριμνᾷς.\nοὔτε γὰρ [ἐκ]δήμῳ ἰέναι ⟨σοι⟩ σύνφορόν ἐστιν,\nοὔτ᾿ ὠνούμενος αἰσθήσῃ [ὃ] ὀνήσιμον ἔσται.",
+      "verse_english": "— One a one, one a six, two fours, and the fifth a three: —\nwhat you are pondering shall not go according to your judgement;\nfor neither is it profitable for you to go abroad,\nnor, in your buying, will you perceive what would profit.",
+      "valence": "unfavourable",
+      "tetraktys": {
+        "sphere": 8,
+        "octave": "embodied",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 14; O, partly T). the stone's assonance ὠνούμενος — ὀνήσιμον (H. remarks it), echoed in buying/profit. 4) ἐκδήμῳ Foerster after III 5."
+    },
+    {
+      "faces": [
+        4,
+        4,
+        4,
+        3,
+        3
+      ],
+      "sum": 18,
+      "oracle_number": "XXXI",
+      "god": {
+        "greek": "Δαίμων Ἱκέσιος / Μέγιστος",
+        "english": "Greatest Daimon"
+      },
+      "verse_greek": "ΔΔΔΓΓ   ΙΗ   Δαίμονος Ἱκεσίου.\n⟨πείπτοντες καὶ⟩ τετρῶοι τρ[ε]ῖς καὶ δύ[ο] τρῖοι,\nοὔ σοι ὁρῶ βουλὴν τήνδε ἀσφαλῆ, ἀλλ᾿ ἀνάμεινον.\nεὖ πράξεις, ἔσται σε τυχεῖν μετὰ ταῦτα· τὸ νῦν δὲ\nἥσυχος ἦσο, θεοῖς πείθου καὶ ἐπ᾿ ἐλπίδος ἴσθι.",
+      "verse_english": "— Three falling as fours, and two as threes: —\nI do not see this plan of yours as safe. But wait:\nyou shall fare well, and attain it hereafter; for now\nsit quiet, obey the gods, and stand in hope.",
+      "valence": "cautionary",
+      "tetraktys": {
+        "sphere": 8,
+        "octave": "embodied",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 14; O, partly T). title varies: Ἱκεσίου (H., \"of suppliants\") vs modern Μέγιστος — collate. First-person voice (οὔ σοι ὁρῶ). 2) after XLIII 2."
+    },
+    {
+      "faces": [
+        6,
+        3,
+        3,
+        3,
+        3
+      ],
+      "sum": 18,
+      "oracle_number": "XXXII",
+      "god": {
+        "greek": "Ἀγαθὸς Χρόνος",
+        "english": "Good Time"
+      },
+      "verse_greek": "ϚΓΓΓΓ   ΙΗ   Ἀγαθο(ῦ Χ)ρόνου.\n(ξείτης, τέσσ]αρες ὄντες ὁμοῦ τρεία, χρησμὸς ὅδ᾿ αὐδᾷ·)\nμὴ σπεύσῃς· δαίμων γὰρ [ἐν]ίσταται, ἀλλ᾿ [ἀνά]μεινον,\nμηδ᾿ ὥς τίς τε (λέ)ων τυφλὴν ἐκύησ[ε] λοχείην.\nἥσυχα βουλεύου, καί σοι χαρίεντα τελεῖται.",
+      "verse_english": "— A six, and four together being threes: this the oracle declares: —\ndo not hasten, for the daimon stands in the way; but wait,\nnor be as the lion that whelped a blind litter:\ntake counsel calmly, and gracious things shall be brought to pass for you.",
+      "valence": "cautionary",
+      "tetraktys": {
+        "sphere": 8,
+        "octave": "embodied",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 15; O and T). god: T Ἀγαθοῦ Χρόνου; Sterrett Ἀγαθοῦ Κρόνου; Cousin Ἀγαθοχρόνου — collate. 4) THE LION CONFIRMED: O's κύων arose \"under the influence of ἐκύησε\" (H.); λέων from T — cf. XXI 4."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        3,
+        3,
+        1
+      ],
+      "sum": 19,
+      "oracle_number": "XXXIII",
+      "god": {
+        "greek": "Ἐλπὶς Ἀγαθή",
+        "english": "Good Hope"
+      },
+      "verse_greek": "ϚϚΑΓΓ   Ι(Θ)   Ἐλπίδος Ἀγαθῆς.\n(ἐξεῖται δύο καὶ τρεῖοι, χεῖος, τάδε φράζει·)\nεὔοδά σοι πάντ᾿ ἐστὶ καὶ ἀσφαλῆ ὧν μ᾿ἐπερωτᾷς,\nμηδὲ φοβοῦ· δαίμων γὰρ ὁδηγήσει πρὸς ἅπαντα,\nπαύσει [ἄφ]αρ λύπης χαλεπῆς, λύσει δ᾿ ὑπόνοιαν.",
+      "verse_english": "— Two sixes and threes, and a dog: this it declares: —\nall roads run fair and safe for you in what you ask me;\nfear nothing, for the daimon will guide you in everything:\nhe will still your hard grief forthwith, and loose suspicion from you.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 9,
+        "octave": "embodied",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 15; O and T). first person (μ᾿ἐπερωτᾷς). 3) intrusive περί purged (contamination from XIX 5, LVI 4); lines 3-5 = XLI 3-5. 5) ἄφαρ Foerster."
+    },
+    {
+      "faces": [
+        6,
+        4,
+        4,
+        4,
+        1
+      ],
+      "sum": 19,
+      "oracle_number": "XXXIV",
+      "god": {
+        "greek": "Ζεὺς Κτήσιος",
+        "english": "Zeus of Possessions"
+      },
+      "verse_greek": "ΔΔΔϚΑ   ΙΘ   Διὸς Κτησίου.\n⟨τέσσαρα τρεῖς καὶ ξείτης εἷς καὶ μοῦνος ὁ πέμπτος,⟩\nθαρσῶν ἐνχείρει καὶ ἐ[π᾿] ἐλπίδος ἐστὶν ὁ χρησμός,\n[ὅ]ς [κατα]μανύει καὶ τὸν νοσέοντ(α σεσ)ῶ(σθ)αι.\nεἰ δέ τι μαντεύῃ χρ(έος, ὃ) χρή(σ)εις ἀπολήμψῃ.",
+      "verse_english": "— Three fours, and one a six, and the fifth a one: —\ntake it in hand with courage: this oracle stands upon hope,\nand it declares that even the one who is sick shall be saved;\nand if you divine about some need, what you require you shall receive.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 9,
+        "octave": "embodied",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 16; O and T). T addresses the inquirer ὦ ξένε with Doric καταμανύει — cf. Fassung E at LII 2, LIV 2. 3) ἐπ᾿ Foerster."
+    },
+    {
+      "faces": [
+        4,
+        4,
+        4,
+        4,
+        3
+      ],
+      "sum": 19,
+      "oracle_number": "XXXV",
+      "god": {
+        "greek": "Ἑρμῆς Κερδένπορος / Κερδῷος",
+        "english": "Hermes of Gain"
+      },
+      "verse_greek": "ΓΔΔΔΔ   (ΙΘ   Ἑ]ρμοῦ Κερδενπόρου.\n([εἰ δέ κ]εν [εἷς τρεῖος καὶ πάντες] τέσσαρα ἄλλοι,)\nἙρμῆς] βουλὴν σαῖσι φρεσίν ([γε καλῶς ἐπι]δ[ώ]σει)\nὠφελίμ]ων ἕνεκ᾿, ἔσται πάντα, (ἐπι)τεύξῃ ἃ βούλει,\nε[ὑρήσεις δ᾿](ὅσα) μαντεύῃ καὶ οὐθὲν (κακὸν ἔστ)αι.",
+      "verse_english": "— And if one is a three, and all the others fours: —\nHermes will give good counsel to your mind\nin all that profits: everything shall be; you shall attain what you wish;\nand you shall find whatever you ask of the oracle, and nothing bad shall be.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 9,
+        "octave": "embodied",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 16; O, line-ends in T via Zingerle). Κερδένπορος — H. compares Ἑρμῆς Κερδέμπορος, Orphic Hymn 28.6; modern lists Κερδῷος — collate. Restoration \"still questionable\" (H.)."
+    },
+    {
+      "faces": [
+        6,
+        4,
+        3,
+        3,
+        3
+      ],
+      "sum": 19,
+      "oracle_number": "XXXVI",
+      "god": {
+        "greek": "Νίκη",
+        "english": "Victory"
+      },
+      "verse_greek": "(ϚΓΓ)Γ(Δ   ΙΘ)   ΝΕΙΚΗΣ\nε[ἷς ξείτης καὶ τρεῖς] τρ[εῖοι κ]αὶ τέσσαρ᾿ ὁ πέμπ[τος.\n(μα]ντείαν) [ἀγαθὴν]) – – –, ξένε, τήνδε νο– – –\n– – – – – – ὁδοι]πορεῖ? – – –",
+      "verse_english": "A good oracle; once thought through you'll do all you desire; the god helps; you'll win and reap the fruits.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 9,
+        "octave": "embodied",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 17 = his XXXVI; O scraps + T fragments). English verse is Graf-derived (attested-56 table); the Order's draft rendering from the Greek is absent or fragmentary here. Greek fragmentary/lacunose as transcribed."
+    },
+    {
+      "faces": [
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "sum": 20,
+      "oracle_number": "XXXVII",
+      "god": {
+        "greek": "Μοῖραι Ἀνένδοτοι",
+        "english": "The Inexorable Moirai"
+      },
+      "verse_greek": "ΔΔΔΔΔ   [Κ]   Μοιρῶν – – –\nεἰ δέ κε τέσσαρα] πάντες ὁμοῦ πείπτωσιν ὁμ[οίως,\n– – – – δεν δ᾿ ὁδὸν νο – – –\nαἰσχρὸν γάρ σοι κῆδος ὁρῶ] περὶ ὧν μ᾿ἐπερωτᾷς\n– – – – εὐχὴν] ἀποδόσθαι.",
+      "verse_english": "The sun has set, terrible night has come, all is dark. Interrupt the matter; neither buy nor sell.",
+      "valence": "unfavourable",
+      "tetraktys": {
+        "sphere": 10,
+        "octave": "embodied",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 17 = his XXXVIII; T only, fragmentary) ⚠. the surviving matter does NOT correspond to Graf's English (\"the sun has set, terrible night has come…\") — Nollé's fuller readings or a different ordering. MUST collate. Petersen's Μοιρῶν ἀδήλων ἐπηκόων doubted. English verse is Graf-derived (attested-56 table); the Order's draft rendering from the Greek is absent or fragmentary here. Greek fragmentary/lacunose as transcribed."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        4,
+        3,
+        1
+      ],
+      "sum": 20,
+      "oracle_number": "XXXVIII",
+      "god": {
+        "greek": "Σελήνη / Νέμεσις (H.)",
+        "english": "The Moon"
+      },
+      "verse_greek": "[ΔΓϚϚΑ   Κ]   Νεμέσεως.\nτετρῶος, τρεῖος,] ξεῖται δύο, χεῖος ὁ πέμπτος·\n– – – – – – σοι ἕξω\nεἰς ἀγαθόν τ᾿] ἐν νούσῳ ἐόντα ἥξειν θεὸς αὐδᾷ·\nἥσυχα βουλεύου φρεσίν. ἔσται] σοι κακὸν οὐ[θ]έν.",
+      "verse_english": "Don't undertake this business -- it won't go well. The god helps the sick; if there's fear, nothing bad happens.",
+      "valence": "unfavourable",
+      "tetraktys": {
+        "sphere": 10,
+        "octave": "embodied",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 17 = his XXXIX; fragmentary) ⚠. deity DIVERGES: H.'s stone Νεμέσεως; later tradition Selene. Surviving valence gentler than Graf's caution. Collate both. English verse is Graf-derived (attested-56 table); the Order's draft rendering from the Greek is absent or fragmentary here. Greek fragmentary/lacunose as transcribed."
+    },
+    {
+      "faces": [
+        6,
+        4,
+        4,
+        3,
+        3
+      ],
+      "sum": 20,
+      "oracle_number": "XXXIX",
+      "god": {
+        "greek": "Διόσκουροι / Ζεὺς νεκρῶν κηδεμών (H.)",
+        "english": "The Dioskouroi"
+      },
+      "verse_greek": "ϚΓΓΔΔ   Κ   Διὸς νεκρῶν κηδε[μ]όν[ος.\nμ]οῦνος δ᾿ἐξείτης, τρεῖοι δύο τέσσαρα δοιά,\nο]ὐκ ἔστιν σπεύδ[οντα τυχ]εῖν ὅσα καιρὸς ἀνώγει·\nκ]έρδος ἔχεις· π[άσης λύσει] θ[ε]ὸς ἐκ κακότητος.\nεὔκολο]ς ἡ πρᾶξις, μοχθηρὰ δὲ πάντα φύλαξαι.",
+      "verse_english": "— One a six, two threes, and fours twain: —\nthe one who hastens cannot seize what the Moment commands;\nyou have your gain, and god will loose you from every malice;\nthe deed is easy — but guard yourself against all that is wretched.",
+      "valence": "unfavourable",
+      "tetraktys": {
+        "sphere": 10,
+        "octave": "embodied",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 18 = his XL; T only) ⚠. the deity DIVERGES mightily: T Διὸς νεκρῶν κηδεμόνος (\"Zeus, Caretaker of the Dead\" — Skutsch's correction of κηδεμόνων); later tradition: the Dioskouroi. Content matches Graf's closely. A chthonic Zeus the Order will want to weigh — collate Nollé with special care."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        6,
+        1,
+        1
+      ],
+      "sum": 20,
+      "oracle_number": "XL",
+      "god": {
+        "greek": "Ἥφαιστος",
+        "english": "Hephaistos"
+      },
+      "verse_greek": null,
+      "verse_english": "Impossible to do business; don't toil in vain; don't turn every stone lest you meet a scorpion. Be on guard.",
+      "valence": "unfavourable",
+      "tetraktys": {
+        "sphere": 10,
+        "octave": "embodied",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: NOT PRESERVED anywhere in Heinevetter (his XXXVII: \"Nirgends erhalten\"). Awaits Nollé. English verse is Graf-derived (attested-56 table); the Order's draft rendering from the Greek is absent or fragmentary here."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        4,
+        4,
+        1
+      ],
+      "sum": 21,
+      "oracle_number": "XLI",
+      "god": {
+        "greek": "Δημήτηρ",
+        "english": "Demeter"
+      },
+      "verse_greek": "[ϚϚΔΔ]Α   Κ[Α]   Δήμητρος.\nδισσοὶ δ᾿ἐξεῖται, δύο τέσσαρα, πέμπτος ὁ χεῖος,\nεὔοδά σοι πάντ᾿ ἐστ[ὶ] καὶ [ἀσφ]αλῆ ὧν μ᾿ἐπερωτᾷς·\nμηδ[ὲ [φ]ο[β]ο[ῦ]· δαί[μων] γὰρ ὁδηγήσει πρὸς ἅπαντα·\nπ]αύσει γὰρ λύπ[η]ς χ[α]λ[ε]πῆς, λύσει δ᾿ ὑπόνοιαν.",
+      "verse_english": "— Twin sixes, two fours, and the fifth the dog: —\nall roads run fair and safe for you in what you ask me;\nfear nothing, for the daimon will guide you in everything:\nhe will still your hard grief, and loose suspicion from you.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 1,
+        "octave": "chthonic",
+        "ground_element": "Fire"
+      },
+      "notes": "Greek source: (Heinevetter p. 18 = his XLI; T only; lines 3-5 = XXXIII 3-5). counsel repeats XXXIII 3-5 (the stone reuses its formulas)."
+    },
+    {
+      "faces": [
+        6,
+        4,
+        4,
+        4,
+        3
+      ],
+      "sum": 21,
+      "oracle_number": "XLII",
+      "god": {
+        "greek": "Ἥλιος",
+        "english": "Helios"
+      },
+      "verse_greek": "ΔΔΔϚΓ   ΚΑ   Ἡλίου Φ[ωσφ]ό[ρου.\nτέσσαρα τρεῖς, μοῦνος [ξ]είτης καὶ τρεῖος ὁ πέμπτ[ος,\nὅσσα θέλεις πράξεις, εὑρήσεις ὅσσα μεριμν[ᾷς.\nἐνχείρει, ξένε, θαρσήσας· πάντ᾿ ἐστὶν ἕ[τοιμα.\nτἀφανὲς εὑρήσεις, σωτήριον ἦμαρ [ἀπαντᾷ.",
+      "verse_english": "— Three fours, one a six, and the fifth a three: —\nall that you wish you shall do; you shall find all that you ponder;\nset your hand to it, stranger, taking courage: all stands ready;\nthe hidden you shall find, and the day of salvation comes to meet you.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 1,
+        "octave": "chthonic",
+        "ground_element": "Fire"
+      },
+      "notes": "Greek source: (Heinevetter p. 19; T, lines 3-5 also Y). the god: T gives Ἡλίου Φ[ωσφ]ό[ρου (Foerster) — light-bearing Helios, the epithet shared with Hekate; modern lists plain Ἥλιος — collate. Lines 3-5 = Colossae oracle 4-6; Y's calmer variant of 5 rejected by H. as contradicting line 4's ἐνχείρει θαρσήσας."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        3,
+        3,
+        3
+      ],
+      "sum": 21,
+      "oracle_number": "XLIII",
+      "god": {
+        "greek": "Τύχη",
+        "english": "Tyche (to Good Things)"
+      },
+      "verse_greek": "ΓΓΓϚϚ   ΚΑ   Τύχης [εἰς ἄ]λ[α] προβιβαζού[σης.\nτρεῖς τρία πείπτοντες, δύο δ᾿ἐξεῖται, τάδε φράζει·\nεἰσὶ καλαὶ πρά[ξε]ις· σπεύδειν δέ σε χρησμὸς ὅδ᾿ αὐδ[ᾷ.\nἐκφεύξῃ νούσου χαλεπῆς πάντων τε κρατήσεις\nκαὶ τὸν [ἀλ]ώμενον ἐν ξενίῃ ἥξειν [θ]εὸς αὐδᾷ.",
+      "verse_english": "— Three falling as threes, and two are sixes: this it declares: —\nthe deeds are fair, and this oracle bids you hasten;\nyou shall escape hard sickness, and master all;\nand the god declares the wanderer in foreign lands shall come home.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 1,
+        "octave": "chthonic",
+        "ground_element": "Fire"
+      },
+      "notes": "Greek source: (Heinevetter p. 19; T, E, Y — the name only in T). a rare oracle that commands haste (σπεύδειν — T's reading, preferred over Y's stonecutter slip). προβιβαζούσης Skutsch. Lines 3-5 = Colossae 7-9; the intrusive χώρῃ purged (cf. XX 5)."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        6,
+        3,
+        1
+      ],
+      "sum": 22,
+      "oracle_number": "XLIV",
+      "god": {
+        "greek": "Μοῖραι Φανεραί",
+        "english": "The Manifest Fates"
+      },
+      "verse_greek": "ΑϚϚϚΓ   ΚΒ   Μοιρῶν (Ἐπιφανῶν).\nεἷς χεῖος, τρεῖς δ᾿ἐξεῖται, (πέμ)π(τος τ)ρία π)εί(πτ)ω(ν,\nεἰς στόμα μὴ δῷς χεῖρα λύκῳ, μή σοί τι γένηται·\nδυσχερές ἐστιν πρᾶγμ᾿ [ὑ]πὲρ [οὗ πεύθῃ] καὶ ἄπισ[τον,\nἀλλὰ (μέν᾿ ἡσύχιος λήξας) ὁδοῦ (ἠδ᾿) ἀγορ(ασμ)οῦ.",
+      "verse_english": "— One the dog, three sixes, and the fifth falling three: —\nput not your hand into the wolf's mouth, lest something befall you;\nthe matter you inquire of is thorny, and not to be trusted:\nremain quiet, ceasing from the road and from the market.",
+      "valence": "unfavourable",
+      "tetraktys": {
+        "sphere": 2,
+        "octave": "chthonic",
+        "ground_element": "Air"
+      },
+      "notes": "Greek source: (Heinevetter p. 20; T, E, A — Ἐπιφανῶν from A and E). the epithet Ἐπιφανῶν (Manifest) wanting in T, preserved A/E ✓ matches the tradition's Μοῖραι Φανεραί. 4-5) T corrupt at the close; restorations from E; cf. LVI 5."
+    },
+    {
+      "faces": [
+        6,
+        4,
+        4,
+        4,
+        4
+      ],
+      "sum": 22,
+      "oracle_number": "XLV",
+      "god": {
+        "greek": "Ποσειδῶν",
+        "english": "Poseidon"
+      },
+      "verse_greek": "(ϚΔΔΔΔ)   ΚΒ   Ποσειδῶ(νος).\n(ἐ]ξείτης [πρῶτος] καὶ τέσσαρα πάντες ἐφεξῆς),\nεἰς πέλαγος ⟨μὴ⟩ σπέρμα βαλεῖν καὶ γράμματα γρά(ψ)αι,\nἀμφότερο(ν) μόχθος τε κενὸς καὶ πρᾶ[ξις] ἄπρα[κτος,\nμηδὲ βιάζου θνητὸς ἐὼν θεόν, ὅς σ(έ τι β)λάψε(ι).",
+      "verse_english": "— A six the first, and all the rest fours in a row: —\nto cast seed into the open sea, and to write upon its waters —\nboth are empty toil, and a deed that comes to nothing;\nand do not, being mortal, force a god: he will do you harm.",
+      "valence": "unfavourable",
+      "tetraktys": {
+        "sphere": 2,
+        "octave": "chthonic",
+        "ground_element": "Air"
+      },
+      "notes": "Greek source: (Heinevetter p. 20; T, E, A). H. notes the ⟨μὴ⟩ of line 3 seems already absent from the original — the futility itself carries the prohibition; similar proverbs at XIV 4 and the seven-astragal Termessos oracle III. 4) ἄπρακτος T/A."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        4,
+        3,
+        3
+      ],
+      "sum": 22,
+      "oracle_number": "XLVI",
+      "god": {
+        "greek": "Ἄρης Δεινός",
+        "english": "Terrible Ares"
+      },
+      "verse_greek": "(ϚϚΔΓΓ)   ΚΒ   Ἄρεως Θουρίου.\n(εἰ δὲ δύο ἐξεῖται εἷς τέσσαρα καὶ δύο τρεῖοι,)\nμὴ βαῖν᾿ ἣν ⟨βαίνειν⟩ μέλλεις, ξένε. τήνδε (γ)άρ, (αὐδῶ),\nαἴθων ἐσχώρησ[ε] λέων μέγας, ὃν π(εφύλ)αξο,\nδεινός· ἄπρακτος (ὁ) χρησμός, ἐ[ν᾿](ἡσυχίῃ δ᾿)ἀνάμεινο(ν).",
+      "verse_english": "— If two are sixes, one a four, and two are threes: —\ngo not the road you mean to go, stranger — for upon it, I declare,\na great blazing lion has entered, against whom be on your guard:\nterrible. The oracle grants nothing: wait, then, in stillness.",
+      "valence": "unfavourable",
+      "tetraktys": {
+        "sphere": 2,
+        "octave": "chthonic",
+        "ground_element": "Air"
+      },
+      "notes": "Greek source: (Heinevetter p. 21; A, E, T). the god: Ἄρεως Θουρίου (Raging Ares) on the stones; the modern list's Δεινός likely migrated from line 5's δεινός — collate. First person (αὐδῶ). 3) original recovered from A/T vs E's divergent formulations. 4) ἐσχώρησε Wilhelm's reading."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        6,
+        4,
+        1
+      ],
+      "sum": 23,
+      "oracle_number": "XLVII",
+      "god": {
+        "greek": "Παλλὰς Ἀθηναίη",
+        "english": "Athena"
+      },
+      "verse_greek": "ΑϚϚϚΔ   ΚΓ   Ἀθηνᾶς.\nεἷς χεῖος, τρεῖς δ᾿ἐξεῖται καὶ τέσσαρ᾿ ὁ πέμπτ(ος,\nΠαλλάδ᾿ Ἀθηναίην τείμα, καὶ πάντα σοι ἔσται,\nὅσσα θέλεις, καί σοι τὰ δεδογμένα πάντα τελε(ῖται)·\nλύσει δ᾿ἐκ δεσμῶν καὶ τὸν νοσ(έοντ᾿ ἀνασώσει).",
+      "verse_english": "— One the dog, three sixes, and the fifth a four: —\nhonour Pallas Athenaia, and all shall be yours,\nall that you wish: your every resolution shall be accomplished;\nshe will loose you from bonds, and save the one who is sick.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 3,
+        "octave": "chthonic",
+        "ground_element": "Air"
+      },
+      "notes": "Greek source: (Heinevetter p. 21; T, E, A). 5) T νοσέοντα δὲ σώσει; ἀνασώσει from E. The verse's τείμα (honour her) makes this one of the corpus's few devotional imperatives."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        4,
+        4,
+        3
+      ],
+      "sum": 23,
+      "oracle_number": "XLVIII",
+      "god": {
+        "greek": "Εὐδαιμονία",
+        "english": "Happiness"
+      },
+      "verse_greek": "ϚϚΔΔΓ   ΚΓ   Εὐφροσύνης.\nεἰ δὲ δύ᾿ ἐξεῖται, δύο τέσσαρα, τρεῖος ⟨δ⟩ [πέμπτος,\nστέλλε᾿, ὅπου θυμός, (σπεύδων), πάλι γὰρ (δόμον ἥ[ξεις)\nεὑρὼν καὶ πράξας κατὰ νοῦν (πάντ[ων] τε κρατ[ήσεις).\nεὐφροσύνη ([γ]ὰρ ἅπαντ᾿ ἔσται, σὺ δὲ μήτι φοβηθῇς).",
+      "verse_english": "— If two are sixes, two fours, and the fifth a three: —\nset out where your heart bids, and hasten: you shall come home again,\nhaving found and accomplished after your mind, and mastered all;\nfor gladness shall be over everything — and fear you nothing.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 3,
+        "octave": "chthonic",
+        "ground_element": "Air"
+      },
+      "notes": "Greek source: (Heinevetter p. 22; T, E, A). the goddess: Εὐφροσύνης on the stones (RE's stray note vindicated); modern lists Εὐδαιμονία — collate. Line 5 DOUBLY attested: E's \"gladness over all, fear nothing\" (H.'s choice, metrical) vs T's Εὐφροσύνην ὠνεῖσθαι πωλεῖν τε — \"gladness in buying and selling\" (whence Graf's trade-happiness). Sophia chooses."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        6,
+        3,
+        3
+      ],
+      "sum": 24,
+      "oracle_number": "XLIX",
+      "god": {
+        "greek": "Ἀπόλλων Πύθιος",
+        "english": "Apollo Pythios"
+      },
+      "verse_greek": "ϚϚϚΓΓ   ΚΔ   Ἀπόλλωνος Πυθίου.\n([τρεῖς ὁμοῦ ἐξεῖται, δύο τρεῖοι,] μάνθαν᾿ ἀκουά[ν·)\n(μεῖνον), μὴ πρ(άξῃ)ς, Φοίβου χρησμοῖσι δὲ πείθου.\nἐν χρόνῳ ⟨εὖ⟩ καιρὸν τήρει· νῦν δ᾿ ἥσυχος ἴσθι.\nμεικρὸν ἐπι[σχ]ὼν ⟨γὰρ⟩ τελέσεις πάνθ᾿ ὅσσα μεριμνᾷς.",
+      "verse_english": "— Three sixes together, two threes: learn what is heard: —\nstay; do not act; obey the oracles of Phoibos;\nin time keep good watch for the moment — but now be still:\nfor holding back a little, you shall accomplish all you ponder.",
+      "valence": "cautionary",
+      "tetraktys": {
+        "sphere": 4,
+        "octave": "chthonic",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: (Heinevetter p. 22; T, E, A). A inverts the name (Πυθίου Ἀπόλλωνος). The oracle-god counselling obedience to his own oracles — the corpus's most self-aware verse."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        4,
+        4,
+        4
+      ],
+      "sum": 24,
+      "oracle_number": "L",
+      "god": {
+        "greek": "Κρόνος Τεκνοφάγος",
+        "english": "Kronos the Child-Eater"
+      },
+      "verse_greek": "ΔΔΔ(ϚϚ)   ΚΔ   Κρόνου Τεκνοφάγου.\nτέσσαρα τρεῖς, δύο δ᾿ἐξεῖται, τάδε σοι θεὸς αὐδᾷ·\nμί(μ)νε δόμων ἐπὶ σῶν ⟨ἀτρέμας⟩ μηδ᾿ ἄλλοθι βαῖνε,\n(μή σ)οι θὴρ ὀλοὸς καὶ ἀλάστωρ ἐνγύθεν ἔλθῃ·\nοὐ γὰρ ὁρῶ (πρᾶξιν τήνδ᾿)ἀσφαλῆ οὐδὲ βέβαιον.",
+      "verse_english": "— Three fours, and two sixes: this the god declares to you: —\nstay within your own house, quietly, and go nowhere else,\nlest a destroying beast and an avenging spirit come near you;\nfor I do not see this deed as safe, nor as sure.",
+      "valence": "unfavourable",
+      "tetraktys": {
+        "sphere": 4,
+        "octave": "chthonic",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: (Heinevetter p. 23; T, E, A). the stone names him Child-Eater outright. ἀλάστωρ — the avenging daimon (the Order's risk-model vocabulary meets the corpus). ⟨ἀτρέμας⟩ Foerster. First person again (ὁρῶ)."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        6,
+        4,
+        3
+      ],
+      "sum": 25,
+      "oracle_number": "LI",
+      "god": {
+        "greek": "Μὴν Φωσφόρος",
+        "english": "Men, Bringer of Light"
+      },
+      "verse_greek": "ΔϚϚϚΓ   ΚΕ   (Μηνὸς Φωσφόρου.)\nτέσσαρα πείπτων εἷς, τρεῖς δ᾿ἐξεῖται, (τρί᾿) ὁ πέμπ(τος),\nθάρσει, καιρὸν ἔχεις, πράξεις δ᾿ ἃ θέλεις, ἐπιτεύ(ξῃ)\nεἰς ὁδὸν ὁρμηθῆναι· ἔχει (καρπόν) τιν᾿ ὁ μόχθος·\nἔργον (δ)᾿ ἐνχειρεῖν ἀγαθὸν καὶ ἀγῶνα δίκην τε.",
+      "verse_english": "— One falling four, three sixes, and the fifth a three: —\ntake courage: the moment is yours; you shall do what you wish; you shall attain\nyour setting-out upon the road; the toil bears its fruit;\nand good it is to set hand to work, to contest, and to law.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 5,
+        "octave": "chthonic",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: (Heinevetter p. 23; T, E, A — the god from E/A; T here mistakenly carries LII's deity). Μηνὸς Φωσφόρου from E and A (T's scribe wandered to LII's goddess). Note Men shares Phosphoros with Helios (XLII) and with Hekate — the light-bearing family across the corpus."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        6,
+        6,
+        1
+      ],
+      "sum": 25,
+      "oracle_number": "LII",
+      "god": {
+        "greek": "Μήτηρ Θεῶν",
+        "english": "Mother of the Gods"
+      },
+      "verse_greek": "ϚϚϚϚΑ   ΚΕ   Μητρὸς θεῶν.\nτέσσαρες ἐξεῖται, πέμπτος χεῖος, τάδε φράζει·\nὡς ἄρνας κατέχουσι λύκοι κρατεροί τε λέοντε[ς\nβοῦς ἕλικας, πάντων οὕτω[ς] (ἔτι) καὶ σὺ κρατήσεις,\n(κ)αὶ πάντ᾿ ἔσται σοι ὅσ᾿ ἐρωτᾷς σὺν Διὸς Ἑρ[μῇ.",
+      "verse_english": "— Four sixes, and the fifth the dog: this it declares: —\nas wolves hold fast the lambs, and mighty lions\nthe twist-horned oxen, so shall you too master all,\nand all that you ask shall be yours — with Hermes, Zeus' own.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 5,
+        "octave": "chthonic",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: (Heinevetter p. 24; T, E, A — T mislabels with LI's god). 4) ἔτι from E — H.'s \"telling proof\" that the reconstruction may fill faulty verses with inserted words. 5) Skutsch reorders. The Homeric simile-pair (wolves/lambs, lions/oxen) is the corpus's grandest figure."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        6,
+        4,
+        4
+      ],
+      "sum": 26,
+      "oracle_number": "LIII",
+      "god": {
+        "greek": "Ζεὺς Χθόνιος",
+        "english": "Subterranean Zeus"
+      },
+      "verse_greek": "ϚϚϚΔΔ   (ΚϚ)   Διὸς Καταχθονίου.\nτρεῖς (ὁμοῦ) ἐξεῖται, δύο τέσσαρα, χρησμὸς ὅδ᾿ αὐδᾷ·\n(ἡ) πρᾶξις κωλύματ᾿ ἔχει, μὴ σπεῦδ᾿, ἀνάμεινο(ν).\n(λ)υπηρά τις ὁδὸς καὶ ἀμήχανος οὐδὲ προσικτή·\nὠνεῖσθαι χαλεπὸν καὶ πωλεῖν τι βλάβος ἔσται.",
+      "verse_english": "— Three sixes together, two fours: this oracle declares: —\nthe deed is hedged with hindrances: do not hasten; wait.\nA grievous road, past helping, not to be approached;\nbuying is hard, and to sell will bring some harm.",
+      "valence": "cautionary",
+      "tetraktys": {
+        "sphere": 6,
+        "octave": "chthonic",
+        "ground_element": "Water"
+      },
+      "notes": "Greek source: (Heinevetter p. 24; T, E, partly A). Διὸς Καταχθονίου — H. cites Il. 9.457 (Ζεὺς καταχθόνιος) for the title: the book's Subterranean Zeus stands on Homeric ground. 3) T's ἀλλ᾿ purged as unmetrical."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        6,
+        6,
+        3
+      ],
+      "sum": 27,
+      "oracle_number": "LIV",
+      "god": {
+        "greek": "Ἀφροδίτη Οὐρανία",
+        "english": "Heavenly Aphrodite"
+      },
+      "verse_greek": "ϚϚϚϚΓ   ΚΖ   Ἀφροδείτης (Οὐρανίας).\nτέσσαρ(ες) ἐξεῖται, μοῦνος τρία σοι τάδε φράζει·\nοὐρανόπαις Ἀφροδείτη, Ἐρώτων πότνι᾿ ἄνασσα\nπέμψει μαντείαν ἀγαθήν, δώσει δὲ ὁδόν σοι\n(ἔ)κφευξ(ίν) τε νόσου καὶ φροντίδος (ἀλγε)σιθύμου.",
+      "verse_english": "— Four sixes, and a lone three: this it declares to you: —\nHeaven-born Aphrodite, mistress of the Loves, O queen:\nshe will send a good oracle, and grant you your road,\nand escape from sickness, and from heart-grieving care.",
+      "valence": "favourable",
+      "tetraktys": {
+        "sphere": 7,
+        "octave": "chthonic",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 25; T and E — COLLATED with Costanza p. 28 / Nollé p. 178: agreement, T's ἐκφεύξῃ = Costanza's text). Οὐρανίας from E. Line 5: E's noun ἔκφευξιν vs T's verb ἐκφεύξῃ (= Costanza/Nollé) — Sophia chooses. ἀλγεσίθυμος previously attested only at Orphic Hymn 65.6 (H.) — with κερδέμπορος (XXXV), the corpus shares rare diction with the Hymns. 3) E: Ἐρώτων πότνια σεμνή, cf. Eur. Phaethon fr. 781.16."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        6,
+        6,
+        4
+      ],
+      "sum": 28,
+      "oracle_number": "LV",
+      "god": {
+        "greek": "Βλάβη",
+        "english": "Damage"
+      },
+      "verse_greek": "ϚϚϚϚΔ   ΚΗ   Βλάβης.\nτέσσαρες ἐξεῖται καὶ τετρῶος τάδε φράζει·\nοὐκ ἔστιν πρᾶξ(ις)· τί μάτην (σπεύδεις; ἀνάμεινον,)\nμή σοι σπεύδοντι βλάβος ([ἐξ] αὐτῆς) τι γένηται·\nοὔτε γὰρ εἰς ὁδὸν ὁρμᾶσθαι καλὸν οὔτ᾿ ἀγοράζε(ιν).",
+      "verse_english": "— Four sixes and a four: this it declares: —\nthere is no deed here. Why hasten in vain? Wait,\nlest to you in your hastening some damage come of it;\nfor neither is it good to set out upon the road, nor to buy.",
+      "valence": "unfavourable",
+      "tetraktys": {
+        "sphere": 8,
+        "octave": "chthonic",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 25; T, E; scraps in Y, K, O). the goddess's name sounds within her own verse (Βλάβης — βλάβος): nominal omen. 3) ἀλλ᾿ purged for metre as at LIII 3. The stonecutter's ΠΕΙΠΤΟΝΤΟΣΟΠΕΙΠΤΩΝ blunder corrected by Kaibel."
+    },
+    {
+      "faces": [
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "sum": 30,
+      "oracle_number": "LVI",
+      "god": {
+        "greek": "Ἑρμῆς Τετράγωνος",
+        "english": "Square Hermes"
+      },
+      "verse_greek": "ϚϚϚϚϚ   (Λ)   Ἑρμοῦ Τετραγώνου.\nεἰ δέ κεν ἐξεῖται πάντες πείπτωσιν ὁμοῖοι,\n(μ)ὴ βαῖν᾿ ἣν μέλλεις, μείναντί σοι ἔσται ἄμεινον.\n(αἰσχρὸν γάρ σοι κ[ῆ]δος ὁρῶ περὶ ὧν μ᾿ ἐπερωτᾷς·)\n(ἀλλὰ μέν᾿ ἡσύχιος λήξας ὁδοῦ ἠδ᾿ ἀγορασμοῦ.)",
+      "verse_english": "— If all that fall are sixes, all alike: —\ngo not the way you intend: for the one who waits it shall be better;\nfor I see a shameful care in what you ask me —\nbut remain quiet, ceasing from the road and from the market.",
+      "valence": "cautionary",
+      "tetraktys": {
+        "sphere": 10,
+        "octave": "chthonic",
+        "ground_element": "Earth"
+      },
+      "notes": "Greek source: (Heinevetter p. 26; T and E; scraps in K, Y, O). E's throw-verse variant: πάντες ὁμοῦ ἐξεῖται Φοίβου φωνῆς ἐπάκουσον — \"all sixes together: hearken to the voice of Phoibos\" — the very formula H. used to restore Oracle I: the corpus's end validates its beginning. T's alternative ending: τόν τε φόβον λύσει καὶ τὸν κάμνοντα δὲ σώσει (\"he will loose your fear and save the sick\" — whence Graf's close). Lines 4-5 echo XXXVII 4 and XLIV 5: the stone's formulas returning at the summit. The highest throw counsels the deepest stillness."
+    }
+  ]
+}

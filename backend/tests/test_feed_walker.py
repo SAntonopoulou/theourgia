@@ -12,6 +12,8 @@ THE critical honesty rules covered:
   * The walker's bounded window is locked at past=4w, future=6w.
   * Feb 29 anniversary handling falls back to March 1 in non-leap
     years.
+  * The four formerly-dead toggles (resh / lunar / planetary hours /
+    custom cron) now EMIT real events from the Phase 03 engines.
 """
 
 from __future__ import annotations
@@ -23,14 +25,20 @@ from uuid import uuid4
 
 from theourgia.core.calendar import feed_walker
 from theourgia.core.calendar.feed_walker import (
+    CUSTOM_EVENT_CAP,
+    PLANETARY_HOURS_WINDOW_FUTURE,
     WALK_WINDOW_FUTURE,
     WALK_WINDOW_PAST,
     WORKING_ENTRY_TYPES,
     WalkResult,
+    _custom_events,
     _entry_to_event,
     _group_sealed_by_date,
+    _lunar_events,
     _next_anniversary_in_window,
     _pilgrimage_to_event,
+    _planetary_hour_events,
+    _resh_events,
     _window_bounds,
 )
 from theourgia.core.calendar.ical_serializer import (
@@ -398,12 +406,158 @@ def test_walker_dispatches_sealed_markers_only_when_workings_enabled() -> None:
     assert "_collect_sealed_markers" in workings_branch
 
 
-def test_walker_has_no_resh_or_lunar_integration_yet() -> None:
-    """Defensive — until Phase 03 substrate integration lands, those
-    toggles are TODO'd. A future commit that wires them must update
-    these tests."""
-    src = inspect.getsource(feed_walker)
-    assert "TODO: include_resh" in src
-    assert "TODO: include_lunar_events" in src
-    assert "TODO: include_planetary_hours" in src
-    assert "TODO: include_custom" in src
+def test_walker_dispatches_all_six_toggles_in_source() -> None:
+    """Every ``include_*`` toggle on the ICalFeed model must gate a
+    real emission path — none may silently accept input and emit
+    nothing (the pre-Day-1 dead-toggle bug)."""
+    src = inspect.getsource(feed_walker.walk_feed_data)
+    assert "feed.include_workings" in src
+    assert "feed.include_pilgrimage_anniversaries" in src
+    assert "feed.include_resh" in src
+    assert "feed.include_lunar_events" in src
+    assert "feed.include_planetary_hours" in src
+    assert "feed.include_custom" in src
+    assert "TODO" not in src
+
+
+# ── Resh emission ────────────────────────────────────────────────
+
+
+_NOW = datetime(2026, 6, 26, 12, 0, tzinfo=timezone.utc)
+_ATHENS = (37.9838, 23.7275)
+
+
+def test_resh_events_emits_four_per_day() -> None:
+    """Non-polar latitude: sunrise/noon/sunset/midnight every day of
+    the 10-week window."""
+    events = _resh_events(*_ATHENS, now=_NOW)
+    lower, upper = _window_bounds(_NOW)
+    n_days = (upper.date() - lower.date()).days + 1
+    # Boundary days can lose transitions that fall outside the exact
+    # datetime window; everything else emits all four.
+    assert len(events) >= (n_days - 2) * 4
+    assert len(events) <= n_days * 4
+
+
+def test_resh_events_carry_godform_and_direction() -> None:
+    events = _resh_events(*_ATHENS, now=_NOW)
+    sunrise = next(e for e in events if "sunrise" in e.uid)
+    assert "Ra Hoor Khuit" in sunrise.summary
+    assert "East" in sunrise.description
+    assert sunrise.location == ""
+    assert sunrise.is_all_day is False
+
+
+def test_resh_events_uid_namespaced_per_day_and_transition() -> None:
+    events = _resh_events(*_ATHENS, now=_NOW)
+    uids = [e.uid for e in events]
+    assert len(uids) == len(set(uids)), "resh UIDs must be unique"
+    assert all(u.startswith("resh-") and u.endswith("@theourgia") for u in uids)
+
+
+def test_resh_events_within_window() -> None:
+    lower, upper = _window_bounds(_NOW)
+    for e in _resh_events(*_ATHENS, now=_NOW):
+        assert lower <= e.start <= upper
+
+
+# ── Lunar emission ───────────────────────────────────────────────
+
+
+def test_lunar_events_emits_phases_in_window() -> None:
+    """A 10-week window spans ~2.5 lunations → ~10 phase events."""
+    events = _lunar_events(now=_NOW)
+    assert 8 <= len(events) <= 12
+    summaries = {e.summary for e in events}
+    assert summaries <= {
+        "New moon", "First quarter", "Full moon", "Last quarter",
+    }
+
+
+def test_lunar_events_carry_moon_sign_in_description() -> None:
+    """v1-051: each phase is subtitled 'Moon in {sign}'."""
+    events = _lunar_events(now=_NOW)
+    assert events
+    for e in events:
+        assert e.description.startswith("Moon in ")
+        assert e.is_all_day is False
+        assert e.uid.startswith("lunar-")
+        assert e.uid.endswith("@theourgia")
+
+
+def test_lunar_events_within_window() -> None:
+    lower, upper = _window_bounds(_NOW)
+    for e in _lunar_events(now=_NOW):
+        assert lower <= e.start <= upper
+
+
+# ── Planetary-hour emission ──────────────────────────────────────
+
+
+def test_planetary_hours_window_is_one_week() -> None:
+    """Cardinality guard: 24 events/day over the full 10-week window
+    would be ~1.7k VEVENTs; the sub-window is locked at 7 days."""
+    assert PLANETARY_HOURS_WINDOW_FUTURE == timedelta(days=7)
+
+
+def test_planetary_hour_events_cover_the_week() -> None:
+    events = _planetary_hour_events(*_ATHENS, now=_NOW)
+    # 7 days × 24 hours, ± boundary hours.
+    assert 165 <= len(events) <= 170
+    end = _NOW + PLANETARY_HOURS_WINDOW_FUTURE
+    for e in events:
+        assert _NOW <= e.start <= end
+        assert e.end is not None and e.end > e.start
+
+
+def test_planetary_hour_events_name_the_ruler() -> None:
+    events = _planetary_hour_events(*_ATHENS, now=_NOW)
+    rulers = {
+        "Saturn", "Jupiter", "Mars", "Sun", "Venus", "Mercury", "Moon",
+    }
+    for e in events:
+        assert e.summary.startswith("Hour of ")
+        assert e.summary.split()[2] in rulers
+        assert e.uid.startswith("planetary-hour-")
+
+
+def test_planetary_hour_uids_unique() -> None:
+    events = _planetary_hour_events(*_ATHENS, now=_NOW)
+    uids = [e.uid for e in events]
+    assert len(uids) == len(set(uids))
+
+
+# ── Custom-cron emission ─────────────────────────────────────────
+
+
+def _feed(custom_cron: str | None) -> SimpleNamespace:
+    return SimpleNamespace(custom_cron=custom_cron)
+
+
+def test_custom_events_expands_weekly_cron() -> None:
+    """'30 6 * * 1' — every Monday 06:30 — fires ten times in the
+    ten-week window."""
+    events = _custom_events(_feed("30 6 * * 1"), now=_NOW)
+    assert len(events) == 10
+    for e in events:
+        assert e.start.weekday() == 0  # Monday
+        assert (e.start.hour, e.start.minute) == (6, 30)
+        assert e.summary == "Custom reminder"
+        assert "30 6 * * 1" in e.description
+
+
+def test_custom_events_empty_expression_emits_nothing() -> None:
+    assert _custom_events(_feed(None), now=_NOW) == []
+    assert _custom_events(_feed(""), now=_NOW) == []
+
+
+def test_custom_events_invalid_expression_emits_nothing() -> None:
+    """A broken cron never guesses — it emits nothing."""
+    assert _custom_events(_feed("not a cron"), now=_NOW) == []
+    assert _custom_events(_feed("99 99 * *"), now=_NOW) == []
+
+
+def test_custom_events_capped() -> None:
+    """An every-minute cron is capped, not served as ~100k VEVENTs."""
+    events = _custom_events(_feed("* * * * *"), now=_NOW)
+    assert len(events) == CUSTOM_EVENT_CAP

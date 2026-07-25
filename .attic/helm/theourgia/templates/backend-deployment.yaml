@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "theourgia.fullname" . }}-backend
+  labels:
+    {{- include "theourgia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.backend.replicas }}
+  selector:
+    matchLabels:
+      {{- include "theourgia.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        {{- include "theourgia.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+      {{- if not .Values.secrets.existingSecret }}
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+      {{- end }}
+    spec:
+      {{- include "theourgia.imagePullSecrets" . | nindent 6 }}
+      containers:
+        - name: backend
+          image: {{ include "theourgia.image" (dict "image" .Values.backend.image "chart" .Chart) }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - uvicorn
+            - theourgia.api.app:app
+            - --host
+            - 0.0.0.0
+            - --port
+            - "8000"
+            - --workers
+            - {{ .Values.backend.workers | quote }}
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            {{- include "theourgia.coreEnv" . | nindent 12 }}
+            - name: THEOURGIA_BASE_URL
+              value: {{ .Values.config.baseUrl | quote }}
+            - name: THEOURGIA_INSTANCE_ID
+              value: {{ .Values.config.instanceId | quote }}
+            - name: THEOURGIA_EPHE_PATH
+              value: /app/data/ephe
+            - name: THEOURGIA_ALLOWED_MAGICKAL_NAMES
+              value: {{ .Values.config.allowedMagickalNames | quote }}
+            {{- if .Values.agentDaemon.enabled }}
+            - name: THEOURGIA_AGENT_DAEMON_URL
+              value: http://{{ include "theourgia.fullname" . }}-agent-daemon:8002
+            - name: THEOURGIA_AGENT_DAEMON_CONTROL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "theourgia.secretName" . }}
+                  key: THEOURGIA_AGENT_CONTROL_TOKEN
+            {{- end }}
+            {{- if .Values.registry.enabled }}
+            - name: THEOURGIA_REGISTRY_URL
+              value: http://{{ include "theourgia.fullname" . }}-registry:8003
+            {{- end }}
+            {{- with .Values.config.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          {{- with .Values.backend.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}

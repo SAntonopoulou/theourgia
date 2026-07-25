@@ -18,6 +18,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import get_db_session
+from theourgia.core.config import get_settings
+from theourgia.models.identity import Vault
 from theourgia.models.newsletter_issue import (
     NewsletterIssue,
     NewsletterIssueStatus,
@@ -76,8 +78,9 @@ class PublicVaultResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     vault_id: str
-    # Caller's vault metadata. Stub strings until the user-profile
-    # schema lands; the surface displays whatever's here.
+    # Owner profile, read from the owner's default Vault row
+    # (display_name + description). ``pronouns`` has no substrate
+    # yet and is honestly null until a profile field exists.
     display_name: str
     pronouns: str | None
     bio: str | None
@@ -173,13 +176,36 @@ async def get_public_vault(
         most_recent_sent_at=last_issue.sent_at if last_issue else None,
     )
 
+    # Owner profile from the default Vault row (same source as the
+    # ActivityPub actor + bundle exports). The settings fallback
+    # (THEOURGIA_PROFILE_DISPLAY_NAME_FALLBACK) only surfaces for
+    # owners predating the v1-030 ensure-vault backfill.
+    vault = (
+        await db.execute(
+            select(Vault)
+            .where(Vault.owner_id == vault_id)
+            .order_by(Vault.created_at.asc())
+            .limit(1)
+        )
+    ).scalars().first()
+    settings = get_settings()
+    if vault is not None and vault.display_name:
+        display_name = vault.display_name
+    else:
+        display_name = settings.profile_display_name_fallback
+    bio = (vault.description or None) if vault is not None else None
+
     return PublicVaultResponse(
         vault_id=str(vault_id),
-        # User-profile fields are stubs until the substrate lands.
-        display_name="Soror Ευ. Α.",
+        display_name=display_name,
+        # No pronouns substrate exists yet — served as null, never a
+        # made-up string.
         pronouns=None,
-        bio=None,
-        license_label="AGPL-3.0",
+        bio=bio,
+        # Site-software license credit (operator-configurable via
+        # THEOURGIA_PUBLIC_LICENSE_LABEL); per-publication content
+        # licenses ride on each publication row.
+        license_label=settings.public_license_label,
         # The H07 surface contract: popular-sort defaults OFF.
         popular_sort_opt_in=False,
         publications=[_to_pub(p) for p in pubs],

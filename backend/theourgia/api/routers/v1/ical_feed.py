@@ -245,9 +245,9 @@ async def serve_feed(
     """Deliver the VCALENDAR file. Private feeds require the caller's
     auth cookie (401 otherwise). Public feeds skip auth.
 
-    Live data walking is NOT in scope for B135 — that's an integration
-    surface in B136. For now the feed always emits a minimal
-    VCALENDAR shell so subscribers' clients don't error out."""
+    Live data is walked per the enabled ``include_*`` toggles — see
+    :func:`theourgia.core.calendar.feed_walker.walk_feed_data` for
+    the per-toggle emission rules."""
     row = (
         await db.execute(
             select(ICalFeed).where(ICalFeed.url_token == token)

@@ -2,8 +2,9 @@
 
 Covers the pure trigger math, the privacy contract (opted-out users'
 mood data is never queried — asserted via a recording fake session),
-mute/dismiss persistence, the resources starter list, and the router
-surface (paths + auth).
+mute/dismiss persistence, the operator-configured resources (with the
+explicit unconfigured empty state), and the router surface
+(paths + auth).
 """
 
 from __future__ import annotations
@@ -29,10 +30,17 @@ from theourgia.api.routers.v1.wellbeing import (
 )
 from theourgia.core.usersettings.defaults import register_default_settings
 from theourgia.core.usersettings.registry import SettingsRegistry
+from theourgia.core.instancesettings.defaults import (
+    register_default_instance_settings,
+)
+from theourgia.core.instancesettings.registry import (
+    InstanceSettingsRegistry,
+)
 from theourgia.core.wellbeing import resources as resources_module
 from theourgia.core.wellbeing.resources import (
-    CRISIS_RESOURCES,
-    resources_payload,
+    CRISIS_RESOURCES_KEY,
+    CrisisResource,
+    load_crisis_resources,
 )
 from theourgia.core.wellbeing.service import (
     CRISIS_NUDGE_KEY,
@@ -92,10 +100,16 @@ class FakeSession:
         settings: dict[str, object] | None = None,
         mood_rows: list[tuple] | None = None,
         forbid_entry_query: bool = False,
+        instance_settings: dict[str, object] | None = None,
     ) -> None:
         self.settings_rows: dict[str, SimpleNamespace] = {}
         for key, value in (settings or {}).items():
             self.settings_rows[key] = SimpleNamespace(
+                key=key, value_json=json.dumps(value)
+            )
+        self.instance_rows: dict[str, SimpleNamespace] = {}
+        for key, value in (instance_settings or {}).items():
+            self.instance_rows[key] = SimpleNamespace(
                 key=key, value_json=json.dumps(value)
             )
         self.mood_rows = list(mood_rows or [])
@@ -107,6 +121,10 @@ class FakeSession:
     async def execute(self, stmt):
         sql = str(stmt)
         self.executed.append(sql)
+        if "instance_setting" in sql:
+            return FakeResult(
+                scalar=self.instance_rows.get(CRISIS_RESOURCES_KEY)
+            )
         if "user_setting" in sql:
             params = stmt.compile().params
             key = next(
@@ -432,17 +450,39 @@ async def test_get_nudge_disabled_returns_empty_resources() -> None:
     assert out.enabled is False
     assert out.show is False
     assert out.resources == []
+    assert out.resources_configured is False
 
 
-async def test_get_nudge_enabled_returns_resources() -> None:
+async def test_get_nudge_enabled_unconfigured_is_explicit_empty_state() -> None:
+    """Enabled but the operator configured nothing → the explicit
+    empty state, never fabricated directory entries."""
     session = FakeSession(settings={CRISIS_NUDGE_KEY: True})
     out = await get_nudge(db=session, current_user=user())
     assert out.enabled is True
-    assert len(out.resources) == len(CRISIS_RESOURCES)
-    for r in out.resources:
-        assert r.region
-        assert r.name
-        assert r.url
+    assert out.resources == []
+    assert out.resources_configured is False
+
+
+async def test_get_nudge_enabled_serves_operator_resources() -> None:
+    session = FakeSession(
+        settings={CRISIS_NUDGE_KEY: True},
+        instance_settings={
+            CRISIS_RESOURCES_KEY: [
+                {
+                    "region": "international",
+                    "name": "Example Helpline",
+                    "url": "https://example.org/help",
+                },
+            ],
+        },
+    )
+    out = await get_nudge(db=session, current_user=user())
+    assert out.enabled is True
+    assert out.resources_configured is True
+    assert len(out.resources) == 1
+    assert out.resources[0].region == "international"
+    assert out.resources[0].name == "Example Helpline"
+    assert out.resources[0].url == "https://example.org/help"
 
 
 async def test_put_nudge_enables_and_persists() -> None:
@@ -501,31 +541,90 @@ def test_dismiss_payload_validates_until() -> None:
         NudgeDismiss(until="")
 
 
-# ── Resources ────────────────────────────────────────────────────────
+# ── Resources (operator-configured; no fabricated entries) ───────────
 
 
-def test_resources_shape() -> None:
-    payload = resources_payload()
-    assert payload, "starter list must not be empty"
-    for item in payload:
-        assert set(item) == {"region", "name", "url"}
-        assert item["region"] == "international"
-        assert item["url"].startswith("https://")
+def test_resources_module_ships_no_builtin_entries() -> None:
+    """The Sacred Well Directory placeholder rule, resolved honestly:
+    the module contains NO hard-coded resource entries — everything
+    comes from the operator's instance setting."""
+    import inspect
+
+    src = inspect.getsource(resources_module)
+    assert "CRISIS_RESOURCES " not in src  # the old hard-coded tuple
+    assert "iasp.info" not in src
+    assert "findahelpline" not in src
 
 
-def test_resources_include_the_two_starter_directories() -> None:
-    urls = {r.url for r in CRISIS_RESOURCES}
-    assert "https://www.iasp.info/resources/Crisis_Centres/" in urls
-    assert "https://findahelpline.com" in urls
-
-
-def test_resources_carry_the_maintainer_review_flag() -> None:
-    """The Sacred Well Directory placeholder rule: the starter list
-    stays flagged for maintainer review — the flag must not be
-    quietly dropped."""
+def test_resources_module_doc_stays_honest() -> None:
+    """The docstring must keep saying the curated directory does not
+    exist and that the operator owns every entry."""
     doc = resources_module.__doc__ or ""
-    assert "MAINTAINER REVIEW REQUIRED" in doc
     assert "Sacred Well Directory" in doc
+    assert "does not exist" in doc
+    assert "operator" in doc
+
+
+async def test_load_resources_missing_row_is_empty() -> None:
+    session = FakeSession()
+    assert await load_crisis_resources(session) == []
+
+
+async def test_load_resources_returns_valid_entries() -> None:
+    session = FakeSession(
+        instance_settings={
+            CRISIS_RESOURCES_KEY: [
+                {
+                    "region": "international",
+                    "name": "Example Helpline",
+                    "url": "https://example.org",
+                },
+            ],
+        },
+    )
+    out = await load_crisis_resources(session)
+    assert out == [
+        CrisisResource(
+            region="international",
+            name="Example Helpline",
+            url="https://example.org",
+        ),
+    ]
+
+
+async def test_load_resources_skips_malformed_entries() -> None:
+    """Bad entries are dropped, never 'repaired' into something the
+    operator didn't write."""
+    session = FakeSession(
+        instance_settings={
+            CRISIS_RESOURCES_KEY: [
+                "just a string",
+                {"region": "x", "name": "no url"},
+                {"region": "", "name": "empty region", "url": "https://a.example"},
+                {"region": "x", "name": "bad scheme", "url": "ftp://a.example"},
+                {"region": "ok", "name": "Kept", "url": "https://kept.example"},
+            ],
+        },
+    )
+    out = await load_crisis_resources(session)
+    assert [r.name for r in out] == ["Kept"]
+
+
+async def test_load_resources_non_list_value_is_empty() -> None:
+    session = FakeSession(
+        instance_settings={CRISIS_RESOURCES_KEY: {"not": "a list"}},
+    )
+    assert await load_crisis_resources(session) == []
+
+
+def test_crisis_resources_instance_setting_registered_empty() -> None:
+    """The operator-editable source is a registered instance setting
+    defaulting to [] — nothing configured means nothing served."""
+    registry = InstanceSettingsRegistry()
+    register_default_instance_settings(registry)
+    d = registry.get(CRISIS_RESOURCES_KEY)
+    assert d.value_type is list
+    assert d.default == []
 
 
 # ── Settings registration ────────────────────────────────────────────

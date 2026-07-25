@@ -146,6 +146,22 @@ def register_default_instance_settings(
         registry=target,
     )
 
+    # ── Wellbeing ────────────────────────────────────────────────────
+    register_instance_setting(
+        "wellbeing.crisis_resources",
+        value_type=list,
+        default=[],
+        description=(
+            "Operator-curated crisis-support resources served by the "
+            "opt-in wellbeing nudge. JSON list of objects with "
+            "'region', 'name', and 'url' keys. Empty by default — "
+            "Theourgia ships NO built-in entries (the 'Sacred Well "
+            "Directory' does not exist yet); every entry is vetted "
+            "by the operator for their own instance."
+        ),
+        registry=target,
+    )
+
     # ── Backups / maintenance ────────────────────────────────────────
     register_instance_setting(
         "maintenance.mode",

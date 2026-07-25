@@ -6,8 +6,10 @@ context manager protocol Uvicorn / Starlette wire to startup/shutdown.
 Responsibilities:
 
 - **Startup**: verify required secrets are present (refuses to start
-  otherwise in non-test environments). Reserve room for future startup
-  work (federation key bootstrap, ephemeris availability check, etc.).
+  otherwise in non-test environments); swap the synchronicity
+  auto-tag stubs for the live Phase 03 astro/calendar providers.
+  Reserve room for future startup work (federation key bootstrap,
+  ephemeris availability check, etc.).
 - **Shutdown**: dispose the SQLAlchemy engine cleanly so the connection
   pool returns underlying sockets before process exit.
 """
@@ -25,9 +27,30 @@ from theourgia.core.observability import get_logger
 from theourgia.core.observability.sentry import init_sentry
 from theourgia.core.plugins.startup import load_active_plugins
 
-__all__ = ["lifespan"]
+__all__ = ["lifespan", "wire_live_autotag_providers"]
 
 _log = get_logger(__name__)
+
+
+def wire_live_autotag_providers() -> None:
+    """Replace the synchronicity auto-tag stubs with the live
+    Phase 03 adapters.
+
+    Before this runs, the synchronicities module serves its documented
+    ``"unknown"`` stubs (its pre-boot default). No weather provider is
+    wired — Theourgia has no outbound weather integration, so
+    ``weather_snapshot`` stays honestly ``None``.
+    """
+    from theourgia.api.routers.v1.synchronicities import set_providers
+    from theourgia.core.analytics.providers import (
+        LiveAstroProvider,
+        LiveCalendarProvider,
+    )
+
+    set_providers(
+        astro=LiveAstroProvider(),
+        calendar=LiveCalendarProvider(),
+    )
 
 
 @asynccontextmanager
@@ -40,6 +63,11 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
     # Optional crash reporting (off by default; opt-in via SENTRY_DSN)
     sentry_active = init_sentry(settings)
+
+    # Live astro/calendar providers for the synchronicity auto-tag —
+    # without this the module-level stubs would serve "unknown"
+    # snapshots forever.
+    wire_live_autotag_providers()
 
     _log.info(
         "theourgia.api.starting",

@@ -4,7 +4,7 @@ B135 shipped the ``/ical/v1/{token}.ics`` route as a VCALENDAR shell;
 this module supplies the bridge between the live database and the
 pure RFC 5545 serializer.
 
-Two paths today:
+The emission paths, one per ``include_*`` toggle:
 
 * **Workings** — Entry rows with ``encryption_mode != SEALED`` and
   ``type`` in the working-kind set, ``occurred_at`` in the configured
@@ -12,28 +12,30 @@ Two paths today:
 * **Pilgrimage anniversaries** — :class:`PilgrimageSite` rows where
   ``sealed == False``. The site's ``created_at`` recurs annually; we
   emit a single event for the next anniversary in the window.
+* **Resh stations** — the four Liber Resh solar transitions per day,
+  from :mod:`theourgia.core.resh.adorations` (Phase 03 sun times).
+* **Lunar events** — new / quarter / full moons from
+  :func:`theourgia.core.astro.events.lunar_phases_in_range`.
+* **Planetary hours** — :mod:`theourgia.core.astro.planetary_hours`,
+  bounded to one week ahead (24 events/day; the full ten-week window
+  would be ~1.7k VEVENTs).
+* **Custom cron** — the feed's ``custom_cron`` expression expanded by
+  the pure evaluator in :mod:`theourgia.core.calendar.cron`.
 
 The sealed-day collapse rule is enforced HERE (the build-side single
 chokepoint): sealed Entry rows are grouped by their ``occurred_at``
 date and emitted as :class:`SealedDayMarker` records — never as
 ``CalendarEvent`` (which would expose the title).
 
-Out of scope (deferred follow-ups · marked with raises so silent
-gaps can't sneak in):
-
-* Resh stations (needs Phase 03 sunrise/noon/sunset integration).
-* Lunar events (needs the Phase 03 astro engine).
-* Planetary hours (high-cardinality; needs the same Phase 03
-  substrate).
-* Custom cron (needs a cron evaluator integration).
-
-Each of those returns an EMPTY list today with a one-line ``# TODO``
-in the dispatcher — the dispatcher logs the configured toggle but
-emits no events. Future batches fill them in.
+Location for the geo-dependent paths (resh, planetary hours) comes
+from the practitioner's stored astro location (``astro.lat`` /
+``astro.lng`` user settings) with the same Greenwich fallback the
+``GET /users/me/settings/location`` endpoint reports when unset.
 """
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from typing import Iterable
@@ -42,17 +44,33 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from theourgia.core.astro.events import AstroEventKind, lunar_phases_in_range
+from theourgia.core.astro.planetary_hours import compute_planetary_hours
+from theourgia.core.calendar.cron import (
+    CronParseError,
+    cron_occurrences,
+    parse_cron,
+)
 from theourgia.core.calendar.ical_serializer import (
     CalendarEvent,
     SealedDayMarker,
 )
+from theourgia.core.resh.adorations import (
+    adoration_for_transition,
+    compute_transitions,
+)
 from theourgia.models.entries import EncryptionMode, Entry, EntryType
 from theourgia.models.ical_feed import ICalFeed
 from theourgia.models.pilgrimage_sites import PilgrimageSite
+from theourgia.models.usersettings import UserSetting
 
 __all__ = [
     "WALK_WINDOW_PAST",
     "WALK_WINDOW_FUTURE",
+    "PLANETARY_HOURS_WINDOW_FUTURE",
+    "CUSTOM_EVENT_CAP",
+    "DEFAULT_FEED_LAT",
+    "DEFAULT_FEED_LNG",
     "WORKING_ENTRY_TYPES",
     "WalkResult",
     "walk_feed_data",
@@ -60,6 +78,11 @@ __all__ = [
     "_collect_sealed_markers",
     "_collect_pilgrimage_anniversaries",
     "_next_anniversary_in_window",
+    "_resh_events",
+    "_lunar_events",
+    "_planetary_hour_events",
+    "_custom_events",
+    "_feed_location",
 ]
 
 
@@ -68,6 +91,23 @@ __all__ = [
 # render the surrounding week without paging.
 WALK_WINDOW_PAST = timedelta(weeks=4)
 WALK_WINDOW_FUTURE = timedelta(weeks=6)
+
+# Planetary hours are 24 events/day — a full ten-week window would be
+# ~1.7k VEVENTs. One week ahead keeps the feed digestible while still
+# letting the practitioner plan elections.
+PLANETARY_HOURS_WINDOW_FUTURE = timedelta(days=7)
+
+# Hard cap on custom-cron occurrences per feed build. An every-minute
+# expression over the ten-week window would otherwise emit ~100k
+# VEVENTs.
+CUSTOM_EVENT_CAP = 500
+
+# Greenwich Observatory — the SAME fallback the location settings
+# endpoint (GET /users/me/settings/location) reports when the
+# practitioner never stored a location, and the same one the entry
+# auto-stamp uses.
+DEFAULT_FEED_LAT = 51.4769
+DEFAULT_FEED_LNG = 0.0
 
 
 # The Entry types that surface as workings on the calendar. The
@@ -291,6 +331,203 @@ async def _collect_pilgrimage_anniversaries(
     return events
 
 
+# ── Stored practitioner location ───────────────────────────────────
+
+
+async def _feed_location(
+    db: AsyncSession, owner_id: UUID,
+) -> tuple[float, float]:
+    """The practitioner's stored astro location, Greenwich fallback.
+
+    Reads the ``astro.lat`` / ``astro.lng`` user-setting rows directly
+    (same row shape the user-settings router writes). Missing or
+    malformed rows fall back to the Greenwich default — identical to
+    what ``GET /users/me/settings/location`` reports when unset.
+    """
+
+    async def _read(key: str) -> float | None:
+        stmt = select(UserSetting).where(
+            UserSetting.user_id == owner_id, UserSetting.key == key,
+        )
+        row = (await db.execute(stmt)).scalar_one_or_none()
+        if row is None:
+            return None
+        try:
+            return float(json.loads(row.value_json))
+        except (TypeError, ValueError):
+            return None
+
+    lat = await _read("astro.lat")
+    lng = await _read("astro.lng")
+    if lat is None or lng is None:
+        return (DEFAULT_FEED_LAT, DEFAULT_FEED_LNG)
+    return (lat, lng)
+
+
+# ── Resh stations ──────────────────────────────────────────────────
+
+
+def _resh_events(
+    latitude: float,
+    longitude: float,
+    *,
+    now: datetime | None = None,
+) -> list[CalendarEvent]:
+    """The four Liber Resh solar transitions for every day in the
+    walk window, computed from real sun times at the given location.
+
+    Polar days silently drop the sunrise/sunset stations (the
+    adorations module returns ``None`` for them); noon and midnight
+    are always defined.
+    """
+    lower, upper = _window_bounds(now)
+    events: list[CalendarEvent] = []
+    d = lower.date()
+    while d <= upper.date():
+        transitions = compute_transitions(d, latitude, longitude)
+        for transition, instant in transitions.as_pairs():
+            if not (lower <= instant <= upper):
+                continue
+            adoration = adoration_for_transition(transition)
+            events.append(
+                CalendarEvent(
+                    uid=(
+                        f"resh-{d.isoformat()}-{transition.value}"
+                        "@theourgia"
+                    ),
+                    summary=(
+                        f"Liber Resh — {transition.value} "
+                        f"({adoration.godform})"
+                    ),
+                    start=instant,
+                    description=(
+                        f"Adoration of {adoration.godform}, "
+                        f"facing {adoration.direction}."
+                    ),
+                    location="",
+                    is_all_day=False,
+                )
+            )
+        d += timedelta(days=1)
+    return events
+
+
+# ── Lunar phases ───────────────────────────────────────────────────
+
+
+_LUNAR_SUMMARIES: dict[AstroEventKind, str] = {
+    AstroEventKind.NEW_MOON: "New moon",
+    AstroEventKind.FIRST_QUARTER: "First quarter",
+    AstroEventKind.FULL_MOON: "Full moon",
+    AstroEventKind.LAST_QUARTER: "Last quarter",
+}
+
+
+def _lunar_events(*, now: datetime | None = None) -> list[CalendarEvent]:
+    """New / quarter / full moons in the walk window, from the real
+    ephemeris. Location-independent — always emittable."""
+    lower, upper = _window_bounds(now)
+    events: list[CalendarEvent] = []
+    for phase in lunar_phases_in_range(lower, upper):
+        summary = _LUNAR_SUMMARIES.get(phase.kind)
+        if summary is None:  # pragma: no cover — defensive
+            continue
+        stamp = phase.instant.strftime("%Y%m%dT%H%M%SZ")
+        events.append(
+            CalendarEvent(
+                uid=f"lunar-{phase.kind.value}-{stamp}@theourgia",
+                summary=summary,
+                start=phase.instant,
+                description=(
+                    f"Moon in {phase.sign}" if phase.sign else ""
+                ),
+                location="",
+                is_all_day=False,
+            )
+        )
+    return events
+
+
+# ── Planetary hours ────────────────────────────────────────────────
+
+
+def _planetary_hour_events(
+    latitude: float,
+    longitude: float,
+    *,
+    now: datetime | None = None,
+) -> list[CalendarEvent]:
+    """The true (sunrise/sunset-anchored) planetary hours from now to
+    :data:`PLANETARY_HOURS_WINDOW_FUTURE` ahead.
+
+    The offset range starts at -1 so hours belonging to yesterday's
+    night arc (before today's sunrise) are included.
+    """
+    n = now or datetime.now(tz=timezone.utc)
+    end = n + PLANETARY_HOURS_WINDOW_FUTURE
+    events: list[CalendarEvent] = []
+    for offset in range(-1, PLANETARY_HOURS_WINDOW_FUTURE.days + 1):
+        base_day = n + timedelta(days=offset)
+        for hour in compute_planetary_hours(
+            base_day, latitude, longitude,
+        ):
+            if not (n <= hour.start <= end):
+                continue
+            events.append(
+                CalendarEvent(
+                    uid=(
+                        f"planetary-hour-{base_day.date().isoformat()}"
+                        f"-{hour.index}@theourgia"
+                    ),
+                    summary=(
+                        f"Hour of {hour.ruler.value.capitalize()} "
+                        f"{hour.glyph}"
+                    ),
+                    start=hour.start,
+                    end=hour.end,
+                    description="",
+                    location="",
+                    is_all_day=False,
+                )
+            )
+    return events
+
+
+# ── Custom cron ────────────────────────────────────────────────────
+
+
+def _custom_events(
+    feed: ICalFeed, *, now: datetime | None = None,
+) -> list[CalendarEvent]:
+    """Occurrences of the feed's ``custom_cron`` expression in the
+    walk window (capped at :data:`CUSTOM_EVENT_CAP`).
+
+    An empty or unparsable expression emits nothing — the settings
+    PATCH surface owns validation feedback; the feed never serves a
+    guess.
+    """
+    if not feed.custom_cron:
+        return []
+    try:
+        schedule = parse_cron(feed.custom_cron)
+    except CronParseError:
+        return []
+    lower, upper = _window_bounds(now)
+    return [
+        CalendarEvent(
+            uid=f"custom-{t.strftime('%Y%m%dT%H%MZ')}@theourgia",
+            summary="Custom reminder",
+            start=t,
+            description=f"Recurs per cron '{feed.custom_cron}'.",
+            location="",
+            is_all_day=False,
+        )
+        for t in cron_occurrences(
+            schedule, lower, upper, limit=CUSTOM_EVENT_CAP,
+        )
+    ]
+
+
 # ── Top-level dispatch ──────────────────────────────────────────────
 
 
@@ -303,17 +540,17 @@ async def walk_feed_data(
     """Compose every enabled include into a (events, sealed_markers)
     pair the serializer can consume.
 
-    Toggles wired today:
+    All six toggles are wired:
 
     * ``include_workings`` → workings + sealed-day collapse.
     * ``include_pilgrimage_anniversaries`` → site anniversaries
       (non-sealed only).
-
-    Toggles whose substrate isn't yet integrated raise NO error —
-    they simply emit no events. The router still serves a clean
-    VCALENDAR; subscribers don't get partial data they can't
-    interpret. Each deferred toggle is marked with a TODO comment
-    below.
+    * ``include_resh`` → the four daily solar transitions at the
+      practitioner's stored location.
+    * ``include_lunar_events`` → new / quarter / full moons.
+    * ``include_planetary_hours`` → the true planetary hours, one
+      week ahead.
+    * ``include_custom`` → the ``custom_cron`` expression expanded.
     """
     events: list[CalendarEvent] = []
     sealed_markers: list[SealedDayMarker] = []
@@ -336,10 +573,22 @@ async def walk_feed_data(
             ),
         )
 
-    # TODO: include_resh — needs Phase 03 sunrise/noon/sunset.
-    # TODO: include_lunar_events — needs Phase 03 astro engine.
-    # TODO: include_planetary_hours — needs same Phase 03 substrate.
-    # TODO: include_custom (custom_cron) — needs a cron evaluator.
+    if feed.include_resh or feed.include_planetary_hours:
+        latitude, longitude = await _feed_location(db, feed.owner_id)
+        if feed.include_resh:
+            events.extend(
+                _resh_events(latitude, longitude, now=now),
+            )
+        if feed.include_planetary_hours:
+            events.extend(
+                _planetary_hour_events(latitude, longitude, now=now),
+            )
+
+    if feed.include_lunar_events:
+        events.extend(_lunar_events(now=now))
+
+    if feed.include_custom:
+        events.extend(_custom_events(feed, now=now))
 
     # Sort events by start time for stable output (calendar clients
     # tolerate any order; humans reading the .ics file appreciate it).

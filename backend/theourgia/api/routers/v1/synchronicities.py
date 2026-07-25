@@ -52,9 +52,12 @@ router = APIRouter()
 
 # ── Provider injection ──────────────────────────────────────────────
 #
-# The auto-tag pipeline takes provider dependencies. Tests + the
-# route hand in stubs through this module-level setter; the live
-# Phase 03 integration replaces the stubs at app boot.
+# The auto-tag pipeline takes provider dependencies. At app boot the
+# lifespan calls :func:`set_providers` with the LIVE Phase 03 adapters
+# (:mod:`theourgia.core.analytics.providers`), so served snapshots are
+# real ephemeris / festival data. The stub classes below remain ONLY
+# as (a) the pre-boot default, and (b) the documented no-data fallback
+# tests can swap back in — they answer "unknown", never fake values.
 
 
 class _StubAstroProvider:
@@ -275,6 +278,29 @@ def _validate_precision(precision: str) -> None:
         )
 
 
+async def _stored_astro_location(
+    db: AsyncSession, user_id: UUID,
+) -> tuple[float, float] | None:
+    """The practitioner's stored home location (``astro.lat`` /
+    ``astro.lng`` user settings), or ``None`` when unset.
+
+    Used as the astro provider's geo fallback when a synchronicity
+    carries no usable location — same source the entry auto-stamp
+    reads. Never written into the synchronicity row.
+    """
+    from theourgia.api.routers.v1.user_settings import (
+        LAT_KEY,
+        LNG_KEY,
+        _read_value,
+    )
+
+    lat = await _read_value(db, user_id, LAT_KEY)
+    lng = await _read_value(db, user_id, LNG_KEY)
+    if lat is None or lng is None:
+        return None
+    return (lat, lng)
+
+
 # ── Routes ──────────────────────────────────────────────────────────
 
 
@@ -345,6 +371,9 @@ async def create_synchronicity(
         astro_provider=_ASTRO_PROVIDER,
         calendar_provider=_CALENDAR_PROVIDER,
         weather_provider=_WEATHER_PROVIDER,
+        fallback_astro_location=await _stored_astro_location(
+            db, current_user.id,
+        ),
     )
 
     astro = payload.astro_snapshot or tag.astro_snapshot
@@ -518,6 +547,9 @@ async def retag_synchronicity(
         astro_provider=_ASTRO_PROVIDER,
         calendar_provider=_CALENDAR_PROVIDER,
         weather_provider=_WEATHER_PROVIDER,
+        fallback_astro_location=await _stored_astro_location(
+            db, current_user.id,
+        ),
     )
 
     def _replace_if_auto(

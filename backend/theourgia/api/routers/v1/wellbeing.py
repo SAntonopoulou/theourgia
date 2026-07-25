@@ -17,9 +17,10 @@ localStorage only). Enabling clears any mute horizon — see
 :func:`theourgia.core.wellbeing.service.set_crisis_nudge_enabled`.
 
 Nothing in this module is user-visible copy; the designer owns every
-visible string of the wellbeing feature. The resources list is API
-data pending maintainer review (Sacred Well Directory placeholder
-rule — see :mod:`theourgia.core.wellbeing.resources`).
+visible string of the wellbeing feature. The resources list is
+operator-configured instance data — Theourgia ships no built-in
+entries, and ``resources_configured`` makes the unconfigured state
+explicit (see :mod:`theourgia.core.wellbeing.resources`).
 """
 
 from __future__ import annotations
@@ -36,7 +37,7 @@ from pydantic import BaseModel, ConfigDict, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: TC002
 
 from theourgia.api.deps import CurrentUser, get_db_session
-from theourgia.core.wellbeing.resources import resources_payload
+from theourgia.core.wellbeing.resources import load_crisis_resources
 from theourgia.core.wellbeing.service import (
     MUTED_FOREVER,
     evaluate_nudge,
@@ -66,6 +67,12 @@ class NudgeRead(BaseModel):
     enabled: bool
     show: bool
     resources: list[CrisisResourceRead]
+    resources_configured: bool
+    """Explicit empty-state marker: True when the operator has
+    configured at least one crisis resource (instance setting
+    ``wellbeing.crisis_resources``). Only meaningful while
+    ``enabled`` is True — opted-out users always get False without
+    the instance config being read."""
 
 
 class NudgeSettingWrite(BaseModel):
@@ -101,13 +108,19 @@ class NudgeDismiss(BaseModel):
 
 async def _nudge_read(db: AsyncSession, user_id: UUID) -> NudgeRead:
     state = await evaluate_nudge(db, user_id)
-    resources = (
-        [CrisisResourceRead(**r) for r in resources_payload()]
-        if state.enabled
-        else []
-    )
+    resources: list[CrisisResourceRead] = []
+    if state.enabled:
+        resources = [
+            CrisisResourceRead(
+                region=r.region, name=r.name, url=r.url,
+            )
+            for r in await load_crisis_resources(db)
+        ]
     return NudgeRead(
-        enabled=state.enabled, show=state.show, resources=resources
+        enabled=state.enabled,
+        show=state.show,
+        resources=resources,
+        resources_configured=bool(resources),
     )
 
 
@@ -119,9 +132,11 @@ async def _nudge_read(db: AsyncSession, user_id: UUID) -> NudgeRead:
     summary="Current crisis-aware-nudge state",
     description=(
         "Returns whether the opt-in nudge is enabled, whether it "
-        "should show right now, and the support-resource starter "
-        "list. Opted-out users get enabled=false, show=false, "
-        "resources=[] — and their mood data is never queried."
+        "should show right now, and the operator-configured "
+        "support resources (resources_configured=false when the "
+        "operator hasn't set any). Opted-out users get "
+        "enabled=false, show=false, resources=[] — and their mood "
+        "data is never queried."
     ),
     response_model=NudgeRead,
 )

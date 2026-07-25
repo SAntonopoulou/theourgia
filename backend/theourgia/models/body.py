@@ -1,4 +1,15 @@
-"""Body sensation diagram — snapshot data model.
+"""Body sensation diagram — snapshot data model (dormant substrate).
+
+HONESTY NOTE (2026-07 Day-1 review): the model + migration exist but
+**no API routes serve it** — the planned
+``theourgia.api.routers.v1.body_snapshots`` router never landed, so
+no snapshot row can currently be created or read through the API.
+``practice_logs.body_snapshot_id``
+(:class:`~theourgia.models.practice_logs.BodyPracticeSession`) is a
+dangling FK into this table: the column ships and is writable, but
+with no snapshot routes it can never point at a row created through
+the product. The table is kept for schema stability until the Phase
+04 wiring lands.
 
 A `BodySnapshot` is one snapshot of the practitioner's felt
 experience after a working: markers placed on body silhouettes with

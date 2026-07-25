@@ -1,27 +1,51 @@
-"""Crisis-support resources — region-keyed starter list.
+"""Crisis-support resources — operator-configured, never fabricated.
 
 Served by ``GET /api/v1/wellbeing/nudge`` when (and only when) the
 user has opted in to the crisis-aware nudge. When the setting is off
-the endpoint returns an empty list and never reaches this module's
-data.
+the endpoint returns an empty list and this module is never consulted.
 
-MAINTAINER REVIEW REQUIRED — do not resolve in code:
-the designer's "Sacred Well Directory" is a placeholder name for a
-Theourgia-curated, magick-literate directory that does not yet exist
-(see ``feedback_wellbeing_copy_never_improvise.md`` and the placeholder
-comments in ``frontend/admin/src/routes/Wellbeing.tsx``). The entries
-below are a starter list carried under that same flag: every entry is
-pending maintainer review before any production deployment. These
-strings are API data (backend strings are unrestricted); the designer
-owns whatever copy eventually surrounds them in the UI.
+Honesty rules (the Sacred Well Directory placeholder, resolved):
+
+* The designer's "Sacred Well Directory" — a Theourgia-curated,
+  magick-literate resource directory — **does not exist** (see
+  ``feedback_wellbeing_copy_never_improvise.md``). Earlier revisions
+  of this module shipped a hard-coded "starter list" under a
+  MAINTAINER REVIEW REQUIRED flag and served it as live data; that
+  review never happened, so the list is gone.
+* Theourgia now ships **zero** built-in entries. Resources come solely
+  from the operator-editable instance setting
+  ``wellbeing.crisis_resources`` (a JSON list of
+  ``{"region", "name", "url"}`` objects). The operator vets every
+  entry for their own instance.
+* When nothing is configured, the API serves an explicit empty state
+  (``resources: []`` + ``resources_configured: false``) — never a
+  default the project hasn't verified.
+* Malformed entries are skipped, never "repaired" into something the
+  operator didn't write.
 """
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
-from typing import Final
+from typing import TYPE_CHECKING, Any, Final
 
-__all__ = ["CRISIS_RESOURCES", "CrisisResource", "resources_payload"]
+from sqlalchemy import select
+
+from theourgia.models.instancesettings import InstanceSetting
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+__all__ = [
+    "CRISIS_RESOURCES_KEY",
+    "CrisisResource",
+    "load_crisis_resources",
+]
+
+
+#: Instance-setting key holding the operator's resource list.
+CRISIS_RESOURCES_KEY: Final[str] = "wellbeing.crisis_resources"
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,25 +57,49 @@ class CrisisResource:
     url: str
 
 
-#: Starter list — international entries only until the maintainer
-#: review described in the module docstring has happened.
-CRISIS_RESOURCES: Final[tuple[CrisisResource, ...]] = (
-    CrisisResource(
-        region="international",
-        name="IASP Crisis Centres directory",
-        url="https://www.iasp.info/resources/Crisis_Centres/",
-    ),
-    CrisisResource(
-        region="international",
-        name="Find a Helpline",
-        url="https://findahelpline.com",
-    ),
-)
+def _coerce_resource(item: Any) -> CrisisResource | None:
+    """Validate one raw entry; ``None`` if it isn't a complete
+    ``{region, name, url}`` object with an http(s) URL."""
+    if not isinstance(item, dict):
+        return None
+    region = item.get("region")
+    name = item.get("name")
+    url = item.get("url")
+    if not all(
+        isinstance(v, str) and v.strip() for v in (region, name, url)
+    ):
+        return None
+    if not url.startswith(("https://", "http://")):
+        return None
+    return CrisisResource(region=region, name=name, url=url)
 
 
-def resources_payload() -> list[dict[str, str]]:
-    """The starter list as JSON-shaped dicts for the API response."""
-    return [
-        {"region": r.region, "name": r.name, "url": r.url}
-        for r in CRISIS_RESOURCES
-    ]
+async def load_crisis_resources(
+    session: AsyncSession,
+) -> list[CrisisResource]:
+    """The operator-configured resource list, empty when unset.
+
+    Reads the ``wellbeing.crisis_resources`` instance-setting row
+    directly (same request-time pattern as
+    :mod:`theourgia.core.instancesettings.dbread`). A missing row,
+    malformed JSON, or a non-list value all yield ``[]`` — the
+    explicit "nothing configured" state.
+    """
+    stmt = select(InstanceSetting).where(
+        InstanceSetting.key == CRISIS_RESOURCES_KEY,
+    )
+    row = (await session.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        return []
+    try:
+        raw = json.loads(row.value_json)
+    except (TypeError, ValueError):
+        return []
+    if not isinstance(raw, list):
+        return []
+    out: list[CrisisResource] = []
+    for item in raw:
+        resource = _coerce_resource(item)
+        if resource is not None:
+            out.append(resource)
+    return out

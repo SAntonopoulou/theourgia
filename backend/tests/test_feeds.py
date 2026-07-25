@@ -234,3 +234,88 @@ def test_atom_escapes_html_in_titles_and_summaries() -> None:
     # The text content should be escaped, not the structural Atom
     # tags.
     assert "<title>&lt;b&gt;bold&lt;/b&gt;</title>" in body
+
+
+# ── Author label resolution (Day-1 honesty batch) ──────────
+
+
+class _ScalarFirst:
+    def __init__(self, value) -> None:
+        self._value = value
+
+    def scalars(self):
+        return self
+
+    def first(self):
+        return self._value
+
+
+class _FakeDb:
+    """Serves a single Vault row (or None) to any query."""
+
+    def __init__(self, vault) -> None:
+        self.vault = vault
+
+    async def execute(self, stmt):
+        return _ScalarFirst(self.vault)
+
+
+async def test_author_label_comes_from_owner_vault() -> None:
+    from types import SimpleNamespace
+    from uuid import uuid4
+
+    from theourgia.api.routers.feeds import _resolve_author_label
+
+    vault = SimpleNamespace(display_name="Aspasia of Miletus")
+    label = await _resolve_author_label(_FakeDb(vault), uuid4())
+    assert label == "Aspasia of Miletus"
+
+
+async def test_author_label_fallback_is_settings_backed() -> None:
+    """No vault row → the operator-configurable settings fallback
+    (THEOURGIA_PROFILE_DISPLAY_NAME_FALLBACK), never an inline
+    literal in the router."""
+    from uuid import uuid4
+
+    from theourgia.api.routers.feeds import _resolve_author_label
+    from theourgia.core.config import get_settings
+
+    label = await _resolve_author_label(_FakeDb(None), uuid4())
+    assert label == get_settings().profile_display_name_fallback
+
+
+async def test_author_label_empty_display_name_falls_back() -> None:
+    from types import SimpleNamespace
+    from uuid import uuid4
+
+    from theourgia.api.routers.feeds import _resolve_author_label
+    from theourgia.core.config import get_settings
+
+    vault = SimpleNamespace(display_name="")
+    label = await _resolve_author_label(_FakeDb(vault), uuid4())
+    assert label == get_settings().profile_display_name_fallback
+
+
+def test_no_hardcoded_operator_name_in_feed_routers() -> None:
+    """The pre-Day-1 bug: 'Soror Ευ. Α.' was inlined in the feed and
+    public-vault routers. The literal must only live in app settings
+    (documented fallback)."""
+    import inspect
+
+    from theourgia.api.routers import feeds as feeds_module
+    from theourgia.api.routers.v1 import public_vault as pv_module
+
+    assert "Soror" not in inspect.getsource(feeds_module)
+    assert "Soror" not in inspect.getsource(pv_module)
+    assert "AGPL-3.0" not in inspect.getsource(pv_module)
+
+
+def test_profile_fallback_settings_are_env_configurable() -> None:
+    from theourgia.core.config import Settings
+
+    s = Settings(
+        THEOURGIA_PROFILE_DISPLAY_NAME_FALLBACK="Frater X",
+        THEOURGIA_PUBLIC_LICENSE_LABEL="AGPL-3.0-or-later",
+    )
+    assert s.profile_display_name_fallback == "Frater X"
+    assert s.public_license_label == "AGPL-3.0-or-later"

@@ -1,0 +1,99 @@
+{{- /*
+Optional single-replica Redis — EVALUATION ONLY, default off.
+
+No persistence guarantees beyond the periodic RDB snapshot, no HA, no
+auth. For production point redis.external.url at a managed Redis or an
+operator-managed deployment.
+*/ -}}
+{{- if .Values.redis.internal.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "theourgia.redisHost" . }}
+  labels:
+    {{- include "theourgia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "theourgia.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "theourgia.redisHost" . }}
+  labels:
+    {{- include "theourgia.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  serviceName: {{ include "theourgia.redisHost" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "theourgia.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: redis
+  template:
+    metadata:
+      labels:
+        {{- include "theourgia.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: redis
+    spec:
+      containers:
+        - name: redis
+          image: {{ .Values.redis.internal.image }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # Same persistence settings as the Docker Compose stack: RDB
+          # snapshot every 60 s if at least one key changed.
+          command:
+            - redis-server
+            - --save
+            - "60"
+            - "1"
+            - --loglevel
+            - warning
+          ports:
+            - name: redis
+              containerPort: 6379
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          {{- with .Values.redis.internal.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.redis.internal.storage }}
+        {{- with .Values.redis.internal.storageClassName }}
+        storageClassName: {{ . }}
+        {{- end }}
+{{- end }}

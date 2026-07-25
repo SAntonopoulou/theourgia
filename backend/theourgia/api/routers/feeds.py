@@ -21,6 +21,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import get_db_session
+from theourgia.core.config import get_settings
 from theourgia.core.publishing.rss import (
     FeedItem,
     FeedMeta,
@@ -28,6 +29,7 @@ from theourgia.core.publishing.rss import (
     build_json_feed,
     build_rss,
 )
+from theourgia.models.identity import Vault
 from theourgia.models.publications import (
     Publication,
     PublicationState,
@@ -70,7 +72,29 @@ async def _live_publications(
     return list((await db.execute(stmt)).scalars().all())
 
 
-def _to_feed_item(pub: Publication) -> FeedItem:
+async def _resolve_author_label(db: AsyncSession, owner_id: UUID) -> str:
+    """The feed's author label — the owner's default vault display name.
+
+    Same source the ActivityPub actor and bundle exports use: the
+    owner's first (default) Vault row. Every account gets one via
+    ``ensure_vault`` at sign-in, so the settings fallback
+    (``THEOURGIA_PROFILE_DISPLAY_NAME_FALLBACK``) only surfaces for
+    rows that predate the v1-030 backfill.
+    """
+    vault = (
+        await db.execute(
+            select(Vault)
+            .where(Vault.owner_id == owner_id)
+            .order_by(Vault.created_at.asc())
+            .limit(1)
+        )
+    ).scalars().first()
+    if vault is not None and vault.display_name:
+        return vault.display_name
+    return get_settings().profile_display_name_fallback
+
+
+def _to_feed_item(pub: Publication, author_label: str) -> FeedItem:
     license_label = _LICENSE_LABELS.get(
         pub.license.value, pub.license.value,
     )
@@ -81,7 +105,7 @@ def _to_feed_item(pub: Publication) -> FeedItem:
         summary=pub.summary,
         published_at=pub.published_at or pub.created_at,
         updated_at=pub.updated_at,
-        author_label="Soror Ευ. Α.",  # stub until user-profile lands
+        author_label=author_label,
         license_slug=pub.license.value,
         license_label=license_label,
     )
@@ -103,8 +127,9 @@ async def vault_rss(
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> Response:
     pubs = await _live_publications(db, vault_id)
+    author = await _resolve_author_label(db, vault_id)
     body = build_rss(
-        _feed_meta(vault_id), [_to_feed_item(p) for p in pubs],
+        _feed_meta(vault_id), [_to_feed_item(p, author) for p in pubs],
     )
     return Response(content=body, media_type="application/rss+xml")
 
@@ -115,8 +140,9 @@ async def vault_atom(
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> Response:
     pubs = await _live_publications(db, vault_id)
+    author = await _resolve_author_label(db, vault_id)
     body = build_atom(
-        _feed_meta(vault_id), [_to_feed_item(p) for p in pubs],
+        _feed_meta(vault_id), [_to_feed_item(p, author) for p in pubs],
     )
     return Response(content=body, media_type="application/atom+xml")
 
@@ -127,7 +153,8 @@ async def vault_json_feed(
     db: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> Response:
     pubs = await _live_publications(db, vault_id)
+    author = await _resolve_author_label(db, vault_id)
     body = build_json_feed(
-        _feed_meta(vault_id), [_to_feed_item(p) for p in pubs],
+        _feed_meta(vault_id), [_to_feed_item(p, author) for p in pubs],
     )
     return Response(content=body, media_type="application/feed+json")
