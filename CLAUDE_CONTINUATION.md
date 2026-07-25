@@ -4,52 +4,78 @@
 where prod is, what's shipped, what's next, and every gotcha we've
 paid for.
 
-Last updated: **2026-07-20** (v1.0 close-out run in progress — see below).
+Last updated: **2026-07-25** (H12 Keybearers reshape shipped + deployed).
 
 ---
 
-## ▶▶ RESUME HERE — 2026-07-22 (calendar + follow-ups closed + deployed)
+## ▶▶ RESUME HERE — 2026-07-25 (H12 practice reshape · v1-054 → v1-064)
 
-**Prod is current and stable at HEAD (`4d187d6`, DB `0085`, SW v5).**
-RestartCount=0 on every service · celery now reports **healthy** (real
-broker ping) · beat has no probe by design · backend boots with **zero**
-`startup_skipped` errors · `/api/v1/events` live with practice + full
-attestation chains. Backup: `/srv/theourgia/prod/backups-manual/pre-v1053-*`.
+**Prod deployed 2026-07-25 at v1-063 (SW v6, alembic `0087`); v1-064
+(iCal preset threading) landed after the deploy bump** — check
+`git log` vs the prod container before assuming it shipped. The platform
+was reshaped around the operator's practice (Greek theurgy under Hekate ·
+the Keybearers): practice surfaces first, the publishing/federation/
+plugins platform intact in a secondary wing.
 
-**Shipped + deployed 2026-07-22:**
-- **Calendar surface (v1-052)** — H01-H03's lost surface, composed
-  end-to-end per `Theourgia Calendar.dc.html`: CalendarSurface (month grid ·
-  multi-day bars · agenda view · tradition/kind filters · Today/festival/
-  astro rail cards · citation legend) live at `/calendar` against
-  `GET /api/v1/events` (26-festival registry + real ephemeris; lunar phases
-  now carry moon sign; festivals expose practice + sources). 55 new tests.
-- **Public-site disclosure menu (v1-051)** — the Landing .dc.html
-  production note realized; nav reachable below 860px; vault card + hero
-  stack at 720; CTA nowrap.
-- **All four 07-20 follow-ups closed (v1-053)**: all 8 PG enum columns get
-  `values_callable` (class fix — proven by live queries on a from-zero-
-  migrated Postgres; SQLite suite can't see this class) · celery/beat
-  healthchecks corrected in compose · Sealed chip fixed.
-- **Final responsive triage: 98 routes × 4 widths = 393 checks, ZERO
-  offenders.** Suites: 3599 backend · 3216 shared · 124 admin.
+**Shipped v1-054 → v1-064 (all 2026-07-25):**
+- **v1-054 `01e882a`** — backend honesty: real astro providers wired,
+  iCal toggles implemented, profiles/wellbeing de-stubbed.
+- **v1-055 `e6c488f`** — frontend de-fake: Oracle/Workshop/stale
+  Divination routes DELETED, identities real, Liber Resh mounted.
+- **v1-056/056b** — infra: agent-daemon + registry parked behind compose
+  profiles (`agents` / `marketplace`), deploy script profile-aware,
+  `scripts/restore-drill.sh` (tested), helm archived to `.attic/helm/`.
+- **v1-057** — astragaloi corpus (56 casts from the operator's grimoire)
+  + H12 design handoff.
+- **v1-058** — Hellenic daily-practice core: Attic calendar
+  (`core/calendars/attic.py`) · Agathos Daimon day · four-station rite
+  (migration 0086 `resh_mode`, HOME/XENOS) · profections + transits.
+- **v1-059** — PracticeNav wings (practice default / platform behind
+  named switcher) + Today practice dashboard.
+- **v1-060** — astragaloi engine · two-gate covenant (sealed intent,
+  verdicts, awaiting-judgment) · tetraktys ladder · install-by-proof
+  practice states. **Migration 0087.**
+- **v1-061** — the operator's liturgy as the shipped Hellenic preset
+  (byte-exact, mode-resolved; `data/hellenic_rite_liturgy.json`).
+- **v1-062** — H12 surfaces 3-5: `/divination/astragaloi` ·
+  `/order/ladder` · `/verdicts`.
+- **v1-063** — SW VERSION v5→v6 for the H12 deploy.
+- **v1-064 `79a4fad`** — iCal feed preset-threaded: rite stations +
+  Attic observance events (`core/calendar/feed_walker.py`).
 
-**Verify harness:** `.sweep-mobshot.mjs` at repo root (run from repo root;
-`SHOTS=0` = fast triage; `WIDTHS=...`). Detector is a FLOOR — screenshot-
-verify. Local verify stack: `theourgia-verify-verify-pg-1` (127.0.0.1:5534,
-db `theourgia_verify` at 0085, user/pass theourgia/theourgia) +
-`verify-redis-1` (6380) left running; backend env aliases are
-`DATABASE_URL`/`REDIS_URL` (NOT THEOURGIA_-prefixed).
+**Docs reality pass done 2026-07-25**: README repositioned (one
+practitioner's instrument first; dormant-by-config named), FEATURES.md
+reality audit added, this file, CHANGELOG v1-054..064, runbook drift fixed
+(§7 first-user flow — the `create_user` CLI it described never existed).
 
-**NEXT (the remaining v1.0.0 gate items):**
-1. **#40 hardening leftovers** — a11y re-sweep of new surfaces (Calendar!),
-   perf profiling, crypto review completion.
-2. **#20 release engineering** — version bump 0.0.0-dev→1.0.0 across ~10
-   files · CHANGELOG `[1.0.0]` cut.
-3. **#21 FEATURES.md evidence-backed audit** (DO LAST before tag).
-4. **#22 tag `v1.0.0`** + deploy + launch report. Release is the LAST step.
-5. (#41 external validation items remain operator decisions.)
+**Verify harness (still holds):** `.sweep-mobshot.mjs` at repo root
+(`SHOTS=0` = fast triage; `WIDTHS=...`). Detector is a FLOOR —
+screenshot-verify. Local verify stack: `theourgia-verify-verify-pg-1`
+(127.0.0.1:5534, db `theourgia_verify`, user/pass theourgia/theourgia —
+was at 0085; **alembic upgrade to 0087 before reuse**) + `verify-redis-1`
+(6380); backend env aliases are `DATABASE_URL`/`REDIS_URL` (NOT
+THEOURGIA_-prefixed).
 
-Full session detail: memory `project_2026_07_22_calendar_and_followups`.
+**⚠ Honest-verification lesson (2026-07-25, paid tuition):** agents'
+test-suite claims MUST be re-verified — two background verification
+gates died silently this day and their "results" would have been
+fabrication if trusted. Never write a test count or "suite green" into
+docs/commits from an agent report; re-run the suite yourself or say
+"unverified". This is the FEATURES.md-audit rule generalized.
+
+**Orchestration rule (still binding):** ONE code batch in flight at a
+time for anything touching shared files (router `__init__`, `config.py`,
+api-client barrels, alembic chain, auth-test). Docs/isolated-module
+batches parallelize safely. Reconcile against the real tree + full
+suites, never agent reports.
+
+**NEXT (remaining v1.0.0 gate items):**
+1. **Responsive sweep** of the new H12 surfaces — IN FLIGHT (separate
+   agent working in `frontend/`; do not collide).
+2. **Release engineering** — version bump 0.0.0-dev→1.0.0 across ~10
+   files · CHANGELOG `[1.0.0]` cut · release.yml.
+3. **Tag `v1.0.0`** + deploy + launch report. Release is the LAST step.
+4. (External validation items remain operator decisions.)
 
 ---
 

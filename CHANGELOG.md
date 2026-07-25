@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-07-25 (iCal feed speaks the operator's rite · v1-064 · `79a4fad`)
+
+The subscribable iCal feed is preset-threaded: rite-station VEVENTs render the feed owner's resolved stations (preset + overrides via `core/resh/user_config.py` — the thelemic preset keeps the classical Liber Resh naming; anything else gets the generalized four-station framing) and the feed walker emits Attic observance events (Deipnon · Noumenia · Agathos Daimon) from `core/calendars/attic.attic_context`. Documented fallback: callers without user context get exactly the pre-preset behavior. Polar days silently drop the sunrise/sunset stations. New `core/resh/user_config.py` + feed-walker tests.
+
+### Added — 2026-07-25 (H12 surfaces 3-5 · astragaloi casting, two-gate covenant, tetraktys ladder · v1-062 + v1-063 · `4be5f5e` + `e1f710d`)
+
+- **`/divination/astragaloi`** — casting surface over the 56-cast corpus: simulated-throw bar, bone-face glyphs + manual entry, **two-channel readings** (OracleChannelCard + LadderChannelCard), cast history, corpus-meta drawer. New shared `Astragaloi/` module.
+- **`/verdicts`** — the Awaiting-judgment queue + two-gate verdict surface: IntentCovenantField (seal before working), GateCard per gate, PracticeModuleStateChip. New shared `TwoGateVerdict/` module.
+- **`/order/ladder`** — TetraktysFigure + SphereDetailPanel + LadderProgressPhrase over the curriculum endpoints. New shared `TetraktysLadder/` module.
+- OracleTabs gains the astragaloi tab; stale `ArrivingWithF2` placeholder removed; DailyPractice cards learn module state.
+- **v1-063 `e1f710d`** — service-worker VERSION v5→v6 so the H12 deploy invalidates caches.
+
+### Added — 2026-07-25 (H12 domains · astragaloi engine, two-gate covenant, tetraktys ladder, install-by-proof · v1-060 + v1-061 · `495020a` + `e2010b4`)
+
+- **Astragaloi** (`core/divination/astragaloi/` + `v1/astragaloi.py`) — the 56-cast knucklebone corpus from the operator's grimoire, validated on load (exactly 56 casts · five bones per throw · face multisets pairwise distinct); POST/GET/PATCH casts + corpus meta.
+- **Two-gate covenant** (`v1/verdicts.py`) — sealed intent declared before the working (sha256 over text + declaration timestamp; re-declaration 409s), two gates judged separately (*did it work* / *is it true*), verdict editable until finalized then immutable (409), `GET /verdicts/awaiting` queue.
+- **Tetraktys curriculum ladder** (`v1/curriculum.py`) — spheres · items · gates; item complete + gate pass + progress endpoints; surface contract for `/order/ladder`.
+- **Install-by-proof practice states** (`models/practices.py` + `v1/practices.py`) — `proposed → trial → installed | rejected`, reason recorded, `installed` terminal.
+- **Migration 0087** (`0087_sprint_ib_domains.py`) — the H12 domain tables.
+- **v1-061 `e2010b4`** — the operator's liturgy ships as the Hellenic preset **byte-exact** (`data/hellenic_rite_liturgy.json`; provenance + caveats in the file's meta block), mode-resolved HOME/XENOS per station; liturgy regression tests pin the text.
+
+### Added — 2026-07-25 (Hellenic daily-practice core + practice-first shell · v1-058 + v1-059 · `4898506` + `d11322c`)
+
+- **Attic lunar calendar** (`core/calendars/attic.py`) — observed-lunation months, archon-year spans, intercalary years; `attic_context` resolves any civil date to Attic day + observance state (Deipnon · Noumenia · **Agathos Daimon day**).
+- **`GET /api/v1/events/today-context`** — the Today chip's cheap lookup: Attic date + observance + coarse moon phase in one call.
+- **Four-station rite** — Liber Resh generalized: per-station configurable forms, **HOME/XENOS mode** column (migration 0086 `resh_mode`), dusk-minimum streak rule (the anchor station alone keeps the day — "the streak never breaks").
+- **Profections + transits** (`core/astro/profections.py` / `transits.py`) — `GET /astro/profections` + `GET /astro/transits`.
+- **v1-059 `d11322c`** — **PracticeNav** replaces VaultNav at the shell: practice wing default (Practice / Reference / Workbench / Study), platform wing (Publishing / Network / Platform) behind a foot switcher that names its destination; wing persists per session. **Today practice dashboard** at `/` — LunarDayChip + rite rows + awaiting-judgment card.
+
+### Changed — 2026-07-25 (Infra: compose profiles · deploy trim · restore drill · helm archived · v1-056 + v1-056b · `cecf15b` + `b206ec8`)
+
+- **Compose profiles** — agent-daemon (+its DB) behind `agents`, registry (+its DB) behind `marketplace`; a plain `docker compose up -d` starts the core six only. `scripts/deploy-prod.sh` is profile-aware via `THEOURGIA_PROFILES` (secrets checks, migrations, verification all follow the active profiles) and grows `--skip-pull`/`--skip-dump` alongside the existing skips.
+- **`scripts/restore-drill.sh`** — non-destructive monthly drill: list restic snapshots, restore latest (or `--snapshot ID`), validate the dump with `pg_restore --list`, and with `--load` boot a throwaway `pgvector/pgvector:pg16` on 127.0.0.1:55432 and count rows. A backup that has never been restored is not a backup.
+- **Helm chart archived** to `.attic/helm/` (v1-056b completes the old-path deletions) — written but never tested against a real cluster; Compose is the supported path. `docs/ops/DEPLOYMENT_RUNBOOK.md` rewritten for profiles + drill.
+
+### Added — 2026-07-25 (Astragaloi corpus + H12 design handoff · v1-057 · `be92f73`)
+
+The 56-cast astragaloi corpus transcribed from the operator's grimoire into fixture data, plus the H12 design handoff package (`docs/design/handoff_H12/` — PracticeNav · Today dashboard · astragaloi casting · two-gate verdict · tetraktys ladder · nav architecture) and the Keybearers design-request record. This handoff reshapes the platform around its operator's practice; the platform wing survives intact.
+
+### Fixed — 2026-07-25 (Honesty pass: backend de-stub + frontend de-fake · v1-054 + v1-055 · `01e882a` + `e6c488f`)
+
+- **v1-054 `01e882a`** — backend honesty: real astro providers wired where stubs pretended, iCal include-toggles actually implemented, profiles/wellbeing de-stubbed.
+- **v1-055 `e6c488f`** — frontend dedup + de-fake: the stale `Oracle.tsx` / `Workshop.tsx` / `Divination.tsx` façade routes DELETED (surfaces that don't work don't ship), Identities rebuilt against real endpoints, Liber Resh surface mounted at `/daily-practice/resh`.
+
+> **Gap note (2026-07-25):** everything between the 2026-06-27 entries below and v1-054 above — the later `b108-2*` batches (first prod deploy 2026-06-28, WebAuthn, agent-daemon, registry bridge) and the `v1-001` → `v1-053` close-out run (2026-07-16 → 2026-07-22: twin-instance federation test, celery/backup incident fix, Playwright E2E, CI re-enable, responsive sweep, Calendar surface) — was recorded in commit messages and `CLAUDE_CONTINUATION.md` but never landed here. `git log` is the record for that stretch.
+
 ### Added — 2026-06-27 (Phase 15 hardening backend + federation outbound + reaper · `be6b3db` → `3a20dc4`)
 
 H10 Cluster B backend prerequisites land ahead of the designer's surface package.

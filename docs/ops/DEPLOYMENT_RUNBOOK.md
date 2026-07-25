@@ -198,8 +198,13 @@ to include the parked services):
 6. Verify the active services report `running`
 
 If any step fails the script exits with the failing command's exit code.
-Re-run with `--skip-build` / `--skip-migrate` after fixing to skip the
-parts that already succeeded.
+Re-run with `--skip-pull` / `--skip-build` / `--skip-migrate` /
+`--skip-dump` after fixing to skip the parts that already succeeded.
+
+Alternative for a from-nothing host: `scripts/install.sh` is the
+bootstrap installer (installs Docker, clones, runs first-run.sh, builds
+and starts the stack, migrates, waits for `/readyz`). Download it, read
+it, then run it — this runbook remains the reference for what it does.
 
 ---
 
@@ -223,19 +228,28 @@ Each should return `{"status": "ok"}`.
 
 ## 7. Bootstrap the first user
 
-The vault has no users on a fresh install. Either:
+The vault has no users on a fresh install. There is no CLI user-creation
+script — the flow is entirely through the UI:
 
-a) Sign up via the UI at `https://theourgia.com/auth/sign-up` (single-user
-   instances: you become the admin by default).
+1. Set the operator allowlist in `.env` before first sign-in
+   (single-operator gate — only listed magickal names can create a
+   user; an empty allowlist leaves signup open):
 
-b) Pre-seed via the admin CLI:
+   ```bash
+   THEOURGIA_ALLOWED_MAGICKAL_NAMES=your-magickal-name-slug
+   ```
 
-```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml exec backend \
-    python -m theourgia.scripts.create_user --handle soror-eu-a --admin
-```
+2. Visit `https://theourgia.com/app/signin` and sign in with that
+   magickal name. On a fresh install the app redirects you to the
+   first-run wizard at `/app/setup` (welcome · magickal name ·
+   tradition · calendars · review).
 
-The registry's first maintainer is auto-created from
+3. **Immediately set a password** at `/app/settings/password`. Until a
+   password is set, the account signs in on magickal name alone.
+   Optionally enrol a passkey at `/app/settings/webauthn`.
+
+Only if the `marketplace` profile is active: the registry's first
+maintainer is auto-created from
 `THEOURGIA_REGISTRY_BOOTSTRAP_MAINTAINER_DID` the first time that DID
 signs a request.
 

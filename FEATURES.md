@@ -9,7 +9,21 @@
 - Inline notes capture intent, rationale, or constraints that must survive context loss
 - See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the phase index, [ARCHITECTURE.md](ARCHITECTURE.md) for the system design
 
-## Phase Status Snapshot (2026-06-26)
+## Reality audit — 2026-07-25
+
+> This catalog's per-checkbox statuses lag the code — most were written as *planning* checkboxes and many were never flipped when the feature shipped. **Where a checkbox below says `[ ]` but the phase table says the phase shipped, trust the phase table**; the per-batch history in [CHANGELOG.md](CHANGELOG.md) and the routers under `backend/theourgia/api/routers/v1/` are the ground truth. This audit records the honest state at `v1-064`:
+>
+> - **Shipped and in daily use** — Phases 00-11 feature areas (journal, beings, divination, workshop, linguistic, analytics solo subset, publishing, media) plus the 2026-07-25 Hellenic practice core (§0 below, new).
+> - **Built but dormant by configuration** — these exist in code with tests, and are deliberately off:
+>   - *Cross-instance federation transport* — `THEOURGIA_FEDERATION_TRANSPORT_ENABLED` defaults `false` (`backend/theourgia/core/config.py`); inbox answers 503, outbound delivery is a no-op. Twin-instance test passed live 2026-07-20.
+>   - *ActivityPub outbound* — bridge implemented; per-vault `enabled` defaults `false` and is not switched on in production.
+>   - *Agent daemon (Phase 16)* and *plugin registry (Phase 14)* — parked behind compose profiles `agents` / `marketplace`; not started by a plain `docker compose up`.
+>   - *Registry/marketplace catalog* — machinery live, no published plugins beyond the operator's identity.
+> - **Partial** — weather/body-state auto-stamp, Cloudflare Stream/Mux video, cryptographic executor key-share, cross-vault DP endpoints (substrate shipped, endpoints await federation).
+> - **Archived** — the Helm chart moved to `.attic/helm/` untested (2026-07-25, v1-056); Compose is the supported deployment path.
+> - **Removed as fake** — the stale Oracle / Workshop / Divination frontend routes were deleted outright in v1-055 rather than left as façades.
+
+## Phase Status Snapshot (2026-06-26 · phase rows 12-16 re-audited 2026-07-25)
 
 > **🔧 Phase 11 Media Library + Pilgrimage backend SHIPPED.** B132-B136 closed 2026-06-26: media_asset + media_link (polymorphic ref · sealed = count-only list response · sealed read NULLS filename / caption / alt_text / tags / exif_metadata / dimensions but PRESERVES size_bytes + link_count + r2_object_key) · R2 upload pipeline (Protocol-isolated EXIF stripper · 5 GB quota guard · 24h session TTL · sealed-AND-strip explicit 400) · pilgrimage_site with precision FLOOR (one-way ratchet via shared apply_precision_floor helper · /requantize rejects any transition that would raise precision · sealed sites STRIPPED from map list · sealed-cluster count-only) · iCal feed (per-vault settings · 6 include toggles · 32-byte URL token rotated via /regenerate · pure-Python RFC 5545 serializer with proper escaping + folding + CRLF · SealedDayMarker dataclass restricted to {date, count} by construction · "{N} sealed entries today" all-day VEVENT with no description / no location · /ical/v1/{token}.ics mounted at app-level). 2276 backend tests passing; alembic 0051 → 0055. The ‡ Nominatim attribution copy is embedded verbatim as a schema default; private feeds require auth cookie + owner match; no /unseal / /forge / /promote / /raise-precision / /retry endpoints anywhere.
 
@@ -37,11 +51,14 @@ This is the **section-level rollup**; per-checkbox detail still lives below. For
 | 09 | [Synchronicity & Analytics](plan/09-synchronicity-and-analytics.md) | ✅ backend (solo subset) · ✅ H06 frontend | Synchronicity log + quick-capture · query builder (DSL + executor) · analytics dashboard (timeseries + heatmap + correlation + today) · saved studies index + per-study page · weekly digest (banned-phrase regex blocks modal/oracular headlines). Network-aggregate / DP / cross-vault path deferred to Phase 12+. |
 | 10 | [Publishing & Monetization](plan/10-publishing-and-monetization.md) | ✅ backend done · H07 Cluster B frontend in | Publication lifecycle (4-state) · Stripe Connect (0% application fee · portal-only refund) · subscription tiers (amount IMMUTABLE) · double-opt-in subscribers · newsletter 5-state lifecycle + Tiptap renderer · public reader with structural paywall · per-vault public page (anti-gamification) · unversioned RSS 2.0 / Atom 1.0 / JSON Feed 1.1 serialisers with AGPLv3 credit + per-pub license. Sealed publications NEVER public (defence in depth). |
 | 11 | [Media Library](plan/11-media-library.md) | ✅ backend done · H07 Cluster C frontend in | media_asset + polymorphic media_link · R2 upload pipeline with Protocol-isolated EXIF strip · pilgrimage_site with precision FLOOR (one-way ratchet) · iCal feed serializer with sealed-day collapse + unversioned URL · anti-gamification CI invariants carried forward (no play_count / view_count / forge / unseal endpoints). |
-| 12 | [Federation](plan/12-federation.md) | ⏳ planned | Native protocol, hubs, group ritual, SSO |
-| 13 | [ActivityPub](plan/13-activitypub.md) | ⏳ planned | Fediverse interop |
-| 14 | [Plugin Ecosystem](plan/14-plugin-ecosystem.md) | ⏳ planned | SDK + registry + sandbox-before-commit |
-| 15 | [Hardening & Launch](plan/15-hardening-and-launch.md) | ⏳ planned | GDPR audit, a11y final pass, perf, inheritance / memorial |
-| 16 | [AI Agent Integration](plan/16-ai-agent-integration.md) | ⏳ planned | Daskalos-pattern daemon + MCP, BYO keys |
+| 12 | [Federation](plan/12-federation.md) | ✅ built · 💤 dormant by config | Native protocol + hubs + group ritual + SSO backend/frontend; transport (RFC 9421 + Ed25519 + inbox + delivery worker) behind `THEOURGIA_FEDERATION_TRANSPORT_ENABLED` (default `false`); twin-instance test passed 2026-07-20 |
+| 13 | [ActivityPub](plan/13-activitypub.md) | ✅ built · 💤 dormant by config | Actor JSON-LD · inbox/outbox · followers; per-vault opt-in defaults `false`, not enabled in production |
+| 14 | [Plugin Ecosystem](plan/14-plugin-ecosystem.md) | ✅ built · 💤 registry parked | SDK + lifecycle routes + sandbox-before-commit live in the vault; registry service parked behind the `marketplace` compose profile; catalog unpopulated |
+| 15 | [Hardening & Launch](plan/15-hardening-and-launch.md) | 🔄 rolling | GDPR export/deletion/sessions/WebAuthn/restore-drill done; remaining: H12 responsive sweep · release engineering · `v1.0.0` tag |
+| 16 | [AI Agent Integration](plan/16-ai-agent-integration.md) | ✅ built · 💤 parked | Daskalos-pattern daemon + MCP + cost caps + bwrap sandbox; behind the `agents` compose profile; needs claude CLI on host |
+| H12 | 2026-07-25 practice reshape (v1-054 → v1-064) | ✅ shipped | See §0 below — Attic calendar · Today dashboard · four-station rite · astragaloi · two-gate covenant · tetraktys ladder · profections/transits · preset-threaded iCal · PracticeNav |
+
+> The per-suite counts below are a **2026-06-26 snapshot** kept for the per-phase breakdowns; the alembic chain is at **0087** as of v1-060 (2026-07-25). Do not cite these counts as current — re-run the suites.
 
 **Backend tests: 2276 passing · Alembic chain at 0055.**
 **Frontend shared tests: 2194 passing · Visual regression: 557/557 · axe-core WCAG 2.2 A+AA: 543/557 — 97.5%.**
@@ -65,6 +82,22 @@ The H01-H03 frontend wiring sprint closes Phases 03/04/05 by shipping the 21 des
 
 ---
 
+## 0. Hellenic Practice Core (H12 · shipped 2026-07-25 · v1-054 → v1-064)
+
+The operator's own daily practice — Greek theurgy under Hekate, the Order of the Keybearers — as first-class platform features. Everything in this section exists in code at `v1-064`; file paths given so claims stay checkable.
+
+- [x] **Attic lunar calendar** — observed-lunation month reckoning with archon-year spans, intercalary years, and Hekatean observance days (Deipnon closing the month · Noumenia day 1 · Agathos Daimon day 2) — `backend/theourgia/core/calendars/attic.py`, migration 0086/0087 era, tests in `backend/tests/test_attic_calendar.py`
+- [x] **Today context endpoint** — `GET /api/v1/events/today-context` (Attic date + observance state + coarse moon phase in one cheap call) — `backend/theourgia/api/routers/v1/astro.py`
+- [x] **Today practice dashboard** — the `/` route composes the lunar-day chip, the day's rite stations, and the awaiting-judgment card — `frontend/admin/src/routes/Today.tsx` + `TodayPractice.tsx`, shared `LunarDayChip`
+- [x] **Four-station configurable daily rite** (né Liber Resh) — four solar transitions with per-station configurable deity/forms; shipped **Hellenic preset carries the operator's liturgy byte-exact** (`backend/theourgia/data/hellenic_rite_liturgy.json`); **HOME/XENOS modes** (`ReshMode` in `models/resh.py`); **dusk-minimum streak** (the anchor station alone keeps the day — "the streak never breaks") — `backend/theourgia/core/resh/`, router `v1/resh.py`, surface at `/daily-practice/resh`
+- [x] **Astragaloi divination** — the 56-cast knucklebone corpus from the operator's grimoire, validated on load (exactly 56 casts · five bones per throw · pairwise-distinct face multisets); two-channel readings (oracle channel + ladder channel); cast history — `backend/theourgia/core/divination/astragaloi/corpus.py`, router `v1/astragaloi.py`, surface at `/divination/astragaloi`
+- [x] **Two-gate covenant on workings** — sealed intent declared before the working (sha256 over text + declaration timestamp), two-gate verdict (*did it work* / *is it true*), immutable once finalized (409), awaiting-judgment queue — `backend/theourgia/api/routers/v1/verdicts.py`, surface at `/verdicts`
+- [x] **Install-by-proof practice states** — practices move `proposed → trial → installed | rejected` with the proof recorded; installed is terminal — `backend/theourgia/models/practices.py`, router `v1/practices.py`
+- [x] **Tetraktys curriculum ladder** — spheres · items · gates with completion + gate-pass endpoints — `backend/theourgia/api/routers/v1/curriculum.py`, surface at `/order/ladder`
+- [x] **Annual profections + live transits** — `GET /api/v1/astro/profections` + `GET /api/v1/astro/transits` — `backend/theourgia/core/astro/{profections,transits}.py`
+- [x] **Preset-threaded iCal feed** — the subscribable feed emits the owner's resolved rite stations (preset + overrides) and Attic observance events; documented fallback to pre-preset behavior without user context — `backend/theourgia/core/calendar/feed_walker.py` + `core/resh/user_config.py`
+- [x] **PracticeNav** — practice-first navigation replacing VaultNav at the shell: practice wing by default (Practice / Reference / Workbench / Study), platform wing (Publishing / Network / Platform) behind a named wing switcher; wing persists per session — `frontend/shared/src/PracticeNav/PracticeNav.tsx`
+
 ## 1. Time, Calendars & Cosmology
 
 Implementation phase: **[03 — Time & Cosmos](plan/03-time-and-cosmos.md)**
@@ -72,11 +105,11 @@ Implementation phase: **[03 — Time & Cosmos](plan/03-time-and-cosmos.md)**
 - [ ] **Multi-calendar engine** — pluggable `Calendar` interface; built-in calendars: Gregorian, Julian, Hebrew, Hindu (Vikram Samvat, Shaka, regional variants), Coptic, Islamic (Hijri), Thelemic (Anno IVxxx + Old Style / Era Vulgaris), Ancient Greek (Attic with archon years), Mayan (Long Count + Tzolkin + Haab), Egyptian decanic, French Republican; extensible via plugin
 - [ ] **Multi-tradition astrology engines** — Swiss Ephemeris bedrock; Western tropical with modern aspects/rulerships; Hellenistic whole-sign with sect, dignities, time-lord techniques (zodiacal releasing, profections, ascensions); Vedic sidereal with selectable ayanāṃśa (Lahiri, Krishnamurti, Fagan-Bradley, Raman, Yukteshwar), vargas, nakshatras, Vimshottari dasha
 - [ ] **Multiple house systems** — Placidus, Koch, Regiomontanus, Campanus, Equal, Whole Sign, Porphyry, Alcabitius, Sripati
-- [ ] **Planetary hours** — sunrise/sunset based, location-aware, Chaldean order, current + upcoming hour table
+- [x] **Planetary hours** — sunrise/sunset based, location-aware, Chaldean order, current + upcoming hour table — `GET /api/v1/astro/planetary-hours` + PlanetaryHourStrip/Detail surfaces
 - [ ] **Lunar phase + VOC moon** — phase, illumination %, void-of-course detection
 - [ ] **Astronomical event stream** — eclipses, ingresses, retrogrades, stations, major aspects; pre-computed ±50yr from current date
-- [ ] **Festival overlays** — Wheel of the Year (Sabbats with regional variants), Greek festival calendar (Anthesteria, Thesmophoria, Pyanepsia, Eleusinia, Bouphonia), Hekate's Deipnon + Noumenia, Thelemic feasts, Roman religious calendar (Calendar of Numa), Egyptian decanal feast days, Hindu festivals, custom user-defined
-- [ ] **Liber Resh tracker** — sunrise/noon/sunset/midnight at user latitude; transition notifications; streak tracking; tradition-specific formula variants
+- [~] **Festival overlays** — 26-festival registry live on `/calendar` (`GET /api/v1/events`, v1-052) with practice + attestation chains; Hekate's Deipnon + Noumenia + Agathos Daimon computed from the Attic calendar (v1-058, §0); Roman/Egyptian/Hindu registries + custom user-defined still open
+- [x] **Liber Resh tracker** → generalized to the **four-station configurable daily rite** (v1-058, §0) — sunrise/noon/sunset/midnight at user latitude, streak tracking (dusk-minimum), preset-based forms incl. the Hellenic preset + thelemic preset naming; transition notifications still open
 - [ ] **Astrological election finder** — constraint-based forward search through the ephemeris; multi-tradition scoring; saved electional queries; example pre-built queries for common workings
 
 ## 2. Journal, Authoring & Blog
@@ -422,13 +455,15 @@ Implementation phase: **[11 — Media Library](plan/11-media-library.md)**
 - [ ] **Pilgrimage / sacred site log** — map (Leaflet + OSM), per-site with location-precision controls (exact/neighborhood/region), visited_at multi-entry, deity associations
 - [ ] **Privacy-aware map rendering** — jittered coords on `network`, city-level only on `public`, exact only on `personal` / `viewer`
 - [x] **Pilgrimage routes** — ordered sequences with notes (e.g., "Eleusis route") — b108-2gx shipped backend (pilgrimage_route + pilgrimage_route_stop tables · CRUD + reorder endpoints · alembic 0070). b108-2he shipped frontend (`PilgrimageRoutesSurface` + admin `/pilgrimage-routes` route with SVG polyline preview + stops editor with up/down reorder).
-- [ ] **iCal / WebCal feed exports** — per-vault subscribable feeds for planetary hours, festivals, working windows
+- [x] **iCal / WebCal feed exports** — per-vault subscribable feed with include toggles, token URL + rotation, sealed-day collapse; since v1-064 preset-threaded with the owner's rite stations + Attic observances (§0) — router `v1/ical_feed.py` + `core/calendar/feed_walker.py`
 - [ ] **Network group ritual feed** — per-hub iCal export of scheduled group rituals, with per-participant timezone-localized planetary-hour metadata
 - [ ] **Subscribable from any iCal client** — Apple Calendar, Google Calendar, Outlook, Fastmail, Thunderbird
 
 ## 14. Federation, Networks & Group Work
 
 Implementation phase: **[12 — Federation](plan/12-federation.md)** + **[13 — ActivityPub](plan/13-activitypub.md)**
+
+> **Status 2026-07-25: built · dormant by config.** The protocol, hubs, group ritual, SSO, inbox, delivery worker, and ActivityPub bridge below exist in code with tests, and a twin-instance federation test passed live (2026-07-20). Cross-instance transport is gated off by default (`THEOURGIA_FEDERATION_TRANSPORT_ENABLED=false` → inbox 503, outbound no-op) pending external threat-model review, and ActivityPub is per-vault opt-in, defaulting off. The unchecked boxes below predate the build; see [plan/12](plan/12-federation.md)/[13](plan/13-activitypub.md) + CHANGELOG for per-item state.
 
 ### Native federation protocol
 - [ ] **Theourgia federation protocol** — HTTPS + HTTP Signatures (RFC 9421); Ed25519 per-instance keys; capability tokens
@@ -526,6 +561,8 @@ Implementation phase: foundations in **[01 — Core Architecture](plan/01-core-a
 
 Implementation phase: **[16 — AI Agent Integration](plan/16-ai-agent-integration.md)** (new phase, daskalos-pattern adapted)
 
+> **Status 2026-07-25: built · parked.** The agent-daemon (MCP, launcher, cost caps, bwrap sandbox, audit) and all admin surfaces exist; the service is parked behind the `agents` compose profile and does not start by default. Zero-AI remains the default in every sense.
+
 - [ ] **Fully opt-in** — zero-AI mode is default and fully supported
 - [ ] **Daemon + waker + MCP architecture** — modeled on daskalos
 - [ ] **Per-purpose agents** — divination companion, scrying journal partner, ritual aide, study tutor, correspondence-research helper
@@ -557,6 +594,9 @@ Implementation phase: **[14 — Plugin Ecosystem](plan/14-plugin-ecosystem.md)**
   - [x] Tea-leaf reading log (demonstrates non-mechanical divination plugin) — b108-2hj: `tea_leaf_reading` table + 41-symbol tasseography dictionary (upright + inverted meanings · position notes · glyph-shape hints from Anglo-Irish tradition) + `/api/v1/reference/tea-leaf-symbols` + full `/api/v1/divination/tea-leaves` CRUD with symbols_observed JSONB (key/position/orientation/notes per symbol). Alembic 0074.
 
 ### Theourgia Official Registry
+
+> **Status 2026-07-25: service built · parked behind the `marketplace` compose profile.** DID + Ed25519 auth, submission lifecycle, maintainer queue, and advisory filing exist with tests; the catalog holds no published plugins yet.
+
 - [ ] **Official Theourgia-hosted registry** at `registry.theourgia.com` (or similar)
 - [ ] **Three tiers**:
   - **Official** — scanned by Theourgia maintainers for update-friendliness, migration-friendliness, community code practices, security review
@@ -573,12 +613,12 @@ Implementation phase: **[14 — Plugin Ecosystem](plan/14-plugin-ecosystem.md)**
 Implementation phase: **[00 — Foundations](plan/00-foundations.md)** + **[01 — Core Architecture](plan/01-core-architecture.md)** + **[15 — Hardening & Launch](plan/15-hardening-and-launch.md)**
 
 ### Deployment
-- [ ] **One-command deploy** — bootstrap installer (`curl ... | bash` or small TUI) for fresh hosts; sets up Docker, secrets, initial config
+- [x] **One-command deploy** — bootstrap installer at `scripts/install.sh` (download-read-run, not blind pipe): Docker install, clone, `.env` secrets via first-run.sh, build + migrate + start, health-probe wait
 - [x] **Web-based first-run wizard** — magical name, tradition(s), location, calendars enabled, encryption preference, 2FA setup, optional library import — b108-2hf shipped `/api/v1/setup/status` (public) + admin `/setup` route with 5-step wizard (welcome · magickal name · tradition · calendars · review). Encryption preference + 2FA + library import are still opt-in via `/settings/*` after signup.
 - [ ] **Docker Compose primary** — production-grade defaults
 - [ ] **Caddy reference config** (host-level shared Caddy supported via `Caddyfile.d/` snippets for multi-tenant boxes)
 - [ ] **Traefik supported** as alternative
-- [ ] **Helm chart** for Kubernetes (community contribution welcomed)
+- [ ] **Helm chart** for Kubernetes — written but never tested against a real cluster; **archived to `.attic/helm/` 2026-07-25 (v1-056)**. Compose is the supported path; community contribution welcomed to revive it
 
 ### Migrations
 - [ ] **One-click migration with preview** — admin panel shows "here's what will change, here's what may break"
@@ -592,10 +632,10 @@ Implementation phase: **[00 — Foundations](plan/00-foundations.md)** + **[01 �
 - [ ] **Pre-merge / pre-deploy README freshness check** vs. PROJECT_PLAN and CHANGELOG
 
 ### Backups
-- [ ] **Restic-based backups** — encrypted, scheduled (daily + 6hr incrementals default), operator-controlled passphrase
-- [ ] **Default backend Cloudflare R2** — S3-compatible; alternatives Hetzner Object Storage, Backblaze B2, MinIO, local FS
-- [ ] **One-command restore** — `just restore --from <snapshot-id>` recreates a working instance
-- [ ] **DR runbook** in admin docs
+- [x] **Restic-based backups** — encrypted, celery-beat scheduled, operator-controlled passphrase; running autonomously in prod since the 2026-07-20 incident fix (`docs/ops/INCIDENT-2026-07-20-celery-never-ran.md`)
+- [x] **Default backend Cloudflare R2** — S3-compatible; any S3-compatible target works via `RESTIC_REPOSITORY`
+- [~] **One-command restore** — `scripts/restore-drill.sh` (non-destructive monthly drill: restore latest snapshot, validate dump, `--load` into throwaway postgres + row counts) + full DR procedure in the runbook; the `just restore` porcelain is still open
+- [x] **DR runbook** — `docs/ops/DEPLOYMENT_RUNBOOK.md` §9 (drill + real disaster recovery)
 
 ### Digital inheritance / memorial mode
 - [~] **Designated digital executor** — encrypted key-share with named person, time-locked unlock — b108-2hg shipped the executor contact field; cryptographic key-share via Shamir/threshold lands in a follow-up batch (needs threat-model review).

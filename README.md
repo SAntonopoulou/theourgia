@@ -5,12 +5,12 @@
 **θεουργία** — *god-working*
 
 A magickal journal CMS and full practitioner's toolkit.
-Open source, self-hostable, federated. For working magicians.
+Open source, self-hostable, federation-ready. For working magicians.
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
-[![Status: Active development](https://img.shields.io/badge/status-active_development_(Phase_11_complete)-orange.svg)](#status)
+[![Status: Live](https://img.shields.io/badge/status-live_(one_vault_in_production)-orange.svg)](#status)
 [![Telemetry: Zero](https://img.shields.io/badge/telemetry-zero-brightgreen.svg)](#privacy)
-[![Federated](https://img.shields.io/badge/federation-native_+_ActivityPub-purple.svg)](FEATURES.md#14-federation-networks--group-work)
+[![Federated](https://img.shields.io/badge/federation-built,_gated_off_by_default-purple.svg)](FEATURES.md#14-federation-networks--group-work)
 [![Plugins](https://img.shields.io/badge/plugins-from_day_one-orange.svg)](FEATURES.md#17-plugin-ecosystem)
 
 </div>
@@ -20,38 +20,30 @@ Open source, self-hostable, federated. For working magicians.
 
 ## Status
 
-**Pre-alpha.** Phases 00-11 end-to-end on both frontend and backend. Phase 12 (Federation) single-vault backend complete + frontend done; cross-instance transport (Phase 12.5) substrate landed behind a feature gate (RFC 9421 + Ed25519 + WebFinger + replay-nonce store + threat model). Phase 13 (ActivityPub) frontend complete + persistence stubbed + WebFinger live; outbound POST + inbox queued. **Phase 14 (Plugin Ecosystem) frontend + backend lifecycle routes complete.** H10 design handoff opened (27 surfaces · rules 41-60) — closes the design queue.
+**Live, for one practitioner.** Theourgia runs in production at https://theourgia.com as the working practice environment of its operator — a single vault, deployed and used daily. All seventeen build phases (00-16) have shipped code end-to-end. On 2026-07-25 the platform was reshaped around the operator's own practice — Greek theurgy under Hekate, the Order of the Keybearers — with practice surfaces first and the publishing/federation/plugin platform intact in a secondary wing.
+
+That is the honest shape of the project: **one practitioner's instrument first, community infrastructure second.** Everything in the platform wing exists in code and is tested, but several subsystems are deliberately **dormant by configuration** until they have users and review:
+
+- **Cross-instance federation transport** — built (RFC 9421 signatures, Ed25519, inbox, delivery worker, replay guard) but the gate defaults to `false`; inbox answers 503 and outbound delivery is a no-op until an external threat-model review signs off (`THEOURGIA_FEDERATION_TRANSPORT_ENABLED`).
+- **ActivityPub outbound** — the bridge (actor, inbox/outbox, followers) is implemented; per-vault `enabled` defaults to `false` and has not been switched on.
+- **Agent daemon and plugin registry** — both services exist with their own test suites and databases, parked behind compose profiles (`agents`, `marketplace`); a plain `docker compose up` starts neither.
+- **Registry/marketplace content** — the machinery is live, the catalog is empty beyond the operator's own identity.
 
 | | |
 |---|---|
-| **Latest commit** | `v1-053` — **prod-warning class fixes**: all 8 Postgres enum columns get `values_callable` (the DB enums hold lowercase values; binding member NAMES failed every state-filtered query on real Postgres — invisible to the SQLite suite, proven fixed by live queries against a migrated Postgres) · celery/celery-beat healthchecks corrected (worker pings itself over the broker; beat's meaningless HTTP probe disabled) · Today quick-capture visibility control no longer clips at 390px · **final responsive triage: 98 routes × 4 widths = 393 checks, zero offenders** · before that `v1-052` — **Calendar surface shipped** (the H01-H03 surface that fell through the cracks): CalendarSurface composes the existing MonthGrid/FestivalDetail primitives per `Theourgia Calendar.dc.html` — month grid with multi-day festival bars + week/agenda list + tradition & event-kind filters + Today/festival/astro rail cards + citation legend, live at `/calendar` against `GET /api/v1/events` (26-festival registry + Swiss Ephemeris lunations/ingresses; lunar phases now carry the moon's sign; festivals expose practice + full attestation chain) · plus `v1-051` public-site disclosure nav menu (the designed mobile menu button) + landing vault-card/hero stacking · earlier: v1-050 responsive sweep + prod catch-up deploy (0082→0085, no restart loop)
-| **Production** | **🟢 LIVE at https://theourgia.com** (deployed 2026-06-28; 8 prod containers, isolated compose project; last deploy 2026-07-20) |
-| **vitest** | **3216** shared + **124** admin + **3599** backend passing · admin tsc clean · shared tsc clean · **zero `as any` casts · zero `@ts-ignore`** |
-| **backend** | **3595 passing** · alembic head **0085** — entry tags + tradition_tags; installed_bundle + sandbox bundle columns; webauthn RLS re-assert; 0066 replay guard; wellbeing + audio + calendars settings; traditions/bundles/wellbeing/audio routers on `CurrentUser` |
-| **backend** | **2974 passing** · alembic head **0075** — entry.published_at column; tea_leaf_reading; memorial_config; family-tree kinship enum + ancestor_profile column; recipe + pilgrimage_route + comment + content_format; every write endpoint + owned read on `CurrentUser` |
-| **backend** | **2670 passing** · alembic head **0066** — 51 v1 routers migrated to CurrentUser (writes + owned reads); public endpoints (subscribe · public reader · webhooks · webfinger · iCal token · public identity face) preserved; **+58 auth-required tests** |
-| **agent-daemon** | **198 passing** · alembic head **0002** — MCP + JSON-RPC + SSE + launcher + subprocess runner + cost-cap hard halt + audit emission · DB-backed (sinks + repos) · bwrap filesystem sandbox (rule 59 enforced) · install lifecycle CRUD · memory dir read/write with rule-59 path-safety |
-| **registry** | 34 passing · alembic head **0001** — DID + Ed25519 auth · author submission lifecycle · maintainer queue/decide/promote · advisory filing |
-| **Phase 12.5** | federation inbox + delivery worker (retry queue with 60s→24h backoff · DEAD after 6 attempts · Celery beat every minute) |
-| **Phase 13** | ActivityPub bridge — actor JSON-LD · per-actor inbox + outbox · followers (count-private) · following (always-empty by design) · privacy-gated 404 when transport disabled |
-| **H10 surfaces wired live** | **26 of 27** — Cluster A 8/8 ✓ · Cluster B 6/7 (B5 is federation-key rotation; WebAuthn credentials live at /settings/webauthn) · Cluster C 12/12 ✓ |
-| **WebAuthn ceremony** | ✅ **LIVE in prod** — backend endpoints + credential table + browser hooks + enrolment surface at `/settings/webauthn` + `/connection` passkey sign-in button. Assert/begin returns a real challenge; awaiting first enrolment. |
-| **Public footer** | ✅ real pages at `/vault` · `/federation` · `/hubs` · `/self-host` (was homepage anchors) |
-| **Perf** | vendor-chunk split lands 36% main-chunk gzip reduction on redeploy; audit at `docs/ops/PERF_AUDIT_2026-07-05.md` |
-| **Identity provisioned** | Author + LEAD maintainer registered in prod registry (`did:vault:theourgia.com/soror-eu-a`); server-side Ed25519 signer wires A2-A8 routes end-to-end |
-| **Deploy artefacts** | docker-compose.{yml,prod,agent-house} · scripts/deploy-prod.sh + first-run.sh · DEPLOYMENT_RUNBOOK.md · R2 buckets provisioned · agent-house Caddy snippet wired |
-| **a11y** | 543 / 557 (97.5%); remaining 14 are intentional design tradeoffs |
-| **Sprints shipped** | H01-H03 · H04 · H05 · H06 · H07 · H08 (21/21) · H09 (17/17) · **H10 (27/27) ✓** |
-| **Design queue** | **H11 open** — Journal auto-context (moon · weather · calendars auto-captured). Design request at `docs/design-requests/2026-07-05-h11-journal-auto-context.md`. |
-| **Next build** | Deploy WebAuthn stack to prod + enrol first passkey · retire demo-signin once every prod user has enrolled · plugins.theourgia.com CNAME · R2 access tokens · route-level React.lazy() (v1.1). **H11 auto-context design request opened** (moon phase · weather · multi-calendar auto-captured on every entry). |
+| **Latest commit** | `v1-064` — the iCal feed speaks the operator's rite: preset-threaded four-station events + Attic observance events (Deipnon · Noumenia · Agathos Daimon) |
+| **Production** | 🟢 LIVE at https://theourgia.com (first deployed 2026-06-28 · H12 reshape deployed 2026-07-25 · alembic head **0087** · service worker **v6**) |
+| **The 2026-07-25 reshape (H12, v1-054 → v1-064)** | Practice-first **PracticeNav** (two wings: practice by default, platform behind a named switcher) · **Today dashboard** on the Attic lunar calendar (`GET /api/v1/events/today-context`) · **four-station daily rite** — configurable stations, shipped Hellenic preset carrying the operator's liturgy byte-exact, HOME/XENOS modes, dusk-minimum streak · **astragaloi divination** (56-cast corpus, two-channel readings) · **two-gate covenant** on workings (sealed intent · verdicts · awaiting-judgment queue) · **install-by-proof** practice states · **tetraktys curriculum ladder** at `/order/ladder` · **profections + transits** endpoints · preset-threaded iCal feed |
+| **Honesty passes** | `v1-054` wired real astro providers + implemented the iCal toggles that were stubbed; `v1-055` deleted the fake Oracle/Workshop/stale-Divination routes outright — surfaces that don't work don't ship |
+| **Infrastructure** | compose profiles park agent-daemon + registry (kept, optional) · deploy script trimmed (`scripts/deploy-prod.sh`, profile-aware) · **tested restore drill** (`scripts/restore-drill.sh` — a backup that has never been restored is not a backup) · Helm chart archived untested to `.attic/helm/` |
+| **Earlier eras** | Phases 00-11 end-to-end (both ends) · Phase 12/13 federation + ActivityPub built behind gates · Phase 14 plugin lifecycle + registry bridge · Phase 15 hardening rolling · Phase 16 agent-daemon scaffold · design sprints H01-H12 · full per-batch history in [CHANGELOG.md](CHANGELOG.md) |
+| **Remaining before `v1.0.0`** | responsive sweep of the new H12 surfaces · release engineering (version bump + `[1.0.0]` changelog cut) · tag + launch report |
 
-The full per-batch history lives in **[CHANGELOG.md](CHANGELOG.md)**. For the canonical feature catalog and per-phase status snapshot, see **[FEATURES.md](FEATURES.md)**. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
-
-For the canonical feature catalog, see **[FEATURES.md](FEATURES.md)** — the "Phase Status Snapshot" table at the top tracks sprint progress per-batch. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
+For the canonical feature catalog, see **[FEATURES.md](FEATURES.md)** — its top now carries a dated reality audit distinguishing shipped / partial / dormant. For the full plan and phase index, see **[PROJECT_PLAN.md](PROJECT_PLAN.md)**.
 
 ## What this is
 
-Theourgia is community infrastructure for practicing magicians across many traditions — Thelemites, chaos magicians, Greek theurgists, witches, Hermeticists, ceremonialists, folk practitioners, and adjacent paths. It treats magical practice as praxis worth recording rigorously, and treats data sovereignty as sacred.
+Theourgia is a magickal journal CMS and practitioner's toolkit, built and run by one practitioner for her own daily practice — Greek theurgy under Hekate — and offered as community infrastructure for practicing magicians across many traditions: Thelemites, chaos magicians, Greek theurgists, witches, Hermeticists, ceremonialists, folk practitioners, and adjacent paths. It treats magical practice as praxis worth recording rigorously, and treats data sovereignty as sacred. The order of those clauses is deliberate: the tool is used before it is offered, and nothing ships that its operator does not practice against.
 
 ### The vision in one breath
 
@@ -61,49 +53,51 @@ Theourgia is community infrastructure for practicing magicians across many tradi
 
 | Area | Highlights |
 |---|---|
-| **Time & Cosmos** | Multi-calendar overlays, multi-tradition astrology (Western / Hellenistic / Vedic), planetary hours, election finder |
-| **Journal & Authoring** | Tiptap editor with magickal blocks, drag-drop templates, body sensation diagrams, audio attachments, inline foreign-script support, blog platform, time-released content |
-| **Magical Beings** | Entities with alias-graph merging, offerings ledger, contracts, oaths (sealed), initiations (sealed), ancestors, servitors, lineage attestation + counter-signing |
-| **Divination** | Tarot (custom decks supported), I Ching, geomancy, runes, scrying (with trance mode), pendulum, bibliomancy, horary |
-| **Workshop** | Sigil generator (Spare, Kamea, Rose Cross, harmonograph, formula-driven), magic squares, talisman designer, magical circle builder, tool registry |
-| **Linguistic** | Multi-cipher gematria, cross-journal gematria search, transliteration, voces magicae library, pronunciation guides |
-| **Analytics** | Scientific illuminism — multi-axis tagging, query builder, visualizations, opt-in cross-magician aggregates |
-| **Sharing** | Magickal Bundle Format (MBF) — pantheons, traditions, rituals, decks, sigil libraries, all shareable piecemeal or as full systems |
-| **Publishing** | Self-published books via Stripe Connect, paid newsletters, print-quality typography, RSS / Atom |
-| **Federation** | Native protocol + ActivityPub bridge; networks for orders, covens, sodalities; group ritual coordinator |
-| **Security** | User-choice encryption (server-side or zero-knowledge), GDPR-compliant, multi-identity, audit log, closed-tradition flags |
-| **AI Integration** | Opt-in per-purpose Claude agents via daskalos-pattern (daemon + MCP); user brings own keys; never required |
-| **Plugins** | Full SDK from day one; official Theourgia registry; sandbox-before-commit |
+| **Daily practice (Hellenic core)** | Attic lunar calendar with observance days (Deipnon · Noumenia · Agathos Daimon), Today dashboard, four-station daily rite (configurable stations · Hellenic preset · HOME/XENOS modes · dusk-minimum streak), annual profections + live transits |
+| **Order & curriculum** | Tetraktys curriculum ladder (spheres · items · gates), two-gate covenant on workings (sealed intent → verdict → immutable finalize), awaiting-judgment queue, install-by-proof practice trials |
+| **Time & Cosmos** | Multi-calendar overlays (incl. Attic, Hebrew, Hijri, Mayan, Julian, Thelemic), Swiss Ephemeris astrology, planetary hours, election finder, festival calendar with attestation chains |
+| **Journal & Authoring** | Tiptap editor with magickal blocks, templates, body sensation diagrams, audio attachments, inline foreign-script support, blog platform, auto-stamped astro/calendar context |
+| **Magical Beings** | Entities with alias-graph merging, offerings ledger, contracts, oaths (sealed), initiations (sealed), ancestors + family tree, servitors, lineage attestation + counter-signing |
+| **Divination** | Astragaloi (56-cast corpus, two-channel readings), tarot (custom decks + spread designer), I Ching, geomancy, runes, pendulum, bibliomancy, horary, tea leaves |
+| **Workshop** | Sigil generator (Spare, Kamea, harmonograph, formula-driven), magic squares, talisman designer, magical circle builder, bind-runes, tool registry |
+| **Linguistic** | Multi-cipher gematria, cross-journal gematria search, transliteration schemes, voces magicae library, polytonic Greek / Hebrew / IAST input |
+| **Analytics** | Scientific illuminism — multi-axis tagging, query builder, visualizations, synchronicity log; DP substrate for cross-magician aggregates (endpoints await federation) |
+| **Sharing** | Magickal Bundle Format (MBF) — pantheons, traditions, rituals, decks, sigil libraries; sandbox-before-commit |
+| **Publishing** | Self-published books via Stripe Connect (0% platform fee), paid newsletters, print-quality book PDF, RSS / Atom / JSON Feed |
+| **Federation** *(built · dormant by config)* | Native protocol + ActivityPub bridge; hubs, group ritual coordinator; transport gate defaults off pending external review |
+| **Security** | User-choice encryption (server-side or zero-knowledge), GDPR tooling, multi-identity, audit log, closed-tradition flags, WebAuthn + TOTP |
+| **AI Integration** *(parked behind compose profile)* | Opt-in per-purpose Claude agents via daskalos-pattern (daemon + MCP); user brings own keys; never required |
+| **Plugins** *(registry parked behind compose profile)* | SDK + lifecycle routes; official registry service exists, catalog not yet populated; sandbox-before-commit |
 
-See **[FEATURES.md](FEATURES.md)** for the complete catalog (~200 features across 19 categories).
+See **[FEATURES.md](FEATURES.md)** for the complete catalog (~200 features across 19 categories) and its dated reality audit.
 
 ## Roadmap
 
-Theourgia is built in 17 phases. Each phase is architecturally dependent on prior phases (not feature-priority-ordered). A phase is **done** when its Definition of Done in the corresponding plan is met, including tests, docs, and security review.
+Theourgia was built in 17 phases, each architecturally dependent on prior phases (not feature-priority-ordered). All seventeen have shipped code. The statuses below distinguish **shipped and in daily use**, **shipped but dormant by configuration**, and **still rolling**. The 2026-07-25 practice reshape (sprint H12, `v1-054` → `v1-064`) sits on top of the phase work rather than inside it — see [Status](#status).
 
 | Phase | Title | Status | Plan |
 |---|---|---|---|
-| 00 | Foundations (repo, CI, dev env, docs infra) | `[x]` | [plan/00-foundations.md](plan/00-foundations.md) |
-| 01 | Core Architecture (DB, auth, plugins, encryption, backups) | `[x]` | [plan/01-core-architecture.md](plan/01-core-architecture.md) |
-| 02 | Frontend Foundations (Astro, React admin, Tiptap, modals, i18n) | `[x]` (full design-fidelity port; PWA; Storybook + axe-core gate) | [plan/02-frontend-foundations.md](plan/02-frontend-foundations.md) |
-| 03 | Time & Cosmos (calendars, astrology, planetary hours, election finder) | `[x]` (Swiss Ephemeris + Hebrew/Hijri/Mayan/Egyptian/Julian + Liber Resh; H01 frontend primitives B56-B60) | [plan/03-time-and-cosmos.md](plan/03-time-and-cosmos.md) |
-| 04 | Journaling (entries, blog, library, body diagrams, quotes) | `[x]` (**Batch 35 CLOSED**: B97-B99c3 Tiptap live editor · 8 custom block nodes · 9 slash commands · 3 picker modals · auto-save · visibility chip + sealed toggle · Publish CTA) | [plan/04-journaling.md](plan/04-journaling.md) |
-| 05 | Magical Beings (entities, offerings, oaths, lineage attestation) | `[x]` (backend ✓; **H03 frontend primitives + Today ledger complete B67-B75**) | [plan/05-magical-beings.md](plan/05-magical-beings.md) |
-| 06 | Divination & Practice (tarot, I Ching, geomancy, scrying, rituals) | `[x]` (backend ✓; **H04 frontend complete B76-B86** — 5 oracle surfaces · Daily Practice Tracker · Practice Logs · OracleTabs nav) | [plan/06-divination-and-practice.md](plan/06-divination-and-practice.md) |
-| 07 | Workshop (sigils, talismans, magical circles, tool registry) | `[x]` ✅ backend B103-B107 + H05 frontend + B108 wiring (B108-2e Tool Registry form shipped in H07 Cluster A) | [plan/07-workshop.md](plan/07-workshop.md) · [plan/07-batches-backend.md](plan/07-batches-backend.md) |
-| 08 | Linguistic Tools (gematria, transliteration, voces magicae) | `[x]` ✅ backend B110-B115 + H06 surfaces 1/4/6 frontend (cipher catalog · gematria index + search · studies · 8 transliteration schemes · voce per-vault state) | [plan/08-linguistic-tools.md](plan/08-linguistic-tools.md) · [plan/08-batches-backend.md](plan/08-batches-backend.md) |
-| 09 | Synchronicity & Analytics (scientific illuminism dashboards) | `[x]` ✅ backend solo subset B120-B125 + all 10 H06 surfaces frontend (synchronicity + autotag · QUERY_BUILDER DSL + executor · timeseries/heatmap/correlation/today · weekly digest with banned-phrase regex). Network-aggregate / DP / cross-vault federation deferred to Phase 12+. | [plan/09-synchronicity-and-analytics.md](plan/09-synchronicity-and-analytics.md) · [plan/09-batches-backend.md](plan/09-batches-backend.md) |
-| 10 | Publishing & Monetization (books, Stripe, newsletters, blog) | `[x]` ✅ backend B126-B131 + H07 Cluster B frontend (10 surfaces) — publication lifecycle · Stripe Connect 0% fee + portal-only refund (no `/refund` POST anywhere) · subscription tiers (amount IMMUTABLE) · double-opt-in subscribers · newsletter delivery (once-sent immutability · per-recipient unsubscribe URL) · public reader with structural paywall + unversioned RSS/Atom/JSON feeds carrying AGPLv3 credit + per-pub license | [plan/10-publishing-and-monetization.md](plan/10-publishing-and-monetization.md) · [plan/10-batches-backend.md](plan/10-batches-backend.md) |
-| 11 | Media Library (images, audio, video, iCal feeds, pilgrimage map) | `[x]` ✅ backend B132-B136 + H07 Cluster C frontend (8 surfaces) — media_asset + polymorphic media_link · R2 upload pipeline with Protocol-isolated EXIF strip · pilgrimage_site with precision FLOOR (one-way ratchet) · iCal feed with sealed-day collapse + unversioned URL + pure-Python RFC 5545 serializer · anti-gamification CI invariants (no play_count / view_count / forge / unseal endpoints anywhere) | [plan/11-media-library.md](plan/11-media-library.md) · [plan/11-batches-backend.md](plan/11-batches-backend.md) |
-| 12 | Federation (native protocol, network hubs, group ritual, SSO) | `[x]` ✅ H08 frontend ✓ · backend B137-B141 ✓ · **Phase 12.5 transport ✓** — inbox (b108-2br · HTTP-sig verifier + replay-nonce + activity persistence) · outbound delivery worker (b108-2bs · 60s→24h backoff · DEAD after 6 attempts · Celery beat every minute) | [plan/12-federation.md](plan/12-federation.md) · [plan/12-batches-backend.md](plan/12-batches-backend.md) |
-| 13 | ActivityPub (Fediverse interop) | `[x]` ✅ H08 frontend ✓ · persistence ✓ alembic 0060 · **Phase 13 bridge ✓** — actor JSON-LD · per-actor inbox + outbox · followers (count-private) · following (always-empty) · privacy-gated 404 when transport disabled (b108-2bt) | [plan/13-activitypub.md](plan/13-activitypub.md) |
-| 14 | Plugin Ecosystem (SDK, official registry, sandbox-before-commit) | `[x]` ✅ H09 frontend ✓ 17/17 · substrate from Phase 01 B7-B10 ✓ · lifecycle routes b108-2n ✓ alembic 0061 · **Registry deployed + bridge wired end-to-end** — server-side Ed25519 author signer (b108-2ch) + maintainer signer (b108-2cj) · all 8 A-cluster surfaces live in admin SPA · `did:vault:theourgia.com/soror-eu-a` registered as LEAD maintainer in prod | [plan/14-plugin-ecosystem.md](plan/14-plugin-ecosystem.md) |
-| 15 | Hardening & Launch (GDPR audit, a11y, performance, security, ops) | `[~]` (Cluster B B1-B4 + B6-B7 wired live ✓ b108-2cl · WebAuthn ceremony end-to-end ✓ b108-2cm/2cn · public footer pages ✓ b108-2co · vendor-chunk perf split ✓ b108-2cp · bwrap sandbox rule 59 ✓ · GDPR export inline ✓ · 30-day deletion grace ✓ · sessions revoke ✓; **remaining**: deploy WebAuthn to prod + enrol first passkey · retire demo signin · federation-key rotation surface at /settings/keys · route-level lazy loading v1.1) | [plan/15-hardening-and-launch.md](plan/15-hardening-and-launch.md) |
-| 16 | AI Agent Integration (daskalos-pattern daemon + MCP) | `[x]` ✅ **agent-daemon scaffold complete** — MCP (JSON-RPC + SSE) · launcher + subprocess runner · cost-cap (at-wake + at-spend hard halt) · audit log · DB persistence · bwrap filesystem sandbox (rule 59) · install lifecycle CRUD · memory dir read/write · all 12 C-cluster surfaces live in admin SPA wired to bridge. (Operational: subprocess launch needs the claude CLI logged into Max on the host; no API key required.) | [plan/16-ai-agent-integration.md](plan/16-ai-agent-integration.md) |
+| 00 | Foundations (repo, CI, dev env, docs infra) | `[x]` shipped | [plan/00-foundations.md](plan/00-foundations.md) |
+| 01 | Core Architecture (DB, auth, plugins, encryption, backups) | `[x]` shipped — auth (sessions + TOTP + WebAuthn), RLS, restic backups verified by a tested restore drill | [plan/01-core-architecture.md](plan/01-core-architecture.md) |
+| 02 | Frontend Foundations (Astro, React admin, Tiptap, modals, i18n) | `[x]` shipped — design-fidelity port · PWA · Storybook + axe-core gate | [plan/02-frontend-foundations.md](plan/02-frontend-foundations.md) |
+| 03 | Time & Cosmos (calendars, astrology, planetary hours, election finder) | `[x]` shipped — Swiss Ephemeris · multi-calendar engine now including the Attic lunar calendar (v1-058) · profections + transits | [plan/03-time-and-cosmos.md](plan/03-time-and-cosmos.md) |
+| 04 | Journaling (entries, blog, library, body diagrams, quotes) | `[x]` shipped — Tiptap live editor · custom blocks · auto-save · publish · astro/calendar auto-stamp | [plan/04-journaling.md](plan/04-journaling.md) |
+| 05 | Magical Beings (entities, offerings, oaths, lineage attestation) | `[x]` shipped | [plan/05-magical-beings.md](plan/05-magical-beings.md) |
+| 06 | Divination & Practice (tarot, I Ching, geomancy, scrying, rituals) | `[x]` shipped — plus astragaloi (56-cast corpus, v1-057/060/062), the operator's own oracle | [plan/06-divination-and-practice.md](plan/06-divination-and-practice.md) |
+| 07 | Workshop (sigils, talismans, magical circles, tool registry) | `[x]` shipped | [plan/07-workshop.md](plan/07-workshop.md) |
+| 08 | Linguistic Tools (gematria, transliteration, voces magicae) | `[x]` shipped | [plan/08-linguistic-tools.md](plan/08-linguistic-tools.md) |
+| 09 | Synchronicity & Analytics (scientific illuminism dashboards) | `[x]` shipped (solo subset) — cross-vault DP aggregates await federation enablement | [plan/09-synchronicity-and-analytics.md](plan/09-synchronicity-and-analytics.md) |
+| 10 | Publishing & Monetization (books, Stripe, newsletters, blog) | `[x]` shipped — Stripe Connect 0% fee · structural paywall · unversioned feeds | [plan/10-publishing-and-monetization.md](plan/10-publishing-and-monetization.md) |
+| 11 | Media Library (images, audio, video, iCal feeds, pilgrimage map) | `[x]` shipped — iCal feed now preset-threaded with the daily rite + Attic observances (v1-064) | [plan/11-media-library.md](plan/11-media-library.md) |
+| 12 | Federation (native protocol, network hubs, group ritual, SSO) | `[x]` built · **dormant by config** — twin-instance test passed live 2026-07-20; transport gate defaults `false` (inbox 503, outbound no-op) pending external threat-model review | [plan/12-federation.md](plan/12-federation.md) |
+| 13 | ActivityPub (Fediverse interop) | `[x]` built · **dormant by config** — bridge complete; per-vault opt-in defaults `false` and is not enabled on the production vault | [plan/13-activitypub.md](plan/13-activitypub.md) |
+| 14 | Plugin Ecosystem (SDK, official registry, sandbox-before-commit) | `[x]` built · **registry parked** behind the `marketplace` compose profile; lifecycle routes + signing live, catalog not yet populated | [plan/14-plugin-ecosystem.md](plan/14-plugin-ecosystem.md) |
+| 15 | Hardening & Launch (GDPR audit, a11y, performance, security, ops) | `[~]` rolling — GDPR export · deletion grace · sessions · WebAuthn · restore drill done; remaining: H12 responsive sweep · release engineering · `v1.0.0` tag | [plan/15-hardening-and-launch.md](plan/15-hardening-and-launch.md) |
+| 16 | AI Agent Integration (daskalos-pattern daemon + MCP) | `[x]` built · **parked** behind the `agents` compose profile; subprocess launch needs the claude CLI on the host | [plan/16-ai-agent-integration.md](plan/16-ai-agent-integration.md) |
 
-**Legend:** `[ ]` planned · `[~]` in progress (backend plan locked but execution still rolling) · `[x]` done
+**Legend:** `[x]` shipped · `[~]` in progress · **dormant by config / parked** — code and tests exist; the subsystem is off until deliberately enabled
 
-This README is updated continuously as phases progress. The roadmap reflects the current state of work, not a snapshot at any point in time.
+This README is updated continuously. The roadmap reflects the current state of the code, not aspiration.
 
 ## Tech stack
 
@@ -193,20 +187,24 @@ Further guarantees and the security model are described in **[ARCHITECTURE.md §
 
 ## Getting started
 
-Self-hosting instructions land with Phase 00 (Foundations). For now, this section is a placeholder.
-
-When ready, getting Theourgia running will be approximately:
+**Self-hosting (production).** The bootstrap installer lives in this repository at [`scripts/install.sh`](scripts/install.sh). It takes a fresh Linux host to a running stack: installs Docker if missing, clones the repo, mints `.env` secrets via `scripts/first-run.sh`, builds and starts the compose stack, runs migrations, and waits for the backend health probe. Download it, **read it**, then run it — we do not ask you to pipe the network straight into your shell:
 
 ```bash
-# (not yet functional — placeholder)
-curl -fsSL https://install.theourgia.com | bash
-cd theourgia
-just dev          # local development
-# or
-just deploy       # production deploy with backups + monitoring
+curl -fsSL https://raw.githubusercontent.com/SAntonopoulou/theourgia/main/scripts/install.sh -o install.sh
+less install.sh
+bash install.sh
 ```
 
-The installation is designed for non-technical magicians as well as developers. One-command deploys, web-based first-run wizard, one-click migrations with preview, one-click rollback.
+Then complete the web-based first-run wizard at `/app/setup`. The full production path — DNS, Caddy, secrets, deploys, backups, and the monthly restore drill — is documented in [`docs/ops/DEPLOYMENT_RUNBOOK.md`](docs/ops/DEPLOYMENT_RUNBOOK.md). Routine updates are one command: `scripts/deploy-prod.sh`. The agent daemon and plugin registry are optional and stay off unless you enable their compose profiles (`agents`, `marketplace`).
+
+**Local development:**
+
+```bash
+git clone https://github.com/SAntonopoulou/theourgia.git
+cd theourgia
+just dev          # dev stack
+just test         # backend + frontend suites
+```
 
 ## Project structure
 
@@ -215,23 +213,26 @@ theourgia/
 ├── README.md              ← this file
 ├── PROJECT_PLAN.md        ← vision, scope, phase index
 ├── ARCHITECTURE.md        ← system design, trust model, tech choices
-├── FEATURES.md            ← canonical feature catalog (all ~200 features)
+├── FEATURES.md            ← canonical feature catalog (all ~200 features) + reality audit
 ├── CHANGELOG.md           ← keep-a-changelog format
 ├── CODE_OF_CONDUCT.md     ← Contributor Covenant + divergent-practice addendum
 ├── CONTRIBUTING.md        ← how to land changes
 ├── SECURITY.md            ← vulnerability disclosure
 ├── LICENSE                ← AGPL-3.0
 ├── plan/                  ← per-phase implementation plans (00–16)
-├── docs/                  ← will hold user/admin/developer documentation
-├── backend/               ← Python 3.12 + FastAPI + SQLModel + Alembic + Celery (2073 tests)
+├── docs/                  ← user/admin/developer/ops docs + Starlight docs site
+├── backend/               ← Python 3.12 + FastAPI + SQLModel + Alembic + Celery
 ├── frontend/              ← React 19 admin SPA · Astro 6 public site · shared design system
-├── docs/                  ← Starlight docs site (theourgia tokens bridged onto Starlight)
-└── plugins/               ← will hold reference plugins (Phase 14+)
+├── agent-daemon/          ← Phase 16 agent daemon (optional; `agents` compose profile)
+├── registry/              ← Phase 14 plugin registry (optional; `marketplace` compose profile)
+├── plugins/               ← example plugin (theourgia-plugin-example-cipher)
+├── scripts/               ← install.sh · first-run.sh · deploy-prod.sh · restore-drill.sh
+└── .attic/                ← archived, untested artefacts (Helm chart)
 ```
 
 ## Contributing
 
-The most valuable contributions during planning phase are reading the plans, reacting to them, and tradition-specific feedback. Once code lands, full contribution workflow opens. See **[CONTRIBUTING.md](CONTRIBUTING.md)** for current ways to help.
+The code has long since landed; the most valuable contributions now are running the software, filing what breaks, tradition-specific corrections to the calendars/festivals/correspondences, and review of the dormant subsystems (the federation transport threat model in particular — external review is what gates it on). See **[CONTRIBUTING.md](CONTRIBUTING.md)** for how to land changes.
 
 All contributors are bound by the **[Code of Conduct](CODE_OF_CONDUCT.md)**, which includes an explicit clause about respect for divergent magickal practice — *"we cannot become a centre of pestilence"*.
 
@@ -246,7 +247,7 @@ All contributors are bound by the **[Code of Conduct](CODE_OF_CONDUCT.md)**, whi
 
 ## About the creator
 
-Theourgia was conceived and is being built by **Soror Ευ. Α.** ([@SAntonopoulou on GitHub](https://github.com/SAntonopoulou)) — a practicing magician across Thelemic (OTO), chaos magickal, Greek theurgic, and eclectic witchcraft paths. The project comes from her own need for tools that take magickal practice seriously — record-keeping deep enough for serious work, infrastructure sovereign enough to actually trust, design respectful enough to honor many traditions at once.
+Theourgia was conceived and is being built by **Soror Ευ. Α.** ([@SAntonopoulou on GitHub](https://github.com/SAntonopoulou)) — a practicing magician whose daily work is Greek theurgy under Hekate, with roots across Thelemic (OTO), chaos magickal, and eclectic witchcraft paths. The project comes from her own need for tools that take magickal practice seriously — record-keeping deep enough for serious work, infrastructure sovereign enough to actually trust, design respectful enough to honor many traditions at once. She runs the production instance as her own vault; the platform is shaped by daily use before it is offered to anyone else.
 
 The intent is community infrastructure, not a product. The license guarantees that intent forever.
 
