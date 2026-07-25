@@ -1,0 +1,722 @@
+/**
+ * PracticeNav — the practice-first admin sidebar (H12, successor to
+ * ``VaultNav``).
+ *
+ * Faithful re-implementation of ``PracticeNav.dc.html`` +
+ * ``NavArchitecture.dc.html`` from handoff H12 (The Keybearer's Record).
+ *
+ * One control, two wings:
+ *
+ *   Practice wing (default) · Practice / Reference / Workbench / Study —
+ *       17 links, 4 sections, unscrolled on a 1080p laptop. Five tools sit
+ *       behind a "More tools" disclosure inside Workbench.
+ *   Platform wing · Publishing (6) / Network (4) / Platform (4) — every
+ *       route from the old VaultNav survives; nothing is deleted.
+ *
+ * The foot **wing switcher** is a single button that names the wing you
+ * are going to and lists that wing's sections beneath, so the destination
+ * is never a guess. The wing persists per session.
+ *
+ * The **Awaiting judgment** entry carries a quiet count — the only number
+ * in the practice wing; a workload, not a score. It renders nothing when
+ * the count is zero or the queue endpoint doesn't exist yet.
+ *
+ * Responsive contract (all five breakpoints) is driven off a
+ * ``data-nav-mode`` attribute so tests and spec surfaces can force a
+ * state; real media queries (``theourgia.shared.css`` H12 block) set the
+ * default:
+ *
+ *   auto    · follows the media queries (drawer < 640 · 64px rail
+ *             640–1024 · 224px 1024–1280 · 248px above · ultrawide caps
+ *             the content column, not the nav)
+ *   drawer / rail / compact / full · forced states for tests + specs.
+ *
+ * ``active`` is a SUPERSET of VaultNav's keys (adds ``astragaloi``,
+ * ``ladder``, ``awaitingjudgment``, ``agents``) — no existing call site
+ * needs rewriting.
+ */
+
+import { type CSSProperties, type ComponentType, type ReactNode, useEffect, useState } from "react";
+
+import {
+  NAV_ICONS,
+  type NavKey,
+  type VaultIdentity,
+  type VaultNavLinkProps,
+} from "../VaultNav/VaultNav.js";
+import { _ } from "../i18n/index.js";
+
+// ─── Icons the old nav didn't need (engraving style, stroke 1.5) ───────────
+
+const ICON_PROPS = {
+  width: 18,
+  height: 18,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 1.5,
+  strokeLinecap: "round" as const,
+  strokeLinejoin: "round" as const,
+  "aria-hidden": true,
+};
+
+const EXTRA_ICONS = {
+  // Knucklebone — a die face showing only 1/3/4/6-style pip clusters
+  // (rule 68: there is no two and no five).
+  astragaloi: (
+    <svg {...ICON_PROPS}>
+      <path d="M6.5 5.5h11a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z" />
+      <circle cx="9" cy="9" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="15" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  ),
+  // The tetraktys — ten points in four rows.
+  ladder: (
+    <svg {...ICON_PROPS} strokeWidth={1.4}>
+      <circle cx="12" cy="4.6" r="1.5" />
+      <circle cx="8.6" cy="10" r="1.5" />
+      <circle cx="15.4" cy="10" r="1.5" />
+      <circle cx="5.2" cy="15.4" r="1.5" />
+      <circle cx="12" cy="15.4" r="1.5" />
+      <circle cx="18.8" cy="15.4" r="1.5" />
+      <circle cx="6.5" cy="20.5" r="1.2" />
+      <circle cx="12" cy="20.5" r="1.2" />
+      <circle cx="17.5" cy="20.5" r="1.2" />
+    </svg>
+  ),
+  // The scales — two gates, one beam.
+  awaitingjudgment: (
+    <svg {...ICON_PROPS}>
+      <path d="M12 4v16M6 8h12M8.5 8l-3 5h6zM15.5 8l-3 5h6z" />
+    </svg>
+  ),
+  // The automaton — platform agents.
+  agents: (
+    <svg {...ICON_PROPS}>
+      <rect x="5" y="8" width="14" height="11" rx="2.5" />
+      <path d="M12 3v3M9 13h0M15 13h0M9.5 16.5h5" />
+      <path d="M3.5 12v3M20.5 12v3" />
+    </svg>
+  ),
+} as const;
+
+const WING_GRID_ICON = (
+  <svg {...ICON_PROPS}>
+    <rect x="4" y="4" width="6.5" height="6.5" rx="1.3" />
+    <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.3" />
+    <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.3" />
+    <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.3" />
+  </svg>
+);
+
+const WING_BACK_ICON = (
+  <svg {...ICON_PROPS} strokeWidth={1.6}>
+    <path d="M15 6l-6 6 6 6" />
+  </svg>
+);
+
+const MORE_ICON = (
+  <svg {...ICON_PROPS}>
+    <circle cx="6" cy="12" r="1.3" />
+    <circle cx="12" cy="12" r="1.3" />
+    <circle cx="18" cy="12" r="1.3" />
+  </svg>
+);
+
+// ─── Keys · superset contract ──────────────────────────────────────────────
+
+/** ``active`` accepts every old VaultNav key plus the H12 additions. */
+export type PracticeNavKey = NavKey | "astragaloi" | "ladder" | "awaitingjudgment" | "agents";
+
+const ICONS: Record<PracticeNavKey, ReactNode> = {
+  ...NAV_ICONS,
+  ...EXTRA_ICONS,
+};
+
+export type Wing = "practice" | "platform";
+
+export type PracticeNavMode = "auto" | "drawer" | "rail" | "compact" | "full";
+
+// ─── Wing trees (route targets carried over 1:1 from VaultNav) ─────────────
+
+export interface PracticeNavItem {
+  key: PracticeNavKey;
+  to: string;
+  label: string;
+}
+
+export interface PracticeNavSection {
+  heading: string;
+  items: PracticeNavItem[];
+  /** Items behind the in-section "More tools" disclosure (Workbench). */
+  moreItems?: PracticeNavItem[];
+}
+
+/** The practice wing — 17 links / 4 sections (+5 behind "More tools"). */
+export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
+  {
+    heading: "Practice",
+    items: [
+      { key: "today", to: "/", label: "Today" },
+      { key: "journal", to: "/journal", label: "Journal" },
+      { key: "dailypractice", to: "/daily-practice", label: "Daily rite" },
+      { key: "practicelogs", to: "/practice-logs", label: "Practice log" },
+    ],
+  },
+  {
+    heading: "Reference",
+    items: [
+      { key: "entities", to: "/entities", label: "Magical beings" },
+      { key: "library", to: "/library", label: "Library" },
+      { key: "calendar", to: "/calendar", label: "Calendar" },
+    ],
+  },
+  {
+    heading: "Workbench",
+    items: [
+      { key: "divination", to: "/divination/tarot", label: "Divination" },
+      { key: "astragaloi", to: "/divination/astragaloi", label: "Astragaloi" },
+      { key: "sigils", to: "/sigils", label: "Sigils" },
+      { key: "talismans", to: "/talismans", label: "Talismans" },
+      { key: "circles", to: "/circles", label: "Magical circle" },
+      { key: "tools", to: "/tools", label: "Tool registry" },
+    ],
+    moreItems: [
+      { key: "magicsquares", to: "/magic-squares", label: "Magic squares" },
+      { key: "voces", to: "/voces", label: "Voces magicae" },
+      { key: "gematria", to: "/gematria", label: "Gematria" },
+      { key: "translit", to: "/transliterations", label: "Transliteration" },
+      { key: "voceslib", to: "/voces-library", label: "Voces library" },
+    ],
+  },
+  {
+    heading: "Study",
+    items: [
+      { key: "synchronicities", to: "/synchronicities", label: "Synchronicities" },
+      { key: "ladder", to: "/order/ladder", label: "Tetraktys ladder" },
+      { key: "awaitingjudgment", to: "/verdicts", label: "Awaiting judgment" },
+      { key: "analytics", to: "/analytics", label: "Analytics" },
+    ],
+  },
+];
+
+/** The platform wing — Publishing (6) / Network (4) / Platform (4). */
+export const PLATFORM_WING_SECTIONS: PracticeNavSection[] = [
+  {
+    heading: "Publishing",
+    items: [
+      { key: "publications", to: "/publications", label: "Publications" },
+      { key: "subscribers", to: "/subscribers", label: "Subscribers" },
+      { key: "media", to: "/media", label: "Media library" },
+      { key: "audio", to: "/audio", label: "Audio library" },
+      { key: "pilgrimage", to: "/pilgrimage", label: "Pilgrimage map" },
+      { key: "icalfeed", to: "/icalfeed", label: "Calendar feed" },
+    ],
+  },
+  {
+    heading: "Network",
+    items: [
+      { key: "feed", to: "/feed", label: "Ritual feed" },
+      { key: "networks", to: "/networks", label: "My networks" },
+      { key: "followers", to: "/followers", label: "Followers" },
+      { key: "privateviewers", to: "/private-viewers", label: "Private viewers" },
+    ],
+  },
+  {
+    heading: "Platform",
+    items: [
+      { key: "plugins", to: "/plugins", label: "Plugins" },
+      { key: "bundles", to: "/bundles", label: "Bundles" },
+      { key: "sandbox", to: "/sandbox", label: "Sandbox" },
+      { key: "agents", to: "/agents-home", label: "Agents" },
+    ],
+  },
+];
+
+/** Which wing a nav key belongs to (``practice`` when unknown). */
+export function wingForKey(key: string | undefined): Wing {
+  if (!key) return "practice";
+  for (const section of PLATFORM_WING_SECTIONS) {
+    if (section.items.some((i) => i.key === key)) return "platform";
+  }
+  return "practice";
+}
+
+const WING_STORAGE_KEY = "theourgia.nav.wing";
+
+function readStoredWing(): Wing | null {
+  try {
+    const value = window.sessionStorage.getItem(WING_STORAGE_KEY);
+    return value === "practice" || value === "platform" ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function storeWing(wing: Wing): void {
+  try {
+    window.sessionStorage.setItem(WING_STORAGE_KEY, wing);
+  } catch {
+    /* storage unavailable — the wing simply doesn't persist */
+  }
+}
+
+// ─── Props ─────────────────────────────────────────────────────────────────
+
+export interface PracticeNavProps {
+  /** Current active nav key — superset of VaultNav's contract. */
+  active?: PracticeNavKey;
+  /** Controlled wing. When omitted the nav owns the state: it follows
+   *  ``active``'s wing and persists the choice per session. */
+  wing?: Wing;
+  /** Fired when the foot switcher crosses over. */
+  onWingChange?: (wing: Wing) => void;
+  /** ``auto`` follows the media queries; the explicit modes exist for
+   *  tests and for framing the nav inside a spec surface. */
+  navMode?: PracticeNavMode;
+  /** Quiet Awaiting-judgment queue count. Omit (or 0) until the
+   *  endpoint exists — the chip renders nothing. */
+  awaitingJudgmentCount?: number;
+  /** Custom link renderer (e.g. react-router NavLink). Defaults to ``<a>``. */
+  LinkComponent?: ComponentType<VaultNavLinkProps>;
+  /** Fired when any link is picked (e.g. close the phone drawer). */
+  onNavigate?: () => void;
+  onQuickCapture?: () => void;
+  onSettings?: () => void;
+  identity?: VaultIdentity;
+  className?: string;
+  style?: CSSProperties;
+}
+
+// ─── Styles (mirror PracticeNav.dc.html) ───────────────────────────────────
+
+const ITEM_BASE: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 11,
+  padding: "8px 10px",
+  borderRadius: 8,
+  color: "var(--ink-soft)",
+  fontFamily: "var(--font-ui)",
+  fontSize: 14,
+  marginBottom: 1,
+  textDecoration: "none",
+};
+
+const ITEM_ACTIVE: CSSProperties = {
+  ...ITEM_BASE,
+  color: "var(--ink)",
+  background: "var(--accent-soft)",
+  boxShadow: "inset 2px 0 0 var(--accent)",
+};
+
+const SUB_ITEM_BASE: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  padding: "6px 10px 6px 40px",
+  borderRadius: 8,
+  color: "var(--ink-mute)",
+  fontFamily: "var(--font-ui)",
+  fontSize: 13,
+  marginBottom: 1,
+  textDecoration: "none",
+};
+
+const SUB_ITEM_ACTIVE: CSSProperties = {
+  ...SUB_ITEM_BASE,
+  color: "var(--ink)",
+  background: "var(--accent-soft)",
+  boxShadow: "inset 2px 0 0 var(--accent)",
+};
+
+const HEADING_STYLE: CSSProperties = {
+  fontFamily: "var(--font-ui)",
+  fontSize: 10,
+  letterSpacing: "0.16em",
+  textTransform: "uppercase",
+  color: "var(--ink-mute)",
+  padding: "13px 10px 6px",
+};
+
+const ICO_STYLE: CSSProperties = { display: "flex", flex: "none" };
+
+// ─── Component ─────────────────────────────────────────────────────────────
+
+function DefaultLink({ to, children, className, style, onClick }: VaultNavLinkProps) {
+  return (
+    <a href={to} className={className} style={style} onClick={onClick}>
+      {children}
+    </a>
+  );
+}
+
+export function PracticeNav({
+  active,
+  wing: wingProp,
+  onWingChange,
+  navMode = "auto",
+  awaitingJudgmentCount,
+  LinkComponent = DefaultLink,
+  onNavigate,
+  onQuickCapture,
+  onSettings,
+  // Magickal-name rule: never default to a fabricated persona.
+  identity = { name: "Practitioner", role: "This vault" },
+  className,
+  style,
+}: PracticeNavProps) {
+  const [wingState, setWingState] = useState<Wing>(
+    () => wingProp ?? (active ? wingForKey(active) : (readStoredWing() ?? "practice")),
+  );
+  // Deep navigation (search, bookmarks) can land on the other wing —
+  // follow the active key so the highlight is never invisible.
+  const activeWing = active ? wingForKey(active) : undefined;
+  useEffect(() => {
+    if (wingProp === undefined && activeWing) setWingState(activeWing);
+  }, [wingProp, activeWing]);
+
+  const wing = wingProp ?? wingState;
+  const isPractice = wing === "practice";
+  const sections = isPractice ? PRACTICE_WING_SECTIONS : PLATFORM_WING_SECTIONS;
+
+  // "More tools" starts open when the active key hides behind it, so the
+  // inset highlight is visible on first paint.
+  const [moreOpen, setMoreOpen] = useState<boolean>(() =>
+    PRACTICE_WING_SECTIONS.some((s) => s.moreItems?.some((i) => i.key === active)),
+  );
+
+  function crossOver(): void {
+    const next: Wing = isPractice ? "platform" : "practice";
+    if (wingProp === undefined) setWingState(next);
+    storeWing(next);
+    onWingChange?.(next);
+  }
+
+  const switchTitle = isPractice ? "Platform" : "Back to practice";
+  const switchSub = isPractice ? "Publishing · Network · Plugins" : "Today · Journal · Workbench";
+
+  const avatarChar = identity.avatarChar ?? identity.name.slice(0, 1).toUpperCase();
+
+  const judgmentCount = awaitingJudgmentCount ?? 0;
+
+  return (
+    <aside
+      aria-label="Practice navigation"
+      className={`scroll om-aside pn-aside${className ? ` ${className}` : ""}`}
+      data-nav-mode={navMode}
+      data-wing={wing}
+      style={{
+        height: "100%",
+        background: "var(--bg-sunk)",
+        borderRight: "1px solid var(--line)",
+        overflowY: "auto",
+        overflowX: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        padding: "16px 12px 14px",
+        fontFamily: "var(--font-serif)",
+        ...style,
+      }}
+    >
+      {/* Brand */}
+      <LinkComponent
+        to="/"
+        onClick={() => onNavigate?.()}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 11,
+          padding: "5px 7px 15px",
+          textDecoration: "none",
+          color: "var(--ink)",
+        }}
+      >
+        <svg
+          width="28"
+          height="28"
+          viewBox="0 0 40 40"
+          fill="none"
+          aria-hidden="true"
+          style={{ flex: "none" }}
+        >
+          <circle cx="20" cy="20" r="17.5" stroke="var(--accent)" strokeWidth="1.4" />
+          <circle cx="20" cy="20" r="12" stroke="var(--accent)" strokeWidth="1" opacity="0.55" />
+          <line x1="9.5" y1="20" x2="30.5" y2="20" stroke="var(--accent)" strokeWidth="1.4" />
+        </svg>
+        <span
+          className="pn-label"
+          style={{
+            fontFamily: "var(--font-display, var(--font-serif))",
+            fontSize: 20,
+            letterSpacing: "0.04em",
+          }}
+        >
+          Theourgia
+        </span>
+      </LinkComponent>
+
+      {/* Quick capture */}
+      <button
+        type="button"
+        className="pn-capture"
+        onClick={() => onQuickCapture?.()}
+        title={_("Quick capture")}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          width: "100%",
+          padding: "9px 11px",
+          marginBottom: 15,
+          border: "1px solid var(--line-2)",
+          borderRadius: "var(--r-md, 8px)",
+          background: "var(--accent-soft)",
+          color: "var(--ink)",
+          fontFamily: "var(--font-ui)",
+          fontSize: 13.5,
+          fontWeight: 700,
+          textAlign: "left",
+          cursor: "pointer",
+        }}
+      >
+        <svg
+          width="17"
+          height="17"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          aria-hidden="true"
+          style={{ flex: "none" }}
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+        <span className="pn-label">{_("Quick capture")}</span>
+        <span
+          className="pn-label"
+          style={{
+            marginLeft: "auto",
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            color: "var(--ink-mute)",
+          }}
+          aria-hidden="true"
+        >
+          ⌘K
+        </span>
+      </button>
+
+      {/* Sections of the current wing */}
+      {sections.map((section) => (
+        <div key={section.heading}>
+          <div className="pn-head" style={HEADING_STYLE}>
+            {_(section.heading)}
+          </div>
+          {section.items.map((item) => {
+            const isActive = item.key === active;
+            const isJudgment = item.key === "awaitingjudgment";
+            return (
+              <LinkComponent
+                key={item.key}
+                to={item.to}
+                onClick={() => onNavigate?.()}
+                style={isActive ? ITEM_ACTIVE : ITEM_BASE}
+              >
+                <span style={ICO_STYLE} title={_(item.label)}>
+                  {ICONS[item.key]}
+                </span>
+                <span
+                  className="pn-label"
+                  style={isJudgment ? { flex: 1, minWidth: 0 } : undefined}
+                >
+                  {_(item.label)}
+                </span>
+                {isJudgment && judgmentCount > 0 ? (
+                  <span
+                    className="pn-label"
+                    data-judgment-count
+                    aria-label={_("{n} awaiting judgment", { n: judgmentCount })}
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      color: "var(--ink-mute)",
+                    }}
+                  >
+                    {judgmentCount}
+                  </span>
+                ) : null}
+              </LinkComponent>
+            );
+          })}
+          {section.moreItems ? (
+            <>
+              <button
+                type="button"
+                className="pn-more"
+                aria-expanded={moreOpen}
+                onClick={() => setMoreOpen((open) => !open)}
+                title={moreOpen ? _("Fewer tools") : _("More tools")}
+                style={{
+                  ...ITEM_BASE,
+                  color: "var(--ink-mute)",
+                  width: "100%",
+                  textAlign: "left",
+                  cursor: "pointer",
+                }}
+              >
+                <span style={ICO_STYLE}>{MORE_ICON}</span>
+                <span className="pn-label" style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
+                  {moreOpen ? _("Fewer tools") : _("More tools")}
+                </span>
+              </button>
+              {moreOpen
+                ? section.moreItems.map((item) => {
+                    const isActive = item.key === active;
+                    return (
+                      <LinkComponent
+                        key={item.key}
+                        to={item.to}
+                        onClick={() => onNavigate?.()}
+                        style={isActive ? SUB_ITEM_ACTIVE : SUB_ITEM_BASE}
+                      >
+                        <span className="pn-label" title={_(item.label)}>
+                          {_(item.label)}
+                        </span>
+                      </LinkComponent>
+                    );
+                  })
+                : null}
+            </>
+          ) : null}
+        </div>
+      ))}
+
+      {/* Wing switcher — the answer to the design question: a single
+          button at the sidebar foot, naming its destination. */}
+      <button
+        type="button"
+        className="pn-switch"
+        data-wing-switch
+        onClick={crossOver}
+        aria-label={_(switchTitle)}
+        title={_(switchTitle)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 11,
+          width: "100%",
+          marginTop: "auto",
+          padding: "10px 11px",
+          marginBottom: 12,
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-md, 8px)",
+          background: "var(--bg-2)",
+          color: "var(--ink-soft)",
+          textAlign: "left",
+          cursor: "pointer",
+        }}
+      >
+        <span style={ICO_STYLE}>{isPractice ? WING_GRID_ICON : WING_BACK_ICON}</span>
+        <span
+          className="pn-label"
+          style={{ flex: 1, minWidth: 0, textAlign: "left", lineHeight: 1.25 }}
+        >
+          <span
+            style={{
+              display: "block",
+              fontFamily: "var(--font-ui)",
+              fontSize: 13,
+              color: "var(--ink)",
+            }}
+          >
+            {_(switchTitle)}
+          </span>
+          <span
+            style={{
+              display: "block",
+              fontFamily: "var(--font-ui)",
+              fontSize: 10.5,
+              color: "var(--ink-mute)",
+            }}
+          >
+            {_(switchSub)}
+          </span>
+        </span>
+      </button>
+
+      {/* Identity foot */}
+      <div
+        className="pn-foot"
+        style={{
+          paddingTop: 12,
+          borderTop: "1px solid var(--line)",
+          display: "flex",
+          alignItems: "center",
+          gap: 11,
+        }}
+      >
+        <span
+          aria-hidden="true"
+          style={{
+            width: 30,
+            height: 30,
+            borderRadius: "50%",
+            background: "var(--accent-soft)",
+            border: "1px solid var(--line-2)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "var(--font-display, var(--font-serif))",
+            color: "var(--accent)",
+            fontSize: 14,
+            flex: "none",
+          }}
+        >
+          {avatarChar}
+        </span>
+        <div className="pn-label" style={{ lineHeight: 1.2, minWidth: 0 }}>
+          <div style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--ink)" }}>
+            {identity.name}
+          </div>
+          {identity.role ? (
+            <div style={{ fontFamily: "var(--font-ui)", fontSize: 11, color: "var(--ink-mute)" }}>
+              {identity.role}
+            </div>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          aria-label={_("Settings")}
+          onClick={() => onSettings?.()}
+          style={{
+            marginLeft: "auto",
+            background: "transparent",
+            border: "none",
+            color: "var(--ink-mute)",
+            cursor: "pointer",
+            padding: 0,
+            display: "inline-flex",
+            alignItems: "center",
+          }}
+        >
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 2.5v2.5M12 19v2.5M21.5 12H19M5 12H2.5M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4L5.6 5.6" />
+          </svg>
+        </button>
+      </div>
+    </aside>
+  );
+}

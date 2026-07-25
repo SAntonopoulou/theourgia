@@ -721,3 +721,75 @@
   --remote: #52659e;
   --remote-soft: rgba(82, 101, 158, 0.12);
 }
+
+/* ============================================================================
+   H11 · Journal auto-context: moon · weather · calendars (Phase 17)
+   Quiet celestial/atmospheric accents. Distinct hues but all low-chroma —
+   context is ambient, never louder than the entry itself. Weather reuses
+   --network family (sky). --context-absent = --ink-mute family for the
+   offline "—" state (rule 61: an unreachable field is ABSENT, never
+   synthesised).
+   ============================================================================ */
+:root {
+  --moon: #9fa6c4; /* cool lunar silver-violet */
+  --moon-soft: rgba(159, 166, 196, 0.15);
+  --weather: var(--network);
+  --weather-soft: var(--network-soft);
+  --hour: #c9a24c; /* planetary gold (= --accent family) */
+  --hour-soft: rgba(201, 162, 76, 0.14);
+  --context-absent: rgba(160, 150, 128, 0.14); /* offline/unset — absent, not fabricated */
+}
+[data-theme="hellenic"] {
+  --moon: #93a0b4;
+  --moon-soft: rgba(147, 160, 180, 0.15);
+  --hour: #bfa15b;
+  --hour-soft: rgba(191, 161, 91, 0.14);
+  --context-absent: rgba(139, 147, 130, 0.14);
+}
+[data-theme="thelemic"] {
+  --moon: #a79ace;
+  --moon-soft: rgba(167, 154, 206, 0.16);
+  --hour: #cda53e;
+  --hour-soft: rgba(205, 165, 62, 0.14);
+  --context-absent: rgba(156, 138, 108, 0.14);
+}
+[data-mode="light"] {
+  --moon: #5a6291;
+  --moon-soft: rgba(90, 98, 145, 0.13);
+  --hour: #9a6e22;
+  --hour-soft: rgba(154, 110, 34, 0.13);
+  --context-absent: rgba(118, 107, 87, 0.13);
+}
+
+/* ============================================================================
+   H12 · The Keybearer's Record (practice-first nav + 4 practice surfaces)
+   ALL ALIASES — no new hues. The rite stations, the two gates, and the ladder
+   spheres are STATES, not scores: they borrow the existing state family so
+   nothing in the practice surfaces can read as a reward or a punishment.
+   --station-missed / --gate-fail are deliberately NOT --danger (rule 2) and
+   NOT red: a missed dusk station is an absence, not an alarm.
+   ============================================================================ */
+:root {
+  --lunar: var(--moon);
+  --lunar-soft: var(--moon-soft);
+  --station-done: var(--peer-ok);
+  --station-done-soft: var(--peer-ok-soft);
+  --station-due: var(--accent);
+  --station-due-soft: var(--accent-soft);
+  --station-missed: var(--ink-mute);
+  --station-missed-soft: var(--context-absent);
+  --gate-pass: var(--peer-ok);
+  --gate-pass-soft: var(--peer-ok-soft);
+  --gate-fail: var(--warn);
+  --gate-fail-soft: var(--warn-soft);
+  --gate-open: var(--ink-mute);
+  --gate-open-soft: var(--context-absent);
+  --sphere-current: var(--accent);
+  --sphere-current-soft: var(--accent-soft);
+  --sphere-done: var(--peer-ok);
+  --sphere-done-soft: var(--peer-ok-soft);
+  --sphere-locked: var(--ink-mute);
+  --covenant: var(--seal);
+  --covenant-soft: var(--seal-soft);
+  --covenant-line: var(--seal-border);
+}

@@ -28,6 +28,9 @@ import {
 
 export interface ReshStationCardProps {
   station: ReshStation;
+  /** Display-label override — H12's Dawn/Noon/Dusk/Night relabel is a
+   *  prop-level rename, not a fork. Defaults to the static meta label. */
+  label?: string;
   adoration: ReshAdoration;
   /** Minute-of-day for the station this date. */
   stationMin: number;
@@ -35,6 +38,15 @@ export interface ReshStationCardProps {
   stationMinUtc: number;
   /** True if this is the next upcoming station. */
   isNext?: boolean;
+  /**
+   * Rule 66 (H12): the minimum-viable station — dusk by default. Carries
+   * the `minimum viable` chip and the ONLY primary CTA in its row. Pass
+   * explicitly (`true`/`false`) on all four cards to adopt the rule:
+   * with `false` the action button stays quiet even when `isNext`;
+   * leave `undefined` for the pre-H12 behaviour (isNext drives the
+   * accent button).
+   */
+  isMinimum?: boolean;
   /** True if the station already passed without observation. */
   isFaded?: boolean;
   /** Observation record if the practitioner marked it today. */
@@ -111,10 +123,12 @@ function CheckBadge() {
 
 export function ReshStationCard({
   station,
+  label,
   adoration,
   stationMin,
   stationMinUtc,
   isNext = false,
+  isMinimum,
   isFaded = false,
   observation,
   statusText,
@@ -123,6 +137,9 @@ export function ReshStationCard({
   style,
 }: ReshStationCardProps) {
   const observed = !!observation;
+  // Rule 66: when the surface states the rule (isMinimum given), only the
+  // minimum-viable station may carry the primary CTA.
+  const primaryAction = isMinimum === undefined ? isNext : isMinimum;
   const iconColor = observed
     ? "var(--success)"
     : isNext
@@ -160,7 +177,7 @@ export function ReshStationCard({
                 fontSize: 18,
               }}
             >
-              {RESH_STATION_META[station].label}
+              {label ?? RESH_STATION_META[station].label}
             </span>
             <span
               style={{
@@ -212,6 +229,29 @@ export function ReshStationCard({
         “{adoration.invocation}”
       </p>
 
+      {isMinimum ? (
+        <div
+          data-minimum-viable
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 5,
+            marginBottom: 10,
+            padding: "1px 8px",
+            borderRadius: "var(--r-pill, 999px)",
+            background: "var(--accent-soft)",
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderColor: "var(--line-2)",
+            fontFamily: "var(--font-ui)",
+            fontSize: 10,
+            color: "var(--accent)",
+          }}
+        >
+          minimum viable
+        </div>
+      ) : null}
+
       {observed ? (
         <Footer>
           <CheckBadge />
@@ -254,11 +294,11 @@ export function ReshStationCard({
               fontWeight: 600,
               whiteSpace: "nowrap",
               flex: "none",
-              background: isNext ? "var(--accent)" : "transparent",
-              color: isNext ? "var(--accent-ink)" : "var(--ink-soft)",
-              borderWidth: isNext ? 0 : 1,
+              background: primaryAction ? "var(--accent)" : "transparent",
+              color: primaryAction ? "var(--accent-ink)" : "var(--ink-soft)",
+              borderWidth: primaryAction ? 0 : 1,
               borderStyle: "solid",
-              borderColor: isNext ? "transparent" : "var(--line-2)",
+              borderColor: primaryAction ? "transparent" : "var(--line-2)",
               cursor: "pointer",
             }}
           >

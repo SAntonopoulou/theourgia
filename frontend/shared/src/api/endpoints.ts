@@ -109,8 +109,12 @@ import type {
   RecurringOfferingRead,
   RegistryAdvisory,
   ReshAdorationRead,
+  ReshConfigRead,
+  ReshConfigWrite,
+  ReshModeWire,
   ReshTodayRead,
   ReshTransitionWire,
+  TodayContextRead,
   RegistryAuthorRead,
   RegistryPluginListResponse,
   RegistrySubmission,
@@ -1481,6 +1485,7 @@ export function api(client: ApiClient) {
       since?: string;
       until?: string;
       transition?: ReshTransitionWire;
+      mode?: ReshModeWire;
       limit?: number;
       signal?: AbortSignal;
     }): Promise<ReshAdorationRead[]> {
@@ -1488,11 +1493,41 @@ export function api(client: ApiClient) {
       if (opts?.since) params.set("since", opts.since);
       if (opts?.until) params.set("until", opts.until);
       if (opts?.transition) params.set("transition", opts.transition);
+      if (opts?.mode) params.set("mode", opts.mode);
       if (opts?.limit !== undefined) params.set("limit", String(opts.limit));
       const qs = params.toString();
       return client.request<ReshAdorationRead[]>(`/api/v1/resh/adorations${qs ? `?${qs}` : ""}`, {
         signal: opts?.signal,
       });
+    },
+
+    /** The caller's rite configuration (preset, overrides, streak anchor). */
+    getReshConfig(opts?: { signal?: AbortSignal }): Promise<ReshConfigRead> {
+      return client.request<ReshConfigRead>("/api/v1/resh/config", {
+        signal: opts?.signal,
+      });
+    },
+
+    /** Partial update — omitted fields keep their current value. */
+    putReshConfig(input: ReshConfigWrite): Promise<ReshConfigRead> {
+      return client.request<ReshConfigRead>("/api/v1/resh/config", {
+        method: "PUT",
+        json: input,
+      });
+    },
+
+    /**
+     * The Today chip's cheap lunar-day lookup — Attic month/day,
+     * Hekatean observance state, and coarse moon phase (v1-058).
+     */
+    getTodayContext(opts?: { date?: string; signal?: AbortSignal }): Promise<TodayContextRead> {
+      const params = new URLSearchParams();
+      if (opts?.date) params.set("date", opts.date);
+      const qs = params.toString();
+      return client.request<TodayContextRead>(
+        `/api/v1/events/today-context${qs ? `?${qs}` : ""}`,
+        { signal: opts?.signal },
+      );
     },
 
     createReshAdoration(input: CreateReshAdorationInput): Promise<ReshAdorationRead> {

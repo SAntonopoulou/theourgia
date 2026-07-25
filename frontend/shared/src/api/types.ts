@@ -2234,10 +2234,16 @@ export interface IdentityRead {
   public_face_enabled: boolean;
 }
 
-// ─── Liber Resh ─────────────────────────────────────────────────────────────
+// ─── Liber Resh / four-station daily rite ───────────────────────────────────
 
 /** The four solar stations, as the wire spells them. */
 export type ReshTransitionWire = "sunrise" | "noon" | "sunset" | "midnight";
+
+/** Liturgy form of an adoration — 'home' (in Greece) or 'xenos' (abroad). */
+export type ReshModeWire = "home" | "xenos";
+
+/** Station-label preset. v1-058 ships ``hellenic`` as the default. */
+export type ReshPresetWire = "hellenic" | "thelemic";
 
 /** One station of the day — element of ``ReshTodayRead.stations``. */
 export interface ReshStationRead {
@@ -2251,14 +2257,46 @@ export interface ReshStationRead {
   /** ISO instant the practitioner marked it observed, else null. */
   observed_at: string | null;
   note: string | null;
+  /** Liturgy form of the observed adoration, if any (v1-058). */
+  mode: ReshModeWire | null;
 }
 
 /** ``GET /api/v1/resh/today?lat=&lng=&date=&tz=``. */
 export interface ReshTodayRead {
   civil_date: string;
   stations: ReshStationRead[];
-  /** Consecutive days ending today with all four (or polar two) observed. */
+  /** Consecutive days ending today with the minimum-viable station
+   *  observed (rule 66 — dusk by default). */
   streak_days: number;
+  /** The station the streak anchors on — ``sunset`` unless configured. */
+  minimum_viable_station: ReshTransitionWire;
+  /** Active station-label preset. */
+  preset: ReshPresetWire;
+  /** Liturgy form of today's most recent observed adoration, or null
+   *  when nothing is observed yet. */
+  mode: ReshModeWire | null;
+}
+
+/** Per-station override layered on the preset — ``resh/config``. */
+export interface ReshStationOverride {
+  godform?: string | null;
+  direction?: string | null;
+  short_invocation?: string | null;
+}
+
+/** ``GET /api/v1/resh/config`` — the caller's rite configuration. */
+export interface ReshConfigRead {
+  preset: ReshPresetWire;
+  minimum_viable_station: ReshTransitionWire;
+  stations: Partial<Record<ReshTransitionWire, ReshStationOverride>>;
+}
+
+/** ``PUT /api/v1/resh/config`` — partial; omitted fields keep their
+ *  value; ``stations`` (when present) replaces the override map. */
+export interface ReshConfigWrite {
+  preset?: ReshPresetWire;
+  minimum_viable_station?: ReshTransitionWire;
+  stations?: Partial<Record<ReshTransitionWire, ReshStationOverride>>;
 }
 
 /** One recorded adoration — ``GET /api/v1/resh/adorations``. */
@@ -2267,6 +2305,8 @@ export interface ReshAdorationRead {
   civil_date: string;
   transition: ReshTransitionWire;
   observed_at: string;
+  /** Liturgy form used ('home' | 'xenos'). */
+  mode: ReshModeWire;
   note: string | null;
   location_label: string | null;
   entry_id: string | null;
@@ -2281,7 +2321,45 @@ export interface CreateReshAdorationInput {
   /** Local civil date (YYYY-MM-DD); server defaults to today (UTC). */
   civil_date?: string | null;
   observed_at?: string | null;
+  /** Liturgy form — server defaults to 'home'. */
+  mode?: ReshModeWire;
   note?: string | null;
   location_label?: string | null;
   entry_id?: string | null;
+}
+
+// ─── Today context — Attic lunar day + observance (v1-058) ─────────────────
+
+/** The Attic calendar date block of ``GET /api/v1/events/today-context``. */
+export interface AtticDateRead {
+  year: number;
+  /** e.g. "2026/27". */
+  year_span: string;
+  month: number;
+  /** e.g. "Hekatombaion". */
+  month_name: string;
+  day: number;
+  month_length: number;
+  is_intercalary_year: boolean;
+}
+
+/** Coarse moon-phase info so the chip renders without a second call. */
+export interface MoonPhaseRead {
+  /** Sun–Moon elongation, degrees 0..360. */
+  phase_angle: number;
+  /** Eight-phase name ("Waxing crescent", …). */
+  phase_name: string;
+}
+
+/** Hekatean observance states carried by the lunar-day chip. */
+export type HekateanObservanceWire = "deipnon" | "noumenia" | "agathos_daimon";
+
+/** ``GET /api/v1/events/today-context``. */
+export interface TodayContextRead {
+  /** Civil (UTC) date resolved. */
+  date: string;
+  attic: AtticDateRead;
+  observance: HekateanObservanceWire | null;
+  moon: MoonPhaseRead;
+  attribution: string;
 }

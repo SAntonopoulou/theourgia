@@ -37,6 +37,7 @@ import { apiMethods } from "../data/api.js";
 import { createEntry, useRecentEntries } from "../data/useEntries.js";
 import { useMyLocation } from "../data/useLocation.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
+import { AwaitingJudgmentCard, TodayLunarChip, TodayRiteRow } from "./TodayPractice.js";
 
 // ─── Static maps ────────────────────────────────────────────────────────────
 
@@ -721,28 +722,6 @@ function HoursOfDayCard({ c }: { c: CelestialState }) {
   );
 }
 
-function OnThisDayCard() {
-  // No backend query yet — show the design's frame as an empty state. When
-  // the "entries authored on this day, prior years" endpoint lands this
-  // card lights up.
-  return (
-    <article style={cardStyle()}>
-      <div style={{ ...sectionLabel, marginBottom: 16 }}>On this day</div>
-      <div
-        style={{
-          fontFamily: "var(--font-serif)",
-          fontSize: 13.5,
-          color: "var(--ink-mute)",
-          lineHeight: 1.5,
-        }}
-      >
-        No record yet from past years on this date. Entries authored today will populate this card
-        next year.
-      </div>
-    </article>
-  );
-}
-
 function MottoCard() {
   return (
     <div style={{ textAlign: "center", padding: "6px 8px" }}>
@@ -868,7 +847,15 @@ export function Today() {
 
   return (
     <>
-      <div style={{ maxWidth: 1280, margin: "0 auto", minWidth: 0 }}>
+      {/* H12 ultrawide rule: the content column is capped, not stretched —
+          --shell-content-max only resolves above 1680px. */}
+      <div
+        style={{
+          maxWidth: "min(1280px, var(--shell-content-max, 1280px))",
+          margin: "0 auto",
+          minWidth: 0,
+        }}
+      >
         <div
           style={{
             display: "flex",
@@ -887,6 +874,14 @@ export function Today() {
               gap: 22,
             }}
           >
+            {/* H12 — the lunar-day chip: what day it is in the Attic
+                calendar and what that day asks. */}
+            <TodayLunarChip />
+
+            {/* H12 — the four-station rite row: first mount of the
+                LiberResh family on the home surface. */}
+            <TodayRiteRow lat={location.lat} lng={location.lng} />
+
             {/* Celestial row — small cards for the planetary hour + transits */}
             <div
               style={{
@@ -991,7 +986,10 @@ export function Today() {
                 formatRelative={relativeTimeBidirectional}
               />
             ) : null}
-            <OnThisDayCard />
+            {/* H12 — the due row's verdict slot; gracefully empty until
+                the two-gate queue endpoint exists. Replaces the old
+                "On this day" placeholder card. */}
+            <AwaitingJudgmentCard />
             <MottoCard />
           </aside>
         </div>

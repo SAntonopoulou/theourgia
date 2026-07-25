@@ -245,6 +245,122 @@ select:focus-visible {
   }
 }
 
+/* ── H12 · PracticeNav — the five-breakpoint nav contract ────────────────────
+ * Driven off a `data-nav-mode` attribute on `.pn-aside` so tests and spec
+ * surfaces can force a state; real media queries set the default (`auto`).
+ *
+ *   Phone         < 640       off-canvas drawer (284px) over a scrim —
+ *                             inherited from the .om-* block above.
+ *   Tablet        640–1024    64px icon rail. Section headers become
+ *                             hairlines; labels collapse; items keep an
+ *                             accessible name + title tooltip.
+ *   Small desktop 1024–1280   224px sidebar (--shell-nav-w).
+ *   Desktop       1280–1680   248px sidebar — the reference width.
+ *   Ultrawide     > 1680      sidebar stays 248px; the CONTENT column is
+ *                             capped, not stretched (--shell-content-max).
+ */
+
+/* Forced modes — for tests and for framing the nav inside a spec surface. */
+.pn-aside[data-nav-mode="rail"] {
+  padding: 14px 8px 12px !important;
+}
+.pn-aside[data-nav-mode="rail"] .pn-label {
+  display: none !important;
+}
+.pn-aside[data-nav-mode="rail"] .pn-head {
+  height: 1px;
+  padding: 10px 0 0 !important;
+  overflow: hidden;
+  color: transparent !important;
+  border-top: 1px solid var(--line);
+  margin: 6px 4px;
+}
+.pn-aside[data-nav-mode="rail"] a,
+.pn-aside[data-nav-mode="rail"] .pn-more,
+.pn-aside[data-nav-mode="rail"] .pn-switch,
+.pn-aside[data-nav-mode="rail"] .pn-capture {
+  justify-content: center;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  min-height: 40px;
+}
+.pn-aside[data-nav-mode="rail"] .pn-foot {
+  justify-content: center;
+}
+.pn-aside[data-nav-mode="compact"] {
+  padding: 14px 10px 12px !important;
+}
+
+/* auto · tablet band 640–1024 — the 64px icon rail. Scoped to shells that
+ * carry a PracticeNav so legacy VaultNav mounts (stories, tests) keep the
+ * old ≤1024 drawer behaviour untouched. */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .om-shell:has(> .pn-aside[data-nav-mode="auto"]) {
+    grid-template-columns: 64px 1fr !important;
+  }
+  .om-shell:has(> .pn-aside[data-nav-mode="auto"]) .om-menu {
+    display: none !important;
+  }
+  .om-shell:has(> .pn-aside[data-nav-mode="auto"]) .om-scrim {
+    display: none !important;
+  }
+  .pn-aside[data-nav-mode="auto"] {
+    position: static;
+    transform: none;
+    width: auto;
+    box-shadow: none !important;
+    padding: 14px 8px 12px !important;
+  }
+  .pn-aside[data-nav-mode="auto"] .pn-label {
+    display: none !important;
+  }
+  .pn-aside[data-nav-mode="auto"] .pn-head {
+    height: 1px;
+    padding: 10px 0 0 !important;
+    overflow: hidden;
+    color: transparent !important;
+    border-top: 1px solid var(--line);
+    margin: 6px 4px;
+  }
+  .pn-aside[data-nav-mode="auto"] a,
+  .pn-aside[data-nav-mode="auto"] .pn-more,
+  .pn-aside[data-nav-mode="auto"] .pn-switch,
+  .pn-aside[data-nav-mode="auto"] .pn-capture {
+    justify-content: center;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    min-height: 40px;
+  }
+  .pn-aside[data-nav-mode="auto"] .pn-foot {
+    justify-content: center;
+  }
+}
+
+/* Ultrawide — the content column is capped, not stretched. Surfaces opt in
+ * with `maxWidth: min(<surface max>, var(--shell-content-max, <surface max>))`.
+ * Below 1680 the var is unset, so each surface keeps its own ceiling. */
+@media (min-width: 1681px) {
+  :root {
+    --shell-content-max: 1080px;
+  }
+}
+
+/* ── H12 · Today practice dashboard — phone-first stacking ──────────────────
+ * Inline styles set the desktop grids; these overrides stack them. */
+@media (max-width: 900px) {
+  .td-stations {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .td-two {
+    grid-template-columns: 1fr !important;
+  }
+}
+@media (max-width: 640px) {
+  .td-stations {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 /* ── Sidebar (om-aside) — hide scrollbar entirely ────────────────────────────
  * Sophia 2026-06-21: the sidebar nav must not show any scrollbar even when
  * the content overflows. Mouse-wheel + keyboard navigation still scroll. */

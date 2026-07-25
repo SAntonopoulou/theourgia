@@ -31,6 +31,11 @@ export interface ReshStreakGridProps {
   streakOverride?: number;
   /** Optional subtitle ("3 of 4 kept so far today"). */
   subtitle?: ReactNode;
+  /** Hide the none→all-four legend — for binary grids (H12's dusk-kept
+   *  record) where the gradation ramp would mislead. */
+  hideLegend?: boolean;
+  /** Per-cell tooltip text; defaults to "{date} — {count} of 4 kept". */
+  cellTitle?: (day: ReshStreakDay) => string;
   className?: string;
   style?: CSSProperties;
 }
@@ -64,6 +69,8 @@ export function ReshStreakGrid({
   days,
   streakOverride,
   subtitle,
+  hideLegend = false,
+  cellTitle,
   className,
   style,
 }: ReshStreakGridProps) {
@@ -152,7 +159,7 @@ export function ReshStreakGrid({
                   data-day={d.date}
                   data-count={d.count}
                   data-is-today={isToday ? "true" : "false"}
-                  title={`${d.date} — ${d.count} of 4 kept`}
+                  title={cellTitle ? cellTitle(d) : `${d.date} — ${d.count} of 4 kept`}
                   style={{
                     width: 15,
                     height: 15,
@@ -170,7 +177,7 @@ export function ReshStreakGrid({
           </div>
           <div
             style={{
-              display: "flex",
+              display: hideLegend ? "none" : "flex",
               alignItems: "center",
               gap: 10,
               justifyContent: "flex-end",

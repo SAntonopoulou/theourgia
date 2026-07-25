@@ -335,6 +335,8 @@ export * from "./SandboxPromote/index.js";
 export * from "./BundleDiscard/index.js";
 export * from "./PluginUpdateDiff/index.js";
 export * from "./practice/index.js";
+export * from "./PracticeNav/index.js";
+export * from "./LunarDayChip/index.js";
 export * from "./PracticeLogs/index.js";
 export * from "./workshop/index.js";
 export * from "./Popover/index.js";

@@ -22,6 +22,9 @@ import {
 
 export interface ReshNextAdorationProps {
   station: ReshStation;
+  /** Display-label override — H12's Dawn/Noon/Dusk/Night relabel is a
+   *  prop-level rename, not a fork. Defaults to the static meta label. */
+  label?: string;
   adoration: ReshAdoration;
   /** Local minute-of-day for the upcoming station. */
   stationMin: number;
@@ -38,6 +41,7 @@ export interface ReshNextAdorationProps {
 
 export function ReshNextAdoration({
   station,
+  label,
   adoration,
   stationMin,
   stationMinUtc,
@@ -46,7 +50,7 @@ export function ReshNextAdoration({
   className,
   style,
 }: ReshNextAdorationProps) {
-  const stationLabel = RESH_STATION_META[station].label;
+  const stationLabel = label ?? RESH_STATION_META[station].label;
   return (
     <div
       className={className}

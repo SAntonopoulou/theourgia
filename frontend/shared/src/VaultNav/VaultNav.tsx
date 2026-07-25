@@ -43,7 +43,12 @@ const ICON_PROPS = {
   "aria-hidden": true,
 };
 
-const NAV_ICONS = {
+/**
+ * Engraving icon per nav key. Exported (H12) so PracticeNav — the
+ * successor chrome — reuses the same engravings instead of forking
+ * thirty SVGs; VaultNav's own contract is unchanged.
+ */
+export const NAV_ICONS = {
   today: (
     <svg {...ICON_PROPS}>
       <circle cx="12" cy="12" r="4" />

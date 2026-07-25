@@ -287,6 +287,13 @@ const MOCK_LOCATION = { lat: 51.4769, lng: 0 };
 // Resource entries mirror backend/theourgia/core/wellbeing/resources.py
 // and stay pending maintainer review (Sacred Well Directory rule).
 const MOCK_WELLBEING = { enabled: false, muted: false };
+
+/** Mutable rite configuration so GET/PUT /resh/config round-trips. */
+const MOCK_RESH_CONFIG: {
+  preset: "hellenic" | "thelemic";
+  minimum_viable_station: "sunrise" | "noon" | "sunset" | "midnight";
+  stations: Record<string, unknown>;
+} = { preset: "hellenic", minimum_viable_station: "sunset", stations: {} };
 const WELLBEING_RESOURCES = [
   {
     region: "international",
@@ -666,28 +673,59 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
   if (bare === "/api/v1/resh/today" && method === "GET") {
     const today = new Date().toISOString().slice(0, 10);
     const at = (hour: number) => `${today}T${String(hour).padStart(2, "0")}:00:00Z`;
+    // Hellenic preset (v1-058 default) — labels arrive server-driven.
     return {
       civil_date: today,
       streak_days: 0,
+      minimum_viable_station: "sunset",
+      preset: "hellenic",
+      mode: null,
       stations: [
-        { transition: "sunrise", at: at(6), godform: "Ra", direction: "the East", short_invocation: "Hail unto Thee who art Ra in Thy rising", observed_at: null, note: null },
-        { transition: "noon", at: at(12), godform: "Ahathoor", direction: "the South", short_invocation: "Hail unto Thee who art Ahathoor in Thy triumphing", observed_at: null, note: null },
-        { transition: "sunset", at: at(18), godform: "Tum", direction: "the West", short_invocation: "Hail unto Thee who art Tum in Thy setting", observed_at: null, note: null },
-        { transition: "midnight", at: at(0), godform: "Khephra", direction: "the North", short_invocation: "Hail unto Thee who art Khephra in Thy hiding", observed_at: null, note: null },
+        { transition: "sunrise", at: at(6), godform: "Helios", direction: "the East", short_invocation: "Hail Helios, rising", observed_at: null, note: null, mode: null },
+        { transition: "noon", at: at(12), godform: "Helios", direction: "the height", short_invocation: "Hail Helios, triumphant at the height", observed_at: null, note: null, mode: null },
+        { transition: "sunset", at: at(18), godform: "Helios", direction: "the West", short_invocation: "Hail Helios, setting", observed_at: null, note: null, mode: null },
+        { transition: "midnight", at: at(0), godform: "Helios", direction: "the deep", short_invocation: "Hail Helios, hidden in the deep", observed_at: null, note: null, mode: null },
       ],
     };
+  }
+
+  if (bare === "/api/v1/resh/config") {
+    if (method === "GET") return { ...MOCK_RESH_CONFIG, stations: { ...MOCK_RESH_CONFIG.stations } };
+    if (method === "PUT") {
+      const input = (body ?? {}) as {
+        preset?: string;
+        minimum_viable_station?: string;
+        stations?: Record<string, unknown>;
+      };
+      if (input.preset === "hellenic" || input.preset === "thelemic") {
+        MOCK_RESH_CONFIG.preset = input.preset;
+      }
+      if (
+        input.minimum_viable_station === "sunrise" ||
+        input.minimum_viable_station === "noon" ||
+        input.minimum_viable_station === "sunset" ||
+        input.minimum_viable_station === "midnight"
+      ) {
+        MOCK_RESH_CONFIG.minimum_viable_station = input.minimum_viable_station;
+      }
+      if (input.stations && typeof input.stations === "object") {
+        MOCK_RESH_CONFIG.stations = { ...input.stations };
+      }
+      return { ...MOCK_RESH_CONFIG, stations: { ...MOCK_RESH_CONFIG.stations } };
+    }
   }
 
   if (bare === "/api/v1/resh/adorations") {
     if (method === "GET") return [];
     if (method === "POST") {
-      const input = (body ?? {}) as { transition?: string; civil_date?: string | null; note?: string | null };
+      const input = (body ?? {}) as { transition?: string; civil_date?: string | null; mode?: string; note?: string | null };
       const now = new Date().toISOString();
       return {
         id: `adoration-${Date.now()}`,
         civil_date: input.civil_date ?? now.slice(0, 10),
         transition: input.transition ?? "sunrise",
         observed_at: now,
+        mode: input.mode === "xenos" ? "xenos" : "home",
         note: input.note ?? null,
         location_label: null,
         entry_id: null,
@@ -696,6 +734,26 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
         updated_at: now,
       };
     }
+  }
+
+  if (bare === "/api/v1/events/today-context" && method === "GET") {
+    // Deterministic Deipnon snapshot — the dark-moon day closing the month.
+    const params = new URLSearchParams(qs);
+    return {
+      date: params.get("date") ?? new Date().toISOString().slice(0, 10),
+      attic: {
+        year: 3,
+        year_span: "2026/27",
+        month: 1,
+        month_name: "Hekatombaion",
+        day: 29,
+        month_length: 29,
+        is_intercalary_year: false,
+      },
+      observance: "deipnon",
+      moon: { phase_angle: 351.4, phase_name: "Waning crescent" },
+      attribution: "Attic reckoning computed locally; no external source.",
+    };
   }
 
   if (bare === "/api/v1/wellbeing/nudge") {

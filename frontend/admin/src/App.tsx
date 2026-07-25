@@ -18,10 +18,10 @@ import {
   AppShell,
   AuthProvider,
   I18nProvider,
-  type NavKey,
+  PracticeNav,
+  type PracticeNavKey,
   ToastProvider,
   TopbarProvider,
-  VaultNav,
   type VaultNavLinkProps,
   VaultTopbar,
   useAuth,
@@ -545,6 +545,9 @@ const VocesMagicaeRoute = lazy(() =>
 const Placeholder = lazy(() =>
   import("./routes/Placeholder.js").then((m) => ({ default: m.Placeholder })),
 );
+const ArrivingWithF2 = lazy(() =>
+  import("./routes/ArrivingWithF2.js").then((m) => ({ default: m.ArrivingWithF2 })),
+);
 const PracticeLogsRoute = lazy(() =>
   import("./routes/PracticeLogsRoute.js").then((m) => ({
     default: m.PracticeLogsRoute,
@@ -617,8 +620,9 @@ function NavLinkAdapter({ to, children, className, style, onClick }: VaultNavLin
   );
 }
 
-/** Map the current ``location.pathname`` to the active VaultNav key. */
-function navKeyForPath(pathname: string): NavKey | undefined {
+/** Map the current ``location.pathname`` to the active PracticeNav key
+ *  (H12 — a superset of the old VaultNav keys; nothing removed). */
+function navKeyForPath(pathname: string): PracticeNavKey | undefined {
   if (pathname === "/" || pathname === "") return "today";
   if (pathname.startsWith("/journal")) return "journal";
   if (pathname.startsWith("/synchronicities")) return "synchronicities";
@@ -639,6 +643,10 @@ function navKeyForPath(pathname: string): NavKey | undefined {
   }
   if (pathname.startsWith("/library")) return "library";
   if (pathname.startsWith("/calendar")) return "calendar";
+  // H12 — the practice wing's three new surfaces (F2 placeholders today).
+  if (pathname.startsWith("/divination/astragaloi")) return "astragaloi";
+  if (pathname.startsWith("/order/ladder")) return "ladder";
+  if (pathname.startsWith("/verdicts")) return "awaitingjudgment";
   if (pathname.startsWith("/divination")) return "divination";
   if (pathname.startsWith("/sigils") || pathname.startsWith("/sigil")) return "sigils";
   if (pathname.startsWith("/magic-squares")) return "magicsquares";
@@ -660,6 +668,8 @@ function navKeyForPath(pathname: string): NavKey | undefined {
   if (pathname.startsWith("/plugins")) return "plugins";
   if (pathname.startsWith("/bundles")) return "bundles";
   if (pathname.startsWith("/sandbox")) return "sandbox";
+  // H12 — Agents joins the platform wing's Platform section.
+  if (pathname.startsWith("/agents")) return "agents";
   return undefined;
 }
 
@@ -728,7 +738,10 @@ function Shell({ children }: { children: React.ReactNode }) {
         />
       }
       nav={
-        <VaultNav
+        // H12: PracticeNav replaces VaultNav wholesale at the shell. The
+        // awaiting-judgment count stays unwired until the queue endpoint
+        // (Sprint I-B) exists — the chip renders nothing at 0.
+        <PracticeNav
           active={active}
           LinkComponent={NavLinkAdapter}
           identity={navIdentity}
@@ -829,6 +842,38 @@ function ShellRoutes() {
               divination surface is /divination/tarot (H04). Keep the bare
               URL alive for bookmarks. */}
             <Route path="/divination" element={<Navigate to="/divination/tarot" replace />} />
+            {/* H12 — practice-wing surfaces whose real compositions land in
+              Sprint F2. Registered now so PracticeNav links never 404. */}
+            <Route
+              path="/divination/astragaloi"
+              element={
+                <ArrivingWithF2
+                  glyph="divination"
+                  title="Astragaloi"
+                  body="Five knucklebones, faces 1/3/4/6 — transcription-first casting with the oracle verse and the ladder reading side by side."
+                />
+              }
+            />
+            <Route
+              path="/order/ladder"
+              element={
+                <ArrivingWithF2
+                  glyph="star"
+                  title="Tetraktys ladder"
+                  body="The ten spheres as navigation — curriculum, gates, and the sealed initiation record along the serpent path."
+                />
+              }
+            />
+            <Route
+              path="/verdicts"
+              element={
+                <ArrivingWithF2
+                  glyph="scroll"
+                  title="Awaiting judgment"
+                  body="The two-gate verdict queue — did it work, and is it true — over every working with a sealed intent still undischarged."
+                />
+              }
+            />
             <Route path="/divination/tarot" element={<TarotRoute />} />
             <Route path="/divination/iching" element={<IChingRoute />} />
             <Route path="/divination/geomancy" element={<GeomancyRoute />} />
