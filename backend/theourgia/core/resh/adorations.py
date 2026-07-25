@@ -20,9 +20,12 @@ without penalty.
 
 from __future__ import annotations
 
+import json
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, date as date_cls, datetime, timedelta
 from enum import Enum
+from importlib import resources
 
 from theourgia.core.astro.sun_times import compute_sun_times
 
@@ -30,12 +33,16 @@ __all__ = [
     "Adoration",
     "AdorationLog",
     "DEFAULT_MINIMUM_VIABLE_STATION",
+    "DEFAULT_MODE",
     "DEFAULT_PRESET",
     "DailyTransitions",
+    "Invocation",
     "PRESETS",
     "Transition",
     "adoration_for_transition",
     "compute_transitions",
+    "invocation_forms",
+    "invocation_for_mode",
     "station_for_transition",
     "stations_for_preset",
     "streak_at_date",
@@ -47,6 +54,44 @@ class Transition(str, Enum):
     NOON = "noon"
     SUNSET = "sunset"
     MIDNIGHT = "midnight"
+
+
+# A station's invocation is either a single form (plain string — the
+# thelemic preset, and any user override) or a per-mode mapping
+# ``{"home": …, "xenos": …}`` (the hellenic preset, which carries the
+# operator's two liturgy forms). Normalize at read via
+# :func:`invocation_for_mode` / :func:`invocation_forms`.
+Invocation = str | Mapping[str, str]
+
+# The liturgy form served when nothing narrows it down.
+DEFAULT_MODE = "home"
+
+
+def invocation_for_mode(invocation: Invocation, mode: str = DEFAULT_MODE) -> str:
+    """Resolve an invocation to the single form for ``mode``.
+
+    A plain string is a single-form invocation and serves every mode
+    unchanged (backward-compatible shape). A mapping resolves by mode
+    key, falling back to ``home``, then to any form present. The text
+    is returned exactly as stored — never normalized or re-encoded.
+    """
+    if isinstance(invocation, str):
+        return invocation
+    form = invocation.get(mode) or invocation.get(DEFAULT_MODE)
+    if form:
+        return form
+    return next(iter(invocation.values()))
+
+
+def invocation_forms(invocation: Invocation) -> dict[str, str]:
+    """Both mode forms, normalized: ``{"home": …, "xenos": …}``.
+
+    A single-form invocation serves the same text for both modes.
+    """
+    return {
+        "home": invocation_for_mode(invocation, "home"),
+        "xenos": invocation_for_mode(invocation, "xenos"),
+    }
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,7 +107,17 @@ class Adoration:
     transition: Transition
     godform: str  # "Hekate Phosphoros — the Return", "Ra Hoor Khuit", …
     direction: str  # "East", "Centre", "West", "Below"
-    short_invocation: str  # opening line of the adoration
+    # Opening line(s) of the adoration — a plain string (single form)
+    # or a per-mode mapping {"home": …, "xenos": …}.
+    short_invocation: Invocation
+
+    def invocation_for(self, mode: str = DEFAULT_MODE) -> str:
+        """The invocation form for a liturgy mode (see module helpers)."""
+        return invocation_for_mode(self.short_invocation, mode)
+
+    def invocation_forms(self) -> dict[str, str]:
+        """Both mode forms, normalized."""
+        return invocation_forms(self.short_invocation)
 
 
 _CANONICAL_ADORATIONS: dict[Transition, Adoration] = {
@@ -93,43 +148,50 @@ _CANONICAL_ADORATIONS: dict[Transition, Adoration] = {
 }
 
 
+# The hellenic liturgy ships as data: the operator's real rite-words,
+# extracted byte-exact from her grimoire (see the file's ``meta`` for
+# provenance + caveats). Greek text is served exactly as stored — no
+# Unicode normalization anywhere on the path.
+_LITURGY_RESOURCE = "data/hellenic_rite_liturgy.json"
+
+# JSON station keys → solar transitions.
+_LITURGY_STATIONS: dict[Transition, str] = {
+    Transition.SUNRISE: "dawn",
+    Transition.NOON: "noon",
+    Transition.SUNSET: "dusk",
+    Transition.MIDNIGHT: "night",
+}
+
+
+def _load_hellenic_liturgy() -> dict[str, dict]:
+    raw = (
+        resources.files("theourgia")
+        .joinpath(_LITURGY_RESOURCE)
+        .read_text(encoding="utf-8")
+    )
+    return json.loads(raw)["stations"]
+
+
+_HELLENIC_GODFORMS: dict[Transition, tuple[str, str]] = {
+    Transition.SUNRISE: ("Hekate Phosphoros — the Return", "East"),
+    Transition.NOON: ("Apollo — the Good / the Augoeides", "Centre"),
+    Transition.SUNSET: ("Hekate Enodia, Kleidouchos — the Descent", "West"),
+    Transition.MIDNIGHT: ("Persephone — the Journey", "Below"),
+}
+
+_liturgy_stations = _load_hellenic_liturgy()
+
 _HELLENIC_ADORATIONS: dict[Transition, Adoration] = {
-    Transition.SUNRISE: Adoration(
-        transition=Transition.SUNRISE,
-        godform="Hekate Phosphoros — the Return",
-        direction="East",
-        short_invocation=(
-            "Hail Hekate Phosphoros, torch-bearer, who leads the soul "
-            "back into the light."
-        ),
-    ),
-    Transition.NOON: Adoration(
-        transition=Transition.NOON,
-        godform="Apollo — the Good / the Augoeides",
-        direction="Centre",
-        short_invocation=(
-            "Hail Apollo, the Good, the shining Augoeides at the "
-            "height of day."
-        ),
-    ),
-    Transition.SUNSET: Adoration(
-        transition=Transition.SUNSET,
-        godform="Hekate Enodia, Kleidouchos — the Descent",
-        direction="West",
-        short_invocation=(
-            "Hail Hekate Enodia, Kleidouchos, keeper of the keys at "
-            "the road's turning; guide the descent."
-        ),
-    ),
-    Transition.MIDNIGHT: Adoration(
-        transition=Transition.MIDNIGHT,
-        godform="Persephone — the Journey",
-        direction="Below",
-        short_invocation=(
-            "Hail Persephone, queen below, companion of the journey "
-            "through the dark."
-        ),
-    ),
+    transition: Adoration(
+        transition=transition,
+        godform=godform,
+        direction=direction,
+        short_invocation={
+            "home": _liturgy_stations[_LITURGY_STATIONS[transition]]["home"]["invocation"],
+            "xenos": _liturgy_stations[_LITURGY_STATIONS[transition]]["xenos"]["invocation"],
+        },
+    )
+    for transition, (godform, direction) in _HELLENIC_GODFORMS.items()
 }
 
 

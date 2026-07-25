@@ -1,0 +1,75 @@
+{
+  "meta": {
+    "source_paths": {
+      "primary_liturgy": "/home/sophia/system/hellinismos-grimoire/notes/liturgy/daily-rite-liturgy.md",
+      "design_context": "/home/sophia/system/hellinismos-grimoire/notes/practice/daily-rite.md"
+    },
+    "extraction_date": "2026-07-25",
+    "liturgy_version": "v1 — LIVE FOR USE (Session 05, 2026-06-22); designed 2026-06-21 (Phase 1, Stage 1)",
+    "mode_definitions": {
+      "HOME": "Her 'home/full' mode: spoken aloud at the altar in Greece — lamp, libation, full gesture. Greek spoken, English beneath, gestures in italics.",
+      "XENOS": "Her 'xenos/discreet' mode: whispered or internal, away from home (Belgium) — in the 'voice of nostos', longing for home: 'the body's exile mirrors the soul's exile from the Good, which the whole path returns from.'"
+    },
+    "caveats": [
+      "Her liturgy has exactly ONE form per station per mode — no separate long/short variants exist. The full strophe is therefore the daily spoken invocation; nothing was shortened.",
+      "All four stations have both HOME and XENOS forms; no XENOS form is absent, so no nulls were needed.",
+      "notes/deities/hekate-invocation-kit.md is NOT referenced by either source file and was not read.",
+      "notes/practice/daily-rite.md (the design doc) contains a full duplicate of the entire liturgy; the two copies are textually identical. The liturgy file was treated as primary. The only divergence: the design doc marks Dusk with 'MINIMUM-VIABLE station' / '(minimum-viable)' in the station headers; the liturgy file omits that marker.",
+      "Ancient anchors preserved untouched: polytonic 'Χαῖρε' opening every station, and 'ΑΠΟ ΠΑΝΤΟΣ ΚΑΚΟΔΑΙΜΟΝΟΣ' in Dusk (both modes). The rest is Modern (monotonic) Greek with ano teleia (·) punctuation.",
+      "The guardian-slot line in Dusk ('Και εσείς, φύλακες που η Εκάτη αγαπά και ορίζει, σταθείτε μαζί μου.') is interim, install-by-proof; specific guardian names are to be added as derived (Stage 3). It is part of her fixed text and was transcribed as-is.",
+      "Her own status notes: 'v1 — tune to your ear through use'; the Greek is 'serviceable-not-native — Sophia to tune to her ear as her Greek returns.' English glosses in the notes fields are HER translations, transcribed verbatim from the italic parentheticals; fuller gloss provenance is chat log #707/#709/#713.",
+      "Design rules from the design doc: on hard days the Dusk Hekate crossing alone is non-negotiable (minimum-viable fallback; 'the streak never breaks'); log each station, even a tick. The rite honors the crossings between the sun's stations, not the stations themselves — Hekate at the crossings = the Way, Apollo/the Good/the Augoeides at noon = the Goal, Persephone at night = the Journey.",
+      "Weekly and monthly rite-words are still to be drafted (her to-do list); this file covers the daily rite only."
+    ]
+  },
+  "stations": {
+    "dawn": {
+      "deity": "Hekate Phosphoros (Εκάτη Φωσφόρος, Light-bearer)",
+      "title": "☀ DAWN — Hekate, the Return",
+      "home": {
+        "invocation": "Χαῖρε, Εκάτη Φωσφόρε. Εσύ που οδηγείς τον δρόμο από το σκοτάδι, που βαδίζεις πριν την αυγή· όπως ανέβασες την Κόρη στο φως, ανέβασέ με σ' αυτή την ημέρα. Να είσαι μαζί μου σε κάθε κατώφλι που περνώ.",
+        "notes": "Gesture: palms upward to the lightening sky. Her English gloss: (Hail, Hekate Phosphóros, Light-bearer. You who lead the way out of the darkness, who walk before the dawn; as you brought the Korē up into the light, raise me up into this day. Be with me at every threshold I cross.) Station meaning: the night→day crossing — she who leads the return up from below; Hekate at the crossings = the Way."
+      },
+      "xenos": {
+        "invocation": "Χαῖρε, Εκάτη Φωσφόρε. Εδώ, μακριά από την πατρίδα, σηκώνεται πάλι το φως. Εσύ που ανέβασες την Κόρη από το σκοτάδι, σήκωσέ κι εμένα σ' αυτή την ημέρα στα ξένα, και κράτα μέσα μου ζωντανό τον δρόμο για το σπίτι.",
+        "notes": "Whispered or internal; no gesture specified for XENOS. Her English gloss: (Hail, Hekate Phosphóros. Here, far from my homeland, the light rises again. You who raised the Korē up out of the darkness, raise me too into this day in a foreign land, and keep alive in me the road home.)"
+      }
+    },
+    "noon": {
+      "deity": "Apollo (Φοίβος Άπολλων / Phoebus Apollo) / the Good / the Augoeides",
+      "title": "☉ NOON — Apollo / the Good / the Augoeides",
+      "home": {
+        "invocation": "Χαῖρε, Φοίβε Άπολλον. Φως του Αγαθού φανερωμένο, ήλιε του κόσμου· όπως είσαι η εικόνα του Αγαθού, άναψε μέσα μου το αυγοειδές, το δικό μου φως. Με το φως σου — να γνωρίσω τον εαυτό μου.",
+        "notes": "Gesture: eyes & open hand to the sun. Her English gloss: (Hail, Phoebus Apollo. Light of the Good made manifest, sun of the world; as you are the image of the Good, kindle in me the augoeides, my own light. By your light — let me know myself.) Station meaning: the height — the Goal (the luminous Self / Agathos Daimon); Plato's Sun as image of the Good (Republic VI 508–509), the Delphic 'know thyself'."
+      },
+      "xenos": {
+        "invocation": "Χαῖρε, Φοίβε Άπολλον. Ο ίδιος ήλιος που λάμπει πάνω από την Ελλάδα λάμπει κι εδώ πάνω μου. Φως του Αγαθού, άναψε μέσα μου το αυγοειδές· οδήγησέ με προς το αληθινό μου σπίτι, και να γνωρίσω τον εαυτό μου.",
+        "notes": "Whispered or internal; no gesture specified for XENOS. Her English gloss: (Hail, Phoebus Apollo. The same sun that shines over Greece shines here upon me too. Light of the Good, kindle in me the augoeides; lead me toward my true home, and let me know myself.)"
+      }
+    },
+    "dusk": {
+      "deity": "Hekate Enodia, Kleidouchos (Εκάτη Ενοδία, Κλειδούχος — of the Way, Key-bearer)",
+      "title": "☾ DUSK — Hekate, the Descent (MINIMUM-VIABLE station)",
+      "home": {
+        "invocation": "Χαῖρε, Εκάτη Ενοδία, Κλειδούχε. Φύλακα του σταυροδρομιού, που κρατάς τα κλειδιά· καθώς πέφτει το φως, κράτα την πύλη. Ας μην περάσει τίποτα ανίερο το κατώφλι μου απόψε. Και εσείς, φύλακες που η Εκάτη αγαπά και ορίζει, σταθείτε μαζί μου. ΑΠΟ ΠΑΝΤΟΣ ΚΑΚΟΔΑΙΜΟΝΟΣ — μακριά, κάθε κακός δαίμονας.",
+        "notes": "Gesture: arms cross at the threshold then open; small wineless libation. Her English gloss: (Hail, Hekate Enodia, of the Way, Kleidoûchos, Key-bearer. Guardian of the crossroads, who hold the keys; as the light falls, hold the gate. Let nothing unhallowed cross my threshold tonight. And you, guardians whom Hekate loves and commands, stand with me. Apo pantos kakodaimonos — away, every evil daimon.) This is the minimum-viable fallback: on hard days this station alone is non-negotiable; the streak never breaks. Contains the ancient anchor ΑΠΟ ΠΑΝΤΟΣ ΚΑΚΟΔΑΙΜΟΝΟΣ and the interim guardian-slot line (specific names to be added at Stage 3). Station meaning: the day→night crossing — her most famous hour; the descent."
+      },
+      "xenos": {
+        "invocation": "Χαῖρε, Εκάτη Ενοδία, Κλειδούχε, εσύ που στέκεις σε κάθε σταυροδρόμι, σε κάθε τόπο. Με ακούς κι εδώ, μακριά από την πατρίδα μου. Σε ξένη γη στέκομαι στο σταυροδρόμι και σε καλώ· κράτα τον δρόμο του γυρισμού ανοιχτό, και φύλαξέ με ώσπου να γυρίσω σπίτι. Και εσείς, φύλακες που η Εκάτη αγαπά και ορίζει, σταθείτε μαζί μου. ΑΠΟ ΠΑΝΤΟΣ ΚΑΚΟΔΑΙΜΟΝΟΣ — μακριά, κάθε κακός δαίμονας.",
+        "notes": "Whispered or internal; marked '(minimum-viable)' in the design doc. Her English gloss: (Hail, Hekate Enodia, Kleidoûchos, you who stand at every crossroads, in every place. You hear me even here, far from my homeland. On foreign soil I stand at the crossroads and call you; keep the road of return open, and guard me until I come home. And you, guardians whom Hekate loves and commands, stand with me. Apo pantos kakodaimonos — away, every evil daimon.) Retains guardian-slot and ΑΠΟ ΠΑΝΤΟΣ ΚΑΚΟΔΑΙΜΟΝΟΣ anchor."
+      }
+    },
+    "night": {
+      "deity": "Persephone (Περσεφόνη, Κόρη και Βασίλισσα — Maiden and Queen)",
+      "title": "● NIGHT — Persephone, the Journey",
+      "home": {
+        "invocation": "Χαῖρε, Περσεφόνη, Κόρη και Βασίλισσα. Εσύ που κατεβαίνεις και ανεβαίνεις ξανά, που βασιλεύεις στα βάθη και γυρνάς με την άνοιξη· δίδαξέ μου τον δρόμο της καθόδου και της επιστροφής. Κράτα με μέσα στο σκοτάδι.",
+        "notes": "Gesture: one hand low toward the earth; then silence. Her English gloss: (Hail, Persephone, Maiden and Queen. You who descend and rise again, who reign in the depths and return with the spring; teach me the way of the descent and the return. Hold me through the darkness.) Station meaning: the depth pole — the Journey (descent and return, the shape of the AD-working); Persephone chosen over Hades for daily invocation."
+      },
+      "xenos": {
+        "invocation": "Χαῖρε, Περσεφόνη, Κόρη και Βασίλισσα, εσύ που ξέρεις την ξενιτιά κάτω από τη γη και τον γυρισμό την άνοιξη. Κράτα με μέσα στη νύχτα στα ξένα· δίδαξέ μου την υπομονή της καθόδου και τη βεβαιότητα της επιστροφής, ώσπου να ξαναβρώ το σπίτι μου.",
+        "notes": "Whispered or internal; no gesture specified for XENOS. Her English gloss: (Hail, Persephone, Maiden and Queen, you who know exile beneath the earth and the return with the spring. Hold me through the night in a foreign land; teach me the patience of the descent and the certainty of the return, until I find my home again.)"
+      }
+    }
+  }
+}

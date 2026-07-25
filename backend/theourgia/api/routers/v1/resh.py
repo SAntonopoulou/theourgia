@@ -32,11 +32,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.core.resh import (
     DEFAULT_MINIMUM_VIABLE_STATION,
+    DEFAULT_MODE,
     DEFAULT_PRESET,
     Adoration as StationDef,
     AdorationLog,
     Transition,
     compute_transitions,
+    invocation_forms,
     stations_for_preset,
     streak_at_date,
 )
@@ -70,6 +72,23 @@ class StationOverride(BaseModel):
     short_invocation: str | None = Field(default=None, max_length=1024)
 
 
+class StationForms(BaseModel):
+    """A resolved station with both liturgy forms of its invocation.
+
+    ``invocation`` always carries both keys — a single-form station
+    (thelemic preset, or a plain-string override) serves the same text
+    for both modes.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    godform: str
+    direction: str
+    invocation: dict[ModeLiteral, str] = Field(
+        description="Both liturgy forms: {'home': …, 'xenos': …}.",
+    )
+
+
 class RiteConfig(BaseModel):
     """The caller's four-station rite configuration."""
 
@@ -81,6 +100,14 @@ class RiteConfig(BaseModel):
         default_factory=dict,
         description="Per-station overrides layered on the preset.",
     )
+    effective_stations: dict[TransitionLiteral, StationForms] = Field(
+        default_factory=dict,
+        description=(
+            "Read-only: the preset with overrides applied, each station "
+            "carrying both liturgy forms of its invocation (for the "
+            "override editor). Ignored on write."
+        ),
+    )
 
 
 class RiteConfigWrite(BaseModel):
@@ -89,6 +116,8 @@ class RiteConfigWrite(BaseModel):
     preset: PresetLiteral | None = None
     minimum_viable_station: TransitionLiteral | None = None
     stations: dict[TransitionLiteral, StationOverride] | None = None
+    # Accepted so a GET body can be echoed back verbatim; never written.
+    effective_stations: dict[TransitionLiteral, StationForms] | None = None
 
 
 class StationRead(BaseModel):
@@ -98,7 +127,13 @@ class StationRead(BaseModel):
     at: datetime | None
     godform: str
     direction: str
-    short_invocation: str
+    short_invocation: str = Field(
+        description=(
+            "The invocation in the liturgy form relevant today: the "
+            "station's observed mode if recorded, else the day's mode, "
+            "else 'home'. Both forms live in GET /resh/config."
+        ),
+    )
     observed_at: datetime | None
     note: str | None
     mode: ModeLiteral | None = Field(
@@ -236,15 +271,22 @@ async def _load_rite_config(db: AsyncSession, user_id) -> RiteConfig:
             if fields:
                 overrides[key] = StationOverride(**fields)
 
-    return RiteConfig(
+    config = RiteConfig(
         preset=preset,  # type: ignore[arg-type]
         minimum_viable_station=min_station,  # type: ignore[arg-type]
         stations=overrides,  # type: ignore[arg-type]
     )
+    config.effective_stations = _station_forms(config)  # type: ignore[assignment]
+    return config
 
 
 def _effective_stations(config: RiteConfig) -> dict[Transition, StationDef]:
-    """The preset's stations with the user's overrides applied."""
+    """The preset's stations with the user's overrides applied.
+
+    A ``short_invocation`` override is a plain string and replaces the
+    preset's invocation for BOTH modes; without one, the preset's form
+    (single string or per-mode mapping) passes through untouched.
+    """
     stations = stations_for_preset(config.preset)
     for key, override in config.stations.items():
         t = Transition(key)
@@ -256,6 +298,18 @@ def _effective_stations(config: RiteConfig) -> dict[Transition, StationDef]:
             short_invocation=override.short_invocation or base.short_invocation,
         )
     return stations
+
+
+def _station_forms(config: RiteConfig) -> dict[str, StationForms]:
+    """Each effective station with both liturgy forms, keyed by transition."""
+    return {
+        t.value: StationForms(
+            godform=station.godform,
+            direction=station.direction,
+            invocation=invocation_forms(station.short_invocation),  # type: ignore[arg-type]
+        )
+        for t, station in _effective_stations(config).items()
+    }
 
 
 async def _upsert_setting(
@@ -370,18 +424,27 @@ async def today(
     observed_rows = (await db.execute(stmt)).scalars().all()
     by_transition = {row.transition: row for row in observed_rows}
 
+    # Day-level mode: the most recently observed adoration's form.
+    latest = max(observed_rows, key=lambda r: r.observed_at, default=None)
+    day_mode = latest.mode.value if latest else None
+
     stations: list[StationRead] = []
     for t in (Transition.SUNRISE, Transition.NOON, Transition.SUNSET, Transition.MIDNIGHT):
         meta = station_defs[t]
         instant = pairs.get(t)  # None when polar fallback ate sunrise/sunset
         observed = by_transition.get(ReshTransition(t.value))
+        # The liturgy form to serve: this station's observed mode wins;
+        # unobserved stations follow the day's mode; default is home.
+        station_mode = (
+            observed.mode.value if observed else (day_mode or DEFAULT_MODE)
+        )
         stations.append(
             StationRead(
                 transition=t.value,
                 at=instant,
                 godform=meta.godform,
                 direction=meta.direction,
-                short_invocation=meta.short_invocation,
+                short_invocation=meta.invocation_for(station_mode),
                 observed_at=observed.observed_at if observed else None,
                 note=observed.note if observed else None,
                 mode=observed.mode.value if observed else None,
@@ -389,9 +452,6 @@ async def today(
         )
 
     streak = await _streak_for_user(db, current_user.id, on_date, min_station)
-
-    # Day-level mode: the most recently observed adoration's form.
-    latest = max(observed_rows, key=lambda r: r.observed_at, default=None)
 
     return ReshToday(
         civil_date=on_date,
