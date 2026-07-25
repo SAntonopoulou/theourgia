@@ -241,6 +241,7 @@ export {
   type AgentsHomeSurfaceProps,
   type DisabledAgentRow,
 } from "./AgentsHome/AgentsHomeSurface.js";
+export type { AgentSubnavKey } from "./AgentsHome/copy.js";
 export * as AgentMarketplaceCopy from "./AgentMarketplace/index.js";
 export {
   AgentMarketplaceSurface,

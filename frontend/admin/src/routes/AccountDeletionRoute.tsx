@@ -18,6 +18,7 @@ import {
 } from "@theourgia/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { CSSProperties } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
 
@@ -39,6 +40,7 @@ export function AccountDeletionRoute() {
   }));
 
   const { session } = useAuth();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const meQuery = useQuery({
     queryKey: ["me"],
@@ -138,7 +140,7 @@ export function AccountDeletionRoute() {
       busy={scheduleMutation.isPending}
       onSchedule={() => scheduleMutation.mutate()}
       onKeepVault={() => {
-        window.location.href = "/settings/data-export";
+        navigate("/settings/data-export");
       }}
     />
   );

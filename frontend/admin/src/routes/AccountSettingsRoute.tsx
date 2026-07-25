@@ -14,6 +14,7 @@
  */
 
 import {
+  AccountSettingsCopy,
   AccountSettingsSurface,
   useAuth,
   useTopbar,
@@ -21,7 +22,19 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { appHref } from "../lib/appHref.js";
+
 const INHERITANCE_KEY = "theourgia.inheritance.enabled";
+
+// The shared DEFAULT_SECTIONS carry raw absolute hrefs ("/settings/keys").
+// Served under the /app basename those escape the SPA, so resolve every
+// internal link through appHref() once at module scope.
+const SECTIONS = AccountSettingsCopy.DEFAULT_SECTIONS.map((section) => ({
+  ...section,
+  links: section.links.map((l) =>
+    l.href.startsWith("/") ? { ...l, href: appHref(l.href) } : l,
+  ),
+}));
 
 export function AccountSettingsRoute() {
   useTopbar(() => ({
@@ -67,6 +80,7 @@ export function AccountSettingsRoute() {
     <>
       <AccountSettingsSurface
         about={about}
+        sections={SECTIONS}
         inheritanceOn={inheritanceOn}
         onToggleInheritance={(next) => {
           setInheritanceOn(next);
@@ -80,7 +94,7 @@ export function AccountSettingsRoute() {
         onSetupExecutor={() => {
           // For v1 the executor-designation flow lives in the Identities
           // surface; the dedicated wizard lands with Digital Inheritance.
-          window.location.href = "/identities";
+          navigate("/identities");
         }}
       />
       <div

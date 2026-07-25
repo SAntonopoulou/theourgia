@@ -18,6 +18,7 @@ import {
 
 import { SurfaceError } from "../lib/SurfaceError.js";
 import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
+import { appHref } from "../lib/appHref.js";
 import {
   type Fragment as ApiFragment,
   type Reflection as ApiReflection,
@@ -128,7 +129,7 @@ export function GroupRitualPostMortem() {
           r.egregore_entity_id
             ? {
                 entityName: r.egregore_name ?? "Egregore",
-                entityHref: `/entities/${r.egregore_entity_id}`,
+                entityHref: appHref(`/entities/${r.egregore_entity_id}`),
               }
             : undefined
         }

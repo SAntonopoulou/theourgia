@@ -24,6 +24,7 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 type SectionKey =
   | "account"
@@ -633,9 +634,9 @@ function AppearanceSection() {
       >
         For finer control (contrast levels · text-scale slider ·
         autoplay), open the dedicated{" "}
-        <a href="/settings/accessibility" style={{ color: "var(--accent)" }}>
+        <Link to="/settings/accessibility" style={{ color: "var(--accent)" }}>
           Accessibility &amp; motion
-        </a>{" "}
+        </Link>{" "}
         page.
       </div>
     </div>
@@ -679,8 +680,8 @@ function StubSection({ section }: { section: SectionKey }) {
         The dedicated {label.toLowerCase()} surface lives at its own route.
       </p>
       {href ? (
-        <a
-          href={href}
+        <Link
+          to={href}
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -697,7 +698,7 @@ function StubSection({ section }: { section: SectionKey }) {
           }}
         >
           Open {label} →
-        </a>
+        </Link>
       ) : (
         <div
           style={{

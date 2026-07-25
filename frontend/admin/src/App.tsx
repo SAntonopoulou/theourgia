@@ -39,6 +39,7 @@ import {
 
 import { apiMethods } from "./data/api.js";
 import { SurfaceSkeleton } from "./lib/SurfaceSkeleton.js";
+import { APP_BASENAME, appHref } from "./lib/appHref.js";
 import { queryClient } from "./lib/queryClient.js";
 
 // Eager: home route (/), auth surface, and PWA start_url. Flashing a
@@ -619,8 +620,8 @@ const KeyRotationRoute = lazy(() =>
 );
 
 // Vite's BASE_URL: "/" in dev, "/app/" in prod. BrowserRouter
-// basename wants no trailing slash; trim it.
-const ROUTER_BASENAME = import.meta.env.BASE_URL.replace(/\/$/, "");
+// basename wants no trailing slash; lib/appHref.ts trims it (and is the
+// single helper for any surface that needs a plain string href).
 
 function NavLinkAdapter({ to, children, className, style, onClick }: VaultNavLinkProps) {
   return (
@@ -754,6 +755,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           actingAs={
             <ActingAsSwitcher
               identities={actingIdentities}
+              manageHref={appHref("/identities")}
               onManage={() => navigate("/identities")}
               onSignOut={() => void handleSignOut()}
             />
@@ -1017,7 +1019,7 @@ export function App() {
               is null. */}
           <ActingAsProvider>
             <ToastProvider />
-            <BrowserRouter basename={ROUTER_BASENAME}>
+            <BrowserRouter basename={APP_BASENAME}>
               <TopbarProvider>
                 <Routes>
                   {/* Full-viewport routes — no chrome. */}

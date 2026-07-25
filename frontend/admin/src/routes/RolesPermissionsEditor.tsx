@@ -23,6 +23,7 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 
+import { appHref } from "../lib/appHref.js";
 import { SurfaceError } from "../lib/SurfaceError.js";
 import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
 import {
@@ -111,7 +112,7 @@ export function RolesPermissionsEditor() {
       ) : null}
       <RolesPermissionsEditorSurface
         hubLabel="This hub"
-        hubHref={`/hubs/${hubId ?? ""}/admin`}
+        hubHref={appHref(`/hubs/${hubId ?? ""}/admin`)}
         lastChangedAgo="—"
         lastChangedBy=""
         initialRoles={initialRoles}

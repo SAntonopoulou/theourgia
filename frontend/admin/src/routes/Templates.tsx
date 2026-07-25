@@ -13,6 +13,7 @@
 import { useTopbar } from "@theourgia/shared";
 import { useQuery } from "@tanstack/react-query";
 import { type CSSProperties, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
 
@@ -410,8 +411,8 @@ export function Templates() {
               </div>
             </div>
             <div style={{ display: "flex", gap: 9, padding: "16px 20px", borderTop: `1px solid ${LINE}` }}>
-              <a
-                href="/editor"
+              <Link
+                to="/editor"
                 style={{
                   flex: 1,
                   display: "flex",
@@ -438,7 +439,7 @@ export function Templates() {
                   <path d="M12 5v14M5 12h14" />
                 </svg>
                 Use this template
-              </a>
+              </Link>
               <button
                 type="button"
                 aria-label="Edit template"

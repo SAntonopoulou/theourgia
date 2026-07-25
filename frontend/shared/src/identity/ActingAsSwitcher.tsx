@@ -31,9 +31,17 @@ export interface ActingAsSwitcherProps {
   /**
    * Optional callback for the "Manage identities" footer link. Typical
    * use: ``() => navigate("/identities")``. When omitted the link is a
-   * plain anchor to ``/identities`` (works in Astro and React Router).
+   * plain anchor to ``manageHref``.
    */
   onManage?: () => void;
+  /**
+   * Href for the "Manage identities" footer anchor — matters for
+   * middle-click / open-in-new-tab even when ``onManage`` is provided.
+   * Hosts served under a basename (the admin SPA under /app) must pass
+   * a resolved URL (e.g. ``appHref("/identities")``); a raw absolute
+   * path would escape the SPA in prod. Defaults to ``/identities``.
+   */
+  manageHref?: string;
   /**
    * Optional callback for the "Sign out" footer link. When provided,
    * a Sign out row renders below "Manage identities". When omitted,
@@ -193,7 +201,12 @@ function IdentityMedallion({ identity, size = 30 }: { identity: Identity; size?:
   );
 }
 
-export function ActingAsSwitcher({ identities, onManage, onSignOut }: ActingAsSwitcherProps) {
+export function ActingAsSwitcher({
+  identities,
+  onManage,
+  manageHref = "/identities",
+  onSignOut,
+}: ActingAsSwitcherProps) {
   const acting = useActingAs();
   const setActing = useSetActingAs();
   const [open, setOpen] = useState(false);
@@ -326,7 +339,7 @@ export function ActingAsSwitcher({ identities, onManage, onSignOut }: ActingAsSw
           })}
           <div style={{ borderTop: "1px solid var(--line)", margin: "6px 4px 0", paddingTop: 6 }}>
             <a
-              href="/identities"
+              href={manageHref}
               onClick={(e) => {
                 if (onManage) {
                   e.preventDefault();

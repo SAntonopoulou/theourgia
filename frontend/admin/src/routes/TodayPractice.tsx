@@ -39,6 +39,7 @@ import {
   useApiCall,
 } from "@theourgia/shared";
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
 
@@ -99,8 +100,8 @@ export function TodayLunarChip() {
     <LunarDayChip
       context={context.data}
       action={
-        <a
-          href="/calendar"
+        <Link
+          to="/calendar"
           style={{
             padding: "8px 14px",
             borderRadius: "var(--r-md, 8px)",
@@ -112,7 +113,7 @@ export function TodayLunarChip() {
           }}
         >
           Observances
-        </a>
+        </Link>
       }
     />
   );
@@ -400,8 +401,8 @@ export function TodayRiteRow({ lat, lng }: TodayRiteRowProps) {
             stationMinUtc={minuteOfDayUtc(next.at)}
             countdown={fmtCountdown(new Date(next.at).getTime() - now)}
             liturgyAction={
-              <a
-                href="/daily-practice/resh"
+              <Link
+                to="/daily-practice/resh"
                 style={{
                   fontFamily: "var(--font-ui)",
                   fontSize: 12.5,
@@ -410,7 +411,7 @@ export function TodayRiteRow({ lat, lng }: TodayRiteRowProps) {
                 }}
               >
                 Open full liturgy →
-              </a>
+              </Link>
             }
           />
         ) : null}
@@ -570,9 +571,9 @@ export function AwaitingJudgmentCard() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {shown.map((item) => (
-            <a
+            <Link
               key={item.entry_id}
-              href="/verdicts"
+              to="/verdicts"
               data-awaiting-row={item.entry_id}
               style={{
                 display: "flex",
@@ -605,7 +606,7 @@ export function AwaitingJudgmentCard() {
               >
                 {item.age_days} {item.age_days === 1 ? "day" : "days"}
               </span>
-            </a>
+            </Link>
           ))}
           {more > 0 ? (
             <div
@@ -620,8 +621,8 @@ export function AwaitingJudgmentCard() {
           ) : null}
         </div>
       )}
-      <a
-        href="/verdicts"
+      <Link
+        to="/verdicts"
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -634,7 +635,7 @@ export function AwaitingJudgmentCard() {
         }}
       >
         The two gates →
-      </a>
+      </Link>
     </article>
   );
 }

@@ -19,6 +19,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useI18n } from "@theourgia/shared";
+import { Link } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
 
@@ -157,8 +158,8 @@ export function Capture() {
           marginBottom: 18,
         }}
       >
-        <a
-          href="/"
+        <Link
+          to="/"
           style={{
             display: "flex",
             alignItems: "center",
@@ -173,7 +174,7 @@ export function Capture() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
           Vault
-        </a>
+        </Link>
         <span
           style={{
             fontFamily: "var(--font-ui)",

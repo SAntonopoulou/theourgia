@@ -34,6 +34,7 @@ import {
 import { useState } from "react";
 
 import { apiMethods } from "../data/api.js";
+import { appHref } from "../lib/appHref.js";
 
 function isLadder(value: unknown): value is LadderRead {
   return (
@@ -256,7 +257,7 @@ export function TetraktysLadderRoute() {
           {activeSphere ? (
             <SphereDetailPanel
               sphere={activeSphere}
-              entryHref={(id) => `/editor/${id}`}
+              entryHref={(id) => appHref(`/editor/${id}`)}
               onCompleteItem={(item) => setPickingFor(item)}
               onPassGate={() => setConfirmPass(true)}
             />

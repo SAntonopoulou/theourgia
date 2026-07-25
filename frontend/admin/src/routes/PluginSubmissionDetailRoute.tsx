@@ -22,6 +22,7 @@ import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
+import { appHref } from "../lib/appHref.js";
 
 function timelineFor(submission: {
   status: string;
@@ -105,7 +106,7 @@ export function PluginSubmissionDetailRoute() {
       canWithdraw={canWithdraw}
       resubmitHref={
         query.data?.status === "changes_requested"
-          ? "/registry/submit"
+          ? appHref("/registry/submit")
           : undefined
       }
       onResubmit={() => navigate("/registry/submit")}

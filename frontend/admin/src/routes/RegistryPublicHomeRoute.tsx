@@ -22,6 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 
 import { apiMethods } from "../data/api.js";
+import { appHref } from "../lib/appHref.js";
 
 function tierOf(tier: string): TierKey {
   if (tier === "official" || tier === "community" || tier === "unverified") {
@@ -124,7 +125,7 @@ export function RegistryPublicHomeRoute() {
       extensionPoints={extensionPoints}
       recentlyUpdated={recentlyUpdatedRows}
       recentlyAdded={recentlyAddedRows}
-      submitHref="/registry/submit"
+      submitHref={appHref("/registry/submit")}
     />
   );
 }

@@ -32,6 +32,7 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
 import { createEntry, useRecentEntries } from "../data/useEntries.js";
@@ -924,8 +925,8 @@ export function Today() {
                 >
                   Recent entries
                 </h2>
-                <a
-                  href="/journal"
+                <Link
+                  to="/journal"
                   style={{
                     fontFamily: "var(--font-ui)",
                     fontSize: 13,
@@ -934,7 +935,7 @@ export function Today() {
                   }}
                 >
                   Open journal →
-                </a>
+                </Link>
               </div>
               <div
                 style={{

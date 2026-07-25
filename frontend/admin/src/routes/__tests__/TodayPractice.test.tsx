@@ -10,8 +10,16 @@
  * awaiting-judgment due slot rendering gracefully empty.
  */
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
+import type { ReactElement } from "react";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// The practice pieces render router <Link>s (v1-067 raw-link fix), so
+// every mount needs a Router context.
+function render(ui: ReactElement) {
+  return rtlRender(ui, { wrapper: MemoryRouter });
+}
 
 const mocks = vi.hoisted(() => ({
   getTodayContext: vi.fn(),

@@ -21,6 +21,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
+import { appHref } from "../lib/appHref.js";
 
 // The marketplace endpoint doesn't yet return per-agent capability
 // data. Rather than pin a fabricated pair of capabilities that every
@@ -73,7 +74,9 @@ export function AgentInstallRoute() {
       memoryDirPath={`/srv/theourgia/agents/${agentSlug ?? "your-vault-id"}/your-install/`}
       hasKey={false}
       initialCostCap="10.00"
-      configureKeyHref="/agents/settings/keys"
+      // The BYO-key settings surface mounts at /agents-keys (App.tsx);
+      // the design's /agents/settings/keys path was never a route.
+      configureKeyHref={appHref("/agents-keys")}
       onCancel={() => navigate(-1)}
       onInstall={(payload) => {
         mutation.mutate(payload);

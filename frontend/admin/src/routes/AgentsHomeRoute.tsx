@@ -13,6 +13,7 @@
 
 import {
   type AgentRow,
+  type AgentSubnavKey,
   type DisabledAgentRow,
   AgentsHomeSurface,
   useTopbar,
@@ -22,6 +23,20 @@ import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
+import { appHref } from "../lib/appHref.js";
+
+// Subnav targets, resolved against the SPA basename. The shared
+// SUBNAV_ITEMS defaults carry the design's raw paths ("/agents/cost"),
+// which are neither real routes (App.tsx mounts /agents-cost et al.)
+// nor basename-safe in prod. "memory" has no standalone route yet —
+// it stays an in-SPA path so the router's Lost placeholder catches it.
+const SUBNAV_HREF: Record<AgentSubnavKey, string> = {
+  agents: appHref("/agents-home"),
+  marketplace: appHref("/agents-marketplace"),
+  memory: appHref("/agents/memory"),
+  cost: appHref("/agents-cost"),
+  settings: appHref("/agents-keys"),
+};
 
 function formatLastActive(iso: string): string {
   const then = new Date(iso).getTime();
@@ -119,6 +134,7 @@ export function AgentsHomeRoute() {
       active={active}
       disabled={disabled}
       activeNav="agents"
+      subnavHrefFor={(key) => SUBNAV_HREF[key] ?? SUBNAV_HREF.agents}
       onOpen={(id) => navigate(`/agents/${id}/compose`)}
       onBrowseMarketplace={() => navigate("/agents-marketplace")}
     />

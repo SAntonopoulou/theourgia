@@ -28,6 +28,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { apiClient } from "../data/api.js";
+import { appHref } from "../lib/appHref.js";
 
 const TRADITIONS = [
   "Hellenic",
@@ -131,8 +132,11 @@ export function SetupWizardRoute() {
       } catch {
         // Preference write failed — the account exists; carry on.
       }
-      // Force auth refresh + navigate.
-      window.location.assign("/");
+      // Force auth refresh + navigate. A full page load is intentional
+      // (the AuthProvider re-checks the session on boot), but it must
+      // land inside the SPA basename — a raw "/" would hit the public
+      // site in prod, where the app lives under /app/.
+      window.location.assign(appHref("/"));
     } catch (e) {
       setError(
         e instanceof Error && e.message

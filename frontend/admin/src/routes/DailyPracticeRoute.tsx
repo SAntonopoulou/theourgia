@@ -26,6 +26,7 @@ import {
 import { useCallback, useMemo, useState } from "react";
 
 import { apiMethods } from "../data/api.js";
+import { appHref } from "../lib/appHref.js";
 
 const TODAY_LONG_FORMAT = new Intl.DateTimeFormat(undefined, {
   weekday: "long",
@@ -262,7 +263,7 @@ export function DailyPracticeRoute() {
       onReset={handleReset}
       onDefine={handleDefine}
       onModuleTransition={(id, next) => void handleModuleTransition(id, next)}
-      liberReshHref="/daily-practice/resh"
+      liberReshHref={appHref("/daily-practice/resh")}
     />
   );
 }

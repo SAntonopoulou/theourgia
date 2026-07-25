@@ -437,6 +437,9 @@ export function SignInRoute() {
         }}
       >
         First time here?{" "}
+        {/* Raw href on purpose — /self-host is a public Astro page, not
+            an SPA route; this link intentionally leaves the app.
+            Allowlisted in RawLinkInvariant.test.ts. */}
         <a
           href="/self-host"
           style={{ color: "var(--accent)", textDecoration: "none" }}

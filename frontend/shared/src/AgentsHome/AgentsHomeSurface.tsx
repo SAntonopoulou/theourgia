@@ -43,6 +43,13 @@ export interface AgentsHomeSurfaceProps {
   active: readonly AgentRow[];
   disabled: readonly DisabledAgentRow[];
   activeNav?: AgentSubnavKey;
+  /**
+   * Resolve a subnav key to the host app's real route. Hosts served
+   * under a basename (the admin SPA under /app) must pass resolved
+   * URLs (e.g. ``appHref("/agents-home")``) — the SUBNAV_ITEMS default
+   * hrefs are raw absolute paths that escape the SPA in prod.
+   */
+  subnavHrefFor?: (key: AgentSubnavKey) => string;
   onOpen?: (id: string) => void;
   onBrowseMarketplace?: () => void;
   className?: string;
@@ -171,6 +178,7 @@ export function AgentsHomeSurface({
   active,
   disabled,
   activeNav = "agents",
+  subnavHrefFor,
   onOpen,
   onBrowseMarketplace,
   className,
@@ -182,7 +190,7 @@ export function AgentsHomeSurface({
         {SUBNAV_ITEMS.map((item) => (
           <a
             key={item.key}
-            href={item.href}
+            href={subnavHrefFor ? subnavHrefFor(item.key) : item.href}
             data-subnav={item.key}
             style={navItemStyle(item.key === activeNav)}
           >
