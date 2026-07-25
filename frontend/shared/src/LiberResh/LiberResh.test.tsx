@@ -109,6 +109,63 @@ describe("ReshStationCard", () => {
     expect(screen.getByText("Sea very still.")).toBeInTheDocument();
   });
 
+  it("keeps time + position chips in normal document flow — never absolutely positioned (v1-068)", () => {
+    const { container } = render(<ReshStationCard {...props} isMinimum />);
+    const chips = container.querySelector("[data-station-chips]");
+    expect(chips).not.toBeNull();
+    // Time, position and minimum-viable all live inside the wrapping chip row.
+    expect(chips?.querySelector("[data-chip-time]")?.textContent).toContain("06:02");
+    expect(chips?.querySelector("[data-chip-time]")?.textContent).toContain("03:02Z");
+    expect(chips?.querySelector("[data-chip-direction]")?.textContent).toBe("the East");
+    expect(chips?.querySelector("[data-minimum-viable]")).not.toBeNull();
+    expect(container.innerHTML).not.toContain("position: absolute");
+  });
+
+  // The operator's real dusk liturgy (HOME form) — byte-real Greek length,
+  // from backend/theourgia/data/hellenic_rite_liturgy.json. The 960px crush
+  // shipped because fixtures only ever carried one-line invocations.
+  const LONG_INVOCATION =
+    "Χαῖρε, Εκάτη Ενοδία, Κλειδούχε. Φύλακα του σταυροδρομιού, που κρατάς τα κλειδιά· καθώς πέφτει το φως, κράτα την πύλη. Ας μην περάσει τίποτα ανίερο το κατώφλι μου απόψε. Και εσείς, φύλακες που η Εκάτη αγαπά και ορίζει, σταθείτε μαζί μου. ΑΠΟ ΠΑΝΤΟΣ ΚΑΚΟΔΑΙΜΟΝΟΣ — μακριά, κάθε κακός δαίμονας.";
+
+  it("clamps a long invocation to ~3 lines behind a per-card expand affordance", () => {
+    const { container } = render(
+      <ReshStationCard
+        {...props}
+        station="sunset"
+        adoration={{
+          godform: "Hekate Enodia, Kleidouchos — the Descent",
+          direction: "west",
+          invocation: LONG_INVOCATION,
+        }}
+      />,
+    );
+    const invocation = container.querySelector("[data-invocation]");
+    expect(invocation?.getAttribute("data-clamped")).toBe("true");
+    // The verbatim text stays in the DOM even while visually clamped.
+    expect(screen.getByText(/ΑΠΟ ΠΑΝΤΟΣ ΚΑΚΟΔΑΙΜΟΝΟΣ/)).toBeInTheDocument();
+
+    const toggle = container.querySelector("[data-invocation-toggle]") as HTMLButtonElement;
+    expect(toggle).not.toBeNull();
+    expect(toggle.textContent).toContain("Show invocation");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+
+    fireEvent.click(toggle);
+    expect(invocation?.getAttribute("data-clamped")).toBe("false");
+    expect(toggle.textContent).toContain("Hide invocation");
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+
+    fireEvent.click(toggle);
+    expect(invocation?.getAttribute("data-clamped")).toBe("true");
+  });
+
+  it("renders short (Liber CC) invocations whole — no clamp, no toggle", () => {
+    const { container } = render(<ReshStationCard {...props} />);
+    expect(
+      container.querySelector("[data-invocation]")?.getAttribute("data-clamped"),
+    ).toBe("false");
+    expect(container.querySelector("[data-invocation-toggle]")).toBeNull();
+  });
+
   it("attaches structural data attributes", () => {
     const { container } = render(<ReshStationCard {...props} isNext />);
     const root = container.firstElementChild as HTMLElement;

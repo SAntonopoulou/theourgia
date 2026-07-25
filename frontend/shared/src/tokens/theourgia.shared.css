@@ -351,19 +351,55 @@ select:focus-visible {
   }
 }
 
-/* ── H12 · Today practice dashboard — phone-first stacking ──────────────────
- * Inline styles set the desktop grids; these overrides stack them. */
-@media (max-width: 900px) {
+/* ── H12 · Today practice dashboard — container-driven stacking (v1-068) ────
+ * The four-station grid and the sun-arc/streak pair are CONTAINER-query
+ * driven, replacing the v1-059 viewport media queries. The nav rail
+ * (64px in the tablet band, 224/248px above) and Today's right rail
+ * change the REAL content-column width independently of the window —
+ * a ~960px window kept 4-across under the old `max-width: 900px` rule
+ * and crushed each card to ~120px. `.td-rite` (the rite section on
+ * Today, the content column on /daily-practice/resh) establishes the
+ * container; the grids ask IT, not the viewport.
+ *
+ * Column count follows the ~260px card-content floor: 1 column until
+ * two genuinely fit, 2×2 until four fit, never 3-across. 4-across
+ * needs a ≥1132px container — only a wide, rail-free content column
+ * reaches that; with the right rail present Today prefers 2×2.
+ * (Without an eligible container css-contain-3 sizes the query against
+ * the small viewport, which degrades gracefully.) */
+.td-rite {
+  container-type: inline-size;
+}
+.td-stations {
+  grid-template-columns: 1fr;
+}
+.td-two {
+  grid-template-columns: 1fr;
+}
+@container (min-width: 568px) {
   .td-stations {
-    grid-template-columns: 1fr 1fr !important;
-  }
-  .td-two {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (max-width: 640px) {
+@container (min-width: 1132px) {
   .td-stations {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@container (min-width: 620px) {
+  .td-two {
+    grid-template-columns: 1.1fr 1fr;
+  }
+}
+
+/* Today's main-column + right-rail grid: two tracks only in the desktop
+ * bands. Below 1280 the rail stacks UNDER the main column — it must
+ * never clip off the right edge or squeeze the station cards. Inline
+ * style carries the desktop tracks; !important overrides it (same
+ * convention as .tk-cols / the workbench rails below). */
+@media (max-width: 1279.98px) {
+  .td-cols {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 }
 

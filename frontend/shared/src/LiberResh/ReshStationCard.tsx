@@ -15,9 +15,17 @@
  *
  * No raw hex — every colour resolves through a token. The invocation
  * is the Crowley liturgy verbatim and lives on the Tradition object.
+ *
+ * v1-068 layout hardening (the 960px crush): the time / position /
+ * minimum-viable chips live in NORMAL flow in a wrapping header row —
+ * never right-aligned blocks that bleed over the title when the card
+ * narrows. Long invocations (the operator's real liturgy is a full
+ * strophe per station) clamp to ~3 lines behind a per-card
+ * "Show invocation" affordance; the verbatim text stays in the DOM
+ * and expands in place.
  */
 
-import { type CSSProperties, type ReactNode } from "react";
+import { type CSSProperties, type ReactNode, useState } from "react";
 
 import {
   type ReshAdoration,
@@ -57,6 +65,32 @@ export interface ReshStationCardProps {
   className?: string;
   style?: CSSProperties;
 }
+
+/**
+ * Invocations at or under this length render whole (~3 lines at the
+ * ~260px card floor); anything longer clamps to 3 lines behind the
+ * per-card "Show invocation" toggle. The Thelemic Liber CC strophes
+ * (~85 chars) stay untoggled; the operator's Hellenic liturgy (a full
+ * strophe per station, 200–450 bytes of Greek) clamps.
+ */
+const INVOCATION_CLAMP_CHARS = 90;
+
+/** Small pill chip — header metadata in normal document flow. */
+const chipStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "baseline",
+  gap: 5,
+  padding: "1px 8px",
+  borderRadius: "var(--r-pill, 999px)",
+  borderWidth: 1,
+  borderStyle: "solid",
+  borderColor: "var(--line)",
+  background: "var(--bg-3)",
+  fontFamily: "var(--font-mono)",
+  fontSize: 10.5,
+  color: "var(--ink-soft)",
+  whiteSpace: "nowrap",
+};
 
 function StationEmblem({
   station,
@@ -140,6 +174,10 @@ export function ReshStationCard({
   // Rule 66: when the surface states the rule (isMinimum given), only the
   // minimum-viable station may carry the primary CTA.
   const primaryAction = isMinimum === undefined ? isNext : isMinimum;
+  // v1-068: long invocations collapse to ~3 lines until expanded.
+  const invocationLong = adoration.invocation.length > INVOCATION_CLAMP_CHARS;
+  const [invocationOpen, setInvocationOpen] = useState(false);
+  const invocationClamped = invocationLong && !invocationOpen;
   const iconColor = observed
     ? "var(--success)"
     : isNext
@@ -170,24 +208,13 @@ export function ReshStationCard({
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <StationEmblem station={station} color={iconColor} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
-            <span
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: 18,
-              }}
-            >
-              {label ?? RESH_STATION_META[station].label}
-            </span>
-            <span
-              style={{
-                fontFamily: "var(--font-ui)",
-                fontSize: 11,
-                color: "var(--ink-mute)",
-              }}
-            >
-              {adoration.direction}
-            </span>
+          <div
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 18,
+            }}
+          >
+            {label ?? RESH_STATION_META[station].label}
           </div>
           <div
             style={{
@@ -199,58 +226,117 @@ export function ReshStationCard({
           >
             {adoration.godform}
           </div>
-        </div>
-        <div style={{ textAlign: "right", flex: "none" }}>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 15 }}>
-            {formatMinute(stationMin)}
-          </div>
+          {/* Chips — time, position, minimum-viable — in normal document
+              flow, wrapping under the title. Never absolutely positioned,
+              never a right-aligned block that collides with the name. */}
           <div
+            data-station-chips
             style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: 9.5,
-              color: "var(--ink-mute)",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 6,
+              marginTop: 6,
             }}
           >
-            {formatMinute(stationMinUtc)}Z
+            <span data-chip-time style={chipStyle}>
+              <span style={{ fontSize: 12, color: "var(--ink)" }}>
+                {formatMinute(stationMin)}
+              </span>
+              <span style={{ fontSize: 9.5, color: "var(--ink-mute)" }}>
+                {formatMinute(stationMinUtc)}Z
+              </span>
+            </span>
+            <span
+              data-chip-direction
+              style={{
+                ...chipStyle,
+                fontFamily: "var(--font-ui)",
+                fontSize: 11,
+                color: "var(--ink-mute)",
+              }}
+            >
+              {adoration.direction}
+            </span>
+            {isMinimum ? (
+              <span
+                data-minimum-viable
+                style={{
+                  ...chipStyle,
+                  background: "var(--accent-soft)",
+                  borderColor: "var(--line-2)",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 10,
+                  color: "var(--accent)",
+                }}
+              >
+                minimum viable
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
 
-      <p
-        style={{
-          fontFamily: "var(--font-serif)",
-          fontStyle: "italic",
-          fontSize: 13,
-          lineHeight: 1.5,
-          color: "var(--ink-mute)",
-          margin: "11px 0 12px",
-        }}
-      >
-        “{adoration.invocation}”
-      </p>
-
-      {isMinimum ? (
-        <div
-          data-minimum-viable
+      <div style={{ margin: "11px 0 12px" }}>
+        <p
+          data-invocation
+          data-clamped={invocationClamped ? "true" : "false"}
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 5,
-            marginBottom: 10,
-            padding: "1px 8px",
-            borderRadius: "var(--r-pill, 999px)",
-            background: "var(--accent-soft)",
-            borderWidth: 1,
-            borderStyle: "solid",
-            borderColor: "var(--line-2)",
-            fontFamily: "var(--font-ui)",
-            fontSize: 10,
-            color: "var(--accent)",
+            fontFamily: "var(--font-serif)",
+            fontStyle: "italic",
+            fontSize: 13,
+            lineHeight: 1.5,
+            color: "var(--ink-mute)",
+            margin: 0,
+            ...(invocationClamped
+              ? {
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical" as const,
+                  overflow: "hidden",
+                }
+              : {}),
           }}
         >
-          minimum viable
-        </div>
-      ) : null}
+          “{adoration.invocation}”
+        </p>
+        {invocationLong ? (
+          <button
+            type="button"
+            data-invocation-toggle
+            aria-expanded={invocationOpen}
+            onClick={() => setInvocationOpen((o) => !o)}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              marginTop: 5,
+              padding: 0,
+              background: "transparent",
+              border: "none",
+              fontFamily: "var(--font-ui)",
+              fontSize: 11.5,
+              color: "var(--accent)",
+              cursor: "pointer",
+            }}
+          >
+            {invocationOpen ? "Hide invocation" : "Show invocation"}
+            <svg
+              width="11"
+              height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              style={{ transform: invocationOpen ? "rotate(180deg)" : "none" }}
+            >
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        ) : null}
+      </div>
 
       {observed ? (
         <Footer>
@@ -327,6 +413,7 @@ function Footer({ children }: { children: ReactNode }) {
       style={{
         display: "flex",
         alignItems: "center",
+        flexWrap: "wrap",
         gap: 9,
         paddingTop: 11,
         borderTop: "1px solid var(--line)",

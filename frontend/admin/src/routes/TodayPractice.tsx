@@ -276,6 +276,9 @@ export function TodayRiteRow({ lat, lng }: TodayRiteRowProps) {
   return (
     <section
       data-component="today-rite-row"
+      // .td-rite — container-query root: the station/two-up grids ask the
+      // REAL column width (nav rail + right rail deducted), not the window.
+      className="td-rite"
       style={{
         border: "1px solid var(--line)",
         borderRadius: "var(--r-lg, 14px)",
@@ -314,7 +317,7 @@ export function TodayRiteRow({ lat, lng }: TodayRiteRowProps) {
             }}
           >
             {minimumLabel} is the station that must be kept — the streak holds if{" "}
-            {minimumLabel.toLowerCase()} is done
+            {minimumLabel.toLowerCase()} is done. The others are kept or not, without penalty.
           </div>
         </div>
         <div
@@ -416,12 +419,14 @@ export function TodayRiteRow({ lat, lng }: TodayRiteRowProps) {
           />
         ) : null}
 
-        {/* Four station cards — dusk carries the only primary CTA */}
+        {/* Four station cards — dusk carries the only primary CTA.
+            Column count (1 → 2×2 → 4) lives in theourgia.shared.css as
+            container queries against .td-rite; never 3-across, never a
+            card below the ~260px content floor. */}
         <div
           className="td-stations"
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
             gap: 12,
           }}
         >
@@ -470,7 +475,6 @@ export function TodayRiteRow({ lat, lng }: TodayRiteRowProps) {
                       },
                     }
                   : {})}
-                {...(!isMinimum && !observed ? { statusText: "kept or not, without penalty" } : {})}
                 onMarkObserved={
                   observed || marking !== null ? undefined : () => void keepStation(s.transition)
                 }
@@ -484,7 +488,6 @@ export function TodayRiteRow({ lat, lng }: TodayRiteRowProps) {
           className="td-two"
           style={{
             display: "grid",
-            gridTemplateColumns: "1.1fr 1fr",
             gap: 13,
             alignItems: "stretch",
           }}

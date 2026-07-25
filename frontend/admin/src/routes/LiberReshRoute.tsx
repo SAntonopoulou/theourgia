@@ -507,6 +507,9 @@ export function LiberReshRoute() {
       style={{ overflowY: "auto", overflowX: "hidden", minHeight: 0, padding: "24px 28px" }}
     >
       <div
+        // .td-rite — container-query root: the .td-stations grid below
+        // sizes against this column's real width (v1-068).
+        className="td-rite"
         style={{
           maxWidth: "min(860px, var(--shell-content-max, 860px))",
           margin: "0 auto",
@@ -578,10 +581,12 @@ export function LiberReshRoute() {
               other three are kept or not, without penalty.
             </div>
 
+            {/* Same container-driven 1 → 2×2 → 4 column contract as the
+                Today rite row (theourgia.shared.css .td-stations). */}
             <div
+              className="td-stations"
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
                 gap: 14,
               }}
             >

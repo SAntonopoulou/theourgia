@@ -857,18 +857,22 @@ export function Today() {
           minWidth: 0,
         }}
       >
+        {/* v1-068: two grid tracks only in the desktop bands. Below 1280
+            the .td-cols override in theourgia.shared.css collapses this to
+            a single column so the right rail STACKS under the main column
+            instead of squeezing the station cards / clipping off-screen. */}
         <div
+          className="td-cols"
           style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "flex-start",
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1fr) 320px",
+            alignItems: "start",
             gap: 24,
           }}
         >
           {/* LEFT */}
           <div
             style={{
-              flex: "3 1 460px",
               minWidth: 0,
               display: "flex",
               flexDirection: "column",
@@ -973,7 +977,6 @@ export function Today() {
           {/* RIGHT RAIL */}
           <aside
             style={{
-              flex: "1 1 300px",
               display: "flex",
               flexDirection: "column",
               gap: 22,
