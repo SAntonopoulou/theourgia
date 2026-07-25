@@ -8,6 +8,7 @@
 ``DELETE /api/v1/practices/{id}``               — soft delete
 ``POST   /api/v1/practices/{id}/archive``       — archive (kept for history)
 ``POST   /api/v1/practices/{id}/unarchive``     — restore
+``POST   /api/v1/practices/{id}/status``        — install-by-proof transition
 ``POST   /api/v1/practices/{id}/complete``      — record today as done
 ``POST   /api/v1/practices/{id}/skip``          — record today as skipped
 ``DELETE /api/v1/practices/{id}/today``         — undo today's record (→ pending)
@@ -39,10 +40,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from theourgia.api.deps import CurrentUser, get_db_session
 from theourgia.models.entities import Entity
 from theourgia.models.practices import (
+    LEGAL_STATUS_TRANSITIONS,
     CompletionStatus,
     CustomPractice,
     PracticeCadence,
     PracticeCompletion,
+    PracticeStatus,
 )
 
 __all__ = ["router"]
@@ -55,6 +58,7 @@ CadenceLiteral = Literal[
 ]
 TodayStatusLiteral = Literal["done", "skipped", "pending"]
 CompletionStatusLiteral = Literal["done", "skip", "miss"]
+ModuleStatusLiteral = Literal["candidate", "testing", "installed", "rejected"]
 
 
 # ─── Read shapes ────────────────────────────────────────────────
@@ -82,6 +86,9 @@ class PracticeRead(BaseModel):
     preferred_anchor: str | None
     streak_label: str
     archived_at: datetime | None
+    status: ModuleStatusLiteral
+    status_changed_at: datetime | None
+    status_note: str | None
     owner_id: str | None
     created_at: datetime
     updated_at: datetime
@@ -282,6 +289,9 @@ def _to_practice_read(
         preferred_anchor=row.preferred_anchor,
         streak_label=row.streak_label,
         archived_at=row.archived_at,
+        status=row.status.value,
+        status_changed_at=row.status_changed_at,
+        status_note=row.status_note,
         owner_id=str(row.owner_id) if row.owner_id else None,
         created_at=row.created_at,
         updated_at=row.updated_at,
@@ -723,3 +733,76 @@ async def undo_today(
     await db.delete(row)
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ─── Install-by-proof (Sprint I-B) ──────────────────────────────
+
+
+def validate_status_transition(
+    current: PracticeStatus, new: PracticeStatus
+) -> None:
+    """Refuse anything off the legal transition graph.
+
+    candidate→testing→installed|rejected; installed is terminal;
+    rejected→candidate reopens a re-trial. Raises :class:`ValueError`
+    with a human sentence for the API layer to surface.
+    """
+    if new in LEGAL_STATUS_TRANSITIONS[current]:
+        return
+    if current == new:
+        raise ValueError(
+            f"Practice is already '{current.value}' — a transition must "
+            "change the status."
+        )
+    legal = sorted(s.value for s in LEGAL_STATUS_TRANSITIONS[current])
+    if not legal:
+        raise ValueError(
+            f"'{current.value}' is terminal — no further transitions."
+        )
+    raise ValueError(
+        f"Illegal transition '{current.value}' → '{new.value}'. "
+        f"From '{current.value}' the legal moves are: {', '.join(legal)}."
+    )
+
+
+class PracticeStatusUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: ModuleStatusLiteral
+    note: str | None = Field(
+        default=None,
+        description="Why — the proof for install, the failure for reject.",
+    )
+
+
+@router.post(
+    "/practices/{practice_id}/status",
+    response_model=PracticeRead,
+    tags=["practices"],
+)
+async def transition_practice_status(
+    practice_id: UUID,
+    payload: PracticeStatusUpdate,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> PracticeRead:
+    """Move a practice through the install-by-proof lifecycle.
+
+    Nothing is installed by enthusiasm — candidate→testing→installed
+    requires walking the graph; illegal jumps are refused with 409.
+    """
+    row = await _get_owned_practice(db, practice_id, current_user)
+    new_status = PracticeStatus(payload.status)
+    try:
+        validate_status_transition(row.status, new_status)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
+        ) from exc
+    row.status = new_status
+    row.status_changed_at = datetime.now(UTC)
+    row.status_note = payload.note
+    await db.commit()
+    await db.refresh(row)
+    entity = await _load_entity(db, row.linked_entity_id)
+    return _to_practice_read(row, entity)

@@ -43,6 +43,7 @@ __all__ = [
     "EntryRevision",
     "EntryType",
     "EntryVisibility",
+    "GateResult",
 ]
 
 
@@ -83,6 +84,26 @@ class EntryVisibility(str, enum.Enum):
     VIEWER = "viewer"
     HUB = "hub"
     PUBLIC = "public"
+
+
+class GateResult(str, enum.Enum):
+    """One gate's verdict in the two-gate covenant (rule 69).
+
+    Gate 1 — did it work (repeatable)? Gate 2 — is it true (coherent)?
+    ``open`` means judgment has not been discharged yet.
+    """
+
+    PASS = "pass"
+    FAIL = "fail"
+    OPEN = "open"
+
+
+# One Postgres enum type shared by both gate columns.
+_gate_result_enum = SQLEnum(
+    GateResult,
+    name="gate_result",
+    values_callable=lambda obj: [m.value for m in obj],
+)
 
 
 class EncryptionMode(str, enum.Enum):
@@ -337,6 +358,75 @@ class Entry(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     # entries through the same code path as the publish endpoint.
     # Sealed and closed-tradition entries are never auto-published.
     publish_on_death: bool = Field(default=False, nullable=False)
+
+    # — Two-gate covenant (Sprint I-B, rule 69) ————————————
+    # The declared intent is a covenant: once sealed, the three intent
+    # columns are IMMUTABLE. No API route writes them after declaration
+    # — including admin surfaces. The fingerprint binds text+timestamp
+    # (sha256) so any later tampering is detectable.
+    intent_text: Optional[str] = Field(
+        default=None,
+        sa_column=Column(Text, nullable=True),
+        description="The sealed declared intent. Written exactly once.",
+    )
+
+    intent_declared_at: Optional[datetime] = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"nullable": True, "index": True},
+    )
+
+    intent_fingerprint: Optional[str] = Field(
+        default=None,
+        sa_column=Column(String(64), nullable=True),
+        description="sha256 hex of intent text + declaration timestamp.",
+    )
+
+    # Verdict — editable until both gates are non-open AND finalized;
+    # after finalization the verdict too is immutable.
+    gate1_result: GateResult = Field(
+        default=GateResult.OPEN,
+        sa_column=Column(
+            _gate_result_enum,
+            nullable=False,
+            server_default="open",
+        ),
+        description="Gate 1 — did it work (repeatable)?",
+    )
+
+    gate2_result: GateResult = Field(
+        default=GateResult.OPEN,
+        sa_column=Column(
+            _gate_result_enum,
+            nullable=False,
+            server_default="open",
+        ),
+        description="Gate 2 — is it true (coherent)?",
+    )
+
+    gate1_notes: Optional[str] = Field(
+        default=None,
+        sa_column=Column(Text, nullable=True),
+    )
+
+    gate2_notes: Optional[str] = Field(
+        default=None,
+        sa_column=Column(Text, nullable=True),
+    )
+
+    judged_at: Optional[datetime] = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"nullable": True},
+        description="Stamp of the most recent verdict write.",
+    )
+
+    verdict_finalized_at: Optional[datetime] = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"nullable": True},
+        description="Set when the verdict is finalized; verdict immutable after.",
+    )
 
 
 class EntryRevision(IDMixin, TimestampMixin, table=True):

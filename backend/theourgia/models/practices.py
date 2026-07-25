@@ -51,10 +51,12 @@ from sqlmodel import Field
 from theourgia.models.base import IDMixin, SoftDeleteMixin, TimestampMixin
 
 __all__ = [
+    "LEGAL_STATUS_TRANSITIONS",
     "CompletionStatus",
     "CustomPractice",
     "PracticeCadence",
     "PracticeCompletion",
+    "PracticeStatus",
 ]
 
 
@@ -72,6 +74,33 @@ class PracticeCadence(str, enum.Enum):
     BEFORE_SLEEP = "before-sleep"
     DARK_MOON = "dark-moon"
     CUSTOM = "custom"
+
+
+class PracticeStatus(str, enum.Enum):
+    """Install-by-proof lifecycle (Sprint I-B, Domain 2).
+
+    A practice is a *candidate* until put on trial (*testing*); a
+    trial ends in *installed* (it earned its place) or *rejected*.
+    Installed is terminal. Rejected may return to candidate for a
+    re-trial — rejection is a verdict, not a ban.
+    """
+
+    CANDIDATE = "candidate"
+    TESTING = "testing"
+    INSTALLED = "installed"
+    REJECTED = "rejected"
+
+
+# The legal transition graph. Anything not listed is refused by the
+# API — including no-op same-state "transitions".
+LEGAL_STATUS_TRANSITIONS: dict[PracticeStatus, frozenset[PracticeStatus]] = {
+    PracticeStatus.CANDIDATE: frozenset({PracticeStatus.TESTING}),
+    PracticeStatus.TESTING: frozenset(
+        {PracticeStatus.INSTALLED, PracticeStatus.REJECTED}
+    ),
+    PracticeStatus.INSTALLED: frozenset(),  # terminal
+    PracticeStatus.REJECTED: frozenset({PracticeStatus.CANDIDATE}),  # re-trial
+}
 
 
 class CompletionStatus(str, enum.Enum):
@@ -187,6 +216,34 @@ class CustomPractice(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
             "deleted_at — archived practices are kept in the ledger for "
             "historical streak reading; deleted ones are soft-removed."
         ),
+    )
+
+    # — Install-by-proof (Sprint I-B) ————————————————————
+    status: PracticeStatus = Field(
+        default=PracticeStatus.CANDIDATE,
+        sa_column=Column(
+            SQLEnum(
+                PracticeStatus,
+                name="practice_status",
+                values_callable=lambda obj: [m.value for m in obj],
+            ),
+            nullable=False,
+            server_default="candidate",
+        ),
+        description="Where the practice stands in the install-by-proof trial.",
+    )
+
+    status_changed_at: Optional[datetime] = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),
+        sa_column_kwargs={"nullable": True},
+        description="Stamp of the most recent status transition.",
+    )
+
+    status_note: Optional[str] = Field(
+        default=None,
+        sa_column=Column(Text, nullable=True),
+        description="Why the status changed — the proof or the failure.",
     )
 
     owner_id: Optional[UUID] = Field(

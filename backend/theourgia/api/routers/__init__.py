@@ -14,6 +14,7 @@ from fastapi import APIRouter, FastAPI
 from theourgia.api.routers import health, metrics, nodeinfo, webfinger, well_known
 from theourgia.api.routers.v1 import admin_health as v1_admin_health
 from theourgia.api.routers.v1 import altars as v1_altars
+from theourgia.api.routers.v1 import astragaloi as v1_astragaloi
 from theourgia.api.routers.v1 import astro as v1_astro
 from theourgia.api.routers.v1 import attestations as v1_attestations
 from theourgia.api.routers.v1 import auth as v1_auth
@@ -21,6 +22,7 @@ from theourgia.api.routers.v1 import bibliomancy as v1_bibliomancy
 from theourgia.api.routers.v1 import blog as v1_blog
 from theourgia.api.routers.v1 import circles as v1_circles
 from theourgia.api.routers.v1 import contracts as v1_contracts
+from theourgia.api.routers.v1 import curriculum as v1_curriculum
 from theourgia.api.routers.v1 import entities as v1_entities
 from theourgia.api.routers.v1 import entity_aliases as v1_entity_aliases
 from theourgia.api.routers.v1 import entries as v1_entries
@@ -66,6 +68,7 @@ from theourgia.api.routers.v1 import today_ledger as v1_today_ledger
 from theourgia.api.routers.v1 import tools as v1_tools
 from theourgia.api.routers.v1 import traditions as v1_traditions
 from theourgia.api.routers.v1 import user_settings as v1_user_settings
+from theourgia.api.routers.v1 import verdicts as v1_verdicts
 from theourgia.api.routers.v1 import voces as v1_voces
 from theourgia.api.routers.v1 import weather as v1_weather
 from theourgia.api.routers.v1 import ciphers as v1_ciphers
@@ -183,6 +186,10 @@ def register_routers(app: FastAPI) -> None:
     # H01-H03 backend gap-fills
     v1.include_router(v1_resh.router, tags=["resh"])
     v1.include_router(v1_today_ledger.router, tags=["today"])
+    # Sprint I-B (H12): astragaloi · two-gate covenant · tetraktys ladder
+    v1.include_router(v1_astragaloi.router, tags=["astragaloi"])
+    v1.include_router(v1_verdicts.router, tags=["verdicts"])
+    v1.include_router(v1_curriculum.router, tags=["curriculum"])
     # Phase 07 Workshop (B103+)
     v1.include_router(v1_sigils.router, tags=["sigils"])
     v1.include_router(v1_magic_squares.router, tags=["magic-squares"])

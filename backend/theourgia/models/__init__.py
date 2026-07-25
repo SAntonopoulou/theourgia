@@ -11,6 +11,7 @@ from __future__ import annotations
 # Import all model modules so SQLModel.metadata sees them.
 from theourgia.models import (  # noqa: F401
     agents,
+    astragaloi,
     audit,
     auth,
     backups,
@@ -18,6 +19,7 @@ from theourgia.models import (  # noqa: F401
     bundles,
     comment,
     crypto,
+    curriculum,
     email,
     entities,
     entries,
@@ -44,6 +46,7 @@ from theourgia.models import (  # noqa: F401
 
 __all__ = [
     "agents",
+    "astragaloi",
     "audit",
     "auth",
     "backups",
@@ -51,6 +54,7 @@ __all__ = [
     "bundles",
     "comment",
     "crypto",
+    "curriculum",
     "email",
     "entities",
     "entries",
