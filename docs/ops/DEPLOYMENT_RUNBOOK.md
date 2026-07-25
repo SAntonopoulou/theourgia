@@ -4,8 +4,32 @@ This runbook walks an operator through the first-time setup of a Theourgia
 instance on a fresh server. After completion, the host serves:
 
 - **theourgia.com**         — the magician-facing app (backend + frontend)
-- **plugins.theourgia.com**  — the plugin registry (Phase 14)
-- Agent daemon (Phase 16)    — internal-only on the Docker network
+- **plugins.theourgia.com**  — the plugin registry (Phase 14) — *parked; see profiles below*
+- Agent daemon (Phase 16)    — internal-only on the Docker network — *parked; see profiles below*
+
+> **Kubernetes/Helm:** the Helm chart is archived (untested against the
+> real deployment) at `.attic/helm/` — Compose is the supported path.
+
+## Compose profiles — what runs by default
+
+The default stack is the **core six**: `postgres`, `redis`, `backend`,
+`celery`, `celery-beat`, `frontend`. The auxiliary services are parked
+behind compose profiles and do NOT start with a plain
+`docker compose up -d`:
+
+| Profile       | Services                      |
+|---------------|-------------------------------|
+| `agents`      | `agent-daemon`, `agent-daemon-pg` |
+| `marketplace` | `registry`, `registry-pg`     |
+
+To run them, pass `--profile agents` / `--profile marketplace` to every
+compose command, or set `THEOURGIA_PROFILES="agents marketplace"` (or a
+subset) in the environment before running `scripts/deploy-prod.sh` —
+the deploy script then also checks their secrets, runs their alembic
+migrations, and verifies them. With no profiles active, the aux secrets
+(`THEOURGIA_AGENT_DB_PASSWORD`, `THEOURGIA_AGENT_CONTROL_TOKEN`,
+`THEOURGIA_AGENT_HKDF_SALT`, `THEOURGIA_REGISTRY_DB_PASSWORD`) may be
+absent from `.env` without blocking startup.
 
 If you only want dev preview at `dev.theourgia.com`, use
 `scripts/deploy-dev.sh` instead — this runbook is the full prod path.
@@ -161,13 +185,17 @@ From the repo root on the server:
 ./scripts/deploy-prod.sh
 ```
 
-This will:
+This will (for the core stack; add `THEOURGIA_PROFILES="agents marketplace"`
+to include the parked services):
 
-1. Validate that all required secrets are in `.env`
-2. Build the three Docker images (backend, agent-daemon, registry, frontend)
-3. Run alembic migrations against the three Postgres instances
-4. Bring the stack up with `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`
-5. Verify the services report `running`
+1. Validate that the required secrets are in `.env` (aux secrets only
+   when their profile is enabled)
+2. Build the Docker images for the active services
+3. Take a pre-migration `pg_dump` of the main DB into `backups-manual/`
+4. Run alembic migrations on the main database (plus agent-daemon /
+   registry databases when their profiles are active)
+5. Bring the stack up with `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`
+6. Verify the active services report `running`
 
 If any step fails the script exits with the failing command's exit code.
 Re-run with `--skip-build` / `--skip-migrate` after fixing to skip the
@@ -181,13 +209,15 @@ Once `deploy-prod.sh` reports "done":
 
 ```bash
 curl -sSf https://theourgia.com/healthz
+
+# Only if the marketplace profile is active:
 curl -sSf https://plugins.theourgia.com/health
-# Agent daemon is NOT externally exposed by design.
-docker compose -f docker-compose.yml -f docker-compose.prod.yml exec agent-daemon \
-    curl -sSf http://localhost:8002/health
+# Only if the agents profile is active (NOT externally exposed by design):
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile agents \
+    exec agent-daemon curl -sSf http://localhost:8002/health
 ```
 
-All three should return `{"status": "ok"}`.
+Each should return `{"status": "ok"}`.
 
 ---
 
@@ -239,7 +269,108 @@ docker run --rm -v theourgia_registry_data:/data -v $(pwd):/backup alpine \
 
 ---
 
-## 9. Tear down
+## 9. Restore
+
+Backups run automatically: celery beat schedules a restic backup to R2
+(daily full cadence + hourly incremental), and each snapshot contains a
+`pg_dump -Fc` archive of the main database at
+`/var/spool/theourgia-backup/theourgia-db.dump`, plus the deploy dir
+(`.env`, compose files, `backups-manual/`). The deploy script
+additionally writes a local `backups-manual/pre-migrate-*.dump` before
+every migration.
+
+### 9a. Restore drill (run monthly — non-destructive)
+
+A backup that has never been restored is not a backup. The drill never
+touches the live database or live containers:
+
+```bash
+cd /srv/theourgia/prod
+./scripts/restore-drill.sh          # list snapshots, restore latest,
+                                    # validate the dump archive
+./scripts/restore-drill.sh --load   # full drill: also load into a
+                                    # throwaway postgres and count rows
+```
+
+What it does:
+
+1. Lists restic snapshots (read-only; config from the same `.env` the
+   deploy uses).
+2. Restores the latest snapshot's dump dir to a temp dir
+   (`--full` restores the whole snapshot; `--snapshot ID` picks one).
+3. Verifies the dump with `pg_restore --list`.
+4. `--load`: starts a throwaway `pgvector/pgvector:pg16` container
+   named `theourgia-restore-test` on `127.0.0.1:55432`
+   (`RESTORE_TEST_PORT` to change), loads the dump with
+   `--no-owner --no-privileges`, and counts rows in `entry` and
+   `"user"` — sanity-check those numbers against what you expect.
+5. Prints PASS/FAIL and cleans up the temp dir + container
+   (`--keep` preserves them for inspection).
+
+Host `restic`/`pg_restore` binaries are used when present; otherwise it
+falls back to the `restic/restic` and pgvector Docker images. If the
+drill FAILs, treat it as a live incident: your backups are not
+restorable.
+
+### 9b. Real disaster recovery
+
+Scenario: the server (or the postgres volume) is gone.
+
+1. **Rebuild the host** through sections 0–4 of this runbook (server
+   bootstrap, clone, Caddy). If `.env` is lost, recover it from the
+   restic snapshot (it is included via the deploy-dir path) — you need
+   `RESTIC_REPOSITORY` + `RESTIC_PASSWORD` + R2 credentials stored
+   OUTSIDE the server (password manager) to bootstrap this.
+2. **Fetch the dump** from the most recent snapshot:
+
+   ```bash
+   export RESTIC_REPOSITORY=... RESTIC_PASSWORD=... \
+          AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_DEFAULT_REGION=auto
+   restic snapshots                       # pick the snapshot to restore
+   restic restore latest --target /srv/restore \
+       --include /var/spool/theourgia-backup
+   ```
+
+3. **Start ONLY postgres** (never run migrations before the data is
+   back):
+
+   ```bash
+   cd /srv/theourgia/prod
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d postgres
+   ```
+
+4. **Load the dump** into the fresh database:
+
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+       cp /srv/restore/var/spool/theourgia-backup/theourgia-db.dump postgres:/tmp/
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+       exec postgres pg_restore -U theourgia -d theourgia \
+       --no-owner --no-privileges /tmp/theourgia-db.dump
+   ```
+
+   (If the target DB is not empty — partial recovery — drop and
+   recreate it first: `dropdb`/`createdb` from inside the container.)
+
+5. **Deploy the code at the matching version**, then bring everything
+   up:
+
+   ```bash
+   ./scripts/deploy-prod.sh   # runs alembic upgrade head on top of the
+                              # restored data, then starts the stack
+   ```
+
+6. **Verify**: `curl -sSf https://theourgia.com/healthz`, sign in, and
+   spot-check recent entries. Then run `./scripts/restore-drill.sh` to
+   confirm the backup pipeline is producing snapshots again on the new
+   host.
+
+Point-in-time caveat: recovery is only as fresh as the last snapshot's
+dump (hourly at best). Anything written after it is lost.
+
+---
+
+## 10. Tear down
 
 To stop services without deleting data:
 

@@ -76,7 +76,10 @@ services:
         max-size: "10m"
         max-file: "5"
 
+  # Parked behind the "agents" profile (mirrors the base file) — enable
+  # with `docker compose --profile agents ... up -d`.
   agent-daemon:
+    profiles: ["agents"]
     build:
       context: ./agent-daemon
       dockerfile: Dockerfile
@@ -88,7 +91,10 @@ services:
         max-size: "10m"
         max-file: "5"
 
+  # Parked behind the "marketplace" profile (mirrors the base file) —
+  # enable with `docker compose --profile marketplace ... up -d`.
   registry:
+    profiles: ["marketplace"]
     build:
       context: ./registry
       dockerfile: Dockerfile

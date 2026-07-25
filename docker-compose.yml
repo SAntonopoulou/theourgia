@@ -74,8 +74,10 @@ services:
       DATABASE_URL: postgresql+asyncpg://${THEOURGIA_DB_USER:-theourgia}:${THEOURGIA_DB_PASSWORD}@postgres:5432/${THEOURGIA_DB_NAME:-theourgia}
       REDIS_URL: redis://redis:6379/0
       THEOURGIA_EPHE_PATH: /app/data/ephe
+      # agent-daemon only runs under the "agents" profile; the URL and
+      # token stay optional so the core stack starts without it.
       THEOURGIA_AGENT_DAEMON_URL: ${THEOURGIA_AGENT_DAEMON_URL:-http://agent-daemon:8002}
-      THEOURGIA_AGENT_DAEMON_CONTROL_TOKEN: ${THEOURGIA_AGENT_CONTROL_TOKEN}
+      THEOURGIA_AGENT_DAEMON_CONTROL_TOKEN: ${THEOURGIA_AGENT_CONTROL_TOKEN:-}
       THEOURGIA_REGISTRY_URL: ${THEOURGIA_REGISTRY_URL:-http://registry:8003}
       # b108-2gs: single-operator vault gate. Empty = open enrollment
       # (dev default). Non-empty comma-separated list of magickal names
@@ -191,12 +193,21 @@ services:
   # Agent daemon (Phase 16) — separate process for AI agent supervision.
   # Its own DB so daemon failures can't poison the vault.
   # Mounted memory dir for agent filesystem (rule 59).
+  #
+  # PARKED behind the "agents" profile: a plain `docker compose up -d`
+  # brings up only the core six services. Opt in with
+  # `docker compose --profile agents up -d`. Secrets below use `:-`
+  # defaults (not `:?`) so a profile-less up is never blocked by unset
+  # agent secrets — they are still required (and checked by
+  # scripts/deploy-prod.sh) whenever the profile is actually enabled.
   # ───────────────────────────────────────────────────────────────────────
   agent-daemon-pg:
     image: postgres:16-alpine
+    profiles: ["agents"]
     environment:
       POSTGRES_USER: ${THEOURGIA_AGENT_DB_USER:-theourgia}
-      POSTGRES_PASSWORD: ${THEOURGIA_AGENT_DB_PASSWORD:?THEOURGIA_AGENT_DB_PASSWORD must be set}
+      # `:-` not `:?` — only required when the "agents" profile is active.
+      POSTGRES_PASSWORD: ${THEOURGIA_AGENT_DB_PASSWORD:-}
       POSTGRES_DB: ${THEOURGIA_AGENT_DB_NAME:-theourgia_agent}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
@@ -214,15 +225,17 @@ services:
     build:
       context: ./agent-daemon
       dockerfile: Dockerfile
+    profiles: ["agents"]
     depends_on:
       agent-daemon-pg:
         condition: service_healthy
     environment:
       THEOURGIA_AGENT_ENV: ${THEOURGIA_ENV:-development}
-      THEOURGIA_AGENT_DATABASE_URL: postgresql+asyncpg://${THEOURGIA_AGENT_DB_USER:-theourgia}:${THEOURGIA_AGENT_DB_PASSWORD}@agent-daemon-pg:5432/${THEOURGIA_AGENT_DB_NAME:-theourgia_agent}
+      THEOURGIA_AGENT_DATABASE_URL: postgresql+asyncpg://${THEOURGIA_AGENT_DB_USER:-theourgia}:${THEOURGIA_AGENT_DB_PASSWORD:-}@agent-daemon-pg:5432/${THEOURGIA_AGENT_DB_NAME:-theourgia_agent}
       THEOURGIA_AGENT_VAULT_MCP_URL: http://backend:8000/mcp
-      THEOURGIA_AGENT_CONTROL_TOKEN: ${THEOURGIA_AGENT_CONTROL_TOKEN:?THEOURGIA_AGENT_CONTROL_TOKEN must be set}
-      THEOURGIA_AGENT_HKDF_SALT: ${THEOURGIA_AGENT_HKDF_SALT:?THEOURGIA_AGENT_HKDF_SALT must be set}
+      # `:-` not `:?` — only required when the "agents" profile is active.
+      THEOURGIA_AGENT_CONTROL_TOKEN: ${THEOURGIA_AGENT_CONTROL_TOKEN:-}
+      THEOURGIA_AGENT_HKDF_SALT: ${THEOURGIA_AGENT_HKDF_SALT:-}
       THEOURGIA_AGENT_LISTEN_HOST: 0.0.0.0
       THEOURGIA_AGENT_LISTEN_PORT: "8002"
     volumes:
@@ -233,12 +246,18 @@ services:
 
   # ───────────────────────────────────────────────────────────────────────
   # Plugin registry (plugins.theourgia.com) — separate process + DB
+  #
+  # PARKED behind the "marketplace" profile: not started by a plain
+  # `docker compose up -d`. Opt in with
+  # `docker compose --profile marketplace up -d`.
   # ───────────────────────────────────────────────────────────────────────
   registry-pg:
     image: postgres:16-alpine
+    profiles: ["marketplace"]
     environment:
       POSTGRES_USER: ${THEOURGIA_REGISTRY_DB_USER:-theourgia}
-      POSTGRES_PASSWORD: ${THEOURGIA_REGISTRY_DB_PASSWORD:?THEOURGIA_REGISTRY_DB_PASSWORD must be set}
+      # `:-` not `:?` — only required when the "marketplace" profile is active.
+      POSTGRES_PASSWORD: ${THEOURGIA_REGISTRY_DB_PASSWORD:-}
       POSTGRES_DB: ${THEOURGIA_REGISTRY_DB_NAME:-theourgia_registry}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
@@ -256,12 +275,13 @@ services:
     build:
       context: ./registry
       dockerfile: Dockerfile
+    profiles: ["marketplace"]
     depends_on:
       registry-pg:
         condition: service_healthy
     environment:
       THEOURGIA_REGISTRY_ENV: ${THEOURGIA_ENV:-development}
-      THEOURGIA_REGISTRY_DATABASE_URL: postgresql+asyncpg://${THEOURGIA_REGISTRY_DB_USER:-theourgia}:${THEOURGIA_REGISTRY_DB_PASSWORD}@registry-pg:5432/${THEOURGIA_REGISTRY_DB_NAME:-theourgia_registry}
+      THEOURGIA_REGISTRY_DATABASE_URL: postgresql+asyncpg://${THEOURGIA_REGISTRY_DB_USER:-theourgia}:${THEOURGIA_REGISTRY_DB_PASSWORD:-}@registry-pg:5432/${THEOURGIA_REGISTRY_DB_NAME:-theourgia_registry}
       THEOURGIA_REGISTRY_BOOTSTRAP_MAINTAINER_DID: ${THEOURGIA_REGISTRY_BOOTSTRAP_MAINTAINER_DID:-}
       # b108-2gq: R2 storage for plugin tarballs.
       THEOURGIA_REGISTRY_R2_BUCKET: ${THEOURGIA_REGISTRY_R2_BUCKET:-}
