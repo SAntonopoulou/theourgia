@@ -14,19 +14,16 @@
 
 import { type CSSProperties, type ReactNode, useState } from "react";
 
+import type { ModuleStatusWire } from "../api/types.js";
 import type { CompletionStatus, TodayStatus } from "../practice/index.js";
 import {
-  EMPTY_STATE_BODY,
-  EMPTY_STATE_CTA,
-  EMPTY_STATE_TITLE,
-} from "./copy.js";
-import {
+  type DefinePracticeDraft,
   DefinePracticeDrawer,
   type DefinePracticeDrawerProps,
-  type DefinePracticeDraft,
 } from "./DefinePracticeDrawer.js";
 import { PracticeCard } from "./PracticeCard.js";
 import { TodayStatusChip } from "./TodayStatusChip.js";
+import { EMPTY_STATE_BODY, EMPTY_STATE_CTA, EMPTY_STATE_TITLE } from "./copy.js";
 
 export interface DailyPractice {
   id: string;
@@ -38,6 +35,8 @@ export interface DailyPractice {
   streak: number;
   streakLabel: string;
   history: readonly CompletionStatus[];
+  /** Install-by-proof lifecycle state (H12 F2), when known. */
+  moduleState?: ModuleStatusWire;
 }
 
 export interface DailyPracticeTrackerProps {
@@ -64,6 +63,8 @@ export interface DailyPracticeTrackerProps {
   onReset?: (practiceId: string) => void;
   /** Called when the user saves the Define Practice drawer. */
   onDefine?: (draft: DefinePracticeDraft) => void;
+  /** Install-by-proof transition (legal moves only render). */
+  onModuleTransition?: (practiceId: string, next: ModuleStatusWire) => void;
 
   className?: string;
   style?: CSSProperties;
@@ -183,6 +184,7 @@ export function DailyPracticeTracker({
   onSkip,
   onReset,
   onDefine,
+  onModuleTransition,
   className,
   style,
 }: DailyPracticeTrackerProps) {
@@ -267,8 +269,7 @@ export function DailyPracticeTracker({
                   borderStyle: "solid",
                   borderColor: "var(--line-2)",
                   borderRadius: "var(--r-lg)",
-                  background:
-                    "linear-gradient(180deg, var(--bg-2), var(--bg))",
+                  background: "linear-gradient(180deg, var(--bg-2), var(--bg))",
                   padding: "20px 24px",
                   marginBottom: 26,
                 }}
@@ -344,11 +345,7 @@ export function DailyPracticeTracker({
                   }}
                 >
                   {practices.map((p) => (
-                    <TodayStatusChip
-                      key={p.id}
-                      name={p.name}
-                      status={p.status}
-                    />
+                    <TodayStatusChip key={p.id} name={p.name} status={p.status} />
                   ))}
                 </div>
               </section>
@@ -399,8 +396,8 @@ export function DailyPracticeTracker({
                       color: "var(--ink-mute)",
                     }}
                   >
-                    A tradition practice with its own four-station tracker.
-                    It shares the Today rail with these.
+                    A tradition practice with its own four-station tracker. It shares the Today rail
+                    with these.
                   </div>
                 </div>
                 <span
@@ -470,6 +467,8 @@ export function DailyPracticeTracker({
                   onComplete={onComplete}
                   onSkip={onSkip}
                   onReset={onReset}
+                  {...(p.moduleState ? { moduleState: p.moduleState } : {})}
+                  {...(onModuleTransition ? { onModuleTransition } : {})}
                 />
               ))}
             </div>

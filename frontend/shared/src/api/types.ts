@@ -636,6 +636,10 @@ export interface PracticeRecord {
   preferred_anchor: string | null;
   streak_label: string;
   archived_at: string | null;
+  /** Install-by-proof lifecycle state (Sprint I-B, Domain 2). */
+  status: ModuleStatusWire;
+  status_changed_at: string | null;
+  status_note: string | null;
   owner_id: string | null;
   created_at: string;
   updated_at: string;
@@ -2362,4 +2366,221 @@ export interface TodayContextRead {
   observance: HekateanObservanceWire | null;
   moon: MoonPhaseRead;
   attribution: string;
+}
+
+// ─── Astragaloi — the five-knucklebone oracle (v1-060, H12 F2) ─────────────
+
+/** A knucklebone face — 1, 3, 4 or 6; never 2 or 5 (rule 68). */
+export type BoneFaceWire = 1 | 3 | 4 | 6;
+
+/** Backend valence keys (the corpus castsheet legend). */
+export type AstragaloiValenceWire = "favourable" | "cautionary" | "unfavourable";
+
+export type AstragaloiOctaveWire = "luminous" | "embodied" | "chthonic";
+
+/** The oracle channel — the resolved corpus row, denormalised at cast
+ *  time so history survives later corpus edits. */
+export interface AstragaloiOracleChannel {
+  /** Roman numeral "I".."LVI". */
+  number: string;
+  god_greek: string;
+  god_english: string;
+  /** Null where Heinevetter preserves nothing — never synthesised. */
+  verse_greek: string | null;
+  verse_english: string;
+  valence: AstragaloiValenceWire;
+}
+
+/** The ladder channel — sum → sphere / octave / ground element. */
+export interface AstragaloiLadderChannel {
+  sphere: number;
+  octave: AstragaloiOctaveWire;
+  ground_element: string;
+}
+
+/** Mirrors ``theourgia.api.routers.v1.astragaloi.CastRead``. */
+export interface AstragaloiCastRead {
+  id: string;
+  /** Sorted ascending by the server. */
+  faces: number[];
+  sum: number;
+  /** Rule 67 — a simulated cast is marked simulated forever. */
+  simulated: boolean;
+  cast_at: string;
+  question: string | null;
+  entry_id: string | null;
+  declared_intent: string | null;
+  oracle: AstragaloiOracleChannel;
+  ladder: AstragaloiLadderChannel;
+  /** The operator's own reading — never generated. */
+  interpretation: string | null;
+  owner_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** ``POST /api/v1/astragaloi/casts`` — faces OR simulate, never both. */
+export interface AstragaloiCastCreate {
+  faces?: BoneFaceWire[];
+  question?: string | null;
+  entry_id?: string | null;
+  declared_intent?: string | null;
+  simulate?: boolean;
+}
+
+export interface AstragaloiCastFilters {
+  valence?: AstragaloiValenceWire;
+  sphere?: number;
+  simulated?: boolean;
+  cast_after?: string;
+  cast_before?: string;
+  limit?: number;
+}
+
+/** The corpus ``meta`` block, displayed verbatim (provenance, legend,
+ *  the pending Nollé adjudications, gaps). Loosely typed on purpose —
+ *  the surface renders what it is given and never repairs it. */
+export interface AstragaloiCorpusMeta {
+  title?: string;
+  assembled?: string;
+  mechanics?: string;
+  tetraktys_overlay?: string;
+  caveats?: string[];
+  gaps?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+// ─── Two-gate covenant — verdicts on workings (v1-060, H12 F2) ─────────────
+
+export type GateResultWire = "pass" | "fail" | "open";
+
+/** A sealed declared intent — rule 69: no update route exists. */
+export interface DeclaredIntentRead {
+  text: string;
+  declared_at: string;
+  /** sha256 over text + declaration timestamp — tampering is evident. */
+  fingerprint: string;
+  immutable: true;
+}
+
+export interface WorkingGateRead {
+  result: GateResultWire;
+  notes: string | null;
+}
+
+/** Mirrors ``theourgia.api.routers.v1.verdicts.VerdictRead``. */
+export interface WorkingVerdictRead {
+  entry_id: string;
+  title: string;
+  intent: DeclaredIntentRead | null;
+  gate1: WorkingGateRead;
+  gate2: WorkingGateRead;
+  judged_at: string | null;
+  /** Non-null → the verdict is finalized and immutable. */
+  finalized_at: string | null;
+}
+
+export interface WorkingGateWrite {
+  result: GateResultWire;
+  notes?: string | null;
+}
+
+/** ``PUT /api/v1/workings/{id}/verdict``. Finalize requires both gates
+ *  non-open; after it the verdict is immutable (409 on any later PUT). */
+export interface WorkingVerdictWrite {
+  gate1: WorkingGateWrite;
+  gate2: WorkingGateWrite;
+  finalize?: boolean;
+}
+
+/** One row of the Awaiting-judgment queue (oldest first). */
+export interface AwaitingJudgmentRead {
+  entry_id: string;
+  title: string;
+  declared_at: string;
+  gate1: GateResultWire;
+  gate2: GateResultWire;
+  age_days: number;
+}
+
+// ─── Curriculum / tetraktys ladder (v1-060, H12 F2) ────────────────────────
+
+export type SphereStateWire = "done" | "current" | "locked";
+export type CurriculumItemKindWire = "reading" | "practice" | "deliverable";
+
+export interface CurriculumItemRead {
+  id: string;
+  kind: CurriculumItemKindWire;
+  title: string;
+  notes: string | null;
+  required_for_gate: boolean;
+  completed_at: string | null;
+  evidence_entry_id: string | null;
+}
+
+/** What a sealed sphere shows: numbers, not names. */
+export interface SphereItemCounts {
+  total: number;
+  completed: number;
+  required_for_gate: number;
+}
+
+export interface SphereGateRead {
+  requirements: string | null;
+  passed_at: string | null;
+  countersign: string | null;
+  initiation_id: string | null;
+}
+
+/** Mirrors ``theourgia.api.routers.v1.curriculum.SphereRead``. */
+export interface SphereRead {
+  number: number;
+  name: string;
+  walk_position: number;
+  state: SphereStateWire;
+  sealed: boolean;
+  item_counts: SphereItemCounts;
+  /** Full items when unlocked; null (counts only) when sealed. */
+  items: CurriculumItemRead[] | null;
+  /** Gate detail when unlocked; null when sealed. */
+  gate: SphereGateRead | null;
+}
+
+export interface LadderRead {
+  /** In walk order (serpent 10→9→8→7→4→5→6→3→2→1). */
+  spheres: SphereRead[];
+  current_sphere: number | null;
+}
+
+/** ``GET /api/v1/curriculum/progress`` — a phrase, never a percentage. */
+export interface LadderProgressRead {
+  current_sphere: number | null;
+  phrase: string;
+}
+
+export interface CurriculumItemCreate {
+  kind: CurriculumItemKindWire;
+  title: string;
+  notes?: string | null;
+  required_for_gate?: boolean;
+}
+
+export interface CurriculumItemComplete {
+  evidence_entry_id?: string | null;
+}
+
+export interface SphereGatePass {
+  countersign?: string | null;
+  initiation_id?: string | null;
+}
+
+// ─── Practice modules — install by proof (v1-060, H12 F2) ──────────────────
+
+/** Install-by-proof lifecycle: candidate → testing → installed | rejected;
+ *  installed is terminal; rejected may return to candidate (re-trial). */
+export type ModuleStatusWire = "candidate" | "testing" | "installed" | "rejected";
+
+export interface PracticeStatusWrite {
+  status: ModuleStatusWire;
+  note?: string | null;
 }

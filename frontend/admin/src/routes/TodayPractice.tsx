@@ -20,6 +20,7 @@
  */
 
 import {
+  type AwaitingJudgmentRead,
   LunarDayChip,
   RESH_STATION_ORDER,
   type ReshAdorationRead,
@@ -523,13 +524,24 @@ export function TodayRiteRow({ lat, lng }: TodayRiteRowProps) {
 
 // ─── Awaiting-judgment due slot ────────────────────────────────────────────
 
+/** Rows shown before the card defers to "and N more" + the link. */
+const AWAITING_CARD_MAX_ROWS = 4;
+
 /**
- * The due row's verdict slot. The two-gate queue endpoint
- * (``GET /api/v1/workings/awaiting-judgment``) ships with Sprint I-B;
- * until it exists this renders the frame gracefully empty — the record
- * does not quietly forget the shape of an unfinished judgment.
+ * The due row's verdict slot — live against
+ * ``GET /api/v1/verdicts/awaiting`` (H12 F2). Workings with a sealed
+ * intent and an open gate list oldest-first with their age; the record
+ * does not quietly forget an unfinished judgment. Empty stays honest,
+ * not celebratory.
  */
 export function AwaitingJudgmentCard() {
+  const queue = useApiCall<AwaitingJudgmentRead[]>((signal) =>
+    apiMethods.listAwaitingJudgment({ signal }),
+  );
+  const items = Array.isArray(queue.data) ? queue.data : [];
+  const shown = items.slice(0, AWAITING_CARD_MAX_ROWS);
+  const more = items.length - shown.length;
+
   return (
     <article
       data-component="awaiting-judgment-card"
@@ -541,17 +553,73 @@ export function AwaitingJudgmentCard() {
       }}
     >
       <div style={{ ...sectionLabel, marginBottom: 14 }}>Awaiting judgment</div>
-      <div
-        style={{
-          fontFamily: "var(--font-serif)",
-          fontSize: 13.5,
-          color: "var(--ink-mute)",
-          lineHeight: 1.5,
-        }}
-      >
-        Nothing to judge yet. Workings with a sealed intent and an open gate will gather here once
-        the two-gate queue arrives with Sprint F2.
-      </div>
+      {queue.status === "loading" || queue.status === "idle" ? (
+        <Skeleton kind="text" width="70%" />
+      ) : shown.length === 0 ? (
+        <div
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: 13.5,
+            color: "var(--ink-mute)",
+            lineHeight: 1.5,
+          }}
+        >
+          Nothing awaits judgment. A working joins this list the moment its intent is sealed, and
+          leaves it only when both gates are closed.
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {shown.map((item) => (
+            <a
+              key={item.entry_id}
+              href="/verdicts"
+              data-awaiting-row={item.entry_id}
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: 10,
+                textDecoration: "none",
+              }}
+            >
+              <span
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  fontFamily: "var(--font-serif)",
+                  fontSize: 13.5,
+                  color: "var(--ink)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {item.title}
+              </span>
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  color: "var(--ink-mute)",
+                  flex: "none",
+                }}
+              >
+                {item.age_days} {item.age_days === 1 ? "day" : "days"}
+              </span>
+            </a>
+          ))}
+          {more > 0 ? (
+            <div
+              style={{
+                fontFamily: "var(--font-ui)",
+                fontSize: 11.5,
+                color: "var(--ink-mute)",
+              }}
+            >
+              and {more} more
+            </div>
+          ) : null}
+        </div>
+      )}
       <a
         href="/verdicts"
         style={{

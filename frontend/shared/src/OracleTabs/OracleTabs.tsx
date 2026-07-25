@@ -14,12 +14,7 @@
  * the page wide.
  */
 
-import {
-  type CSSProperties,
-  type ComponentType,
-  type MouseEvent,
-  type ReactNode,
-} from "react";
+import type { CSSProperties, ComponentType, MouseEvent, ReactNode } from "react";
 
 // ─── Tabs ──────────────────────────────────────────────────────────────
 
@@ -39,22 +34,8 @@ const ICON_PROPS = {
 const ORACLE_ICONS = {
   tarot: (
     <svg {...ICON_PROPS}>
-      <rect
-        x="6"
-        y="3.5"
-        width="9"
-        height="14"
-        rx="1.4"
-        transform="rotate(-9 10.5 10.5)"
-      />
-      <rect
-        x="9"
-        y="6.5"
-        width="9"
-        height="14"
-        rx="1.4"
-        transform="rotate(6 13.5 13.5)"
-      />
+      <rect x="6" y="3.5" width="9" height="14" rx="1.4" transform="rotate(-9 10.5 10.5)" />
+      <rect x="9" y="6.5" width="9" height="14" rx="1.4" transform="rotate(6 13.5 13.5)" />
       <path d="M13.5 10.5l1.3 2.4 2.6.4-1.9 1.8.5 2.6-2.3-1.2" />
     </svg>
   ),
@@ -77,6 +58,16 @@ const ORACLE_ICONS = {
       <path d="M7 4v16M7 4l7 6M7 11l6-5M17 4v16" />
     </svg>
   ),
+  // Knucklebone — pips only from the legal 1/3/4/6 faces (H12 rule 68:
+  // there is no two and no five).
+  astragaloi: (
+    <svg {...ICON_PROPS}>
+      <path d="M6.5 5.5h11a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z" />
+      <circle cx="9" cy="9" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="15" r="0.9" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  ),
   more: (
     <svg {...ICON_PROPS}>
       <path d="M12 4v9M12 13l4 5M12 13l-4 5" />
@@ -95,12 +86,14 @@ interface TabDef {
   iconToken: string;
 }
 
-// Tab order + labels match the designer's OracleTabs.dc.html exactly.
+// Tab order + labels match the designer's OracleTabs.dc.html, with the
+// H12 astragaloi surface joining the cluster before "More" (Sprint F2).
 const TABS: readonly TabDef[] = [
   { key: "tarot", label: "Tarot", iconToken: "--ot-tarot" },
   { key: "iching", label: "I Ching", iconToken: "--ot-iching" },
   { key: "geomancy", label: "Geomancy", iconToken: "--ot-geomancy" },
   { key: "runes", label: "Runes", iconToken: "--ot-runes" },
+  { key: "astragaloi", label: "Astragaloi", iconToken: "--ot-astragaloi" },
   { key: "more", label: "More", iconToken: "--ot-more" },
 ];
 
@@ -110,6 +103,7 @@ const DEFAULT_HREF_FOR: Record<OracleKey, string> = {
   iching: "/divination/iching",
   geomancy: "/divination/geomancy",
   runes: "/divination/runes",
+  astragaloi: "/divination/astragaloi",
   more: "/divination/more",
 };
 
@@ -136,13 +130,7 @@ export interface OracleTabsProps {
   style?: CSSProperties;
 }
 
-function DefaultLink({
-  to,
-  children,
-  current,
-  style,
-  onClick,
-}: OracleTabsLinkProps) {
+function DefaultLink({ to, children, current, style, onClick }: OracleTabsLinkProps) {
   return current ? (
     <a href={to} style={style} onClick={onClick} aria-current="page">
       {children}
@@ -229,8 +217,4 @@ export function OracleTabs({
   );
 }
 
-export {
-  ORACLE_ICONS,
-  DEFAULT_HREF_FOR as ORACLE_DEFAULT_HREF_FOR,
-  TABS as ORACLE_TABS,
-};
+export { ORACLE_ICONS, DEFAULT_HREF_FOR as ORACLE_DEFAULT_HREF_FOR, TABS as ORACLE_TABS };

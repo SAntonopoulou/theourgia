@@ -2,17 +2,13 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
-import {
-  ORACLE_DEFAULT_HREF_FOR,
-  ORACLE_TABS,
-  OracleTabs,
-} from "./index.js";
+import { ORACLE_DEFAULT_HREF_FOR, ORACLE_TABS, OracleTabs } from "./index.js";
 
 describe("OracleTabs", () => {
-  it("renders all 5 tabs in canonical order", () => {
+  it("renders all 6 tabs in canonical order", () => {
     render(<OracleTabs />);
     const labels = ORACLE_TABS.map((t) => t.label);
-    expect(labels).toEqual(["Tarot", "I Ching", "Geomancy", "Runes", "More"]);
+    expect(labels).toEqual(["Tarot", "I Ching", "Geomancy", "Runes", "Astragaloi", "More"]);
     for (const label of labels) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
@@ -23,18 +19,14 @@ describe("OracleTabs", () => {
     for (const key of Object.keys(ORACLE_DEFAULT_HREF_FOR) as Array<
       keyof typeof ORACLE_DEFAULT_HREF_FOR
     >) {
-      const link = container.querySelector(
-        `a[href="${ORACLE_DEFAULT_HREF_FOR[key]}"]`,
-      );
+      const link = container.querySelector(`a[href="${ORACLE_DEFAULT_HREF_FOR[key]}"]`);
       expect(link).not.toBeNull();
     }
   });
 
   it("hrefFor override is honored", () => {
     const hrefFor = (k: string) => `/custom/${k}`;
-    const { container } = render(
-      <OracleTabs active="iching" hrefFor={hrefFor} />,
-    );
+    const { container } = render(<OracleTabs active="iching" hrefFor={hrefFor} />);
     expect(container.querySelector('a[href="/custom/iching"]')).not.toBeNull();
     expect(container.querySelector('a[href="/custom/tarot"]')).not.toBeNull();
   });
@@ -111,24 +103,20 @@ describe("OracleTabs", () => {
     const Link = ({ to, children }: { to: string; children: React.ReactNode }) => (
       <button data-href={to}>{children}</button>
     );
-    const { container } = render(
-      <OracleTabs active="tarot" LinkComponent={Link as never} />,
-    );
-    expect(container.querySelectorAll("button")).toHaveLength(5);
+    const { container } = render(<OracleTabs active="tarot" LinkComponent={Link as never} />);
+    expect(container.querySelectorAll("button")).toHaveLength(6);
     expect(container.querySelectorAll("a")).toHaveLength(0);
   });
 
   it("attaches data-component for downstream tooling", () => {
     const { container } = render(<OracleTabs />);
-    expect(
-      container.firstElementChild?.getAttribute("data-component"),
-    ).toBe("oracle-tabs");
+    expect(container.firstElementChild?.getAttribute("data-component")).toBe("oracle-tabs");
   });
 
   it("each tab is keyboard-focusable", () => {
     const { container } = render(<OracleTabs />);
     const links = container.querySelectorAll("a");
-    expect(links).toHaveLength(5);
+    expect(links).toHaveLength(6);
     links.forEach((link) => {
       expect(link.getAttribute("tabindex")).not.toBe("-1");
     });

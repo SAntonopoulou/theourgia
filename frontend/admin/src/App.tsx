@@ -11,7 +11,7 @@
  * ``<VaultNav active=…>`` so the design's inset-accent highlight follows.
  */
 
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import {
   ActingAsProvider,
   ActingAsSwitcher,
@@ -545,8 +545,18 @@ const VocesMagicaeRoute = lazy(() =>
 const Placeholder = lazy(() =>
   import("./routes/Placeholder.js").then((m) => ({ default: m.Placeholder })),
 );
-const ArrivingWithF2 = lazy(() =>
-  import("./routes/ArrivingWithF2.js").then((m) => ({ default: m.ArrivingWithF2 })),
+// H12 Sprint F2 — the three practice surfaces that replaced the
+// ArrivingWithF2 placeholders.
+const AstragaloiRoute = lazy(() =>
+  import("./routes/AstragaloiRoute.js").then((m) => ({ default: m.AstragaloiRoute })),
+);
+const TetraktysLadderRoute = lazy(() =>
+  import("./routes/TetraktysLadderRoute.js").then((m) => ({
+    default: m.TetraktysLadderRoute,
+  })),
+);
+const VerdictsRoute = lazy(() =>
+  import("./routes/VerdictsRoute.js").then((m) => ({ default: m.VerdictsRoute })),
 );
 const PracticeLogsRoute = lazy(() =>
   import("./routes/PracticeLogsRoute.js").then((m) => ({
@@ -679,6 +689,19 @@ function Shell({ children }: { children: React.ReactNode }) {
   const auth = useAuth();
   const active = navKeyForPath(location.pathname);
 
+  // H12 F2 — the Awaiting-judgment queue drives the quiet count in the
+  // practice wing (the only number in that wing; a workload, not a
+  // score). Shared queryKey with the /verdicts surface so finalizing a
+  // verdict refreshes the chip via invalidation.
+  const awaitingJudgment = useQuery({
+    queryKey: ["awaiting-judgment"],
+    queryFn: ({ signal }) => apiMethods.listAwaitingJudgment({ signal }),
+    staleTime: 60_000,
+  });
+  const awaitingJudgmentCount = Array.isArray(awaitingJudgment.data)
+    ? awaitingJudgment.data.length
+    : 0;
+
   async function handleSignOut(): Promise<void> {
     try {
       await auth.signOut();
@@ -739,12 +762,12 @@ function Shell({ children }: { children: React.ReactNode }) {
       }
       nav={
         // H12: PracticeNav replaces VaultNav wholesale at the shell. The
-        // awaiting-judgment count stays unwired until the queue endpoint
-        // (Sprint I-B) exists — the chip renders nothing at 0.
+        // awaiting-judgment chip renders nothing at 0 (quiet by design).
         <PracticeNav
           active={active}
           LinkComponent={NavLinkAdapter}
           identity={navIdentity}
+          awaitingJudgmentCount={awaitingJudgmentCount}
           onSettings={() => navigate("/settings")}
         />
       }
@@ -842,38 +865,10 @@ function ShellRoutes() {
               divination surface is /divination/tarot (H04). Keep the bare
               URL alive for bookmarks. */}
             <Route path="/divination" element={<Navigate to="/divination/tarot" replace />} />
-            {/* H12 — practice-wing surfaces whose real compositions land in
-              Sprint F2. Registered now so PracticeNav links never 404. */}
-            <Route
-              path="/divination/astragaloi"
-              element={
-                <ArrivingWithF2
-                  glyph="divination"
-                  title="Astragaloi"
-                  body="Five knucklebones, faces 1/3/4/6 — transcription-first casting with the oracle verse and the ladder reading side by side."
-                />
-              }
-            />
-            <Route
-              path="/order/ladder"
-              element={
-                <ArrivingWithF2
-                  glyph="star"
-                  title="Tetraktys ladder"
-                  body="The ten spheres as navigation — curriculum, gates, and the sealed initiation record along the serpent path."
-                />
-              }
-            />
-            <Route
-              path="/verdicts"
-              element={
-                <ArrivingWithF2
-                  glyph="scroll"
-                  title="Awaiting judgment"
-                  body="The two-gate verdict queue — did it work, and is it true — over every working with a sealed intent still undischarged."
-                />
-              }
-            />
+            {/* H12 Sprint F2 — the practice wing's three real surfaces. */}
+            <Route path="/divination/astragaloi" element={<AstragaloiRoute />} />
+            <Route path="/order/ladder" element={<TetraktysLadderRoute />} />
+            <Route path="/verdicts" element={<VerdictsRoute />} />
             <Route path="/divination/tarot" element={<TarotRoute />} />
             <Route path="/divination/iching" element={<IChingRoute />} />
             <Route path="/divination/geomancy" element={<GeomancyRoute />} />

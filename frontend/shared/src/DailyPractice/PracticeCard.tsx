@@ -18,17 +18,17 @@
  * is verbatim per H04 §S3.4 — never improvise.
  */
 
-import { type CSSProperties, type ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
-import {
-  type CompletionStatus,
-  type TodayStatus,
-  countKept,
-} from "../practice/index.js";
+import { PracticeModuleStateChip } from "../TwoGateVerdict/PracticeModuleStateChip.js";
+import { MODULE_TRANSITION_LABELS, legalModuleTransitions } from "../TwoGateVerdict/covenant.js";
+import type { ModuleStatusWire } from "../api/types.js";
+import { _ } from "../i18n/index.js";
+import { type CompletionStatus, type TodayStatus, countKept } from "../practice/index.js";
 import { Last7DaysDots } from "./Last7DaysDots.js";
-import { PRACTICE_STATUS_HEADLINE, PRACTICE_STATUS_SUB } from "./copy.js";
 import { PracticeStatusIcon } from "./PracticeStatusIcon.js";
 import { StreakGrid35 } from "./StreakGrid35.js";
+import { PRACTICE_STATUS_HEADLINE, PRACTICE_STATUS_SUB } from "./copy.js";
 
 export interface PracticeCardProps {
   /** Unique id (stable for tests + onComplete/onSkip dispatch). */
@@ -55,6 +55,14 @@ export interface PracticeCardProps {
   onComplete?: (id: string) => void;
   onSkip?: (id: string) => void;
   onReset?: (id: string) => void;
+
+  /** Install-by-proof lifecycle state (H12 F2). When present, the
+   *  state chip renders next to the title. */
+  moduleState?: ModuleStatusWire;
+  /** Fired with a LEGAL next state (candidate→testing → installed |
+   *  rejected → candidate). Only legal transitions render as controls;
+   *  installed is terminal and shows none. */
+  onModuleTransition?: (id: string, next: ModuleStatusWire) => void;
 
   className?: string;
   style?: CSSProperties;
@@ -156,10 +164,13 @@ export function PracticeCard({
   onComplete,
   onSkip,
   onReset,
+  moduleState,
+  onModuleTransition,
   className,
   style,
 }: PracticeCardProps) {
   const kept = countKept(history);
+  const moduleNextStates = moduleState ? legalModuleTransitions(moduleState) : [];
 
   return (
     <article
@@ -210,6 +221,7 @@ export function PracticeCard({
               {CADENCE_GLYPH}
               {cadenceHuman}
             </span>
+            {moduleState ? <PracticeModuleStateChip state={moduleState} /> : null}
             {entity ? (
               <span style={ENTITY_PILL_STYLE} data-entity-pill>
                 <span
@@ -348,6 +360,54 @@ export function PracticeCard({
           </button>
         ) : null}
       </div>
+
+      {/* Install-by-proof transitions — legal moves only (H12 F2).
+          Nothing enters the daily rite on enthusiasm alone. */}
+      {moduleState && onModuleTransition && moduleNextStates.length > 0 ? (
+        <div
+          data-module-transitions
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: "wrap",
+            margin: "0 0 20px",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-ui)",
+              fontSize: 11,
+              color: "var(--ink-mute)",
+            }}
+          >
+            {_("Installed by proof:")}
+          </span>
+          {moduleNextStates.map((next) => (
+            <button
+              key={next}
+              type="button"
+              data-module-transition={next}
+              onClick={() => onModuleTransition(id, next)}
+              style={{
+                padding: "7px 13px",
+                borderRadius: "var(--r-md)",
+                borderWidth: 1,
+                borderStyle: "solid",
+                borderColor: "var(--line-2)",
+                background: "transparent",
+                fontFamily: "var(--font-ui)",
+                fontSize: 12,
+                color: "var(--ink-soft)",
+                cursor: "pointer",
+                minHeight: 32,
+              }}
+            >
+              {_(MODULE_TRANSITION_LABELS[next])}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {/* Grids row */}
       <div

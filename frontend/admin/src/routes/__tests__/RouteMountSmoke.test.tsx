@@ -266,6 +266,22 @@ const ROUTES: ReadonlyArray<[string, () => Promise<{ Component: React.ComponentT
     "CalendarRoute",
     () => import("../CalendarRoute.js").then((m) => ({ Component: m.CalendarRoute })),
   ],
+  // H12 Sprint F2 — the three practice surfaces.
+  [
+    "AstragaloiRoute",
+    () => import("../AstragaloiRoute.js").then((m) => ({ Component: m.AstragaloiRoute })),
+  ],
+  [
+    "VerdictsRoute",
+    () => import("../VerdictsRoute.js").then((m) => ({ Component: m.VerdictsRoute })),
+  ],
+  [
+    "TetraktysLadderRoute",
+    () =>
+      import("../TetraktysLadderRoute.js").then((m) => ({
+        Component: m.TetraktysLadderRoute,
+      })),
+  ],
 ];
 
 describe("route mount smoke suite", () => {

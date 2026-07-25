@@ -21,3 +21,19 @@ export type {
 
 export { countKept, streak } from "./streak.js";
 export type { CompletionStatus, TodayStatus } from "./streak.js";
+
+export {
+  SERPENT_ORDER,
+  SPHERE_NAMES,
+  TETRAKTYS_ROWS,
+  octaveForSum,
+  sphereForSum,
+  tetraktysLayout,
+} from "./tetraktys.js";
+export type {
+  Octave,
+  SphereNumber,
+  SphereState,
+  TetraktysLayout,
+  TetraktysPoint,
+} from "./tetraktys.js";

@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   reshToday: vi.fn(),
   listReshAdorations: vi.fn(),
   createReshAdoration: vi.fn(),
+  listAwaitingJudgment: vi.fn(),
 }));
 
 vi.mock("../../data/api.js", () => ({
@@ -110,6 +111,7 @@ beforeEach(() => {
   mocks.reshToday.mockReset().mockResolvedValue(reshPayload());
   mocks.listReshAdorations.mockReset().mockResolvedValue([]);
   mocks.createReshAdoration.mockReset().mockResolvedValue({});
+  mocks.listAwaitingJudgment.mockReset().mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -222,11 +224,41 @@ describe("TodayRiteRow", () => {
 });
 
 describe("AwaitingJudgmentCard", () => {
-  it("renders the due slot gracefully empty until the queue endpoint exists", () => {
+  it("renders the due slot gracefully empty when nothing awaits", async () => {
     render(<AwaitingJudgmentCard />);
     expect(screen.getByText("Awaiting judgment")).toBeInTheDocument();
-    expect(screen.getByText(/Nothing to judge yet/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Nothing awaits judgment/i)).toBeInTheDocument();
     const link = screen.getByText(/The two gates/).closest("a");
     expect(link).toHaveAttribute("href", "/verdicts");
+  });
+
+  it("lists undischarged workings from the queue with their ages (H12 F2)", async () => {
+    mocks.listAwaitingJudgment.mockResolvedValue([
+      {
+        entry_id: "w-1",
+        title: "The petition left at the crossroads stone",
+        declared_at: "2026-06-19T21:00:00+03:00",
+        gate1: "open",
+        gate2: "open",
+        age_days: 36,
+      },
+      {
+        entry_id: "w-2",
+        title: "Saturn talisman — first consecration",
+        declared_at: "2026-07-02T20:00:00+03:00",
+        gate1: "pass",
+        gate2: "open",
+        age_days: 23,
+      },
+    ]);
+    const { container } = render(<AwaitingJudgmentCard />);
+    expect(
+      await screen.findByText("The petition left at the crossroads stone"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("36 days")).toBeInTheDocument();
+    expect(screen.getByText("23 days")).toBeInTheDocument();
+    // Rows route to the two-gate surface — the record does not forget.
+    const row = container.querySelector('[data-awaiting-row="w-1"]') as HTMLAnchorElement;
+    expect(row.getAttribute("href")).toBe("/verdicts");
   });
 });

@@ -361,6 +361,14 @@ select:focus-visible {
   }
 }
 
+/* ── H12 F2 · Tetraktys ladder — the figure stacks over the sphere detail
+ * on phones (matches TetraktysLadder.dc.html's .tk-cols override). */
+@media (max-width: 640px) {
+  .tk-cols {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 /* ── Sidebar (om-aside) — hide scrollbar entirely ────────────────────────────
  * Sophia 2026-06-21: the sidebar nav must not show any scrollbar even when
  * the content overflows. Mouse-wheel + keyboard navigation still scroll. */

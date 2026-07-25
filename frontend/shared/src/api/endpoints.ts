@@ -19,7 +19,13 @@ import type {
   AgentRunCostSnapshot,
   AgentRunSnapshot,
   AltarRecordWire,
+  AstragaloiCastCreate,
+  AstragaloiCastFilters,
+  AstragaloiCastRead,
+  AstragaloiCorpusMeta,
+  AstroEventsResponse,
   AudioAttachmentRecord,
+  AwaitingJudgmentRead,
   BanishingLogRecord,
   BodyPracticeRecord,
   BookRecord,
@@ -29,7 +35,6 @@ import type {
   BundledPackageListResponse,
   BundledVoce,
   CastHoraryInput,
-  AstroEventsResponse,
   ChartRequestInput,
   ChartResponse,
   CircleRecord,
@@ -61,8 +66,12 @@ import type {
   CreateToolInput,
   CreateVoceInput,
   CreateVoceRecordingInput,
+  CurriculumItemComplete,
+  CurriculumItemCreate,
+  CurriculumItemRead,
   DataExportResponse,
   DecideSubmissionInput,
+  DeclaredIntentRead,
   DeletionScheduledRead,
   EndScryingSessionInput,
   EntityKind,
@@ -87,6 +96,8 @@ import type {
   InstalledBundleListResponse,
   KeyRotationHistoryResponse,
   KeyRotationStatusResponse,
+  LadderProgressRead,
+  LadderRead,
   MagicSquareRecord,
   MaintainerQueueResponse,
   MeRead,
@@ -103,22 +114,22 @@ import type {
   PendulumReadingRecord,
   PlanetarySquareWire,
   PracticeRecord,
+  PracticeStatusWrite,
   PracticesToday,
   PresetCircle,
   PromotePluginInput,
   RecurringOfferingRead,
   RegistryAdvisory,
+  RegistryAuthorRead,
+  RegistryPluginListResponse,
+  RegistrySubmission,
+  RegistrySubmissionListResponse,
   ReshAdorationRead,
   ReshConfigRead,
   ReshConfigWrite,
   ReshModeWire,
   ReshTodayRead,
   ReshTransitionWire,
-  TodayContextRead,
-  RegistryAuthorRead,
-  RegistryPluginListResponse,
-  RegistrySubmission,
-  RegistrySubmissionListResponse,
   ScryingSessionRecord,
   SealEntryInput,
   SealedPayloadRead,
@@ -132,12 +143,16 @@ import type {
   Session,
   SigilRecord,
   SourceScriptWire,
+  SphereGatePass,
+  SphereGateRead,
+  SphereRead,
   StartAgentRunInput,
   StartScryingSessionInput,
   SubmitPluginInput,
   TalismanRecord,
   TalismanSealPayload,
   TalismanUnsealResponse,
+  TodayContextRead,
   TodayLedger,
   ToolKindWire,
   ToolRecordWire,
@@ -165,6 +180,8 @@ import type {
   WebauthnCredentialListResponse,
   WebauthnCredentialRead,
   WellbeingNudge,
+  WorkingVerdictRead,
+  WorkingVerdictWrite,
 } from "./types.js";
 
 export class NotImplementedError extends Error {
@@ -1002,10 +1019,7 @@ export function api(client: ApiClient) {
      * memory with the vault passphrase via `decryptSealedPayloadB64`
      * — the row stays sealed; this is read-only.
      */
-    getEntrySealedPayload(
-      id: string,
-      opts?: { signal?: AbortSignal },
-    ): Promise<SealedPayloadRead> {
+    getEntrySealedPayload(id: string, opts?: { signal?: AbortSignal }): Promise<SealedPayloadRead> {
       return client.request<SealedPayloadRead>(`/api/v1/entries/${id}/sealed-payload`, {
         signal: opts?.signal,
       });
@@ -1368,10 +1382,7 @@ export function api(client: ApiClient) {
      * `decryptSealedPayloadB64` (the SealUnlock flow). Never
      * plaintext; non-sealed rows 409.
      */
-    getOathSealedPayload(
-      id: string,
-      opts?: { signal?: AbortSignal },
-    ): Promise<SealedPayloadRead> {
+    getOathSealedPayload(id: string, opts?: { signal?: AbortSignal }): Promise<SealedPayloadRead> {
       return client.request<SealedPayloadRead>(`/api/v1/oaths/${id}/sealed-payload`, {
         signal: opts?.signal,
       });
@@ -1524,10 +1535,9 @@ export function api(client: ApiClient) {
       const params = new URLSearchParams();
       if (opts?.date) params.set("date", opts.date);
       const qs = params.toString();
-      return client.request<TodayContextRead>(
-        `/api/v1/events/today-context${qs ? `?${qs}` : ""}`,
-        { signal: opts?.signal },
-      );
+      return client.request<TodayContextRead>(`/api/v1/events/today-context${qs ? `?${qs}` : ""}`, {
+        signal: opts?.signal,
+      });
     },
 
     createReshAdoration(input: CreateReshAdorationInput): Promise<ReshAdorationRead> {
@@ -1769,6 +1779,152 @@ export function api(client: ApiClient) {
       const qs = `?tz=${encodeURIComponent(tz)}`;
       return client.request<void>(`/api/v1/practices/${id}/today${qs}`, {
         method: "DELETE",
+      });
+    },
+
+    /** Install-by-proof transition (candidate → testing → installed |
+     *  rejected; rejected → candidate). Illegal transitions 409. */
+    transitionPracticeStatus(id: string, input: PracticeStatusWrite): Promise<PracticeRecord> {
+      return client.request<PracticeRecord>(`/api/v1/practices/${id}/status`, {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    // ─── Astragaloi — five-knucklebone oracle (v1-060, H12 F2) ───────
+
+    /** Record a throw (faces) or a server-rolled simulated one
+     *  (``simulate: true``). 422 on any face ∉ {1,3,4,6}. */
+    createAstragaloiCast(input: AstragaloiCastCreate): Promise<AstragaloiCastRead> {
+      return client.request<AstragaloiCastRead>("/api/v1/astragaloi/casts", {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    listAstragaloiCasts(
+      opts?: AstragaloiCastFilters & { signal?: AbortSignal },
+    ): Promise<AstragaloiCastRead[]> {
+      const params = new URLSearchParams();
+      if (opts?.valence) params.set("valence", opts.valence);
+      if (opts?.sphere !== undefined) params.set("sphere", String(opts.sphere));
+      if (opts?.simulated !== undefined) params.set("simulated", String(opts.simulated));
+      if (opts?.cast_after) params.set("cast_after", opts.cast_after);
+      if (opts?.cast_before) params.set("cast_before", opts.cast_before);
+      if (opts?.limit !== undefined) params.set("limit", String(opts.limit));
+      const qs = params.toString();
+      return client.request<AstragaloiCastRead[]>(`/api/v1/astragaloi/casts${qs ? `?${qs}` : ""}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    getAstragaloiCast(id: string, opts?: { signal?: AbortSignal }): Promise<AstragaloiCastRead> {
+      return client.request<AstragaloiCastRead>(`/api/v1/astragaloi/casts/${id}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    /** The operator's own interpretation — the only writable field. */
+    updateAstragaloiCast(
+      id: string,
+      input: { interpretation: string | null },
+    ): Promise<AstragaloiCastRead> {
+      return client.request<AstragaloiCastRead>(`/api/v1/astragaloi/casts/${id}`, {
+        method: "PATCH",
+        json: input,
+      });
+    },
+
+    /** Corpus provenance, legend, caveats and gaps — for verbatim display. */
+    getAstragaloiCorpusMeta(opts?: { signal?: AbortSignal }): Promise<AstragaloiCorpusMeta> {
+      return client.request<AstragaloiCorpusMeta>("/api/v1/astragaloi/corpus/meta", {
+        signal: opts?.signal,
+      });
+    },
+
+    // ─── Two-gate covenant — verdicts on workings (v1-060, H12 F2) ───
+
+    /** Seal the declared intent on a working. Once. Forever (rule 69);
+     *  a second declaration 409s. */
+    declareWorkingIntent(entryId: string, input: { text: string }): Promise<DeclaredIntentRead> {
+      return client.request<DeclaredIntentRead>(`/api/v1/workings/${entryId}/intent`, {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    getWorkingVerdict(
+      entryId: string,
+      opts?: { signal?: AbortSignal },
+    ): Promise<WorkingVerdictRead> {
+      return client.request<WorkingVerdictRead>(`/api/v1/workings/${entryId}/verdict`, {
+        signal: opts?.signal,
+      });
+    },
+
+    /** Judge the two gates. Editable while open; immutable once
+     *  finalized (409). Finalize requires both gates non-open. */
+    putWorkingVerdict(entryId: string, input: WorkingVerdictWrite): Promise<WorkingVerdictRead> {
+      return client.request<WorkingVerdictRead>(`/api/v1/workings/${entryId}/verdict`, {
+        method: "PUT",
+        json: input,
+      });
+    },
+
+    /** The Awaiting-judgment queue — oldest first; drives the nav count. */
+    listAwaitingJudgment(opts?: { signal?: AbortSignal }): Promise<AwaitingJudgmentRead[]> {
+      return client.request<AwaitingJudgmentRead[]>("/api/v1/verdicts/awaiting", {
+        signal: opts?.signal,
+      });
+    },
+
+    // ─── Curriculum / tetraktys ladder (v1-060, H12 F2) ──────────────
+
+    /** All ten spheres in walk order; locked spheres arrive sealed. */
+    getCurriculumLadder(opts?: { signal?: AbortSignal }): Promise<LadderRead> {
+      return client.request<LadderRead>("/api/v1/curriculum/ladder", {
+        signal: opts?.signal,
+      });
+    },
+
+    getCurriculumSphere(number: number, opts?: { signal?: AbortSignal }): Promise<SphereRead> {
+      return client.request<SphereRead>(`/api/v1/curriculum/spheres/${number}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    createCurriculumItem(number: number, input: CurriculumItemCreate): Promise<CurriculumItemRead> {
+      return client.request<CurriculumItemRead>(`/api/v1/curriculum/spheres/${number}/items`, {
+        method: "POST",
+        json: input,
+      });
+    },
+
+    /** Mark an item done, optionally with journal-entry evidence.
+     *  Refused (409) on sealed spheres. */
+    completeCurriculumItem(
+      itemId: string,
+      input?: CurriculumItemComplete,
+    ): Promise<CurriculumItemRead> {
+      return client.request<CurriculumItemRead>(`/api/v1/curriculum/items/${itemId}/complete`, {
+        method: "POST",
+        json: input ?? {},
+      });
+    },
+
+    /** Pass the current sphere's gate — requires every required-for-gate
+     *  item complete (422 otherwise; 409 when locked or already passed). */
+    passSphereGate(number: number, input?: SphereGatePass): Promise<SphereGateRead> {
+      return client.request<SphereGateRead>(`/api/v1/curriculum/spheres/${number}/gate/pass`, {
+        method: "POST",
+        json: input ?? {},
+      });
+    },
+
+    /** Where the walk stands — a phrase, never a percentage. */
+    getCurriculumProgress(opts?: { signal?: AbortSignal }): Promise<LadderProgressRead> {
+      return client.request<LadderProgressRead>("/api/v1/curriculum/progress", {
+        signal: opts?.signal,
       });
     },
 

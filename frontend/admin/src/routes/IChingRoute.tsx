@@ -42,6 +42,7 @@ const ORACLE_HREF: Record<string, string> = {
   iching: "/divination/iching",
   geomancy: "/divination/geomancy",
   runes: "/divination/runes",
+  astragaloi: "/divination/astragaloi",
   more: "/divination/more",
 };
 

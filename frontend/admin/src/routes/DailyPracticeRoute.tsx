@@ -15,9 +15,11 @@ import {
   type DailyPractice,
   DailyPracticeTracker,
   type DefinePracticeDraft,
+  type ModuleStatusWire,
+  type PracticeRecord,
   type PracticeTodayView,
-  type TodayStatus,
   Toast,
+  type TodayStatus,
   useApiCall,
   useTopbar,
 } from "@theourgia/shared";
@@ -36,9 +38,7 @@ function mapStatus(s: PracticeTodayView["status"]): TodayStatus {
   return s;
 }
 
-function mapHistory(
-  history: PracticeTodayView["history"],
-): CompletionStatus[] {
+function mapHistory(history: PracticeTodayView["history"]): CompletionStatus[] {
   return history.map((c: PracticeTodayView["history"][number]) => c as CompletionStatus);
 }
 
@@ -65,17 +65,26 @@ export function DailyPracticeRoute() {
   useTopbar(
     () => ({
       title: "Daily practice",
-      subtitle:
-        "The practices you set yourself — kept, or not, and recorded either way",
+      subtitle: "The practices you set yourself — kept, or not, and recorded either way",
     }),
     [],
   );
 
   const todayLong = useMemo(() => TODAY_LONG_FORMAT.format(new Date()), []);
 
-  const { data, status, refresh } = useApiCall((signal) =>
-    apiMethods.practicesToday({ signal }),
-  );
+  const { data, status, refresh } = useApiCall((signal) => apiMethods.practicesToday({ signal }));
+
+  // Install-by-proof lifecycle state per practice (H12 F2). The /today
+  // view stays lean; the module state rides the practice records and
+  // merges in by id.
+  const records = useApiCall<PracticeRecord[]>((signal) => apiMethods.listPractices({ signal }));
+  const moduleStateById = useMemo(() => {
+    const map = new Map<string, ModuleStatusWire>();
+    for (const r of Array.isArray(records.data) ? records.data : []) {
+      if (r.status) map.set(r.id, r.status);
+    }
+    return map;
+  }, [records.data]);
 
   // Local optimistic overlay: practice id → today status. Cleared on
   // refresh.
@@ -93,6 +102,8 @@ export function DailyPracticeRoute() {
     if (!data) return [];
     return data.practices.map((view) => {
       const card = toCardModel(view);
+      const moduleState = moduleStateById.get(view.id);
+      if (moduleState) card.moduleState = moduleState;
       const overlaid = optimistic[view.id];
       if (overlaid !== undefined) {
         card.status = overlaid;
@@ -100,22 +111,16 @@ export function DailyPracticeRoute() {
         const next = [...card.history];
         const last = next.length - 1;
         if (last >= 0) {
-          next[last] =
-            overlaid === "done"
-              ? "done"
-              : overlaid === "skipped"
-                ? "skip"
-                : "miss";
+          next[last] = overlaid === "done" ? "done" : overlaid === "skipped" ? "skip" : "miss";
         }
         card.history = next;
       }
       return card;
     });
-  }, [data, optimistic]);
+  }, [data, optimistic, moduleStateById]);
 
   const applyOptimistic = useCallback(
-    (id: string, status: TodayStatus) =>
-      setOptimistic((m) => ({ ...m, [id]: status })),
+    (id: string, status: TodayStatus) => setOptimistic((m) => ({ ...m, [id]: status })),
     [],
   );
 
@@ -139,8 +144,7 @@ export function DailyPracticeRoute() {
         Toast.push({
           tone: "warning",
           title: "Could not record",
-          body:
-            e instanceof Error ? e.message : "Try again — the record was not saved.",
+          body: e instanceof Error ? e.message : "Try again — the record was not saved.",
         });
       }
     },
@@ -159,8 +163,7 @@ export function DailyPracticeRoute() {
         Toast.push({
           tone: "warning",
           title: "Could not record",
-          body:
-            e instanceof Error ? e.message : "Try again — the record was not saved.",
+          body: e instanceof Error ? e.message : "Try again — the record was not saved.",
         });
       }
     },
@@ -179,12 +182,40 @@ export function DailyPracticeRoute() {
         Toast.push({
           tone: "warning",
           title: "Could not undo",
-          body:
-            e instanceof Error ? e.message : "Try again — the change was not saved.",
+          body: e instanceof Error ? e.message : "Try again — the change was not saved.",
         });
       }
     },
     [applyOptimistic, clearOptimistic, refresh],
+  );
+
+  // Install-by-proof transition (H12 F2). Only legal moves render as
+  // controls; the backend still 409s an illegal one — surface it.
+  const handleModuleTransition = useCallback(
+    async (id: string, next: ModuleStatusWire) => {
+      try {
+        await apiMethods.transitionPracticeStatus(id, { status: next });
+        Toast.push({
+          tone: "success",
+          title:
+            next === "installed"
+              ? "Installed — it earned its place"
+              : next === "testing"
+                ? "The trial begins"
+                : next === "rejected"
+                  ? "Rejected — a verdict, not a ban"
+                  : "Returned to candidate",
+        });
+        await records.refresh();
+      } catch (e) {
+        Toast.push({
+          tone: "warning",
+          title: "The transition was refused",
+          body: e instanceof Error ? e.message : "Try again — the status was not changed.",
+        });
+      }
+    },
+    [records.refresh],
   );
 
   const handleDefine = useCallback(
@@ -196,8 +227,7 @@ export function DailyPracticeRoute() {
           // The drawer ships the cadence chip key; "custom" needs the
           // freeform label, which the H04 drawer doesn't carry yet —
           // pass the chip label until the drawer grows a custom field.
-          cadence_custom:
-            draft.cadence === "custom" ? "Custom cadence" : null,
+          cadence_custom: draft.cadence === "custom" ? "Custom cadence" : null,
           intention: draft.intention || null,
           linked_entity_id: null, // entity-name → id lookup is a follow-up
         });
@@ -211,10 +241,7 @@ export function DailyPracticeRoute() {
         Toast.push({
           tone: "warning",
           title: "Could not save practice",
-          body:
-            e instanceof Error
-              ? e.message
-              : "Try again — the practice was not saved.",
+          body: e instanceof Error ? e.message : "Try again — the practice was not saved.",
         });
       }
     },
@@ -234,6 +261,7 @@ export function DailyPracticeRoute() {
       onSkip={handleSkip}
       onReset={handleReset}
       onDefine={handleDefine}
+      onModuleTransition={(id, next) => void handleModuleTransition(id, next)}
       liberReshHref="/daily-practice/resh"
     />
   );
