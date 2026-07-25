@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@500;600;700&family=GFS+Didot&family=Inria+Sans:wght@300;400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font-display:'Cardo',Georgia,serif; --font-serif:'Cardo',Georgia,serif;
+  --font-ui:'Inria Sans',system-ui,sans-serif; --font-mono:'JetBrains Mono',monospace;
+  --bg:#15120D; --bg-2:#1C1812; --bg-3:#231E16; --bg-sunk:#100D09;
+  --line:rgba(236,229,214,.10); --line-2:rgba(236,229,214,.20);
+  --ink:#ECE5D6; --ink-soft:#BCB29D; --ink-mute:#A09680;
+  --accent:#C7A24C; --accent-ink:#15120D; --accent-soft:rgba(199,162,76,.14);
+  --peer-ok:#6BA892; --peer-ok-soft:rgba(107,168,146,.16); --peer-ok-border:rgba(107,168,146,.45);
+  --network:#5E8FA8; --network-soft:rgba(94,143,168,.14); --network-line:rgba(94,143,168,.42);
+  --warn:#C99A3C; --warn-soft:rgba(201,154,60,.14); --warn-border:rgba(201,154,60,.45);
+  --moon:#9FA6C4; --moon-soft:rgba(159,166,196,.15); --hour:#C9A24C; --hour-soft:rgba(201,162,76,.14);
+  --seal:#A98AC0; --seal-soft:rgba(169,138,192,.16);
+  --lunar:var(--moon); --lunar-soft:var(--moon-soft);
+  --station-done:var(--peer-ok); --station-done-soft:var(--peer-ok-soft);
+  --station-due:var(--accent); --station-due-soft:var(--accent-soft);
+  --station-missed:var(--ink-mute); --station-missed-soft:rgba(160,150,128,.14);
+  --r-sm:4px; --r-md:8px; --r-lg:14px; --r-pill:20px;
+}
+[data-theme="hellenic"]{ --font-display:'GFS Didot',serif; --bg:#0F1311; --bg-2:#161B18; --bg-3:#1D2420; --bg-sunk:#0B0F0D; --line:rgba(226,231,222,.10); --line-2:rgba(226,231,222,.20); --ink:#E9EADE; --ink-soft:#AEB6A4; --ink-mute:#8B9382; --accent:#BFA15B; --accent-ink:#0F1311; --accent-soft:rgba(191,161,91,.14); --peer-ok:#6E9C72; --peer-ok-soft:rgba(110,156,114,.16); --peer-ok-border:rgba(110,156,114,.45); --network:#5E9BA6; --network-soft:rgba(94,155,166,.14); --network-line:rgba(94,155,166,.42); --warn:#BFA15B; --warn-soft:rgba(191,161,91,.14); --warn-border:rgba(191,161,91,.45); --moon:#93A0B4; --moon-soft:rgba(147,160,180,.15); --hour:#BFA15B; --hour-soft:rgba(191,161,91,.14); --seal:#8FA8C0; --seal-soft:rgba(143,168,192,.16); --station-missed-soft:rgba(139,147,130,.14); }
+[data-theme="thelemic"]{ --font-display:'Cinzel',serif; --bg:#100B09; --bg-2:#191210; --bg-3:#201714; --bg-sunk:#0A0706; --line:rgba(239,227,203,.12); --line-2:rgba(239,227,203,.22); --ink:#EFE3CB; --ink-soft:#C5B493; --ink-mute:#9C8A6C; --accent:#CDA53E; --accent-ink:#100B09; --accent-soft:rgba(205,165,62,.15); --peer-ok:#6BA892; --peer-ok-soft:rgba(107,168,146,.16); --peer-ok-border:rgba(107,168,146,.45); --network:#7E91CE; --network-soft:rgba(126,145,206,.14); --network-line:rgba(126,145,206,.42); --warn:#CDA53E; --warn-soft:rgba(205,165,62,.15); --warn-border:rgba(205,165,62,.45); --moon:#A79ACE; --moon-soft:rgba(167,154,206,.16); --hour:#CDA53E; --hour-soft:rgba(205,165,62,.14); --seal:#B79ACE; --seal-soft:rgba(183,154,206,.16); --station-missed-soft:rgba(156,138,108,.14); }
+[data-mode="light"]{ --bg:#EFE7D4; --bg-2:#F6F0E1; --bg-3:#FBF7EC; --bg-sunk:#E6DCC6; --line:rgba(40,32,22,.14); --line-2:rgba(40,32,22,.26); --ink:#2A2316; --ink-soft:#5A5040; --ink-mute:#766B57; --accent:#9A6E22; --accent-ink:#FBF7EC; --accent-soft:rgba(154,110,34,.14); --peer-ok:#3E7A5E; --peer-ok-soft:rgba(62,122,94,.13); --peer-ok-border:rgba(62,122,94,.45); --network:#3F6E86; --network-soft:rgba(63,110,134,.12); --network-line:rgba(63,110,134,.4); --warn:#8A6A2E; --warn-soft:rgba(138,106,46,.12); --warn-border:rgba(138,106,46,.4); --moon:#5A6291; --moon-soft:rgba(90,98,145,.13); --hour:#9A6E22; --hour-soft:rgba(154,110,34,.13); --seal:#7A5E9E; --seal-soft:rgba(122,94,158,.14); --station-missed-soft:rgba(118,107,87,.13); }
+*{box-sizing:border-box}
+body{margin:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+a{color:inherit;text-decoration:none}
+input{font:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+::selection{background:var(--accent-soft);color:var(--ink)}
+.scroll::-webkit-scrollbar{width:10px}
+.scroll::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:10px;border:3px solid transparent;background-clip:content-box}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.001ms!important}}
+:root{ --shell-nav-w:248px; }
+.om-menu{ display:none; } .om-scrim{ display:none; }
+@media (max-width:1280px){ :root{ --shell-nav-w:224px; } }
+/* ── tablet 640–1024: 64px ICON RAIL (the H12 nav contract) ── */
+@media (min-width:640px) and (max-width:1024px){
+  .om-shell{ grid-template-columns:64px 1fr !important; }
+  .om-menu{ display:none !important; }
+  .pn-aside{ padding:14px 8px 12px !important; }
+  .pn-aside .pn-label{ display:none !important; }
+  .pn-aside .pn-head{ height:1px; padding:10px 0 0 !important; overflow:hidden; color:transparent !important; border-top:1px solid var(--line); margin:6px 4px; }
+  .pn-aside a, .pn-aside .pn-more, .pn-aside .pn-switch, .pn-aside .pn-capture{ justify-content:center; padding-left:0 !important; padding-right:0 !important; min-height:40px; }
+  .pn-aside .pn-foot{ justify-content:center; }
+}
+/* ── the forced-mode rail, for tests and spec surfaces ── */
+.pn-aside[data-nav-mode="rail"]{ padding:14px 8px 12px !important; }
+.pn-aside[data-nav-mode="rail"] .pn-label{ display:none !important; }
+.pn-aside[data-nav-mode="rail"] .pn-head{ height:1px; padding:10px 0 0 !important; overflow:hidden; color:transparent !important; border-top:1px solid var(--line); margin:6px 4px; }
+.pn-aside[data-nav-mode="rail"] a, .pn-aside[data-nav-mode="rail"] .pn-more, .pn-aside[data-nav-mode="rail"] .pn-switch, .pn-aside[data-nav-mode="rail"] .pn-capture{ justify-content:center; padding-left:0 !important; padding-right:0 !important; }
+.pn-aside[data-nav-mode="rail"] .pn-foot{ justify-content:center; }
+/* ── phone < 640: off-canvas drawer ── */
+@media (max-width:640px){
+  .om-shell{ grid-template-columns:1fr !important; }
+  .om-aside{ position:fixed; top:0; left:0; bottom:0; width:284px; z-index:60; transform:translateX(-100%); transition:transform .28s cubic-bezier(.4,0,.2,1); }
+  .om-shell[data-nav-open="true"] .om-aside{ transform:none; box-shadow:2px 0 26px rgba(0,0,0,.42); }
+  .om-scrim{ display:block; position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:opacity .28s ease; }
+  .om-shell[data-nav-open="true"] .om-scrim{ opacity:1; pointer-events:auto; }
+  .om-menu{ display:inline-flex !important; }
+  .om-aside a, .om-aside button{ min-height:44px; }
+}
+@media (max-width:900px){ .td-stations{ grid-template-columns:1fr 1fr !important; } .td-two{ grid-template-columns:1fr !important; } }
+@media (max-width:640px){ .om-topbar{ padding-left:14px !important; padding-right:14px !important; } .td-main{ padding:16px 14px 40px !important; } .td-lunar{ flex-wrap:wrap !important; } .td-stations{ grid-template-columns:1fr !important; } }
+@media (min-width:1681px){ .td-wrap{ max-width:1080px !important; } }
+@media (prefers-reduced-motion: reduce){ .om-aside, .om-scrim{ transition:none !important; } }
+</style>
+<script>
+(function(){
+  if (window.__omNavWired) return; window.__omNavWired = true;
+  function shellOf(el){ return el && el.closest ? el.closest('.om-shell') : null; }
+  document.addEventListener('click', function(e){
+    var menu = e.target.closest && e.target.closest('.om-menu');
+    if (menu){ var s = shellOf(menu); if(!s) return; var open = s.getAttribute('data-nav-open') === 'true'; s.setAttribute('data-nav-open', open ? 'false' : 'true'); menu.setAttribute('aria-expanded', open ? 'false' : 'true'); return; }
+    var scrim = e.target.closest && e.target.closest('.om-scrim');
+    if (scrim){ var s2 = shellOf(scrim); if(s2){ s2.setAttribute('data-nav-open','false'); var m = s2.querySelector('.om-menu'); if(m) m.setAttribute('aria-expanded','false'); } }
+  });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape'){ document.querySelectorAll('.om-shell[data-nav-open="true"]').forEach(function(s){ s.setAttribute('data-nav-open','false'); var m = s.querySelector('.om-menu'); if(m) m.setAttribute('aria-expanded','false'); }); } });
+})();
+</script>
+</helmet>
+
+<div class="om-shell" data-theme="{{ theme }}" data-mode="{{ mode }}" style="height:100vh;display:grid;grid-template-columns:var(--shell-nav-w) 1fr;grid-template-rows:minmax(0,1fr);background:var(--bg);color:var(--ink);font-family:var(--font-serif);overflow:hidden">
+
+  <dc-import name="PracticeNav" active="today" hint-size="248px,100%"></dc-import>
+  <div class="om-scrim" aria-hidden="true"></div>
+
+  <div style="display:grid;grid-template-rows:auto 1fr;min-width:0;min-height:0">
+    <header class="om-topbar" style="display:flex;align-items:center;gap:14px;padding:13px 24px;border-bottom:1px solid var(--line);background:var(--bg)"><button class="om-menu" aria-label="Open navigation" aria-expanded="false" style="align-items:center;justify-content:center;width:40px;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);color:var(--ink-soft);flex:none" style-hover="color:var(--ink)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div style="min-width:0"><div style="font-family:var(--font-ui);font-size:11px;color:var(--ink-mute)">Saturday, 25 July 2026</div><div style="font-family:var(--font-display);font-size:21px;line-height:1.1">Today</div></div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:10px"><div role="group" aria-label="Theme" style="display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2)"><button onClick="{{ onBase }}" aria-pressed="{{ isBase }}" style="{{ segBase }}">Base</button><button onClick="{{ onHel }}" aria-pressed="{{ isHel }}" style="{{ segHel }}">Hel</button><button onClick="{{ onThe }}" aria-pressed="{{ isThe }}" style="{{ segThe }}">Thel</button></div><button onClick="{{ toggleMode }}" aria-label="Toggle light and dark" style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);color:var(--ink-soft)" style-hover="color:var(--ink)">{{ modeIcon }}</button></div>
+    </header>
+
+    <main class="scroll td-main" style="overflow-y:auto;min-height:0;padding:20px 24px 56px">
+      <div class="td-wrap" style="max-width:880px;margin:0 auto">
+
+        <!-- ══ LUNAR DAY CHIP ══ -->
+        <div class="td-lunar" style="display:flex;align-items:center;gap:14px;padding:15px 17px;border:1px solid var(--network-line);border-radius:var(--r-lg);background:var(--lunar-soft);margin-bottom:14px">
+          <span style="width:46px;height:46px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:var(--lunar);background:var(--bg-2);border:1px solid var(--network-line)">{{ moonGlyph }}</span>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap"><span style="font-family:var(--font-display);font-size:19px;color:var(--ink)">Deipnon tonight — dark moon</span><span style="font-family:var(--font-mono);font-size:11.5px;color:var(--lunar)">Hekatombaion 29</span></div>
+            <div style="font-family:var(--font-ui);font-size:12.5px;color:var(--ink-soft);margin-top:3px">Last day of the Attic month · waning crescent, 2% · the offering goes to the crossroads after dark</div>
+          </div>
+          <a href="#" style="padding:8px 14px;border-radius:var(--r-md);border:1px solid var(--network-line);font-family:var(--font-ui);font-size:13px;color:var(--network);flex:none" style-hover="background:var(--network-soft)">Observances</a>
+        </div>
+
+        <!-- ══ FOUR-STATION RITE ROW ══ -->
+        <section style="border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg-2);overflow:hidden;margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:12px;padding:14px 17px;border-bottom:1px solid var(--line);flex-wrap:wrap">
+            <div style="min-width:0"><div style="font-family:var(--font-display);font-size:17px;color:var(--ink)">The four stations</div><div style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);margin-top:1px">Dusk is the station that must be kept — the streak holds if dusk is done</div></div>
+            <div style="margin-left:auto;display:flex;align-items:center;gap:9px;flex:none"><span style="font-family:var(--font-mono);font-size:12px;color:var(--ink-mute)">{{ streakLabel }}</span></div>
+          </div>
+
+          <div class="td-stations" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line)">
+            <sc-for list="{{ stations }}" as="s" hint-placeholder-count="4">
+              <div style="{{ s.cardStyle }}">
+                <div style="display:flex;align-items:center;gap:9px;margin-bottom:9px"><span style="{{ s.iconWrap }}">{{ s.icon }}</span><div style="min-width:0"><div style="font-family:var(--font-display);font-size:15px;color:var(--ink);line-height:1.15">{{ s.name }}</div><div style="font-family:var(--font-mono);font-size:10.5px;color:var(--ink-mute)">{{ s.window }}</div></div></div>
+                <div style="font-family:var(--font-serif);font-size:12.5px;color:var(--ink-soft);line-height:1.45;margin-bottom:11px;min-height:36px">{{ s.adoration }}</div>
+                <sc-if value="{{ s.isMinimum }}" hint-placeholder-val="{{ false }}"><div style="display:inline-flex;align-items:center;gap:5px;margin-bottom:9px;padding:1px 8px;border-radius:var(--r-pill);background:var(--accent-soft);border:1px solid var(--line-2);font-family:var(--font-ui);font-size:10px;color:var(--accent)">minimum viable</div></sc-if>
+                <button style="{{ s.btnStyle }}">{{ s.btnLabel }}</button>
+              </div>
+            </sc-for>
+          </div>
+
+          <!-- sun arc + streak grid -->
+          <div class="td-two" style="display:grid;grid-template-columns:1.1fr 1fr;gap:1px;background:var(--line);border-top:1px solid var(--line)">
+            <div style="padding:15px 17px;background:var(--bg-2)">
+              <div style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:11px">The sun's arc</div>
+              <div data-om-raster="1">{{ sunArc }}</div>
+            </div>
+            <div style="padding:15px 17px;background:var(--bg-2)">
+              <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:11px"><span style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute)">Last five weeks</span><span style="font-family:var(--font-ui);font-size:10.5px;color:var(--ink-mute);margin-left:auto">dusk kept</span></div>
+              <div data-om-raster="1">{{ streakGrid }}</div>
+              <div style="font-family:var(--font-ui);font-size:11px;color:var(--ink-mute);margin-top:10px;line-height:1.5">A record, not a scoreboard. Gaps are kept as honestly as the days you sat.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══ QUICK CAPTURE + PLANETARY HOUR ══ -->
+        <div class="td-two" style="display:grid;grid-template-columns:1.4fr 1fr;gap:13px;margin-bottom:14px">
+          <div style="padding:15px 17px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg-2)">
+            <div style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:10px">Quick capture</div>
+            <input placeholder="A line for the record…" style="width:100%;padding:11px 13px;border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--bg);color:var(--ink);font-family:var(--font-serif);font-size:14.5px;margin-bottom:10px">
+            <div style="display:flex;gap:7px;flex-wrap:wrap"><sc-for list="{{ captureKinds }}" as="k" hint-placeholder-count="4"><button style="{{ k.style }}" style-hover="color:var(--ink);border-color:var(--line-2)">{{ k.label }}</button></sc-for></div>
+          </div>
+          <div style="padding:15px 17px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg-2)">
+            <div style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:10px">Planetary hour</div>
+            <div style="display:flex;align-items:center;gap:11px"><span style="width:38px;height:38px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:var(--hour);background:var(--hour-soft);border:1px solid var(--line-2)">{{ hourGlyph }}</span><div style="min-width:0"><div style="font-family:var(--font-display);font-size:17px;color:var(--ink)">Hour of Saturn</div><div style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute)">4th of the night · ends 02:41</div></div></div>
+            <a href="#" style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-family:var(--font-ui);font-size:12.5px;color:var(--accent)" style-hover="text-decoration:underline">Elections finder →</a>
+          </div>
+        </div>
+
+        <!-- ══ DUE ROW ══ -->
+        <section style="margin-bottom:14px">
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:11px"><span style="font-family:var(--font-display);font-size:17px;color:var(--ink)">Due</span><span style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute)">{{ dueCount }}</span></div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <sc-for list="{{ due }}" as="d" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:13px;padding:13px 15px;border:1px solid {{ d.border }};border-radius:var(--r-md);background:var(--bg-2)">
+                <span style="{{ d.iconWrap }}">{{ d.icon }}</span>
+                <div style="flex:1;min-width:0"><div style="font-family:var(--font-serif);font-size:14.5px;color:var(--ink)">{{ d.title }}</div><div style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);margin-top:1px">{{ d.detail }}</div></div>
+                <span style="font-family:var(--font-mono);font-size:11px;color:{{ d.whenColor }};flex:none">{{ d.when }}</span>
+                <button style="padding:7px 13px;border-radius:var(--r-md);border:1px solid var(--line-2);font-family:var(--font-ui);font-size:12.5px;color:var(--ink-soft);flex:none" style-hover="color:var(--ink)">{{ d.action }}</button>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <!-- ══ RECENT ENTRIES ══ -->
+        <section>
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:11px"><span style="font-family:var(--font-display);font-size:17px;color:var(--ink)">Recent</span><a href="Theourgia Journal.dc.html" style="margin-left:auto;font-family:var(--font-ui);font-size:12.5px;color:var(--accent)" style-hover="text-decoration:underline">All entries →</a></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ recent }}" as="r" hint-placeholder-count="3">
+              <a href="#" style="display:flex;align-items:center;gap:12px;padding:12px 15px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--bg-2)" style-hover="border-color:var(--line-2)">
+                <span style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);flex:none;width:52px">{{ r.when }}</span>
+                <span style="flex:1;min-width:0;font-family:var(--font-serif);font-size:14px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ r.title }}</span>
+                <sc-if value="{{ r.awaiting }}" hint-placeholder-val="{{ false }}"><span style="display:inline-flex;align-items:center;padding:1px 9px;border-radius:var(--r-pill);border:1px solid var(--warn-border);background:var(--warn-soft);font-family:var(--font-ui);font-size:10px;color:var(--warn);flex:none">awaiting judgment</span></sc-if>
+                <span style="font-family:var(--font-ui);font-size:11px;color:var(--ink-mute);flex:none">{{ r.kind }}</span>
+              </a>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;base&quot;,&quot;hellenic&quot;,&quot;thelemic&quot;],&quot;default&quot;:&quot;base&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { theme:(this.props&&this.props.theme)||'base', mode:(this.props&&this.props.mode)||'dark' };
+  componentDidUpdate(prev){ if(this.props.theme&&prev.theme!==this.props.theme)this.setState({theme:this.props.theme}); if(this.props.mode&&prev.mode!==this.props.mode)this.setState({mode:this.props.mode}); }
+  renderVals(){
+    const { theme, mode } = this.state; const setTheme=(t)=>this.setState({theme:t});
+    const R=React.createElement;
+    const svg=(size,...kids)=>R('svg',{width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.4,strokeLinecap:'round',strokeLinejoin:'round'},...kids);
+    const P=(d,extra)=>R('path',{key:d,d,...(extra||{})});
+    // waning crescent, 2% — lit sliver on the left
+    const moonGlyph=svg(24,R('circle',{key:'c',cx:12,cy:12,r:9}),P('M12 3a9 9 0 0 1 0 18 6.4 6.4 0 0 0 0-18z',{fill:'currentColor',stroke:'none',opacity:.55}));
+    const hourGlyph=svg(19,P('M6 4h7l-2 6h4l-7 10 2-8H6z'));
+    const stationDefs=[
+      {name:'Dawn', window:'05:58', adoration:'Hail unto Thee who art Ra in Thy rising.', state:'done', keptAt:'06:04'},
+      {name:'Noon', window:'13:04', adoration:'Hail unto Thee who art Ahathoor in Thy triumphing.', state:'done', keptAt:'13:11'},
+      {name:'Dusk', window:'20:47', adoration:'Hail unto Thee who art Tum in Thy setting.', state:'due', minimum:true},
+      {name:'Night', window:'00:12', adoration:'Hail unto Thee who art Khephra in Thy hiding.', state:'pending'}
+    ];
+    const tone={ done:['var(--station-done)','var(--station-done-soft)'], due:['var(--station-due)','var(--station-due-soft)'],
+      pending:['var(--ink-mute)','var(--bg-3)'], missed:['var(--station-missed)','var(--station-missed-soft)'] };
+    const check=svg(16,P('M20 6L9 17l-5-5'));
+    const dot=svg(16,R('circle',{key:'d',cx:12,cy:12,r:4.5}));
+    const stations=stationDefs.map(s=>{ const [c,bg]=tone[s.state];
+      const done=s.state==='done', due=s.state==='due';
+      return { name:s.name, window:s.window, adoration:s.adoration, isMinimum:!!s.minimum,
+        cardStyle:{ padding:'14px 15px', background:'var(--bg-2)', borderTop:due?'2px solid var(--station-due)':'2px solid transparent' },
+        iconWrap:{ width:'32px', height:'32px', borderRadius:'50%', flex:'none', display:'flex', alignItems:'center', justifyContent:'center', color:c, background:bg, border:'1px solid color-mix(in srgb, '+c+' 38%, transparent)' },
+        icon: done?check:dot,
+        btnStyle: done
+          ? { width:'100%', minHeight:'34px', padding:'8px 12px', borderRadius:'var(--r-md)', border:'1px solid var(--peer-ok-border)', background:'var(--station-done-soft)', color:'var(--station-done)', fontFamily:'var(--font-ui)', fontSize:'12.5px' }
+          : due
+          ? { width:'100%', minHeight:'34px', padding:'8px 12px', borderRadius:'var(--r-md)', border:'1px solid var(--accent)', background:'var(--accent)', color:'var(--accent-ink)', fontFamily:'var(--font-ui)', fontWeight:700, fontSize:'12.5px' }
+          : { width:'100%', minHeight:'34px', padding:'8px 12px', borderRadius:'var(--r-md)', border:'1px solid var(--line-2)', background:'transparent', color:'var(--ink-mute)', fontFamily:'var(--font-ui)', fontSize:'12.5px' },
+        btnLabel: done?('Kept '+s.keptAt):(due?'Keep the station':'Not yet') };
+    });
+    // sun arc — dawn/noon/dusk/night marks on a half-circle
+    const W=300,H=118;
+    const arcPts=[{k:'Dawn',t:0,done:true},{k:'Noon',t:.5,done:true},{k:'Dusk',t:1,done:false}];
+    const ax=(t)=>26+t*(W-52), ay=(t)=>H-26-Math.sin(t*Math.PI)*62;
+    const sunArc=R('svg',{viewBox:'0 0 '+W+' '+H,width:'100%',role:'img','aria-label':'The sun\u2019s arc today: dawn and noon kept, dusk still due'},
+      R('path',{key:'arc',d:'M26 '+(H-26)+' Q '+(W/2)+' '+(H-26-124)+' '+(W-26)+' '+(H-26),fill:'none',stroke:'var(--line-2)',strokeWidth:1.2}),
+      R('line',{key:'ground',x1:14,y1:H-26,x2:W-14,y2:H-26,stroke:'var(--line)',strokeWidth:1}),
+      ...arcPts.map((p,i)=>R('g',{key:'p'+i},
+        R('circle',{cx:ax(p.t),cy:ay(p.t),r:p.done?5:6,fill:p.done?'var(--station-done)':'none',stroke:p.done?'var(--station-done)':'var(--station-due)',strokeWidth:1.6}),
+        R('text',{x:ax(p.t),y:H-11,textAnchor:'middle',fontFamily:'var(--font-ui)',fontSize:10,fill:'var(--ink-mute)'},p.k))),
+      R('circle',{key:'night',cx:W-26,cy:H-26,r:0}),
+      R('text',{key:'nl',x:W-26,y:H-11,textAnchor:'middle',fontFamily:'var(--font-ui)',fontSize:10,fill:'transparent'},'')
+    );
+    // streak grid — 5 weeks x 7 days, dusk kept
+    const kept=[1,1,1,0,1,1,1, 1,1,1,1,1,0,1, 1,0,1,1,1,1,1, 1,1,1,1,1,1,1, 1,1,1,1,0,1,2];
+    const cell=13, gap=4;
+    const gw=7*cell+6*gap, gh=5*cell+4*gap;
+    const streakGrid=R('svg',{viewBox:'0 0 '+gw+' '+gh,width:gw,height:gh,role:'img','aria-label':'Dusk station kept on 31 of the last 35 days'},
+      ...kept.map((v,i)=>{ const c=i%7, r0=Math.floor(i/7);
+        const fill = v===2 ? 'var(--station-due-soft)' : (v?'var(--station-done-soft)':'transparent');
+        const stroke = v===2 ? 'var(--station-due)' : (v?'var(--station-done)':'var(--line-2)');
+        return R('rect',{key:i,x:c*(cell+gap),y:r0*(cell+gap),width:cell,height:cell,rx:3,fill,stroke,strokeWidth:1}); }));
+    const captureKinds=[{label:'Working'},{label:'Divination'},{label:'Synchronicity'},{label:'Dream'}].map(k=>({ label:k.label,
+      style:{ padding:'6px 12px', borderRadius:'var(--r-pill)', border:'1px solid var(--line)', background:'var(--bg)', fontFamily:'var(--font-ui)', fontSize:'12px', color:'var(--ink-mute)' } }));
+    const iw=(c,bg)=>({ width:'34px', height:'34px', borderRadius:'var(--r-md)', flex:'none', display:'flex', alignItems:'center', justifyContent:'center', color:c, background:bg, border:'1px solid var(--line-2)' });
+    const dueDefs=[
+      { title:'Recharge the Saturn talisman', detail:'Consecrated 12 Jun · charge holds 6 weeks', when:'today', urgent:true, kind:'talisman' },
+      { title:'Deipnon offering — Hekate', detail:'Dark-moon rite · bread, egg, sweepings', when:'after dark', urgent:true, kind:'rite' },
+      { title:'Second reading of the Chaldean Oracles', detail:'Sphere 9 curriculum · fragments 1–52', when:'this week', urgent:false, kind:'study' },
+      { title:'Judge the LBRP cycle working', detail:'Intent declared 9 Jul · both gates open', when:'overdue', urgent:false, kind:'verdict' }
+    ];
+    const dueIcons={ talisman:svg(17,P('M12 2.5l3 5 5.5 1-4 4 1 5.5-5.5-3-5.5 3 1-5.5-4-4 5.5-1z')),
+      rite:svg(17,R('circle',{key:'c',cx:12,cy:12,r:8}),P('M12 4v16')),
+      study:svg(17,P('M4 5a2 2 0 0 1 2-2h7v18H6a2 2 0 0 1-2-2z'),P('M13 3h5v16h-5')),
+      verdict:svg(17,P('M12 4v16M6 8h12M8.5 8l-3 5h6zM15.5 8l-3 5h6z')) };
+    const due=dueDefs.map(d=>({ title:d.title, detail:d.detail, when:d.when, action:d.kind==='verdict'?'Judge':'Open',
+      icon:dueIcons[d.kind],
+      iconWrap: d.urgent ? iw('var(--accent)','var(--accent-soft)') : iw('var(--ink-mute)','var(--bg-3)'),
+      border: d.urgent ? 'var(--line-2)' : 'var(--line)',
+      whenColor: d.when==='overdue' ? 'var(--warn)' : (d.urgent?'var(--accent)':'var(--ink-mute)') }));
+    const recent=[
+      { when:'21:14', title:'Preparing the crossroads offering', kind:'working', awaiting:false },
+      { when:'Yesterday', title:'Astragaloi — five bones on the question of the move', kind:'divination', awaiting:true },
+      { when:'23 Jul', title:'The owl again, third time this month', kind:'synchronicity', awaiting:false }
+    ];
+    const segBase={ padding:'5px 11px', fontFamily:'var(--font-ui)', fontSize:'12px', color:'var(--ink-mute)', background:'transparent', border:'1px solid transparent', borderRadius:'6px' };
+    const segOn={ ...segBase, color:'var(--ink)', background:'var(--accent-soft)', borderColor:'var(--line-2)' };
+    const seg=(t)=>(t===theme?segOn:segBase);
+    const moonI=R('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.6,strokeLinecap:'round',strokeLinejoin:'round'},R('path',{d:'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'}));
+    const sunI=R('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.6,strokeLinecap:'round',strokeLinejoin:'round'},R('circle',{cx:12,cy:12,r:4}),R('path',{d:'M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4'}));
+    return { theme, mode, isBase:theme==='base', isHel:theme==='hellenic', isThe:theme==='thelemic',
+      onBase:()=>setTheme('base'), onHel:()=>setTheme('hellenic'), onThe:()=>setTheme('thelemic'),
+      toggleMode:()=>this.setState(s=>({mode:s.mode==='dark'?'light':'dark'})), modeIcon:mode==='dark'?moonI:sunI,
+      segBase:seg('base'), segHel:seg('hellenic'), segThe:seg('thelemic'),
+      moonGlyph, hourGlyph, stations, sunArc, streakGrid, captureKinds, due, recent,
+      streakLabel:'dusk kept 31 of the last 35 days', dueCount:'4 items', };
+  }
+}
+</script>
+</body>
+</html>

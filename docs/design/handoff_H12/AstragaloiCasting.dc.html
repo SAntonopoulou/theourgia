@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@500;600;700&family=GFS+Didot&family=Inria+Sans:wght@300;400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font-display:'Cardo',Georgia,serif; --font-serif:'Cardo',Georgia,serif;
+  --font-ui:'Inria Sans',system-ui,sans-serif; --font-mono:'JetBrains Mono',monospace;
+  --bg:#15120D; --bg-2:#1C1812; --bg-3:#231E16; --bg-sunk:#100D09;
+  --line:rgba(236,229,214,.10); --line-2:rgba(236,229,214,.20);
+  --ink:#ECE5D6; --ink-soft:#BCB29D; --ink-mute:#A09680;
+  --accent:#C7A24C; --accent-ink:#15120D; --accent-soft:rgba(199,162,76,.14);
+  --peer-ok:#6BA892; --peer-ok-soft:rgba(107,168,146,.16); --peer-ok-border:rgba(107,168,146,.45);
+  --network:#5E8FA8; --network-soft:rgba(94,143,168,.14); --network-line:rgba(94,143,168,.42);
+  --warn:#C99A3C; --warn-soft:rgba(201,154,60,.14); --warn-border:rgba(201,154,60,.45);
+  --moon:#9FA6C4; --moon-soft:rgba(159,166,196,.15);
+  --seal:#A98AC0; --seal-soft:rgba(169,138,192,.16); --seal-border:rgba(169,138,192,.45);
+  --r-sm:4px; --r-md:8px; --r-lg:14px; --r-pill:20px;
+}
+[data-theme="hellenic"]{ --font-display:'GFS Didot',serif; --bg:#0F1311; --bg-2:#161B18; --bg-3:#1D2420; --bg-sunk:#0B0F0D; --line:rgba(226,231,222,.10); --line-2:rgba(226,231,222,.20); --ink:#E9EADE; --ink-soft:#AEB6A4; --ink-mute:#8B9382; --accent:#BFA15B; --accent-ink:#0F1311; --accent-soft:rgba(191,161,91,.14); --peer-ok:#6E9C72; --peer-ok-soft:rgba(110,156,114,.16); --peer-ok-border:rgba(110,156,114,.45); --network:#5E9BA6; --network-soft:rgba(94,155,166,.14); --network-line:rgba(94,155,166,.42); --warn:#BFA15B; --warn-soft:rgba(191,161,91,.14); --warn-border:rgba(191,161,91,.45); --moon:#93A0B4; --moon-soft:rgba(147,160,180,.15); --seal:#8FA8C0; --seal-soft:rgba(143,168,192,.16); --seal-border:rgba(143,168,192,.45); }
+[data-theme="thelemic"]{ --font-display:'Cinzel',serif; --bg:#100B09; --bg-2:#191210; --bg-3:#201714; --bg-sunk:#0A0706; --line:rgba(239,227,203,.12); --line-2:rgba(239,227,203,.22); --ink:#EFE3CB; --ink-soft:#C5B493; --ink-mute:#9C8A6C; --accent:#CDA53E; --accent-ink:#100B09; --accent-soft:rgba(205,165,62,.15); --peer-ok:#6BA892; --peer-ok-soft:rgba(107,168,146,.16); --peer-ok-border:rgba(107,168,146,.45); --network:#7E91CE; --network-soft:rgba(126,145,206,.14); --network-line:rgba(126,145,206,.42); --warn:#CDA53E; --warn-soft:rgba(205,165,62,.15); --warn-border:rgba(205,165,62,.45); --moon:#A79ACE; --moon-soft:rgba(167,154,206,.16); --seal:#B79ACE; --seal-soft:rgba(183,154,206,.16); --seal-border:rgba(183,154,206,.45); }
+[data-mode="light"]{ --bg:#EFE7D4; --bg-2:#F6F0E1; --bg-3:#FBF7EC; --bg-sunk:#E6DCC6; --line:rgba(40,32,22,.14); --line-2:rgba(40,32,22,.26); --ink:#2A2316; --ink-soft:#5A5040; --ink-mute:#766B57; --accent:#9A6E22; --accent-ink:#FBF7EC; --accent-soft:rgba(154,110,34,.14); --peer-ok:#3E7A5E; --peer-ok-soft:rgba(62,122,94,.13); --peer-ok-border:rgba(62,122,94,.45); --network:#3F6E86; --network-soft:rgba(63,110,134,.12); --network-line:rgba(63,110,134,.4); --warn:#8A6A2E; --warn-soft:rgba(138,106,46,.12); --warn-border:rgba(138,106,46,.4); --moon:#5A6291; --moon-soft:rgba(90,98,145,.13); --seal:#7A5E9E; --seal-soft:rgba(122,94,158,.14); --seal-border:rgba(122,94,158,.45); }
+*{box-sizing:border-box}
+body{margin:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+a{color:inherit;text-decoration:none}
+input,textarea,select{font:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+::selection{background:var(--accent-soft);color:var(--ink)}
+.scroll::-webkit-scrollbar{width:10px}
+.scroll::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:10px;border:3px solid transparent;background-clip:content-box}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.001ms!important}}
+:root{ --shell-nav-w:248px; }
+.om-menu{ display:none; } .om-scrim{ display:none; }
+@media (max-width:1280px){ :root{ --shell-nav-w:224px; } }
+/* ── tablet 640–1024: 64px ICON RAIL (the H12 nav contract) ── */
+@media (min-width:640px) and (max-width:1024px){
+  .om-shell{ grid-template-columns:64px 1fr !important; }
+  .om-menu{ display:none !important; }
+  .pn-aside{ padding:14px 8px 12px !important; }
+  .pn-aside .pn-label{ display:none !important; }
+  .pn-aside .pn-head{ height:1px; padding:10px 0 0 !important; overflow:hidden; color:transparent !important; border-top:1px solid var(--line); margin:6px 4px; }
+  .pn-aside a, .pn-aside .pn-more, .pn-aside .pn-switch, .pn-aside .pn-capture{ justify-content:center; padding-left:0 !important; padding-right:0 !important; min-height:40px; }
+  .pn-aside .pn-foot{ justify-content:center; }
+}
+/* ── the forced-mode rail, for tests and spec surfaces ── */
+.pn-aside[data-nav-mode="rail"]{ padding:14px 8px 12px !important; }
+.pn-aside[data-nav-mode="rail"] .pn-label{ display:none !important; }
+.pn-aside[data-nav-mode="rail"] .pn-head{ height:1px; padding:10px 0 0 !important; overflow:hidden; color:transparent !important; border-top:1px solid var(--line); margin:6px 4px; }
+.pn-aside[data-nav-mode="rail"] a, .pn-aside[data-nav-mode="rail"] .pn-more, .pn-aside[data-nav-mode="rail"] .pn-switch, .pn-aside[data-nav-mode="rail"] .pn-capture{ justify-content:center; padding-left:0 !important; padding-right:0 !important; }
+.pn-aside[data-nav-mode="rail"] .pn-foot{ justify-content:center; }
+/* ── phone < 640: off-canvas drawer ── */
+@media (max-width:640px){
+  .om-shell{ grid-template-columns:1fr !important; }
+  .om-aside{ position:fixed; top:0; left:0; bottom:0; width:284px; z-index:60; transform:translateX(-100%); transition:transform .28s cubic-bezier(.4,0,.2,1); }
+  .om-shell[data-nav-open="true"] .om-aside{ transform:none; box-shadow:2px 0 26px rgba(0,0,0,.42); }
+  .om-scrim{ display:block; position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:opacity .28s ease; }
+  .om-shell[data-nav-open="true"] .om-scrim{ opacity:1; pointer-events:auto; }
+  .om-menu{ display:inline-flex !important; }
+  .om-aside a, .om-aside button{ min-height:44px; }
+}
+@media (max-width:900px){ .as-two{ grid-template-columns:1fr !important; } }
+@media (max-width:640px){ .om-topbar{ padding-left:14px !important; padding-right:14px !important; } .as-main{ padding:16px 14px 40px !important; } .as-bones{ flex-wrap:wrap !important; justify-content:center !important; } }
+@media (min-width:1681px){ .as-wrap{ max-width:1000px !important; } }
+@media (prefers-reduced-motion: reduce){ .om-aside, .om-scrim{ transition:none !important; } }
+</style>
+<script>
+(function(){
+  if (window.__omNavWired) return; window.__omNavWired = true;
+  function shellOf(el){ return el && el.closest ? el.closest('.om-shell') : null; }
+  document.addEventListener('click', function(e){
+    var menu = e.target.closest && e.target.closest('.om-menu');
+    if (menu){ var s = shellOf(menu); if(!s) return; var open = s.getAttribute('data-nav-open') === 'true'; s.setAttribute('data-nav-open', open ? 'false' : 'true'); menu.setAttribute('aria-expanded', open ? 'false' : 'true'); return; }
+    var scrim = e.target.closest && e.target.closest('.om-scrim');
+    if (scrim){ var s2 = shellOf(scrim); if(s2){ s2.setAttribute('data-nav-open','false'); var m = s2.querySelector('.om-menu'); if(m) m.setAttribute('aria-expanded','false'); } }
+  });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape'){ document.querySelectorAll('.om-shell[data-nav-open="true"]').forEach(function(s){ s.setAttribute('data-nav-open','false'); var m = s.querySelector('.om-menu'); if(m) m.setAttribute('aria-expanded','false'); }); } });
+})();
+</script>
+</helmet>
+
+<div class="om-shell" data-theme="{{ theme }}" data-mode="{{ mode }}" style="height:100vh;display:grid;grid-template-columns:var(--shell-nav-w) 1fr;grid-template-rows:minmax(0,1fr);background:var(--bg);color:var(--ink);font-family:var(--font-serif);overflow:hidden">
+
+  <dc-import name="PracticeNav" active="astragaloi" hint-size="248px,100%"></dc-import>
+  <div class="om-scrim" aria-hidden="true"></div>
+
+  <div style="display:grid;grid-template-rows:auto 1fr;min-width:0;min-height:0">
+    <header class="om-topbar" style="display:flex;align-items:center;gap:14px;padding:13px 24px;border-bottom:1px solid var(--line);background:var(--bg)"><button class="om-menu" aria-label="Open navigation" aria-expanded="false" style="align-items:center;justify-content:center;width:40px;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);color:var(--ink-soft);flex:none" style-hover="color:var(--ink)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div style="min-width:0;display:flex;align-items:center;gap:9px;flex-wrap:wrap"><a href="Theourgia Tarot.dc.html" style="font-family:var(--font-ui);font-size:13px;color:var(--ink-mute)" style-hover="color:var(--ink)">Divination</a><span style="color:var(--ink-mute)">/</span><span style="font-family:var(--font-display);font-size:20px;line-height:1.1">Astragaloi</span></div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:10px"><div role="group" aria-label="Theme" style="display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2)"><button onClick="{{ onBase }}" aria-pressed="{{ isBase }}" style="{{ segBase }}">Base</button><button onClick="{{ onHel }}" aria-pressed="{{ isHel }}" style="{{ segHel }}">Hel</button><button onClick="{{ onThe }}" aria-pressed="{{ isThe }}" style="{{ segThe }}">Thel</button></div><button onClick="{{ toggleMode }}" aria-label="Toggle light and dark" style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);color:var(--ink-soft)" style-hover="color:var(--ink)">{{ modeIcon }}</button></div>
+    </header>
+
+    <main class="scroll as-main" style="overflow-y:auto;min-height:0;padding:22px 24px 56px">
+      <div class="as-wrap" style="max-width:820px;margin:0 auto">
+
+        <!-- transcription framing -->
+        <div style="display:flex;gap:13px;padding:15px 17px;border:1px solid var(--line-2);border-radius:var(--r-lg);background:var(--bg-2);margin-bottom:16px">
+          <span style="display:flex;color:var(--accent);flex:none;margin-top:1px">{{ handIcon }}</span>
+          <div><div style="font-family:var(--font-display);font-size:16px;color:var(--ink);margin-bottom:3px">Record the throw you made</div><div style="font-family:var(--font-serif);font-size:13.5px;color:var(--ink-soft);line-height:1.55">Cast the five bones by hand, then enter the faces they showed. This is a transcription of something that happened in the room, not a number the machine invented for you.</div></div>
+        </div>
+
+        <!-- the question -->
+        <div style="margin-bottom:16px">
+          <label style="display:block;font-family:var(--font-ui);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:7px">The question put to the bones</label>
+          <input value="Whether to take the house at the edge of the town" style="width:100%;padding:12px 14px;border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--bg-2);color:var(--ink);font-family:var(--font-serif);font-size:15px">
+        </div>
+
+        <!-- bone entry -->
+        <section style="padding:18px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg-2);margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px"><span style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute)">The five faces</span><span style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute)">A knucklebone falls on one of four faces — 1, 3, 4 or 6. There is no two and no five.</span></div>
+
+          <div class="as-bones" style="display:flex;gap:11px;margin-bottom:16px">
+            <sc-for list="{{ bones }}" as="b" hint-placeholder-count="5">
+              <div style="flex:1 1 0;min-width:104px">
+                <div style="font-family:var(--font-mono);font-size:10.5px;color:var(--ink-mute);margin-bottom:6px;text-align:center">{{ b.label }}</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">
+                  <sc-for list="{{ b.faces }}" as="f" hint-placeholder-count="4"><button onClick="{{ f.onPick }}" aria-pressed="{{ f.on }}" aria-label="{{ f.aria }}" style="{{ f.style }}">{{ f.glyph }}</button></sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-top:14px;border-top:1px solid var(--line)">
+            <div style="font-family:var(--font-ui);font-size:12.5px;color:var(--ink-mute)">{{ sumNote }}</div>
+            <button onClick="{{ onClear }}" style="margin-left:auto;padding:9px 15px;border-radius:var(--r-md);border:1px solid var(--line-2);font-family:var(--font-ui);font-size:13px;color:var(--ink-soft)" style-hover="color:var(--ink)">Clear</button>
+            <button disabled="{{ readDisabled }}" style="{{ readStyle }}">Read the cast</button>
+          </div>
+        </section>
+
+        <!-- RNG, clearly separated -->
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 15px;border:1px dashed var(--line-2);border-radius:var(--r-md);margin-bottom:22px">
+          <span style="display:flex;color:var(--ink-mute);flex:none">{{ diceIcon }}</span>
+          <div style="flex:1;min-width:0;font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);line-height:1.5">No bones to hand? A simulated throw is available, and every cast made this way is marked as simulated in your history for as long as it is kept.</div>
+          <button onClick="{{ onSimulate }}" style="padding:8px 14px;border-radius:var(--r-md);border:1px solid var(--line-2);font-family:var(--font-ui);font-size:12.5px;color:var(--ink-mute);flex:none" style-hover="color:var(--ink-soft)">Simulate a throw</button>
+        </div>
+
+        <!-- ══ RESULT: TWO CHANNELS ══ -->
+        <div style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:12px">The reading — two channels, side by side</div>
+        <div class="as-two" style="display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:16px">
+
+          <!-- channel 1: oracle verse -->
+          <section style="padding:17px 18px;border:1px solid var(--network-line);border-radius:var(--r-lg);background:var(--bg-2)">
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:13px"><span style="font-family:var(--font-ui);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--network)">The oracle</span><span style="{{ valenceChip }}">{{ valenceGlyph }}{{ valenceLabel }}</span></div>
+            <div style="font-family:var(--font-display);font-size:21px;color:var(--ink);line-height:1.15;margin-bottom:4px">{{ godName }}</div>
+            <div style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);margin-bottom:13px">{{ godEpithet }}</div>
+            <blockquote style="margin:0;padding:13px 15px;border-left:2px solid var(--network-line);background:var(--bg-3);border-radius:0 var(--r-md) var(--r-md) 0"><div style="font-family:var(--font-serif);font-style:italic;font-size:15px;line-height:1.65;color:var(--ink)">{{ verse }}</div></blockquote>
+            <div style="font-family:var(--font-mono);font-size:10.5px;color:var(--ink-mute);margin-top:11px">{{ verseCite }}</div>
+          </section>
+
+          <!-- channel 2: ladder reading -->
+          <section style="padding:17px 18px;border:1px solid var(--line-2);border-radius:var(--r-lg);background:var(--bg-2)">
+            <div style="font-family:var(--font-ui);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:13px">The ladder</div>
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+              <div data-om-raster="1" style="flex:none">{{ ladderFig }}</div>
+              <div style="min-width:0">
+                <div style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute)">sum {{ sum }}</div>
+                <div style="font-family:var(--font-display);font-size:19px;color:var(--ink);line-height:1.15">{{ sphereName }}</div>
+                <div style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute)">sphere {{ sphereNum }} of ten</div>
+              </div>
+            </div>
+            <dl style="display:grid;grid-template-columns:auto 1fr;gap:7px 14px;margin:0">
+              <dt style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-mute)">Octave</dt><dd style="margin:0;display:flex"><span style="{{ octaveChip }}">{{ octaveLabel }}</span></dd>
+              <dt style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-mute)">Ground</dt><dd style="margin:0;font-family:var(--font-serif);font-size:14px;color:var(--ink-soft)">{{ element }}</dd>
+            </dl>
+          </section>
+        </div>
+
+        <!-- operator's own reading -->
+        <section style="padding:17px 18px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg-2);margin-bottom:22px">
+          <div style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:4px">Your reading</div>
+          <div style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);margin-bottom:11px">The two channels above are what the system can say. What it means is yours.</div>
+          <textarea rows="3" placeholder="What the bones said to you…" style="width:100%;padding:12px 14px;border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--bg);color:var(--ink);font-family:var(--font-serif);font-size:14.5px;line-height:1.6;resize:vertical;margin-bottom:12px"></textarea>
+          <div style="display:flex;align-items:center;gap:11px;flex-wrap:wrap"><span style="display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:var(--r-pill);border:1px solid var(--seal-border);background:var(--seal-soft);font-family:var(--font-ui);font-size:11.5px;color:var(--seal)">{{ linkIcon }}Linked to a declared intent</span><button style="margin-left:auto;padding:10px 18px;border-radius:var(--r-md);background:var(--accent);border:1px solid var(--accent);color:var(--accent-ink);font-family:var(--font-ui);font-weight:700;font-size:13.5px">Save to the journal</button></div>
+        </section>
+
+        <!-- history -->
+        <section>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px"><span style="font-family:var(--font-display);font-size:17px;color:var(--ink)">Earlier casts</span><div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ filters }}" as="f" hint-placeholder-count="4"><button onClick="{{ f.onPick }}" aria-pressed="{{ f.on }}" style="{{ f.style }}">{{ f.label }}</button></sc-for></div></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ history }}" as="h" hint-placeholder-count="4">
+              <a href="#" style="display:flex;align-items:center;gap:13px;padding:12px 15px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--bg-2)" style-hover="border-color:var(--line-2)">
+                <span style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);flex:none;width:48px">{{ h.when }}</span>
+                <span style="font-family:var(--font-mono);font-size:12.5px;color:var(--ink-soft);flex:none;letter-spacing:.08em">{{ h.faces }}</span>
+                <span style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);flex:none">= {{ h.sum }}</span>
+                <span style="flex:1;min-width:0;font-family:var(--font-serif);font-size:13.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ h.god }} · {{ h.question }}</span>
+                <sc-if value="{{ h.simulated }}" hint-placeholder-val="{{ false }}"><span style="font-family:var(--font-ui);font-size:10px;color:var(--ink-mute);border:1px solid var(--line-2);border-radius:var(--r-pill);padding:1px 8px;flex:none">simulated</span></sc-if>
+                <span style="{{ h.valChip }}">{{ h.valGlyph }}</span>
+              </a>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;base&quot;,&quot;hellenic&quot;,&quot;thelemic&quot;],&quot;default&quot;:&quot;base&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { theme:(this.props&&this.props.theme)||'base', mode:(this.props&&this.props.mode)||'dark',
+    cast:[4,3,6,1,4], filter:'all' };
+  componentDidUpdate(prev){ if(this.props.theme&&prev.theme!==this.props.theme)this.setState({theme:this.props.theme}); if(this.props.mode&&prev.mode!==this.props.mode)this.setState({mode:this.props.mode}); }
+  faceGlyph(f,size){
+    // knucklebone faces: 1 / 3 / 4 / 6 ONLY — drawn as pip clusters, never 2 or 5
+    const R=React.createElement; const s=size||26; const g=[];
+    const layouts={ 1:[[.5,.5]], 3:[[.28,.28],[.5,.5],[.72,.72]],
+      4:[[.3,.3],[.7,.3],[.3,.7],[.7,.7]], 6:[[.3,.26],[.7,.26],[.3,.5],[.7,.5],[.3,.74],[.7,.74]] };
+    (layouts[f]||[]).forEach((p,i)=>g.push(R('circle',{key:i,cx:p[0]*s,cy:p[1]*s,r:s*.075,fill:'currentColor'})));
+    return R('svg',{width:s,height:s,viewBox:'0 0 '+s+' '+s,'aria-hidden':'true'},...g);
+  }
+  renderVals(){
+    const { theme, mode, cast, filter } = this.state; const setTheme=(t)=>this.setState({theme:t});
+    const R=React.createElement;
+    const svg=(size,sw,...kids)=>R('svg',{width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:sw||1.4,strokeLinecap:'round',strokeLinejoin:'round'},...kids);
+    const P=(d,x)=>R('path',{key:d,d,...(x||{})});
+    const handIcon=svg(22,1.4,P('M8 11V5.5a1.5 1.5 0 0 1 3 0V11'),P('M11 11V4.5a1.5 1.5 0 0 1 3 0V11'),P('M14 11V6a1.5 1.5 0 0 1 3 0v7.5a6.5 6.5 0 0 1-6.5 6.5H10a5 5 0 0 1-5-5v-2.5a1.5 1.5 0 0 1 3 0'));
+    const diceIcon=svg(18,1.4,R('rect',{key:'r',x:4,y:4,width:16,height:16,rx:3}),R('circle',{key:'a',cx:9,cy:9,r:1,fill:'currentColor',stroke:'none'}),R('circle',{key:'b',cx:15,cy:15,r:1,fill:'currentColor',stroke:'none'}));
+    const linkIcon=svg(14,1.6,P('M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1'),P('M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1'));
+    // ── bone entry ──
+    const faceVals=[1,3,4,6];
+    const bones=[0,1,2,3,4].map(i=>({
+      label:'Bone '+(i+1),
+      faces:faceVals.map(f=>{ const on=cast[i]===f;
+        return { glyph:this.faceGlyph(f,24), on, aria:'Bone '+(i+1)+', face '+f,
+          onPick:()=>this.setState(s=>{ const c=s.cast.slice(); c[i]=f; return { cast:c }; }),
+          style:{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'40px', borderRadius:'var(--r-md)',
+            border:'1px solid '+(on?'var(--accent)':'var(--line-2)'), background:on?'var(--accent-soft)':'var(--bg)',
+            color:on?'var(--accent)':'var(--ink-mute)' } }; })
+    }));
+    const filled=cast.filter(v=>v>0).length;
+    const sum=cast.reduce((a,b)=>a+(b||0),0);
+    const complete=filled===5;
+    const sumNote = complete
+      ? 'Five faces recorded · '+cast.join(' + ')+' = '+sum
+      : filled+' of five faces recorded';
+    const readDisabled = complete ? null : true;
+    const readStyle = complete
+      ? { padding:'10px 20px', borderRadius:'var(--r-md)', background:'var(--accent)', border:'1px solid var(--accent)', color:'var(--accent-ink)', fontFamily:'var(--font-ui)', fontWeight:700, fontSize:'13.5px' }
+      : { padding:'10px 20px', borderRadius:'var(--r-md)', background:'var(--bg-3)', border:'1px solid var(--line)', color:'var(--ink-mute)', fontFamily:'var(--font-ui)', fontWeight:700, fontSize:'13.5px', cursor:'not-allowed' };
+    // ── channel 1: oracle ──
+    const valence='favourable';
+    const valMap={ favourable:['var(--peer-ok)','var(--peer-ok-soft)','favourable',svg(13,2,P('M20 6L9 17l-5-5'))],
+      withheld:['var(--ink-mute)','rgba(160,150,128,.14)','withheld',svg(13,1.7,R('circle',{key:'c',cx:12,cy:12,r:8}),P('M12 8v4l3 2'))],
+      refused:['var(--warn)','var(--warn-soft)','refused',svg(13,1.9,P('M6 6l12 12M18 6L6 18'))] };
+    const [vc,vbg,vlabel,vglyph]=valMap[valence];
+    // ── channel 2: ladder ──
+    const spheres={ 5:['Malkuth',10],14:['Chesed',4],18:['Chesed',4],30:['Kether',1] };
+    const sphereByS=(n)=>{ if(n<=10) return ['Malkuth · Yesod','10']; if(n<=14) return ['Hod · Netzach','8']; if(n<=20) return ['Tiphareth','6']; if(n<=25) return ['Binah','3']; return ['Kether','1']; };
+    const [sphereName,sphereNum]=sphereByS(sum);
+    const octave = sum<=10 ? ['luminous','var(--accent)','var(--accent-soft)'] : (sum<=20 ? ['embodied','var(--peer-ok)','var(--peer-ok-soft)'] : ['chthonic','var(--moon)','var(--moon-soft)']);
+    const element = sum<=10 ? 'Fire — the first descent' : (sum<=20 ? 'Air and Water — the mixed middle' : 'Earth — the settled ground');
+    // tetraktys mini-figure with the read sphere lit
+    const rows=[[1],[2,3],[4,5,6],[7,8,9,10]];
+    const LW=86,LH=86, cy0=13, rowGap=21;
+    const litNum=parseInt(sphereNum,10);
+    const ladderFig=R('svg',{viewBox:'0 0 '+LW+' '+LH,width:LW,height:LH,role:'img','aria-label':'Tetraktys with sphere '+sphereNum+' lit'},
+      ...rows.flatMap((row,ri)=>row.map((n,ci)=>{ const step=18; const x=LW/2+(ci-(row.length-1)/2)*step; const y=cy0+ri*rowGap;
+        const lit=n===litNum;
+        return R('circle',{key:n,cx:x,cy:y,r:lit?6:4.2,fill:lit?'var(--accent-soft)':'transparent',stroke:lit?'var(--accent)':'var(--line-2)',strokeWidth:lit?1.7:1}); })));
+    const octaveChip={ display:'inline-flex', alignItems:'center', padding:'1px 11px', borderRadius:'var(--r-pill)',
+      background:octave[2], border:'1px solid '+octave[1], fontFamily:'var(--font-ui)', fontSize:'11px', color:octave[1] };
+    // ── history ──
+    const fdefs=[{k:'all',label:'All'},{k:'fav',label:'Favourable'},{k:'ref',label:'Refused'},{k:'sim',label:'Simulated'}];
+    const chip=(on)=>({ padding:'6px 12px', borderRadius:'var(--r-pill)', border:'1px solid '+(on?'var(--line-2)':'var(--line)'),
+      background:on?'var(--accent-soft)':'var(--bg-2)', fontFamily:'var(--font-ui)', fontSize:'12px', color:on?'var(--ink)':'var(--ink-mute)' });
+    const filters=fdefs.map(f=>({ label:f.label, on:filter===f.k, style:chip(filter===f.k), onPick:()=>this.setState({filter:f.k}) }));
+    const valSmall=(v)=>{ const [c,bg,,g]=valMap[v]; return { chip:{ display:'flex', alignItems:'center', justifyContent:'center', width:'22px', height:'22px', borderRadius:'50%', background:bg, color:c, flex:'none' }, glyph:g }; };
+    const hraw=[
+      { when:'Yest.', faces:'4 3 6 1 4', sum:18, god:'Hermes Enodios', question:'Whether to take the house at the edge of the town', v:'favourable', simulated:false },
+      { when:'19 Jul', faces:'1 1 3 4 6', sum:15, god:'Hekate Propylaia', question:'On the dream of the three doors', v:'withheld', simulated:false },
+      { when:'11 Jul', faces:'6 6 6 4 3', sum:25, god:'Kronos Chthonios', question:'Whether the quarrel is mine to end', v:'refused', simulated:false },
+      { when:'2 Jul', faces:'3 4 4 1 1', sum:13, god:'Apollon Aguieus', question:'A first trial of the bones', v:'favourable', simulated:true }
+    ];
+    const history=hraw.map(h=>{ const vs=valSmall(h.v); return { ...h, valChip:vs.chip, valGlyph:vs.glyph }; });
+    const segBase={ padding:'5px 11px', fontFamily:'var(--font-ui)', fontSize:'12px', color:'var(--ink-mute)', background:'transparent', border:'1px solid transparent', borderRadius:'6px' };
+    const segOn={ ...segBase, color:'var(--ink)', background:'var(--accent-soft)', borderColor:'var(--line-2)' };
+    const seg=(t)=>(t===theme?segOn:segBase);
+    const moonI=svg(16,1.6,P('M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'));
+    const sunI=R('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.6,strokeLinecap:'round',strokeLinejoin:'round'},R('circle',{cx:12,cy:12,r:4}),R('path',{d:'M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4'}));
+    return { theme, mode, isBase:theme==='base', isHel:theme==='hellenic', isThe:theme==='thelemic',
+      onBase:()=>setTheme('base'), onHel:()=>setTheme('hellenic'), onThe:()=>setTheme('thelemic'),
+      toggleMode:()=>this.setState(s=>({mode:s.mode==='dark'?'light':'dark'})), modeIcon:mode==='dark'?moonI:sunI,
+      segBase:seg('base'), segHel:seg('hellenic'), segThe:seg('thelemic'),
+      handIcon, diceIcon, linkIcon,
+      bones, sumNote, readDisabled, readStyle, sum,
+      onClear:()=>this.setState({cast:[0,0,0,0,0]}),
+      onSimulate:()=>this.setState({cast:[0,1,2,3,4].map(()=>faceVals[Math.floor(Math.random()*4)])}),
+      valenceChip:{ display:'inline-flex', alignItems:'center', gap:'5px', padding:'1px 10px', borderRadius:'var(--r-pill)', background:vbg, border:'1px solid '+vc, fontFamily:'var(--font-ui)', fontSize:'10.5px', color:vc },
+      valenceGlyph:vglyph, valenceLabel:vlabel,
+      godName:'Hermes Enodios', godEpithet:'Hermes of the Road · lord of the threshold and the errand',
+      verse:'“Go, and do not turn back: the road you doubt is the road that was opened for you.”',
+      verseCite:'Astragalomantic oracle · sum 18 · Hermes, of the four-and-three',
+      sphereName, sphereNum, ladderFig, octaveChip, octaveLabel:octave[0], element,
+      filters, history };
+  }
+}
+</script>
+</body>
+</html>

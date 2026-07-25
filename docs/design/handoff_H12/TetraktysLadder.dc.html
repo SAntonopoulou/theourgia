@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@500;600;700&family=GFS+Didot&family=Inria+Sans:wght@300;400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font-display:'Cardo',Georgia,serif; --font-serif:'Cardo',Georgia,serif;
+  --font-ui:'Inria Sans',system-ui,sans-serif; --font-mono:'JetBrains Mono',monospace;
+  --bg:#15120D; --bg-2:#1C1812; --bg-3:#231E16; --bg-sunk:#100D09;
+  --line:rgba(236,229,214,.10); --line-2:rgba(236,229,214,.20);
+  --ink:#ECE5D6; --ink-soft:#BCB29D; --ink-mute:#A09680;
+  --accent:#C7A24C; --accent-ink:#15120D; --accent-soft:rgba(199,162,76,.14);
+  --peer-ok:#6BA892; --peer-ok-soft:rgba(107,168,146,.16); --peer-ok-border:rgba(107,168,146,.45);
+  --network:#5E8FA8; --network-soft:rgba(94,143,168,.14); --network-line:rgba(94,143,168,.42);
+  --warn:#C99A3C; --warn-soft:rgba(201,154,60,.14); --warn-border:rgba(201,154,60,.45);
+  --seal:#A98AC0; --seal-soft:rgba(169,138,192,.16); --seal-border:rgba(169,138,192,.45);
+  --sphere-current:var(--accent); --sphere-current-soft:var(--accent-soft);
+  --sphere-done:var(--peer-ok); --sphere-done-soft:var(--peer-ok-soft);
+  --sphere-locked:var(--ink-mute);
+  --r-sm:4px; --r-md:8px; --r-lg:14px; --r-pill:20px;
+}
+[data-theme="hellenic"]{ --font-display:'GFS Didot',serif; --bg:#0F1311; --bg-2:#161B18; --bg-3:#1D2420; --bg-sunk:#0B0F0D; --line:rgba(226,231,222,.10); --line-2:rgba(226,231,222,.20); --ink:#E9EADE; --ink-soft:#AEB6A4; --ink-mute:#8B9382; --accent:#BFA15B; --accent-ink:#0F1311; --accent-soft:rgba(191,161,91,.14); --peer-ok:#6E9C72; --peer-ok-soft:rgba(110,156,114,.16); --peer-ok-border:rgba(110,156,114,.45); --network:#5E9BA6; --network-soft:rgba(94,155,166,.14); --network-line:rgba(94,155,166,.42); --warn:#BFA15B; --warn-soft:rgba(191,161,91,.14); --warn-border:rgba(191,161,91,.45); --seal:#8FA8C0; --seal-soft:rgba(143,168,192,.16); --seal-border:rgba(143,168,192,.45); }
+[data-theme="thelemic"]{ --font-display:'Cinzel',serif; --bg:#100B09; --bg-2:#191210; --bg-3:#201714; --bg-sunk:#0A0706; --line:rgba(239,227,203,.12); --line-2:rgba(239,227,203,.22); --ink:#EFE3CB; --ink-soft:#C5B493; --ink-mute:#9C8A6C; --accent:#CDA53E; --accent-ink:#100B09; --accent-soft:rgba(205,165,62,.15); --peer-ok:#6BA892; --peer-ok-soft:rgba(107,168,146,.16); --peer-ok-border:rgba(107,168,146,.45); --network:#7E91CE; --network-soft:rgba(126,145,206,.14); --network-line:rgba(126,145,206,.42); --warn:#CDA53E; --warn-soft:rgba(205,165,62,.15); --warn-border:rgba(205,165,62,.45); --seal:#B79ACE; --seal-soft:rgba(183,154,206,.16); --seal-border:rgba(183,154,206,.45); }
+[data-mode="light"]{ --bg:#EFE7D4; --bg-2:#F6F0E1; --bg-3:#FBF7EC; --bg-sunk:#E6DCC6; --line:rgba(40,32,22,.14); --line-2:rgba(40,32,22,.26); --ink:#2A2316; --ink-soft:#5A5040; --ink-mute:#766B57; --accent:#9A6E22; --accent-ink:#FBF7EC; --accent-soft:rgba(154,110,34,.14); --peer-ok:#3E7A5E; --peer-ok-soft:rgba(62,122,94,.13); --peer-ok-border:rgba(62,122,94,.45); --network:#3F6E86; --network-soft:rgba(63,110,134,.12); --network-line:rgba(63,110,134,.4); --warn:#8A6A2E; --warn-soft:rgba(138,106,46,.12); --warn-border:rgba(138,106,46,.4); --seal:#7A5E9E; --seal-soft:rgba(122,94,158,.14); --seal-border:rgba(122,94,158,.45); }
+*{box-sizing:border-box}
+body{margin:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+::selection{background:var(--accent-soft);color:var(--ink)}
+.scroll::-webkit-scrollbar{width:10px}
+.scroll::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:10px;border:3px solid transparent;background-clip:content-box}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.001ms!important}}
+:root{ --shell-nav-w:248px; }
+.om-menu{ display:none; } .om-scrim{ display:none; }
+@media (max-width:1280px){ :root{ --shell-nav-w:224px; } }
+/* ── tablet 640–1024: 64px ICON RAIL (the H12 nav contract) ── */
+@media (min-width:640px) and (max-width:1024px){
+  .om-shell{ grid-template-columns:64px 1fr !important; }
+  .om-menu{ display:none !important; }
+  .pn-aside{ padding:14px 8px 12px !important; }
+  .pn-aside .pn-label{ display:none !important; }
+  .pn-aside .pn-head{ height:1px; padding:10px 0 0 !important; overflow:hidden; color:transparent !important; border-top:1px solid var(--line); margin:6px 4px; }
+  .pn-aside a, .pn-aside .pn-more, .pn-aside .pn-switch, .pn-aside .pn-capture{ justify-content:center; padding-left:0 !important; padding-right:0 !important; min-height:40px; }
+  .pn-aside .pn-foot{ justify-content:center; }
+}
+/* ── the forced-mode rail, for tests and spec surfaces ── */
+.pn-aside[data-nav-mode="rail"]{ padding:14px 8px 12px !important; }
+.pn-aside[data-nav-mode="rail"] .pn-label{ display:none !important; }
+.pn-aside[data-nav-mode="rail"] .pn-head{ height:1px; padding:10px 0 0 !important; overflow:hidden; color:transparent !important; border-top:1px solid var(--line); margin:6px 4px; }
+.pn-aside[data-nav-mode="rail"] a, .pn-aside[data-nav-mode="rail"] .pn-more, .pn-aside[data-nav-mode="rail"] .pn-switch, .pn-aside[data-nav-mode="rail"] .pn-capture{ justify-content:center; padding-left:0 !important; padding-right:0 !important; }
+.pn-aside[data-nav-mode="rail"] .pn-foot{ justify-content:center; }
+/* ── phone < 640: off-canvas drawer ── */
+@media (max-width:640px){
+  .om-shell{ grid-template-columns:1fr !important; }
+  .om-aside{ position:fixed; top:0; left:0; bottom:0; width:284px; z-index:60; transform:translateX(-100%); transition:transform .28s cubic-bezier(.4,0,.2,1); }
+  .om-shell[data-nav-open="true"] .om-aside{ transform:none; box-shadow:2px 0 26px rgba(0,0,0,.42); }
+  .om-scrim{ display:block; position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:opacity .28s ease; }
+  .om-shell[data-nav-open="true"] .om-scrim{ opacity:1; pointer-events:auto; }
+  .om-menu{ display:inline-flex !important; }
+  .om-aside a, .om-aside button{ min-height:44px; }
+  .tk-cols{ grid-template-columns:1fr !important; }
+}
+@media (max-width:640px){ .om-topbar{ padding-left:14px !important; padding-right:14px !important; } .tk-main{ padding:16px 14px 40px !important; } }
+@media (min-width:1681px){ .tk-wrap{ max-width:1120px !important; } }
+@media (prefers-reduced-motion: reduce){ .om-aside, .om-scrim{ transition:none !important; } }
+</style>
+<script>
+(function(){
+  if (window.__omNavWired) return; window.__omNavWired = true;
+  function shellOf(el){ return el && el.closest ? el.closest('.om-shell') : null; }
+  document.addEventListener('click', function(e){
+    var menu = e.target.closest && e.target.closest('.om-menu');
+    if (menu){ var s = shellOf(menu); if(!s) return; var open = s.getAttribute('data-nav-open') === 'true'; s.setAttribute('data-nav-open', open ? 'false' : 'true'); menu.setAttribute('aria-expanded', open ? 'false' : 'true'); return; }
+    var scrim = e.target.closest && e.target.closest('.om-scrim');
+    if (scrim){ var s2 = shellOf(scrim); if(s2){ s2.setAttribute('data-nav-open','false'); var m = s2.querySelector('.om-menu'); if(m) m.setAttribute('aria-expanded','false'); } }
+  });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape'){ document.querySelectorAll('.om-shell[data-nav-open="true"]').forEach(function(s){ s.setAttribute('data-nav-open','false'); var m = s.querySelector('.om-menu'); if(m) m.setAttribute('aria-expanded','false'); }); } });
+})();
+</script>
+</helmet>
+
+<div class="om-shell" data-theme="{{ theme }}" data-mode="{{ mode }}" style="height:100vh;display:grid;grid-template-columns:var(--shell-nav-w) 1fr;grid-template-rows:minmax(0,1fr);background:var(--bg);color:var(--ink);font-family:var(--font-serif);overflow:hidden">
+
+  <dc-import name="PracticeNav" active="ladder" hint-size="248px,100%"></dc-import>
+  <div class="om-scrim" aria-hidden="true"></div>
+
+  <div style="display:grid;grid-template-rows:auto 1fr;min-width:0;min-height:0">
+    <header class="om-topbar" style="display:flex;align-items:center;gap:14px;padding:13px 24px;border-bottom:1px solid var(--line);background:var(--bg)"><button class="om-menu" aria-label="Open navigation" aria-expanded="false" style="align-items:center;justify-content:center;width:40px;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);color:var(--ink-soft);flex:none" style-hover="color:var(--ink)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div style="min-width:0"><div style="font-family:var(--font-ui);font-size:11px;color:var(--ink-mute)">The Order · the ladder of ten</div><div style="font-family:var(--font-display);font-size:21px;line-height:1.1">Tetraktys</div></div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:10px"><span style="font-family:var(--font-ui);font-size:12.5px;color:var(--ink-mute)">Sphere 9 · second month</span><div role="group" aria-label="Theme" style="display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2)"><button onClick="{{ onBase }}" aria-pressed="{{ isBase }}" style="{{ segBase }}">Base</button><button onClick="{{ onHel }}" aria-pressed="{{ isHel }}" style="{{ segHel }}">Hel</button><button onClick="{{ onThe }}" aria-pressed="{{ isThe }}" style="{{ segThe }}">Thel</button></div><button onClick="{{ toggleMode }}" aria-label="Toggle light and dark" style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);color:var(--ink-soft)" style-hover="color:var(--ink)">{{ modeIcon }}</button></div>
+    </header>
+
+    <main class="scroll tk-main" style="overflow-y:auto;min-height:0;padding:24px 24px 56px">
+      <div class="tk-wrap" style="max-width:960px;margin:0 auto">
+        <div class="tk-cols" style="display:grid;grid-template-columns:360px 1fr;gap:26px;align-items:start">
+
+          <!-- ══ THE FIGURE, AS NAVIGATION ══ -->
+          <div style="max-width:360px;width:100%">
+            <div data-om-raster="1" style="padding:20px 18px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg-2)">{{ figure }}</div>
+            <div style="display:flex;flex-direction:column;gap:7px;margin-top:13px">
+              <sc-for list="{{ legend }}" as="l" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:10px"><span style="{{ l.swatch }}"></span><span style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute)">{{ l.label }}</span></div></sc-for>
+            </div>
+            <div style="margin-top:14px;padding:12px 14px;border-top:1px solid var(--line);font-family:var(--font-ui);font-size:11px;color:var(--ink-mute);line-height:1.6">The serpent descends from the tenth and returns to the first: 10 · 9 · 8 · 7 · 4 · 5 · 6 · 3 · 2 · 1. The order is fixed; the pace is not.</div>
+          </div>
+
+          <!-- ══ SPHERE DETAIL ══ -->
+          <div>
+            <div style="display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;margin-bottom:5px"><span style="font-family:var(--font-mono);font-size:12px;color:{{ sphereColor }}">Sphere {{ sphereNum }}</span><h2 style="font-family:var(--font-display);font-size:27px;margin:0;line-height:1.1;color:var(--ink)">{{ sphereName }}</h2><span style="{{ stateChip }}">{{ stateLabel }}</span></div>
+            <div style="font-family:var(--font-serif);font-style:italic;font-size:14.5px;color:var(--ink-soft);margin-bottom:20px">{{ sphereGloss }}</div>
+
+            <!-- curriculum -->
+            <div style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:10px">Curriculum</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:22px">
+              <sc-for list="{{ curriculum }}" as="c" hint-placeholder-count="5">
+                <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--bg-2)">
+                  <span style="{{ c.markStyle }}">{{ c.mark }}</span>
+                  <div style="flex:1;min-width:0"><div style="font-family:var(--font-serif);font-size:14px;color:var(--ink);line-height:1.35">{{ c.title }}</div><div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:3px"><span style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-mute)">{{ c.kind }}</span><sc-if value="{{ c.hasEvidence }}" hint-placeholder-val="{{ false }}"><a href="#" style="font-family:var(--font-ui);font-size:11.5px;color:var(--network)" style-hover="text-decoration:underline">{{ c.evidence }}</a></sc-if></div></div>
+                </div>
+              </sc-for>
+            </div>
+
+            <!-- gate requirements -->
+            <div style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:10px">Gate to the eighth</div>
+            <div style="padding:15px 17px;border:1px solid var(--line-2);border-radius:var(--r-lg);background:var(--bg-2);margin-bottom:22px">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <sc-for list="{{ gates }}" as="g" hint-placeholder-count="3"><div style="display:flex;align-items:flex-start;gap:11px"><span style="{{ g.markStyle }}">{{ g.mark }}</span><div style="flex:1;min-width:0"><div style="font-family:var(--font-serif);font-size:13.5px;color:var(--ink);line-height:1.45">{{ g.text }}</div><sc-if value="{{ g.met }}" hint-placeholder-val="{{ false }}"><div style="font-family:var(--font-mono);font-size:10.5px;color:var(--ink-mute);margin-top:2px">{{ g.metOn }}</div></sc-if></div></div></sc-for>
+              </div>
+              <div style="margin-top:13px;padding-top:12px;border-top:1px solid var(--line);font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);line-height:1.55">The gate opens when the requirements are met and your preceptor countersigns. There is no way to hurry it and no reward for hurrying.</div>
+            </div>
+
+            <!-- oath / initiation, sealed -->
+            <div style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:10px">Oath &amp; initiation</div>
+            <div style="position:relative;padding:17px 19px;border:1px solid var(--seal-border);border-radius:var(--r-lg);background:var(--seal-soft);overflow:hidden">
+              <div aria-hidden="true" style="position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--seal)"></div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px"><span style="display:flex;color:var(--seal);flex:none">{{ sealIcon }}</span><span style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--seal)">Sealed record</span><span style="margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--ink-mute)">14 May 2026</span></div>
+              <div style="font-family:var(--font-serif);font-size:15px;color:var(--ink);line-height:1.6;margin-bottom:11px">Received into the ninth sphere at the vernal crossing, before two witnesses of the Order.</div>
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-family:var(--font-ui);font-size:11px;color:var(--ink-mute)"><span>Oath text held sealed — visible only to you</span><a href="#" style="margin-left:auto;color:var(--seal)" style-hover="text-decoration:underline">Unseal to read →</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;base&quot;,&quot;hellenic&quot;,&quot;thelemic&quot;],&quot;default&quot;:&quot;base&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { theme:(this.props&&this.props.theme)||'base', mode:(this.props&&this.props.mode)||'dark', sel:9 };
+  componentDidUpdate(prev){ if(this.props.theme&&prev.theme!==this.props.theme)this.setState({theme:this.props.theme}); if(this.props.mode&&prev.mode!==this.props.mode)this.setState({mode:this.props.mode}); }
+  renderVals(){
+    const { theme, mode, sel } = this.state; const setTheme=(t)=>this.setState({theme:t});
+    const R=React.createElement;
+    const svg=(size,sw,...k)=>R('svg',{width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:sw||1.5,strokeLinecap:'round',strokeLinejoin:'round'},...k);
+    const P=(d)=>R('path',{key:d,d});
+    const sealIcon=svg(17,1.5,R('rect',{key:'r',x:5,y:11,width:14,height:9,rx:2}),P('M8 11V8a4 4 0 0 1 8 0v3'));
+    // ── the ladder state ──
+    const done=[10];               // walked
+    const current=9;
+    const order=[10,9,8,7,4,5,6,3,2,1];
+    const names={1:'Kether',2:'Chokmah',3:'Binah',4:'Chesed',5:'Geburah',6:'Tiphareth',7:'Netzach',8:'Hod',9:'Yesod',10:'Malkuth'};
+    const glosses={ 9:'The foundation — where the work becomes habit, and habit becomes ground.', 10:'The kingdom — the body, the room, the hour you actually keep.' };
+    const stateOf=(n)=> n===current ? 'current' : (done.indexOf(n)>=0 ? 'done' : 'locked');
+    // ── the figure: 4 rows (1/2/3/4), serpent path, as navigation ──
+    const rows=[[1],[2,3],[4,5,6],[7,8,9,10]];
+    const W=320,H=300, top=40, rowGap=72, step=76;
+    const pos={};
+    rows.forEach((row,ri)=>row.forEach((n,ci)=>{ pos[n]={ x:W/2+(ci-(row.length-1)/2)*step, y:top+ri*rowGap }; }));
+    const pathPts=order.map(n=>pos[n].x+','+pos[n].y).join(' ');
+    const nodes=[];
+    Object.keys(pos).forEach(k=>{
+      const n=parseInt(k,10); const p=pos[n]; const st=stateOf(n);
+      const isSel=n===sel;
+      const stroke = st==='current' ? 'var(--sphere-current)' : (st==='done' ? 'var(--sphere-done)' : 'var(--sphere-locked)');
+      const fill = st==='current' ? 'var(--sphere-current-soft)' : (st==='done' ? 'var(--sphere-done-soft)' : 'transparent');
+      const op = st==='locked' ? .45 : 1;
+      nodes.push(R('g',{key:'g'+n,role:'button',tabIndex:0,'aria-label':'Sphere '+n+', '+names[n]+', '+st,
+          onClick:()=>this.setState({sel:n}), style:{cursor:'pointer'}, opacity:op},
+        isSel ? R('circle',{key:'ring',cx:p.x,cy:p.y,r:22,fill:'none',stroke:stroke,strokeWidth:1,opacity:.5}) : null,
+        R('circle',{key:'c',cx:p.x,cy:p.y,r:16,fill:fill,stroke:stroke,strokeWidth:st==='current'?1.8:1.2}),
+        R('text',{key:'t',x:p.x,y:p.y+4.5,textAnchor:'middle',fontFamily:'var(--font-mono)',fontSize:12,
+          fill: st==='locked' ? 'var(--sphere-locked)' : (st==='current' ? 'var(--sphere-current)' : 'var(--sphere-done)')}, String(n)),
+        st==='done' ? R('path',{key:'m',d:'M'+(p.x-5)+' '+(p.y+11)+' l4 4 7-7',fill:'none',stroke:'var(--sphere-done)',strokeWidth:1.4,strokeLinecap:'round',strokeLinejoin:'round',transform:'translate(0,6)'}) : null
+      ));
+    });
+    const figure=R('svg',{viewBox:'0 0 '+W+' '+H,width:'100%',role:'group','aria-label':'The tetraktys ladder — sphere 10 walked, sphere 9 current, spheres 8 to 1 locked'},
+      R('polyline',{key:'serpent',points:pathPts,fill:'none',stroke:'var(--line-2)',strokeWidth:1,strokeDasharray:'3 4'}),
+      ...nodes.filter(Boolean));
+    const legend=[
+      { label:'Walked', swatch:{ width:'12px', height:'12px', borderRadius:'50%', border:'1px solid var(--sphere-done)', background:'var(--sphere-done-soft)', flex:'none' } },
+      { label:'Where you stand', swatch:{ width:'12px', height:'12px', borderRadius:'50%', border:'1.6px solid var(--sphere-current)', background:'var(--sphere-current-soft)', flex:'none' } },
+      { label:'Not yet opened', swatch:{ width:'12px', height:'12px', borderRadius:'50%', border:'1px solid var(--sphere-locked)', background:'transparent', opacity:.5, flex:'none' } }
+    ];
+    // ── selected sphere detail ──
+    const st=stateOf(sel);
+    const sphereColor = st==='current' ? 'var(--sphere-current)' : (st==='done' ? 'var(--sphere-done)' : 'var(--sphere-locked)');
+    const stateChip={ display:'inline-flex', alignItems:'center', padding:'2px 11px', borderRadius:'var(--r-pill)',
+      border:'1px solid '+sphereColor, background: st==='locked' ? 'transparent' : (st==='current' ? 'var(--sphere-current-soft)' : 'var(--sphere-done-soft)'),
+      fontFamily:'var(--font-ui)', fontSize:'11px', color:sphereColor };
+    const stateLabel = st==='current' ? 'where you stand' : (st==='done' ? 'walked' : 'not yet opened');
+    const markDone={ display:'flex', alignItems:'center', justifyContent:'center', width:'20px', height:'20px', borderRadius:'50%',
+      border:'1px solid var(--sphere-done)', background:'var(--sphere-done-soft)', color:'var(--sphere-done)', flex:'none' };
+    const markOpen={ display:'flex', alignItems:'center', justifyContent:'center', width:'20px', height:'20px', borderRadius:'50%',
+      border:'1px solid var(--line-2)', background:'transparent', color:'var(--ink-mute)', flex:'none' };
+    const tick=svg(12,2,P('M20 6L9 17l-5-5'));
+    const ring=R('span',{style:{width:'6px',height:'6px',borderRadius:'50%',border:'1px solid currentColor'}});
+    const curriculumBySphere={
+      9: [
+        { title:'The Chaldean Oracles — second reading, fragments 1–52', kind:'reading', complete:true, evidence:'3 entries · Jun–Jul' },
+        { title:'Nine nights of the Lesser Banishing at dusk', kind:'practice', complete:true, evidence:'entry · 18 Jul' },
+        { title:'Iamblichus, De Mysteriorum I–III', kind:'reading', complete:false },
+        { title:'A written account of what the foundation is for', kind:'deliverable', complete:false },
+        { title:'Four consecutive weeks of the dusk station', kind:'practice', complete:true, evidence:'streak · 31 of 35 days' }
+      ],
+      10: [
+        { title:'The room, the table, the hour — a description of your ground', kind:'deliverable', complete:true, evidence:'entry · 2 May' },
+        { title:'Thirty days of any single kept station', kind:'practice', complete:true, evidence:'streak · Apr–May' }
+      ]
+    };
+    const curriculum=(curriculumBySphere[sel]||[
+      { title:'The curriculum for this sphere opens when you arrive at it.', kind:'sealed', complete:false }
+    ]).map(c=>({ title:c.title, kind:c.kind, hasEvidence:!!c.evidence, evidence:c.evidence||'',
+      mark: c.complete ? tick : ring, markStyle: c.complete ? markDone : markOpen }));
+    const gatesBySphere={
+      9: [
+        { text:'Every curriculum item complete', met:false },
+        { text:'One working carried through both gates of judgment', met:true, metOn:'closed 22 Jul 2026' },
+        { text:'Countersigned by your preceptor', met:false }
+      ],
+      10: [
+        { text:'Every curriculum item complete', met:true, metOn:'closed 11 May 2026' },
+        { text:'Countersigned by your preceptor', met:true, metOn:'14 May 2026' }
+      ]
+    };
+    const gates=(gatesBySphere[sel]||[{ text:'The requirements of this gate are sealed until the sphere opens.', met:false }])
+      .map(g=>({ text:g.text, met:!!g.met, metOn:g.metOn||'', mark:g.met?tick:ring, markStyle:g.met?markDone:markOpen }));
+    const segBase={ padding:'5px 11px', fontFamily:'var(--font-ui)', fontSize:'12px', color:'var(--ink-mute)', background:'transparent', border:'1px solid transparent', borderRadius:'6px' };
+    const segOn={ ...segBase, color:'var(--ink)', background:'var(--accent-soft)', borderColor:'var(--line-2)' };
+    const seg=(t)=>(t===theme?segOn:segBase);
+    const moonI=svg(16,1.6,P('M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'));
+    const sunI=R('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.6,strokeLinecap:'round',strokeLinejoin:'round'},R('circle',{cx:12,cy:12,r:4}),R('path',{d:'M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4'}));
+    return { theme, mode, isBase:theme==='base', isHel:theme==='hellenic', isThe:theme==='thelemic',
+      onBase:()=>setTheme('base'), onHel:()=>setTheme('hellenic'), onThe:()=>setTheme('thelemic'),
+      toggleMode:()=>this.setState(s=>({mode:s.mode==='dark'?'light':'dark'})), modeIcon:mode==='dark'?moonI:sunI,
+      segBase:seg('base'), segHel:seg('hellenic'), segThe:seg('thelemic'),
+      figure, legend, sealIcon,
+      sphereNum:String(sel), sphereName:names[sel], sphereColor, stateChip, stateLabel,
+      sphereGloss: glosses[sel] || 'Its gloss is written when the sphere is opened to you.',
+      curriculum, gates };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@500;600;700&family=GFS+Didot&family=Inria+Sans:wght@300;400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font-display:'Cardo',Georgia,serif; --font-serif:'Cardo',Georgia,serif;
+  --font-ui:'Inria Sans',system-ui,sans-serif; --font-mono:'JetBrains Mono',monospace;
+  --bg:#15120D; --bg-2:#1C1812; --bg-3:#231E16; --bg-sunk:#100D09;
+  --line:rgba(236,229,214,.10); --line-2:rgba(236,229,214,.20);
+  --ink:#ECE5D6; --ink-soft:#BCB29D; --ink-mute:#A09680;
+  --accent:#C7A24C; --accent-ink:#15120D; --accent-soft:rgba(199,162,76,.14);
+  --peer-ok:#6BA892; --peer-ok-soft:rgba(107,168,146,.16); --peer-ok-border:rgba(107,168,146,.45);
+  --network:#5E8FA8; --network-soft:rgba(94,143,168,.14); --network-line:rgba(94,143,168,.42);
+  --warn:#C99A3C; --warn-soft:rgba(201,154,60,.14); --warn-border:rgba(201,154,60,.45);
+  --seal:#A98AC0; --seal-soft:rgba(169,138,192,.16); --seal-border:rgba(169,138,192,.45);
+  --covenant:var(--seal); --covenant-soft:var(--seal-soft); --covenant-line:var(--seal-border);
+  --gate-pass:var(--peer-ok); --gate-pass-soft:var(--peer-ok-soft);
+  --gate-fail:var(--warn); --gate-fail-soft:var(--warn-soft);
+  --gate-open:var(--ink-mute); --gate-open-soft:rgba(160,150,128,.14);
+  --r-sm:4px; --r-md:8px; --r-lg:14px; --r-pill:20px;
+}
+[data-theme="hellenic"]{ --font-display:'GFS Didot',serif; --bg:#0F1311; --bg-2:#161B18; --bg-3:#1D2420; --bg-sunk:#0B0F0D; --line:rgba(226,231,222,.10); --line-2:rgba(226,231,222,.20); --ink:#E9EADE; --ink-soft:#AEB6A4; --ink-mute:#8B9382; --accent:#BFA15B; --accent-ink:#0F1311; --accent-soft:rgba(191,161,91,.14); --peer-ok:#6E9C72; --peer-ok-soft:rgba(110,156,114,.16); --peer-ok-border:rgba(110,156,114,.45); --network:#5E9BA6; --network-soft:rgba(94,155,166,.14); --network-line:rgba(94,155,166,.42); --warn:#BFA15B; --warn-soft:rgba(191,161,91,.14); --warn-border:rgba(191,161,91,.45); --seal:#8FA8C0; --seal-soft:rgba(143,168,192,.16); --seal-border:rgba(143,168,192,.45); --gate-open-soft:rgba(139,147,130,.14); }
+[data-theme="thelemic"]{ --font-display:'Cinzel',serif; --bg:#100B09; --bg-2:#191210; --bg-3:#201714; --bg-sunk:#0A0706; --line:rgba(239,227,203,.12); --line-2:rgba(239,227,203,.22); --ink:#EFE3CB; --ink-soft:#C5B493; --ink-mute:#9C8A6C; --accent:#CDA53E; --accent-ink:#100B09; --accent-soft:rgba(205,165,62,.15); --peer-ok:#6BA892; --peer-ok-soft:rgba(107,168,146,.16); --peer-ok-border:rgba(107,168,146,.45); --network:#7E91CE; --network-soft:rgba(126,145,206,.14); --network-line:rgba(126,145,206,.42); --warn:#CDA53E; --warn-soft:rgba(205,165,62,.15); --warn-border:rgba(205,165,62,.45); --seal:#B79ACE; --seal-soft:rgba(183,154,206,.16); --seal-border:rgba(183,154,206,.45); --gate-open-soft:rgba(156,138,108,.14); }
+[data-mode="light"]{ --bg:#EFE7D4; --bg-2:#F6F0E1; --bg-3:#FBF7EC; --bg-sunk:#E6DCC6; --line:rgba(40,32,22,.14); --line-2:rgba(40,32,22,.26); --ink:#2A2316; --ink-soft:#5A5040; --ink-mute:#766B57; --accent:#9A6E22; --accent-ink:#FBF7EC; --accent-soft:rgba(154,110,34,.14); --peer-ok:#3E7A5E; --peer-ok-soft:rgba(62,122,94,.13); --peer-ok-border:rgba(62,122,94,.45); --network:#3F6E86; --network-soft:rgba(63,110,134,.12); --network-line:rgba(63,110,134,.4); --warn:#8A6A2E; --warn-soft:rgba(138,106,46,.12); --warn-border:rgba(138,106,46,.4); --seal:#7A5E9E; --seal-soft:rgba(122,94,158,.14); --seal-border:rgba(122,94,158,.45); --gate-open-soft:rgba(118,107,87,.13); }
+*{box-sizing:border-box}
+body{margin:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+a{color:inherit;text-decoration:none}
+input,textarea{font:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+::selection{background:var(--accent-soft);color:var(--ink)}
+.scroll::-webkit-scrollbar{width:10px}
+.scroll::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:10px;border:3px solid transparent;background-clip:content-box}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.001ms!important}}
+:root{ --shell-nav-w:248px; }
+.om-menu{ display:none; } .om-scrim{ display:none; }
+@media (max-width:1280px){ :root{ --shell-nav-w:224px; } }
+/* ── tablet 640–1024: 64px ICON RAIL (the H12 nav contract) ── */
+@media (min-width:640px) and (max-width:1024px){
+  .om-shell{ grid-template-columns:64px 1fr !important; }
+  .om-menu{ display:none !important; }
+  .pn-aside{ padding:14px 8px 12px !important; }
+  .pn-aside .pn-label{ display:none !important; }
+  .pn-aside .pn-head{ height:1px; padding:10px 0 0 !important; overflow:hidden; color:transparent !important; border-top:1px solid var(--line); margin:6px 4px; }
+  .pn-aside a, .pn-aside .pn-more, .pn-aside .pn-switch, .pn-aside .pn-capture{ justify-content:center; padding-left:0 !important; padding-right:0 !important; min-height:40px; }
+  .pn-aside .pn-foot{ justify-content:center; }
+}
+/* ── the forced-mode rail, for tests and spec surfaces ── */
+.pn-aside[data-nav-mode="rail"]{ padding:14px 8px 12px !important; }
+.pn-aside[data-nav-mode="rail"] .pn-label{ display:none !important; }
+.pn-aside[data-nav-mode="rail"] .pn-head{ height:1px; padding:10px 0 0 !important; overflow:hidden; color:transparent !important; border-top:1px solid var(--line); margin:6px 4px; }
+.pn-aside[data-nav-mode="rail"] a, .pn-aside[data-nav-mode="rail"] .pn-more, .pn-aside[data-nav-mode="rail"] .pn-switch, .pn-aside[data-nav-mode="rail"] .pn-capture{ justify-content:center; padding-left:0 !important; padding-right:0 !important; }
+.pn-aside[data-nav-mode="rail"] .pn-foot{ justify-content:center; }
+/* ── phone < 640: off-canvas drawer ── */
+@media (max-width:640px){
+  .om-shell{ grid-template-columns:1fr !important; }
+  .om-aside{ position:fixed; top:0; left:0; bottom:0; width:284px; z-index:60; transform:translateX(-100%); transition:transform .28s cubic-bezier(.4,0,.2,1); }
+  .om-shell[data-nav-open="true"] .om-aside{ transform:none; box-shadow:2px 0 26px rgba(0,0,0,.42); }
+  .om-scrim{ display:block; position:fixed; inset:0; z-index:55; background:rgba(0,0,0,.5); opacity:0; pointer-events:none; transition:opacity .28s ease; }
+  .om-shell[data-nav-open="true"] .om-scrim{ opacity:1; pointer-events:auto; }
+  .om-menu{ display:inline-flex !important; }
+  .om-aside a, .om-aside button{ min-height:44px; }
+}
+@media (max-width:900px){ .tg-two{ grid-template-columns:1fr !important; } }
+@media (max-width:640px){ .om-topbar{ padding-left:14px !important; padding-right:14px !important; } .tg-main{ padding:16px 14px 40px !important; } }
+@media (min-width:1681px){ .tg-wrap{ max-width:980px !important; } }
+@media (prefers-reduced-motion: reduce){ .om-aside, .om-scrim{ transition:none !important; } }
+</style>
+<script>
+(function(){
+  if (window.__omNavWired) return; window.__omNavWired = true;
+  function shellOf(el){ return el && el.closest ? el.closest('.om-shell') : null; }
+  document.addEventListener('click', function(e){
+    var menu = e.target.closest && e.target.closest('.om-menu');
+    if (menu){ var s = shellOf(menu); if(!s) return; var open = s.getAttribute('data-nav-open') === 'true'; s.setAttribute('data-nav-open', open ? 'false' : 'true'); menu.setAttribute('aria-expanded', open ? 'false' : 'true'); return; }
+    var scrim = e.target.closest && e.target.closest('.om-scrim');
+    if (scrim){ var s2 = shellOf(scrim); if(s2){ s2.setAttribute('data-nav-open','false'); var m = s2.querySelector('.om-menu'); if(m) m.setAttribute('aria-expanded','false'); } }
+  });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape'){ document.querySelectorAll('.om-shell[data-nav-open="true"]').forEach(function(s){ s.setAttribute('data-nav-open','false'); var m = s.querySelector('.om-menu'); if(m) m.setAttribute('aria-expanded','false'); }); } });
+})();
+</script>
+</helmet>
+
+<div class="om-shell" data-theme="{{ theme }}" data-mode="{{ mode }}" style="height:100vh;display:grid;grid-template-columns:var(--shell-nav-w) 1fr;grid-template-rows:minmax(0,1fr);background:var(--bg);color:var(--ink);font-family:var(--font-serif);overflow:hidden">
+
+  <dc-import name="PracticeNav" active="awaitingjudgment" hint-size="248px,100%"></dc-import>
+  <div class="om-scrim" aria-hidden="true"></div>
+
+  <div style="display:grid;grid-template-rows:auto 1fr;min-width:0;min-height:0">
+    <header class="om-topbar" style="display:flex;align-items:center;gap:14px;padding:13px 24px;border-bottom:1px solid var(--line);background:var(--bg)"><button class="om-menu" aria-label="Open navigation" aria-expanded="false" style="align-items:center;justify-content:center;width:40px;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);color:var(--ink-soft);flex:none" style-hover="color:var(--ink)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <div style="min-width:0"><div style="font-family:var(--font-ui);font-size:11px;color:var(--ink-mute)">Declare before · judge after</div><div style="font-family:var(--font-display);font-size:21px;line-height:1.1">The two gates</div></div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+        <div role="group" aria-label="Stage" style="display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2)"><button onClick="{{ setUndeclared }}" aria-pressed="{{ isUndeclared }}" style="{{ segU }}">Undeclared</button><button onClick="{{ setSealed }}" aria-pressed="{{ isSealed }}" style="{{ segS }}">Sealed</button><button onClick="{{ setJudged }}" aria-pressed="{{ isJudged }}" style="{{ segJ }}">Judged</button></div>
+        <div role="group" aria-label="Theme" style="display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2)"><button onClick="{{ onBase }}" aria-pressed="{{ isBase }}" style="{{ segBase }}">Base</button><button onClick="{{ onHel }}" aria-pressed="{{ isHel }}" style="{{ segHel }}">Hel</button><button onClick="{{ onThe }}" aria-pressed="{{ isThe }}" style="{{ segThe }}">Thel</button></div><button onClick="{{ toggleMode }}" aria-label="Toggle light and dark" style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);color:var(--ink-soft)" style-hover="color:var(--ink)">{{ modeIcon }}</button></div>
+    </header>
+
+    <main class="scroll tg-main" style="overflow-y:auto;min-height:0;padding:22px 24px 56px">
+      <div class="tg-wrap" style="max-width:800px;margin:0 auto">
+
+        <!-- the working under judgment -->
+        <div style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:9px">The working</div>
+        <div style="padding:15px 17px;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg-2);margin-bottom:16px"><div style="font-family:var(--font-display);font-size:19px;color:var(--ink);line-height:1.15">Nine nights of the Lesser Banishing, at dusk</div><div style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);margin-top:4px">Begun 9 July 2026 · completed 18 July · Sphere 9 curriculum</div></div>
+
+        <!-- ══ THE COVENANT (intent) ══ -->
+        <div style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:9px">Before — the declared intent</div>
+
+        <sc-if value="{{ isUndeclared }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:17px 19px;border:1px dashed var(--covenant-line);border-radius:var(--r-lg);background:var(--bg-2);margin-bottom:20px">
+            <div style="font-family:var(--font-serif);font-size:14px;color:var(--ink-soft);line-height:1.6;margin-bottom:13px">Say what you are asking for, before you begin. Once saved it is sealed with its hour and cannot be rewritten — the point of the covenant is that your later self cannot move the mark.</div>
+            <textarea rows="3" placeholder="What this working is for…" style="width:100%;padding:12px 14px;border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--bg);color:var(--ink);font-family:var(--font-serif);font-size:15px;line-height:1.6;resize:vertical;margin-bottom:12px"></textarea>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute)">Sealed at the moment you save it</span><button onClick="{{ setSealed }}" style="margin-left:auto;display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:var(--r-md);background:var(--covenant-soft);border:1px solid var(--covenant);color:var(--covenant);font-family:var(--font-ui);font-weight:700;font-size:14px" style-hover="background:var(--covenant);color:#fff">{{ sealIcon }}Seal the intent</button></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ intentSealed }}" hint-placeholder-val="{{ true }}">
+          <div style="position:relative;padding:19px 21px;border:1px solid var(--covenant-line);border-radius:var(--r-lg);background:var(--covenant-soft);margin-bottom:20px;overflow:hidden">
+            <div aria-hidden="true" style="position:absolute;top:0;left:0;bottom:0;width:3px;background:var(--covenant)"></div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><span style="display:flex;color:var(--covenant);flex:none">{{ sealIcon }}</span><span style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--covenant)">Sealed · cannot be rewritten</span><span style="margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--ink-mute)">9 Jul 2026 · 20:44 EEST</span></div>
+            <blockquote style="margin:0;font-family:var(--font-serif);font-size:16.5px;line-height:1.7;color:var(--ink)">“That the room be quiet enough to work in, and that I learn whether the quiet is mine or the rite's.”</blockquote>
+            <div style="font-family:var(--font-ui);font-size:11px;color:var(--ink-mute);margin-top:13px;padding-top:11px;border-top:1px solid var(--covenant-line)">Signed with your key · fingerprint SHA256:7a3f 9c21 · the text and its hour are part of the record now</div>
+          </div>
+        </sc-if>
+
+        <!-- ══ THE TWO GATES (verdict) ══ -->
+        <div style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:9px">After — the judgment</div>
+        <div class="tg-two" style="display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:14px">
+          <sc-for list="{{ gates }}" as="g" hint-placeholder-count="2">
+            <section style="{{ g.cardStyle }}">
+              <div style="display:flex;align-items:baseline;gap:9px;margin-bottom:4px"><span style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute)">{{ g.num }}</span><span style="font-family:var(--font-display);font-size:18px;color:var(--ink)">{{ g.question }}</span></div>
+              <div style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);margin-bottom:13px">{{ g.test }}</div>
+              <div style="display:flex;gap:6px;margin-bottom:12px"><sc-for list="{{ g.options }}" as="o" hint-placeholder-count="3"><button onClick="{{ o.onPick }}" aria-pressed="{{ o.on }}" style="{{ o.style }}">{{ o.label }}</button></sc-for></div>
+              <sc-if value="{{ g.hasNote }}" hint-placeholder-val="{{ true }}">
+                <textarea rows="2" placeholder="{{ g.notePlaceholder }}" style="width:100%;padding:10px 12px;border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--bg);color:var(--ink);font-family:var(--font-serif);font-size:13.5px;line-height:1.55;resize:vertical">{{ g.note }}</textarea>
+              </sc-if>
+              <sc-if value="{{ g.stamped }}" hint-placeholder-val="{{ false }}"><div style="font-family:var(--font-mono);font-size:10.5px;color:var(--ink-mute);margin-top:10px">judged {{ g.stamp }}</div></sc-if>
+            </section>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ notJudged }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border:1px solid var(--warn-border);border-radius:var(--r-md);background:var(--warn-soft);margin-bottom:26px"><span style="display:flex;color:var(--warn);flex:none">{{ scaleIcon }}</span><div style="flex:1;min-width:0;font-family:var(--font-serif);font-size:13.5px;color:var(--ink);line-height:1.5">Both gates are still open. This working sits in <strong>Awaiting judgment</strong> until you close them — the record does not quietly forget an unfinished verdict.</div><button onClick="{{ setJudged }}" style="padding:10px 17px;border-radius:var(--r-md);border:1px solid var(--warn-border);font-family:var(--font-ui);font-weight:700;font-size:13px;color:var(--warn);flex:none" style-hover="background:var(--warn);color:#fff">Record the verdict</button></div>
+        </sc-if>
+        <sc-if value="{{ isJudged }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border:1px solid var(--peer-ok-border);border-radius:var(--r-md);background:var(--peer-ok-soft);margin-bottom:26px"><span style="display:flex;color:var(--peer-ok);flex:none">{{ checkIcon }}</span><div style="font-family:var(--font-serif);font-size:13.5px;color:var(--ink);line-height:1.5">Verdict recorded 22 July 2026. It worked and it holds — <em>repeatable, and coherent with what you already know</em>. The working leaves the queue.</div></div>
+        </sc-if>
+
+        <!-- ══ PRACTICE MODULE: INSTALL BY PROOF ══ -->
+        <div style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:9px">Practice modules · installed by proof</div>
+        <div style="border:1px solid var(--line);border-radius:var(--r-lg);background:var(--bg-2);overflow:hidden;margin-bottom:26px">
+          <div style="padding:13px 16px;border-bottom:1px solid var(--line);font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);line-height:1.5">A practice you devise is a <em>candidate</em> until it has been tested and judged. Nothing enters the daily rite on enthusiasm alone.</div>
+          <sc-for list="{{ modules }}" as="m" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:13px;padding:13px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap">
+              <div style="flex:1;min-width:0"><div style="font-family:var(--font-serif);font-size:14.5px;color:var(--ink)">{{ m.name }}</div><div style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);margin-top:1px">{{ m.detail }}</div></div>
+              <span style="{{ m.chip }}">{{ m.state }}</span>
+              <button style="{{ m.btnStyle }}">{{ m.next }}</button>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- ══ AWAITING-JUDGMENT QUEUE ══ -->
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:11px"><span style="font-family:var(--font-display);font-size:17px;color:var(--ink)">Awaiting judgment</span><span style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute)">3 workings · oldest first</span><span style="margin-left:auto;font-family:var(--font-ui);font-size:11px;color:var(--ink-mute)">Lives under Study in the sidebar</span></div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ queue }}" as="q" hint-placeholder-count="3">
+            <a href="#" style="display:flex;align-items:center;gap:13px;padding:13px 15px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--bg-2)" style-hover="border-color:var(--line-2)">
+              <span style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute);flex:none;width:56px">{{ q.when }}</span>
+              <span style="flex:1;min-width:0;font-family:var(--font-serif);font-size:14px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ q.title }}</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;flex:none"><span style="{{ q.g1 }}">1</span><span style="{{ q.g2 }}">2</span></span>
+              <span style="font-family:var(--font-ui);font-size:11px;color:var(--ink-mute);flex:none">{{ q.age }}</span>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;base&quot;,&quot;hellenic&quot;,&quot;thelemic&quot;],&quot;default&quot;:&quot;base&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { theme:(this.props&&this.props.theme)||'base', mode:(this.props&&this.props.mode)||'dark', stage:'sealed', g1:null, g2:null };
+  componentDidUpdate(prev){ if(this.props.theme&&prev.theme!==this.props.theme)this.setState({theme:this.props.theme}); if(this.props.mode&&prev.mode!==this.props.mode)this.setState({mode:this.props.mode}); }
+  renderVals(){
+    const { theme, mode, stage, g1, g2 } = this.state; const setTheme=(t)=>this.setState({theme:t});
+    const R=React.createElement;
+    const svg=(size,sw,...k)=>R('svg',{width:size,height:size,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:sw||1.5,strokeLinecap:'round',strokeLinejoin:'round'},...k);
+    const P=(d)=>R('path',{key:d,d});
+    const sealIcon=svg(17,1.5,R('rect',{key:'r',x:5,y:11,width:14,height:9,rx:2}),P('M8 11V8a4 4 0 0 1 8 0v3'));
+    const scaleIcon=svg(18,1.5,P('M12 4v16M6 8h12M8.5 8l-3 5h6zM15.5 8l-3 5h6z'));
+    const checkIcon=svg(18,1.7,P('M20 6L9 17l-5-5'));
+    const isUndeclared=stage==='undeclared', isSealed=stage==='sealed', isJudged=stage==='judged';
+    const eff1 = isJudged ? 'pass' : g1;
+    const eff2 = isJudged ? 'pass' : g2;
+    const optTone={ pass:['var(--gate-pass)','var(--gate-pass-soft)'], fail:['var(--gate-fail)','var(--gate-fail-soft)'], open:['var(--gate-open)','var(--gate-open-soft)'] };
+    const mkOpts=(cur,setter)=>[{k:'pass',label:'It did'},{k:'fail',label:'It did not'},{k:'open',label:'Still open'}].map(o=>{
+      const on=cur===o.k; const [c,bg]=optTone[o.k];
+      return { label:o.label, on, onPick:()=>setter(o.k),
+        style:{ flex:'1 1 auto', padding:'9px 11px', borderRadius:'var(--r-md)', border:'1px solid '+(on?c:'var(--line-2)'),
+          background:on?bg:'var(--bg)', color:on?c:'var(--ink-mute)', fontFamily:'var(--font-ui)', fontSize:'12.5px', textAlign:'center' } };
+    });
+    const cardFor=(v)=>{ const border = v==='pass' ? 'var(--gate-pass)' : (v==='fail' ? 'var(--gate-fail)' : 'var(--line)');
+      return { padding:'17px 18px', border:'1px solid '+border, borderRadius:'var(--r-lg)', background:'var(--bg-2)' }; };
+    const gates=[
+      { num:'Gate 1', question:'Did it work?', test:'Repeatable — did the effect appear, and would it appear again?',
+        options:mkOpts(eff1,(k)=>this.setState({g1:k})), cardStyle:cardFor(eff1), hasNote:true,
+        notePlaceholder:'What happened, plainly…', note: isJudged ? 'The room did quiet, from the fourth night onward, and again on the two nights I repeated it in August.' : '',
+        stamped:isJudged, stamp:'22 Jul 2026' },
+      { num:'Gate 2', question:'Is it true?', test:'Coherent — does it hold with the rest of what you know?',
+        options:mkOpts(eff2,(k)=>this.setState({g2:k})), cardStyle:cardFor(eff2), hasNote:true,
+        notePlaceholder:'Where it sits against the rest…', note: isJudged ? 'Consistent with the Sphere 9 material on hearth-quiet; no conflict with the earlier dark-moon findings.' : '',
+        stamped:isJudged, stamp:'22 Jul 2026' }
+    ];
+    const modChip=(s)=>{ const m={ candidate:['var(--ink-mute)','transparent','1px solid var(--line-2)'],
+      testing:['var(--accent)','var(--accent-soft)','1px solid var(--accent)'],
+      installed:['var(--gate-pass)','var(--gate-pass-soft)','1px solid var(--gate-pass)'],
+      rejected:['var(--gate-fail)','var(--gate-fail-soft)','1px solid var(--gate-fail-soft)'] }[s];
+      return { display:'inline-flex', alignItems:'center', padding:'2px 11px', borderRadius:'var(--r-pill)', color:m[0], background:m[1], border:m[2], fontFamily:'var(--font-ui)', fontSize:'11px', flex:'none' }; };
+    const modBtn=(s)=>({ padding:'8px 14px', borderRadius:'var(--r-md)', border:'1px solid var(--line-2)',
+      fontFamily:'var(--font-ui)', fontSize:'12.5px', color: s==='rejected' ? 'var(--ink-mute)' : 'var(--ink-soft)', flex:'none' });
+    const mraw=[
+      { name:'Hearth-lamp at the third hour', detail:'Devised 2 Jul · no trial yet', state:'candidate', next:'Begin a trial' },
+      { name:'Voces before the banishing', detail:'In trial since 11 Jul · 9 of 14 nights', state:'testing', next:'Judge the trial' },
+      { name:'Dusk adoration', detail:'Installed 3 May · both gates passed', state:'installed', next:'Open record' },
+      { name:'Waking augury from the window', detail:'Rejected 28 Jun · Gate 1 failed twice', state:'rejected', next:'Read why' }
+    ];
+    const modules=mraw.map(m=>({ ...m, chip:modChip(m.state), btnStyle:modBtn(m.state) }));
+    const qGate=(v)=>{ const [c,bg]=optTone[v]||optTone.open;
+      return { display:'flex', alignItems:'center', justifyContent:'center', width:'20px', height:'20px', borderRadius:'50%',
+        border:'1px solid '+c, background:bg, color:c, fontFamily:'var(--font-mono)', fontSize:'10px' }; };
+    const queue=[
+      { when:'9 Jul', title:'Nine nights of the Lesser Banishing, at dusk', g1:qGate('open'), g2:qGate('open'), age:'16 days' },
+      { when:'2 Jul', title:'Saturn talisman — first consecration', g1:qGate('pass'), g2:qGate('open'), age:'23 days' },
+      { when:'19 Jun', title:'The petition left at the crossroads stone', g1:qGate('open'), g2:qGate('open'), age:'36 days' }
+    ];
+    const segBase={ padding:'5px 11px', fontFamily:'var(--font-ui)', fontSize:'12px', color:'var(--ink-mute)', background:'transparent', border:'1px solid transparent', borderRadius:'6px' };
+    const segOn={ ...segBase, color:'var(--ink)', background:'var(--accent-soft)', borderColor:'var(--line-2)' };
+    const seg=(t)=>(t===theme?segOn:segBase);
+    const moonI=svg(16,1.6,P('M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'));
+    const sunI=R('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.6,strokeLinecap:'round',strokeLinejoin:'round'},R('circle',{cx:12,cy:12,r:4}),R('path',{d:'M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4'}));
+    return { theme, mode, isBase:theme==='base', isHel:theme==='hellenic', isThe:theme==='thelemic',
+      onBase:()=>setTheme('base'), onHel:()=>setTheme('hellenic'), onThe:()=>setTheme('thelemic'),
+      toggleMode:()=>this.setState(s=>({mode:s.mode==='dark'?'light':'dark'})), modeIcon:mode==='dark'?moonI:sunI,
+      segBase:seg('base'), segHel:seg('hellenic'), segThe:seg('thelemic'),
+      isUndeclared, isSealed, isJudged, intentSealed:!isUndeclared, notJudged:!isJudged,
+      setUndeclared:()=>this.setState({stage:'undeclared'}), setSealed:()=>this.setState({stage:'sealed'}), setJudged:()=>this.setState({stage:'judged'}),
+      segU:isUndeclared?segOn:segBase, segS:isSealed?segOn:segBase, segJ:isJudged?segOn:segBase,
+      sealIcon, scaleIcon, checkIcon, gates, modules, queue };
+  }
+}
+</script>
+</body>
+</html>

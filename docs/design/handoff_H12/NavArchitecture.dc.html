@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cardo:ital,wght@0,400;0,700;1,400&family=Cinzel:wght@500;600;700&family=GFS+Didot&family=Inria+Sans:wght@300;400;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --font-display:'Cardo',Georgia,serif; --font-serif:'Cardo',Georgia,serif;
+  --font-ui:'Inria Sans',system-ui,sans-serif; --font-mono:'JetBrains Mono',monospace;
+  --bg:#15120D; --bg-2:#1C1812; --bg-3:#231E16; --bg-sunk:#100D09;
+  --line:rgba(236,229,214,.10); --line-2:rgba(236,229,214,.20);
+  --ink:#ECE5D6; --ink-soft:#BCB29D; --ink-mute:#A09680;
+  --accent:#C7A24C; --accent-ink:#15120D; --accent-soft:rgba(199,162,76,.14);
+  --peer-ok:#6BA892; --peer-ok-soft:rgba(107,168,146,.16); --peer-ok-border:rgba(107,168,146,.45);
+  --network:#5E8FA8; --network-soft:rgba(94,143,168,.14); --network-line:rgba(94,143,168,.42);
+  --warn:#C99A3C; --warn-soft:rgba(201,154,60,.14); --warn-border:rgba(201,154,60,.45);
+  --r-sm:4px; --r-md:8px; --r-lg:14px; --r-pill:20px;
+}
+[data-theme="hellenic"]{ --font-display:'GFS Didot',serif; --bg:#0F1311; --bg-2:#161B18; --bg-3:#1D2420; --bg-sunk:#0B0F0D; --line:rgba(226,231,222,.10); --line-2:rgba(226,231,222,.20); --ink:#E9EADE; --ink-soft:#AEB6A4; --ink-mute:#8B9382; --accent:#BFA15B; --accent-ink:#0F1311; --accent-soft:rgba(191,161,91,.14); --peer-ok:#6E9C72; --peer-ok-soft:rgba(110,156,114,.16); --peer-ok-border:rgba(110,156,114,.45); --network:#5E9BA6; --network-soft:rgba(94,155,166,.14); --network-line:rgba(94,155,166,.42); --warn:#BFA15B; --warn-soft:rgba(191,161,91,.14); --warn-border:rgba(191,161,91,.45); }
+[data-theme="thelemic"]{ --font-display:'Cinzel',serif; --bg:#100B09; --bg-2:#191210; --bg-3:#201714; --bg-sunk:#0A0706; --line:rgba(239,227,203,.12); --line-2:rgba(239,227,203,.22); --ink:#EFE3CB; --ink-soft:#C5B493; --ink-mute:#9C8A6C; --accent:#CDA53E; --accent-ink:#100B09; --accent-soft:rgba(205,165,62,.15); --peer-ok:#6BA892; --peer-ok-soft:rgba(107,168,146,.16); --peer-ok-border:rgba(107,168,146,.45); --network:#7E91CE; --network-soft:rgba(126,145,206,.14); --network-line:rgba(126,145,206,.42); --warn:#CDA53E; --warn-soft:rgba(205,165,62,.15); --warn-border:rgba(205,165,62,.45); }
+[data-mode="light"]{ --bg:#EFE7D4; --bg-2:#F6F0E1; --bg-3:#FBF7EC; --bg-sunk:#E6DCC6; --line:rgba(40,32,22,.14); --line-2:rgba(40,32,22,.26); --ink:#2A2316; --ink-soft:#5A5040; --ink-mute:#766B57; --accent:#9A6E22; --accent-ink:#FBF7EC; --accent-soft:rgba(154,110,34,.14); --peer-ok:#3E7A5E; --peer-ok-soft:rgba(62,122,94,.13); --peer-ok-border:rgba(62,122,94,.45); --network:#3F6E86; --network-soft:rgba(63,110,134,.12); --network-line:rgba(63,110,134,.4); --warn:#8A6A2E; --warn-soft:rgba(138,106,46,.12); --warn-border:rgba(138,106,46,.4); }
+*{box-sizing:border-box}
+body{margin:0;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+::selection{background:var(--accent-soft);color:var(--ink)}
+.scroll::-webkit-scrollbar{width:8px}
+.scroll::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:8px;border:2px solid transparent;background-clip:content-box}
+/* ── the nav's own responsive contract, driven off data-nav-mode so a frame can force a state ── */
+.pn-aside[data-nav-mode="rail"]{ padding:14px 8px 12px !important; align-items:stretch; }
+.pn-aside[data-nav-mode="rail"] .pn-label{ display:none !important; }
+.pn-aside[data-nav-mode="rail"] .pn-head{ height:1px; padding:10px 0 0 !important; overflow:hidden; color:transparent !important; border-top:1px solid var(--line); margin:6px 4px; }
+.pn-aside[data-nav-mode="rail"] a, .pn-aside[data-nav-mode="rail"] .pn-more, .pn-aside[data-nav-mode="rail"] .pn-switch, .pn-aside[data-nav-mode="rail"] .pn-capture{ justify-content:center; padding-left:0 !important; padding-right:0 !important; }
+.pn-aside[data-nav-mode="rail"] .pn-foot{ justify-content:center; }
+.pn-aside[data-nav-mode="compact"]{ padding:14px 10px 12px !important; }
+@media (prefers-reduced-motion:reduce){*{transition-duration:.001ms!important}}
+@media (max-width:1100px){ .na-rack{ overflow-x:auto; } }
+</style>
+</helmet>
+
+<div data-theme="{{ theme }}" data-mode="{{ mode }}" style="min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--font-serif)">
+  <div style="max-width:1240px;margin:0 auto;padding:26px 24px 80px">
+
+    <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:8px">
+      <div style="flex:1;min-width:0"><div style="font-family:var(--font-ui);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:7px">Surface 1 · Navigation architecture</div><h1 style="font-family:var(--font-display);font-size:29px;margin:0;line-height:1.12">Practice first, platform in its own wing</h1></div>
+      <div style="display:flex;align-items:center;gap:8px;flex:none"><div role="group" aria-label="Theme" style="display:flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2)"><button onClick="{{ onBase }}" aria-pressed="{{ isBase }}" style="{{ segBase }}">Base</button><button onClick="{{ onHel }}" aria-pressed="{{ isHel }}" style="{{ segHel }}">Hel</button><button onClick="{{ onThe }}" aria-pressed="{{ isThe }}" style="{{ segThe }}">Thel</button></div><button onClick="{{ toggleMode }}" aria-label="Toggle light and dark" style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--line);border-radius:8px;background:var(--bg-2);color:var(--ink-soft)">{{ modeIcon }}</button></div>
+    </div>
+
+    <!-- THE ANSWER -->
+    <div style="padding:18px 20px;border:1px solid var(--peer-ok-border);border-radius:var(--r-lg);background:var(--peer-ok-soft);margin-bottom:14px">
+      <div style="font-family:var(--font-ui);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--peer-ok);margin-bottom:7px">Our answer to your design question</div>
+      <p style="font-family:var(--font-serif);font-size:15.5px;line-height:1.65;color:var(--ink);margin:0 0 12px"><strong>A switcher at the sidebar foot</strong> — one control, two wings. The practice wing is the default and fits a 1080p laptop unscrolled; the platform wing is one tap away and holds every publishing, network, and plugin route unchanged.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:11px">
+        <div style="padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--bg-2)"><div style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);margin-bottom:4px">Why not collapsible</div><div style="font-family:var(--font-serif);font-size:13.5px;color:var(--ink-soft);line-height:1.5">A collapsed section still spends sidebar height on its header, and the moment it opens you are back to a scrolling sidebar — the clutter returns exactly when you are using it.</div></div>
+        <div style="padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--bg-2)"><div style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);margin-bottom:4px">Why not a landing page</div><div style="font-family:var(--font-serif);font-size:13.5px;color:var(--ink-soft);line-height:1.5">A separate page adds a hop before every platform task and makes the platform feel severed from the vault rather than adjacent to it. The switcher keeps both wings in the same muscle memory.</div></div>
+      </div>
+    </div>
+
+    <!-- link budget -->
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:13px 18px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--bg-2);margin-bottom:26px">
+      <span style="font-family:var(--font-ui);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute)">Link budget</span>
+      <span style="font-family:var(--font-serif);font-size:14px;color:var(--ink-soft)"><span style="font-family:var(--font-mono);color:var(--ink-mute)">31 links / 10 sections</span> → <span style="font-family:var(--font-mono);color:var(--peer-ok)">17 links / 4 sections</span> in the practice wing</span>
+      <span style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);margin-left:auto">Nothing deleted — 14 routes moved to the platform wing, 5 tools behind “More tools”, 3 new surfaces added</span>
+    </div>
+
+    <!-- five breakpoints -->
+    <div style="font-family:var(--font-ui);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:14px">Behaviour at all five breakpoints</div>
+    <div class="na-rack scroll" style="display:flex;gap:14px;align-items:flex-start;padding-bottom:12px;margin-bottom:30px">
+      <sc-for list="{{ frames }}" as="f" hint-placeholder-count="5">
+        <div style="flex:none;width:{{ f.frameW }}">
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:7px"><span style="font-family:var(--font-display);font-size:15px;color:var(--ink)">{{ f.name }}</span><span style="font-family:var(--font-mono);font-size:10.5px;color:var(--ink-mute)">{{ f.range }}</span></div>
+          <div style="height:392px;border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--bg-2);overflow:hidden;display:flex">
+            <div style="{{ f.navBox }}"><dc-import name="PracticeNav" active="today" nav-mode="{{ f.mode }}" hint-size="100%,100%"></dc-import></div>
+            <sc-if value="{{ f.showBody }}" hint-placeholder-val="{{ true }}"><div aria-hidden="true" style="flex:1;min-width:0;padding:12px;display:flex;flex-direction:column;gap:8px"><div style="height:12px;width:70%;background:var(--bg-3);border-radius:4px"></div><div style="{{ f.contentCap }}"></div></div></sc-if>
+            <sc-if value="{{ f.showScrim }}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" style="position:absolute;inset:0;background:rgba(0,0,0,.45)"></div></sc-if>
+          </div>
+          <div style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-soft);line-height:1.5;margin-top:8px">{{ f.note }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- the wing switch, live -->
+    <div style="font-family:var(--font-ui);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:14px">The wing switch, live</div>
+    <div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
+      <div style="flex:none;width:248px"><div style="height:640px;border:1px solid var(--line-2);border-radius:var(--r-md);overflow:hidden"><dc-import name="PracticeNav" active="today" wing="practice" hint-size="248px,100%"></dc-import></div><div style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-soft);margin-top:8px;line-height:1.5">Practice wing — the default. Tap the foot control to cross over. <em style="color:var(--ink-mute)">Both panels here are live: try the switcher and “More tools”.</em></div></div>
+      <div style="flex:none;width:248px"><div style="height:640px;border:1px solid var(--line-2);border-radius:var(--r-md);overflow:hidden"><dc-import name="PracticeNav" active="plugins" wing="platform" hint-size="248px,100%"></dc-import></div><div style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-soft);margin-top:8px;line-height:1.5">Platform wing — Publishing, Network, Platform. The foot control reads “Back to practice”.</div></div>
+      <div style="flex:1;min-width:280px">
+        <div style="font-family:var(--font-ui);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:10px">Contract for the build side</div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <sc-for list="{{ contract }}" as="c" hint-placeholder-count="6"><div style="padding:12px 14px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--bg-2)"><div style="font-family:var(--font-mono);font-size:11.5px;color:var(--accent);margin-bottom:3px">{{ c.k }}</div><div style="font-family:var(--font-serif);font-size:13.5px;color:var(--ink-soft);line-height:1.5">{{ c.v }}</div></div></sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:900},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;base&quot;,&quot;hellenic&quot;,&quot;thelemic&quot;],&quot;default&quot;:&quot;base&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { theme:(this.props&&this.props.theme)||'base', mode:(this.props&&this.props.mode)||'dark' };
+  componentDidUpdate(prev){ if(this.props.theme&&prev.theme!==this.props.theme)this.setState({theme:this.props.theme}); if(this.props.mode&&prev.mode!==this.props.mode)this.setState({mode:this.props.mode}); }
+  renderVals(){
+    const { theme, mode } = this.state; const setTheme=(t)=>this.setState({theme:t});
+    const capFull={ flex:1, minHeight:0, background:'var(--bg-3)', borderRadius:'6px' };
+    const capCapped={ flex:1, minHeight:0, maxWidth:'220px', background:'var(--bg-3)', borderRadius:'6px', outline:'1px dashed var(--accent)', outlineOffset:'3px' };
+    const frames=[
+      { name:'Phone', range:'< 640', frameW:'190px', mode:'drawer', navBox:{ width:'150px', flex:'none', boxShadow:'2px 0 18px rgba(0,0,0,.4)', position:'relative', zIndex:2 }, showBody:true, showScrim:false, contentCap:capFull,
+        note:'Off-canvas drawer over a scrim, opened by the topbar hamburger. The drawer carries whichever wing is active, with the same foot switcher. Targets ≥44px.' },
+      { name:'Tablet', range:'640 – 1024', frameW:'150px', mode:'rail', navBox:{ width:'64px', flex:'none' }, showBody:true, showScrim:false, contentCap:capFull,
+        note:'64px icon rail. Section headers become hairlines; every item keeps an accessible name and a tooltip. Tapping the mark expands a 284px overlay.' },
+      { name:'Small desktop', range:'1024 – 1280', frameW:'300px', mode:'compact', navBox:{ width:'224px', flex:'none' }, showBody:true, showScrim:false, contentCap:capFull,
+        note:'224px sidebar, labels visible. This is the tightest full-label width — the 17-link practice wing still does not scroll.' },
+      { name:'Desktop', range:'1280 – 1680', frameW:'330px', mode:'full', navBox:{ width:'248px', flex:'none' }, showBody:true, showScrim:false, contentCap:capFull,
+        note:'248px sidebar — the reference width. Practice wing sits unscrolled on a 1080p laptop with the profile foot in view.' },
+      { name:'Ultrawide', range:'> 1680', frameW:'360px', mode:'full', navBox:{ width:'248px', flex:'none' }, showBody:true, showScrim:false, contentCap:capCapped,
+        note:'Sidebar stays 248px; the content column is capped (dashed) rather than stretched, so a working never spans the whole desk. Extra space becomes gutter.' }
+    ];
+    const contract=[
+      { k:'active: string', v:'Unchanged from VaultNav — a superset of the old keys plus astragaloi, ladder, awaitingjudgment. Every previous route still resolves.' },
+      { k:'wing: "practice" | "platform"', v:'Which wing renders. Defaults to practice; persists per session so the operator returns where she left.' },
+      { k:'navMode: auto | drawer | rail | compact | full', v:'auto follows the media queries; the explicit modes exist for tests and for framing the nav inside a spec surface like this one.' },
+      { k:'Foot switcher', v:'A single button, not a menu. It names the wing you are going to and lists that wing’s sections beneath, so the destination is never a guess.' },
+      { k:'“More tools”', v:'An in-section disclosure inside Workbench holding magic squares, voces magicae, gematria, transliteration, and the voces library. Collapsed by default; nothing is deleted.' },
+      { k:'Awaiting judgment', v:'Lives in Study with a quiet count. This is the review queue for entries carrying an undischarged verdict — the only number in the practice wing, and it is a workload, not a score.' }
+    ];
+    const segBase={ padding:'5px 11px', fontFamily:'var(--font-ui)', fontSize:'12px', color:'var(--ink-mute)', background:'transparent', border:'1px solid transparent', borderRadius:'6px' };
+    const segOn={ ...segBase, color:'var(--ink)', background:'var(--accent-soft)', borderColor:'var(--line-2)' };
+    const seg=(t)=>(t===theme?segOn:segBase);
+    const R=React.createElement;
+    const moon=R('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.6,strokeLinecap:'round',strokeLinejoin:'round'},R('path',{d:'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z'}));
+    const sun=R('svg',{width:16,height:16,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.6,strokeLinecap:'round',strokeLinejoin:'round'},R('circle',{cx:12,cy:12,r:4}),R('path',{d:'M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4'}));
+    return { theme, mode, isBase:theme==='base', isHel:theme==='hellenic', isThe:theme==='thelemic',
+      onBase:()=>setTheme('base'), onHel:()=>setTheme('hellenic'), onThe:()=>setTheme('thelemic'),
+      toggleMode:()=>this.setState(s=>({mode:s.mode==='dark'?'light':'dark'})), modeIcon:mode==='dark'?moon:sun,
+      segBase:seg('base'), segHel:seg('hellenic'), segThe:seg('thelemic'), frames, contract };
+  }
+}
+</script>
+</body>
+</html>

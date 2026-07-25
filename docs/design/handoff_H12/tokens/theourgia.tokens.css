@@ -1,0 +1,353 @@
+/* ============================================================================
+   THEOURGIA — Design Tokens
+   ----------------------------------------------------------------------------
+   The portable token layer behind every Theourgia surface. Drop this file in,
+   then style with var(--token) only — never hard-coded colors or fonts.
+
+   HOW THEMING WORKS
+   -----------------
+   Two independent axes, set as attributes on any ancestor (usually <html> or
+   the app root):
+
+     <html data-theme="base|hellenic|thelemic" data-mode="dark|light">
+
+   • data-theme  swaps brand identity — including the *display font* (base→Cardo,
+                 hellenic→GFS Didot, thelemic→Cinzel) and the accent + category
+                 hues. This proves font-and-color themeability from one attribute.
+   • data-mode   swaps the surface/ink ramp between dark (leads) and light.
+
+   The cascade is: :root (base + dark defaults) → [data-theme=…] overrides →
+   [data-mode="light"] overrides. Later rules win, so a theme sets accent/fonts
+   and mode sets surfaces; they compose cleanly.
+
+   Tokens only ever change *values* across themes/modes — never their *names* —
+   so any component built on var(--token) re-skins for free.
+
+   Per-script faces (--font-hebrew, --font-arabic, …) are constant across themes;
+   apply them on elements whose lang/script needs them.
+
+   Accessibility: contrast pairs are tuned for WCAG 2.2 AA in both modes.
+   high-contrast / colorblind-safe / reduced-motion variants attach as additional
+   [data-*] blocks following the same pattern (stubs at the foot of this file).
+   ============================================================================ */
+
+:root {
+  /* — Type roles ————————————————————————————————————————————————
+     --font-display is overridden per theme (see below). The rest are constant. */
+  --font-display: 'Cardo', Georgia, serif;     /* titles, headings, ritual text */
+  --font-serif:   'Cardo', Georgia, serif;     /* body / long-form / polytonic   */
+  --font-ui:      'Inria Sans', system-ui, sans-serif; /* labels, controls, meta */
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace; /* keys, UUIDs, gematria */
+  --font-glyph:   'Noto Sans Symbols', 'Cardo', serif; /* planetary / alchemical glyphs */
+
+  /* Per-script faces (constant across themes) */
+  --font-hebrew: 'Frank Ruhl Libre', serif;
+  --font-arabic: 'Noto Naskh Arabic', serif;
+  --font-deva:   'Noto Serif Devanagari', serif;
+  --font-coptic: 'Noto Sans Coptic', serif;
+  --font-cjk:    'Noto Serif SC', serif;        /* I Ching hexagram names (乾, 明夷, …) */
+  --font-rune:   'Noto Sans Runic', 'Noto Sans Symbols', serif; /* Elder Futhark staves (ᚠ ᚢ ᚦ …) */
+
+  /* — Type scale (px / line-height) ——————————————————————————————— */
+  --type-hero:    clamp(40px, 6vw, 68px); --leading-hero: 1.04;
+  --type-h1:      34px; --leading-h1: 1.1;
+  --type-h2:      27px; --leading-h2: 1.15;
+  --type-h3:      18px; --leading-h3: 1.2;
+  --type-body-lg: 18px;
+  --type-body:    16px; --leading-body: 1.62;
+  --type-body-sm: 14px;
+  --type-ui:      13px;
+  --type-caption: 11px;
+  --tracking-eyebrow: .16em;
+  --tracking-tight:  -.01em;
+
+  /* — Surfaces & ink (DARK is the default mode) ——————————————————— */
+  --bg:      #15120D;  /* page ground            */
+  --bg-2:    #1C1812;  /* card / panel surface   */
+  --bg-3:    #231E16;  /* raised / hover surface */
+  --bg-sunk: #100D09;  /* wells, insets, code    */
+
+  --line:    rgba(236,229,214,.10); /* hairline divider / border       */
+  --line-2:  rgba(236,229,214,.20); /* stronger border / input outline */
+
+  --ink:      #ECE5D6; /* high-emphasis text  */
+  --ink-soft: #BCB29D; /* body text           */
+  --ink-mute: #897F6B; /* captions, metadata  */
+
+  /* — Accent (overridden per theme) ——————————————————————————————— */
+  --accent:      #C7A24C;                 /* the single brand gold        */
+  --accent-ink:  #15120D;                 /* text/icon ON an accent fill  */
+  --accent-soft: rgba(199,162,76,.14);    /* tinted accent backgrounds    */
+
+  /* — Semantic ————————————————————————————————————————————————————— */
+  --info:    #7E91CE;
+  --success: #6BA892;
+  --warning: #C9A24C;
+  --warn:      #C99A3C;                    /* Workshop caution — invalid formula, passed election, personal-only (never red) */
+  --warn-soft: rgba(201,154,60,.14);
+  --warn-border: rgba(201,154,60,.45);
+  --danger:  #C8554A;
+  --danger-bg:     rgba(200,85,74,.12);
+  /* Analytics visualisation palette (H06) — muted, no-red, theme-re-skinned per data series */
+  --chart-1: #C7A24C; --chart-2: #7E91CE; --chart-3: #6BA892; --chart-4: #A98AC0; --chart-5: #C99A3C; --chart-6: #8FA4B8;
+  --danger-border: rgba(200,85,74,.45);
+  --care:      #C9A86A;                    /* wellbeing/check-in — calm, never red */
+  --care-soft: rgba(201,168,106,.12);
+  --care-line: rgba(201,168,106,.40);
+  /* Daily Practice: a SKIPPED day is neutral information, never a failure (never red). */
+  --skip:      var(--ink-mute);
+  --skip-soft: color-mix(in srgb, var(--ink-mute) 16%, transparent);
+  --trance:    #6B7FB0;                    /* scrying trance-mode accent (Divination Misc) */
+
+  /* — Category accents (the six practice domains) ————————————————— */
+  --c-journal:       #CDBE9E;
+  --c-divination:    #7E91CE;
+  --c-working:       #C2554A;
+  --c-entity:        #C9A24C;
+  --c-library:       #BC8050;
+  --c-synchronicity: #6BA892;
+
+  /* — Elemental accents (circle / talisman work) —————————————————— */
+  --air:   #C7B36A;
+  --fire:  #C2554A;
+  --water: #5E8FA8;
+  --earth: #6E8E63;
+
+  /* — Money (H07 · sober transactional confirm — NOT --success [too "complete"], NOT --accent [brand]) — */
+  --money:      #6E9C72;                    /* muted sage-green: active/paid/connected */
+  --money-soft: rgba(110,156,114,.14);
+  --money-line: rgba(110,156,114,.42);
+  /* — Pilgrimage map (H07 · four site-kinds + base marker) ——————————— */
+  --map-sacred:    #C9A24C;
+  --map-ancestral: #A98AC0;
+  --map-working:   #C2554A;
+  --map-pilgrimage:#5E8FA8;
+  --map-other:     #8FA4B8;
+
+  /* — Radii ————————————————————————————————————————————————————————— */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 14px;
+  --r-pill: 999px;
+
+  /* — Spacing ramp ————————————————————————————————————————————————— */
+  --space-1: 6px;  --space-2: 10px; --space-3: 14px;
+  --space-4: 20px; --space-5: 28px; --space-6: 38px; --space-7: 52px;
+
+  /* — Elevation (shadow carries depth; surfaces stay matte) ——————— */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.30);
+  --shadow-md: 0 8px 24px rgba(0,0,0,.35);
+  --shadow-lg: 0 22px 48px rgba(0,0,0,.50);
+
+  /* — Motion (short, restrained, no bounce) ——————————————————————— */
+  --transition-color: color .15s ease, background-color .15s ease, border-color .15s ease;
+  --transition-all:   all .16s ease;
+
+  /* — Layout widths ———————————————————————————————————————————————— */
+  --maxw-doc:  1080px;  /* public document column     */
+  --nav-w:     248px;   /* app sidebar (VaultNav)      */
+}
+
+/* ============================================================================
+   THEME — Hellenic  (display → GFS Didot; cooler, greener neutrals)
+   ============================================================================ */
+[data-theme="hellenic"] {
+  --font-display: 'GFS Didot', serif;
+
+  --bg: #0F1311; --bg-2: #161B18; --bg-3: #1D2420; --bg-sunk: #0B0F0D;
+  --line: rgba(226,231,222,.10); --line-2: rgba(226,231,222,.20);
+  --ink: #E9EADE; --ink-soft: #AEB6A4; --ink-mute: #7C8474;
+
+  --accent: #BFA15B; --accent-ink: #0F1311; --accent-soft: rgba(191,161,91,.14);
+
+  --info: #5E9BA6; --success: #5E9BA6; --warning: #BFA15B; --danger: #B5573F;
+  --danger-border: rgba(181,87,63,.45);
+  --care: #9FB89A; --care-soft: rgba(159,184,154,.12); --care-line: rgba(159,184,154,.40);
+
+  --c-divination: #5E9BA6; --c-working: #B5573F; --c-synchronicity: #5E9BA6;
+  --c-library: #A88A52; --c-entity: #BFA15B; --c-journal: #CDBE9E;
+
+  --fire: #B5573F; --water: #5E9BA6; --earth: #6E8E63; --air: #BFA15B;
+  --trance: #5E8FA6;
+}
+
+/* ============================================================================
+   THEME — Thelemic  (display → Cinzel; warmer, redder, higher contrast)
+   ============================================================================ */
+[data-theme="thelemic"] {
+  --font-display: 'Cinzel', serif;
+
+  --bg: #100B09; --bg-2: #191210; --bg-3: #201714; --bg-sunk: #0A0706;
+  --line: rgba(239,227,203,.12); --line-2: rgba(239,227,203,.22);
+  --ink: #EFE3CB; --ink-soft: #C5B493; --ink-mute: #8C7B5E;
+
+  --accent: #CDA53E; --accent-ink: #100B09; --accent-soft: rgba(205,165,62,.15);
+
+  --info: #B58A3C; --success: #9A8F4E; --warning: #CDA53E; --danger: #C5392B;
+  --danger-border: rgba(197,57,43,.50);
+  --care: #CBA75A; --care-soft: rgba(203,167,90,.12); --care-line: rgba(203,167,90,.40);
+
+  --c-working: #C5392B; --c-divination: #B58A3C; --c-entity: #CDA53E;
+  --c-library: #B97A3A; --c-synchronicity: #9A8F4E; --c-journal: #CDBE9E;
+
+  --fire: #C5392B; --water: #4F87A0; --earth: #7A8A52; --air: #CDA53E;
+  --trance: #8A7FB0;
+}
+
+/* ============================================================================
+   MODE — Light  (applies on top of any theme; surfaces + ink invert)
+   ============================================================================ */
+[data-mode="light"] {
+  --bg: #EFE7D4; --bg-2: #F6F0E1; --bg-3: #FBF7EC; --bg-sunk: #E6DCC6;
+  --line: rgba(40,32,22,.14); --line-2: rgba(40,32,22,.26);
+  --ink: #2A2316; --ink-soft: #5A5040; --ink-mute: #867B66;
+
+  --accent: #9A6E22; --accent-ink: #FBF7EC; --accent-soft: rgba(154,110,34,.14);
+  --money: #3E7A5E; --money-soft: rgba(62,122,94,.13); --money-line: rgba(62,122,94,.4);
+  --warn: #8A6A2E; --warn-soft: rgba(138,106,46,.12); --warn-border: rgba(138,106,46,.4);
+  --care: #8A6A2E; --care-soft: rgba(138,106,46,.10); --care-line: rgba(138,106,46,.34);
+
+  --shadow-sm: 0 1px 3px rgba(40,32,22,.10);
+  --shadow-md: 0 8px 24px rgba(40,32,22,.14);
+  --shadow-lg: 0 22px 48px rgba(40,32,22,.20);
+  --trance: #52659E;
+}
+
+/* ============================================================================
+   ACCESSIBILITY VARIANTS — same attribute pattern; fill in as adopted.
+   ============================================================================ */
+
+/* Reduced motion — honor OS preference everywhere. */
+@media (prefers-reduced-motion: reduce) {
+  :root { --transition-color: none; --transition-all: none; }
+}
+
+/* High contrast — raise ink contrast, harden borders, drop alpha tints to solids.
+   Pair with the active theme/mode; works on top of either dark or light. */
+[data-contrast="high"] {
+  --ink-soft: var(--ink);
+  --ink-mute: var(--ink);
+  --line:    rgba(236,229,214,.32);
+  --line-2:  rgba(236,229,214,.62);
+  --accent-soft: rgba(199,162,76,.30);
+  --care-line:   var(--care);
+  --danger-border: var(--danger);
+}
+[data-contrast="high"][data-mode="light"] {
+  --line:   rgba(40,32,22,.34);
+  --line-2: rgba(40,32,22,.66);
+  --accent-soft: rgba(154,110,34,.26);
+}
+
+/* Colorblind-safe semantic set — a blue/amber/vermilion triad that stays
+   distinguishable under deuteranopia & protanopia (the red/green confusions).
+   ALWAYS pair color with an icon or shape; color alone is never the only cue. */
+[data-cvd="safe"] {
+  --info:    #4F86C6;   /* blue        */
+  --success: #1F9FA6;   /* teal-cyan   — reads distinct from warning/danger */
+  --warning: #E0A93B;   /* amber       */
+  --danger:  #D5562B;   /* vermilion   — kept far from teal in luminance */
+  --danger-border: rgba(213,86,43,.5);
+  --c-divination: #4F86C6; --c-synchronicity: #1F9FA6; --c-working: #D5562B;
+  --water: #4F86C6; --earth: #1F9FA6; --fire: #D5562B; --air: #E0A93B;
+}
+
+/* ============================================================================
+   H08 · Federation + ActivityPub (Phase 12 + 13)
+   --network-*  hub/community chrome (calm teal-slate; NOT --seal violet, NOT --accent)
+   --peer-*     four handshake states (ok/pending/refused/blocked) — all --warn family, NONE --danger (rule 2)
+   --planetary-hour-now  the in-the-moment planetary-hour chip on group-ritual surfaces
+   --remote-*   federated / AP-sourced content chrome (the "‡ from {instance}" chip)
+   ============================================================================ */
+:root {
+  --network:      #5E8FA8;  --network-soft: rgba(94,143,168,.14);  --network-line: rgba(94,143,168,.42);
+  --peer-ok:      #6BA892;  --peer-ok-soft:      rgba(107,168,146,.16);
+  --peer-pending: #C99A3C;  --peer-pending-soft: rgba(201,154,60,.16);
+  --peer-refused: #BC7A5A;  --peer-refused-soft: rgba(188,122,90,.16);   /* warn-family, never --danger */
+  --peer-blocked: #A8705C;  --peer-blocked-soft: rgba(168,112,92,.18);
+  --planetary-hour-now: #D8A14A;  --planetary-hour-now-soft: rgba(216,161,74,.16);
+  --remote:       #8FA4B8;  --remote-soft:  rgba(143,164,184,.14);
+}
+[data-theme="hellenic"] {
+  --network: #5E9BA6; --network-soft: rgba(94,155,166,.14); --network-line: rgba(94,155,166,.42);
+  --peer-ok: #6E9C72; --peer-ok-soft: rgba(110,156,114,.16);
+  --planetary-hour-now: #BFA15B; --planetary-hour-now-soft: rgba(191,161,91,.16);
+  --remote: #8FA8C0; --remote-soft: rgba(143,168,192,.14);
+}
+[data-theme="thelemic"] {
+  --network: #7E91CE; --network-soft: rgba(126,145,206,.14); --network-line: rgba(126,145,206,.42);
+  --planetary-hour-now: #CDA53E; --planetary-hour-now-soft: rgba(205,165,62,.16);
+  --remote: #A98AC0; --remote-soft: rgba(169,138,192,.14);
+}
+[data-mode="light"] {
+  --network: #3F6E86; --network-soft: rgba(63,110,134,.12); --network-line: rgba(63,110,134,.4);
+  --peer-ok: #3E7A5E; --peer-ok-soft: rgba(62,122,94,.13);
+  --peer-pending: #8A6A2E; --peer-pending-soft: rgba(138,106,46,.12);
+  --peer-refused: #93512F; --peer-refused-soft: rgba(147,81,47,.12);
+  --peer-blocked: #834A33; --peer-blocked-soft: rgba(131,74,51,.14);
+  --planetary-hour-now: #9A6E22; --planetary-hour-now-soft: rgba(154,110,34,.13);
+  --remote: #52659E; --remote-soft: rgba(82,101,158,.12);
+}
+
+/* ============================================================================
+   H09 · Plugin Ecosystem (Phase 14)
+   All aliases of existing families — H09 introduces NO new hues (rule 2/29).
+   --plugin-active   = --peer-ok       (running plugin chip — green-slate)
+   --plugin-error    = --peer-pending  (load/runtime error chip — warn amber, NEVER --danger)
+   --plugin-disabled-line  neutral grey for deactivated-plugin card border
+   --sandbox-frame   = --remote        (sandbox-content card border + "‡ in sandbox" chip)
+   --tombstone-soft  --ink-mute family for the "‡ tombstoned by author" badge
+   Trust tiers render with NEUTRAL chrome (rule 29): Official=--peer-ok-soft,
+   Community=--network-soft, Unverified=--ink-mute border. No red/green, no score.
+   ============================================================================ */
+:root {
+  --plugin-active:      var(--peer-ok);       --plugin-active-soft: var(--peer-ok-soft);
+  --plugin-error:       var(--peer-pending);  --plugin-error-soft:  var(--peer-pending-soft);
+  --plugin-disabled-line: rgba(236,229,214,.20);
+  --sandbox-frame:      var(--remote);        --sandbox-frame-soft: var(--remote-soft);
+  --tombstone-soft:     rgba(160,150,128,.14);
+}
+[data-theme="hellenic"] { --plugin-disabled-line: rgba(226,231,222,.20); --tombstone-soft: rgba(139,147,130,.14); }
+[data-theme="thelemic"] { --plugin-disabled-line: rgba(239,227,203,.22); --tombstone-soft: rgba(156,138,108,.14); }
+[data-mode="light"]     { --plugin-disabled-line: rgba(40,32,22,.20);    --tombstone-soft: rgba(118,107,87,.13); }
+
+/* ============================================================================
+   H11 · Journal auto-context: moon · weather · calendars (Phase 17)
+   Three quiet celestial/atmospheric accents for the EntryContextBanner chips.
+   Distinct hues (a banner reads at a glance) but all low-chroma — context is
+   ambient, never louder than the entry itself. Weather reuses --network family
+   (sky). --context-absent = --ink-mute family for the offline "—" state (rule 61:
+   an unreachable field is ABSENT, never synthesised). Reveal chip on the viewer
+   uses --seal (the practitioner's own disclosure choice, per-entry, rule 62).
+   ============================================================================ */
+:root {
+  --moon:    #9FA6C4;  --moon-soft:    rgba(159,166,196,.15);   /* cool lunar silver-violet */
+  --weather: var(--network);  --weather-soft: var(--network-soft);  /* sky */
+  --hour:    #C9A24C;  --hour-soft:    rgba(201,162,76,.14);    /* planetary gold (= --accent family) */
+  --context-absent: rgba(160,150,128,.14);   /* offline/unset field — absent, not fabricated */
+}
+[data-theme="hellenic"] { --moon: #93A0B4; --moon-soft: rgba(147,160,180,.15); --hour: #BFA15B; --hour-soft: rgba(191,161,91,.14); --context-absent: rgba(139,147,130,.14); }
+[data-theme="thelemic"] { --moon: #A79ACE; --moon-soft: rgba(167,154,206,.16); --hour: #CDA53E; --hour-soft: rgba(205,165,62,.14); --context-absent: rgba(156,138,108,.14); }
+[data-mode="light"]     { --moon: #5A6291; --moon-soft: rgba(90,98,145,.13);   --hour: #9A6E22; --hour-soft: rgba(154,110,34,.13); --context-absent: rgba(118,107,87,.13); }
+
+/* ============================================================================
+   H12 · The Keybearer's Record (practice-first nav + 4 practice surfaces)
+   ALL ALIASES — no new hues. The rite stations, the two gates, and the ladder
+   spheres are STATES, not scores: they borrow the existing state family so
+   nothing in the practice surfaces can read as a reward or a punishment.
+   --station-missed / --gate-fail are deliberately NOT --danger (rule 2) and
+   NOT red: a missed dusk station is an absence, not an alarm.
+   ============================================================================ */
+:root {
+  --lunar:          var(--moon);       --lunar-soft:   var(--moon-soft);
+  --station-done:   var(--peer-ok);    --station-done-soft: var(--peer-ok-soft);
+  --station-due:    var(--accent);     --station-due-soft:  var(--accent-soft);
+  --station-missed: var(--ink-mute);   --station-missed-soft: var(--context-absent);
+  --gate-pass:      var(--peer-ok);    --gate-pass-soft: var(--peer-ok-soft);
+  --gate-fail:      var(--warn);       --gate-fail-soft: var(--warn-soft);
+  --gate-open:      var(--ink-mute);   --gate-open-soft: var(--context-absent);
+  --sphere-current: var(--accent);     --sphere-current-soft: var(--accent-soft);
+  --sphere-done:    var(--peer-ok);    --sphere-done-soft: var(--peer-ok-soft);
+  --sphere-locked:  var(--ink-mute);
+  --covenant:       var(--seal);       --covenant-soft: var(--seal-soft);  --covenant-line: var(--seal-border);
+}

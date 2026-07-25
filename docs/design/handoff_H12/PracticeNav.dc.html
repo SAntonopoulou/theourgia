@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<aside class="scroll om-aside pn-aside" data-nav-mode="{{ navMode }}" data-wing="{{ wing }}" style="height:100%;background:var(--bg-sunk);border-right:1px solid var(--line);overflow-y:auto;display:flex;flex-direction:column;padding:16px 12px 14px;font-family:var(--font-serif)">
+
+  <a href="TodayPracticeDashboard.dc.html" class="pn-brand" style="display:flex;align-items:center;gap:11px;padding:5px 7px 15px;text-decoration:none;color:var(--ink)">
+    <svg width="28" height="28" viewBox="0 0 40 40" fill="none" aria-hidden="true" style="flex:none"><circle cx="20" cy="20" r="17.5" stroke="var(--accent)" stroke-width="1.4"/><circle cx="20" cy="20" r="12" stroke="var(--accent)" stroke-width="1" opacity=".55"/><line x1="9.5" y1="20" x2="30.5" y2="20" stroke="var(--accent)" stroke-width="1.4"/></svg>
+    <span class="pn-label" style="font-family:var(--font-display);font-size:20px;letter-spacing:.04em">Theourgia</span>
+  </a>
+
+  <button class="pn-capture" style="display:flex;align-items:center;gap:10px;width:100%;padding:9px 11px;margin-bottom:15px;border:1px solid var(--line-2);border-radius:var(--r-md);background:var(--accent-soft);color:var(--ink);font-family:var(--font-ui);font-size:13.5px;font-weight:700;text-align:left" style-hover="border-color:var(--accent)">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" style="flex:none"><path d="M12 5v14M5 12h14"/></svg>
+    <span class="pn-label">Quick capture</span>
+    <span class="pn-label" style="margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--ink-mute)">⌘K</span>
+  </button>
+
+  <!-- ══ PRACTICE WING ══ -->
+  <sc-if value="{{ isPractice }}" hint-placeholder-val="{{ true }}">
+    <div class="pn-head" style="{{ headStyle }}">Practice</div>
+    <a href="TodayPracticeDashboard.dc.html" style="{{ sToday }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Today"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.2 5.2l1.8 1.8M17 17l1.8 1.8M18.8 5.2L17 7M7 17l-1.8 1.8"/></svg></span><span class="pn-label">Today</span></a>
+    <a href="Theourgia Journal.dc.html" style="{{ sJournal }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Journal"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-2-1.3-4.6-1.5-7-.9v12.4c2.4-.6 5-.4 7 .9 2-1.3 4.6-1.5 7-.9V5.1c-2.4-.6-5-.4-7 .9z"/><path d="M12 6v12.4"/></svg></span><span class="pn-label">Journal</span></a>
+    <a href="Theourgia Daily Practice Tracker.dc.html" style="{{ sDaily }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Daily rite"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 15h14M3.5 19h17M12 3v5M9 6l3-3 3 3"/><path d="M5 15a7 7 0 0 1 14 0"/></svg></span><span class="pn-label">Daily rite</span></a>
+    <a href="Theourgia Practice Logs.dc.html" style="{{ sLogs }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Practice log"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h9l3 3v13H6z"/><path d="M9 9h6M9 12.5h6M9 16h4"/></svg></span><span class="pn-label">Practice log</span></a>
+
+    <div class="pn-head" style="{{ headStyle }}">Reference</div>
+    <a href="Theourgia Entities.dc.html" style="{{ sEntities }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Magical beings"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6.5h12M7 9.5h10M9 9.5v8M15 9.5v8M5 20.5h14"/><circle cx="12" cy="4" r="1.5"/></svg></span><span class="pn-label">Magical beings</span></a>
+    <a href="#" style="{{ sLibrary }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Library"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4.5" width="5" height="15" rx="1"/><rect x="10" y="4.5" width="5" height="15" rx="1"/><path d="M15.6 6l3.4 1 2.4 13.5-3.4-1z"/></svg></span><span class="pn-label">Library</span></a>
+    <a href="#" style="{{ sCalendar }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Calendar"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></svg></span><span class="pn-label">Calendar</span></a>
+
+    <div class="pn-head" style="{{ headStyle }}">Workbench</div>
+    <a href="Theourgia Tarot.dc.html" style="{{ sDivination }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Divination"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/></svg></span><span class="pn-label">Divination</span></a>
+    <a href="AstragaloiCasting.dc.html" style="{{ sAstragaloi }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Astragaloi"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 5.5h11a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-11a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z"/><circle cx="9" cy="9" r=".9" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r=".9" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r=".9" fill="currentColor" stroke="none"/></svg></span><span class="pn-label">Astragaloi</span></a>
+    <a href="Theourgia Sigil Generator.dc.html" style="{{ sSigil }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Sigils"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 4.5l6.5 11.3H5.5z"/></svg></span><span class="pn-label">Sigils</span></a>
+    <a href="Theourgia Talisman Designer.dc.html" style="{{ sTalismans }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Talismans"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l3 5 5.5 1-4 4 1 5.5-5.5-3-5.5 3 1-5.5-4-4 5.5-1z"/></svg></span><span class="pn-label">Talismans</span></a>
+    <a href="Theourgia Magical Circle.dc.html" style="{{ sCircle }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Magical circle"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg></span><span class="pn-label">Magical circle</span></a>
+    <a href="Theourgia Tool Registry.dc.html" style="{{ sTools }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Tool registry"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5-9.5 9.5-5-5z"/><path d="M9 10l-4.5 4.5M16.5 2.5l1.6 1.6"/><circle cx="6" cy="18" r="1"/></svg></span><span class="pn-label">Tool registry</span></a>
+    <button onClick="{{ toggleMore }}" aria-expanded="{{ moreOpen }}" class="pn-more" style="{{ moreStyle }}" style-hover="color:var(--ink)"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="18" cy="12" r="1.3"/></svg></span><span class="pn-label" style="flex:1;min-width:0;text-align:left">{{ moreLabel }}</span></button>
+    <sc-if value="{{ moreOpen }}" hint-placeholder-val="{{ false }}">
+      <a href="Theourgia Magic Squares.dc.html" style="{{ sSub }}" style-hover="color:var(--ink)"><span class="pn-label">Magic squares</span></a>
+      <a href="Theourgia Voces Magicae Recorder.dc.html" style="{{ sSub }}" style-hover="color:var(--ink)"><span class="pn-label">Voces magicae</span></a>
+      <a href="Theourgia Gematria Calculator.dc.html" style="{{ sSub }}" style-hover="color:var(--ink)"><span class="pn-label">Gematria</span></a>
+      <a href="Theourgia Transliteration Utility.dc.html" style="{{ sSub }}" style-hover="color:var(--ink)"><span class="pn-label">Transliteration</span></a>
+      <a href="Theourgia Voces Magicae Library Browser.dc.html" style="{{ sSub }}" style-hover="color:var(--ink)"><span class="pn-label">Voces library</span></a>
+    </sc-if>
+
+    <div class="pn-head" style="{{ headStyle }}">Study</div>
+    <a href="Theourgia Synchronicity Log.dc.html" style="{{ sSync }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Synchronicities"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v6M12 15v6M3 12h6M15 12h6M6.5 6.5l3.2 3.2M14.3 14.3l3.2 3.2M17.5 6.5l-3.2 3.2M9.7 14.3l-3.2 3.2"/></svg></span><span class="pn-label">Synchronicities</span></a>
+    <a href="TetraktysLadder.dc.html" style="{{ sLadder }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Tetraktys ladder"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="4.6" r="1.5"/><circle cx="8.6" cy="10" r="1.5"/><circle cx="15.4" cy="10" r="1.5"/><circle cx="5.2" cy="15.4" r="1.5"/><circle cx="12" cy="15.4" r="1.5"/><circle cx="18.8" cy="15.4" r="1.5"/><circle cx="6.5" cy="20.5" r="1.2"/><circle cx="12" cy="20.5" r="1.2"/><circle cx="17.5" cy="20.5" r="1.2"/></svg></span><span class="pn-label">Tetraktys ladder</span></a>
+    <a href="TwoGateVerdict.dc.html" style="{{ sJudgment }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Awaiting judgment"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M6 8h12M8.5 8l-3 5h6zM15.5 8l-3 5h6z"/></svg></span><span class="pn-label" style="flex:1;min-width:0">Awaiting judgment</span><sc-if value="{{ hasPending }}" hint-placeholder-val="{{ true }}"><span class="pn-label" style="font-family:var(--font-mono);font-size:11px;color:var(--ink-mute)">{{ pendingCount }}</span></sc-if></a>
+    <a href="Theourgia Analytics Dashboard.dc.html" style="{{ sAnalytics }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Analytics"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v16h16"/><path d="M8 16v-3M12 16v-7M16 16v-5M20 16v-9"/></svg></span><span class="pn-label">Analytics</span></a>
+  </sc-if>
+
+  <!-- ══ PLATFORM WING ══ -->
+  <sc-if value="{{ isPlatform }}" hint-placeholder-val="{{ false }}">
+    <div class="pn-head" style="{{ headStyle }}">Publishing</div>
+    <a href="Theourgia Publications.dc.html" style="{{ sPublications }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Publications"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h9l3 3v13H5z"/><path d="M5 7.5h9M9 4v16"/></svg></span><span class="pn-label">Publications</span></a>
+    <a href="Theourgia Subscribers.dc.html" style="{{ sSubscribers }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Subscribers"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 6a3 3 0 0 1 0 6M18 19a5.5 5.5 0 0 0-3-5"/></svg></span><span class="pn-label">Subscribers</span></a>
+    <a href="Theourgia Media Library.dc.html" style="{{ sMedia }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Media library"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="14" rx="1.6"/><path d="M4 15l4-4 3 3 4-5 5 6"/><circle cx="9" cy="9" r="1.3"/></svg></span><span class="pn-label">Media library</span></a>
+    <a href="Theourgia Audio Library.dc.html" style="{{ sAudio }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Audio library"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10v4M8 7v10M12 5v14M16 8v8M20 10v4"/></svg></span><span class="pn-label">Audio library</span></a>
+    <a href="Theourgia Pilgrimage Map.dc.html" style="{{ sPilgrimage }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Pilgrimage map"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.3 7-11.5A7 7 0 0 0 5 9.5C5 14.7 12 21 12 21z"/><circle cx="12" cy="9.3" r="2.4"/></svg></span><span class="pn-label">Pilgrimage map</span></a>
+    <a href="Theourgia iCal Feed.dc.html" style="{{ sIcal }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Calendar feed"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="16" rx="1.6"/><path d="M4 9.5h16M8 3.5v3M16 3.5v3M9 14l2 2 4-4"/></svg></span><span class="pn-label">Calendar feed</span></a>
+
+    <div class="pn-head" style="{{ headStyle }}">Network</div>
+    <a href="Theourgia Ritual Feed.dc.html" style="{{ sFeed }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Ritual feed"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span><span class="pn-label">Ritual feed</span></a>
+    <a href="Theourgia My Networks.dc.html" style="{{ sHubs }}" style-hover="background:var(--bg-2);color:var(--ink)" title="My networks"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="3"/><circle cx="5.5" cy="17" r="2.5"/><circle cx="18.5" cy="17" r="2.5"/><path d="M12 10v3M10 14l-3 2M14 14l3 2"/></svg></span><span class="pn-label">My networks</span></a>
+    <a href="Theourgia Followers Pane.dc.html" style="{{ sFollowers }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Followers"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16.5 6.2a3 3 0 0 1 0 5.6M20 19a5.5 5.5 0 0 0-3.2-5"/></svg></span><span class="pn-label">Followers</span></a>
+    <a href="Theourgia Private Viewer Management.dc.html" style="{{ sViewers }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Private viewers"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.5"/><path d="M19 5l-2 2M5 19l2-2"/></svg></span><span class="pn-label">Private viewers</span></a>
+
+    <div class="pn-head" style="{{ headStyle }}">Platform</div>
+    <a href="Theourgia Installed Plugins.dc.html" style="{{ sPlugins }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Plugins"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v3.5M15 3v3.5M6 6.5h12v5a6 6 0 0 1-12 0z"/><path d="M12 17.5V21"/></svg></span><span class="pn-label">Plugins</span></a>
+    <a href="Theourgia Bundle Library.dc.html" style="{{ sBundles }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Bundles"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4.5c-1.4 0-2.2 1-2.2 2.2S5.6 9 7 9M7 4.5h11v15H7M7 9v10.5M7 19.5c-1.4 0-2.2-1-2.2-2.2"/><path d="M11 9h4M11 12.5h4"/></svg></span><span class="pn-label">Bundles</span></a>
+    <a href="Theourgia Sandbox Browser.dc.html" style="{{ sSandbox }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Sandbox"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5h16M5.5 19.5l2-9h9l2 9M9 10.5V7a3 3 0 0 1 6 0v3.5"/></svg></span><span class="pn-label">Sandbox</span></a>
+    <a href="C1_AgentsHome.dc.html" style="{{ sAgents }}" style-hover="background:var(--bg-2);color:var(--ink)" title="Agents"><span style="{{ icoStyle }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8" width="14" height="11" rx="2.5"/><path d="M12 3v3M9 13h0M15 13h0M9.5 16.5h5"/><path d="M3.5 12v3M20.5 12v3"/></svg></span><span class="pn-label">Agents</span></a>
+  </sc-if>
+
+  <!-- ══ WING SWITCHER (the answer to the design question) ══ -->
+  <button onClick="{{ toggleWing }}" class="pn-switch" style="{{ switchStyle }}" style-hover="border-color:var(--line-2);color:var(--ink)" title="{{ switchTitle }}">
+    <span style="{{ icoStyle }}">{{ switchIcon }}</span>
+    <span class="pn-label" style="flex:1;min-width:0;text-align:left;line-height:1.25"><span style="display:block;font-family:var(--font-ui);font-size:13px;color:var(--ink)">{{ switchTitle }}</span><span style="display:block;font-family:var(--font-ui);font-size:10.5px;color:var(--ink-mute)">{{ switchSub }}</span></span>
+  </button>
+
+  <div class="pn-foot" style="padding-top:12px;border-top:1px solid var(--line);display:flex;align-items:center;gap:11px">
+    <span style="width:30px;height:30px;border-radius:50%;background:var(--accent-soft);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);color:var(--accent);font-size:14px;flex:none">Ε</span>
+    <div class="pn-label" style="line-height:1.2;min-width:0"><div style="font-family:var(--font-ui);font-size:13px;color:var(--ink)">Soror Ευ. Α.</div><div style="font-family:var(--font-ui);font-size:11px;color:var(--ink-mute)">Sphere 9 · second month</div></div>
+    <a href="B1_AccountSettings.dc.html" class="pn-label" aria-label="Settings" style="margin-left:auto;color:var(--ink-mute);display:flex" style-hover="color:var(--ink)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v2.5M12 19v2.5M21.5 12H19M5 12H2.5M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4L5.6 5.6"/></svg></a>
+  </div>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:248,&quot;height&quot;:800},&quot;active&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;today&quot;,&quot;journal&quot;,&quot;dailypractice&quot;,&quot;practicelogs&quot;,&quot;entities&quot;,&quot;library&quot;,&quot;calendar&quot;,&quot;divination&quot;,&quot;astragaloi&quot;,&quot;sigils&quot;,&quot;talismans&quot;,&quot;circles&quot;,&quot;tools&quot;,&quot;magicsquares&quot;,&quot;voces&quot;,&quot;gematria&quot;,&quot;translit&quot;,&quot;voceslib&quot;,&quot;synchronicities&quot;,&quot;ladder&quot;,&quot;awaitingjudgment&quot;,&quot;analytics&quot;,&quot;publications&quot;,&quot;subscribers&quot;,&quot;media&quot;,&quot;audio&quot;,&quot;pilgrimage&quot;,&quot;icalfeed&quot;,&quot;feed&quot;,&quot;networks&quot;,&quot;followers&quot;,&quot;privateviewers&quot;,&quot;plugins&quot;,&quot;bundles&quot;,&quot;sandbox&quot;,&quot;agents&quot;],&quot;default&quot;:&quot;today&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;wing&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;practice&quot;,&quot;platform&quot;],&quot;default&quot;:&quot;practice&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;navMode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;auto&quot;,&quot;drawer&quot;,&quot;rail&quot;,&quot;compact&quot;,&quot;full&quot;],&quot;default&quot;:&quot;auto&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { wing:(this.props&&this.props.wing)||'practice', moreOpen:false };
+  componentDidUpdate(prev){ if(this.props.wing&&prev.wing!==this.props.wing)this.setState({wing:this.props.wing}); }
+  renderVals(){
+    const active=(this.props&&this.props.active)||'today';
+    const navMode=(this.props&&this.props.navMode)||'auto';
+    const { wing, moreOpen } = this.state;
+    const rail = navMode==='rail';
+    const base={ display:'flex', alignItems:'center', gap:'11px', padding:'8px 10px', borderRadius:'8px',
+      color:'var(--ink-soft)', fontFamily:'var(--font-ui)', fontSize:'14px', marginBottom:'1px', textDecoration:'none' };
+    const on={ ...base, color:'var(--ink)', background:'var(--accent-soft)', boxShadow:'inset 2px 0 0 var(--accent)' };
+    const s=(k)=>(k===active?on:base);
+    const headStyle={ fontFamily:'var(--font-ui)', fontSize:'10px', letterSpacing:'.16em', textTransform:'uppercase',
+      color:'var(--ink-mute)', padding:'13px 10px 6px' };
+    const icoStyle={ display:'flex', flex:'none' };
+    const sSub={ display:'flex', alignItems:'center', padding:'6px 10px 6px 40px', borderRadius:'8px',
+      color:'var(--ink-mute)', fontFamily:'var(--font-ui)', fontSize:'13px', marginBottom:'1px', textDecoration:'none' };
+    const moreStyle={ ...base, color:'var(--ink-mute)', width:'100%', textAlign:'left' };
+    const isPractice = wing==='practice';
+    const R=React.createElement;
+    const gridIcon=R('svg',{width:18,height:18,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.5,strokeLinecap:'round',strokeLinejoin:'round'},
+      R('rect',{key:'a',x:4,y:4,width:6.5,height:6.5,rx:1.3}),R('rect',{key:'b',x:13.5,y:4,width:6.5,height:6.5,rx:1.3}),
+      R('rect',{key:'c',x:4,y:13.5,width:6.5,height:6.5,rx:1.3}),R('rect',{key:'d',x:13.5,y:13.5,width:6.5,height:6.5,rx:1.3}));
+    const backIcon=R('svg',{width:18,height:18,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:1.6,strokeLinecap:'round',strokeLinejoin:'round'},
+      R('path',{d:'M15 6l-6 6 6 6'}));
+    const switchStyle={ display:'flex', alignItems:'center', gap:'11px', width:'100%', marginTop:'auto',
+      padding:'10px 11px', marginBottom:'12px', border:'1px solid var(--line)', borderRadius:'var(--r-md)',
+      background:'var(--bg-2)', color:'var(--ink-soft)', textAlign:'left' };
+    return {
+      navMode, wing, isPractice, isPlatform:!isPractice,
+      headStyle, icoStyle, sSub, moreStyle, switchStyle,
+      moreOpen, toggleMore:()=>this.setState(s2=>({moreOpen:!s2.moreOpen})),
+      moreLabel: moreOpen ? 'Fewer tools' : 'More tools',
+      toggleWing:()=>this.setState(s2=>({wing:s2.wing==='practice'?'platform':'practice'})),
+      switchIcon: isPractice ? gridIcon : backIcon,
+      switchTitle: isPractice ? 'Platform' : 'Back to practice',
+      switchSub: isPractice ? 'Publishing · Network · Plugins' : 'Today · Journal · Workbench',
+      hasPending:true, pendingCount:'3',
+      sToday:s('today'), sJournal:s('journal'), sDaily:s('dailypractice'), sLogs:s('practicelogs'),
+      sEntities:s('entities'), sLibrary:s('library'), sCalendar:s('calendar'),
+      sDivination:s('divination'), sAstragaloi:s('astragaloi'), sSigil:s('sigils'), sTalismans:s('talismans'),
+      sCircle:s('circles'), sTools:s('tools'),
+      sSync:s('synchronicities'), sLadder:s('ladder'), sJudgment:s('awaitingjudgment'), sAnalytics:s('analytics'),
+      sPublications:s('publications'), sSubscribers:s('subscribers'), sMedia:s('media'), sAudio:s('audio'),
+      sPilgrimage:s('pilgrimage'), sIcal:s('icalfeed'),
+      sFeed:s('feed'), sHubs:s('networks'), sFollowers:s('followers'), sViewers:s('privateviewers'),
+      sPlugins:s('plugins'), sBundles:s('bundles'), sSandbox:s('sandbox'), sAgents:s('agents')
+    };
+  }
+}
+</script>
+</body>
+</html>
