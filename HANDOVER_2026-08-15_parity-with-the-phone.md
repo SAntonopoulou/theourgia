@@ -118,6 +118,29 @@ makes it a record.
 `/voces-library`, `backend/theourgia/api/routers/v1/voces.py`. That one really
 is "add it to the app", and Sophia wants it syncing both ways once it is there.
 
+### Email is decided, and mostly already here
+
+Sophia, 15 August: **Resend**, sending as **contact@theourgia.com**, shared
+across all three products. theourgia.com is on her Proton account.
+
+⚠ This backend already has the whole thing — `core/email/` is a backend
+protocol with console, null, smtp, resend, postmark, ses and mailgun behind
+`THEOURGIA_EMAIL_BACKEND`. So here it is **configuration**, not building:
+
+```sh
+THEOURGIA_EMAIL_BACKEND=resend
+THEOURGIA_EMAIL_DEFAULT_FROM=contact@theourgia.com
+THEOURGIA_RESEND_API_KEY=…
+```
+
+⚠ Those go in the compose `environment:` map for the backend service, **not
+only in `.env`** — this stack takes an explicit map, so a variable added to
+`.env` alone reaches nothing. That trap cost a restart on 15 August with
+`THEOURGIA_LINK_CODE_CLIENTS`; the fix is in `docker-compose.yml` beside it.
+
+astropractise has no email code at all and should copy this shape rather than
+invent a second one.
+
 ### The quick links are still not matched
 
 Sophia asked for the homepage quick links to match the phone's. They cannot
