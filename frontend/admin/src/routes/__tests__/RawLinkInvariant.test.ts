@@ -118,6 +118,7 @@ const ALLOWLIST: Readonly<Record<string, readonly string[]>> = {
     'href: "/settings/audit"',
     'href: "/settings/accessibility"',
     'href: "/settings/delete-account"',
+    'href: "/settings/linked-applications"',
   ],
   // Raw design defaults, overridden via subnavHrefFor at the admin call
   // site (AgentsHomeRoute SUBNAV_HREF). Kept raw for root-served hosts.

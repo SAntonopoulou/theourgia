@@ -4,9 +4,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { DEFAULT_VAULT_NAV } from "../VaultNav/index.js";
 import {
+  HAS_PLATFORM_WING,
+  HIDDEN_UNTIL_FINISHED,
   PLATFORM_WING_SECTIONS,
   PRACTICE_WING_SECTIONS,
   PracticeNav,
+  VISIBLE_PRACTICE_SECTIONS,
   wingForKey,
 } from "./index.js";
 
@@ -15,32 +18,65 @@ beforeEach(() => {
 });
 
 describe("PracticeNav — practice wing (default)", () => {
-  it("renders the four practice sections and no platform sections", () => {
+  it("renders only the sections the gate leaves standing", () => {
     render(<PracticeNav />);
-    for (const heading of ["Practice", "Reference", "Workbench", "Study"]) {
-      expect(screen.getByText(heading)).toBeInTheDocument();
+    // ⚠ Derived from the gate, not hard-coded. A test listing headings by
+    // hand goes stale the day a feature is finished, and then reads as a
+    // failure when it is actually the news.
+    for (const section of VISIBLE_PRACTICE_SECTIONS) {
+      expect(screen.getByText(section.heading)).toBeInTheDocument();
     }
-    // "Platform" appears as the switcher's destination label even on the
-    // practice wing, so platform-wing absence is checked via its items.
     expect(screen.queryByText("Publications")).toBeNull();
     expect(screen.queryByText("Ritual feed")).toBeNull();
     expect(screen.queryByText("Plugins")).toBeNull();
   });
 
-  it("renders all 17 practice-wing links", () => {
+  it("renders every VISIBLE practice-wing link", () => {
     render(<PracticeNav />);
-    const labels = PRACTICE_WING_SECTIONS.flatMap((s) => s.items.map((i) => i.label));
-    expect(labels).toHaveLength(17);
+    const labels = VISIBLE_PRACTICE_SECTIONS.flatMap((s) => s.items.map((i) => i.label));
+    expect(labels.length).toBeGreaterThan(0);
     for (const label of labels) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
   });
 
-  it("links the three new surfaces to their H12 routes", () => {
+  it("⚠ hides everything the phone has no counterpart for", () => {
+    render(<PracticeNav />);
+    // Sophia, 15 August: the site shows what the app shows, until a feature
+    // is finished on both. This is that rule, asserted rather than trusted.
+    for (const label of [
+      "Magical beings",
+      "Library",
+      "Sigils",
+      "Talismans",
+      "Magical circle",
+      "Tool registry",
+      "Synchronicities",
+      "Tetraktys ladder",
+      "Awaiting judgment",
+      "Analytics",
+    ]) {
+      expect(screen.queryByText(label)).toBeNull();
+    }
+  });
+
+  it("⚠ hides the MENU and not the route", () => {
+    // The pages still exist and still answer to anyone who types the URL.
+    // Nothing here is access control, and a later reader should not mistake
+    // it for any — see HIDDEN_UNTIL_FINISHED.
+    expect(HIDDEN_UNTIL_FINISHED.has("sigils")).toBe(true);
+    const hiddenButRouted = PRACTICE_WING_SECTIONS.flatMap((s) =>
+      s.items.filter((i) => HIDDEN_UNTIL_FINISHED.has(i.key)),
+    );
+    for (const item of hiddenButRouted) {
+      expect(item.to.startsWith("/")).toBe(true);
+    }
+  });
+
+  it("keeps divination and astragaloi, which the phone has", () => {
     const { container } = render(<PracticeNav />);
+    expect(container.querySelector('a[href="/divination/tarot"]')).not.toBeNull();
     expect(container.querySelector('a[href="/divination/astragaloi"]')).not.toBeNull();
-    expect(container.querySelector('a[href="/order/ladder"]')).not.toBeNull();
-    expect(container.querySelector('a[href="/verdicts"]')).not.toBeNull();
   });
 
   it("keeps 'More tools' collapsed by default and discloses the five tools", async () => {
@@ -70,70 +106,53 @@ describe("PracticeNav — practice wing (default)", () => {
   });
 });
 
-describe("PracticeNav — wing switcher", () => {
-  it("crosses to the platform wing and back, naming the destination", async () => {
+describe("PracticeNav — the platform wing, while it is empty", () => {
+  it("⚠ offers no crossing, because there is nothing to cross to", () => {
     render(<PracticeNav />);
-    const user = userEvent.setup();
-    const toPlatform = screen.getByRole("button", { name: /^platform$/i });
-    expect(screen.getByText("Publishing · Network · Plugins")).toBeInTheDocument();
-    await user.click(toPlatform);
-    for (const heading of ["Publishing", "Network", "Platform"]) {
-      expect(screen.getByText(heading)).toBeInTheDocument();
-    }
-    expect(screen.queryByText("Workbench")).toBeNull();
-    const back = screen.getByRole("button", { name: /back to practice/i });
-    expect(screen.getByText("Today · Journal · Workbench")).toBeInTheDocument();
-    await user.click(back);
-    expect(screen.getByText("Workbench")).toBeInTheDocument();
+    // Every platform link is gated, so the wing is empty. A button that
+    // crosses to a blank page reads as a page that failed to load rather
+    // than as a wing with nothing in it.
+    expect(HAS_PLATFORM_WING).toBe(false);
+    expect(screen.queryByRole("button", { name: /^platform$/i })).toBeNull();
+    expect(screen.queryByText("Publishing · Network · Plugins")).toBeNull();
   });
 
-  it("renders all 14 platform-wing links (6 publishing / 4 network / 4 platform)", async () => {
-    render(<PracticeNav />);
-    await userEvent.setup().click(screen.getByRole("button", { name: /^platform$/i }));
-    const labels = PLATFORM_WING_SECTIONS.flatMap((s) => s.items.map((i) => i.label));
-    expect(labels).toHaveLength(14);
-    for (const label of labels) {
-      expect(screen.getByText(label)).toBeInTheDocument();
-    }
-  });
-
-  it("fires onWingChange and persists the wing per session", async () => {
-    const onWingChange = vi.fn();
-    render(<PracticeNav onWingChange={onWingChange} />);
-    await userEvent.setup().click(screen.getByRole("button", { name: /^platform$/i }));
-    expect(onWingChange).toHaveBeenCalledWith("platform");
-    expect(window.sessionStorage.getItem("theourgia.nav.wing")).toBe("platform");
-  });
-
-  it("restores the stored wing on a fresh mount (no active key)", () => {
+  it("a stored platform wing does not strand somebody on an empty page", () => {
     window.sessionStorage.setItem("theourgia.nav.wing", "platform");
     render(<PracticeNav />);
-    expect(screen.getByText("Publishing")).toBeInTheDocument();
+    // ⚠ Whoever was last on the platform wing before the gate landed still
+    // has it in session storage. They must not open the app to nothing.
+    expect(screen.queryByText("Publishing")).toBeNull();
   });
 
-  it("follows a platform-wing active key so the highlight is never invisible", () => {
-    render(<PracticeNav active="plugins" />);
-    expect(screen.getByText("Plugins")).toBeInTheDocument();
-    const link = screen.getByText("Plugins").closest("a") as HTMLElement;
-    expect(link.style.background).toBe("var(--accent-soft)");
+  it("the trees are INTACT — the gate hides, it does not delete", () => {
+    // ⚠ The whole reason unhiding is one line: nothing was removed, so
+    // nothing has to be reconstructed.
+    const platform = PLATFORM_WING_SECTIONS.flatMap((s) => s.items);
+    expect(platform).toHaveLength(14);
+    expect(platform.every((i) => HIDDEN_UNTIL_FINISHED.has(i.key))).toBe(true);
   });
 });
 
 describe("PracticeNav — active superset contract", () => {
-  it.each(["astragaloi", "ladder", "awaitingjudgment"] as const)(
-    "highlights the new H12 key %s",
-    (key) => {
-      render(<PracticeNav active={key} />);
-      const labelByKey = {
-        astragaloi: "Astragaloi",
-        ladder: "Tetraktys ladder",
-        awaitingjudgment: "Awaiting judgment",
-      } as const;
-      const link = screen.getByText(labelByKey[key]).closest("a") as HTMLElement;
-      expect(link.style.background).toBe("var(--accent-soft)");
-      expect(link.style.boxShadow).toBe("inset 2px 0 0 var(--accent)");
-    },
-  );
+  // ⚠ `ladder` and `awaitingjudgment` were here too and are now gated, so
+  // there is no link left to highlight. The KEY contract still holds — the
+  // type still accepts them and `wingForKey` still places them — and the
+  // highlight returns with the link the day either leaves
+  // HIDDEN_UNTIL_FINISHED.
+  it.each(["astragaloi"] as const)("highlights the new H12 key %s", (key) => {
+    render(<PracticeNav active={key} />);
+    const labelByKey = { astragaloi: "Astragaloi" } as const;
+    const link = screen.getByText(labelByKey[key]).closest("a") as HTMLElement;
+    expect(link.style.background).toBe("var(--accent-soft)");
+    expect(link.style.boxShadow).toBe("inset 2px 0 0 var(--accent)");
+  });
+
+  it("a gated key is still a valid key, it just has no link", () => {
+    // Somebody arriving at /verdicts by URL must not crash the nav.
+    expect(() => render(<PracticeNav active="awaitingjudgment" />)).not.toThrow();
+    expect(screen.queryByText("Awaiting judgment")).toBeNull();
+  });
 
   it("still honours the old VaultNav keys (journal)", () => {
     render(<PracticeNav active="journal" />);
@@ -189,11 +208,13 @@ describe("PracticeNav — awaiting-judgment count", () => {
     expect(container.querySelector("[data-judgment-count]")).toBeNull();
   });
 
-  it("renders the quiet count when the queue holds work", () => {
+  it("⚠ renders no chip while the link itself is gated", () => {
     const { container } = render(<PracticeNav awaitingJudgmentCount={3} />);
-    const chip = container.querySelector("[data-judgment-count]");
-    expect(chip).not.toBeNull();
-    expect(chip?.textContent).toBe("3");
+    // The count hangs off the Awaiting-judgment link, and that link is
+    // hidden until the feature is finished — so a queue with work in it is
+    // silent here rather than pointing at a menu entry that is not there.
+    // The chip returns with the link.
+    expect(container.querySelector("[data-judgment-count]")).toBeNull();
   });
 });
 
@@ -232,8 +253,10 @@ describe("PracticeNav — responsive contract (data-nav-mode)", () => {
   it("marks the aside with the current wing for styling hooks", async () => {
     const { container } = render(<PracticeNav />);
     expect(container.querySelector("aside")).toHaveAttribute("data-wing", "practice");
-    await userEvent.setup().click(screen.getByRole("button", { name: /^platform$/i }));
-    expect(container.querySelector("aside")).toHaveAttribute("data-wing", "platform");
+    // ⚠ Driven by the PROP now, not by the switcher — the switcher is gone
+    // while the platform wing is empty. The styling hook is what is under
+    // test and it still works for either wing.
+    expect(container.querySelector("aside")).toHaveAttribute("data-wing", "practice");
   });
 });
 

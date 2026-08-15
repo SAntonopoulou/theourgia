@@ -85,6 +85,24 @@ const CAPTURE_LABEL: Record<CaptureType, string> = {
   working: "working",
 };
 
+/**
+ * The captures the homepage actually offers.
+ *
+ * ⚠ `synchronicity` is absent, and it is absent because its BROWSE page is
+ * gated — see `HIDDEN_UNTIL_FINISHED` in PracticeNav. A chip that files
+ * something away where nothing can read it back is worse than no chip: the
+ * entry is really written, and the person who wrote it has no way to find it.
+ *
+ * ⚠ These four are the site's own vocabulary and the PHONE's is different —
+ * it keeps practices, and notes carrying a Mood and a Body reading, with the
+ * sky and the weather of the moment attached. Matching them properly is not a
+ * relabelling; it needs the record model this site does not have yet. Sophia,
+ * 15 August: *"the record needs to be added pretty much separate from the
+ * journal."* Until that lands, this list only stops offering what it cannot
+ * show back.
+ */
+const OFFERED_CAPTURES: readonly CaptureType[] = ["dream", "sensation", "working"];
+
 const CAPTURE_COLOR: Record<CaptureType, string> = {
   synchronicity: "var(--c-synchronicity)",
   dream: "var(--c-divination)",
@@ -338,7 +356,7 @@ function QuickCapture({
 }: {
   onCapture: (input: { type: CaptureType; visibility: Visibility }) => void;
 }) {
-  const [captureType, setCaptureType] = useState<CaptureType>("synchronicity");
+  const [captureType, setCaptureType] = useState<CaptureType>("dream");
   const [visibility, setVisibility] = useState<Visibility>("personal");
   // v1-053: five segments at full padding are ~4px wider than a 390px
   // phone; tighten the padding on narrow screens and let the group
@@ -348,7 +366,7 @@ function QuickCapture({
   return (
     <article style={cardStyle({ padding: 20 })}>
       <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
-        {(Object.keys(CAPTURE_LABEL) as CaptureType[]).map((t) => {
+        {OFFERED_CAPTURES.map((t) => {
           const selected = t === captureType;
           return (
             <button
@@ -809,10 +827,9 @@ export function Today() {
 
   // Phase-05 Today ledger — four cards in the right rail (active practices,
   // obligations, servitor feeding, attestation activity). Loads after auth.
-  const ledger = useApiCall<TodayLedger>(
-    (signal) => apiMethods.getTodayLedger({ signal }),
-    { skip: session === null },
-  );
+  const ledger = useApiCall<TodayLedger>((signal) => apiMethods.getTodayLedger({ signal }), {
+    skip: session === null,
+  });
 
   useEffect(() => {
     if (entries.status === "error") {
@@ -985,10 +1002,7 @@ export function Today() {
           >
             <HoursOfDayCard c={celestial} />
             {ledger.status === "ok" && ledger.data ? (
-              <TodayLedgerCards
-                ledger={ledger.data}
-                formatRelative={relativeTimeBidirectional}
-              />
+              <TodayLedgerCards ledger={ledger.data} formatRelative={relativeTimeBidirectional} />
             ) : null}
             {/* H12 — the due row's verdict slot; gracefully empty until
                 the two-gate queue endpoint exists. Replaces the old

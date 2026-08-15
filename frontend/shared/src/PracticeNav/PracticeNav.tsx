@@ -234,6 +234,89 @@ export const PLATFORM_WING_SECTIONS: PracticeNavSection[] = [
   },
 ];
 
+// ─── What the site SHOWS, and why it is less than what it has ─────────────
+//
+// Sophia, 15 August 2026: *"hide all the features except those specific ones
+// that I mentioned above from the theourgia site until they are totally
+// finished … the mobile application being the source of truth."*
+//
+// The rule is **parity with the phone**. `practiseapp` offers eight practices
+// (lunar and solar adorations, rituals, workings, meditation, pranayama,
+// divination, letters and numbers) and six utilities (the record, calendar,
+// elections, spiritual map, charts, planetary hours). Anything here without a
+// counterpart there is hidden until it is finished on both.
+//
+// ⚠ **This hides the MENU, not the route.** Every page below still exists and
+// still answers to anyone who types its URL — the nav is a way in, not a lock.
+// If any of these needs to be genuinely unreachable that is a router change
+// and a different conversation.
+//
+// ⚠ **Unhiding is deleting one line.** That is the whole reason this is a flat
+// set rather than a rewrite of the trees: nothing was removed, so nothing has
+// to be reconstructed, and the day a feature is finished costs one line.
+//
+// ⚠ Four of the phone's utilities have NO page here at all — elections, the
+// spiritual map, charts and planetary hours. Parity cuts both ways and those
+// are the gaps in the other direction; they are not hidden, they are missing.
+export const HIDDEN_UNTIL_FINISHED: ReadonlySet<PracticeNavKey> = new Set<PracticeNavKey>([
+  // Reference — no counterpart on the phone.
+  "entities",
+  "library",
+  // Workbench — the phone has divination and letters-and-numbers, not these.
+  "sigils",
+  "talismans",
+  "circles",
+  "tools",
+  // Study — none of it exists on the phone.
+  "synchronicities",
+  "ladder",
+  "awaitingjudgment",
+  "analytics",
+  // The whole platform wing. Publishing, network and plugins are the site
+  // running itself rather than anybody practising, and the phone has no
+  // notion of any of it.
+  "publications",
+  "subscribers",
+  "media",
+  "audio",
+  "pilgrimage",
+  "icalfeed",
+  "feed",
+  "networks",
+  "followers",
+  "privateviewers",
+  "plugins",
+  "bundles",
+  "sandbox",
+  "agents",
+]);
+
+/** Drop the hidden keys, then drop any section left with nothing in it. */
+function shown(sections: PracticeNavSection[]): PracticeNavSection[] {
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((i) => !HIDDEN_UNTIL_FINISHED.has(i.key)),
+      moreItems: section.moreItems?.filter((i) => !HIDDEN_UNTIL_FINISHED.has(i.key)),
+    }))
+    .filter((s) => s.items.length > 0 || (s.moreItems?.length ?? 0) > 0);
+}
+
+/** What the practice wing actually renders. */
+export const VISIBLE_PRACTICE_SECTIONS = shown(PRACTICE_WING_SECTIONS);
+
+/** What the platform wing actually renders — currently nothing at all. */
+export const VISIBLE_PLATFORM_SECTIONS = shown(PLATFORM_WING_SECTIONS);
+
+/**
+ * Whether there is a second wing to cross to.
+ *
+ * ⚠ Under strict parity the platform wing empties completely, and a button
+ * that crosses to an empty page is worse than no button — it looks like the
+ * page failed to load. So the switch disappears with its contents.
+ */
+export const HAS_PLATFORM_WING = VISIBLE_PLATFORM_SECTIONS.length > 0;
+
 /** Which wing a nav key belongs to (``practice`` when unknown). */
 export function wingForKey(key: string | undefined): Wing {
   if (!key) return "practice";
@@ -378,12 +461,12 @@ export function PracticeNav({
 
   const wing = wingProp ?? wingState;
   const isPractice = wing === "practice";
-  const sections = isPractice ? PRACTICE_WING_SECTIONS : PLATFORM_WING_SECTIONS;
+  const sections = isPractice ? VISIBLE_PRACTICE_SECTIONS : VISIBLE_PLATFORM_SECTIONS;
 
   // "More tools" starts open when the active key hides behind it, so the
   // inset highlight is visible on first paint.
   const [moreOpen, setMoreOpen] = useState<boolean>(() =>
-    PRACTICE_WING_SECTIONS.some((s) => s.moreItems?.some((i) => i.key === active)),
+    VISIBLE_PRACTICE_SECTIONS.some((s) => s.moreItems?.some((i) => i.key === active)),
   );
 
   function crossOver(): void {
@@ -594,57 +677,65 @@ export function PracticeNav({
       ))}
 
       {/* Wing switcher — the answer to the design question: a single
-          button at the sidebar foot, naming its destination. */}
-      <button
-        type="button"
-        className="pn-switch"
-        data-wing-switch
-        onClick={crossOver}
-        aria-label={_(switchTitle)}
-        title={_(switchTitle)}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 11,
-          width: "100%",
-          marginTop: "auto",
-          padding: "10px 11px",
-          marginBottom: 12,
-          border: "1px solid var(--line)",
-          borderRadius: "var(--r-md, 8px)",
-          background: "var(--bg-2)",
-          color: "var(--ink-soft)",
-          textAlign: "left",
-          cursor: "pointer",
-        }}
-      >
-        <span style={ICO_STYLE}>{isPractice ? WING_GRID_ICON : WING_BACK_ICON}</span>
-        <span
-          className="pn-label"
-          style={{ flex: 1, minWidth: 0, textAlign: "left", lineHeight: 1.25 }}
+          button at the sidebar foot, naming its destination.
+
+          ⚠ Absent while the platform wing is empty. Under the parity gate
+          every one of its links is hidden, and a button that crosses to a
+          blank page reads as a page that failed to load rather than as a
+          wing with nothing in it. It returns by itself the moment anything
+          in that wing leaves HIDDEN_UNTIL_FINISHED. */}
+      {HAS_PLATFORM_WING ? (
+        <button
+          type="button"
+          className="pn-switch"
+          data-wing-switch
+          onClick={crossOver}
+          aria-label={_(switchTitle)}
+          title={_(switchTitle)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 11,
+            width: "100%",
+            marginTop: "auto",
+            padding: "10px 11px",
+            marginBottom: 12,
+            border: "1px solid var(--line)",
+            borderRadius: "var(--r-md, 8px)",
+            background: "var(--bg-2)",
+            color: "var(--ink-soft)",
+            textAlign: "left",
+            cursor: "pointer",
+          }}
         >
+          <span style={ICO_STYLE}>{isPractice ? WING_GRID_ICON : WING_BACK_ICON}</span>
           <span
-            style={{
-              display: "block",
-              fontFamily: "var(--font-ui)",
-              fontSize: 13,
-              color: "var(--ink)",
-            }}
+            className="pn-label"
+            style={{ flex: 1, minWidth: 0, textAlign: "left", lineHeight: 1.25 }}
           >
-            {_(switchTitle)}
+            <span
+              style={{
+                display: "block",
+                fontFamily: "var(--font-ui)",
+                fontSize: 13,
+                color: "var(--ink)",
+              }}
+            >
+              {_(switchTitle)}
+            </span>
+            <span
+              style={{
+                display: "block",
+                fontFamily: "var(--font-ui)",
+                fontSize: 10.5,
+                color: "var(--ink-mute)",
+              }}
+            >
+              {_(switchSub)}
+            </span>
           </span>
-          <span
-            style={{
-              display: "block",
-              fontFamily: "var(--font-ui)",
-              fontSize: 10.5,
-              color: "var(--ink-mute)",
-            }}
-          >
-            {_(switchSub)}
-          </span>
-        </span>
-      </button>
+        </button>
+      ) : null}
 
       {/* Identity foot */}
       <div
