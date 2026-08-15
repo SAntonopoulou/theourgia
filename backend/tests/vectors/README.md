@@ -58,13 +58,21 @@ unless the phone is demonstrably wrong.
 | `band-lookup` | ✓ emitted | `core/divination/derive.py` |
 | `table-lookup` | ✓ emitted | `core/divination/derive.py` |
 | `profect-annual` | ✓ | `core/astro/profections.py` |
-| `profect-monthly` | — | — |
+| `profect-monthly` | ✓ emitted | `core/astro/profections.py` |
 | `solar-return` | — | — |
 | `zodiacal-releasing` | — | — |
 
 ⚠ The four derivation cases were **emitted by practiseapp running** —
 `test/emit_astro_vectors_test.dart` over there prints them, and it is a
 generator wearing a test's clothes. Regenerate rather than hand-edit them.
+
+⚠ **A monthly profection is a twelfth of the ACTUAL year**, not a calendar
+month. The year runs birthday to birthday, so it is 365 days or 366 and a
+twelfth is about thirty and a half — nothing begins on the first, and
+consecutive years have twelfths of different lengths. The twelfth is integer
+microsecond division, so the twelve do not tile the year exactly and the last
+ends a few microseconds short; a site dividing in float would disagree at the
+boundary, which is exactly when somebody is looking.
 
 ⚠ Three behaviours a careful reading of the Dart still gets wrong, all now
 pinned by vectors:

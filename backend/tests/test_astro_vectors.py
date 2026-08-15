@@ -26,7 +26,12 @@ from typing import Any
 
 import pytest
 
-from theourgia.core.astro.profections import profection_at, profection_for_date
+from theourgia.core.astro.profections import (
+    profection_at,
+    profection_for_date,
+    profection_monthly_at,
+    profection_year_bounds,
+)
 from theourgia.core.divination.derive import derive, layers_from_payload
 
 VECTORS = json.loads((Path(__file__).parent / "vectors" / "astro-vectors.json").read_text())
@@ -40,6 +45,7 @@ EXERCISED: frozenset[str] = frozenset(
         "cycle-of",
         "band-lookup",
         "table-lookup",
+        "profect-monthly",
     }
 )
 
@@ -99,6 +105,56 @@ class TestAnnualProfections:
                 datetime.fromisoformat("2026-03-02T09:00:00Z"),
                 5,
             )
+
+
+class TestMonthlyProfections:
+    """⚠ A month is a TWELFTH OF THE ACTUAL YEAR, not a calendar month.
+
+    The year runs birthday to birthday — 365 days or 366 — so a twelfth is
+    about thirty and a half, nothing begins on the first, and consecutive
+    years have twelfths of different lengths.
+    """
+
+    @pytest.mark.parametrize("case", _cases("profect-monthly"), ids=_ids("profect-monthly"))
+    def test_the_site_agrees_with_the_phone(self, case: dict[str, Any]) -> None:
+        got = profection_monthly_at(
+            datetime.fromisoformat(case["born"]),
+            datetime.fromisoformat(case["at"]),
+            case["ascendant_sign"],
+        )
+        assert got.profected_sign == case["sign"], case["case"]
+        assert got.profected_house == case["house"], case["case"]
+
+    @pytest.mark.parametrize("case", _cases("profect-monthly"), ids=_ids("profect-monthly"))
+    def test_the_twelfth_runs_where_the_phone_says(self, case: dict[str, Any]) -> None:
+        # ⚠ The bounds matter as much as the sign: a reader showing "until the
+        # 2nd" where the phone says 04:00 on the 2nd is wrong for ten hours.
+        year_from, year_until = profection_year_bounds(
+            datetime.fromisoformat(case["born"]),
+            datetime.fromisoformat(case["at"]),
+        )
+        length_us = int((year_until - year_from).total_seconds() * 1_000_000)
+        twelfth_us = length_us // 12
+        into_us = int((datetime.fromisoformat(case["at"]) - year_from).total_seconds() * 1_000_000)
+        month = max(0, min(11, into_us // twelfth_us))
+
+        from datetime import timedelta
+
+        start = year_from + timedelta(microseconds=twelfth_us * month)
+        end = year_from + timedelta(microseconds=twelfth_us * (month + 1))
+        assert start == datetime.fromisoformat(case["from"]), case["case"]
+        assert end == datetime.fromisoformat(case["until"]), case["case"]
+
+    def test_the_month_wraps_past_Pisces_with_the_year(self) -> None:
+        # ⚠ Half a year in, the month has advanced six signs from the year's
+        # own — which for a year in Aquarius lands back in Leo.
+        got = profection_monthly_at(
+            datetime.fromisoformat("1984-03-02T18:00:00Z"),
+            datetime.fromisoformat("2026-09-02T19:00:00Z"),
+            5,
+        )
+        assert got.profected_sign == 5
+        assert got.profected_house == 1
 
 
 class TestTheDerivationPrimitives:

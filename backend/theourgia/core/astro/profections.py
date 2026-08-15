@@ -38,21 +38,21 @@ exists so this side can agree.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date as date_cls
-from datetime import datetime
-from datetime import UTC
+from datetime import UTC, date as date_cls, datetime
 from typing import Final
 
 from theourgia.core.astro.planetary_hours import Planet
 from theourgia.core.astro.zodiac import SIGNS
 
 __all__ = [
-    "Profection",
     "TRADITIONAL_RULERS",
+    "Profection",
     "age_at",
     "completed_years",
     "profection_at",
     "profection_for_date",
+    "profection_monthly_at",
+    "profection_year_bounds",
 ]
 
 
@@ -156,6 +156,68 @@ def profection_at(
         profected_sign_name=SIGNS[sign],
         year_lord=TRADITIONAL_RULERS[sign],
     )
+
+
+def profection_monthly_at(
+    born: datetime,
+    at: datetime,
+    ascendant_sign: int,
+) -> Profection:
+    """The monthly profection in force at ``at``.
+
+    ⚠ A "month" here is **a twelfth of the actual year**, not a calendar month.
+    The year runs birthday to birthday, so it is 365 or 366 days long and a
+    twelfth is about thirty and a half. Nothing begins on the first, and two
+    consecutive years have twelfths of different lengths.
+
+    ⚠ The twelfth is **integer division of microseconds**, matching
+    practiseapp, so the twelve do not tile the year exactly — the last one ends
+    a few microseconds before the birthday. That rounding is the phone's and
+    this side reproduces it rather than computing something tidier: a site that
+    divided in float would disagree at the boundary, which is precisely when
+    somebody is looking.
+
+    Returns the MONTH's sign, house and lord; ``age`` stays the year's.
+    """
+    year = profection_at(born, at, ascendant_sign)
+    year_from, year_until = profection_year_bounds(born, at)
+
+    length_us = int((year_until - year_from).total_seconds() * 1_000_000)
+    twelfth_us = length_us // 12
+    into_us = int((at.astimezone(UTC) - year_from).total_seconds() * 1_000_000)
+    month = max(0, min(11, into_us // twelfth_us))
+
+    sign = ((year.profected_sign - 1 + month) % 12) + 1
+    return Profection(
+        age=year.age,
+        profected_house=((year.profected_house - 1 + month) % 12) + 1,
+        profected_sign=sign,
+        profected_sign_name=SIGNS[sign],
+        year_lord=TRADITIONAL_RULERS[sign],
+    )
+
+
+def profection_year_bounds(born: datetime, at: datetime) -> tuple[datetime, datetime]:
+    """The birthday moments the profected year runs between.
+
+    ⚠ A birth on 29 February takes 1 March in a common year, which is what
+    `_birthday_after` below does and what the phone does — the astrological
+    year turns when the full year has elapsed.
+    """
+    age = completed_years(born, at)
+    return _birthday_after(born, age), _birthday_after(born, age + 1)
+
+
+def _birthday_after(born: datetime, years: int) -> datetime:
+    born_utc = born.astimezone(UTC)
+    year = born_utc.year + years
+    try:
+        return born_utc.replace(year=year)
+    except ValueError:
+        # ⚠ 29 February in a common year. March the 1st, because the year has
+        # elapsed by then and a profection that waited for the next leap year
+        # would leave somebody three years without a lord.
+        return born_utc.replace(year=year, month=3, day=1)
 
 
 def profection_for_date(
