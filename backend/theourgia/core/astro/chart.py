@@ -17,11 +17,14 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Final
 
+from pathlib import Path
+
 import swisseph as swe
 
 from theourgia.core.astro.aspects import Aspect, detect_aspects
 from theourgia.core.astro.attribution import ATTRIBUTION
 from theourgia.core.astro.bodies import BODIES, Body
+from theourgia.core.config import get_settings
 from theourgia.core.astro.houses import HouseSystem, Houses, compute_houses
 from theourgia.core.astro.zodiac import (
     Ayanamsa,
@@ -30,15 +33,55 @@ from theourgia.core.astro.zodiac import (
     sign_of,
 )
 
-__all__ = ["ChartRequest", "ChartResult", "Placement", "compute_chart"]
+__all__ = [
+    "EPHEMERIS_SOURCE",
+    "ChartRequest",
+    "ChartResult",
+    "Placement",
+    "compute_chart",
+]
 
 
-_FLAGS: Final[int] = swe.FLG_MOSEPH | swe.FLG_SPEED
-# FLG_MOSEPH uses the built-in Moshier analytical ephemeris (~arcsec
-# accuracy, ample for astrology). FLG_SPEED returns velocities so the
-# chart can flag retrograde bodies. When .se1 ephemeris files ship in
-# `backend/data/ephe/`, this switches to FLG_SWIEPH for sub-arcsec
-# precision — a later batch deliverable per plan/03 §"Implementation".
+def _ephemeris_source() -> tuple[int, str]:
+    """Which ephemeris this process will actually use, and its name.
+
+    ⚠ **Not a silent fallback.** Swiss Ephemeris quietly drops to Moshier when
+    its data files are missing, so a deployment that forgot to ship them would
+    compute slightly different positions and say nothing. That is the worst
+    shape a difference can take: everything works, the numbers are plausible,
+    and nobody finds out until two devices disagree about somebody's chart.
+
+    So the choice is made HERE, from whether the files are actually on disk,
+    and the name is exported so a test can assert it and a deployment can be
+    checked.
+
+    ⚠ **practiseapp uses `SEFLG_SWIEPH`** — the compressed Swiss data files it
+    ships in `ephe_files/`. This side used `FLG_MOSEPH`, an analytical series
+    accurate to about an arcsecond. An arcsecond of solar longitude is roughly
+    **25 seconds of time**, and a solar return is read entirely from its
+    angles: half a minute moves the Ascendant about seven arcminutes, which
+    near a sign boundary is a different chart. The two must match, and
+    matching means the same files. See `tests/vectors/README.md`.
+    """
+    path = get_settings().ephe_path
+    if not path.is_absolute():
+        # Relative to the repository root, which is this file's grandparent's
+        # grandparent — `backend/theourgia/core/astro/chart.py`.
+        path = Path(__file__).resolve().parents[4] / path
+    if path.is_dir() and any(path.glob("*.se1")):
+        swe.set_ephe_path(str(path))
+        return swe.FLG_SWIEPH | swe.FLG_SPEED, "swieph"
+    return swe.FLG_MOSEPH | swe.FLG_SPEED, "moshier"
+
+
+_FLAGS, EPHEMERIS_SOURCE = _ephemeris_source()
+"""The flags in force, and which ephemeris produced them.
+
+``EPHEMERIS_SOURCE`` is ``"swieph"`` when the Swiss data files were found and
+``"moshier"`` when they were not. ⚠ A deployment reading ``"moshier"`` will
+disagree with the phone by arcseconds — see the note above for why that is
+seconds of time and can be a whole sign on an angle.
+"""
 
 # Map our Ayanamsa enum onto Swiss Ephemeris ayanāṃśa codes.
 _AYANAMSA_CODES: Final[dict[Ayanamsa, int]] = {

@@ -26,6 +26,7 @@ from typing import Any
 
 import pytest
 
+from theourgia.core.astro.chart import EPHEMERIS_SOURCE
 from theourgia.core.astro.profections import (
     profection_at,
     profection_for_date,
@@ -198,6 +199,40 @@ class TestTheDerivationPrimitives:
         assert got["rung"] == "1"
         assert got["named"] == "Monad"
         assert all(isinstance(v, str) for v in got.values())
+
+
+class TestTheEphemerisItself:
+    """⚠ Both sides must ask Swiss Ephemeris for the SAME ephemeris.
+
+    They call the same library, which is not the same thing. practiseapp uses
+    `SEFLG_SWIEPH` — the compressed Swiss data files it ships — and this side
+    used `FLG_MOSEPH`, an analytical series accurate to about an arcsecond.
+
+    An arcsecond of solar longitude is roughly **25 seconds of time**, and a
+    solar return is read entirely from its angles: half a minute moves the
+    Ascendant about seven arcminutes, which near a sign boundary is a
+    different chart. No amount of vectoring the arithmetic helps if the
+    numbers going in differ.
+    """
+
+    def test_this_deployment_is_on_the_swiss_files(self) -> None:
+        # ⚠ Swiss Ephemeris drops to Moshier SILENTLY when its files are
+        # missing — everything works, the numbers are plausible, and nobody
+        # finds out until two devices disagree about somebody's chart. This is
+        # the check that makes that loud.
+        assert EPHEMERIS_SOURCE == "swieph", (
+            "the .se1 files are missing from backend/data/ephe/, so this "
+            "process is on Moshier and will disagree with the phone by "
+            "arcseconds — which is seconds of time on a return"
+        )
+
+    def test_the_files_are_the_ones_the_phone_ships(self) -> None:
+        ephe = Path(__file__).resolve().parents[1] / "data" / "ephe"
+        names = {f.name for f in ephe.glob("*.se1")}
+        # The two practiseapp carries in `ephe_files/`. ⚠ If the phone ever
+        # ships a wider set — asteroids, a longer span — this side needs the
+        # same ones or the two will differ outside the covered range.
+        assert {"semo_18.se1", "sepl_18.se1"} <= names, sorted(names)
 
 
 class TestTheRuleWithTeeth:

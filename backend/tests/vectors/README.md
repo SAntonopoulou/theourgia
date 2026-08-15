@@ -7,7 +7,7 @@ We looked, and most of the engine is **already shared**:
 
 | layer | shared? |
 |---|---|
-| planetary positions | ✓ Swiss Ephemeris — `sweph` in Dart, `pyswisseph` here |
+| planetary positions | ✓ Swiss Ephemeris — `sweph` in Dart, `pyswisseph` here, **and since 15 Aug the same data files** |
 | sidereal / ayanamsa | ✓ the same `SE_SIDM_*` constants reaching the same C |
 | rules, readings, house meanings, cautions | ✓ pack data, once `astro-techniques` imports |
 | **genuinely duplicated code** | **8 primitives, all arithmetic** |
@@ -18,6 +18,39 @@ Across all thirty-five phone packs the named computations are:
 > `solar-return` · `sum-of-faces` · `table-lookup` · `zodiacal-releasing`
 
 Two of those are generic lookups over pack data rather than astrology.
+
+## ⚠ Calling the same library is not using the same ephemeris
+
+This was nearly missed, and it would have made every vector below meaningless.
+
+The phone uses `SEFLG_SWIEPH` — the compressed Swiss data files it ships in
+`ephe_files/` (1.8 MB, sub-arcsecond). This side used `FLG_MOSEPH`, the
+built-in analytical series, accurate to about an arcsecond. Same library, two
+different ephemerides.
+
+**An arcsecond of solar longitude is about 25 seconds of time.** A solar return
+bisected to the second would land half a minute apart on the two devices, and a
+return chart is read *entirely from its angles* — half a minute moves the
+Ascendant some seven arcminutes, which near a sign boundary is a different
+chart. The phone's own docstring says that is the one thing the technique
+cannot survive.
+
+Fixed on 15 August: the two `.se1` files are now in `backend/data/ephe/`, and
+`chart.py` chooses its flags from **whether the files are actually on disk**,
+exporting `EPHEMERIS_SOURCE` so it can be asserted.
+
+⚠ **Swiss Ephemeris falls back to Moshier silently** when its files are
+missing. Everything works, the numbers stay plausible, and nobody finds out
+until two devices disagree about somebody's chart. `test_this_deployment_is_
+on_the_swiss_files` is what makes that loud — a deployment that forgets the
+files fails its suite rather than quietly computing something else.
+
+⚠ **Licence note.** The `.se1` files are Swiss Ephemeris data, under the same
+AGPL-or-commercial terms as the library. theourgia's server already depends on
+`pyswisseph`, so this does not open a question that was closed — but
+astropractise deliberately holds off buying a commercial licence until
+monetisation is settled, and that position is *its own*. Do not read this as
+having decided anything for that product.
 
 ## Why vectors and not one compiled core
 
