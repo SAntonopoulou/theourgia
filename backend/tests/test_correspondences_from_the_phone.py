@@ -119,9 +119,13 @@ def _container(pack: dict[str, Any]) -> bytes:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from tool.pack_to_mbf import convert
 
-    envelope, doc = convert(pack, license_spdx="CC-BY-SA-4.0", created=datetime.now(tz=UTC))
+    # ⚠ `convert` grew a third return on 15 August — the assets. It had been
+    # dropping every non-list payload key, including 34.9 MB of word data and
+    # the `shape` that says how many knucklebones to cast. See
+    # `tests/test_pack_conversion.py`.
+    envelope, doc, assets = convert(pack, license_spdx="CC-BY-SA-4.0", created=datetime.now(tz=UTC))
     base = envelope.model_dump(mode="json", exclude={"payloads", "assets"})
-    return build_mbf(manifest_base=base, payload_docs=[doc])
+    return build_mbf(manifest_base=base, payload_docs=[doc], assets=assets)
 
 
 class TestTheFormatsConverged:

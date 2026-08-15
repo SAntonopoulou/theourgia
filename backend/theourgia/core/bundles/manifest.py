@@ -118,18 +118,28 @@ TYPE_CATALOG: frozenset[str] = frozenset(
         "divination-systems",
         "session-protocols",
         "sitting-forms",
+        # ⚠ Gematria, and why it is NOT `voces-library` or `magical-alphabets`.
+        #
+        # A phone `word-list` is an index of words with their values — Sepher
+        # Sephiroth is 2453 of them. `voces-library` is this site's own name
+        # for voces magicae (`models/voces.py`: source_text, IPA, a REQUIRED
+        # per-row citation), and the two share nothing but the word "words".
+        #
+        # A phone `number-system` is a numeration: several methods over one
+        # script, plus the rules saying whether ᾳ folds to α. It is not a
+        # `magical-alphabet`, which is a script like Theban; and it is not a
+        # `cipher-definition` either, because a Cipher here is ONE letter-value
+        # table and cannot hold four methods and a fold map.
+        "gematria-systems",
+        "gematria-word-lists",
     }
 )
 
 
-_KebabStr = Annotated[
-    str, StringConstraints(pattern=r"^[a-z0-9][a-z0-9-]{0,63}$")
-]
+_KebabStr = Annotated[str, StringConstraints(pattern=r"^[a-z0-9][a-z0-9-]{0,63}$")]
 """Kebab-case identifier: lowercase alphanumerics + hyphens, ≤64 chars."""
 
-_SemVerStr = Annotated[
-    str, StringConstraints(pattern=r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$")
-]
+_SemVerStr = Annotated[str, StringConstraints(pattern=r"^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$")]
 """Strict SemVer 2.0 string — same pattern the plugin manifest uses."""
 
 _Sha256Hex = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
@@ -290,9 +300,7 @@ class PayloadDocument(BaseModel):
 
     @field_validator("items")
     @classmethod
-    def _items_carry_unique_refs(
-        cls, v: list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
+    def _items_carry_unique_refs(cls, v: list[dict[str, Any]]) -> list[dict[str, Any]]:
         seen: set[str] = set()
         for index, item in enumerate(v):
             ref = item.get("ref")
@@ -326,8 +334,7 @@ def build_attribution(manifest: BundleManifest) -> str:
     ``license.spdx`` are required, non-empty manifest fields.
     """
     text = (
-        f"{manifest.name} v{manifest.version} "
-        f"by {manifest.author.name} — {manifest.license.spdx}"
+        f"{manifest.name} v{manifest.version} by {manifest.author.name} — {manifest.license.spdx}"
     )
     if manifest.license.magickal_tags:
         text += f" ({', '.join(manifest.license.magickal_tags)})"
