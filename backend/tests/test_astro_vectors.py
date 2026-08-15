@@ -27,6 +27,7 @@ from typing import Any
 import pytest
 
 from theourgia.core.astro.chart import EPHEMERIS_SOURCE
+from theourgia.core.astro.releasing import BondRule, first_level
 from theourgia.core.astro.profections import (
     profection_at,
     profection_for_date,
@@ -47,6 +48,7 @@ EXERCISED: frozenset[str] = frozenset(
         "band-lookup",
         "table-lookup",
         "profect-monthly",
+        "zodiacal-releasing",
     }
 )
 
@@ -199,6 +201,43 @@ class TestTheDerivationPrimitives:
         assert got["rung"] == "1"
         assert got["named"] == "Monad"
         assert all(isinstance(v, str) for v in got.values())
+
+
+class TestZodiacalReleasing:
+    """Valens' periods, and the three readings of the loosing of the bond."""
+
+    @pytest.mark.parametrize("case", _cases("zodiacal-releasing"), ids=_ids("zodiacal-releasing"))
+    def test_every_period_matches_the_phone(self, case: dict[str, Any]) -> None:
+        got = first_level(
+            datetime.fromisoformat(case["born"]),
+            case["start_sign"],
+            years=case["years"],
+            bond=BondRule(case["bond"]),
+        )
+        want = case["periods"]
+        assert len(got) == len(want), case["case"]
+        for g, w in zip(got, want, strict=True):
+            assert g.sign == w["sign"], case["case"]
+            # ⚠ The LENGTH in whole days, not just the sign. round(years *
+            # 365.2422) — fifteen years of Aries is 5479 days, not 5478.633.
+            # A float implementation drifts a day per period and is a
+            # fortnight out by the end of a life.
+            assert (g.until - g.start).days == w["days"], case["case"]
+            assert g.start == datetime.fromisoformat(w["from"]), case["case"]
+            assert g.is_loosing_of_the_bond == w["loosing"], case["case"]
+
+    def test_the_three_rules_give_visibly_different_lives(self) -> None:
+        """⚠ Anything reporting a time lord must say which rule it used."""
+        born = datetime.fromisoformat("1984-03-02T18:00:00Z")
+        runs = {
+            rule: [p.sign for p in first_level(born, 5, years=160, bond=rule)] for rule in BondRule
+        }
+        assert runs[BondRule.NONE] != runs[BondRule.SKIP]
+        assert runs[BondRule.NONE] != runs[BondRule.TO_START]
+        # SKIP never reaches the opposite sign at all, so nothing is loosed.
+        assert 11 not in runs[BondRule.SKIP]
+        # TO_START returns to Leo after the loosing rather than going on.
+        assert runs[BondRule.TO_START][-2:] == [5, 6]
 
 
 class TestTheEphemerisItself:

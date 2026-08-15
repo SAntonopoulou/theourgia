@@ -486,5 +486,244 @@
       "from": "2027-01-31T08:00:00.000Z",
       "until": "2027-03-02T18:00:00.000Z"
     }
+  ],
+  "zodiacal-releasing": [
+    {
+      "case": "from Leo, $releasingYears years, bond: ${rule.name}",
+      "born": "1984-03-02T18:00:00Z",
+      "start_sign": 5,
+      "years": 160,
+      "bond": "none",
+      "periods": [
+        {
+          "sign": 5,
+          "from": "1984-03-02T18:00:00.000Z",
+          "until": "2003-03-03T18:00:00.000Z",
+          "days": 6940,
+          "loosing": false
+        },
+        {
+          "sign": 6,
+          "from": "2003-03-03T18:00:00.000Z",
+          "until": "2023-03-03T18:00:00.000Z",
+          "days": 7305,
+          "loosing": false
+        },
+        {
+          "sign": 7,
+          "from": "2023-03-03T18:00:00.000Z",
+          "until": "2031-03-03T18:00:00.000Z",
+          "days": 2922,
+          "loosing": false
+        },
+        {
+          "sign": 8,
+          "from": "2031-03-03T18:00:00.000Z",
+          "until": "2046-03-03T18:00:00.000Z",
+          "days": 5479,
+          "loosing": false
+        },
+        {
+          "sign": 9,
+          "from": "2046-03-03T18:00:00.000Z",
+          "until": "2058-03-03T18:00:00.000Z",
+          "days": 4383,
+          "loosing": false
+        },
+        {
+          "sign": 10,
+          "from": "2058-03-03T18:00:00.000Z",
+          "until": "2085-03-03T18:00:00.000Z",
+          "days": 9862,
+          "loosing": false
+        },
+        {
+          "sign": 11,
+          "from": "2085-03-03T18:00:00.000Z",
+          "until": "2115-03-04T18:00:00.000Z",
+          "days": 10957,
+          "loosing": true
+        },
+        {
+          "sign": 12,
+          "from": "2115-03-04T18:00:00.000Z",
+          "until": "2127-03-04T18:00:00.000Z",
+          "days": 4383,
+          "loosing": false
+        },
+        {
+          "sign": 1,
+          "from": "2127-03-04T18:00:00.000Z",
+          "until": "2142-03-04T18:00:00.000Z",
+          "days": 5479,
+          "loosing": false
+        },
+        {
+          "sign": 2,
+          "from": "2142-03-04T18:00:00.000Z",
+          "until": "2150-03-04T18:00:00.000Z",
+          "days": 2922,
+          "loosing": false
+        }
+      ]
+    },
+    {
+      "case": "from Leo, $releasingYears years, bond: ${rule.name}",
+      "born": "1984-03-02T18:00:00Z",
+      "start_sign": 5,
+      "years": 160,
+      "bond": "toStart",
+      "periods": [
+        {
+          "sign": 5,
+          "from": "1984-03-02T18:00:00.000Z",
+          "until": "2003-03-03T18:00:00.000Z",
+          "days": 6940,
+          "loosing": false
+        },
+        {
+          "sign": 6,
+          "from": "2003-03-03T18:00:00.000Z",
+          "until": "2023-03-03T18:00:00.000Z",
+          "days": 7305,
+          "loosing": false
+        },
+        {
+          "sign": 7,
+          "from": "2023-03-03T18:00:00.000Z",
+          "until": "2031-03-03T18:00:00.000Z",
+          "days": 2922,
+          "loosing": false
+        },
+        {
+          "sign": 8,
+          "from": "2031-03-03T18:00:00.000Z",
+          "until": "2046-03-03T18:00:00.000Z",
+          "days": 5479,
+          "loosing": false
+        },
+        {
+          "sign": 9,
+          "from": "2046-03-03T18:00:00.000Z",
+          "until": "2058-03-03T18:00:00.000Z",
+          "days": 4383,
+          "loosing": false
+        },
+        {
+          "sign": 10,
+          "from": "2058-03-03T18:00:00.000Z",
+          "until": "2085-03-03T18:00:00.000Z",
+          "days": 9862,
+          "loosing": false
+        },
+        {
+          "sign": 11,
+          "from": "2085-03-03T18:00:00.000Z",
+          "until": "2115-03-04T18:00:00.000Z",
+          "days": 10957,
+          "loosing": true
+        },
+        {
+          "sign": 5,
+          "from": "2115-03-04T18:00:00.000Z",
+          "until": "2134-03-04T18:00:00.000Z",
+          "days": 6940,
+          "loosing": false
+        },
+        {
+          "sign": 6,
+          "from": "2134-03-04T18:00:00.000Z",
+          "until": "2154-03-04T18:00:00.000Z",
+          "days": 7305,
+          "loosing": false
+        }
+      ]
+    },
+    {
+      "case": "from Leo, $releasingYears years, bond: ${rule.name}",
+      "born": "1984-03-02T18:00:00Z",
+      "start_sign": 5,
+      "years": 160,
+      "bond": "skip",
+      "periods": [
+        {
+          "sign": 5,
+          "from": "1984-03-02T18:00:00.000Z",
+          "until": "2003-03-03T18:00:00.000Z",
+          "days": 6940,
+          "loosing": false
+        },
+        {
+          "sign": 6,
+          "from": "2003-03-03T18:00:00.000Z",
+          "until": "2023-03-03T18:00:00.000Z",
+          "days": 7305,
+          "loosing": false
+        },
+        {
+          "sign": 7,
+          "from": "2023-03-03T18:00:00.000Z",
+          "until": "2031-03-03T18:00:00.000Z",
+          "days": 2922,
+          "loosing": false
+        },
+        {
+          "sign": 8,
+          "from": "2031-03-03T18:00:00.000Z",
+          "until": "2046-03-03T18:00:00.000Z",
+          "days": 5479,
+          "loosing": false
+        },
+        {
+          "sign": 9,
+          "from": "2046-03-03T18:00:00.000Z",
+          "until": "2058-03-03T18:00:00.000Z",
+          "days": 4383,
+          "loosing": false
+        },
+        {
+          "sign": 10,
+          "from": "2058-03-03T18:00:00.000Z",
+          "until": "2085-03-03T18:00:00.000Z",
+          "days": 9862,
+          "loosing": false
+        },
+        {
+          "sign": 12,
+          "from": "2085-03-03T18:00:00.000Z",
+          "until": "2097-03-03T18:00:00.000Z",
+          "days": 4383,
+          "loosing": false
+        },
+        {
+          "sign": 1,
+          "from": "2097-03-03T18:00:00.000Z",
+          "until": "2112-03-04T18:00:00.000Z",
+          "days": 5479,
+          "loosing": false
+        },
+        {
+          "sign": 2,
+          "from": "2112-03-04T18:00:00.000Z",
+          "until": "2120-03-04T18:00:00.000Z",
+          "days": 2922,
+          "loosing": false
+        },
+        {
+          "sign": 3,
+          "from": "2120-03-04T18:00:00.000Z",
+          "until": "2140-03-04T18:00:00.000Z",
+          "days": 7305,
+          "loosing": false
+        },
+        {
+          "sign": 4,
+          "from": "2140-03-04T18:00:00.000Z",
+          "until": "2165-03-04T18:00:00.000Z",
+          "days": 9131,
+          "loosing": false
+        }
+      ]
+    }
   ]
 }

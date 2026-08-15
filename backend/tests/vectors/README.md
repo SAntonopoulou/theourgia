@@ -92,8 +92,8 @@ unless the phone is demonstrably wrong.
 | `table-lookup` | ✓ emitted | `core/divination/derive.py` |
 | `profect-annual` | ✓ | `core/astro/profections.py` |
 | `profect-monthly` | ✓ emitted | `core/astro/profections.py` |
-| `solar-return` | — | — |
-| `zodiacal-releasing` | — | — |
+| `solar-return` | — | — (unblocked now the ephemerides match) |
+| `zodiacal-releasing` | ✓ emitted | `core/astro/releasing.py` |
 
 ⚠ The four derivation cases were **emitted by practiseapp running** —
 `test/emit_astro_vectors_test.dart` over there prints them, and it is a
@@ -106,6 +106,14 @@ consecutive years have twelfths of different lengths. The twelfth is integer
 microsecond division, so the twelve do not tile the year exactly and the last
 ends a few microseconds short; a site dividing in float would disagree at the
 boundary, which is exactly when somebody is looking.
+
+⚠ **Zodiacal releasing: a period is a whole number of DAYS.** `round(years *
+365.2422)` — fifteen years of Aries is 5479 days, not 5478.633. A float
+implementation drifts a day per period and is a fortnight out by the end of a
+life. And the three readings of the loosing produce **visibly different
+lives**: from Leo over 160 years, `none` gives ten periods, `toStart` nine,
+`skip` eleven with nothing loosed at all. Anything reporting a time lord must
+say which rule it used.
 
 ⚠ Three behaviours a careful reading of the Dart still gets wrong, all now
 pinned by vectors:
