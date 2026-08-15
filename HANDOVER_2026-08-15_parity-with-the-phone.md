@@ -118,6 +118,46 @@ makes it a record.
 `/voces-library`, `backend/theourgia/api/routers/v1/voces.py`. That one really
 is "add it to the app", and Sophia wants it syncing both ways once it is there.
 
+### ⚠ The astrology: shared vectors, and one real bug already found
+
+Sophia asked whether the phone and the site could run **the same engine**. They
+largely already do, and the answer is written up in `backend/tests/vectors/README.md`:
+
+* **positions** — Swiss Ephemeris both sides (`sweph` in Dart, `pyswisseph` here)
+* **ayanamsas** — the same `SE_SIDM_*` constants reaching the same C
+* **rules, readings, house meanings, cautions** — pack data
+* **genuinely duplicated code** — eight arithmetic primitives, no more
+
+Decision: **shared test vectors, not a compiled core.** A Rust/C core reached by
+FFI would remove drift by construction and add a cross-compilation toolchain to
+both projects forever, for eight arithmetic functions. Revisit it if primary
+directions or circumambulation come to the web — those are numerically
+delicate — or if the primitive list passes roughly fifteen.
+
+⚠ **The rule: a new primitive without a vector is not finished.**
+`tests/test_astro_vectors.py` enforces it — a key added to the fixture with no
+test reading it fails the suite.
+
+⚠ **What it found on day one: annual profections disagreed by a whole year.**
+This side counted completed years between two *dates*, so the year turned at
+midnight; the phone counts between two *moments*, so it turns at the hour of
+birth. Different house, different lord, for up to a day every birthday.
+
+`profection_at(born: datetime, at: datetime, ascendant_sign)` was added and is
+now the one to use. `profection_for_date` is kept, documented as lossy, for
+callers holding nothing but a date — and it has a second problem: taking a date
+at all means somebody upstream already chose a timezone, so Auckland and Los
+Angeles get different lords at the same instant.
+
+⚠ **Nothing outside its own tests called either function.** Check that again
+before changing it further. Seven of the eight primitives still have no
+vectors.
+
+⚠ Also fixed while there: `SIGNS` is **1-indexed** — `SIGNS[0]` is a deliberate
+placeholder so `SIGNS[1]` is Aries. My first version used `SIGNS[sign - 1]` and
+named Capricorn "Sagittarius". The existing `profection_for_date` had it right;
+I did not read it carefully enough first.
+
 ### Email is decided, and mostly already here
 
 Sophia, 15 August: **Resend**, sending as **contact@theourgia.com**, shared

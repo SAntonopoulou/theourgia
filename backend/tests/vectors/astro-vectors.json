@@ -1,0 +1,51 @@
+{
+  "_note": "Emitted from practiseapp — the source of truth. See README.md. A new primitive without a vector is not finished.",
+  "generated": "2026-08-15",
+  "source": "practiseapp lib/domain/astrology/time_lords.dart",
+  "profect-annual": [
+    {
+      "case": "the hour of birth has not come round yet on the birthday",
+      "why": "the case that found the disagreement — the site said 42/7th, the phone 41/6th",
+      "born": "1984-03-02T18:00:00Z",
+      "at": "2026-03-02T09:00:00Z",
+      "ascendant_sign": 5,
+      "age": 41, "house": 6, "sign": 10
+    },
+    {
+      "case": "the same birthday, after the hour of birth",
+      "born": "1984-03-02T18:00:00Z",
+      "at": "2026-03-02T19:00:00Z",
+      "ascendant_sign": 5,
+      "age": 42, "house": 7, "sign": 11
+    },
+    {
+      "case": "the day of birth itself",
+      "born": "1990-06-15T12:00:00Z",
+      "at": "1990-06-15T12:00:00Z",
+      "ascendant_sign": 1,
+      "age": 0, "house": 1, "sign": 1
+    },
+    {
+      "case": "a whole twelve-year turn returns to the first",
+      "born": "1990-06-15T12:00:00Z",
+      "at": "2002-06-15T12:00:00Z",
+      "ascendant_sign": 8,
+      "age": 12, "house": 1, "sign": 8
+    },
+    {
+      "case": "the sign wraps past Pisces",
+      "born": "1990-06-15T12:00:00Z",
+      "at": "1995-06-15T12:00:00Z",
+      "ascendant_sign": 11,
+      "age": 5, "house": 6, "sign": 4
+    },
+    {
+      "case": "born on the 29th of February, asked in a common year",
+      "why": "the astrological year turns when the full year has elapsed",
+      "born": "2000-02-29T06:00:00Z",
+      "at": "2025-03-01T06:00:00Z",
+      "ascendant_sign": 3,
+      "age": 25, "house": 2, "sign": 4
+    }
+  ]
+}
