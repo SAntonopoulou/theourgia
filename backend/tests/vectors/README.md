@@ -82,6 +82,12 @@ notices there is no fixture. It belongs written down, not remembered.
 The phone is the source of truth, so a disagreement is this side's to fix
 unless the phone is demonstrably wrong.
 
+## ⚠ All eight are covered, and that is now a GATE
+
+`test_all_eight_primitives_are_covered` fails if the fixture is missing one.
+Before 15 August it only reported the gap, which is the version of that test
+that lets the arrangement rot quietly. A ninth primitive on the phone fails it.
+
 ## Where the eight stand
 
 | primitive | vectors | site implementation |
@@ -92,7 +98,7 @@ unless the phone is demonstrably wrong.
 | `table-lookup` | ✓ emitted | `core/divination/derive.py` |
 | `profect-annual` | ✓ | `core/astro/profections.py` |
 | `profect-monthly` | ✓ emitted | `core/astro/profections.py` |
-| `solar-return` | — | — (unblocked now the ephemerides match) |
+| `solar-return` | ✓ emitted | `core/astro/solar_return.py` |
 | `zodiacal-releasing` | ✓ emitted | `core/astro/releasing.py` |
 
 ⚠ The four derivation cases were **emitted by practiseapp running** —
@@ -126,6 +132,38 @@ pinned by vectors:
   nothing stops a pack from overlapping them.
 * **Values are strings all the way.** The layers chain, and a table keyed by
   `"10"` is not found by `10`.
+
+## ⚠ Solar returns are vectored against a LINEAR Sun, deliberately
+
+The primitive is the **bisection** — bracket ±3 days, widen to ±10 if the
+separation does not change sign, halve until the window is a second. Pinning a
+real return instant would pin the `.se1` FILES instead, and the fixture would
+break the day they are updated for a reason that is not a disagreement between
+two implementations. That the two sides read the same real ephemeris is a
+separate guarantee with its own check, above.
+
+Three things a careful reading of the Dart gets wrong, each caught by exactly
+one vector — verified by breaking this side on purpose and watching which case
+failed:
+
+* **The midpoint is truncated integer microseconds** (`~/ 2` on a Duration).
+  Python's `(high - low) / 2` rounds to the nearest *even* microsecond, so on
+  an odd span the two sides pick midpoints a microsecond apart and every
+  later halving inherits it. Caught by 335° and 344°, two microseconds out.
+* **Dart's `double.sign` makes zero its own sign.** `0.0` equals neither `-1`
+  nor `1`, so a probe landing exactly on the target degree matches *neither*
+  end and takes the else branch. Spelling it `x < 0` on both sides — the
+  obvious Python — folds zero in with the positives and widens a bracket that
+  should not have widened. Caught **only** by the 337.75° case, which is the
+  low bracket edge exactly, and which exists for that reason alone.
+* **`_birthdayIn` keeps seconds and no finer**, discarding milliseconds and
+  microseconds from the birth moment. It is only a starting guess, but the
+  halving sequence descends from it, so keeping them changes the answer's last
+  digits for a reason nobody could see.
+
+⚠ **A 29 February birth rolls to 1 March**, because Dart's `DateTime.utc`
+normalises rather than raising. The Python raises, so that branch is written
+out explicitly — it is Dart's rollover transcribed, not a policy of ours.
 
 ## What it found on the first day
 

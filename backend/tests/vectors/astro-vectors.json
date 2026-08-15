@@ -1,11 +1,388 @@
 {
-  "_note": "Emitted from practiseapp — the source of truth. See README.md. A new primitive without a vector is not finished.",
+  "_note": "Emitted from practiseapp \u2014 the source of truth. See README.md. A new primitive without a vector is not finished.",
   "generated": "2026-08-15",
   "source": "practiseapp lib/domain/astrology/time_lords.dart",
+  "_emitted": "The derivation cases were EMITTED by practiseapp running (test/emit_astro_vectors_test.dart). The profection cases were derived from its source; regenerate them the same way when the emitter grows a chart fixture.",
+  "derivation-layers": {
+    "_note": "The system the cases below were read against \u2014 the phone's own spelling.",
+    "layers": [
+      {
+        "key": "sum",
+        "label": "Sum",
+        "primitive": "sum-of-faces"
+      },
+      {
+        "key": "rung",
+        "label": "Rung",
+        "primitive": "cycle-of",
+        "from": "sum",
+        "cycle": 10
+      },
+      {
+        "key": "octave",
+        "label": "Octave",
+        "primitive": "band-lookup",
+        "from": "sum",
+        "bands": [
+          {
+            "upTo": 6,
+            "name": "low"
+          },
+          {
+            "upTo": 12,
+            "name": "middle"
+          },
+          {
+            "upTo": 18,
+            "name": "high"
+          }
+        ]
+      },
+      {
+        "key": "named",
+        "label": "Named",
+        "primitive": "table-lookup",
+        "from": "rung",
+        "table": {
+          "1": "Monad",
+          "2": "Dyad",
+          "10": "Decad"
+        }
+      }
+    ]
+  },
+  "sum-of-faces": [
+    {
+      "case": "cast 1-1-1 \u2014 a table MISS leaves the key absent, not empty",
+      "cast": [
+        1,
+        1,
+        1
+      ],
+      "derived": {
+        "sum": "3",
+        "rung": "3",
+        "octave": "low"
+      }
+    },
+    {
+      "case": "cast 2-2-2 \u2014 the band boundary is INCLUSIVE",
+      "cast": [
+        2,
+        2,
+        2
+      ],
+      "derived": {
+        "sum": "6",
+        "rung": "6",
+        "octave": "low"
+      }
+    },
+    {
+      "case": "cast 1-2-4 \u2014 the first of the next band",
+      "cast": [
+        1,
+        2,
+        4
+      ],
+      "derived": {
+        "sum": "7",
+        "rung": "7",
+        "octave": "middle"
+      }
+    },
+    {
+      "case": "cast 3-3-4 \u2014 ten on a ten-cycle is ten, not zero",
+      "cast": [
+        3,
+        3,
+        4
+      ],
+      "derived": {
+        "sum": "10",
+        "rung": "10",
+        "octave": "middle",
+        "named": "Decad"
+      }
+    },
+    {
+      "case": "cast 4-4-3 \u2014 eleven wraps to one",
+      "cast": [
+        4,
+        4,
+        3
+      ],
+      "derived": {
+        "sum": "11",
+        "rung": "1",
+        "octave": "middle",
+        "named": "Monad"
+      }
+    },
+    {
+      "case": "cast 6-6-6 \u2014 the top, and another table miss",
+      "cast": [
+        6,
+        6,
+        6
+      ],
+      "derived": {
+        "sum": "18",
+        "rung": "8",
+        "octave": "high"
+      }
+    }
+  ],
+  "cycle-of": [
+    {
+      "case": "cast 1-1-1 \u2014 a table MISS leaves the key absent, not empty",
+      "cast": [
+        1,
+        1,
+        1
+      ],
+      "derived": {
+        "sum": "3",
+        "rung": "3",
+        "octave": "low"
+      }
+    },
+    {
+      "case": "cast 2-2-2 \u2014 the band boundary is INCLUSIVE",
+      "cast": [
+        2,
+        2,
+        2
+      ],
+      "derived": {
+        "sum": "6",
+        "rung": "6",
+        "octave": "low"
+      }
+    },
+    {
+      "case": "cast 1-2-4 \u2014 the first of the next band",
+      "cast": [
+        1,
+        2,
+        4
+      ],
+      "derived": {
+        "sum": "7",
+        "rung": "7",
+        "octave": "middle"
+      }
+    },
+    {
+      "case": "cast 3-3-4 \u2014 ten on a ten-cycle is ten, not zero",
+      "cast": [
+        3,
+        3,
+        4
+      ],
+      "derived": {
+        "sum": "10",
+        "rung": "10",
+        "octave": "middle",
+        "named": "Decad"
+      }
+    },
+    {
+      "case": "cast 4-4-3 \u2014 eleven wraps to one",
+      "cast": [
+        4,
+        4,
+        3
+      ],
+      "derived": {
+        "sum": "11",
+        "rung": "1",
+        "octave": "middle",
+        "named": "Monad"
+      }
+    },
+    {
+      "case": "cast 6-6-6 \u2014 the top, and another table miss",
+      "cast": [
+        6,
+        6,
+        6
+      ],
+      "derived": {
+        "sum": "18",
+        "rung": "8",
+        "octave": "high"
+      }
+    }
+  ],
+  "band-lookup": [
+    {
+      "case": "cast 1-1-1 \u2014 a table MISS leaves the key absent, not empty",
+      "cast": [
+        1,
+        1,
+        1
+      ],
+      "derived": {
+        "sum": "3",
+        "rung": "3",
+        "octave": "low"
+      }
+    },
+    {
+      "case": "cast 2-2-2 \u2014 the band boundary is INCLUSIVE",
+      "cast": [
+        2,
+        2,
+        2
+      ],
+      "derived": {
+        "sum": "6",
+        "rung": "6",
+        "octave": "low"
+      }
+    },
+    {
+      "case": "cast 1-2-4 \u2014 the first of the next band",
+      "cast": [
+        1,
+        2,
+        4
+      ],
+      "derived": {
+        "sum": "7",
+        "rung": "7",
+        "octave": "middle"
+      }
+    },
+    {
+      "case": "cast 3-3-4 \u2014 ten on a ten-cycle is ten, not zero",
+      "cast": [
+        3,
+        3,
+        4
+      ],
+      "derived": {
+        "sum": "10",
+        "rung": "10",
+        "octave": "middle",
+        "named": "Decad"
+      }
+    },
+    {
+      "case": "cast 4-4-3 \u2014 eleven wraps to one",
+      "cast": [
+        4,
+        4,
+        3
+      ],
+      "derived": {
+        "sum": "11",
+        "rung": "1",
+        "octave": "middle",
+        "named": "Monad"
+      }
+    },
+    {
+      "case": "cast 6-6-6 \u2014 the top, and another table miss",
+      "cast": [
+        6,
+        6,
+        6
+      ],
+      "derived": {
+        "sum": "18",
+        "rung": "8",
+        "octave": "high"
+      }
+    }
+  ],
+  "table-lookup": [
+    {
+      "case": "cast 1-1-1 \u2014 a table MISS leaves the key absent, not empty",
+      "cast": [
+        1,
+        1,
+        1
+      ],
+      "derived": {
+        "sum": "3",
+        "rung": "3",
+        "octave": "low"
+      }
+    },
+    {
+      "case": "cast 2-2-2 \u2014 the band boundary is INCLUSIVE",
+      "cast": [
+        2,
+        2,
+        2
+      ],
+      "derived": {
+        "sum": "6",
+        "rung": "6",
+        "octave": "low"
+      }
+    },
+    {
+      "case": "cast 1-2-4 \u2014 the first of the next band",
+      "cast": [
+        1,
+        2,
+        4
+      ],
+      "derived": {
+        "sum": "7",
+        "rung": "7",
+        "octave": "middle"
+      }
+    },
+    {
+      "case": "cast 3-3-4 \u2014 ten on a ten-cycle is ten, not zero",
+      "cast": [
+        3,
+        3,
+        4
+      ],
+      "derived": {
+        "sum": "10",
+        "rung": "10",
+        "octave": "middle",
+        "named": "Decad"
+      }
+    },
+    {
+      "case": "cast 4-4-3 \u2014 eleven wraps to one",
+      "cast": [
+        4,
+        4,
+        3
+      ],
+      "derived": {
+        "sum": "11",
+        "rung": "1",
+        "octave": "middle",
+        "named": "Monad"
+      }
+    },
+    {
+      "case": "cast 6-6-6 \u2014 the top, and another table miss",
+      "cast": [
+        6,
+        6,
+        6
+      ],
+      "derived": {
+        "sum": "18",
+        "rung": "8",
+        "octave": "high"
+      }
+    }
+  ],
   "profect-annual": [
     {
       "case": "the hour of birth has not come round yet on the birthday",
-      "why": "the case that found the disagreement — the site said 42/7th, the phone 41/6th",
+      "why": "the case that found the disagreement \u2014 the site said 42/7th, the phone 41/6th",
       "born": "1984-03-02T18:00:00Z",
       "at": "2026-03-02T09:00:00Z",
       "ascendant_sign": 5,
@@ -60,383 +437,6 @@
       "sign": 4
     }
   ],
-  "_emitted": "The derivation cases were EMITTED by practiseapp running (test/emit_astro_vectors_test.dart). The profection cases were derived from its source; regenerate them the same way when the emitter grows a chart fixture.",
-  "derivation-layers": {
-    "_note": "The system the cases below were read against — the phone's own spelling.",
-    "layers": [
-      {
-        "key": "sum",
-        "label": "Sum",
-        "primitive": "sum-of-faces"
-      },
-      {
-        "key": "rung",
-        "label": "Rung",
-        "primitive": "cycle-of",
-        "from": "sum",
-        "cycle": 10
-      },
-      {
-        "key": "octave",
-        "label": "Octave",
-        "primitive": "band-lookup",
-        "from": "sum",
-        "bands": [
-          {
-            "upTo": 6,
-            "name": "low"
-          },
-          {
-            "upTo": 12,
-            "name": "middle"
-          },
-          {
-            "upTo": 18,
-            "name": "high"
-          }
-        ]
-      },
-      {
-        "key": "named",
-        "label": "Named",
-        "primitive": "table-lookup",
-        "from": "rung",
-        "table": {
-          "1": "Monad",
-          "2": "Dyad",
-          "10": "Decad"
-        }
-      }
-    ]
-  },
-  "sum-of-faces": [
-    {
-      "case": "cast 1-1-1 — a table MISS leaves the key absent, not empty",
-      "cast": [
-        1,
-        1,
-        1
-      ],
-      "derived": {
-        "sum": "3",
-        "rung": "3",
-        "octave": "low"
-      }
-    },
-    {
-      "case": "cast 2-2-2 — the band boundary is INCLUSIVE",
-      "cast": [
-        2,
-        2,
-        2
-      ],
-      "derived": {
-        "sum": "6",
-        "rung": "6",
-        "octave": "low"
-      }
-    },
-    {
-      "case": "cast 1-2-4 — the first of the next band",
-      "cast": [
-        1,
-        2,
-        4
-      ],
-      "derived": {
-        "sum": "7",
-        "rung": "7",
-        "octave": "middle"
-      }
-    },
-    {
-      "case": "cast 3-3-4 — ten on a ten-cycle is ten, not zero",
-      "cast": [
-        3,
-        3,
-        4
-      ],
-      "derived": {
-        "sum": "10",
-        "rung": "10",
-        "octave": "middle",
-        "named": "Decad"
-      }
-    },
-    {
-      "case": "cast 4-4-3 — eleven wraps to one",
-      "cast": [
-        4,
-        4,
-        3
-      ],
-      "derived": {
-        "sum": "11",
-        "rung": "1",
-        "octave": "middle",
-        "named": "Monad"
-      }
-    },
-    {
-      "case": "cast 6-6-6 — the top, and another table miss",
-      "cast": [
-        6,
-        6,
-        6
-      ],
-      "derived": {
-        "sum": "18",
-        "rung": "8",
-        "octave": "high"
-      }
-    }
-  ],
-  "cycle-of": [
-    {
-      "case": "cast 1-1-1 — a table MISS leaves the key absent, not empty",
-      "cast": [
-        1,
-        1,
-        1
-      ],
-      "derived": {
-        "sum": "3",
-        "rung": "3",
-        "octave": "low"
-      }
-    },
-    {
-      "case": "cast 2-2-2 — the band boundary is INCLUSIVE",
-      "cast": [
-        2,
-        2,
-        2
-      ],
-      "derived": {
-        "sum": "6",
-        "rung": "6",
-        "octave": "low"
-      }
-    },
-    {
-      "case": "cast 1-2-4 — the first of the next band",
-      "cast": [
-        1,
-        2,
-        4
-      ],
-      "derived": {
-        "sum": "7",
-        "rung": "7",
-        "octave": "middle"
-      }
-    },
-    {
-      "case": "cast 3-3-4 — ten on a ten-cycle is ten, not zero",
-      "cast": [
-        3,
-        3,
-        4
-      ],
-      "derived": {
-        "sum": "10",
-        "rung": "10",
-        "octave": "middle",
-        "named": "Decad"
-      }
-    },
-    {
-      "case": "cast 4-4-3 — eleven wraps to one",
-      "cast": [
-        4,
-        4,
-        3
-      ],
-      "derived": {
-        "sum": "11",
-        "rung": "1",
-        "octave": "middle",
-        "named": "Monad"
-      }
-    },
-    {
-      "case": "cast 6-6-6 — the top, and another table miss",
-      "cast": [
-        6,
-        6,
-        6
-      ],
-      "derived": {
-        "sum": "18",
-        "rung": "8",
-        "octave": "high"
-      }
-    }
-  ],
-  "band-lookup": [
-    {
-      "case": "cast 1-1-1 — a table MISS leaves the key absent, not empty",
-      "cast": [
-        1,
-        1,
-        1
-      ],
-      "derived": {
-        "sum": "3",
-        "rung": "3",
-        "octave": "low"
-      }
-    },
-    {
-      "case": "cast 2-2-2 — the band boundary is INCLUSIVE",
-      "cast": [
-        2,
-        2,
-        2
-      ],
-      "derived": {
-        "sum": "6",
-        "rung": "6",
-        "octave": "low"
-      }
-    },
-    {
-      "case": "cast 1-2-4 — the first of the next band",
-      "cast": [
-        1,
-        2,
-        4
-      ],
-      "derived": {
-        "sum": "7",
-        "rung": "7",
-        "octave": "middle"
-      }
-    },
-    {
-      "case": "cast 3-3-4 — ten on a ten-cycle is ten, not zero",
-      "cast": [
-        3,
-        3,
-        4
-      ],
-      "derived": {
-        "sum": "10",
-        "rung": "10",
-        "octave": "middle",
-        "named": "Decad"
-      }
-    },
-    {
-      "case": "cast 4-4-3 — eleven wraps to one",
-      "cast": [
-        4,
-        4,
-        3
-      ],
-      "derived": {
-        "sum": "11",
-        "rung": "1",
-        "octave": "middle",
-        "named": "Monad"
-      }
-    },
-    {
-      "case": "cast 6-6-6 — the top, and another table miss",
-      "cast": [
-        6,
-        6,
-        6
-      ],
-      "derived": {
-        "sum": "18",
-        "rung": "8",
-        "octave": "high"
-      }
-    }
-  ],
-  "table-lookup": [
-    {
-      "case": "cast 1-1-1 — a table MISS leaves the key absent, not empty",
-      "cast": [
-        1,
-        1,
-        1
-      ],
-      "derived": {
-        "sum": "3",
-        "rung": "3",
-        "octave": "low"
-      }
-    },
-    {
-      "case": "cast 2-2-2 — the band boundary is INCLUSIVE",
-      "cast": [
-        2,
-        2,
-        2
-      ],
-      "derived": {
-        "sum": "6",
-        "rung": "6",
-        "octave": "low"
-      }
-    },
-    {
-      "case": "cast 1-2-4 — the first of the next band",
-      "cast": [
-        1,
-        2,
-        4
-      ],
-      "derived": {
-        "sum": "7",
-        "rung": "7",
-        "octave": "middle"
-      }
-    },
-    {
-      "case": "cast 3-3-4 — ten on a ten-cycle is ten, not zero",
-      "cast": [
-        3,
-        3,
-        4
-      ],
-      "derived": {
-        "sum": "10",
-        "rung": "10",
-        "octave": "middle",
-        "named": "Decad"
-      }
-    },
-    {
-      "case": "cast 4-4-3 — eleven wraps to one",
-      "cast": [
-        4,
-        4,
-        3
-      ],
-      "derived": {
-        "sum": "11",
-        "rung": "1",
-        "octave": "middle",
-        "named": "Monad"
-      }
-    },
-    {
-      "case": "cast 6-6-6 — the top, and another table miss",
-      "cast": [
-        6,
-        6,
-        6
-      ],
-      "derived": {
-        "sum": "18",
-        "rung": "8",
-        "octave": "high"
-      }
-    }
-  ],
   "profect-monthly": [
     {
       "case": "born 1984-03-02T18:00:00Z, asked 2026-03-02T19:00:00Z",
@@ -485,6 +485,58 @@
       "house": 6,
       "from": "2027-01-31T08:00:00.000Z",
       "until": "2027-03-02T18:00:00.000Z"
+    }
+  ],
+  "solar-return": [
+    {
+      "case": "a linear Sun returning to 340.0\u00b0",
+      "target": 340.0,
+      "epoch": "2026-01-01T00:00:00Z",
+      "sun_at_epoch": 280.0,
+      "degrees_per_day": 1.0,
+      "born": "1984-03-02T18:00:00Z",
+      "age": 42,
+      "found": "2026-03-01T23:59:59.505615Z"
+    },
+    {
+      "case": "a linear Sun returning to 341.5\u00b0",
+      "target": 341.5,
+      "epoch": "2026-01-01T00:00:00Z",
+      "sun_at_epoch": 280.0,
+      "degrees_per_day": 1.0,
+      "born": "1984-03-02T18:00:00Z",
+      "age": 42,
+      "found": "2026-03-03T11:59:59.505615Z"
+    },
+    {
+      "case": "a linear Sun returning to 335.0\u00b0",
+      "target": 335.0,
+      "epoch": "2026-01-01T00:00:00Z",
+      "sun_at_epoch": 280.0,
+      "degrees_per_day": 1.0,
+      "born": "1984-03-02T18:00:00Z",
+      "age": 42,
+      "found": "2026-02-24T23:59:59.752806Z"
+    },
+    {
+      "case": "a linear Sun returning to 344.0\u00b0",
+      "target": 344.0,
+      "epoch": "2026-01-01T00:00:00Z",
+      "sun_at_epoch": 280.0,
+      "degrees_per_day": 1.0,
+      "born": "1984-03-02T18:00:00Z",
+      "age": 42,
+      "found": "2026-03-06T00:00:00.247191Z"
+    },
+    {
+      "case": "a linear Sun returning to 337.75\u00b0",
+      "target": 337.75,
+      "epoch": "2026-01-01T00:00:00Z",
+      "sun_at_epoch": 280.0,
+      "degrees_per_day": 1.0,
+      "born": "1984-03-02T18:00:00Z",
+      "age": 42,
+      "found": "2026-02-27T18:00:00.494384Z"
     }
   ],
   "zodiacal-releasing": [

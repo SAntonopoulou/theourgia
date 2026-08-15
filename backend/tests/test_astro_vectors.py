@@ -34,6 +34,7 @@ from theourgia.core.astro.profections import (
     profection_monthly_at,
     profection_year_bounds,
 )
+from theourgia.core.astro.solar_return import nearest_return, return_for_age
 from theourgia.core.divination.derive import derive, layers_from_payload
 
 VECTORS = json.loads((Path(__file__).parent / "vectors" / "astro-vectors.json").read_text())
@@ -49,6 +50,7 @@ EXERCISED: frozenset[str] = frozenset(
         "table-lookup",
         "profect-monthly",
         "zodiacal-releasing",
+        "solar-return",
     }
 )
 
@@ -240,6 +242,94 @@ class TestZodiacalReleasing:
         assert runs[BondRule.TO_START][-2:] == [5, 6]
 
 
+def _linear_sun(case: dict[str, Any]):
+    """The phone's `LinearEphemeris`, as a plain function.
+
+    ⚠ **A linear Sun on purpose.** The primitive being vectored is the SEARCH,
+    not the ephemeris. Pinning a real return instant would pin the `.se1` files
+    instead, and the fixture would break the day they are updated for a reason
+    that is not a disagreement between the two implementations. That the two
+    read the same real ephemeris is `TestTheEphemerisItself` below.
+    """
+    epoch = datetime.fromisoformat(case["epoch"])
+    at_epoch = case["sun_at_epoch"]
+    per_day = case["degrees_per_day"]
+
+    def longitude_at(moment: datetime) -> float:
+        days = (moment - epoch).total_seconds() / 86400
+        return (at_epoch + per_day * days) % 360
+
+    return longitude_at
+
+
+class TestSolarReturns:
+    """The bisection, to the microsecond the phone reached."""
+
+    @pytest.mark.parametrize("case", _cases("solar-return"), ids=_ids("solar-return"))
+    def test_every_return_matches_the_phone(self, case: dict[str, Any]) -> None:
+        got = return_for_age(
+            _linear_sun(case),
+            born=datetime.fromisoformat(case["born"]),
+            natal_sun=case["target"],
+            age=case["age"],
+        )
+        # ⚠ Exactly, not to the second. The halving sequence is deterministic,
+        # so a microsecond of disagreement means the two sides are stepping
+        # differently — from float division rounding to even, say — and that
+        # is worth failing over even though nobody would feel a microsecond.
+        assert got == datetime.fromisoformat(case["found"]), case["case"]
+
+    def test_a_degree_the_sun_does_not_reach_is_refused(self) -> None:
+        """⚠ Refused, never approximated.
+
+        Returning the nearest bracket end would be a confident wrong answer,
+        and a return chart is read entirely from its angles — an answer hours
+        out is a different chart, not a slightly worse one.
+        """
+        case = _cases("solar-return")[0]
+        with pytest.raises(ValueError, match="did not reach"):
+            return_for_age(
+                _linear_sun(case),
+                born=datetime.fromisoformat(case["born"]),
+                # Some 160° from where this Sun is at the birthday — far
+                # outside even the widened bracket.
+                natal_sun=140.0,
+                age=case["age"],
+            )
+
+    def test_the_widened_bracket_is_what_saves_the_five_day_case(self) -> None:
+        """⚠ 335° is five days back, so the ±3 bracket does not hold it."""
+        case = next(c for c in _cases("solar-return") if c["target"] == 335.0)
+        got = return_for_age(
+            _linear_sun(case),
+            born=datetime.fromisoformat(case["born"]),
+            natal_sun=case["target"],
+            age=case["age"],
+        )
+        guess = datetime.fromisoformat("2026-03-02T18:00:00Z")
+        assert abs((got - guess).days) >= 3, "this case no longer exercises the widening"
+        assert got == datetime.fromisoformat(case["found"])
+
+    def test_january_belongs_to_the_return_before_it(self) -> None:
+        """⚠ Which return governs a moment is not which birthday is nearest.
+
+        A return falling on 3 January governs from that instant, so 1 January
+        belongs to the one before — a year earlier, not a day.
+        """
+        case = _cases("solar-return")[0]
+        sun = _linear_sun(case)
+        born = datetime.fromisoformat(case["born"])
+        # New Year's Day, two months before the birthday comes round.
+        governing = nearest_return(
+            sun,
+            born=born,
+            natal_sun=case["target"],
+            at=datetime.fromisoformat("2026-01-01T00:00:00Z"),
+        )
+        assert governing.year == 2025, "the 2026 return has not happened yet on 1 January"
+        assert governing < datetime.fromisoformat("2026-01-01T00:00:00Z")
+
+
 class TestTheEphemerisItself:
     """⚠ Both sides must ask Swiss Ephemeris for the SAME ephemeris.
 
@@ -293,11 +383,13 @@ class TestTheRuleWithTeeth:
             "Add a test, or take them out of the fixture."
         )
 
-    def test_the_eight_primitives_are_named_so_the_gap_is_visible(self) -> None:
-        """The list, and how much of it is still to do.
+    def test_all_eight_primitives_are_covered(self) -> None:
+        """The eight, and that none of them has gone unvectored.
 
-        ⚠ Not a failure — a statement. Seven of the eight have no vectors yet
-        and this is where somebody finds that out.
+        ⚠ This became a gate on 15 August, when `solar-return` closed the set.
+        Before that it only reported the gap. A NINTH primitive on the phone
+        fails here, which is the point — the rule is that a new primitive
+        without a vector is not finished, and a rule nobody enforces is a note.
         """
         all_eight = {
             "band-lookup",
@@ -317,4 +409,10 @@ class TestTheRuleWithTeeth:
         assert covered <= all_eight, (
             f"unknown primitive in the fixture: {sorted(covered - all_eight)} — "
             "if the phone has grown a ninth, add it to this list too"
+        )
+        assert covered == all_eight, (
+            f"no vectors for: {sorted(all_eight - covered)}. Emit them from "
+            "practiseapp's test/emit_astro_vectors_test.dart rather than "
+            "writing them by hand — a fixture the phone did not produce "
+            "pins what somebody believed, not what the phone does."
         )
