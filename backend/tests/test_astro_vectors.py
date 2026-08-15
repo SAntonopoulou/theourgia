@@ -27,12 +27,21 @@ from typing import Any
 import pytest
 
 from theourgia.core.astro.profections import profection_at, profection_for_date
+from theourgia.core.divination.derive import derive, layers_from_payload
 
 VECTORS = json.loads((Path(__file__).parent / "vectors" / "astro-vectors.json").read_text())
 
 #: Every primitive this file actually checks. ⚠ Keep in step with the fixture —
 #: the last test in this module is what enforces that.
-EXERCISED: frozenset[str] = frozenset({"profect-annual"})
+EXERCISED: frozenset[str] = frozenset(
+    {
+        "profect-annual",
+        "sum-of-faces",
+        "cycle-of",
+        "band-lookup",
+        "table-lookup",
+    }
+)
 
 
 def _cases(primitive: str) -> list[dict[str, Any]]:
@@ -90,6 +99,49 @@ class TestAnnualProfections:
                 datetime.fromisoformat("2026-03-02T09:00:00Z"),
                 5,
             )
+
+
+class TestTheDerivationPrimitives:
+    """The four that are arithmetic over pack data.
+
+    ⚠ These cases were EMITTED by practiseapp running, not transcribed from
+    reading it — `test/emit_astro_vectors_test.dart` over there prints them.
+    Two of the behaviours below are ones a careful reading still gets wrong.
+    """
+
+    @staticmethod
+    def _layers():
+        return layers_from_payload(VECTORS["derivation-layers"]["layers"])
+
+    @pytest.mark.parametrize("case", _cases("sum-of-faces"), ids=_ids("sum-of-faces"))
+    def test_the_site_derives_what_the_phone_derived(self, case: dict[str, Any]) -> None:
+        got = derive(self._layers(), tuple(case["cast"]))
+        assert got == case["derived"], case["case"]
+
+    def test_a_table_MISS_leaves_the_key_absent(self) -> None:
+        # ⚠ The phone does `if (value.isEmpty) continue`, so a miss drops the
+        # layer entirely. A reader showing "Named: —" where the phone shows
+        # nothing at all is giving a different reading.
+        got = derive(self._layers(), (1, 1, 1))
+        assert "named" not in got
+        assert got == {"sum": "3", "rung": "3", "octave": "low"}
+
+    def test_the_band_boundary_is_inclusive(self) -> None:
+        # Six is the top of the low band and belongs to it.
+        assert derive(self._layers(), (2, 2, 2))["octave"] == "low"
+        assert derive(self._layers(), (1, 2, 4))["octave"] == "middle"
+
+    def test_the_cycle_is_one_based(self) -> None:
+        # ⚠ Ten on a ten-cycle is TEN, not zero; eleven is one.
+        assert derive(self._layers(), (3, 3, 4))["rung"] == "10"
+        assert derive(self._layers(), (4, 4, 3))["rung"] == "1"
+
+    def test_values_are_STRINGS_because_the_layers_chain(self) -> None:
+        # `named` reads `rung`, and the table is keyed by "1", not by 1.
+        got = derive(self._layers(), (4, 4, 3))
+        assert got["rung"] == "1"
+        assert got["named"] == "Monad"
+        assert all(isinstance(v, str) for v in got.values())
 
 
 class TestTheRuleWithTeeth:

@@ -49,6 +49,35 @@ notices there is no fixture. It belongs written down, not remembered.
 The phone is the source of truth, so a disagreement is this side's to fix
 unless the phone is demonstrably wrong.
 
+## Where the eight stand
+
+| primitive | vectors | site implementation |
+|---|---|---|
+| `sum-of-faces` | ✓ emitted | `core/divination/derive.py` |
+| `cycle-of` | ✓ emitted | `core/divination/derive.py` |
+| `band-lookup` | ✓ emitted | `core/divination/derive.py` |
+| `table-lookup` | ✓ emitted | `core/divination/derive.py` |
+| `profect-annual` | ✓ | `core/astro/profections.py` |
+| `profect-monthly` | — | — |
+| `solar-return` | — | — |
+| `zodiacal-releasing` | — | — |
+
+⚠ The four derivation cases were **emitted by practiseapp running** —
+`test/emit_astro_vectors_test.dart` over there prints them, and it is a
+generator wearing a test's clothes. Regenerate rather than hand-edit them.
+
+⚠ Three behaviours a careful reading of the Dart still gets wrong, all now
+pinned by vectors:
+
+* **A table miss leaves the key ABSENT**, not present-and-empty. The phone
+  does `if (value.isEmpty) continue`, so the layer drops out. A reader showing
+  "Named: —" where the phone shows nothing is giving a different reading.
+* **Band boundaries are inclusive** and bands are tried **in declared order**.
+  Sorting them changes the answer for any pack whose bands overlap, and
+  nothing stops a pack from overlapping them.
+* **Values are strings all the way.** The layers chain, and a table keyed by
+  `"10"` is not found by `10`.
+
 ## What it found on the first day
 
 ⚠ **Annual profections disagreed by a whole year.** Same person, same instant —
