@@ -97,6 +97,27 @@ TYPE_CATALOG: frozenset[str] = frozenset(
         "body-diagram-presets",
         "dream-symbols",
         "plugin",
+        # ── From the phone, 15 August 2026 ──────────────────────────────
+        #
+        # ⚠ Added because practiseapp publishes these kinds and the two
+        # formats are converging on this one. Every other kind it ships
+        # already had a home here — see backend/tool/pack_to_mbf.py, which
+        # converts all thirty-five of its packs and verifies every digest.
+        #
+        # ⚠ An unknown type imports opaque-but-listed rather than being
+        # refused, so these five were arriving safely before they were named.
+        # Naming them is what lets an importer be written for them.
+        # ⚠ NOT `correspondences`, which already means something else here: a
+        # flat table of rows, as `planetary-correspondences` ships. A phone
+        # map is nodes, edges, lines, shapes and groups, each CARRYING
+        # correspondences. One type name over two shapes is how a format
+        # rots, so the map gets its own.
+        "spiritual-maps",
+        "divination-derivations",
+        "divination-fields",
+        "divination-systems",
+        "session-protocols",
+        "sitting-forms",
     }
 )
 

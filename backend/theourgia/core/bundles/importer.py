@@ -29,6 +29,7 @@ are documented in ``docs/developer/mbf.md``.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Protocol
@@ -40,6 +41,7 @@ from theourgia.models.bundles import InstalledBundle
 from theourgia.models.entities import Entity, EntityKind, EntityVisibility
 from theourgia.models.entries import EntryType
 from theourgia.models.recipe import Recipe, RecipeKind
+from theourgia.models.spiritual_map import SpiritualMap
 from theourgia.models.tarot import Spread, SpreadKind
 from theourgia.models.templates import EntryTemplate, TemplateScope
 from theourgia.models.voces import SourceScript, VoceMagicae
@@ -105,9 +107,7 @@ class _ImportContext:
         )
 
     def skipped(self, ref: str, kind: str, detail: str) -> None:
-        self.results.append(
-            ItemResult(ref=ref, kind=kind, status=STATUS_SKIPPED, detail=detail)
-        )
+        self.results.append(ItemResult(ref=ref, kind=kind, status=STATUS_SKIPPED, detail=detail))
 
 
 def _selected(
@@ -236,9 +236,7 @@ async def import_entry_templates(
         if isinstance(body_template, (dict, list)):
             body_template = json.dumps(body_template)
         if not isinstance(body_template, str) or not body_template.strip():
-            ctx.skipped(
-                ref, "entry-templates", "missing required field 'body_template'"
-            )
+            ctx.skipped(ref, "entry-templates", "missing required field 'body_template'")
             continue
         row = EntryTemplate(
             name=name,
@@ -310,9 +308,7 @@ async def import_voces(
         name = _str_or_none(item.get("name"))
         source_text = _str_or_none(item.get("source_text"))
         if name is None or source_text is None:
-            ctx.skipped(
-                ref, "voces", "missing required field 'name' or 'source_text'"
-            )
+            ctx.skipped(ref, "voces", "missing required field 'name' or 'source_text'")
             continue
         citation = _str_or_none(item.get("source_citation"))
         if citation is None:
@@ -329,9 +325,7 @@ async def import_voces(
             script_note = ""
         except ValueError:
             script = SourceScript.CUSTOM
-            script_note = (
-                f"unknown source script {raw_script!r} — stored as 'custom'"
-            )
+            script_note = f"unknown source script {raw_script!r} — stored as 'custom'"
         row = VoceMagicae(
             name=name,
             source_text=source_text,
@@ -342,9 +336,7 @@ async def import_voces(
             planetary_associations=_str_list(item.get("planetary_associations")),
             elemental_associations=_str_list(item.get("elemental_associations")),
             linked_entity_ids=[],
-            forked_from_bundled_id=_str_or_none(
-                item.get("forked_from_bundled_id")
-            ),
+            forked_from_bundled_id=_str_or_none(item.get("forked_from_bundled_id")),
             owner_id=owner_id,
         )
         ctx.imported(ref, "voces", row, detail=script_note)
@@ -409,12 +401,109 @@ class _Importer(Protocol):
     ) -> list[ItemResult]: ...
 
 
+async def import_spiritual_maps(
+    session: Any,
+    items: Sequence[dict[str, Any]],
+    *,
+    owner_id: UUID,
+    origin: str,
+    selected_refs: Collection[str] | None = None,
+    sandbox_id: UUID | None = None,
+) -> list[ItemResult]:
+    """Import spiritual maps — the correspondence charts from the phone.
+
+    ⚠ **A map arrives WHOLE.** Nodes, edges, lines, shapes, groups, the ascent
+    and the words are stored as the pack shipped them, because a
+    correspondence attaches to whatever *carries* it and shredding the
+    document would force this side to decide which of five carriers' fields
+    deserve columns — a decision it would then have to remake every time the
+    phone learns a new one. See `models/spiritual_map.py`.
+
+    ⚠ **A map with no nodes is skipped.** An empty chart is not a small chart:
+    it is a manifest entry with nothing behind it, and importing one puts a
+    name in somebody's list that opens onto nothing.
+    """
+    _ = sandbox_id
+    ctx = _ImportContext(session=session, owner_id=owner_id, origin=origin)
+    for item in _selected(items, selected_refs):
+        ref = item["ref"]
+        name = _str_or_none(item.get("name"))
+        if name is None:
+            ctx.skipped(ref, "spiritual-maps", "missing required field 'name'")
+            continue
+
+        nodes = item.get("nodes")
+        if not isinstance(nodes, list) or not nodes:
+            ctx.skipped(
+                ref,
+                "spiritual-maps",
+                "a map with no nodes is a name with nothing behind it",
+            )
+            continue
+
+        # ⚠ Counted here rather than trusted from the pack. A count a publisher
+        # asserts is a claim; a count taken from the document is a fact, and
+        # the directory that shows it should not be quoting anybody.
+        carriers = ("nodes", "edges", "lines", "shapes", "groups")
+        correspondences = sum(
+            len(carrier.get("correspondences") or [])
+            for key in carriers
+            for carrier in (item.get(key) or [])
+            if isinstance(carrier, dict)
+        )
+
+        # Everything except the fields that became columns. ⚠ Unknown keys are
+        # KEPT — the phone may ship a carrier this build has never heard of,
+        # and dropping it here would silently lose somebody's work.
+        document = {
+            key: value
+            for key, value in item.items()
+            if key not in {"ref", "name", "tradition", "summary"}
+        }
+
+        row = SpiritualMap(
+            owner_id=owner_id,
+            slug=_slug_from_ref(ref),
+            name=name,
+            tradition=_str_or_none(item.get("tradition")) or "",
+            summary=_str_or_none(item.get("summary")) or "",
+            document=document,
+            node_count=len(nodes),
+            correspondence_count=correspondences,
+            source_slug=origin,
+        )
+        ctx.imported(
+            ref,
+            "spiritual-maps",
+            row,
+            detail=f"{len(nodes)} nodes, {correspondences} correspondences",
+        )
+    return ctx.results
+
+
+def _slug_from_ref(ref: str) -> str:
+    """`maps:the-hekate-tetraktys` → `the-hekate-tetraktys`.
+
+    ⚠ The list prefix is how the converter keeps two entries of the same name
+    apart inside one pack. It has done its job by the time the map is a row of
+    its own, and carrying it into the slug would put a colon in a URL.
+    """
+    tail = ref.split(":", 1)[-1]
+    return re.sub(r"[^a-z0-9-]+", "-", tail.lower()).strip("-")[:128] or "map"
+
+
 KIND_IMPORTERS: dict[str, _Importer] = {
     "entities": import_entities,
     "entry-templates": import_entry_templates,
     "tarot-spreads": import_tarot_spreads,
     "voces": import_voces,
     "recipes": import_recipes,
+    # ⚠ From the phone, and under `spiritual-maps` rather than
+    # `correspondences`: this side already uses that name for a flat table of
+    # rows (`planetary-correspondences`), which has no importer BY CHOICE.
+    # Registering a map importer against it would have quietly started
+    # importing somebody else's content in a shape it does not have.
+    "spiritual-maps": import_spiritual_maps,
 }
 
 
@@ -446,10 +535,7 @@ async def import_parsed_bundle(
                     ref=item["ref"],
                     kind=doc.kind,
                     status=STATUS_SKIPPED,
-                    detail=(
-                        f"kind {doc.kind!r} has no v1 importer — "
-                        "listed but not materialized"
-                    ),
+                    detail=(f"kind {doc.kind!r} has no v1 importer — listed but not materialized"),
                 )
                 for item in _selected(doc.items, selected_refs)
             )
