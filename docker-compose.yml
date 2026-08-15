@@ -71,6 +71,17 @@ services:
       THEOURGIA_BASE_URL: ${THEOURGIA_BASE_URL:-https://theourgia.example.com}
       THEOURGIA_INSTANCE_ID: ${THEOURGIA_INSTANCE_ID:-theourgia.example.com}
       THEOURGIA_LOG_LEVEL: ${THEOURGIA_LOG_LEVEL:-info}
+      # Companion applications that may redeem a device link code, as
+      # `client_id:secret` pairs. ⚠ Empty is the default and means the
+      # link-code endpoints REFUSE — a relying party is a named thing an
+      # operator adds on purpose. See theourgia/models/link_code.py.
+      #
+      # ⚠ Listed HERE and not only in .env. This service takes an explicit
+      # environment map, so .env is read by compose for substitution and is
+      # NOT passed through to the container — a variable added to .env alone
+      # reaches nothing, and the endpoint answers 503 as though it were
+      # unconfigured. Which is exactly what happened.
+      THEOURGIA_LINK_CODE_CLIENTS: ${THEOURGIA_LINK_CODE_CLIENTS:-}
       DATABASE_URL: postgresql+asyncpg://${THEOURGIA_DB_USER:-theourgia}:${THEOURGIA_DB_PASSWORD}@postgres:5432/${THEOURGIA_DB_NAME:-theourgia}
       REDIS_URL: redis://redis:6379/0
       THEOURGIA_EPHE_PATH: /app/data/ephe

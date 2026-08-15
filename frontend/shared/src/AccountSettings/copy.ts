@@ -9,6 +9,7 @@
 export type SectionKey =
   | "identity"
   | "security"
+  | "linked"
   | "privacy"
   | "access"
   | "inheritance"
@@ -51,6 +52,15 @@ export const DEFAULT_SECTIONS: readonly SectionDef[] = [
     ],
   },
   {
+    key: "linked",
+    title: "Linked applications",
+    sub: "Companion apps connected to this account",
+    // Under Security rather than Privacy: a link code is a credential, and
+    // this is where somebody looks when they want to know what can act on
+    // their behalf.
+    links: [{ label: "Link a companion app", href: "/settings/linked-applications" }],
+  },
+  {
     key: "privacy",
     title: "Privacy",
     sub: "Export & audit",
@@ -63,9 +73,7 @@ export const DEFAULT_SECTIONS: readonly SectionDef[] = [
     key: "access",
     title: "Accessibility and motion",
     sub: "Contrast, text size, motion, autoplay",
-    links: [
-      { label: "Accessibility settings", href: "/settings/accessibility" },
-    ],
+    links: [{ label: "Accessibility settings", href: "/settings/accessibility" }],
   },
   {
     key: "inheritance",

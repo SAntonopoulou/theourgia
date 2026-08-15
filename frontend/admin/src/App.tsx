@@ -578,6 +578,11 @@ const AccountSettingsRoute = lazy(() =>
     default: m.AccountSettingsRoute,
   })),
 );
+const LinkedApplicationsRoute = lazy(() =>
+  import("./routes/LinkedApplicationsRoute.js").then((m) => ({
+    default: m.LinkedApplicationsRoute,
+  })),
+);
 const DataExportRequestRoute = lazy(() =>
   import("./routes/DataExportRequestRoute.js").then((m) => ({
     default: m.DataExportRequestRoute,
@@ -983,6 +988,7 @@ function ShellRoutes() {
             <Route path="/settings/delete-account" element={<AccountDeletionRoute />} />
             <Route path="/settings/audit" element={<PerUserAuditLogRoute />} />
             <Route path="/settings/sessions" element={<SessionsAndDevicesRoute />} />
+            <Route path="/settings/linked-applications" element={<LinkedApplicationsRoute />} />
             <Route path="/settings/accessibility" element={<AccessibilityAndMotionRoute />} />
             <Route path="/settings/preferences" element={<Settings />} />
             <Route path="/comments-moderation" element={<CommentModerationRoute />} />

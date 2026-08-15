@@ -401,6 +401,36 @@ class Settings(BaseSettings):
         default=None, alias="THEOURGIA_WEBAUTHN_ORIGIN",
     )
 
+    # ── Device link codes ─────────────────────────────────────────────────
+    # Companion applications that may redeem a link code, as
+    # `client_id:secret` pairs, comma-separated. Example:
+    #
+    #     THEOURGIA_LINK_CODE_CLIENTS=astropractise:s3cr3t
+    #
+    # **Empty by default, and empty means the endpoints refuse.** A relying
+    # party is a named thing an operator adds on purpose; a deployment that
+    # never configured one has not accidentally opened a way to exchange a
+    # short code for a user's identity.
+    link_code_clients: str = Field(
+        default="", alias="THEOURGIA_LINK_CODE_CLIENTS"
+    )
+
+    @property
+    def link_code_client_secrets(self) -> dict[str, str]:
+        """The configured relying parties, as ``{client_id: secret}``.
+
+        ⚠ Pairs with a blank id or a blank secret are DROPPED rather than
+        registered. `THEOURGIA_LINK_CODE_CLIENTS=astropractise:` is a
+        half-finished deployment, and registering a client whose secret is the
+        empty string would let anyone who knows the client id redeem codes.
+        """
+        out: dict[str, str] = {}
+        for pair in self.link_code_clients.split(","):
+            client_id, _, secret = pair.partition(":")
+            if client_id.strip() and secret.strip():
+                out[client_id.strip()] = secret.strip()
+        return out
+
     # ── Observability ─────────────────────────────────────────────────────
     sentry_dsn: SecretStr | None = Field(default=None, alias="THEOURGIA_SENTRY_DSN")
     """Crash reporting DSN. **Off by default** — Theourgia ships with
