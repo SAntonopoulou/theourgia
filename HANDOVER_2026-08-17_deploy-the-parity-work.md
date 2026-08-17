@@ -275,11 +275,7 @@ decided by whoever happened to write the importer.
 - The **record model**, separate from the journal. Homepage quick links are
   blocked on it.
 - **Voces magicae in the app.**
-- The astrology gap: nakshatras, the ayanamsas, the missing house divisions.
-  ⚠ Revisit the vectors-not-a-shared-core decision if **primary directions or
-  circumambulation** come to the web — those are numerically delicate in a way
-  the current eight are not, and the reasoning is in
-  `tests/vectors/README.md`.
+- **The Hellenistic astrology module** — §7, which is the whole of it.
 - **Resend** — key and verified domain both ready, three env vars needed in the
   compose map. ⚠ `.env` does not reach the container; compose takes an
   explicit `environment:` map. That cost a restart to learn.
@@ -297,3 +293,169 @@ decided by whoever happened to write the importer.
 
 ⚠ The backend suite figure is from **before** your talisman and scrying work
 landed. Re-run it rather than quoting mine.
+
+---
+
+## 7. A complete Hellenistic astrology module — what exists and what is missing
+
+Sophia asked for this specifically. It replaces the vaguer line that used to
+sit in §6, which was **wrong in a way worth naming**: I had listed *nakshatras,
+the ayanamsas and the missing house divisions* as "the astrology gap". None of
+those belongs in a Hellenistic module. See "Not Hellenistic" at the end.
+
+### ⚠ First, the thing nobody has written down: there are THREE engines
+
+| codebase | what it is strong at |
+|---|---|
+| **astropractise** `lib/domain/astrology/` | the **doctrine** — sect, lots, dignities, conditions, length of life, predominator, ascensional times |
+| **practiseapp** `lib/domain/astrology/` | the **predictive techniques** — solar returns, antiscia, primary directions, progressions, transits |
+| **theourgia** `backend/theourgia/core/astro/` | the **least of the three** — chart, houses, aspects, transits, profections, releasing, solar returns, planetary hours |
+
+They are close to **complementary**, and neither Dart codebase is a superset of
+the other. Concretely:
+
+- astropractise has **no** solar returns, antiscia, fixed stars or lunar nodes.
+- practiseapp has **no** lots, no bonification/maltreatment, no enclosure, no
+  length-of-life, no predominator.
+- ⚠ **Zodiacal releasing is implemented to four levels in astropractise and to
+  one level everywhere else.** This site's `releasing.py` was ported from the
+  phone, so it inherited the phone's single level — meaning **the site was
+  ported from the less complete of the two available implementations.** That
+  was not a decision anybody made; it followed from "the phone is the source of
+  truth", which is the right rule for *magickal* content and the wrong one for
+  Hellenistic doctrine.
+
+⚠ **Before writing any Hellenistic code here, check astropractise first.** The
+odds are good it is already there, thought through, and sourced.
+
+### The checklist
+
+`A` = astropractise · `P` = practiseapp (phone) · `S` = this site.
+✓ implemented · **—** absent.
+
+**Foundations**
+
+| doctrine | A | P | S |
+|---|:-:|:-:|:-:|
+| Whole sign houses ⚠ settled; do not add quadrant systems | ✓ | ✓ | ✓ |
+| Sect — day/night, sect light, benefic & malefic of sect, contrary to sect | ✓ | ✓ | partial |
+| The twelve places and their topics (`places.dart`) | ✓ | ✓ | partial |
+| Angularity — pivots, epanaphorai, apoklimata | ✓ | ✓ | ✓ |
+| Planetary joys | ✓ | ✓ | — |
+| Thema Mundi (teaching device, and the source of the rulership scheme) | ✓ | — | — |
+
+**Rulership and dignity**
+
+| doctrine | A | P | S |
+|---|:-:|:-:|:-:|
+| Domicile, exaltation, detriment, fall | ✓ | ✓ | — |
+| Bounds ⚠ **Egyptian *and* Ptolemaic — they differ, and a module must say which it used** | ✓ | ✓ | partial |
+| Decans / faces (Egyptian order) | ✓ | ✓ | partial |
+| Triplicity rulers (Dorothean: day, night, participating) | ✓ | ✓ | — |
+| Domicile-lord chains / oikodespotes | ✓ | — | — |
+
+**Configuration and condition**
+
+| doctrine | A | P | S |
+|---|:-:|:-:|:-:|
+| Aspects by **sign** as well as by degree ⚠ the Hellenistic set only — no minor aspects | ✓ | ✓ | degree only |
+| Applying vs separating | ✓ | ✓ | ✓ |
+| Overcoming, dexter/sinister, superiority | ✓ | partial | — |
+| Bonification and maltreatment (`conditions.dart`) | ✓ | — | — |
+| Enclosure / besiegement (`enclosure.dart`) | ✓ | — | — |
+| Solar phase — cazimi, combustion, under the beams, oriental/occidental, stations, retrogradation (`solar_phase.dart`) | ✓ | ✓ | — |
+| Lunar phase, waxing and waning, the Moon's course | ✓ | ✓ | ✓ |
+| **Doryphory** (spear-bearing / bodyguards) | — | — | — |
+
+**Lots** — all seven Hermetic lots are in `astropractise/lib/domain/astrology/lots.dart`
+
+| doctrine | A | P | S |
+|---|:-:|:-:|:-:|
+| Fortune, Spirit, Eros, Necessity, Courage, Victory, Nemesis | ✓ | — | — |
+| Fortune as a second Ascendant; the places counted from it | ✓ | — | — |
+| Topical lots (marriage, children, father, …) | partial | — | — |
+
+**Time-lord and predictive**
+
+| doctrine | A | P | S |
+|---|:-:|:-:|:-:|
+| Annual profections | ✓ | ✓ | ✓ |
+| Monthly profections | ✓ | ✓ | ✓ |
+| Daily profections | ✓ | — | — |
+| Zodiacal releasing — **four levels** | ✓ | L1 | L1 |
+| Loosing of the bond, all three readings | ✓ | ✓ | ✓ |
+| Releasing from **Spirit** as well as Fortune | ✓ | partial | partial |
+| Circumambulation through the bounds | ✓ | ✓ | — |
+| Ascensional times / rising times of signs ⚠ needed by both of the above | ✓ | ✓ | — |
+| Primary directions | ✓ | ✓ | — |
+| Solar returns | — | ✓ | ✓ |
+| Transits — to natal **and to the profected** places | ✓ | ✓ | natal only |
+| **Decennials** (Valens, 10y 9m) | — | — | — |
+| Firdaria ⚠ Persian, post-Hellenistic — include only if Sophia wants it | — | — | — |
+
+**Length of life and the master of the nativity**
+
+| doctrine | A | P | S |
+|---|:-:|:-:|:-:|
+| Hyleg / releaser (`length_of_life.dart`) | ✓ | — | — |
+| Alcocoden / giver of years | partial | — | — |
+| Predominator (`predominator.dart`) | ✓ | — | — |
+
+**Remaining**
+
+| doctrine | A | P | S |
+|---|:-:|:-:|:-:|
+| Antiscia and contra-antiscia | — | ✓ | — |
+| Fixed stars, and parans | — | partial | — |
+| Lunar nodes | — | ✓ | — |
+| Dodekatemoria / twelfth-parts | — | — | — |
+| Monomoiria | — | — | — |
+
+### ⚠ Missing from all three
+
+Nothing here is exotic; each appears in the surviving sources and each is
+absent everywhere:
+
+1. **Doryphory** — bodyguarding. In astropractise's `FEATURE_SPEC.md` and its
+   `CANON-03` research notes but not in code.
+2. **Decennials** — Valens' 10-year-9-month periods.
+3. **Dodekatemoria** (twelfth-parts) and **monomoiria** (individual degrees).
+4. **Parans**, and a Hellenistic fixed-star set.
+5. **Daily profections** exist only in astropractise.
+
+### ⚠ NOT Hellenistic — do not add these in the name of completeness
+
+I had this wrong in the previous draft, so it is worth stating plainly:
+
+- **Nakshatras** and **all ayanamsas / the sidereal zodiac.** Hellenistic
+  astrology is **tropical**. The phone carries these for its own general
+  astrology and they are legitimate there — they are not a gap in a Hellenistic
+  module and porting them here in the name of parity would be wrong.
+- **Quadrant house systems** — Placidus, Koch, Regiomontanus. Sophia's standing
+  instruction: *"whole sign houses are consistent across all of Hellenistic
+  astrology — we don't change the method."* Porphyry existed in the period, but
+  the method is settled. **"Missing house divisions" is not a gap.**
+- **Modern planets**, asteroids, Chiron.
+- **Minor aspects** — semisextile, quincunx, quintile and the rest.
+- **Secondary progressions** — later tradition. The phone has them; that is the
+  phone's business.
+
+### What I would actually do
+
+1. **Do not port doctrine from the phone to this site.** For anything
+   Hellenistic, astropractise is the better source and the phone is not
+   authoritative — the releasing-levels case above is what that mistake looks
+   like when it has already happened.
+2. **Raise this site's releasing to four levels**, from astropractise's
+   `releasing.dart`, and vector it. It is the largest single correctness gap
+   here and the work is bounded.
+3. Treat the rest as one decision rather than twenty: **the doctrine layer
+   (sect, lots, dignities, conditions) is what this site lacks**, and it is
+   arithmetic over positions, so it is vector-able exactly like the eight.
+4. ⚠ **Revisit the vectors-not-a-shared-core decision before porting primary
+   directions or circumambulation.** Those are numerically delicate — arcs of
+   ascension, obliquity, the places two honest implementations differ in the
+   fourth decimal and nobody can say which is right. The reasoning, including
+   when to change our minds, is in `tests/vectors/README.md`. That file also
+   says to revisit if the shared-primitive list passes roughly fifteen; the
+   doctrine layer would take it past that on its own.
