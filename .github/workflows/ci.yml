@@ -146,11 +146,19 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Astro 6 requires node >= 22.
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile=false
-      - name: tsc (per workspace)
-        run: pnpm -r exec tsc --noEmit
+      # The Astro workspaces cannot be checked with bare tsc: astro:content
+      # is a virtual module whose types `astro sync` generates, and Starlight
+      # ships TypeScript source that only astro's own checker loads properly.
+      - name: tsc (per workspace, Astro workspaces excluded)
+        run: pnpm -r --filter '!./docs/site' --filter '!./frontend/public-site' exec tsc --noEmit
+      - name: astro check (the Astro workspaces)
+        run: |
+          pnpm --filter ./docs/site exec astro check
+          pnpm --filter ./frontend/public-site exec astro check
 
   frontend-test:
     name: frontend-test
