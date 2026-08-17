@@ -559,6 +559,11 @@ const TetraktysLadderRoute = lazy(() =>
 const VerdictsRoute = lazy(() =>
   import("./routes/VerdictsRoute.js").then((m) => ({ default: m.VerdictsRoute })),
 );
+const RecordRoute = lazy(() =>
+  import("./routes/RecordRoute.js").then((m) => ({
+    default: m.RecordRoute,
+  })),
+);
 const PracticeLogsRoute = lazy(() =>
   import("./routes/PracticeLogsRoute.js").then((m) => ({
     default: m.PracticeLogsRoute,
@@ -644,6 +649,7 @@ function navKeyForPath(pathname: string): PracticeNavKey | undefined {
   if (pathname.startsWith("/synchronicities")) return "synchronicities";
   if (pathname.startsWith("/daily-practice")) return "dailypractice";
   if (pathname.startsWith("/practice-logs")) return "practicelogs";
+  if (pathname.startsWith("/record")) return "record";
   if (pathname.startsWith("/entities")) return "entities";
   // The Beings-ledger cluster (v1-019): BeingsTabs is the secondary
   // nav; the VaultNav "Entities" entry stays active per the design.
@@ -844,6 +850,7 @@ function ShellRoutes() {
             <Route path="/daily-practice" element={<DailyPracticeRoute />} />
             <Route path="/daily-practice/resh" element={<LiberReshRoute />} />
             <Route path="/practice-logs" element={<PracticeLogsRoute />} />
+            <Route path="/record" element={<RecordRoute />} />
             <Route path="/entities" element={<Entities />} />
             {/* v1-019 — Beings-ledger cluster (BeingsTabs secondary nav). */}
             <Route path="/offerings" element={<OfferingsRoute />} />

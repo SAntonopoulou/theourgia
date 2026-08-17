@@ -61,6 +61,13 @@ const ICON_PROPS = {
 };
 
 const EXTRA_ICONS = {
+  // The record — an open ledger, its spine centre.
+  record: (
+    <svg {...ICON_PROPS}>
+      <path d="M12 6c-1.8-1.2-4.2-1.4-6.5-.8v12.4c2.3-.6 4.7-.4 6.5.8 1.8-1.2 4.2-1.4 6.5-.8V5.2c-2.3-.6-4.7-.4-6.5.8z" />
+      <path d="M12 6v12.4" />
+    </svg>
+  ),
   // Knucklebone — a die face showing only 1/3/4/6-style pip clusters
   // (rule 68: there is no two and no five).
   astragaloi: (
@@ -127,7 +134,7 @@ const MORE_ICON = (
 // ─── Keys · superset contract ──────────────────────────────────────────────
 
 /** ``active`` accepts every old VaultNav key plus the H12 additions. */
-export type PracticeNavKey = NavKey | "astragaloi" | "ladder" | "awaitingjudgment" | "agents";
+export type PracticeNavKey = NavKey | "astragaloi" | "ladder" | "awaitingjudgment" | "agents" | "record";
 
 const ICONS: Record<PracticeNavKey, ReactNode> = {
   ...NAV_ICONS,
@@ -162,6 +169,10 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
       { key: "journal", to: "/journal", label: "Journal" },
       { key: "dailypractice", to: "/daily-practice", label: "Daily rite" },
       { key: "practicelogs", to: "/practice-logs", label: "Practice log" },
+      // The phone's record, synced here — the set of practices done each
+      // day, and by Sophia's ruling never the journal and never flattened
+      // into it.
+      { key: "record", to: "/record", label: "The record" },
     ],
   },
   {
