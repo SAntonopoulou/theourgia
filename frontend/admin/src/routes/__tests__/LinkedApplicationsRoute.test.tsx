@@ -100,7 +100,7 @@ describe("LinkedApplicationsRoute", () => {
     await flush();
 
     await act(async () => {
-      screen.getAllByText("Show me a code")[0].click();
+      screen.getAllByText("Show me a code")[0]?.click();
     });
     await flush();
 
@@ -122,7 +122,7 @@ describe("LinkedApplicationsRoute", () => {
     await flush();
 
     await act(async () => {
-      screen.getAllByText("Show me a code")[1].click();
+      screen.getAllByText("Show me a code")[1]?.click();
     });
     await flush();
 
@@ -138,7 +138,7 @@ describe("LinkedApplicationsRoute", () => {
     await flush();
 
     await act(async () => {
-      screen.getAllByText("Show me a code")[0].click();
+      screen.getAllByText("Show me a code")[0]?.click();
     });
     await flush();
 
