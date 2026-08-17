@@ -28,7 +28,7 @@ vi.mock("../../lib/api.js", () => ({
   ApiError: class extends Error {},
 }));
 
-import { RecordRoute, titleOf } from "../RecordRoute.js";
+import { namesFrom, RecordRoute, titleOf } from "../RecordRoute.js";
 
 function renderRoute() {
   const client = new QueryClient({
@@ -95,7 +95,100 @@ describe("titleOf", () => {
   });
 });
 
+describe("namesFrom", () => {
+  it("resolves an arrangement through to its subject's name", () => {
+    const names = namesFrom([
+      {
+        id: "r1",
+        kind: "ritual",
+        doc: { row: { name: "The Star Ruby" } },
+        updated_at_utc: "2026-08-17T06:00:00Z",
+        deleted_at_utc: null,
+        seq: 1,
+      },
+      {
+        id: "s1",
+        kind: "schedule",
+        doc: { row: { title: "", subjectKind: "ritual", subjectId: "r1" } },
+        updated_at_utc: "2026-08-17T06:00:00Z",
+        deleted_at_utc: null,
+        seq: 2,
+      },
+    ] as never);
+    expect(names.get("ritual:r1")).toBe("The Star Ruby");
+    expect(names.get("schedule:s1")).toBe("The Star Ruby");
+    expect(titleOf("schedule:s1", names)).toBe("The Star Ruby");
+    expect(titleOf("schedule:s1#2", names)).toBe("The Star Ruby");
+  });
+});
+
 describe("RecordRoute", () => {
+  it("names a keeping by its synced subject, and keeps definitions off the days", async () => {
+    mocks.apiGet.mockResolvedValue({
+      entries: [
+        entry({
+          id: "kept-1",
+          doc: {
+            subjectKey: "schedule:s1",
+            observedAt: "2026-08-17T06:12:00Z",
+          },
+        }),
+        {
+          id: "r1",
+          kind: "ritual",
+          doc: { row: { name: "The Star Ruby" } },
+          updated_at_utc: "2026-08-17T06:00:00Z",
+          deleted_at_utc: null,
+          seq: 2,
+        },
+        {
+          id: "s1",
+          kind: "schedule",
+          doc: { row: { title: "", subjectKind: "ritual", subjectId: "r1" } },
+          updated_at_utc: "2026-08-17T06:00:00Z",
+          deleted_at_utc: null,
+          seq: 3,
+        },
+      ],
+      next_since: 3,
+      more: false,
+    });
+    renderRoute();
+    await flush();
+    await flush();
+
+    expect(screen.getByText("The Star Ruby")).toBeTruthy();
+    // The rite's DEFINITION lends its name and is not itself a day's event.
+    expect(screen.getAllByText("The Star Ruby").length).toBe(1);
+  });
+
+  it("a dream shows as a dream, with its words", async () => {
+    mocks.apiGet.mockResolvedValue({
+      entries: [
+        {
+          id: "d1",
+          kind: "day-entry",
+          doc: {
+            kind: "dream",
+            at: "2026-08-17T05:00:00Z",
+            body: "The crossroads again.",
+          },
+          updated_at_utc: "2026-08-17T05:01:00Z",
+          deleted_at_utc: null,
+          seq: 4,
+        },
+      ],
+      next_since: 4,
+      more: false,
+    });
+    renderRoute();
+    await flush();
+    await flush();
+
+    expect(screen.getByText("A dream")).toBeTruthy();
+    expect(screen.getByText(/The crossroads again/)).toBeTruthy();
+  });
+
   it("shows a keeping whole — the Greek, the mood, the sky", async () => {
     mocks.apiGet.mockResolvedValue({
       entries: [entry()],

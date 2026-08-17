@@ -29,9 +29,13 @@ type WireEntry = {
   doc: {
     subjectKey?: string;
     observedAt?: string;
+    at?: string;
     note?: string;
+    body?: string;
     mood?: number | null;
     bodyFeeling?: number | null;
+    /** Subject kinds carry the whole device row here. */
+    row?: Record<string, unknown>;
     context?: {
       moonSignIndex?: number | null;
       planetaryHourRuler?: string | null;
@@ -43,6 +47,42 @@ type WireEntry = {
   deleted_at_utc: string | null;
   seq: number;
 };
+
+/** The kinds that are events of the record; everything else on the shelf
+ * is a definition — a rite, a sitting, an arrangement — read for its NAME
+ * and never shown as a day's entry. */
+const EVENT_KINDS = new Set(["observance", "day-entry"]);
+
+/** Names, gathered from the synced subject rows.
+ *
+ * An arrangement resolves through to its subject where it has no title of
+ * its own — a keeping through "schedule:x" was a keeping of the rite the
+ * arrangement stands for, and the record names the practice, not the
+ * paperwork. The phone's own reader keeps the same rule. */
+export function namesFrom(entries: WireEntry[]): Map<string, string> {
+  const names = new Map<string, string>();
+  const schedules: WireEntry[] = [];
+  for (const entry of entries) {
+    const row = entry.doc.row;
+    if (!row) continue;
+    if (entry.kind === "ritual" || entry.kind === "meditation") {
+      const name = row.name;
+      if (typeof name === "string" && name.length > 0) {
+        names.set(`${entry.kind}:${entry.id}`, name);
+      }
+    } else if (entry.kind === "schedule") {
+      schedules.push(entry);
+    }
+  }
+  for (const entry of schedules) {
+    const row = entry.doc.row ?? {};
+    const title = typeof row.title === "string" ? row.title : "";
+    const subject = `${String(row.subjectKind ?? "")}:${String(row.subjectId ?? "")}`;
+    const resolved = title || names.get(subject);
+    if (resolved) names.set(`schedule:${entry.id}`, resolved);
+  }
+  return names;
+}
 
 type PullResult = {
   entries: WireEntry[];
@@ -56,8 +96,13 @@ type PullResult = {
  * rest of the record joins the sync. A station's key is its own name; the
  * rest say what kind of thing was kept rather than pretending to know
  * which. */
-export function titleOf(subjectKey: string | undefined): string {
+export function titleOf(
+  subjectKey: string | undefined,
+  names?: Map<string, string>,
+): string {
   if (!subjectKey) return "A keeping";
+  const named = names?.get(subjectKey.split("#")[0] ?? subjectKey);
+  if (named) return named;
   const station: Record<string, string> = {
     moonrise: "Moonrise",
     "upper-culmination": "Upper culmination",
@@ -68,8 +113,8 @@ export function titleOf(subjectKey: string | undefined): string {
     sunset: "Sunset",
     "solar-midnight": "Solar midnight",
   };
-  const named = station[subjectKey];
-  if (named) return named;
+  const stationName = station[subjectKey];
+  if (stationName) return stationName;
   if (subjectKey.startsWith("ritual:")) return "A rite";
   if (subjectKey.startsWith("meditation:")) return "A sitting";
   if (subjectKey.startsWith("schedule:")) return "A scheduled keeping";
@@ -77,6 +122,16 @@ export function titleOf(subjectKey: string | undefined): string {
   if (subjectKey.startsWith("day-entry:")) return "A day's entry";
   return "A keeping";
 }
+
+/** The day's own entries, in the phone's words. */
+const DAY_ENTRY_KINDS: Record<string, string> = {
+  dream: "A dream",
+  dreamIntention: "A dream intention",
+  waking: "Waking",
+  sleeping: "Sleeping",
+  note: "A note",
+  sky: "The sky, seen",
+};
 
 const SIGNS = [
   "Aries",
@@ -150,8 +205,13 @@ export function RecordRoute() {
   }
 
   // Tombstones are real entries that say "removed" — but a reading of the
-  // record shows what stands, exactly as the phone's own reader does.
-  const standing = entries.filter((e) => e.deleted_at_utc === null);
+  // record shows what stands, exactly as the phone's own reader does. And
+  // the shelf holds definitions beside events: the definitions lend their
+  // names and stay off the days.
+  const names = namesFrom(entries.filter((e) => e.deleted_at_utc === null));
+  const standing = entries.filter(
+    (e) => e.deleted_at_utc === null && EVENT_KINDS.has(e.kind),
+  );
 
   if (standing.length === 0) {
     return (
@@ -176,7 +236,9 @@ export function RecordRoute() {
   // page, so nobody mistakes it for the moonrise day they configured.
   const byDay = new Map<string, WireEntry[]>();
   for (const entry of standing) {
-    const at = new Date(entry.doc.observedAt ?? entry.updated_at_utc);
+    const at = new Date(
+      entry.doc.observedAt ?? entry.doc.at ?? entry.updated_at_utc,
+    );
     const day = at.toLocaleDateString(undefined, {
       weekday: "long",
       year: "numeric",
@@ -208,14 +270,14 @@ export function RecordRoute() {
               .slice()
               .sort(
                 (a, b) =>
-                  new Date(a.doc.observedAt ?? 0).getTime() -
-                  new Date(b.doc.observedAt ?? 0).getTime(),
+                  new Date(a.doc.observedAt ?? a.doc.at ?? 0).getTime() -
+                  new Date(b.doc.observedAt ?? b.doc.at ?? 0).getTime(),
               )
               .map((entry) => (
                 <li key={entry.id} style={rowStyle}>
                   <span style={timeStyle}>
                     {new Date(
-                      entry.doc.observedAt ?? entry.updated_at_utc,
+                      entry.doc.observedAt ?? entry.doc.at ?? entry.updated_at_utc,
                     ).toLocaleTimeString(undefined, {
                       hour: "2-digit",
                       minute: "2-digit",
@@ -223,10 +285,21 @@ export function RecordRoute() {
                   </span>
                   <span style={{ flex: 1 }}>
                     <span style={{ color: "var(--ink)" }}>
-                      {titleOf(entry.doc.subjectKey)}
+                      {entry.kind === "day-entry"
+                        ? DAY_ENTRY_KINDS[String(entry.doc.subjectKey ?? "")] ??
+                          DAY_ENTRY_KINDS[
+                            String(
+                              (entry.doc as Record<string, unknown>).kind ?? "",
+                            )
+                          ] ??
+                          "A day's entry"
+                        : titleOf(entry.doc.subjectKey, names)}
                     </span>
-                    {entry.doc.note ? (
-                      <span style={noteStyle}> — {entry.doc.note}</span>
+                    {entry.doc.note || entry.doc.body ? (
+                      <span style={noteStyle}>
+                        {" "}
+                        — {entry.doc.note ?? entry.doc.body}
+                      </span>
                     ) : null}
                     <span style={metaStyle}>
                       {[
