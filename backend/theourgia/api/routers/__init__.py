@@ -51,6 +51,7 @@ from theourgia.api.routers.v1 import link_codes as v1_link_codes
 from theourgia.api.routers.v1 import magic_squares as v1_magic_squares
 from theourgia.api.routers.v1 import meta as v1_meta
 from theourgia.api.routers.v1 import oaths as v1_oaths
+from theourgia.api.routers.v1 import record as v1_record
 from theourgia.api.routers.v1 import offerings as v1_offerings
 from theourgia.api.routers.v1 import pendulum as v1_pendulum
 from theourgia.api.routers.v1 import practice_logs as v1_practice
@@ -155,6 +156,7 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_totp.router, tags=["auth"])
     v1.include_router(v1_link_codes.router, tags=["auth"])
     v1.include_router(v1_entries.router, tags=["entries"])
+    v1.include_router(v1_record.router, tags=["record"])
     v1.include_router(v1_traditions.router, tags=["traditions"])
     v1.include_router(v1_entities.router, tags=["entities"])
     v1.include_router(v1_library.router, tags=["library"])
