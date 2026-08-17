@@ -112,6 +112,27 @@ describe("LinkedApplicationsRoute", () => {
     expect(screen.getByText("ABCD-2345")).toBeTruthy();
   });
 
+  it("the app's code also stands as a QR, and only the app's", async () => {
+    mocks.apiPost.mockResolvedValue({
+      code: "ABCD2345",
+      audience: "theourgia-app",
+      expires_at_utc: "2026-08-14T12:10:00+00:00",
+    });
+    renderRoute();
+    await flush();
+
+    await act(async () => {
+      screen.getAllByText("Show me a code")[0]?.click();
+    });
+    await flush();
+
+    // One QR — the app scans; astropractise's server redeems and has no
+    // camera to speak of. The URI carries the instance's own origin, so a
+    // self-hosted vault's QR links the phone to that vault.
+    expect(screen.getAllByTestId("link-qr").length).toBe(1);
+    expect(screen.getByText(/Scan it, or type it/)).toBeTruthy();
+  });
+
   it("astropractise's card mints for its own audience", async () => {
     mocks.apiPost.mockResolvedValue({
       code: "WXYZ6789",

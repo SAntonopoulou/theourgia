@@ -21,6 +21,7 @@
 
 import { useTopbar } from "@theourgia/shared";
 import { type CSSProperties, type ReactNode, useState } from "react";
+import QRCode from "react-qr-code";
 
 import { ApiError, apiPost } from "../lib/api.js";
 
@@ -32,10 +33,15 @@ const COMPANIONS: Array<{
   title: string;
   instructions: ReactNode;
   receives: string;
+  /** Whether the companion can take the code by camera. The QR encodes a
+   * `theourgia://link?server=…&code=…` URI so a self-hosted instance's
+   * address travels with its code; typing stays the fallback always. */
+  scannable?: boolean;
 }> = [
   {
     audience: "theourgia-app",
     title: "Theourgia — the app",
+    scannable: true,
     instructions: (
       <>
         Ask for a code here, then type it into the Theourgia app under
@@ -103,11 +109,13 @@ function CompanionCard({
   title,
   instructions,
   receives,
+  scannable = false,
 }: {
   audience: string;
   title: string;
   instructions: ReactNode;
   receives: string;
+  scannable?: boolean;
 }) {
   const [code, setCode] = useState<MintedCode | null>(null);
   const [busy, setBusy] = useState(false);
@@ -143,9 +151,20 @@ function CompanionCard({
 
       {code ? (
         <>
+          {scannable ? (
+            <div style={qrWrapStyle} data-testid="link-qr">
+              <QRCode
+                value={linkUri(code.code)}
+                size={168}
+                bgColor="transparent"
+                fgColor="currentColor"
+                aria-label="Scan this code with the Theourgia app"
+              />
+            </div>
+          ) : null}
           <p style={codeStyle}>{format(code.code)}</p>
           <p style={hintStyle}>
-            Expires {new Date(code.expires_at_utc).toLocaleTimeString()}. Asking for another one
+            {scannable ? "Scan it, or type it. " : ""}Expires {new Date(code.expires_at_utc).toLocaleTimeString()}. Asking for another one
             immediately cancels this.
           </p>
         </>
@@ -171,6 +190,13 @@ function CompanionCard({
   );
 }
 
+/** The URI a scanned code carries: which instance, and the code itself —
+ * so a self-hosted vault's QR links the phone to that vault, not to
+ * theourgia.com. */
+function linkUri(code: string): string {
+  return `theourgia://link?server=${encodeURIComponent(window.location.origin)}&code=${encodeURIComponent(code)}`;
+}
+
 /** Four and four. Eight unbroken characters is harder to read back. */
 function format(code: string): string {
   return code.length === 8 ? `${code.slice(0, 4)}-${code.slice(4)}` : code;
@@ -193,6 +219,14 @@ const proseStyle: CSSProperties = {
   font: "var(--type-body)",
   color: "var(--ink)",
   lineHeight: 1.6,
+};
+
+const qrWrapStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "center",
+  padding: "var(--space-3)",
+  margin: "var(--space-3) 0 0",
+  color: "var(--ink)",
 };
 
 const codeStyle: CSSProperties = {
