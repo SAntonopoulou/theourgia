@@ -33,6 +33,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -106,6 +107,11 @@ def _set_cookie(response: Response, token: str, *, expires_at: datetime) -> None
 
 def _clear_cookie(response: Response) -> None:
     response.delete_cookie(key=SESSION_COOKIE, path="/")
+
+
+_bearer_scheme = HTTPBearer(
+    auto_error=False, description="Theourgia session token (linked devices)"
+)
 
 
 async def _resolve_session(
@@ -342,15 +348,29 @@ async def set_password(
 @router.delete(
     "/auth/session",
     summary="Sign out",
-    description="Revoke the cookie-presented session and clear the cookie.",
+    description=(
+        "Revoke the presented session — the cookie for the browser, or the "
+        "bearer token for a linked device — and clear the cookie."
+    ),
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_session(
     response: Response,
     db: Annotated[AsyncSession, Depends(get_db_session)],
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None, Depends(_bearer_scheme)
+    ] = None,
     theourgia_session: Annotated[str | None, Cookie()] = None,
 ) -> Response:
-    row = await _resolve_session(theourgia_session, db)
+    # ⚠ The bearer form exists for linked devices: a phone that unlinks must
+    # be able to end its own session, not merely forget its token — a token
+    # merely forgotten is still a live credential in a backup somewhere.
+    presented = (
+        credentials.credentials
+        if credentials is not None and credentials.credentials
+        else theourgia_session
+    )
+    row = await _resolve_session(presented, db)
     if row is not None:
         row.revoked_at = datetime.now(tz=UTC)
         await db.commit()

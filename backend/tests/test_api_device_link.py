@@ -266,3 +266,36 @@ async def test_no_device_audiences_means_503(monkeypatch, reset_settings) -> Non
     db = _FakeSession([])
 
     assert (await _redeem_device(_make_app(db), "ABCD2345")).status_code == 503
+
+
+# ── Unlinking ───────────────────────────────────────────────────────
+
+
+async def test_sign_out_revokes_a_bearer_presented_session(
+    monkeypatch, reset_settings,
+) -> None:
+    # ⚠ A phone that unlinks must be able to END its session, not merely
+    # forget the token — a token merely forgotten is still a live credential
+    # in a backup somewhere. DELETE /auth/session accepts the bearer form
+    # for exactly this.
+    _ = reset_settings
+    _configure(monkeypatch)
+    session_row = SimpleNamespace(
+        user_id=USER_ID,
+        token_hash=hash_token("the-device-token"),
+        revoked_at=None,
+        expires_at=datetime.now(tz=UTC) + timedelta(days=90),
+    )
+    db = _FakeSession([_Result([session_row])])
+
+    async with AsyncClient(
+        transport=ASGITransport(app=_make_app(db)), base_url="http://testserver",
+    ) as ac:
+        response = await ac.delete(
+            "/api/v1/auth/session",
+            headers={"Authorization": "Bearer the-device-token"},
+        )
+
+    assert response.status_code == 204
+    assert session_row.revoked_at is not None
+    assert db.commits == 1
