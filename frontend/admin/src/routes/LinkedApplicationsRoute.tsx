@@ -1,26 +1,68 @@
 /**
  * Linked applications — where a companion app's link code is minted.
  *
- * The first companion is **astropractise**, whose app cannot hold a theourgia
- * session token: getting one onto a phone means either an embedded login form
- * — asking somebody to type their theourgia password into a different app,
- * which is the exact habit every phishing attack relies on — or a full OAuth
- * implementation neither side has.
+ * Nobody's theourgia password is ever typed anywhere but here: an embedded
+ * login form in another app is the exact habit every phishing attack relies
+ * on, and a full OAuth implementation is a cost neither side has paid. So
+ * this surface shows eight characters, and the user types them into the
+ * companion. What the companion gets depends on which kind it is:
  *
- * So this surface shows eight characters. The user types them into the app;
- * the app's SERVER redeems them here with its own client credentials. See
- * `theourgia/models/link_code.py` for the whole mechanism.
+ * - **The Theourgia app** (the phone) redeems the code itself and receives a
+ *   session of its own — it acts as you, which is what sync *is* — and the
+ *   session appears in your active sessions under the device's name,
+ *   revocable like any other.
+ * - **astropractise** has its own accounts; its SERVER redeems the code with
+ *   client credentials and learns only "this is user X here". No session.
+ *
+ * See `theourgia/models/link_code.py` for the whole mechanism.
  *
  * Mounted at /settings/linked-applications.
  */
 
 import { useTopbar } from "@theourgia/shared";
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, type ReactNode, useState } from "react";
 
 import { ApiError, apiPost } from "../lib/api.js";
 
-/** Kept in step with the mint endpoint's own list of configured clients. */
-const AUDIENCE = "astropractise";
+/** Kept in step with the instance's configured audiences: device audiences
+ * (`THEOURGIA_DEVICE_LINK_AUDIENCES`) and relying-party clients
+ * (`THEOURGIA_LINK_CODE_CLIENTS`). */
+const COMPANIONS: Array<{
+  audience: string;
+  title: string;
+  instructions: ReactNode;
+  receives: string;
+}> = [
+  {
+    audience: "theourgia-app",
+    title: "Theourgia — the app",
+    instructions: (
+      <>
+        Ask for a code here, then type it into the Theourgia app under
+        <em> Settings → Link this account</em>. The code lasts ten minutes and works once.
+      </>
+    ),
+    receives:
+      "The app receives a signed-in session of its own — that is what keeps " +
+      "your record in step. It appears in your active sessions under the " +
+      "device's name, and revoking it there unlinks the device.",
+  },
+  {
+    audience: "astropractise",
+    title: "astropractise",
+    instructions: (
+      <>
+        Ask for a code here, then type it into the astropractise app under
+        <em> Me → Your page → Link my theourgia account</em>. The code lasts ten minutes and works
+        once.
+      </>
+    ),
+    receives:
+      "astropractise learns your account id and the display name on your " +
+      "default persona. Not your email, not your vault, and no session — " +
+      "redeeming its code opens no way to act as you here.",
+  },
+];
 
 type MintedCode = {
   code: string;
@@ -37,6 +79,36 @@ export function LinkedApplicationsRoute() {
     [],
   );
 
+  return (
+    <div style={pageStyle} data-route="linked-applications">
+      {COMPANIONS.map((companion) => (
+        <CompanionCard key={companion.audience} {...companion} />
+      ))}
+
+      <div style={{ ...cardStyle, marginTop: "var(--space-4)" }}>
+        <h3 style={{ font: "var(--type-h4)", marginTop: 0 }}>What a code is worth</h3>
+        <p style={proseStyle}>
+          A code is worth nothing on its own until the right application spends it — and each card
+          above says exactly what that application receives. Read one aloud to the wrong person and
+          the worst they can do is link an account you were about to link anyway; asking for a new
+          code cancels the old one at once.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function CompanionCard({
+  audience,
+  title,
+  instructions,
+  receives,
+}: {
+  audience: string;
+  title: string;
+  instructions: ReactNode;
+  receives: string;
+}) {
   const [code, setCode] = useState<MintedCode | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,16 +117,19 @@ export function LinkedApplicationsRoute() {
     setBusy(true);
     setError(null);
     try {
-      setCode(await apiPost<MintedCode>("/link-codes", { audience: AUDIENCE }));
+      setCode(await apiPost<MintedCode>("/link-codes", { audience }));
     } catch (e) {
-      // A 503 here means the operator has not configured any companion
-      // application, which is a deployment fact and not the user's mistake.
+      // A 503 means the operator has not configured any companion
+      // application; a 404 means not THIS one. Deployment facts, not the
+      // user's mistake.
       setError(
         e instanceof ApiError && e.status === 503
           ? "No companion applications are configured on this instance."
-          : e instanceof Error
-            ? e.message
-            : String(e),
+          : e instanceof ApiError && e.status === 404
+            ? "This companion is not configured on this instance."
+            : e instanceof Error
+              ? e.message
+              : String(e),
       );
     } finally {
       setBusy(false);
@@ -62,54 +137,36 @@ export function LinkedApplicationsRoute() {
   };
 
   return (
-    <div style={pageStyle} data-route="linked-applications">
-      <div style={cardStyle}>
-        <h2 style={{ font: "var(--type-h3)", marginTop: 0 }}>astropractise</h2>
-        <p style={proseStyle}>
-          Ask for a code here, then type it into the astropractise app under
-          <em> Me → Your page → Link my theourgia account</em>. The code lasts ten minutes and works
-          once.
-        </p>
+    <div style={{ ...cardStyle, marginBottom: "var(--space-4)" }} data-audience={audience}>
+      <h2 style={{ font: "var(--type-h3)", marginTop: 0 }}>{title}</h2>
+      <p style={proseStyle}>{instructions}</p>
 
-        {code ? (
-          <>
-            <p style={codeStyle}>{format(code.code)}</p>
-            <p style={hintStyle}>
-              Expires {new Date(code.expires_at_utc).toLocaleTimeString()}. Asking for another one
-              immediately cancels this.
-            </p>
-          </>
-        ) : null}
-
-        {error ? (
-          <p role="alert" style={{ color: "var(--care)" }}>
-            {error}
+      {code ? (
+        <>
+          <p style={codeStyle}>{format(code.code)}</p>
+          <p style={hintStyle}>
+            Expires {new Date(code.expires_at_utc).toLocaleTimeString()}. Asking for another one
+            immediately cancels this.
           </p>
-        ) : null}
+        </>
+      ) : null}
 
-        <button
-          type="button"
-          onClick={() => void mint()}
-          disabled={busy}
-          style={{ ...primaryButton, opacity: busy ? 0.6 : 1 }}
-        >
-          {busy ? "Working…" : code ? "Give me a new code" : "Show me a code"}
-        </button>
-      </div>
+      {error ? (
+        <p role="alert" style={{ color: "var(--care)" }}>
+          {error}
+        </p>
+      ) : null}
 
-      <div style={{ ...cardStyle, marginTop: "var(--space-4)" }}>
-        <h3 style={{ font: "var(--type-h4)", marginTop: 0 }}>What the other application learns</h3>
-        <p style={proseStyle}>
-          Your account id and the display name on your default persona. Not your email, not your
-          vault, and not the ability to act as you here. Redeeming a code opens no session on this
-          instance.
-        </p>
-        <p style={proseStyle}>
-          A code is worth nothing on its own — the application redeeming it has to hold credentials
-          this instance's operator gave it. Read one aloud to the wrong person and the worst they
-          can do is link an account you were about to link anyway.
-        </p>
-      </div>
+      <button
+        type="button"
+        onClick={() => void mint()}
+        disabled={busy}
+        style={{ ...primaryButton, opacity: busy ? 0.6 : 1 }}
+      >
+        {busy ? "Working…" : code ? "Give me a new code" : "Show me a code"}
+      </button>
+
+      <p style={{ ...hintStyle, textAlign: "left", marginTop: "var(--space-3)" }}>{receives}</p>
     </div>
   );
 }

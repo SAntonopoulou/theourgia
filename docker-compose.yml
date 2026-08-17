@@ -82,6 +82,7 @@ services:
       # reaches nothing, and the endpoint answers 503 as though it were
       # unconfigured. Which is exactly what happened.
       THEOURGIA_LINK_CODE_CLIENTS: ${THEOURGIA_LINK_CODE_CLIENTS:-}
+      THEOURGIA_DEVICE_LINK_AUDIENCES: ${THEOURGIA_DEVICE_LINK_AUDIENCES:-}
       DATABASE_URL: postgresql+asyncpg://${THEOURGIA_DB_USER:-theourgia}:${THEOURGIA_DB_PASSWORD}@postgres:5432/${THEOURGIA_DB_NAME:-theourgia}
       REDIS_URL: redis://redis:6379/0
       THEOURGIA_EPHE_PATH: /app/data/ephe

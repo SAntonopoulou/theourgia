@@ -431,6 +431,29 @@ class Settings(BaseSettings):
                 out[client_id.strip()] = secret.strip()
         return out
 
+    # ── Device linking ────────────────────────────────────────────────────
+    # Audiences whose link codes the DEVICE ITSELF may redeem, receiving a
+    # session token of its own — unlike the relying parties above, whose
+    # servers exchange a code for an identity and get no session. This is
+    # how the theourgia mobile app links: the user mints a code in the
+    # browser, types it into the phone, and the phone becomes a revocable
+    # entry in their active-sessions list. Example:
+    #
+    #     THEOURGIA_DEVICE_LINK_AUDIENCES=theourgia-app
+    #
+    # **Empty by default, and empty means the endpoint refuses** — the same
+    # fail-closed reasoning as the relying-party list.
+    device_link_audiences: str = Field(
+        default="", alias="THEOURGIA_DEVICE_LINK_AUDIENCES"
+    )
+
+    @property
+    def device_link_audience_set(self) -> frozenset[str]:
+        """The configured device audiences. Blank entries are dropped."""
+        return frozenset(
+            a.strip() for a in self.device_link_audiences.split(",") if a.strip()
+        )
+
     # ── Observability ─────────────────────────────────────────────────────
     sentry_dsn: SecretStr | None = Field(default=None, alias="THEOURGIA_SENTRY_DSN")
     """Crash reporting DSN. **Off by default** — Theourgia ships with

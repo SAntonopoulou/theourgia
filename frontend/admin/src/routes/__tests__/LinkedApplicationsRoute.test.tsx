@@ -78,19 +78,43 @@ afterEach(() => {
 });
 
 describe("LinkedApplicationsRoute", () => {
-  it("shows no code until one is asked for", async () => {
+  it("shows no code until one is asked for — for either companion", async () => {
     renderRoute();
     await flush();
 
     // A code is a credential with a ten-minute life. Minting one on page load
     // would burn a live credential onto the screen of anyone who wandered in.
     expect(mocks.apiPost).not.toHaveBeenCalled();
-    expect(screen.getByText("Show me a code")).toBeTruthy();
+    // Two companions now: the Theourgia app (a device) and astropractise (a
+    // relying party). Each mints its own code from its own card.
+    expect(screen.getAllByText("Show me a code").length).toBe(2);
   });
 
-  it("mints for the named audience and shows the code in two halves", async () => {
+  it("the app's card mints for the device audience", async () => {
     mocks.apiPost.mockResolvedValue({
       code: "ABCD2345",
+      audience: "theourgia-app",
+      expires_at_utc: "2026-08-14T12:10:00+00:00",
+    });
+    renderRoute();
+    await flush();
+
+    await act(async () => {
+      screen.getAllByText("Show me a code")[0].click();
+    });
+    await flush();
+
+    expect(mocks.apiPost).toHaveBeenCalledWith("/link-codes", {
+      audience: "theourgia-app",
+    });
+    // Four and four. Eight unbroken characters is harder to read back to
+    // somebody holding a phone.
+    expect(screen.getByText("ABCD-2345")).toBeTruthy();
+  });
+
+  it("astropractise's card mints for its own audience", async () => {
+    mocks.apiPost.mockResolvedValue({
+      code: "WXYZ6789",
       audience: "astropractise",
       expires_at_utc: "2026-08-14T12:10:00+00:00",
     });
@@ -98,16 +122,14 @@ describe("LinkedApplicationsRoute", () => {
     await flush();
 
     await act(async () => {
-      screen.getByText("Show me a code").click();
+      screen.getAllByText("Show me a code")[1].click();
     });
     await flush();
 
     expect(mocks.apiPost).toHaveBeenCalledWith("/link-codes", {
       audience: "astropractise",
     });
-    // Four and four. Eight unbroken characters is harder to read back to
-    // somebody holding a phone.
-    expect(screen.getByText("ABCD-2345")).toBeTruthy();
+    expect(screen.getByText("WXYZ-6789")).toBeTruthy();
   });
 
   it("says plainly when the instance has no companion configured", async () => {
@@ -116,7 +138,7 @@ describe("LinkedApplicationsRoute", () => {
     await flush();
 
     await act(async () => {
-      screen.getByText("Show me a code").click();
+      screen.getAllByText("Show me a code")[0].click();
     });
     await flush();
 
