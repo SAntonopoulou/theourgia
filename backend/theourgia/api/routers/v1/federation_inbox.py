@@ -222,25 +222,38 @@ async def receive_inbox(
     try:
         peer = await resolver.resolve(keyid)
     except PeerKeyUnavailableError as exc:
+        # Do NOT echo the upstream error (it can carry the peer's URL
+        # or status code) back to the caller — log it, return generic.
+        _log.warning(
+            "federation_inbox.peer_key_unavailable",
+            extra={"keyid": keyid, "error": str(exc)},
+        )
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=str(exc),
+            detail="could not resolve the sender's key",
         ) from exc
 
     # Verify signature. verify_request raises HTTPSignatureError on
-    # any failure mode (window, mismatch, malformed, etc.).
+    # any failure mode (window, mismatch, malformed, digest, etc.). The
+    # raw body is passed so content-digest is recomputed + compared: a
+    # body swapped in transit fails here even with a valid signature.
     try:
         verify_request(
             public_key=peer.public_key,
             method=request.method,
             path=request.url.path,
             headers={k: v for k, v in request.headers.items()},
+            body=body_bytes,
             expected_keyid=keyid,
         )
     except HTTPSignatureError as exc:
+        _log.warning(
+            "federation_inbox.signature_failed",
+            extra={"keyid": keyid, "error": str(exc)},
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"signature verification failed: {exc}",
+            detail="signature verification failed",
         ) from exc
 
     # Replay guard. The nonce key is "<keyid>:<created>" where created
@@ -252,9 +265,13 @@ async def receive_inbox(
     try:
         await record_nonce(db, nonce_key=nonce_key)
     except ReplayDetectedError as exc:
+        _log.info(
+            "federation_inbox.replay_detected",
+            extra={"keyid": keyid, "error": str(exc)},
+        )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"replayed nonce: {exc}",
+            detail="request rejected as a replay",
         ) from exc
 
     # Parse body JSON. Verification passed already; this is just
@@ -264,7 +281,7 @@ async def receive_inbox(
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"body is not valid JSON: {exc}",
+            detail="request body is not valid JSON",
         ) from exc
 
     kind = _classify_kind(body_json)

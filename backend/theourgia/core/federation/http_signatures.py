@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import hmac
 import logging
 import re
 from dataclasses import dataclass, field
@@ -35,6 +36,8 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 
 __all__ = [
     "DEFAULT_COMPONENTS",
+    "BODY_COMPONENTS",
+    "MINIMUM_BODY_COMPONENTS",
     "HTTPSignatureError",
     "SignedRequestComponents",
     "sign_request",
@@ -56,9 +59,27 @@ DEFAULT_COMPONENTS: tuple[str, ...] = (
 )
 """Default covered components when no body is present.
 
-When the request has a body, callers should add ``"content-digest"``
-to the list (and set the corresponding header via
-:func:`content_digest_header`)."""
+When the request has a body, callers MUST sign :data:`BODY_COMPONENTS`
+(which appends ``"content-digest"``) and set the corresponding header
+via :func:`content_digest_header`. The verifier enforces this for any
+inbound request that carries a body — see :data:`MINIMUM_BODY_COMPONENTS`.
+"""
+
+
+# Covered components for a signed request that carries a body. The
+# content-digest binds the (separately-hashed) body into the signature,
+# so a body swapped in transit is detectable even though the raw bytes
+# are not themselves part of the signature base.
+BODY_COMPONENTS: tuple[str, ...] = (*DEFAULT_COMPONENTS, "content-digest")
+
+
+# The verifier REQUIRES every one of these components be covered by the
+# signature of any inbound request that has a body. Signing a subset (or
+# omitting content-digest) is rejected before the Ed25519 check — a
+# sender cannot narrow the covered set to dodge body integrity.
+MINIMUM_BODY_COMPONENTS: frozenset[str] = frozenset(
+    c.lower() for c in BODY_COMPONENTS
+)
 
 
 # Maximum age of an inbound signature relative to server clock. Helps
@@ -88,6 +109,30 @@ def content_digest_header(body: bytes) -> str:
     """
     digest = hashlib.sha256(body).digest()
     return f"sha-256=:{base64.b64encode(digest).decode('ascii')}:"
+
+
+def _parse_content_digest_sha256(header_value: str) -> bytes | None:
+    """Extract the raw SHA-256 digest bytes from a Content-Digest header.
+
+    Accepts the RFC 9530 dictionary form ``sha-256=:<base64>:`` and
+    tolerates additional comma-separated members (we only trust
+    ``sha-256``). Returns ``None`` if no well-formed sha-256 member is
+    present.
+    """
+    for member in header_value.split(","):
+        key, _, raw = member.strip().partition("=")
+        if key.strip().lower() != "sha-256":
+            continue
+        val = raw.strip()
+        if val.startswith(":") and val.endswith(":") and len(val) >= 2:
+            val = val[1:-1]
+        try:
+            # binascii.Error subclasses ValueError, so this covers
+            # malformed base64 too.
+            return base64.b64decode(val, validate=True)
+        except ValueError:
+            return None
+    return None
 
 
 def build_signature_base(
@@ -204,6 +249,7 @@ def verify_request(
     method: str,
     path: str,
     headers: Mapping[str, str],
+    body: bytes | None = None,
     expected_keyid: str | None = None,
     now: float | None = None,
 ) -> None:
@@ -217,10 +263,23 @@ def verify_request(
        or further in the future than
        :data:`SIGNATURE_MAX_FUTURE_SKEW_SECONDS`.
     4. Optionally verifies the keyid matches ``expected_keyid``.
-    5. Rebuilds the signature base from the request and verifies the
+    5. When ``body`` is supplied and non-empty, requires the covered
+       component set to include every member of
+       :data:`MINIMUM_BODY_COMPONENTS` (in particular ``content-digest``)
+       — a sender may not narrow the covered set to omit body integrity.
+    6. Rebuilds the signature base from the request and verifies the
        Ed25519 signature against the supplied public key.
+    7. When ``body`` is supplied and non-empty, recomputes the SHA-256
+       digest over the raw body AFTER the signature verifies and rejects
+       if it does not match the (now-authenticated) ``Content-Digest``
+       header — this is what defeats a body swapped in transit.
+
+    ``body`` is the exact raw bytes the peer sent. Inbound POSTs to a
+    federation inbox MUST pass it; a signed request that carries a body
+    but is verified without one would leave the body unauthenticated.
     """
     lower_headers = {k.lower(): v for k, v in headers.items()}
+    body_present = body is not None and len(body) > 0
 
     sig_input = lower_headers.get("signature-input")
     sig_value = lower_headers.get("signature")
@@ -262,6 +321,20 @@ def verify_request(
         msg = "Signature-Input contained no covered components"
         raise HTTPSignatureError(msg)
 
+    # A request that carries a body MUST cover the minimum set — most
+    # importantly content-digest — so the body cannot be swapped without
+    # invalidating the signature. Enforced BEFORE the Ed25519 check so a
+    # narrowed-coverage envelope is refused outright.
+    if body_present:
+        covered = {c.lower() for c in components}
+        missing = MINIMUM_BODY_COMPONENTS - covered
+        if missing:
+            msg = (
+                "signature does not cover the required components for a "
+                f"request with a body: missing {sorted(missing)}"
+            )
+            raise HTTPSignatureError(msg)
+
     sig_match = _SIGNATURE_RE.match(sig_value)
     if not sig_match:
         msg = "malformed Signature header"
@@ -288,3 +361,24 @@ def verify_request(
     except InvalidSignature as exc:
         msg = "signature did not verify"
         raise HTTPSignatureError(msg) from exc
+
+    # The signature covers the Content-Digest HEADER VALUE (it is in the
+    # covered set) — but that only authenticates what the signer claimed
+    # the body's hash to be. We must still confirm the body we actually
+    # received hashes to that value; otherwise an attacker could keep the
+    # signed headers and swap the payload. Done only after the signature
+    # verifies, so we never leak digest-comparison timing on unsigned
+    # requests.
+    if body_present:
+        claimed = lower_headers.get("content-digest")
+        if claimed is None:
+            msg = "Content-Digest header missing on a request with a body"
+            raise HTTPSignatureError(msg)
+        claimed_sha256 = _parse_content_digest_sha256(claimed)
+        if claimed_sha256 is None:
+            msg = "Content-Digest header has no usable sha-256 member"
+            raise HTTPSignatureError(msg)
+        actual_sha256 = hashlib.sha256(body).digest()
+        if not hmac.compare_digest(claimed_sha256, actual_sha256):
+            msg = "Content-Digest does not match the request body"
+            raise HTTPSignatureError(msg)

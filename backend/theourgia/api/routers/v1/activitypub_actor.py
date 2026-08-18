@@ -239,10 +239,26 @@ async def post_inbox(
         )
 
     # Escape hatch: operators may accept unsigned inbound (OFF by
-    # default — federation should always be signed).
+    # default — federation should always be signed). Even when an
+    # operator flips the instance setting on, it is HARD-DISABLED in a
+    # production environment: unsigned inbound accepts whatever actor the
+    # body claims with zero verification, so it must never be reachable
+    # on a live instance regardless of the stored flag (v1-026).
     allow_anonymous = await read_bool_setting(
         db, "federation.accept_anonymous_inbound", default=False,
     )
+    if allow_anonymous and get_settings().is_production:
+        _log.warning(
+            "activitypub_inbox.anonymous_inbound_ignored_in_production",
+            extra={"handle": handle},
+        )
+        allow_anonymous = False
+
+    # The DID whose signature we actually verified. In the signed path
+    # this is the authenticated sender; it — not the body's self-declared
+    # actor — is what we persist, so a spoofed `actor` field cannot
+    # masquerade as another instance.
+    verified_keyid: str | None = None
     if not allow_anonymous:
         keyid = _extract_keyid(signature_input)
         if not keyid:
@@ -253,9 +269,13 @@ async def post_inbox(
         try:
             peer = await resolver.resolve(keyid)
         except PeerKeyUnavailableError as exc:
+            _log.warning(
+                "activitypub_inbox.peer_key_unavailable",
+                extra={"keyid": keyid, "error": str(exc)},
+            )
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail=str(exc),
+                detail="could not resolve the sender's key",
             ) from exc
         try:
             verify_request(
@@ -263,22 +283,32 @@ async def post_inbox(
                 method=request.method,
                 path=request.url.path,
                 headers={k: v for k, v in request.headers.items()},
+                body=body,
                 expected_keyid=keyid,
             )
         except HTTPSignatureError as exc:
+            _log.warning(
+                "activitypub_inbox.signature_failed",
+                extra={"keyid": keyid, "error": str(exc)},
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"signature verification failed: {exc}",
+                detail="signature verification failed",
             ) from exc
+        verified_keyid = keyid
 
         # Replay guard — same nonce key scheme as the native inbox.
         nonce_key = _build_replay_nonce_key(signature_input, body)
         try:
             await record_nonce(db, nonce_key=nonce_key)
         except ReplayDetectedError as exc:
+            _log.info(
+                "activitypub_inbox.replay_detected",
+                extra={"keyid": keyid, "error": str(exc)},
+            )
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"replayed nonce: {exc}",
+                detail="request rejected as a replay",
             ) from exc
 
     # Defer to the native inbox path's persistence layer. The AP→native
@@ -300,8 +330,18 @@ async def post_inbox(
         FederationActivityKind,
     )
 
+    # Persist the VERIFIED signer, never the body's self-declared actor.
+    # Only the (dev/test-only) anonymous escape hatch — which does no
+    # verification at all — falls back to the unverified body actor, and
+    # it is tagged so downstream processing never treats it as trusted.
+    if verified_keyid is not None:
+        sender_did = verified_keyid
+    else:
+        claimed = str(body_json.get("actor", "unknown"))
+        sender_did = f"ap:unverified:{claimed}"
+
     activity = FederationActivity(
-        sender_did=str(body_json.get("actor", "ap:unknown")),
+        sender_did=sender_did,
         kind=_map_ap_type_to_kind(body_json.get("type")),
         body_json=body_json,
         received_at=datetime.now(tz=UTC),

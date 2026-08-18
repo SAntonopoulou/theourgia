@@ -34,8 +34,10 @@ Honesty rules wired:
   · The body is JSON-encoded ONCE (canonical encoding) — same bytes
     are hashed for the Content-Digest header AND posted as the
     request body. Otherwise the recipient's verifier would reject.
-  · The signature includes ``content-digest``, ``host``, and ``date``
-    headers (DEFAULT_COMPONENTS).
+  · The signature covers ``content-digest`` alongside ``@method``,
+    ``@path``, ``host`` and ``date`` (:data:`BODY_COMPONENTS`), so the
+    hashed body is bound into the signature. The recipient enforces this
+    exact minimum set for any inbound request that has a body.
 """
 
 from __future__ import annotations
@@ -52,6 +54,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from theourgia.core.config import get_settings
 from theourgia.core.federation.http_signatures import (
+    BODY_COMPONENTS,
     DEFAULT_COMPONENTS,
     SignedRequestComponents,
     content_digest_header,
@@ -133,11 +136,17 @@ async def deliver(
         headers.update(dict(extra_headers))
 
     path = parsed.path + (f"?{parsed.query}" if parsed.query else "")
+    # A federation delivery always carries a body, so the content-digest
+    # MUST be covered (BODY_COMPONENTS) — the recipient rejects a
+    # body-bearing request whose signature omits it.
+    signed_components = (
+        BODY_COMPONENTS if body else DEFAULT_COMPONENTS
+    )
     components = SignedRequestComponents(
         method="POST",
         path=path,
         headers=headers,
-        components=DEFAULT_COMPONENTS,
+        components=signed_components,
     )
     created = int(time())
     sig_headers = sign_request(

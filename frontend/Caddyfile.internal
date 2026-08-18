@@ -57,6 +57,15 @@
         reverse_proxy backend:8000
     }
 
+    # NodeInfo document. The discovery pointer lives under /.well-known/
+    # (handled above) but the 2.0 document it points to is served at
+    # /nodeinfo/2.0 — without this route it would fall through to the SPA
+    # catch-all and never reach the backend, leaving discovery half
+    # broken for fediverse crawlers.
+    handle /nodeinfo/* {
+        reverse_proxy backend:8000
+    }
+
     # ActivityPub user paths
     handle /users/* {
         reverse_proxy backend:8000

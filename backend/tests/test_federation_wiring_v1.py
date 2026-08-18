@@ -35,8 +35,9 @@ from httpx import ASGITransport, AsyncClient
 
 from theourgia.core.federation import ap_outbound
 from theourgia.core.federation.http_signatures import (
-    DEFAULT_COMPONENTS,
+    BODY_COMPONENTS,
     SignedRequestComponents,
+    content_digest_header,
     sign_request,
 )
 from theourgia.core.federation.inbox_processor import (
@@ -547,6 +548,38 @@ def _ap_inbox_db(owner: Any) -> _FakeSession:
 PEER_DID = "did:theourgia:thelema.example"
 
 
+def _sign_body_request(
+    *,
+    private_key: Any,
+    keyid: str,
+    path: str,
+    body: bytes,
+    host: str = "testserver",
+    created: int | None = None,
+) -> dict[str, str]:
+    """Build headers for a signed inbound POST that carries a body.
+
+    Covers BODY_COMPONENTS (so content-digest is part of the signature)
+    and sets the Content-Digest header over the exact body bytes — the
+    contract the verifier now enforces for any body-bearing request.
+    """
+    digest = content_digest_header(body)
+    signable = {"Host": host, "Content-Digest": digest}
+    components = SignedRequestComponents(
+        method="POST",
+        path=path,
+        headers=signable,
+        components=BODY_COMPONENTS,
+    )
+    signed = sign_request(
+        private_key=private_key,
+        keyid=keyid,
+        components=components,
+        created=created if created is not None else int(time()),
+    )
+    return {**signable, **signed}
+
+
 async def test_ap_inbox_rejects_unsigned_with_401(fed_env) -> None:
     keypair = generate_keypair()
     db = _ap_inbox_db(uuid4())
@@ -571,17 +604,11 @@ async def test_ap_inbox_accepts_signed_request_with_202(fed_env) -> None:
     body = json.dumps(
         {"type": "Follow", "actor": "https://thelema.example/users/frater-lux"},
     ).encode("utf-8")
-    components = SignedRequestComponents(
-        method="POST",
-        path="/users/aspasia/inbox",
-        headers={"Host": "testserver"},
-        components=DEFAULT_COMPONENTS,
-    )
-    headers = sign_request(
+    headers = _sign_body_request(
         private_key=keypair.private_key,
         keyid=PEER_DID,
-        components=components,
-        created=int(time()),
+        path="/users/aspasia/inbox",
+        body=body,
     )
 
     async with AsyncClient(
@@ -606,27 +633,62 @@ async def test_ap_inbox_rejects_bad_signature_with_401(fed_env) -> None:
     db = _ap_inbox_db(uuid4())
     app = _ap_inbox_app(db, _StubResolver(PEER_DID, keypair.public_key))
 
-    components = SignedRequestComponents(
-        method="POST",
-        path="/users/aspasia/inbox",
-        headers={"Host": "testserver"},
-        components=DEFAULT_COMPONENTS,
-    )
-    headers = sign_request(
+    body = b'{"type":"Follow"}'
+    # A fully-formed signature (content-digest covered) but from the
+    # wrong key — must fail at the Ed25519 check, not the coverage check.
+    headers = _sign_body_request(
         private_key=other.private_key,
         keyid=PEER_DID,
-        components=components,
-        created=int(time()),
+        path="/users/aspasia/inbox",
+        body=body,
     )
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://testserver",
     ) as ac:
         response = await ac.post(
             "/users/aspasia/inbox",
-            content=b'{"type":"Follow"}',
+            content=body,
             headers=headers,
         )
     assert response.status_code == 401
+    assert db.commits == 0
+
+
+async def test_ap_inbox_rejects_body_swap_with_401(fed_env) -> None:
+    """A request signed over one body but delivered with a DIFFERENT body
+    is rejected: the signature stays valid over the covered headers, but
+    the recomputed content-digest no longer matches the swapped payload
+    (finding 1 — the body must be bound into the signature)."""
+    keypair = generate_keypair()
+    db = _ap_inbox_db(uuid4())
+    app = _ap_inbox_app(db, _StubResolver(PEER_DID, keypair.public_key))
+
+    signed_body = json.dumps(
+        {"type": "Follow", "actor": "https://thelema.example/users/frater-lux"},
+    ).encode("utf-8")
+    headers = _sign_body_request(
+        private_key=keypair.private_key,
+        keyid=PEER_DID,
+        path="/users/aspasia/inbox",
+        body=signed_body,
+    )
+    # Attacker swaps the payload while keeping the signed headers intact.
+    swapped_body = json.dumps(
+        {"type": "Follow", "actor": "https://evil.example/users/impostor"},
+    ).encode("utf-8")
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver",
+    ) as ac:
+        response = await ac.post(
+            "/users/aspasia/inbox",
+            content=swapped_body,
+            headers={**headers, "Content-Type": "application/activity+json"},
+        )
+    assert response.status_code == 401, response.text
+    # Nothing persisted from a tampered request.
+    assert db.commits == 0
+    assert not any(isinstance(r, FederationActivity) for r in db.added)
 
 
 # ── Manual approve → Accept enqueue ─────────────────────────────────
@@ -1092,21 +1154,15 @@ async def test_native_inbox_hub_post_requires_capability(fed_env) -> None:
     peer_keypair = generate_keypair()
     instance_keypair, instance_did = _instance_keypair_and_did()
 
+    body = json.dumps({"type": "hub.post", "payload": {}}).encode("utf-8")
+
     def _signed_headers() -> dict[str, str]:
-        components = SignedRequestComponents(
-            method="POST",
-            path="/api/v1/federation/inbox",
-            headers={"Host": "testserver"},
-            components=DEFAULT_COMPONENTS,
-        )
-        return sign_request(
+        return _sign_body_request(
             private_key=peer_keypair.private_key,
             keyid=PEER_DID,
-            components=components,
-            created=int(time()),
+            path="/api/v1/federation/inbox",
+            body=body,
         )
-
-    body = json.dumps({"type": "hub.post", "payload": {}}).encode("utf-8")
 
     # 1. Signed but capability-less → 403.
     db = _FakeSession()
@@ -1163,17 +1219,11 @@ async def test_native_inbox_follow_needs_no_capability(fed_env) -> None:
     body = json.dumps(
         {"type": "follow.request", "target_user_id": str(uuid4())},
     ).encode("utf-8")
-    components = SignedRequestComponents(
-        method="POST",
-        path="/api/v1/federation/inbox",
-        headers={"Host": "testserver"},
-        components=DEFAULT_COMPONENTS,
-    )
-    headers = sign_request(
+    headers = _sign_body_request(
         private_key=peer_keypair.private_key,
         keyid=PEER_DID,
-        components=components,
-        created=int(time()),
+        path="/api/v1/federation/inbox",
+        body=body,
     )
 
     db = _FakeSession()
@@ -1327,3 +1377,160 @@ def test_ssrf_guard_blocks_internal_hosts_on_did_path():
         "a.b.c.example.org",
     ]:
         assert not _is_blocked_ssrf_host(ok), f"should allow {ok!r}"
+
+
+# ── Finding 2: verified signer bound to the activity actor ──────────
+
+
+async def test_follow_request_spoofed_actor_host_is_skipped() -> None:
+    """The signature was verified for did:theourgia:thelema.example, but
+    the body claims an actor on evil.example — refuse the cross-instance
+    actor claim rather than record a follower for another host."""
+    owner = uuid4()
+    db = _FakeSession()  # binding check precedes any DB query
+    activity = _activity(
+        FederationActivityKind.FOLLOW_REQUEST,
+        {"type": "Follow", "actor": "https://evil.example/users/impostor"},
+        sender="did:theourgia:thelema.example",
+        target_user_id=str(owner),
+    )
+    status, reason = await process_activity(db, activity)
+    assert status is FederationActivityStatus.SKIPPED
+    assert "does not match the verified signer" in (reason or "")
+    assert db.added == []
+
+
+async def test_follow_request_matching_actor_host_proceeds() -> None:
+    """A body actor on the SAME host as the verified DID signer is
+    accepted (the binding does not block honest peers)."""
+    owner = uuid4()
+    db = _FakeSession([
+        _Result(rows=[_ap_settings(owner)]),  # settings (MANUAL)
+        _Result(rows=[]),                      # no existing follower
+        _Result(rows=[]),                      # no pending request
+    ])
+    activity = _activity(
+        FederationActivityKind.FOLLOW_REQUEST,
+        {"type": "Follow", "actor": "https://thelema.example/users/frater-lux"},
+        sender="did:theourgia:thelema.example",
+        target_user_id=str(owner),
+    )
+    status, reason = await process_activity(db, activity)
+    assert status is FederationActivityStatus.PROCESSED
+    assert reason is None
+
+
+async def test_note_create_spoofed_actor_host_is_skipped() -> None:
+    owner = uuid4()
+    entry_id = uuid4()
+    db = _FakeSession()  # binding check precedes any DB query
+    activity = _activity(
+        FederationActivityKind.NOTE_CREATE,
+        {
+            "type": "Create",
+            "actor": "https://evil.example/users/impostor",
+            "object": {
+                "type": "Note",
+                "inReplyTo": f"https://hearth.sophia.example/@aspasia/{entry_id}",
+                "content": "spoofed",
+            },
+        },
+        sender="did:theourgia:thelema.example",
+        target_user_id=str(owner),
+    )
+    status, reason = await process_activity(db, activity)
+    assert status is FederationActivityStatus.SKIPPED
+    assert "does not match the verified signer" in (reason or "")
+    assert db.added == []
+
+
+# ── Finding 4: anonymous-inbound escape hatch is prod-gated ─────────
+
+
+def _escape_hatch_db(owner: Any, *, anonymous: bool) -> _FakeSession:
+    """post_inbox queue: vault → ap settings → accept_anonymous_inbound."""
+    setting = SimpleNamespace(value_json="true" if anonymous else "false")
+    return _FakeSession([
+        _Result(rows=[_vault(owner)]),
+        _Result(rows=[_ap_settings(owner)]),
+        _Result(scalar=setting),
+    ])
+
+
+async def test_anonymous_inbound_accepted_in_non_prod(fed_env) -> None:
+    """With the operator flag ON and a non-production env, unsigned
+    inbound is accepted — but recorded as an UNVERIFIED sender."""
+    owner = uuid4()
+    db = _escape_hatch_db(owner, anonymous=True)
+    app = _ap_inbox_app(db, _StubResolver(PEER_DID, generate_keypair().public_key))
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver",
+    ) as ac:
+        response = await ac.post(
+            "/users/aspasia/inbox",
+            json={"type": "Follow", "actor": "https://thelema.example/users/x"},
+        )
+    assert response.status_code == 202, response.text
+    stored = next(r for r in db.added if isinstance(r, FederationActivity))
+    assert stored.sender_did.startswith("ap:unverified:")
+
+
+async def test_anonymous_inbound_refused_in_production(monkeypatch, fed_env) -> None:
+    """Even with the operator flag ON, a production environment
+    hard-disables the escape hatch: unsigned inbound is rejected 401."""
+    from theourgia.api.routers.v1 import activitypub_actor
+
+    monkeypatch.setattr(
+        activitypub_actor,
+        "get_settings",
+        lambda: SimpleNamespace(
+            federation_transport_enabled=True,
+            base_url="https://testserver",
+            is_production=True,
+        ),
+    )
+    owner = uuid4()
+    db = _escape_hatch_db(owner, anonymous=True)
+    app = _ap_inbox_app(db, _StubResolver(PEER_DID, generate_keypair().public_key))
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver",
+    ) as ac:
+        response = await ac.post(
+            "/users/aspasia/inbox",
+            json={"type": "Follow", "actor": "https://thelema.example/users/x"},
+        )
+    assert response.status_code == 401, response.text
+    assert db.commits == 0
+
+
+# ── Finding 5: registered-peer SSRF guard (real-connection path) ────
+
+
+def test_registered_peer_private_ip_blocked_without_lab_flag(monkeypatch):
+    """A registered peer whose base_url points at a private IP is refused
+    on the real (non-mock) fetch path unless the LAB insecure-http flag
+    is set — the operator-trusted bypass no longer skips the guard."""
+    import asyncio
+
+    from theourgia.core import config
+    from theourgia.core.federation.peer_keys import (
+        PeerKeyResolver,
+        PeerKeyUnavailableError,
+    )
+
+    monkeypatch.delenv("THEOURGIA_FEDERATION_ALLOW_INSECURE_HTTP", raising=False)
+    config.get_settings.cache_clear()
+
+    async def lookup(did: str) -> str | None:
+        return "http://10.0.0.5:9999"
+
+    # http_client=None → the real fetch path, which now validates the
+    # connect target before dialing.
+    resolver = PeerKeyResolver(peer_base_url_lookup=lookup)
+
+    async def run() -> None:
+        with pytest.raises(PeerKeyUnavailableError):
+            await resolver.resolve("did:theourgia:known.example")
+
+    asyncio.run(run())
+    config.get_settings.cache_clear()

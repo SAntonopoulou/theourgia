@@ -132,6 +132,54 @@ def _actor_of(activity: FederationActivity) -> str:
     return activity.sender_did
 
 
+def _host_of_ref(ref: str) -> str | None:
+    """Best-effort host for an actor reference.
+
+    Handles both AP actor URLs (``https://host/users/x``) and native
+    DIDs (``did:theourgia:host`` / ``…:vault:slug``). Returns ``None``
+    when no host can be determined.
+    """
+    if not isinstance(ref, str) or not ref:
+        return None
+    if ref.startswith(("https://", "http://")):
+        host = urlparse(ref).hostname
+        return host.lower() if host else None
+    try:
+        host, _, _ = parse_actor_id(ref)
+    except InvalidDIDError:
+        return None
+    # Strip any :port before comparing (DIDs may carry one in dev).
+    return host.rsplit(":", 1)[0].lower() if host else None
+
+
+def _actor_binding_error(activity: FederationActivity) -> str | None:
+    """Return a skip reason if the body's declared actor is not bound to
+    the verified sender.
+
+    ``activity.sender_did`` is the DID/actor whose HTTP signature the
+    inbox verified. If the body's self-declared ``actor`` lives on a
+    different host than that verified sender, the activity is spoofing
+    another instance's actor — we refuse it rather than act on the
+    unverified claim. When the verified sender's host cannot be
+    determined (e.g. the dev-only unsigned escape hatch), there is
+    nothing to bind against and we do not block here.
+    """
+    body = activity.body_json or {}
+    claimed = body.get("actor")
+    if not isinstance(claimed, str) or not claimed:
+        return None
+    sender_host = _host_of_ref(activity.sender_did)
+    if sender_host is None:
+        return None
+    claimed_host = _host_of_ref(claimed)
+    if claimed_host is None or claimed_host != sender_host:
+        return (
+            "actor host does not match the verified signer — refusing a "
+            "cross-instance actor claim"
+        )
+    return None
+
+
 def _handle_of(actor: str) -> str | None:
     """Best-effort ``@user@host`` handle from an AP actor URL."""
     if not actor.startswith("https://"):
@@ -159,6 +207,9 @@ async def _handle_follow_request(
             FederationActivityStatus.SKIPPED,
             "follow.request has no resolvable local target actor",
         )
+    binding_error = _actor_binding_error(activity)
+    if binding_error is not None:
+        return (FederationActivityStatus.SKIPPED, binding_error)
     actor = _actor_of(activity)
 
     ap_settings = (
@@ -244,6 +295,9 @@ async def _handle_follow_undo(
             f"undo of {inner.get('type')!r} has no v1 handler",
         )
 
+    binding_error = _actor_binding_error(activity)
+    if binding_error is not None:
+        return (FederationActivityStatus.SKIPPED, binding_error)
     actor = _actor_of(activity)
     follower = (
         await db.execute(
@@ -266,6 +320,9 @@ async def _handle_note_create(
     db: AsyncSession, activity: FederationActivity, now: datetime,
 ) -> tuple[FederationActivityStatus, str | None]:
     body = activity.body_json or {}
+    binding_error = _actor_binding_error(activity)
+    if binding_error is not None:
+        return (FederationActivityStatus.SKIPPED, binding_error)
     obj = body.get("object")
     if not isinstance(obj, dict):
         return (
