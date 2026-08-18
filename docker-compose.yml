@@ -83,6 +83,14 @@ services:
       # unconfigured. Which is exactly what happened.
       THEOURGIA_LINK_CODE_CLIENTS: ${THEOURGIA_LINK_CODE_CLIENTS:-}
       THEOURGIA_DEVICE_LINK_AUDIENCES: ${THEOURGIA_DEVICE_LINK_AUDIENCES:-}
+      # Email, through Resend as contact@theourgia.com — the address the
+      # whole of theourgia answers from, shared with astropractise and the
+      # phone's feedback mail. Same rule as everything in this map: listed
+      # HERE, valued in .env; .env alone reaches nothing.
+      THEOURGIA_EMAIL_BACKEND: ${THEOURGIA_EMAIL_BACKEND:-console}
+      THEOURGIA_EMAIL_DEFAULT_FROM: ${THEOURGIA_EMAIL_DEFAULT_FROM:-contact@theourgia.com}
+      THEOURGIA_EMAIL_DEFAULT_FROM_NAME: ${THEOURGIA_EMAIL_DEFAULT_FROM_NAME:-theourgia}
+      THEOURGIA_RESEND_API_KEY: ${THEOURGIA_RESEND_API_KEY:-}
       DATABASE_URL: postgresql+asyncpg://${THEOURGIA_DB_USER:-theourgia}:${THEOURGIA_DB_PASSWORD}@postgres:5432/${THEOURGIA_DB_NAME:-theourgia}
       REDIS_URL: redis://redis:6379/0
       THEOURGIA_EPHE_PATH: /app/data/ephe
@@ -148,6 +156,13 @@ services:
       # theourgia.example.com defaults baked into Settings.
       THEOURGIA_BASE_URL: ${THEOURGIA_BASE_URL:-https://theourgia.example.com}
       THEOURGIA_INSTANCE_ID: ${THEOURGIA_INSTANCE_ID:-theourgia.example.com}
+      # Email sends FROM THIS WORKER — send_email_async is a celery task,
+      # so a mail configured only on the web container reaches nothing at
+      # the moment of sending. Same four as the backend's map.
+      THEOURGIA_EMAIL_BACKEND: ${THEOURGIA_EMAIL_BACKEND:-console}
+      THEOURGIA_EMAIL_DEFAULT_FROM: ${THEOURGIA_EMAIL_DEFAULT_FROM:-contact@theourgia.com}
+      THEOURGIA_EMAIL_DEFAULT_FROM_NAME: ${THEOURGIA_EMAIL_DEFAULT_FROM_NAME:-theourgia}
+      THEOURGIA_RESEND_API_KEY: ${THEOURGIA_RESEND_API_KEY:-}
       # Backups run on this worker (the backups queue) — restic needs
       # its repository, password, and the R2/S3 credentials here.
       RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:-}
