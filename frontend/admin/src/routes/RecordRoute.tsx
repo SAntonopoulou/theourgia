@@ -6,10 +6,11 @@
  * of what was done — keepings with a Mood and a Body reading, notes in
  * whatever tongue the rite demanded, each carrying the sky it happened
  * under. It arrives by sync from a linked device and rests in
- * `record_entry` as whole documents; this page reads them and nothing
- * else. READ-ONLY deliberately: the server is a shelf, not an author, and
- * editing from here comes later, through the same conflict rules the
- * devices obey.
+ * `record_entry` as whole documents; this page reads them — and mends or
+ * removes them THROUGH THE PROTOCOL: every write goes out as the same
+ * whole-document PUT the devices push with, last writer wins on the
+ * timestamp, and the phone applies it at its next sync as news like any
+ * other. The server stays a shelf, never an author.
  *
  * Days first, newest first, then a day's entries in the order they were
  * kept — the phone's own three levels, minus one until entries grow a
@@ -21,7 +22,7 @@
 import { useTopbar } from "@theourgia/shared";
 import { type CSSProperties, useEffect, useState } from "react";
 
-import { apiGet } from "../lib/api.js";
+import { apiGet, apiPut } from "../lib/api.js";
 
 type WireEntry = {
   id: string;
@@ -321,6 +322,44 @@ export function RecordRoute() {
   );
 
   const [entries, setEntries] = useState<WireEntry[] | null>(null);
+
+  /** Write one changed entry back through the shelf's own conflict rules —
+   * the same PUT the devices use, last writer wins on the timestamp. The
+   * phone pulls it on its next sync and applies it as news like any other. */
+  const writeBack = async (changed: WireEntry) => {
+    await apiPut("/record/entries", {
+      entries: [
+        {
+          id: changed.id,
+          kind: changed.kind,
+          doc: changed.doc,
+          updated_at_utc: changed.updated_at_utc,
+          deleted_at_utc: changed.deleted_at_utc,
+        },
+      ],
+    });
+    setEntries((held) => held?.map((one) => (one.id === changed.id ? changed : one)) ?? held);
+  };
+
+  const remove = async (entry: WireEntry) => {
+    if (!window.confirm("Remove this from the record? The device learns of it at its next sync.")) {
+      return;
+    }
+    const now = new Date().toISOString();
+    await writeBack({ ...entry, updated_at_utc: now, deleted_at_utc: now });
+  };
+
+  const mend = async (entry: WireEntry) => {
+    const field = entry.kind === "day-entry" ? "body" : "note";
+    const current = String(entry.doc[field] ?? "");
+    const words = window.prompt("The words, mended:", current);
+    if (words === null || words === current) return;
+    await writeBack({
+      ...entry,
+      doc: { ...entry.doc, [field]: words },
+      updated_at_utc: new Date().toISOString(),
+    });
+  };
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -410,8 +449,9 @@ export function RecordRoute() {
   return (
     <div style={pageStyle} data-route="record">
       <p style={hintStyle}>
-        Days run midnight to midnight in your timezone here; the app groups by your chosen frame.
-        Read-only for now — mend entries on the device that keeps them.
+        Days run midnight to midnight in your timezone here; the app groups by your chosen frame. An
+        entry opened here can be mended or removed; the devices learn of it at their next sync, by
+        the same rules they push with.
       </p>
       {days.map(([day, list]) => (
         <section key={day} style={{ ...cardStyle, marginBottom: "var(--space-4)" }}>
@@ -487,6 +527,24 @@ export function RecordRoute() {
                           </div>
                         ))}
                       </dl>
+                      <div style={detailActionsStyle}>
+                        {(entry.kind === "observance" || entry.kind === "day-entry") && (
+                          <button
+                            type="button"
+                            style={detailButtonStyle}
+                            onClick={() => void mend(entry)}
+                          >
+                            Mend the words
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          style={detailButtonStyle}
+                          onClick={() => void remove(entry)}
+                        >
+                          Remove from the record
+                        </button>
+                      </div>
                     </details>
                   </li>
                 );
@@ -566,6 +624,21 @@ const detailValueStyle: CSSProperties = {
   color: "var(--ink-soft)",
   margin: 0,
   whiteSpace: "pre-wrap",
+};
+
+const detailActionsStyle: CSSProperties = {
+  display: "flex",
+  gap: "var(--space-3)",
+  margin: "0 0 var(--space-2) calc(3.5em + var(--space-3))",
+};
+
+const detailButtonStyle: CSSProperties = {
+  font: "var(--type-caption)",
+  color: "var(--accent)",
+  background: "none",
+  border: "none",
+  padding: 0,
+  cursor: "pointer",
 };
 
 const metaStyle: CSSProperties = {

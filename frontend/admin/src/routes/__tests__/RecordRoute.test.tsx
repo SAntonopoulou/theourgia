@@ -20,11 +20,12 @@ import { Suspense } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ apiGet: vi.fn() }));
+const mocks = vi.hoisted(() => ({ apiGet: vi.fn(), apiPut: vi.fn() }));
 
 vi.mock("../../lib/api.js", () => ({
   apiGet: mocks.apiGet,
   apiPost: vi.fn(),
+  apiPut: mocks.apiPut,
   ApiError: class extends Error {},
 }));
 
@@ -84,6 +85,7 @@ function entry(overrides: Record<string, unknown> = {}) {
 afterEach(() => {
   cleanup();
   mocks.apiGet.mockReset();
+  mocks.apiPut.mockReset();
 });
 
 describe("titleOf", () => {
@@ -448,5 +450,65 @@ describe("RecordRoute", () => {
 
     expect(screen.getByText(/Nothing here yet/)).toBeTruthy();
     expect(screen.getByText(/Sync the record now/)).toBeTruthy();
+  });
+
+  it("removes an entry through the protocol — a tombstone, not a deletion", async () => {
+    mocks.apiGet.mockResolvedValue({
+      entries: [entry()],
+      next_since: 1,
+      more: false,
+    });
+    mocks.apiPut.mockResolvedValue({ accepted: 1, stale: 0, latest_seq: 2 });
+    const confirmed = vi.spyOn(window, "confirm").mockReturnValue(true);
+    renderRoute();
+    await flush();
+    await flush();
+
+    await act(async () => {
+      screen.getByText("Remove from the record").click();
+    });
+    await flush();
+
+    const [path, body] = mocks.apiPut.mock.calls[0] as [
+      string,
+      { entries: Array<Record<string, unknown>> },
+    ];
+    expect(path).toBe("/record/entries");
+    const wire = body.entries[0];
+    expect(wire?.id).toBe("row-1");
+    expect(wire?.deleted_at_utc).toBeTruthy();
+    // The page then shows what stands, exactly as the phone's reader would.
+    expect(screen.queryByText("Moonrise")).toBeNull();
+    confirmed.mockRestore();
+  });
+
+  it("mends the words through the protocol, newest writer winning", async () => {
+    mocks.apiGet.mockResolvedValue({
+      entries: [entry()],
+      next_since: 1,
+      more: false,
+    });
+    mocks.apiPut.mockResolvedValue({ accepted: 1, stale: 0, latest_seq: 2 });
+    const asked = vi.spyOn(window, "prompt").mockReturnValue("Χαῖρε Σελήνη — mended");
+    renderRoute();
+    await flush();
+    await flush();
+
+    await act(async () => {
+      screen.getByText("Mend the words").click();
+    });
+    await flush();
+
+    const [, body] = mocks.apiPut.mock.calls[0] as [
+      string,
+      { entries: Array<{ doc: { note?: string }; updated_at_utc: string }> },
+    ];
+    const wire = body.entries[0];
+    expect(wire?.doc.note).toBe("Χαῖρε Σελήνη — mended");
+    expect(
+      wire !== undefined && wire.updated_at_utc > "2026-08-17T06:12:01Z",
+    ).toBe(true);
+    expect(screen.getByText(/Σελήνη — mended/)).toBeTruthy();
+    asked.mockRestore();
   });
 });

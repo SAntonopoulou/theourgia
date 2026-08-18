@@ -33,12 +33,22 @@ export async function apiGet<T>(path: string): Promise<T> {
   return parse<T>(res);
 }
 
-export async function apiPost<T>(
-  path: string,
-  body?: unknown,
-): Promise<T> {
+export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
   const res = await fetch(`${DEFAULT_BASE}${path}`, {
     method: "POST",
+    credentials: "include",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  return parse<T>(res);
+}
+
+export async function apiPut<T>(path: string, body?: unknown): Promise<T> {
+  const res = await fetch(`${DEFAULT_BASE}${path}`, {
+    method: "PUT",
     credentials: "include",
     headers: {
       Accept: "application/json",
