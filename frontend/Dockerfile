@@ -83,6 +83,11 @@ FROM caddy:${CADDY_VERSION} AS prod
 COPY --from=build /app/frontend/public-site/dist /srv/public-site
 COPY --from=build /app/frontend/admin/dist /srv/admin
 
+# The pack distribution at /packs/* — prebuilt artifacts committed under
+# packs/dist (regenerate with backend/tool/build_pack_dist.py when the
+# phone's packs change).
+COPY packs/dist /srv/packs
+
 # Internal routing Caddyfile. /api/* and /federation/* go to the backend
 # container on its compose-network address; everything else falls through
 # to the static file server with /app/* hitting the admin SPA.

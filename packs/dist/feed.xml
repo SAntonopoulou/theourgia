@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:pack="https://theourgia.com/ns/pack">
+  <channel>
+    <title>Theourgia packs</title>
+    <link>https://theourgia.com/packs</link>
+    <description>Every pack theourgia publishes — traditions, rites, calendars, number systems and word corpora — as .mbf, one source for the app and the site.</description>
+    <item>
+      <title>The Keybearers' Divination 2</title>
+      <guid isPermaLink="false">astralogi.keybearers.tetraktys@2</guid>
+      <pubDate>Mon, 03 Aug 2026 22:58:58 +0000</pubDate>
+      <description>The tetraktys dice-oracle: five knucklebones read upon the ladder of ten.</description>
+      <pack:id>astralogi.keybearers.tetraktys</pack:id>
+      <pack:version>2</pack:version>
+      <enclosure url="https://theourgia.com/packs/astralogi-keybearers-tetraktys-v2.mbf" type="application/x-mbf" length="18651"/>
+    </item>
+    <item>
+      <title>Cards — the general deck and spreads 1</title>
+      <guid isPermaLink="false">theourgia.cards.general@1</guid>
+      <pubDate>Tue, 04 Aug 2026 12:17:27 +0000</pubDate>
+      <description>A plain seventy-eight by code and generic name, usable at once with any deck you own — and a library of spreads that work with any deck at all.</description>
+      <pack:id>theourgia.cards.general</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-cards-general-v1.mbf" type="application/x-mbf" length="2869"/>
+    </item>
+    <item>
+      <title>Geomancy — the shield chart 3</title>
+      <guid isPermaLink="false">theourgia.derivations.geomancy@3</guid>
+      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <description>The Latin shield chart: four Mothers cast, the Daughters got by transposing their ranks, and the whole shield derived from those by row-wise addition.</description>
+      <pack:id>theourgia.derivations.geomancy</pack:id>
+      <pack:version>3</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-derivations-geomancy-v3.mbf" type="application/x-mbf" length="2627"/>
+    </item>
+    <item>
+      <title>علم الرمل — Arabic geomancy 1</title>
+      <guid isPermaLink="false">theourgia.derivations.raml@1</guid>
+      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <description>The sixteen houses as al-Zanātī and the 1241 tablet give them, with the figures under their Arabic names and al-Zanātī’s domicile scheme — including the three figures he does not reach and the six where the Arabic parts company with the Latin.</description>
+      <pack:id>theourgia.derivations.raml</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-derivations-raml-v1.mbf" type="application/x-mbf" length="6287"/>
+    </item>
+    <item>
+      <title>Tasseography — the cup 2</title>
+      <guid isPermaLink="false">theourgia.fields.tasseography@2</guid>
+      <pubDate>Wed, 05 Aug 2026 02:21:31 +0000</pubDate>
+      <description>Reading the grounds and the leaves, in three traditions kept apart — the Greek cup, the Turkish cup and saucer, and the Victorian teacup. Their zones disagree, and the disagreement is shown rather than settled.</description>
+      <pack:id>theourgia.fields.tasseography</pack:id>
+      <pack:version>2</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-fields-tasseography-v2.mbf" type="application/x-mbf" length="3597"/>
+    </item>
+    <item>
+      <title>Hellenistic Elections 5</title>
+      <guid isPermaLink="false">theourgia.hellenistic.elections@5</guid>
+      <pubDate>Mon, 03 Aug 2026 10:39:28 +0000</pubDate>
+      <description>Sixteen matters, each with its place and its significators, judged whole rather than clause by clause — placed, dignified, aspected and unafflicted together, on a favourable day at a favourable hour.</description>
+      <pack:id>theourgia.hellenistic.elections</pack:id>
+      <pack:version>5</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-hellenistic-elections-v5.mbf" type="application/x-mbf" length="5021"/>
+    </item>
+    <item>
+      <title>Hellenistic Techniques 2</title>
+      <guid isPermaLink="false">theourgia.hellenistic.techniques@2</guid>
+      <pubDate>Sun, 02 Aug 2026 21:06:32 +0000</pubDate>
+      <description>Annual and monthly profections, zodiacal releasing from the lots, and the return of the Sun — with what the sources say about reading them.</description>
+      <pack:id>theourgia.hellenistic.techniques</pack:id>
+      <pack:version>2</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-hellenistic-techniques-v2.mbf" type="application/x-mbf" length="2902"/>
+    </item>
+    <item>
+      <title>The Keybearers' Adorations 1</title>
+      <guid isPermaLink="false">theourgia.keybearers.adorations@1</guid>
+      <pubDate>Mon, 03 Aug 2026 23:33:12 +0000</pubDate>
+      <description>The daily solar office at dawn, noon, dusk and night — in the home form and the xenos form for when you are away — and the lunar office keyed to the Moon's four angles.</description>
+      <pack:id>theourgia.keybearers.adorations</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-keybearers-adorations-v1.mbf" type="application/x-mbf" length="4911"/>
+    </item>
+    <item>
+      <title>The Keybearers 8</title>
+      <guid isPermaLink="false">theourgia.keybearers.bundle@8</guid>
+      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <description>The whole practice of the order in one download — the household calendar, the rites, the daily and lunar adorations, the sittings, the long workings, the tetraktys, the scrying protocol, and the oracle. Take all of it, or only the parts you want; every part is also published on its own.</description>
+      <pack:id>theourgia.keybearers.bundle</pack:id>
+      <pack:version>8</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-keybearers-bundle-v8.mbf" type="application/x-mbf" length="56394"/>
+    </item>
+    <item>
+      <title>The Keybearers' Calendar 3</title>
+      <guid isPermaLink="false">theourgia.keybearers.calendar@3</guid>
+      <pubDate>Mon, 03 Aug 2026 17:08:12 +0000</pubDate>
+      <description>The Athenian household month kept at the dark moon: Hekate's Deipnon, the Noumenia at the first crescent, and the Agathos Daimon on the day after. With the hosting that opens it and the lunar quarter-turns of the weekly tier.</description>
+      <pack:id>theourgia.keybearers.calendar</pack:id>
+      <pack:version>3</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-keybearers-calendar-v3.mbf" type="application/x-mbf" length="3594"/>
+    </item>
+    <item>
+      <title>The Keybearers' Rites 3</title>
+      <guid isPermaLink="false">theourgia.keybearers.rites@3</guid>
+      <pubDate>Wed, 05 Aug 2026 02:22:47 +0000</pubDate>
+      <description>The rites of the order — the Hellenic banishing, the weekly devotion, the three days of the monthly turn, scrying, the graded apolysis, consecration, animation, and the standing wards.</description>
+      <pack:id>theourgia.keybearers.rites</pack:id>
+      <pack:version>3</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-keybearers-rites-v3.mbf" type="application/x-mbf" length="11366"/>
+    </item>
+    <item>
+      <title>The Keybearers’ Scrying 2</title>
+      <guid isPermaLink="false">theourgia.keybearers.scrying@2</guid>
+      <pubDate>Wed, 05 Aug 2026 02:21:31 +0000</pubDate>
+      <description>Water and lamp scrying under a presiding god, with the six spirit-tests, the graded license to depart, and the ladder for a contact that will not leave.</description>
+      <pack:id>theourgia.keybearers.scrying</pack:id>
+      <pack:version>2</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-keybearers-scrying-v2.mbf" type="application/x-mbf" length="3950"/>
+    </item>
+    <item>
+      <title>The Keybearers' Sittings 1</title>
+      <guid isPermaLink="false">theourgia.keybearers.sittings@1</guid>
+      <pubDate>Mon, 03 Aug 2026 23:43:11 +0000</pubDate>
+      <description>The quiet disciplines beneath the rites — the daily stilling that every later skill stands on, the listening, the gaze practised without a window opened, and the breath at either end of a working.</description>
+      <pack:id>theourgia.keybearers.sittings</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-keybearers-sittings-v1.mbf" type="application/x-mbf" length="1882"/>
+    </item>
+    <item>
+      <title>The Keybearers’ Tetraktys 2</title>
+      <guid isPermaLink="false">theourgia.keybearers.tetraktys@2</guid>
+      <pubDate>Tue, 04 Aug 2026 11:03:26 +0000</pubDate>
+      <description>The ladder of ten in four rows — every sphere carded with its station, its Hekate-face, its retinue, trials, praxis and shadow; eighteen typed paths, the four global lines the wanderers ride, and the shapes each sphere stands in.</description>
+      <pack:id>theourgia.keybearers.tetraktys</pack:id>
+      <pack:version>2</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-keybearers-tetraktys-v2.mbf" type="application/x-mbf" length="12979"/>
+    </item>
+    <item>
+      <title>The Keybearers' Workings 3</title>
+      <guid isPermaLink="false">theourgia.keybearers.workings@3</guid>
+      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <description>The long operations — the Probationer’s lunar cycle, the operative path toward the Agathos Daimon in seven stages, and the three-night hosting at the seat.</description>
+      <pack:id>theourgia.keybearers.workings</pack:id>
+      <pack:version>3</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-keybearers-workings-v3.mbf" type="application/x-mbf" length="4610"/>
+    </item>
+    <item>
+      <title>حساب الجمّل — the abjad reckoning 1</title>
+      <guid isPermaLink="false">theourgia.numbers.arabic@1</guid>
+      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <description>The twenty-eight letters in both the Mashriqi and the Maghribi orders, which differ in exactly six — with the orthographic questions the sources leave open offered as choices rather than settled silently.</description>
+      <pack:id>theourgia.numbers.arabic</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-numbers-arabic-v1.mbf" type="application/x-mbf" length="2889"/>
+    </item>
+    <item>
+      <title>Ἰσοψηφία — Greek isopsephy 2</title>
+      <guid isPermaLink="false">theourgia.numbers.greek@2</guid>
+      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <description>The Milesian numerals with digamma, koppa and sampi; the plain count, and Hippolytus’ πυθμένες under both the rule of nine and the rule of seven, with the contest they were made for.</description>
+      <pack:id>theourgia.numbers.greek</pack:id>
+      <pack:version>2</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-numbers-greek-v2.mbf" type="application/x-mbf" length="4566"/>
+    </item>
+    <item>
+      <title>גימטריה — Hebrew gematria 1</title>
+      <guid isPermaLink="false">theourgia.numbers.hebrew@1</guid>
+      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <description>The twenty-two letters and the five finals, with fourteen of the named methods — the absolute, ordinal, reduced, cumulative, squares, cubes, building and positional values, AtBash and AlBam, and the three kolel variants offered as choices rather than applied silently.</description>
+      <pack:id>theourgia.numbers.hebrew</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-numbers-hebrew-v1.mbf" type="application/x-mbf" length="4270"/>
+    </item>
+    <item>
+      <title>Scrying and the pendulum 3</title>
+      <guid isPermaLink="false">theourgia.sessions.scrying@3</guid>
+      <pubDate>Wed, 05 Aug 2026 13:05:10 +0000</pubDate>
+      <description>Practices that run rather than resolve — scrying in water, mirror, flame, smoke and ink, and the pendulum with its calibration. The app holds the frame, the clock and the record; the seeing is yours.</description>
+      <pack:id>theourgia.sessions.scrying</pack:id>
+      <pack:version>3</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-sessions-scrying-v3.mbf" type="application/x-mbf" length="4041"/>
+    </item>
+    <item>
+      <title>Thelema 5</title>
+      <guid isPermaLink="false">theourgia.thelema.bundle@5</guid>
+      <pubDate>Wed, 05 Aug 2026 13:05:10 +0000</pubDate>
+      <description>The official corpus in one download — the calendar of the feasts, the banishings and daily rites, Liber Resh, the disciplines of Liber E and its fellows, the long operations, and the Tree of Life. Take all of it, or only the parts you want; every part is also published on its own.</description>
+      <pack:id>theourgia.thelema.bundle</pack:id>
+      <pack:version>5</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-thelema-bundle-v5.mbf" type="application/x-mbf" length="23824"/>
+    </item>
+    <item>
+      <title>Liber Resh vel Helios 1</title>
+      <guid isPermaLink="false">theourgia.thelema.resh@1</guid>
+      <pubDate>Tue, 04 Aug 2026 09:50:07 +0000</pubDate>
+      <description>The four daily adorations of the Sun — Ra at dawn, Ahathoor at noon, Tum at sunset, Khephra at midnight. Class D. Kept at the true solar stations, not at clock hours.</description>
+      <pack:id>theourgia.thelema.resh</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-thelema-resh-v1.mbf" type="application/x-mbf" length="2272"/>
+    </item>
+    <item>
+      <title>The Thelemic Rites 3</title>
+      <guid isPermaLink="false">theourgia.thelema.rites@3</guid>
+      <pubDate>Wed, 05 Aug 2026 13:05:10 +0000</pubDate>
+      <description>The banishings and the daily rites — the Star Ruby, the Star Sapphire, the Mass of the Phœnix, Reguli, the Lesser Pentagram as Crowley printed it, and the Bornless Invocation — with the Gnostic Mass, worked by five officers and the People.</description>
+      <pack:id>theourgia.thelema.rites</pack:id>
+      <pack:version>3</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-thelema-rites-v3.mbf" type="application/x-mbf" length="8641"/>
+    </item>
+    <item>
+      <title>The Thelemic Disciplines 1</title>
+      <guid isPermaLink="false">theourgia.thelema.sittings@1</guid>
+      <pubDate>Tue, 04 Aug 2026 09:52:27 +0000</pubDate>
+      <description>The instructional Libri as practices — asana, pranayama, dharana, the control of speech and action, and the memory run backwards. With Crowley’s own thresholds where he gives them, and his cautions where they are real.</description>
+      <pack:id>theourgia.thelema.sittings</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-thelema-sittings-v1.mbf" type="application/x-mbf" length="2974"/>
+    </item>
+    <item>
+      <title>The Tree of Life 3</title>
+      <guid isPermaLink="false">theourgia.thelema.tree@3</guid>
+      <pubDate>Tue, 04 Aug 2026 11:03:26 +0000</pubDate>
+      <description>The Qabalistic Tree as Crowley gives it in 777 and the Book of Thoth — ten Sephiroth with their god-names, archangels and mundane chakras, the forty small cards seated where they belong, twenty-two paths with letters, attributions and Atus, the pillars, the Veils, and the A∴A∴ grades. With the Tzaddi correction applied and its conflict recorded.</description>
+      <pack:id>theourgia.thelema.tree</pack:id>
+      <pack:version>3</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-thelema-tree-v3.mbf" type="application/x-mbf" length="7669"/>
+    </item>
+    <item>
+      <title>The Thelemic Operations 2</title>
+      <guid isPermaLink="false">theourgia.thelema.workings@2</guid>
+      <pubDate>Wed, 05 Aug 2026 02:24:03 +0000</pubDate>
+      <description>The long work — Astarte’s sixty-three days of devotion on five concurrent tracks, the ninety-one days of Liber VIII with its changing cadence, and the A∴A∴ ladder to the Knowledge and Conversation.</description>
+      <pack:id>theourgia.thelema.workings</pack:id>
+      <pack:version>2</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-thelema-workings-v2.mbf" type="application/x-mbf" length="3352"/>
+    </item>
+    <item>
+      <title>The Thelemic Calendar 2</title>
+      <guid isPermaLink="false">theourgia.thelemic.calendar@2</guid>
+      <pubDate>Wed, 05 Aug 2026 13:05:10 +0000</pubDate>
+      <description>The holy days named in Liber AL, the customary observances that grew around them, and the years counted in docosades from 1904.</description>
+      <pack:id>theourgia.thelemic.calendar</pack:id>
+      <pack:version>2</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-thelemic-calendar-v2.mbf" type="application/x-mbf" length="2607"/>
+    </item>
+    <item>
+      <title>Theourgia 3</title>
+      <guid isPermaLink="false">theourgia.bundle@3</guid>
+      <pubDate>Wed, 05 Aug 2026 13:05:10 +0000</pubDate>
+      <description>Everything theourgia publishes: the Hellenistic election rules and techniques, the ways of asking that belong to no one order, and the three letter-reckonings. The orders — the Keybearers, Thelema — are published separately, so taking this gives you the app’s own work and not somebody else’s tradition.</description>
+      <pack:id>theourgia.bundle</pack:id>
+      <pack:version>3</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-bundle-v3.mbf" type="application/x-mbf" length="37416"/>
+    </item>
+    <item>
+      <title>Theourgia General Divination 3</title>
+      <guid isPermaLink="false">theourgia.divination.general@3</guid>
+      <pubDate>Wed, 05 Aug 2026 13:05:10 +0000</pubDate>
+      <description>The ways of asking that belong to no one order — cards in any deck you own, the Elder Futhark, the cup, scrying and the pendulum, and the geomantic shield. Take all of it or only the parts you want; every part is also published on its own.</description>
+      <pack:id>theourgia.divination.general</pack:id>
+      <pack:version>3</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-divination-general-v3.mbf" type="application/x-mbf" length="21789"/>
+    </item>
+    <item>
+      <title>Theourgia — letters and numbers 2</title>
+      <guid isPermaLink="false">theourgia.numbers.bundle@2</guid>
+      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <description>Greek isopsephy, Hebrew gematria and the Arabic abjad reckoning. Nothing about any alphabet is built into the app; all three arrive this way, and anybody may write a fourth.</description>
+      <pack:id>theourgia.numbers.bundle</pack:id>
+      <pack:version>2</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-numbers-bundle-v2.mbf" type="application/x-mbf" length="9318"/>
+    </item>
+    <item>
+      <title>The Elder Futhark 1</title>
+      <guid isPermaLink="false">theourgia.runes.elder-futhark@1</guid>
+      <pubDate>Wed, 05 Aug 2026 02:22:47 +0000</pubDate>
+      <description>The twenty-four attested staves in their three ættir, read through the Old English, Old Norwegian and Old Icelandic rune poems — with merkstave provided for and the eight staves that have no reversed form saying so. Four casts, from the single stave to the nine worlds.</description>
+      <pack:id>theourgia.runes.elder-futhark</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-runes-elder-futhark-v1.mbf" type="application/x-mbf" length="6005"/>
+    </item>
+    <item>
+      <title>Arabic — ayaspell stems 1</title>
+      <guid isPermaLink="false">theourgia.words.arabic-ayaspell@1</guid>
+      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <description>Two hundred and ninety-four thousand Arabic stems, counted under both the Mashriqi and the Maghribi orders.</description>
+      <pack:id>theourgia.words.arabic-ayaspell</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-words-arabic-ayaspell-v1.mbf" type="application/x-mbf" length="2057705"/>
+    </item>
+    <item>
+      <title>Ancient Greek — the Diorisis corpus 1</title>
+      <guid isPermaLink="false">theourgia.words.greek-diorisis@1</guid>
+      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <description>Every word form attested across 820 Greek texts from Homer to the fifth century, with its dictionary form and how often it occurs — 442,272 of them. Large: expect it to take a moment to install.</description>
+      <pack:id>theourgia.words.greek-diorisis</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-words-greek-diorisis-v1.mbf" type="application/x-mbf" length="4429696"/>
+    </item>
+    <item>
+      <title>Hebrew — Wikidata lexemes 1</title>
+      <guid isPermaLink="false">theourgia.words.hebrew-wikidata@1</guid>
+      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <description>Dictionary forms of Hebrew from Wikidata’s lexeme data, with English senses where they exist. Broader than the Bible, and modern.</description>
+      <pack:id>theourgia.words.hebrew-wikidata</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-words-hebrew-wikidata-v1.mbf" type="application/x-mbf" length="222078"/>
+    </item>
+    <item>
+      <title>The Hebrew Bible 1</title>
+      <guid isPermaLink="false">theourgia.words.hebrew-wlc@1</guid>
+      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <description>Every word attested in the Westminster Leningrad Codex, as consonants, with how often each occurs. The vocabulary a gematria is usually asking about.</description>
+      <pack:id>theourgia.words.hebrew-wlc</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-words-hebrew-wlc-v1.mbf" type="application/x-mbf" length="265845"/>
+    </item>
+    <item>
+      <title>Sepher Sephiroth 1</title>
+      <guid isPermaLink="false">theourgia.words.sepher-sephiroth@1</guid>
+      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <description>Bennett and Crowley’s gematria index from The Equinox I:8, 1912 — the numbers 1 to 3321 with the Hebrew words and phrases set under each, and their glosses.</description>
+      <pack:id>theourgia.words.sepher-sephiroth</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-words-sepher-sephiroth-v1.mbf" type="application/x-mbf" length="46353"/>
+    </item>
+  </channel>
+</rss>

@@ -80,6 +80,12 @@ dist/
 build/
 out/
 
+# …except the pack distribution, which is committed on purpose: prebuilt,
+# versioned artifacts the frontend image serves at /packs/* (regenerate
+# with backend/tool/build_pack_dist.py when the phone's packs change).
+!packs/dist/
+!packs/dist/**
+
 # Logs
 *.log
 logs/
