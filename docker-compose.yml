@@ -17,7 +17,7 @@ services:
   postgres:
     # pgvector build required — migration 0001 issues CREATE EXTENSION
     # vector. Drop-in replacement for postgres:16-alpine.
-    image: pgvector/pgvector:pg16
+    image: pgvector/pgvector:pg16@sha256:ccc6e83d6e35e931dc7c5def2022729d5a6c370318d099181995567ff1fb4d6b
     environment:
       POSTGRES_USER: ${THEOURGIA_DB_USER:-theourgia}
       POSTGRES_PASSWORD: ${THEOURGIA_DB_PASSWORD:?THEOURGIA_DB_PASSWORD must be set in .env}
@@ -39,7 +39,7 @@ services:
   # Redis (sessions, cache, Celery broker)
   # ───────────────────────────────────────────────────────────────────────
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2
     command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
     volumes:
       - redis_data:/data
@@ -244,7 +244,7 @@ services:
   # scripts/deploy-prod.sh) whenever the profile is actually enabled.
   # ───────────────────────────────────────────────────────────────────────
   agent-daemon-pg:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
     profiles: ["agents"]
     environment:
       POSTGRES_USER: ${THEOURGIA_AGENT_DB_USER:-theourgia}
@@ -294,7 +294,7 @@ services:
   # `docker compose --profile marketplace up -d`.
   # ───────────────────────────────────────────────────────────────────────
   registry-pg:
-    image: postgres:16-alpine
+    image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
     profiles: ["marketplace"]
     environment:
       POSTGRES_USER: ${THEOURGIA_REGISTRY_DB_USER:-theourgia}

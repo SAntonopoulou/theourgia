@@ -21,7 +21,9 @@ ARG CADDY_VERSION=2.11-alpine
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 1 — base (Node + pnpm + corepack)
 # ─────────────────────────────────────────────────────────────────────────────
-FROM node:${NODE_VERSION}-alpine AS base
+# Base images pinned by digest — see backend/Dockerfile for the why and the
+# one-liner to refresh a sha256. (v1 prelaunch-audit.)
+FROM node:${NODE_VERSION}-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS base
 
 ENV PNPM_HOME=/pnpm \
     PATH=/pnpm:$PATH
@@ -76,7 +78,7 @@ CMD ["pnpm", "--filter", "@theourgia/admin", "dev", "--host", "0.0.0.0"]
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 5 — prod (Caddy serving built statics + reverse-proxying /api/*)
 # ─────────────────────────────────────────────────────────────────────────────
-FROM caddy:${CADDY_VERSION} AS prod
+FROM caddy:${CADDY_VERSION}@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648 AS prod
 
 # Copy built outputs to where Caddy will serve them.
 # Public site at /, admin SPA at /app/*.

@@ -13,7 +13,12 @@ ARG PYTHON_VERSION=3.12
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 1 — base
 # ─────────────────────────────────────────────────────────────────────────────
-FROM python:${PYTHON_VERSION}-slim-bookworm AS base
+# Base images are pinned by digest (not tag alone) so a repointed or
+# recompromised upstream tag cannot silently change what we build on. The
+# tag is kept beside the digest as a human hint; Docker resolves by digest.
+# To update: `docker buildx imagetools inspect <image>:<tag> --format
+# '{{.Manifest.Digest}}'` and replace the sha256 here. (v1 prelaunch-audit.)
+FROM python:${PYTHON_VERSION}-slim-bookworm@sha256:a116514e19457bcb7af7efe9c3dd0b9b71e85b317694e7882a1c52aa15a78134 AS base
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -39,7 +44,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv (Astral's Python package manager)
-COPY --from=ghcr.io/astral-sh/uv:0.5.13 /uv /uvx /usr/local/bin/
+COPY --from=ghcr.io/astral-sh/uv:0.5.13@sha256:ea61e006cfec0e8d81fae901ad703e09d2c6cf1aa58abcb6507d124b50286f9f /uv /uvx /usr/local/bin/
 
 WORKDIR /app
 
@@ -86,7 +91,7 @@ CMD ["uvicorn", "theourgia.api.app:app", "--host", "0.0.0.0", "--port", "8000", 
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 4 — prod (minimal runtime, non-root, healthcheck)
 # ─────────────────────────────────────────────────────────────────────────────
-FROM python:${PYTHON_VERSION}-slim-bookworm AS prod
+FROM python:${PYTHON_VERSION}-slim-bookworm@sha256:a116514e19457bcb7af7efe9c3dd0b9b71e85b317694e7882a1c52aa15a78134 AS prod
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
