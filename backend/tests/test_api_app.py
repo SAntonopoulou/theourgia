@@ -147,3 +147,30 @@ async def test_cors_preflight_allowed_origins_in_dev(
         )
         # CORSMiddleware returns 200 on a successful preflight
         assert response.status_code in (200, 204)
+
+
+async def test_openapi_and_docs_disabled_in_production(
+    monkeypatch: pytest.MonkeyPatch, reset_settings: None
+) -> None:
+    """In production the raw schema at /api/openapi.json and the Swagger/
+    ReDoc UIs are all off — a public map of every route and shape does
+    not belong on a live instance (pre-launch audit)."""
+    from theourgia.core.config import reset_settings_cache
+
+    monkeypatch.setenv("THEOURGIA_ENV", "production")
+    # Production refuses to start without its required secrets; provide the
+    # minimal set so create_app() reaches the docs/openapi decision.
+    monkeypatch.setenv("THEOURGIA_SECRET_KEY", "x" * 48)
+    reset_settings_cache()
+    try:
+        app = create_app()
+        assert app.docs_url is None
+        assert app.redoc_url is None
+        assert app.openapi_url is None
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://testserver",
+        ) as ac:
+            assert (await ac.get("/api/openapi.json")).status_code == 404
+    finally:
+        reset_settings_cache()

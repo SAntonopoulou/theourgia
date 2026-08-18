@@ -132,6 +132,28 @@ class Settings(BaseSettings):
     """Selected cache backend: memory or redis. Default ``memory`` is
     safe for tests + single-process dev; production should use ``redis``."""
 
+    # ── Auth rate limiting ────────────────────────────────────────────────
+    auth_rate_limit_max_attempts: int = Field(
+        default=10, alias="THEOURGIA_AUTH_RATE_LIMIT_MAX_ATTEMPTS"
+    )
+    """Sign-in / password attempts allowed per client IP per window before a
+    429. Guards the auth endpoints against credential-stuffing and brute
+    force. Ten per minute is generous for a human, hostile to a script."""
+    auth_rate_limit_window_seconds: int = Field(
+        default=60, alias="THEOURGIA_AUTH_RATE_LIMIT_WINDOW_SECONDS"
+    )
+
+    # ── API schema exposure ───────────────────────────────────────────────
+    expose_openapi_in_production: bool = Field(
+        default=False, alias="THEOURGIA_EXPOSE_OPENAPI_IN_PRODUCTION"
+    )
+    """Whether /api/openapi.json is served in production. Off by default —
+    a live instance need not publish a map of every route and shape (the
+    pre-launch audit's finding). Turn on where a client type-generator
+    fetches the schema from the running prod instance; the schema is
+    always available in dev/test and to a local ``app.openapi()`` call
+    regardless."""
+
     # ── Astrology ─────────────────────────────────────────────────────────
     ephe_path: Path = Field(default=Path("backend/data/ephe"), alias="THEOURGIA_EPHE_PATH")
 

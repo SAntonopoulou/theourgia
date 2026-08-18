@@ -43,6 +43,21 @@ def _set_test_environment() -> Generator[None, None, None]:
 # ── Async backend selection ──────────────────────────────────────────
 
 
+@pytest.fixture(autouse=True)
+def _reset_auth_rate_limiter() -> Generator[None, None, None]:
+    """Drop the auth rate-limiter's in-process counter before each test.
+
+    The limiter is a module-global whose in-memory store would otherwise
+    accumulate sign-in attempts across the whole session and start 429ing
+    unrelated tests. Reset per test so each one has its own attempt budget.
+    """
+    from theourgia.api.ratelimit_dep import reset_auth_limiter
+
+    reset_auth_limiter()
+    yield
+    reset_auth_limiter()
+
+
 @pytest.fixture
 def anyio_backend() -> str:
     """Pin anyio's backend to asyncio so tests run on a predictable loop."""

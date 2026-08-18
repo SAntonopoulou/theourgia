@@ -39,6 +39,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import get_db_session
+from theourgia.api.ratelimit_dep import enforce_auth_rate_limit
 from theourgia.api.errors import UnauthorizedError
 from theourgia.core.auth.tokens import generate_token, hash_token
 from theourgia.core.config import get_settings
@@ -153,6 +154,7 @@ async def _session_to_read(row: SessionRow, db: AsyncSession) -> SessionRead:
 
 @router.post(
     "/auth/demo-signin",
+    dependencies=[Depends(enforce_auth_rate_limit)],
     summary="Demo signin",
     description=(
         "Find-or-create a development user with the supplied magickal name and "
@@ -305,6 +307,7 @@ async def get_password_status(
 @router.put(
     "/auth/password",
     response_model=PasswordStatusRead,
+    dependencies=[Depends(enforce_auth_rate_limit)],
     summary="Set or change the account password",
     description=(
         "Sets an Argon2id password hash. If a password is already set, "

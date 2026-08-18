@@ -6,10 +6,13 @@ customization. Tests build their own instance via the factory; the
 ``uvicorn theourgia.api.app:app`` entry point uses the
 module-level :data:`app` singleton.
 
-OpenAPI docs are exposed only in non-production environments by
-default; ``/api/openapi.json`` is always available for machine
-consumers (clients generate types from it). Production deployments can
-opt back into the docs UI by setting the appropriate env var.
+OpenAPI docs (Swagger/ReDoc) and the raw ``/api/openapi.json`` schema
+are exposed only in non-production environments by default — a live
+instance need not publish a map of every route and shape. A prod
+deployment whose client tooling fetches the schema from the running
+instance can opt back in with
+``THEOURGIA_EXPOSE_OPENAPI_IN_PRODUCTION=true``; the schema is always
+available to a local ``app.openapi()`` call regardless.
 """
 
 from __future__ import annotations
@@ -39,7 +42,7 @@ register_default_policies()
 register_default_settings()
 register_default_instance_settings()
 
-__all__ = ["create_app", "app"]
+__all__ = ["app", "create_app"]
 
 
 DESCRIPTION = """\
@@ -72,6 +75,13 @@ def create_app() -> FastAPI:
     is_dev_or_test = settings.is_development or settings.is_test
     docs_url = "/api/docs" if is_dev_or_test else None
     redoc_url = "/api/redoc" if is_dev_or_test else None
+    # The Swagger/ReDoc UIs were already gated to dev/test, but the raw
+    # schema at /api/openapi.json was served unconditionally — a public
+    # map of every route and shape in production (the audit's finding).
+    # Gate it too, with an opt-in for a prod client type-generator; None
+    # disables the endpoint entirely.
+    expose_schema = is_dev_or_test or settings.expose_openapi_in_production
+    openapi_url = "/api/openapi.json" if expose_schema else None
 
     app = FastAPI(
         title="Theourgia",
@@ -80,7 +90,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
         docs_url=docs_url,
         redoc_url=redoc_url,
-        openapi_url="/api/openapi.json",
+        openapi_url=openapi_url,
         license_info={
             "name": __license__,
             "url": "https://www.gnu.org/licenses/agpl-3.0.html",
