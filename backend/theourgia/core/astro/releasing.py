@@ -38,7 +38,14 @@ from datetime import UTC, datetime, timedelta
 from enum import Enum
 from typing import Final
 
-__all__ = ["SIGN_PERIODS", "BondRule", "ReleasingPeriod", "first_level"]
+__all__ = [
+    "SIGN_PERIODS",
+    "BondRule",
+    "ReleasingPeriod",
+    "first_level",
+    "second_level",
+    "sub_level",
+]
 
 
 #: Valens' years per sign. ⚠ The table, not a formula — the numbers are not
@@ -132,5 +139,85 @@ def first_level(
         )
         at = until
         sign = start_sign if (loosed and bond is BondRule.TO_START) else (sign % 12) + 1
+
+    return periods
+
+
+def second_level(
+    parent: ReleasingPeriod,
+    *,
+    bond: BondRule = BondRule.NONE,
+) -> list[ReleasingPeriod]:
+    """The second-level periods inside ``parent`` — the months.
+
+    ⚠ The phone's arithmetic exactly: `round(units * 365.2422 / 12)` whole
+    DAYS per period, the sequence beginning from the parent's own sign, the
+    last period CUT to the parent, the loosing judged against the parent's
+    opposite. The rounding is day-scale like the first level, and the shared
+    vectors pin it.
+    """
+    return _below(parent, bond=bond, day_rounded=True)
+
+
+def sub_level(
+    parent: ReleasingPeriod,
+    *,
+    bond: BondRule = BondRule.NONE,
+) -> list[ReleasingPeriod]:
+    """The periods one level deeper than ``parent`` — third inside second,
+    fourth inside third.
+
+    ⚠ MICROSECONDS, not days: `round(units * 365.2422 * 86400e6 / 12**level)`
+    where ``level`` is the parent's. At the fourth level a day of rounding is
+    bigger than most of the periods, and a table rounded there would be noise
+    wearing the technique's clothes. The first two levels keep their
+    day-rounded arithmetic — two precisions, on purpose, both the phone's.
+    """
+    if parent.level < 2:
+        raise ValueError(
+            "sub_level deepens a second-level period or below; use second_level inside a first"
+        )
+    return _below(parent, bond=bond, day_rounded=False)
+
+
+def _below(
+    parent: ReleasingPeriod,
+    *,
+    bond: BondRule,
+    day_rounded: bool,
+) -> list[ReleasingPeriod]:
+    opposite = ((parent.sign - 1 + 6) % 12) + 1
+    periods: list[ReleasingPeriod] = []
+    at = parent.start
+    sign = parent.sign
+
+    while at < parent.until:
+        if bond is BondRule.SKIP and sign == opposite and periods:
+            sign = (sign % 12) + 1
+            continue
+
+        units = SIGN_PERIODS[sign]
+        if day_rounded:
+            # ⚠ Dart's `.round()` is half-away-from-zero; Python's is
+            # half-to-even. `int(x + 0.5)` matches the phone for the
+            # positive values these always are.
+            length = timedelta(days=int(units * DAYS_IN_YEAR / 12 + 0.5))
+        else:
+            length = timedelta(
+                microseconds=int(units * DAYS_IN_YEAR * 86_400_000_000 / 12**parent.level + 0.5)
+            )
+        until = at + length
+        loosed = sign == opposite
+        periods.append(
+            ReleasingPeriod(
+                level=parent.level + 1,
+                sign=sign,
+                start=at,
+                until=min(until, parent.until),
+                is_loosing_of_the_bond=loosed,
+            )
+        )
+        at = until
+        sign = parent.sign if (loosed and bond is BondRule.TO_START) else (sign % 12) + 1
 
     return periods

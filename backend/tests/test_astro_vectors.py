@@ -27,13 +27,13 @@ from typing import Any
 import pytest
 
 from theourgia.core.astro.chart import EPHEMERIS_SOURCE
-from theourgia.core.astro.releasing import BondRule, first_level
 from theourgia.core.astro.profections import (
     profection_at,
     profection_for_date,
     profection_monthly_at,
     profection_year_bounds,
 )
+from theourgia.core.astro.releasing import BondRule, first_level, second_level, sub_level
 from theourgia.core.astro.solar_return import nearest_return, return_for_age
 from theourgia.core.divination.derive import derive, layers_from_payload
 
@@ -50,6 +50,7 @@ EXERCISED: frozenset[str] = frozenset(
         "table-lookup",
         "profect-monthly",
         "zodiacal-releasing",
+        "zodiacal-releasing-sub",
         "solar-return",
     }
 )
@@ -242,6 +243,51 @@ class TestZodiacalReleasing:
         assert runs[BondRule.TO_START][-2:] == [5, 6]
 
 
+class TestZodiacalReleasingSubLevels:
+    """The four levels, descending the first period of each — two precisions.
+
+    ⚠ The second level is whole DAYS (`round(units * 365.2422 / 12)`); the
+    third and fourth are MICROSECONDS (`round(units * 365.2422 * 86400e6 /
+    12**parentLevel)`). Both are the phone's; rounding the deep levels to
+    days would collapse most fourth-level periods to nothing.
+    """
+
+    @pytest.mark.parametrize(
+        "case",
+        _cases("zodiacal-releasing-sub"),
+        ids=_ids("zodiacal-releasing-sub"),
+    )
+    def test_every_level_matches_the_phone(self, case: dict[str, Any]) -> None:
+        bond = BondRule(case["bond"])
+        l1 = first_level(
+            datetime.fromisoformat(case["born"]),
+            case["start_sign"],
+            years=160,
+            bond=bond,
+        )[0]
+        l2 = second_level(l1, bond=bond)
+        l3 = sub_level(l2[0], bond=bond)
+        l4 = sub_level(l3[0], bond=bond)
+
+        for level, got in (("level2", l2), ("level3", l3), ("level4", l4)):
+            want = case[level]
+            assert len(got) == len(want), f"{case['case']} at {level}"
+            for g, w in zip(got, want, strict=True):
+                where = f"{case['case']} at {level}"
+                assert g.sign == w["sign"], where
+                assert g.start == datetime.fromisoformat(w["from"]), where
+                assert g.until == datetime.fromisoformat(w["until"]), where
+                assert g.is_loosing_of_the_bond == w["loosing"], where
+
+    def test_a_first_level_parent_is_refused(self) -> None:
+        """second_level is the door into a first-level period, and the
+        distinct arithmetic is the reason there are two doors at all."""
+        born = datetime.fromisoformat("1984-03-02T18:00:00Z")
+        l1 = first_level(born, 5)[0]
+        with pytest.raises(ValueError, match="second_level"):
+            sub_level(l1)
+
+
 def _linear_sun(case: dict[str, Any]):
     """The phone's `LinearEphemeris`, as a plain function.
 
@@ -400,6 +446,9 @@ class TestTheRuleWithTeeth:
             "sum-of-faces",
             "table-lookup",
             "zodiacal-releasing",
+            # The ninth, 18 August: the sub-levels the four-level descent
+            # brought. The phone grew it first, as the rule requires.
+            "zodiacal-releasing-sub",
         }
         covered = {
             key
