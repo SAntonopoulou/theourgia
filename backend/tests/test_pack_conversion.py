@@ -34,6 +34,10 @@ from tool.pack_to_mbf import _BULK_BYTES, _is_bulk, _items_from
 
 PACKS = Path("/home/sophia/Documents/development/practiseapp/assets/packs")
 
+#: Where the corpora moved on 18 August (phone commit "the corpora leave the
+#: binary"): still published, still converted, no longer bundled in the APK.
+PACKS_REMOTE = Path("/home/sophia/Documents/development/practiseapp/tool/packs-remote")
+
 
 class TestNothingIsDropped:
     """Every top-level payload key reaches an item or an asset."""
@@ -164,7 +168,7 @@ class TestAgainstTheRealPacks:
     def test_the_word_data_is_carried(self) -> None:
         """⚠ 34.9 MB of it, all of which used to vanish."""
         total = 0
-        for src in sorted(PACKS.glob("words-*.json")):
+        for src in sorted(PACKS_REMOTE.glob("words-*.json")):
             _, assets = _items_from(json.loads(src.read_text())["payload"])
             assert assets, f"{src.stem} carried no word data"
             total += sum(len(blob) for blob, _ in assets.values())

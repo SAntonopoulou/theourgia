@@ -69,6 +69,9 @@ LICENSES: dict[str, str] = {
     "theourgia.words.arabic-ayaspell": "MPL-1.1",  # ayaspell tri-licence
     # Crowley, published 1912–1913 and out of copyright everywhere:
     "theourgia.words.sepher-sephiroth": "LicenseRef-Public-Domain",
+    # The dictation pack describes OpenAI's Whisper base weights, which are
+    # MIT — and so is the pack, there being nothing in it but the pointer.
+    "theourgia.dictation.whisper-base": "MIT",
 }
 
 # Sophia's own work (author fields: 'theourgia', 'Sophia Antonopoulou') and

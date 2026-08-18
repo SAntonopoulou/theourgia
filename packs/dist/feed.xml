@@ -293,6 +293,15 @@
       <enclosure url="https://theourgia.com/packs/theourgia-runes-elder-futhark-v1.mbf" type="application/x-mbf" length="6005"/>
     </item>
     <item>
+      <title>Dictation — Whisper base, multilingual 1</title>
+      <guid isPermaLink="false">theourgia.dictation.whisper-base@1</guid>
+      <pubDate>Tue, 18 Aug 2026 12:25:00 +0000</pubDate>
+      <description>The model dictation listens with: OpenAI's Whisper base, all ninety-nine languages, as ggml weights transcribed entirely on the device. The pack is small; the weights (141 MB) are fetched separately, from Settings → Dictation, so the download is chosen and not sprung.</description>
+      <pack:id>theourgia.dictation.whisper-base</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-dictation-whisper-base-v1.mbf" type="application/x-mbf" length="991"/>
+    </item>
+    <item>
       <title>Arabic — ayaspell stems 2</title>
       <guid isPermaLink="false">theourgia.words.arabic-ayaspell@2</guid>
       <pubDate>Tue, 18 Aug 2026 10:03:22 +0000</pubDate>

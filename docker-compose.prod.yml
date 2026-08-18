@@ -64,6 +64,13 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
       target: prod
+    volumes:
+      # Model weights (the dictation pack's ggml, and whatever joins it) are
+      # served at /packs/models/* but never enter git or the image — a
+      # hundred-megabyte binary in either would be carried by every clone
+      # and every build forever. They live on the host, uploaded once,
+      # immutable and versioned like every /packs artifact.
+      - ./packs/models:/srv/packs/models:ro
     ports:
       # Bound to host loopback only. Host shared Caddy reverse-proxies here.
       # 8190 is Theourgia's reserved entry-point port in the agent-house

@@ -132,3 +132,4 @@ frontend/shared/storybook-static/
 playwright-report/
 test-results/
 .last-run.json
+packs/models/

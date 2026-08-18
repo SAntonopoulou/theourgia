@@ -105,6 +105,12 @@ KIND_TO_MBF_TYPE: dict[str, str] = {
     "technique": "astro-techniques",
     "election-rules": "election-templates",
     # Not yet in the catalogue — see `NEW_TYPES`.
+    #
+    # `speech-model` (18 Aug): the phone's dictation model pack. The payload
+    # is only the weights' url/sha256/bytes — the weights themselves are a
+    # separate artifact under packs/models/, fetched by the phone directly
+    # and never inside an .mbf. It crosses as a `self:` subject, whole.
+    "speech-model": "speech-model",
     "derivation": "divination-derivations",
     "field-system": "divination-fields",
     "session-system": "session-protocols",
