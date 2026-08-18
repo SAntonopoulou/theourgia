@@ -159,6 +159,45 @@ def run_scheduled_backup(
     return asyncio.run(_run_scheduled_backup_async(incremental=incremental))
 
 
+def _sentry_backup_checkin(
+    status: str, *, check_in_id: str | None = None
+) -> str | None:
+    """Send a Sentry cron check-in for the daily backup monitor.
+
+    A no-op when Sentry is not configured (no DSN → the SDK never
+    initialised), so it costs nothing on a self-host without Sentry.
+    Its own failure never touches the backup — a monitoring gap is
+    logged, never raised.
+
+    Together the three statuses ARE the dead-man's-switch: ``in_progress``
+    when a backup begins, ``ok`` when it finishes, ``error`` when it
+    fails. If the process dies or the host goes down, no ``ok`` arrives
+    within the schedule margin and Sentry alerts — the July incident
+    (backups silently stopped) is exactly what this catches, through the
+    Sentry the operator already runs rather than a second service.
+    """
+    try:
+        import sentry_sdk
+
+        client = sentry_sdk.get_client()
+        if client is None or not getattr(client, "dsn", None):
+            return None  # Sentry not configured — no-op
+        return sentry_sdk.crons.capture_checkin(
+            monitor_slug="theourgia-scheduled-backup",
+            check_in_id=check_in_id,
+            status=status,
+            monitor_config={
+                "schedule": {"type": "crontab", "value": "15 3 * * *"},
+                "checkin_margin": 30,
+                "max_runtime": 60,
+                "timezone": "UTC",
+            },
+        )
+    except Exception:  # noqa: BLE001 — best-effort, never fail the backup
+        _log.warning("backup.sentry_checkin_failed", exc_info=True)
+        return None
+
+
 async def _ping_heartbeat(url: str | None) -> None:
     """Ping the backup dead-man's-switch URL. Best-effort and silent on
     failure — a heartbeat that cannot be delivered is a monitoring gap to
@@ -189,6 +228,11 @@ async def _run_scheduled_backup_async(*, incremental: bool) -> dict[str, Any]:
         backup_runs_total.labels(outcome=BackupOutcome.SKIPPED.value).inc()
         return {"outcome": BackupOutcome.SKIPPED.value, "reason": "no_paths"}
 
+    # Open a Sentry cron check-in for the DAILY backup — the incremental
+    # runs share the task but not the monitor's schedule, so only the daily
+    # one drives the dead-man's-switch.
+    check_in_id = _sentry_backup_checkin("in_progress") if not incremental else None
+
     # Database dump pre-step (v1-023). Failure here fails the whole
     # backup loudly — see _dump_database.
     try:
@@ -196,6 +240,7 @@ async def _run_scheduled_backup_async(*, incremental: bool) -> dict[str, Any]:
     except PgDumpError as exc:
         _log.error("backup.pg_dump_failed", extra={"err": str(exc)})
         backup_runs_total.labels(outcome=BackupOutcome.FAILURE.value).inc()
+        _sentry_backup_checkin("error", check_in_id=check_in_id)
         async with task_session_scope() as session:
             from datetime import UTC, datetime as _dt
 
@@ -263,12 +308,18 @@ async def _run_scheduled_backup_async(*, incremental: bool) -> dict[str, Any]:
             await client.prune(policy=DEFAULT_POLICY)
         except Exception as exc:  # noqa: BLE001 — log + continue
             _log.warning("backup.prune_failed", extra={"err": str(exc)})
-        # Dead-man's-switch: tell the external check we are alive. This
-        # fires ONLY on success, so a failed or absent backup lets the
-        # ping lapse and the external service alerts — the first line of
-        # "is anything watching prod". Best-effort: a heartbeat that
-        # cannot be sent must never fail an otherwise-good backup.
+        # Dead-man's-switch, two ways (whichever the operator configured):
+        # a Sentry cron 'ok' check-in, and/or an external heartbeat URL.
+        # Both fire ONLY on success, so a failed or absent backup withholds
+        # the signal and the watcher alerts — the first line of "is anything
+        # watching prod". Best-effort: a signal that cannot be sent must
+        # never fail an otherwise-good backup.
+        _sentry_backup_checkin("ok", check_in_id=check_in_id)
         await _ping_heartbeat(settings.backup_heartbeat_url)
+    else:
+        # A backup that ran but did not succeed is an active failure, not a
+        # silence — tell Sentry now rather than waiting for the missed 'ok'.
+        _sentry_backup_checkin("error", check_in_id=check_in_id)
 
     _log.info(
         "backup.complete",

@@ -54,8 +54,12 @@ FROM base AS deps
 COPY pyproject.toml uv.lock* README.md ./
 
 # Sync production deps. Use --frozen if uv.lock exists; otherwise generate.
+# --extra sentry pulls in sentry-sdk[fastapi,celery] so an operator who sets
+# THEOURGIA_SENTRY_DSN gets crash reporting + cron monitoring; without the DSN
+# the SDK is present but init_sentry is a no-op (zero-telemetry default).
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --no-dev --no-install-project --frozen 2>/dev/null || uv sync --no-dev --no-install-project
+    uv sync --no-dev --extra sentry --no-install-project --frozen 2>/dev/null \
+    || uv sync --no-dev --extra sentry --no-install-project
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 3 — dev (dev deps + full source, hot-reload friendly)
