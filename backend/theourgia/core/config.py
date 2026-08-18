@@ -251,10 +251,16 @@ class Settings(BaseSettings):
     media_backup_bucket: str | None = Field(
         default=None, alias="THEOURGIA_MEDIA_BACKUP_BUCKET"
     )
-    """Second-destination bucket (rclone remote:bucket) that user-uploaded
-    R2 media is mirrored to on each scheduled backup. Restic snapshots
-    only local filesystem paths, so without this the uploads have no
-    copy. Unset = no media mirror (log a warning if media exists)."""
+    """Reserved: an OPTIONAL additional off-provider destination for a media
+    mirror, for defence against losing the whole storage account (see
+    docs/admin/cloudflare-spof.md).
+
+    Media is ALREADY backed up by default: the scheduled backup folds the
+    object store into the restic spool (see tasks/backup.py::
+    _sync_media_into_spool), so uploads ride the same encrypted, versioned,
+    restore-drill-proven repository as the database dump. This field would
+    add a SECOND copy on a different provider; it is not yet wired, and is
+    unnecessary unless the same-account restic copy is deemed insufficient."""
 
     # ── Email ─────────────────────────────────────────────────────────────
     email_backend: str = Field(default="console", alias="THEOURGIA_EMAIL_BACKEND")

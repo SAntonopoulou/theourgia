@@ -62,9 +62,13 @@ COPY pyproject.toml uv.lock* README.md ./
 # --extra sentry pulls in sentry-sdk[fastapi,celery] so an operator who sets
 # THEOURGIA_SENTRY_DSN gets crash reporting + cron monitoring; without the DSN
 # the SDK is present but init_sentry is a no-op (zero-telemetry default).
+# --extra storage-s3 pulls in boto3 — REQUIRED whenever
+# THEOURGIA_STORAGE_BACKEND=s3 (R2 media), else every upload 500s at the
+# lazy boto3 import; the scheduled backup also uses it to fold media into
+# the restic snapshot. Harmless (unused) under the local-FS default.
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --no-dev --extra sentry --no-install-project --frozen 2>/dev/null \
-    || uv sync --no-dev --extra sentry --no-install-project
+    uv sync --no-dev --extra sentry --extra storage-s3 --no-install-project --frozen 2>/dev/null \
+    || uv sync --no-dev --extra sentry --extra storage-s3 --no-install-project
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 3 — dev (dev deps + full source, hot-reload friendly)

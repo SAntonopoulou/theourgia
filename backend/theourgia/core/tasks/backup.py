@@ -47,9 +47,7 @@ class PgDumpError(RuntimeError):
     """pg_dump failed — the backup must not pretend to be complete."""
 
 
-async def _run_pg_dump_subprocess(
-    argv: list[str], env: dict[str, str]
-) -> tuple[int, str]:
+async def _run_pg_dump_subprocess(argv: list[str], env: dict[str, str]) -> tuple[int, str]:
     """Execute pg_dump. Split out so tests inject a recorder instead."""
     proc = await asyncio.create_subprocess_exec(
         *argv,
@@ -83,23 +81,103 @@ async def _dump_database(spool_dir: Path) -> Path:
     argv = [
         "pg_dump",
         "-Fc",
-        "-h", url.hostname or "localhost",
-        "-p", str(url.port or 5432),
-        "-U", url.username or "theourgia",
-        "-d", (url.path or "/theourgia").lstrip("/"),
-        "-f", str(target),
+        "-h",
+        url.hostname or "localhost",
+        "-p",
+        str(url.port or 5432),
+        "-U",
+        url.username or "theourgia",
+        "-d",
+        (url.path or "/theourgia").lstrip("/"),
+        "-f",
+        str(target),
     ]
     env = {**os.environ, "PGPASSWORD": url.password or ""}
     try:
         code, stderr = await _run_pg_dump_subprocess(argv, env)
     except FileNotFoundError as exc:
         raise PgDumpError(
-            "pg_dump binary not found — install postgresql-client in the "
-            "worker image"
+            "pg_dump binary not found — install postgresql-client in the worker image"
         ) from exc
     if code != 0:
         raise PgDumpError(f"pg_dump exited {code}: {stderr[:2000]}")
     return target
+
+
+async def _sync_media_into_spool(spool_dir: Path) -> int:
+    """Fold the object-store media into the backup spool so restic snapshots
+    it alongside the database dump.
+
+    The pre-launch audit found media (S3/R2) had no backup at all — restic
+    only ever snapshotted local filesystem paths. Rather than a separate,
+    unversioned second bucket, media now rides the SAME restic repository as
+    the dump: one encrypted, versioned, restore-drill-proven recovery path,
+    unlocked by the one escrowed password. The spool is already in the
+    include paths, so anything under ``spool_dir/media`` lands in the
+    snapshot.
+
+    Copy-only: a delete in the live bucket never removes the backed-up copy,
+    and objects already present at the same size are not re-downloaded
+    (media keys are write-once here, and restic dedups regardless). A no-op
+    (returns 0) unless the store is S3/R2-backed. Returns the object count.
+    """
+    settings = get_settings()
+    if settings.storage_backend != "s3":
+        return 0
+    bucket = settings.storage_s3_bucket
+    endpoint = settings.storage_s3_endpoint
+    if not bucket or not endpoint:
+        _log.warning("backup.media.s3_unconfigured")
+        return 0
+    try:
+        import boto3  # noqa: PLC0415
+    except ImportError:
+        # storage-s3 extra absent: media uploads would already be failing,
+        # but the DB backup must still proceed. Loud, not fatal.
+        _log.warning("backup.media.boto3_missing")
+        return 0
+
+    media_dir = spool_dir / "media"
+    media_dir.mkdir(parents=True, exist_ok=True)
+    resolved_root = media_dir.resolve()
+
+    def _sync_blocking() -> int:
+        client = boto3.client(
+            "s3",
+            endpoint_url=endpoint,
+            region_name=settings.storage_s3_region,
+            aws_access_key_id=(
+                settings.storage_s3_access_key.get_secret_value()
+                if settings.storage_s3_access_key
+                else None
+            ),
+            aws_secret_access_key=(
+                settings.storage_s3_secret_key.get_secret_value()
+                if settings.storage_s3_secret_key
+                else None
+            ),
+            use_ssl=settings.storage_s3_use_ssl,
+        )
+        count = 0
+        paginator = client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=bucket):
+            for obj in page.get("Contents", []):
+                key = obj["Key"]
+                dest = (media_dir / key).resolve()
+                # Refuse any key that escapes the media dir (defence in depth;
+                # our own keys never do).
+                if not str(dest).startswith(str(resolved_root)):
+                    _log.warning("backup.media.skip_unsafe_key", extra={"key": key})
+                    continue
+                if dest.exists() and dest.stat().st_size == obj.get("Size", -1):
+                    count += 1
+                    continue
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                client.download_file(bucket, key, str(dest))
+                count += 1
+        return count
+
+    return await asyncio.to_thread(_sync_blocking)
 
 
 def build_restic_client_from_settings() -> ResticClient | None:
@@ -121,9 +199,7 @@ def build_restic_client_from_settings() -> ResticClient | None:
         repository=repo,
         password=pw,
         aws_access_key_id=(
-            settings.aws_access_key_id.get_secret_value()
-            if settings.aws_access_key_id
-            else None
+            settings.aws_access_key_id.get_secret_value() if settings.aws_access_key_id else None
         ),
         aws_secret_access_key=(
             settings.aws_secret_access_key.get_secret_value()
@@ -159,9 +235,7 @@ def run_scheduled_backup(
     return asyncio.run(_run_scheduled_backup_async(incremental=incremental))
 
 
-def _sentry_backup_checkin(
-    status: str, *, check_in_id: str | None = None
-) -> str | None:
+def _sentry_backup_checkin(status: str, *, check_in_id: str | None = None) -> str | None:
     """Send a Sentry cron check-in for the daily backup monitor.
 
     A no-op when Sentry is not configured (no DSN → the SDK never
@@ -214,7 +288,7 @@ async def _ping_heartbeat(url: str | None) -> None:
         _log.warning("backup.heartbeat_failed", extra={"err": str(exc)})
 
 
-async def _run_scheduled_backup_async(*, incremental: bool) -> dict[str, Any]:
+async def _run_scheduled_backup_async(*, incremental: bool) -> dict[str, Any]:  # noqa: PLR0915 — one linear orchestration (dump → media → snapshot → record → signal); splitting it would scatter the failure handling
     settings = get_settings()
     client = build_restic_client_from_settings()
     if client is None:
@@ -260,6 +334,18 @@ async def _run_scheduled_backup_async(*, incremental: bool) -> dict[str, Any]:
         return {"outcome": BackupOutcome.FAILURE.value, "reason": "pg_dump"}
     if dump_path.parent not in paths:
         paths.append(dump_path.parent)
+
+    # Media pre-step: fold the object-store media into the spool so restic
+    # snapshots it with the dump (audit: media was unbacked). Daily runs only
+    # — the hourly ones keep to the fast DB dump. Best-effort: a media hiccup
+    # is logged but must never fail the database backup, the crown jewel.
+    if not incremental:
+        try:
+            media_count = await _sync_media_into_spool(settings.backup_spool_dir)
+            if media_count:
+                _log.info("backup.media.synced", extra={"objects": media_count})
+        except Exception as exc:  # noqa: BLE001 — media is secondary to the DB
+            _log.warning("backup.media.sync_failed", extra={"err": str(exc)})
 
     tags = ("hourly",) if incremental else ("daily",)
     triggered_by = "scheduled"

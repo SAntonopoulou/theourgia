@@ -22,20 +22,28 @@ dump).
 ## What it does NOT cover — user-uploaded media in object storage
 
 Uploaded artifacts live in **object storage (Cloudflare R2)**, not on the
-local filesystem, so **restic never sees them**. A perfectly restorable
-Postgres dump would then reference media objects that exist nowhere. Close
-this gap in two layers:
+local filesystem. Historically **restic never saw them** — a perfectly
+restorable Postgres dump would reference media objects backed up nowhere.
 
-- **Belt (in the console, one-time):** enable **R2 object versioning** and
-  a lifecycle rule on the media bucket, so an accidental delete or
-  overwrite is recoverable from the provider itself.
-- **Braces (a second destination):** set `THEOURGIA_MEDIA_BACKUP_BUCKET`
-  to an `rclone` remote (e.g. a bucket on a *different* provider) and wire
-  an `rclone sync` of the media bucket into the backup schedule. The
-  config field is present; the rclone remote + credential is an operator
-  action (a leaked storage key or account lockout is exactly the case a
-  *second provider* defends against — see the Cloudflare single-point note
-  in the audit).
+**This is now closed by default.** Each *daily* scheduled backup folds the
+object store into the restic spool (`_sync_media_into_spool` in
+`tasks/backup.py`) before the snapshot, so media rides the **same** encrypted,
+versioned, restore-drill-proven repository as the database dump — one recovery
+path, one escrowed password. It needs only the `storage-s3` extra in the
+backend image (present) and the `THEOURGIA_STORAGE_S3_*` credentials (set in
+production). Copy-only: a delete in the live bucket never removes the
+backed-up copy.
+
+Two optional layers harden it further:
+
+- **Belt (in the console, one-time):** enable **R2 object versioning** and a
+  lifecycle rule on the media bucket, so an accidental delete or overwrite is
+  recoverable from the provider itself even between backups.
+- **Braces (a different provider):** `THEOURGIA_MEDIA_BACKUP_BUCKET` is
+  reserved for a SECOND copy on a *different* provider, defending against loss
+  of the whole storage account (see `cloudflare-spof.md`). Not wired — the
+  same-account restic fold already gives media a restorable copy; add this
+  only if that is judged insufficient.
 
 ## Knowing it ran — the dead-man's-switch
 
@@ -55,12 +63,15 @@ assumed).
 
 ## Operator checklist before launch
 
-- [ ] Set `THEOURGIA_BACKUP_HEARTBEAT_URL` and create the external check.
-- [ ] Enable R2 versioning + a lifecycle rule on the media bucket.
-- [ ] Provision a second-provider bucket, set `THEOURGIA_MEDIA_BACKUP_BUCKET`
-      and the rclone remote, and confirm one sync runs.
-- [ ] Confirm `RESTIC_REPOSITORY` / `RESTIC_PASSWORD` are set and the
-      `RESTIC_PASSWORD` is **escrowed off-server** (a repo you cannot
-      decrypt is not a backup — see `disaster-recovery.md`).
+- [x] Dead-man's-switch: the **Sentry cron monitor** `theourgia-scheduled-backup`
+      checks in on each daily backup and alerts if one is missed (done 18 Aug;
+      replaces the healthchecks.io heartbeat, which stays as an optional extra
+      via `THEOURGIA_BACKUP_HEARTBEAT_URL`).
+- [x] Media rides the restic backup (daily fold — no action needed).
+- [ ] (optional) Enable R2 versioning + a lifecycle rule on the media bucket.
+- [ ] (optional) Provision a second-provider bucket for an off-account media
+      mirror only if the same-account restic copy is judged insufficient.
+- [x] `RESTIC_REPOSITORY` / `RESTIC_PASSWORD` set and the `RESTIC_PASSWORD`
+      **escrowed off-server** (done 18 Aug — `SECRETS.local.md` + KeePassX).
 - [ ] Run `scripts/restore-drill.sh` against a scratch target and confirm a
       restore actually reconstitutes the database.
