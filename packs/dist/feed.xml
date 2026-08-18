@@ -149,6 +149,15 @@
       <enclosure url="https://theourgia.com/packs/theourgia-numbers-arabic-v1.mbf" type="application/x-mbf" length="2889"/>
     </item>
     <item>
+      <title>Coptic isopsephy 1</title>
+      <guid isPermaLink="false">theourgia.numbers.coptic@1</guid>
+      <pubDate>Tue, 18 Aug 2026 10:00:49 +0000</pubDate>
+      <description>The Milesian values carried into the Coptic alphabet — the count of the magical papyri continued in the letters of Christian Egypt. ⲁⲅⲁⲡⲏ is 93, exactly as ἀγάπη is.</description>
+      <pack:id>theourgia.numbers.coptic</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-numbers-coptic-v1.mbf" type="application/x-mbf" length="1899"/>
+    </item>
+    <item>
       <title>Ἰσοψηφία — Greek isopsephy 2</title>
       <guid isPermaLink="false">theourgia.numbers.greek@2</guid>
       <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
@@ -165,6 +174,15 @@
       <pack:id>theourgia.numbers.hebrew</pack:id>
       <pack:version>1</pack:version>
       <enclosure url="https://theourgia.com/packs/theourgia-numbers-hebrew-v1.mbf" type="application/x-mbf" length="4270"/>
+    </item>
+    <item>
+      <title>कटपयादि — the Katapayadi numeration 1</title>
+      <guid isPermaLink="false">theourgia.numbers.sanskrit@1</guid>
+      <pubDate>Tue, 18 Aug 2026 09:56:30 +0000</pubDate>
+      <description>The consonant-to-digit cipher of Sanskrit astronomy and the Carnatic melas: kādi nava, ṭādi nava, pādi pañca, yādyaṣṭau — and the digits run leftward, so the first syllable is the units.</description>
+      <pack:id>theourgia.numbers.sanskrit</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-numbers-sanskrit-v1.mbf" type="application/x-mbf" length="2182"/>
     </item>
     <item>
       <title>Scrying and the pendulum 3</title>
@@ -277,7 +295,7 @@
     <item>
       <title>Arabic — ayaspell stems 2</title>
       <guid isPermaLink="false">theourgia.words.arabic-ayaspell@2</guid>
-      <pubDate>Tue, 18 Aug 2026 09:13:56 +0000</pubDate>
+      <pubDate>Tue, 18 Aug 2026 10:03:22 +0000</pubDate>
       <description>Two hundred and ninety-four thousand Arabic stems, counted under both the Mashriqi and the Maghribi orders.</description>
       <pack:id>theourgia.words.arabic-ayaspell</pack:id>
       <pack:version>2</pack:version>
@@ -286,7 +304,7 @@
     <item>
       <title>Ancient Greek — the Diorisis corpus 2</title>
       <guid isPermaLink="false">theourgia.words.greek-diorisis@2</guid>
-      <pubDate>Tue, 18 Aug 2026 09:13:55 +0000</pubDate>
+      <pubDate>Tue, 18 Aug 2026 10:03:14 +0000</pubDate>
       <description>Every word form attested across 820 Greek texts from Homer to the fifth century, with its dictionary form and how often it occurs — 442,272 of them. Large: expect it to take a moment to install.</description>
       <pack:id>theourgia.words.greek-diorisis</pack:id>
       <pack:version>2</pack:version>
@@ -295,7 +313,7 @@
     <item>
       <title>Hebrew — Wikidata lexemes 2</title>
       <guid isPermaLink="false">theourgia.words.hebrew-wikidata@2</guid>
-      <pubDate>Tue, 18 Aug 2026 09:13:55 +0000</pubDate>
+      <pubDate>Tue, 18 Aug 2026 10:03:15 +0000</pubDate>
       <description>Dictionary forms of Hebrew from Wikidata’s lexeme data, with English senses where they exist. Broader than the Bible, and modern.</description>
       <pack:id>theourgia.words.hebrew-wikidata</pack:id>
       <pack:version>2</pack:version>
@@ -304,16 +322,25 @@
     <item>
       <title>The Hebrew Bible 2</title>
       <guid isPermaLink="false">theourgia.words.hebrew-wlc@2</guid>
-      <pubDate>Tue, 18 Aug 2026 09:13:55 +0000</pubDate>
+      <pubDate>Tue, 18 Aug 2026 10:03:14 +0000</pubDate>
       <description>Every word attested in the Westminster Leningrad Codex, as consonants, with how often each occurs. The vocabulary a gematria is usually asking about.</description>
       <pack:id>theourgia.words.hebrew-wlc</pack:id>
       <pack:version>2</pack:version>
       <enclosure url="https://theourgia.com/packs/theourgia-words-hebrew-wlc-v2.mbf" type="application/x-mbf" length="265845"/>
     </item>
     <item>
+      <title>Sanskrit — Wikidata lexemes 2</title>
+      <guid isPermaLink="false">theourgia.words.sanskrit-wikidata@2</guid>
+      <pubDate>Tue, 18 Aug 2026 10:03:14 +0000</pubDate>
+      <description>Dictionary forms of Sanskrit from Wikidata’s lexeme data, in Devanagari, with English senses where they exist — reckoned under the katapayadi numeration.</description>
+      <pack:id>theourgia.words.sanskrit-wikidata</pack:id>
+      <pack:version>2</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-words-sanskrit-wikidata-v2.mbf" type="application/x-mbf" length="18759"/>
+    </item>
+    <item>
       <title>Sepher Sephiroth 2</title>
       <guid isPermaLink="false">theourgia.words.sepher-sephiroth@2</guid>
-      <pubDate>Tue, 18 Aug 2026 09:13:55 +0000</pubDate>
+      <pubDate>Tue, 18 Aug 2026 10:03:15 +0000</pubDate>
       <description>Bennett and Crowley’s gematria index from The Equinox I:8, 1912 — the numbers 1 to 3321 with the Hebrew words and phrases set under each, and their glosses.</description>
       <pack:id>theourgia.words.sepher-sephiroth</pack:id>
       <pack:version>2</pack:version>

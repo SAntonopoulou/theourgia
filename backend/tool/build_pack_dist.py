@@ -65,6 +65,7 @@ LICENSES: dict[str, str] = {
     "theourgia.words.greek-diorisis": "CC-BY-4.0",  # Diorisis corpus
     "theourgia.words.hebrew-wlc": "CC-BY-4.0",  # text PD; morphology CC BY 4.0
     "theourgia.words.hebrew-wikidata": "CC0-1.0",  # Wikidata lexemes
+    "theourgia.words.sanskrit-wikidata": "CC0-1.0",  # Wikidata lexemes
     "theourgia.words.arabic-ayaspell": "MPL-1.1",  # ayaspell tri-licence
     # Crowley, published 1912–1913 and out of copyright everywhere:
     "theourgia.words.sepher-sephiroth": "LicenseRef-Public-Domain",
@@ -136,12 +137,24 @@ def main() -> None:
 
         version = int(manifest.get("version", 1))
         spdx = LICENSES.get(pack_id, FALLBACK_LICENSE)
-        created = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
-
-        blob = _artifact(pack, license_spdx=spdx, created=created)
         name = f"{_slug(pack_id)}-v{version}.mbf"
-        (args.out / name).write_bytes(blob)
-        print(f"  {name:<56}{len(blob):>10} bytes  {spdx}")
+
+        # A published versioned artifact is immutable, byte for byte. The
+        # embedded creation time follows the source file's mtime, so a
+        # rebuild would otherwise rewrite every artifact it did not change
+        # — same version, different bytes, which is the exact promise the
+        # versioned filename makes that it must not break. Changing a
+        # pack means bumping its version; the new file gets written, the
+        # old one stands forever.
+        created = datetime.fromtimestamp(path.stat().st_mtime, tz=UTC)
+        out_file = args.out / name
+        if out_file.exists():
+            blob = out_file.read_bytes()
+            print(f"  {name:<56}{len(blob):>10} bytes  (standing)")
+        else:
+            blob = _artifact(pack, license_spdx=spdx, created=created)
+            out_file.write_bytes(blob)
+            print(f"  {name:<56}{len(blob):>10} bytes  {spdx}")
 
         items.append(
             "    <item>\n"
