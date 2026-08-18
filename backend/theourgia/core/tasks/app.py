@@ -79,15 +79,10 @@ def build_celery_app() -> Celery:
             "kwargs": {"incremental": False},
             "options": {"queue": "backups"},
         },
-        "theourgia.backup.hourly_incremental": {
-            "task": "theourgia.core.tasks.backup.run_scheduled_backup",
-            # Every 6 hours — Restic is incremental by default, so a
-            # "full" vs "incremental" distinction is more about retention
-            # tags than payload size.
-            "schedule": crontab(hour="*/6", minute=15),
-            "kwargs": {"incremental": True},
-            "options": {"queue": "backups"},
-        },
+        # No sub-daily backup: the retention policy keeps no hourly snapshots
+        # (DEFAULT_POLICY, tight by design), so an every-6h run would only
+        # create snapshots the next prune immediately forgets — pure churn.
+        # One daily full (which also folds in media) is the whole cadence.
         "theourgia.scheduler.promote_scheduled_entries": {
             "task": "theourgia.core.tasks.scheduler.run_promote_scheduled_entries",
             # Every minute — scheduled releases land within 60s of their

@@ -12,27 +12,24 @@ def test_default_policy_keeps_something() -> None:
 
 
 def test_default_policy_values() -> None:
-    assert DEFAULT_POLICY.keep_last == 5
-    assert DEFAULT_POLICY.keep_hourly == 24
-    assert DEFAULT_POLICY.keep_daily == 7
-    assert DEFAULT_POLICY.keep_weekly == 4
-    assert DEFAULT_POLICY.keep_monthly == 12
-    assert DEFAULT_POLICY.keep_yearly == 5
+    # Tight by design: 2 recent + 2 daily + 2 weekly, no hourly/monthly/yearly.
+    assert DEFAULT_POLICY.keep_last == 2
+    assert DEFAULT_POLICY.keep_hourly == 0
+    assert DEFAULT_POLICY.keep_daily == 2
+    assert DEFAULT_POLICY.keep_weekly == 2
+    assert DEFAULT_POLICY.keep_monthly == 0
+    assert DEFAULT_POLICY.keep_yearly == 0
 
 
 def test_to_restic_args_default() -> None:
     args = DEFAULT_POLICY.to_restic_args()
+    # Only the active (non-zero) rules produce flags.
     assert "--keep-last" in args
-    assert "5" in args
-    assert "--keep-hourly" in args
-    assert "24" in args
     assert "--keep-daily" in args
-    assert "7" in args
     assert "--keep-weekly" in args
-    assert "4" in args
-    assert "--keep-monthly" in args
-    assert "12" in args
-    assert "--keep-yearly" in args
+    assert "--keep-hourly" not in args
+    assert "--keep-monthly" not in args
+    assert "--keep-yearly" not in args
 
 
 def test_zero_rules_omitted_from_args() -> None:

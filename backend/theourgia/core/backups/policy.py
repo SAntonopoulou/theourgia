@@ -4,9 +4,11 @@ A :class:`RetentionPolicy` describes which snapshots Restic should keep
 when it runs ``forget --prune``. Values map to Restic's
 ``--keep-last`` / ``--keep-hourly`` / ``--keep-daily`` / etc. flags.
 
-The default policy is conservative — comfortably enough history to
-recover from a problem reported up to a year later, without keeping so
-many snapshots that storage cost balloons.
+The default policy is deliberately TIGHT — a personal instance wants to
+recover from a recently-noticed problem, not to hoard a year of history.
+It keeps at most a handful of snapshots (a fortnight of reach) so the
+repository never accumulates. Restic de-duplicates, so even this is more
+recoverability than the snapshot count suggests.
 """
 
 from __future__ import annotations
@@ -36,12 +38,12 @@ class RetentionPolicy:
         keep_tags: Always keep snapshots that carry any of these tags.
     """
 
-    keep_last: int = 5
-    keep_hourly: int = 24
-    keep_daily: int = 7
-    keep_weekly: int = 4
-    keep_monthly: int = 12
-    keep_yearly: int = 5
+    keep_last: int = 2
+    keep_hourly: int = 0
+    keep_daily: int = 2
+    keep_weekly: int = 2
+    keep_monthly: int = 0
+    keep_yearly: int = 0
     keep_tags: tuple[str, ...] = field(default_factory=tuple)
 
     def __post_init__(self) -> None:
@@ -95,8 +97,9 @@ class RetentionPolicy:
 
 
 DEFAULT_POLICY: RetentionPolicy = RetentionPolicy()
-"""The project's default retention policy.
+"""The project's default retention policy — tight by design.
 
-Keeps: 5 most recent + 24 hourly + 7 daily + 4 weekly + 12 monthly +
-5 yearly. Sufficient to recover from a problem reported up to a year
-later; bounded enough that storage cost stays predictable."""
+Keeps: 2 most recent + 2 daily + 2 weekly (no hourly, no monthly, no
+yearly). At most ~6 snapshots, reaching back ~2 weeks — enough to roll
+back a recently-noticed problem without the repository ever growing
+without bound. Operators who want deeper history raise these values."""

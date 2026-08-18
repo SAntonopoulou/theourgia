@@ -13,7 +13,11 @@ the actions that close both.
    plus the deploy-dir include paths to **restic**. The Postgres dump is
    the database's backup — `PGDATA` itself is never file-copied.
 2. Applies the retention policy (`DEFAULT_POLICY`) and, on success, pings
-   the dead-man's-switch (below).
+   the dead-man's-switch (below). Retention is **tight by design**: 2 most
+   recent + 2 daily + 2 weekly (no hourly/monthly/yearly) — at most ~6
+   snapshots, reaching back ~2 weeks. There is one backup a day (no sub-daily
+   run), since the policy keeps no sub-daily snapshots. Raise the values in
+   `core/backups/policy.py` for deeper history.
 
 Restic snapshots **local filesystem paths only** (`THEOURGIA_BACKUP_INCLUDE_PATHS`,
 default `/srv/theourgia/prod` — `.env`, compose, manual dumps, the pg
