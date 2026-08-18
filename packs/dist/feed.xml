@@ -275,49 +275,49 @@
       <enclosure url="https://theourgia.com/packs/theourgia-runes-elder-futhark-v1.mbf" type="application/x-mbf" length="6005"/>
     </item>
     <item>
-      <title>Arabic — ayaspell stems 1</title>
-      <guid isPermaLink="false">theourgia.words.arabic-ayaspell@1</guid>
-      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <title>Arabic — ayaspell stems 2</title>
+      <guid isPermaLink="false">theourgia.words.arabic-ayaspell@2</guid>
+      <pubDate>Tue, 18 Aug 2026 09:13:56 +0000</pubDate>
       <description>Two hundred and ninety-four thousand Arabic stems, counted under both the Mashriqi and the Maghribi orders.</description>
       <pack:id>theourgia.words.arabic-ayaspell</pack:id>
-      <pack:version>1</pack:version>
-      <enclosure url="https://theourgia.com/packs/theourgia-words-arabic-ayaspell-v1.mbf" type="application/x-mbf" length="2057705"/>
+      <pack:version>2</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-words-arabic-ayaspell-v2.mbf" type="application/x-mbf" length="2057706"/>
     </item>
     <item>
-      <title>Ancient Greek — the Diorisis corpus 1</title>
-      <guid isPermaLink="false">theourgia.words.greek-diorisis@1</guid>
-      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <title>Ancient Greek — the Diorisis corpus 2</title>
+      <guid isPermaLink="false">theourgia.words.greek-diorisis@2</guid>
+      <pubDate>Tue, 18 Aug 2026 09:13:55 +0000</pubDate>
       <description>Every word form attested across 820 Greek texts from Homer to the fifth century, with its dictionary form and how often it occurs — 442,272 of them. Large: expect it to take a moment to install.</description>
       <pack:id>theourgia.words.greek-diorisis</pack:id>
-      <pack:version>1</pack:version>
-      <enclosure url="https://theourgia.com/packs/theourgia-words-greek-diorisis-v1.mbf" type="application/x-mbf" length="4429696"/>
+      <pack:version>2</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-words-greek-diorisis-v2.mbf" type="application/x-mbf" length="4429696"/>
     </item>
     <item>
-      <title>Hebrew — Wikidata lexemes 1</title>
-      <guid isPermaLink="false">theourgia.words.hebrew-wikidata@1</guid>
-      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <title>Hebrew — Wikidata lexemes 2</title>
+      <guid isPermaLink="false">theourgia.words.hebrew-wikidata@2</guid>
+      <pubDate>Tue, 18 Aug 2026 09:13:55 +0000</pubDate>
       <description>Dictionary forms of Hebrew from Wikidata’s lexeme data, with English senses where they exist. Broader than the Bible, and modern.</description>
       <pack:id>theourgia.words.hebrew-wikidata</pack:id>
-      <pack:version>1</pack:version>
-      <enclosure url="https://theourgia.com/packs/theourgia-words-hebrew-wikidata-v1.mbf" type="application/x-mbf" length="222078"/>
+      <pack:version>2</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-words-hebrew-wikidata-v2.mbf" type="application/x-mbf" length="222078"/>
     </item>
     <item>
-      <title>The Hebrew Bible 1</title>
-      <guid isPermaLink="false">theourgia.words.hebrew-wlc@1</guid>
-      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <title>The Hebrew Bible 2</title>
+      <guid isPermaLink="false">theourgia.words.hebrew-wlc@2</guid>
+      <pubDate>Tue, 18 Aug 2026 09:13:55 +0000</pubDate>
       <description>Every word attested in the Westminster Leningrad Codex, as consonants, with how often each occurs. The vocabulary a gematria is usually asking about.</description>
       <pack:id>theourgia.words.hebrew-wlc</pack:id>
-      <pack:version>1</pack:version>
-      <enclosure url="https://theourgia.com/packs/theourgia-words-hebrew-wlc-v1.mbf" type="application/x-mbf" length="265845"/>
+      <pack:version>2</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-words-hebrew-wlc-v2.mbf" type="application/x-mbf" length="265845"/>
     </item>
     <item>
-      <title>Sepher Sephiroth 1</title>
-      <guid isPermaLink="false">theourgia.words.sepher-sephiroth@1</guid>
-      <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
+      <title>Sepher Sephiroth 2</title>
+      <guid isPermaLink="false">theourgia.words.sepher-sephiroth@2</guid>
+      <pubDate>Tue, 18 Aug 2026 09:13:55 +0000</pubDate>
       <description>Bennett and Crowley’s gematria index from The Equinox I:8, 1912 — the numbers 1 to 3321 with the Hebrew words and phrases set under each, and their glosses.</description>
       <pack:id>theourgia.words.sepher-sephiroth</pack:id>
-      <pack:version>1</pack:version>
-      <enclosure url="https://theourgia.com/packs/theourgia-words-sepher-sephiroth-v1.mbf" type="application/x-mbf" length="46353"/>
+      <pack:version>2</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-words-sepher-sephiroth-v2.mbf" type="application/x-mbf" length="46353"/>
     </item>
   </channel>
 </rss>
