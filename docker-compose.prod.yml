@@ -11,6 +11,8 @@
 #   - No postgres / redis external port bindings — strictly internal
 #   - Restart policies set to unless-stopped
 #   - Logging driver configured for production observability
+#   - Per-service mem_limit/cpus so one runaway process cannot OOM
+#     the whole single VPS. Sized for ~8GB; tune to your host.
 
 services:
   backend:
@@ -26,6 +28,8 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+    mem_limit: 1536m
+    cpus: "2.0"
 
   celery:
     build:
@@ -47,6 +51,8 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+    mem_limit: 1024m
+    cpus: "1.0"
 
   celery-beat:
     build:
@@ -58,6 +64,8 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+    mem_limit: 256m
+    cpus: "0.5"
 
   frontend:
     build:
@@ -82,6 +90,8 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+    mem_limit: 256m
+    cpus: "0.5"
 
   # Parked behind the "agents" profile (mirrors the base file) — enable
   # with `docker compose --profile agents ... up -d`.
@@ -97,6 +107,8 @@ services:
       options:
         max-size: "10m"
         max-file: "5"
+    mem_limit: 768m
+    cpus: "1.0"
 
   # Parked behind the "marketplace" profile (mirrors the base file) —
   # enable with `docker compose --profile marketplace ... up -d`.
@@ -111,6 +123,29 @@ services:
       # plugins.theourgia.com — bound to host loopback only; host Caddy
       # routes plugins.theourgia.com 443 → 127.0.0.1:8193.
       - "127.0.0.1:${THEOURGIA_REGISTRY_HOST_PORT:-8193}:8003"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+    mem_limit: 512m
+    cpus: "0.5"
+
+  # Base file defines postgres + redis without resource caps or log
+  # rotation. In production a single VPS needs both: an unbounded pg log
+  # or an OOM-happy neighbour takes the whole box down.
+  postgres:
+    mem_limit: 1536m
+    cpus: "1.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  redis:
+    mem_limit: 512m
+    cpus: "0.5"
     logging:
       driver: json-file
       options:

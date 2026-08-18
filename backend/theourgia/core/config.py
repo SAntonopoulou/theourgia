@@ -238,6 +238,23 @@ class Settings(BaseSettings):
     )
     """Writable directory where the pre-backup pg_dump lands; appended
     to the restic include paths automatically."""
+    backup_heartbeat_url: str | None = Field(
+        default=None, alias="THEOURGIA_BACKUP_HEARTBEAT_URL"
+    )
+    """Dead-man's-switch: a successful backup pings this URL. Point it at
+    an external check (healthchecks.io and the like) configured to expect
+    a ping within the backup schedule; if a backup fails, the worker
+    dies, or the host goes down, the ping stops arriving and the external
+    service alerts. The cheapest first line for "is anything watching
+    prod" — the July incident (backups silently stopped) is exactly what
+    it catches. Unset = no ping (the default; nothing external assumed)."""
+    media_backup_bucket: str | None = Field(
+        default=None, alias="THEOURGIA_MEDIA_BACKUP_BUCKET"
+    )
+    """Second-destination bucket (rclone remote:bucket) that user-uploaded
+    R2 media is mirrored to on each scheduled backup. Restic snapshots
+    only local filesystem paths, so without this the uploads have no
+    copy. Unset = no media mirror (log a warning if media exists)."""
 
     # ── Email ─────────────────────────────────────────────────────────────
     email_backend: str = Field(default="console", alias="THEOURGIA_EMAIL_BACKEND")

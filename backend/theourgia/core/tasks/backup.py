@@ -159,6 +159,22 @@ def run_scheduled_backup(
     return asyncio.run(_run_scheduled_backup_async(incremental=incremental))
 
 
+async def _ping_heartbeat(url: str | None) -> None:
+    """Ping the backup dead-man's-switch URL. Best-effort and silent on
+    failure — a heartbeat that cannot be delivered is a monitoring gap to
+    log, never a reason to fail a backup that actually succeeded."""
+    if not url:
+        return
+    try:
+        import httpx
+
+        async with httpx.AsyncClient(timeout=10.0) as http:
+            await http.get(url)
+        _log.info("backup.heartbeat.sent")
+    except Exception as exc:  # noqa: BLE001 — best-effort, log + continue
+        _log.warning("backup.heartbeat_failed", extra={"err": str(exc)})
+
+
 async def _run_scheduled_backup_async(*, incremental: bool) -> dict[str, Any]:
     settings = get_settings()
     client = build_restic_client_from_settings()
@@ -247,6 +263,12 @@ async def _run_scheduled_backup_async(*, incremental: bool) -> dict[str, Any]:
             await client.prune(policy=DEFAULT_POLICY)
         except Exception as exc:  # noqa: BLE001 — log + continue
             _log.warning("backup.prune_failed", extra={"err": str(exc)})
+        # Dead-man's-switch: tell the external check we are alive. This
+        # fires ONLY on success, so a failed or absent backup lets the
+        # ping lapse and the external service alerts — the first line of
+        # "is anything watching prod". Best-effort: a heartbeat that
+        # cannot be sent must never fail an otherwise-good backup.
+        await _ping_heartbeat(settings.backup_heartbeat_url)
 
     _log.info(
         "backup.complete",
