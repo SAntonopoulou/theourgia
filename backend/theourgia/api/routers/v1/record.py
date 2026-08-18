@@ -33,8 +33,8 @@ a time-based cursor invites.
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Any
+from datetime import datetime, timedelta
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Query, status
@@ -42,6 +42,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select
 
 from theourgia.api.deps import CurrentUser, DBSession
+from theourgia.core.astro.day_frames import frame_boundaries
 from theourgia.models.record_entry import RECORD_ENTRY_SEQ, RecordEntry
 
 __all__ = ["router"]
@@ -231,4 +232,45 @@ async def pull(
         ],
         next_since=page[-1].synced_seq if page else since,
         more=more,
+    )
+
+
+class DayFramesOut(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    boundaries: list[datetime]
+
+
+@router.get(
+    "/record/day-frames",
+    summary="Day boundaries for a chosen frame",
+    description=(
+        "The rises of the frame's body across the span, so the record can "
+        "be grouped into the practitioner's own days — moonrise to "
+        "moonrise, or sunrise to sunrise — rather than the calendar's. "
+        "Computed with this server's ephemeris; a keeping within a minute "
+        "of a boundary can sit on a different day here than in the app."
+    ),
+    response_model=DayFramesOut,
+)
+async def day_frames(
+    user: CurrentUser,  # noqa: ARG001 — the dependency IS the authentication
+    frame: Annotated[str, Query(pattern="^(sunrise|moonrise)$")],
+    start: Annotated[datetime, Query(alias="from")],
+    end: Annotated[datetime, Query(alias="to")],
+    latitude: Annotated[float, Query(ge=-90, le=90)],
+    longitude: Annotated[float, Query(ge=-180, le=180)],
+) -> DayFramesOut:
+    if end <= start:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="to must be after from",
+        )
+    if end - start > timedelta(days=400):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="the span is capped at 400 days",
+        )
+    return DayFramesOut(
+        boundaries=frame_boundaries(frame, start, end, latitude, longitude)
     )

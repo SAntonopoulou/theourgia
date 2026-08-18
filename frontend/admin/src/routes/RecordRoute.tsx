@@ -322,6 +322,9 @@ export function RecordRoute() {
   );
 
   const [entries, setEntries] = useState<WireEntry[] | null>(null);
+  const [frame, setFrame] = useState<"civil" | "sunrise" | "moonrise">("civil");
+  const [frameBounds, setFrameBounds] = useState<string[] | null>(null);
+  const [frameNote, setFrameNote] = useState("");
 
   /** Write one changed entry back through the shelf's own conflict rules —
    * the same PUT the devices use, last writer wins on the timestamp. The
@@ -387,6 +390,68 @@ export function RecordRoute() {
     };
   }, []);
 
+  // Where the record was kept, for the frame boundaries: the newest entry
+  // that carried a coordinate. The page groups one record, and a record is
+  // kept where its practitioner is.
+  const placeOf = (held: WireEntry[]): { lat: number; lon: number } | null => {
+    for (const one of [...held].reverse()) {
+      const sky = one.doc.context;
+      if (sky?.latitude != null && sky.longitude != null) {
+        return { lat: sky.latitude, lon: sky.longitude };
+      }
+    }
+    return null;
+  };
+
+  // The boundaries for the chosen frame, refetched when it changes. Civil
+  // needs none — midnight is arithmetic.
+  useEffect(() => {
+    if (frame === "civil" || entries === null || entries.length === 0) {
+      setFrameBounds(null);
+      setFrameNote("");
+      return;
+    }
+    const standing = entries.filter((e) => e.deleted_at_utc === null);
+    const place = placeOf(standing);
+    if (place === null) {
+      setFrameBounds(null);
+      setFrameNote("No keeping carries a place yet, so the days stay civil until one does.");
+      return;
+    }
+    const moments = standing
+      .filter((e) => EVENT_KINDS.has(e.kind))
+      .map((e) => new Date(atOf(e)).getTime());
+    if (moments.length === 0) return;
+    const from = new Date(Math.min(...moments) - 86400000).toISOString();
+    const to = new Date(Math.max(...moments) + 86400000).toISOString();
+    let cancelled = false;
+    (async () => {
+      try {
+        const got = await apiGet<{ boundaries: string[] }>(
+          `/record/day-frames?frame=${frame}&from=${encodeURIComponent(from)}` +
+            `&to=${encodeURIComponent(to)}&latitude=${place.lat}` +
+            `&longitude=${place.lon}`,
+        );
+        if (!cancelled) {
+          setFrameBounds(got.boundaries);
+          setFrameNote("");
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setFrameBounds(null);
+          setFrameNote(
+            `The frame boundaries could not be fetched (${
+              e instanceof Error ? e.message : String(e)
+            }); the days stay civil for now.`,
+          );
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [frame, entries]);
+
   if (error) {
     return (
       <div style={pageStyle}>
@@ -426,14 +491,44 @@ export function RecordRoute() {
   // The phone's day frames need the ephemeris; until the site carries one,
   // days here are civil days in the viewer's own timezone — said on the
   // page, so nobody mistakes it for the moonrise day they configured.
-  const byDay = new Map<string, WireEntry[]>();
-  for (const entry of standing) {
-    const day = new Date(atOf(entry)).toLocaleDateString(undefined, {
+  // The day an entry belongs to: the calendar's, or the practitioner's —
+  // the span between two rises of the frame's body, named by the moment
+  // the day OPENED.
+  const dayOf = (entry: WireEntry): string => {
+    const at = new Date(atOf(entry));
+    if (frame !== "civil" && frameBounds && frameBounds.length > 0) {
+      let opened: string | null = null;
+      for (const boundary of frameBounds) {
+        if (new Date(boundary) <= at) opened = boundary;
+        else break;
+      }
+      if (opened !== null) {
+        const from = new Date(opened);
+        const label = from.toLocaleDateString(undefined, {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+        const clock = from.toLocaleTimeString(undefined, {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        return `${label} · from ${frame} at ${clock}`;
+      }
+      return "Before the first boundary";
+    }
+    return at.toLocaleDateString(undefined, {
       weekday: "long",
       year: "numeric",
       month: "long",
       day: "numeric",
     });
+  };
+
+  const byDay = new Map<string, WireEntry[]>();
+  for (const entry of standing) {
+    const day = dayOf(entry);
     const list = byDay.get(day) ?? [];
     list.push(entry);
     byDay.set(day, list);
@@ -449,9 +544,26 @@ export function RecordRoute() {
   return (
     <div style={pageStyle} data-route="record">
       <p style={hintStyle}>
-        Days run midnight to midnight in your timezone here; the app groups by your chosen frame. An
-        entry opened here can be mended or removed; the devices learn of it at their next sync, by
-        the same rules they push with.
+        An entry opened here can be mended or removed; the devices learn of it at their next sync,
+        by the same rules they push with.
+      </p>
+      <p style={hintStyle}>
+        Days run{" "}
+        <select
+          aria-label="Day frame"
+          value={frame}
+          onChange={(event) => setFrame(event.target.value as "civil" | "sunrise" | "moonrise")}
+          style={frameSelectStyle}
+        >
+          <option value="civil">midnight to midnight</option>
+          <option value="sunrise">sunrise to sunrise</option>
+          <option value="moonrise">moonrise to moonrise</option>
+        </select>
+        {frame === "civil"
+          ? " in your timezone."
+          : " — computed by this server's ephemeris, so a keeping within a" +
+            " minute of a boundary can sit on a different day than in the app."}
+        {frameNote ? ` ${frameNote}` : ""}
       </p>
       {days.map(([day, list]) => (
         <section key={day} style={{ ...cardStyle, marginBottom: "var(--space-4)" }}>
@@ -630,6 +742,14 @@ const detailActionsStyle: CSSProperties = {
   display: "flex",
   gap: "var(--space-3)",
   margin: "0 0 var(--space-2) calc(3.5em + var(--space-3))",
+};
+
+const frameSelectStyle: CSSProperties = {
+  font: "var(--type-caption)",
+  color: "var(--accent)",
+  background: "none",
+  border: "none",
+  cursor: "pointer",
 };
 
 const detailButtonStyle: CSSProperties = {

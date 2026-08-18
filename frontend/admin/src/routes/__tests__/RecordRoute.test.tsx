@@ -505,10 +505,52 @@ describe("RecordRoute", () => {
     ];
     const wire = body.entries[0];
     expect(wire?.doc.note).toBe("Χαῖρε Σελήνη — mended");
-    expect(
-      wire !== undefined && wire.updated_at_utc > "2026-08-17T06:12:01Z",
-    ).toBe(true);
+    expect(wire !== undefined && wire.updated_at_utc > "2026-08-17T06:12:01Z").toBe(true);
     expect(screen.getByText(/Σελήνη — mended/)).toBeTruthy();
     asked.mockRestore();
+  });
+
+  it("groups by the practitioner's day when a frame is chosen", async () => {
+    // Two keepings on ONE civil day with a moonrise between them: under the
+    // moonrise frame they are different days, named by the moment each
+    // opened — which is the whole reason the frame exists.
+    const withPlace = (id: string, at: string) =>
+      entry({
+        id,
+        doc: {
+          subjectKey: "moonrise",
+          observedAt: at,
+          context: { latitude: 50.72, longitude: 4.4 },
+        },
+      });
+    mocks.apiGet.mockImplementation(async (path: string) => {
+      if (path.startsWith("/record/day-frames")) {
+        expect(path).toContain("frame=moonrise");
+        expect(path).toContain("latitude=50.72");
+        return {
+          boundaries: ["2026-08-16T18:00:00Z", "2026-08-17T18:40:00Z"],
+        };
+      }
+      return {
+        entries: [withPlace("k1", "2026-08-17T06:00:00Z"), withPlace("k2", "2026-08-17T20:00:00Z")],
+        next_since: 2,
+        more: false,
+      };
+    });
+    renderRoute();
+    await flush();
+    await flush();
+
+    const select = screen.getByLabelText("Day frame") as HTMLSelectElement;
+    await act(async () => {
+      select.value = "moonrise";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await flush();
+    await flush();
+
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent ?? "");
+    expect(headings).toHaveLength(2);
+    expect(headings.every((h) => h.includes("from moonrise at"))).toBe(true);
   });
 });
