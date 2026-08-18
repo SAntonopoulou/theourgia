@@ -300,11 +300,13 @@ def test_to_recording_read_round_trips() -> None:
 # ── Router registration smoke ────────────────────────────────────────
 
 
-def test_voces_router_registers_eleven_routes() -> None:
-    """bundled + list + create + get + patch + delete + fork + add-rec
-    + del-rec + per-vault-get + per-vault-put = 11 routes.
+def test_voces_router_registers_twelve_routes() -> None:
+    """bundled + list + sync + create + get + patch + delete + fork
+    + add-rec + del-rec + per-vault-get + per-vault-put = 12 routes.
 
-    Originally 9 (B107); B114 added the 2 per-vault routes.
+    Originally 9 (B107); B114 added the 2 per-vault routes; the
+    pre-launch audit added GET /voces/sync (the complete-library page a
+    sync client reconciles against).
     """
     methods_and_paths = sorted(
         (frozenset(r.methods), r.path)
@@ -315,6 +317,7 @@ def test_voces_router_registers_eleven_routes() -> None:
         [
             (frozenset({"GET"}), "/voces/bundled"),
             (frozenset({"GET"}), "/voces"),
+            (frozenset({"GET"}), "/voces/sync"),
             (frozenset({"POST"}), "/voces"),
             (frozenset({"GET"}), "/voces/{voce_id}"),
             (frozenset({"PATCH"}), "/voces/{voce_id}"),
@@ -482,3 +485,60 @@ def test_list_voces_signature_accepts_include_hidden() -> None:
     sig = inspect.signature(voces_module.list_voces)
     assert "include_hidden" in sig.parameters
     assert sig.parameters["include_hidden"].default is False
+
+
+def test_sync_endpoint_pages_the_whole_library() -> None:
+    """GET /voces/sync takes a cursor + limit and returns a page whose
+    response model carries the completeness signals a sync client needs
+    (total, has_more, next_cursor) so absence != truncation."""
+    import inspect
+
+    sig = inspect.signature(voces_module.sync_voces)
+    assert "cursor" in sig.parameters
+    assert "limit" in sig.parameters
+    fields = voces_module.VocesSyncPage.model_fields
+    for required in ("items", "total", "has_more", "next_cursor", "limit"):
+        assert required in fields, required
+
+
+def test_sync_cursor_round_trips() -> None:
+    """The keyset cursor survives an encode/decode round-trip, and a
+    malformed cursor is a 400 rather than a 500 that would abort a sync."""
+    from datetime import UTC, datetime
+    from uuid import uuid4
+
+    from fastapi import HTTPException
+
+    at = datetime(2026, 8, 18, 9, 0, tzinfo=UTC)
+    vid = uuid4()
+    cur = voces_module._encode_cursor(at, vid)
+    got_at, got_id = voces_module._decode_cursor(cur)
+    assert got_at == at
+    assert got_id == vid
+    with pytest.raises(HTTPException) as exc:
+        voces_module._decode_cursor("not-a-cursor!!")
+    assert exc.value.status_code == 400
+
+
+def test_ipa_has_no_length_cap() -> None:
+    """The 480-char cap on ipa (which aborted a whole sync when a longer
+    transcription crossed) is gone from both write schemas; the DB column
+    is Text. source_citation keeps its real 480 cap."""
+    for schema in (
+        voces_module.VoceMagicaeCreate,
+        voces_module.VoceMagicaeUpdate,
+    ):
+        ipa = schema.model_fields["ipa"]
+        assert ipa.metadata == [] or all(
+            getattr(m, "max_length", None) is None for m in ipa.metadata
+        ), f"{schema.__name__}.ipa still has a length cap"
+
+    long_ipa = "ˈaː" * 400  # ~1200 chars, well past the old 480 cap
+    created = voces_module.VoceMagicaeCreate(
+        name="Ablanathanalba",
+        source_text="ΑΒΛΑΝΑΘΑΝΑΛΒΑ",
+        source_script="greek",
+        source_citation="PGM I.297",
+        ipa=long_ipa,
+    )
+    assert created.ipa == long_ipa

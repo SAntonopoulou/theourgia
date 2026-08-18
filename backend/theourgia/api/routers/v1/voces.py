@@ -19,13 +19,14 @@ PATCH cannot clear it.
 
 from __future__ import annotations
 
+import base64
 from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
+from sqlalchemy import func, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import CurrentUser, get_db_session
@@ -103,7 +104,7 @@ class VoceMagicaeCreate(BaseModel):
     source_text: str = Field(min_length=1)
     source_script: SourceScript
     transliteration: str | None = None
-    ipa: str | None = Field(default=None, max_length=480)
+    ipa: str | None = None  # unbounded; see model — a cap here aborted sync
     # REQUIRED — H05 honesty rule.
     source_citation: str = Field(min_length=1, max_length=480)
     planetary_associations: list[str] = Field(default_factory=list)
@@ -120,7 +121,7 @@ class VoceMagicaeUpdate(BaseModel):
     source_text: str | None = Field(default=None, min_length=1)
     source_script: SourceScript | None = None
     transliteration: str | None = None
-    ipa: str | None = Field(default=None, max_length=480)
+    ipa: str | None = None  # unbounded; see model — a cap here aborted sync
     source_citation: str | None = Field(
         default=None, min_length=1, max_length=480,
     )
@@ -299,6 +300,104 @@ async def list_voces(
 
     # List view omits recordings (use detail for those).
     return [_to_voce_read(row, []) for row in rows]
+
+
+class VocesSyncPage(BaseModel):
+    """One page of the complete library, for a sync client.
+
+    Distinct from the list endpoint (which the website UI uses and which
+    caps at 500 and hides hidden voces): a sync client reconciles a
+    LOCAL library against the server's and reads a vox's absence as a
+    deletion. That is only safe against a COMPLETE picture, so this page
+    includes hidden voces and signals ``has_more`` plus a ``next_cursor``
+    — the caller pages until ``has_more`` is false and only then may it
+    treat any local vox not seen as deleted.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[VoceMagicaeRead]
+    total: int
+    has_more: bool
+    next_cursor: str | None
+    limit: int
+
+
+def _encode_cursor(created_at: datetime, voce_id: UUID) -> str:
+    raw = f"{created_at.isoformat()}|{voce_id}"
+    return base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii")
+
+
+def _decode_cursor(cursor: str) -> tuple[datetime, UUID]:
+    try:
+        raw = base64.urlsafe_b64decode(cursor.encode("ascii")).decode("utf-8")
+        iso, _, id_str = raw.partition("|")
+        return datetime.fromisoformat(iso), UUID(id_str)
+    except Exception as exc:  # malformed cursor is a client error
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="malformed sync cursor",
+        ) from exc
+
+
+@router.get("/voces/sync", response_model=VocesSyncPage, tags=["voces"])
+async def sync_voces(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+    cursor: str | None = None,
+    limit: int = 200,
+) -> VocesSyncPage:
+    """Page the caller's COMPLETE voces library (hidden included).
+
+    Keyset-paginated on ``(created_at, id)`` descending so a vox added
+    mid-sync cannot shift the page window and drop a row. ``has_more``
+    tells the sync client when it has seen everything.
+    """
+    page_size = max(1, min(limit, 500))
+
+    base = select(VoceMagicae).where(
+        VoceMagicae.deleted_at.is_(None),
+        VoceMagicae.owner_id == current_user.id,
+    )
+    total = (
+        await db.execute(
+            select(func.count())
+            .select_from(VoceMagicae)
+            .where(
+                VoceMagicae.deleted_at.is_(None),
+                VoceMagicae.owner_id == current_user.id,
+            )
+        )
+    ).scalar_one()
+
+    stmt = base
+    if cursor is not None:
+        after_created, after_id = _decode_cursor(cursor)
+        # Strictly before the cursor in (created_at, id) descending order.
+        stmt = stmt.where(
+            tuple_(VoceMagicae.created_at, VoceMagicae.id)
+            < tuple_(after_created, after_id)
+        )
+    stmt = stmt.order_by(
+        VoceMagicae.created_at.desc(), VoceMagicae.id.desc()
+    ).limit(page_size + 1)
+
+    rows = list((await db.execute(stmt)).scalars().all())
+    has_more = len(rows) > page_size
+    rows = rows[:page_size]
+    next_cursor = (
+        _encode_cursor(rows[-1].created_at, rows[-1].id)
+        if has_more and rows
+        else None
+    )
+
+    return VocesSyncPage(
+        items=[_to_voce_read(row, []) for row in rows],
+        total=total,
+        has_more=has_more,
+        next_cursor=next_cursor,
+        limit=page_size,
+    )
 
 
 @router.post(

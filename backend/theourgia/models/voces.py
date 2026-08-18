@@ -84,9 +84,14 @@ class VoceMagicae(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
     transliteration: Optional[str] = Field(
         default=None, sa_column=Column(Text),
     )
-    ipa: Optional[str] = Field(default=None, max_length=480)
+    # Unbounded Text — the phone imposes no length cap, and a narrow IPA
+    # transcription (stress, tone, length marks, multi-word voces) can
+    # legitimately exceed 480 chars. A cap here used to abort a whole voces
+    # sync when a longer transcription crossed; see migration widening it.
+    ipa: Optional[str] = Field(default=None, sa_column=Column(Text))
     # REQUIRED — H05 honesty rule. The DB enforces nullable=False; the
-    # API layer enforces a non-empty value.
+    # API layer enforces a non-empty value. The 480 cap here is a real
+    # constraint on a citation, unlike the (now removed) one on ipa.
     source_citation: str = Field(max_length=480, nullable=False)
 
     # Associations.
