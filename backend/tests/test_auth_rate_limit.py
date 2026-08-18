@@ -99,3 +99,19 @@ async def test_forwarded_for_identifies_the_real_client(
         await enforce_auth_rate_limit(c2)  # type: ignore[arg-type]
     finally:
         reset_settings_cache()
+
+
+async def test_limiter_fails_open_on_store_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A store that errors (a Redis blip in prod) must NOT lock people out
+    of sign-in — the limiter degrades to 'no limit', never 'no auth'."""
+    import theourgia.api.ratelimit_dep as mod
+
+    class _BrokenLimiter:
+        async def check(self, *a: object, **k: object) -> None:
+            raise OSError("redis unreachable")
+
+    monkeypatch.setattr(mod, "_get_limiter", lambda: _BrokenLimiter())
+    # No exception: the request is allowed through.
+    await enforce_auth_rate_limit(_FakeRequest("203.0.113.9"))  # type: ignore[arg-type]

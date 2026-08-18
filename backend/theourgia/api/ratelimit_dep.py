@@ -14,6 +14,8 @@ store in dev/test where a single worker (and no redis) is the norm.
 
 from __future__ import annotations
 
+import logging
+
 import redis.asyncio as aioredis
 from fastapi import HTTPException, Request, status
 
@@ -27,6 +29,8 @@ from theourgia.core.ratelimit import (
 )
 
 __all__ = ["enforce_auth_rate_limit", "reset_auth_limiter"]
+
+_log = logging.getLogger(__name__)
 
 
 # A one-slot holder rather than a rebindable module global: the limiter is
@@ -89,3 +93,10 @@ async def enforce_auth_rate_limit(request: Request) -> None:
             detail="Too many attempts. Wait a moment and try again.",
             headers={"Retry-After": str(exc.retry_after_seconds)},
         ) from exc
+    except Exception:  # noqa: BLE001 — the limiter FAILS OPEN
+        # If the store itself errors (a Redis blip in production), allow
+        # the request rather than lock everyone out of sign-in. A rate
+        # limiter that goes down must degrade to "no limit", never to "no
+        # auth" — availability of the door beats the brute-force guard for
+        # the seconds an infra hiccup lasts. Logged, not raised.
+        _log.warning("auth.rate_limit.store_error_fail_open", exc_info=True)
