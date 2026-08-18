@@ -49,9 +49,31 @@ type WireEntry = {
 };
 
 /** The kinds that are events of the record; everything else on the shelf
- * is a definition — a rite, a sitting, an arrangement — read for its NAME
- * and never shown as a day's entry. */
-const EVENT_KINDS = new Set(["observance", "day-entry"]);
+ * is a definition — a rite, a sitting, an arrangement, a working and its
+ * parts — read for its NAME and never shown as a day's entry. Reckonings,
+ * reflections and elections are events: each is a thing done at a time. */
+const EVENT_KINDS = new Set(["observance", "day-entry", "reckoning", "reflection", "election"]);
+
+/** When an event happened, wherever its kind keeps that.
+ *
+ * The hand-mapped kinds say it at the top of their doc; the whole-row
+ * kinds carry it inside the row the device serialized — keptAt for a
+ * reckoning, writtenAt for a reflection, createdAt for an election. */
+export function atOf(entry: WireEntry): string {
+  const row = entry.doc.row ?? {};
+  const fromRow = (key: string): string | undefined => {
+    const value = row[key];
+    return typeof value === "string" ? value : undefined;
+  };
+  return (
+    entry.doc.observedAt ??
+    entry.doc.at ??
+    fromRow("keptAt") ??
+    fromRow("writtenAt") ??
+    fromRow("createdAt") ??
+    entry.updated_at_utc
+  );
+}
 
 /** Names, gathered from the synced subject rows.
  *
@@ -61,25 +83,33 @@ const EVENT_KINDS = new Set(["observance", "day-entry"]);
  * paperwork. The phone's own reader keeps the same rule. */
 export function namesFrom(entries: WireEntry[]): Map<string, string> {
   const names = new Map<string, string>();
-  const schedules: WireEntry[] = [];
+  const deferred: WireEntry[] = [];
   for (const entry of entries) {
     const row = entry.doc.row;
     if (!row) continue;
-    if (entry.kind === "ritual" || entry.kind === "meditation") {
+    if (entry.kind === "ritual" || entry.kind === "meditation" || entry.kind === "working") {
       const name = row.name;
       if (typeof name === "string" && name.length > 0) {
         names.set(`${entry.kind}:${entry.id}`, name);
       }
-    } else if (entry.kind === "schedule") {
-      schedules.push(entry);
+    } else if (entry.kind === "schedule" || entry.kind === "working-item") {
+      // Resolves through to something named above; second pass.
+      deferred.push(entry);
     }
   }
-  for (const entry of schedules) {
+  for (const entry of deferred) {
     const row = entry.doc.row ?? {};
     const title = typeof row.title === "string" ? row.title : "";
-    const subject = `${String(row.subjectKind ?? "")}:${String(row.subjectId ?? "")}`;
+    const subject =
+      entry.kind === "schedule"
+        ? `${String(row.subjectKind ?? "")}:${String(row.subjectId ?? "")}`
+        : // A working's item is named by its own title, else the rite it
+          // performs, else the working it serves — the phone's own order.
+          row.ritualId
+          ? `ritual:${String(row.ritualId)}`
+          : `working:${String(row.workingId ?? "")}`;
     const resolved = title || names.get(subject);
-    if (resolved) names.set(`schedule:${entry.id}`, resolved);
+    if (resolved) names.set(`${entry.kind}:${entry.id}`, resolved);
   }
   return names;
 }
@@ -96,10 +126,7 @@ type PullResult = {
  * rest of the record joins the sync. A station's key is its own name; the
  * rest say what kind of thing was kept rather than pretending to know
  * which. */
-export function titleOf(
-  subjectKey: string | undefined,
-  names?: Map<string, string>,
-): string {
+export function titleOf(subjectKey: string | undefined, names?: Map<string, string>): string {
   if (!subjectKey) return "A keeping";
   const named = names?.get(subjectKey.split("#")[0] ?? subjectKey);
   if (named) return named;
@@ -121,6 +148,38 @@ export function titleOf(
   if (subjectKey.startsWith("working-item:")) return "A working's day";
   if (subjectKey.startsWith("day-entry:")) return "A day's entry";
   return "A keeping";
+}
+
+/** The events that carry their whole device row: what to call them and
+ * what of theirs to quote. Null for every other kind. */
+export function rowEvent(entry: WireEntry): { title: string; quote: string } | null {
+  const row = entry.doc.row ?? {};
+  const str = (key: string): string => {
+    const value = row[key];
+    return typeof value === "string" ? value : "";
+  };
+  if (entry.kind === "reckoning") {
+    const total = typeof row.total === "number" ? ` = ${row.total}` : "";
+    const note = str("note");
+    return {
+      title: "A reckoning",
+      quote: `${str("wrote")}${total}${note ? ` — ${note}` : ""}`,
+    };
+  }
+  if (entry.kind === "reflection") {
+    return {
+      title: str("kind") === "intention" ? "An intention" : "A reflection",
+      quote: str("body"),
+    };
+  }
+  if (entry.kind === "election") {
+    const matter = str("matterName");
+    return {
+      title: matter ? `An election — ${matter}` : "An election",
+      quote: str("note"),
+    };
+  }
+  return null;
 }
 
 /** The day's own entries, in the phone's words. */
@@ -174,9 +233,7 @@ export function RecordRoute() {
         // a record grown past a few thousand entries still arrives, just
         // in more than one breath.
         for (;;) {
-          const page = await apiGet<PullResult>(
-            `/record/entries?since=${since}&limit=500`,
-          );
+          const page = await apiGet<PullResult>(`/record/entries?since=${since}&limit=500`);
           all.push(...page.entries);
           since = page.next_since;
           if (!page.more) break;
@@ -209,22 +266,18 @@ export function RecordRoute() {
   // the shelf holds definitions beside events: the definitions lend their
   // names and stay off the days.
   const names = namesFrom(entries.filter((e) => e.deleted_at_utc === null));
-  const standing = entries.filter(
-    (e) => e.deleted_at_utc === null && EVENT_KINDS.has(e.kind),
-  );
+  const standing = entries.filter((e) => e.deleted_at_utc === null && EVENT_KINDS.has(e.kind));
 
   if (standing.length === 0) {
     return (
       <div style={pageStyle}>
         <div style={cardStyle}>
-          <h2 style={{ font: "var(--type-h3)", marginTop: 0 }}>
-            Nothing here yet
-          </h2>
+          <h2 style={{ font: "var(--type-h3)", marginTop: 0 }}>Nothing here yet</h2>
           <p style={proseStyle}>
-            The record fills from a linked device. In the Theourgia app, link
-            this account under <em>Settings → Linked account</em>, then press
-            <em> Sync the record now</em> — every keeping arrives whole, sky
-            and all, and stands here as well as there.
+            The record fills from a linked device. In the Theourgia app, link this account under{" "}
+            <em>Settings → Linked account</em>, then press
+            <em> Sync the record now</em> — every keeping arrives whole, sky and all, and stands
+            here as well as there.
           </p>
         </div>
       </div>
@@ -236,10 +289,7 @@ export function RecordRoute() {
   // page, so nobody mistakes it for the moonrise day they configured.
   const byDay = new Map<string, WireEntry[]>();
   for (const entry of standing) {
-    const at = new Date(
-      entry.doc.observedAt ?? entry.doc.at ?? entry.updated_at_utc,
-    );
-    const day = at.toLocaleDateString(undefined, {
+    const day = new Date(atOf(entry)).toLocaleDateString(undefined, {
       weekday: "long",
       year: "numeric",
       month: "long",
@@ -250,17 +300,18 @@ export function RecordRoute() {
     byDay.set(day, list);
   }
   const days = [...byDay.entries()].sort((a, b) => {
-    const at = new Date(a[1][0]?.doc.observedAt ?? 0).getTime();
-    const bt = new Date(b[1][0]?.doc.observedAt ?? 0).getTime();
+    const first = a[1][0];
+    const second = b[1][0];
+    const at = first ? new Date(atOf(first)).getTime() : 0;
+    const bt = second ? new Date(atOf(second)).getTime() : 0;
     return bt - at;
   });
 
   return (
     <div style={pageStyle} data-route="record">
       <p style={hintStyle}>
-        Days run midnight to midnight in your timezone here; the app groups
-        by your chosen frame. Read-only for now — mend entries on the device
-        that keeps them.
+        Days run midnight to midnight in your timezone here; the app groups by your chosen frame.
+        Read-only for now — mend entries on the device that keeps them.
       </p>
       {days.map(([day, list]) => (
         <section key={day} style={{ ...cardStyle, marginBottom: "var(--space-4)" }}>
@@ -268,63 +319,53 @@ export function RecordRoute() {
           <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
             {list
               .slice()
-              .sort(
-                (a, b) =>
-                  new Date(a.doc.observedAt ?? a.doc.at ?? 0).getTime() -
-                  new Date(b.doc.observedAt ?? b.doc.at ?? 0).getTime(),
-              )
-              .map((entry) => (
-                <li key={entry.id} style={rowStyle}>
-                  <span style={timeStyle}>
-                    {new Date(
-                      entry.doc.observedAt ?? entry.doc.at ?? entry.updated_at_utc,
-                    ).toLocaleTimeString(undefined, {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
-                  <span style={{ flex: 1 }}>
-                    <span style={{ color: "var(--ink)" }}>
-                      {entry.kind === "day-entry"
-                        ? DAY_ENTRY_KINDS[String(entry.doc.subjectKey ?? "")] ??
-                          DAY_ENTRY_KINDS[
-                            String(
-                              (entry.doc as Record<string, unknown>).kind ?? "",
-                            )
-                          ] ??
-                          "A day's entry"
-                        : titleOf(entry.doc.subjectKey, names)}
+              .sort((a, b) => new Date(atOf(a)).getTime() - new Date(atOf(b)).getTime())
+              .map((entry) => {
+                const carried = rowEvent(entry);
+                const quote = carried?.quote || entry.doc.note || entry.doc.body || "";
+                return (
+                  <li key={entry.id} style={rowStyle}>
+                    <span style={timeStyle}>
+                      {new Date(atOf(entry)).toLocaleTimeString(undefined, {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </span>
-                    {entry.doc.note || entry.doc.body ? (
-                      <span style={noteStyle}>
-                        {" "}
-                        — {entry.doc.note ?? entry.doc.body}
+                    <span style={{ flex: 1 }}>
+                      <span style={{ color: "var(--ink)" }}>
+                        {carried
+                          ? carried.title
+                          : entry.kind === "day-entry"
+                            ? (DAY_ENTRY_KINDS[String(entry.doc.subjectKey ?? "")] ??
+                              DAY_ENTRY_KINDS[
+                                String((entry.doc as Record<string, unknown>).kind ?? "")
+                              ] ??
+                              "A day's entry")
+                            : titleOf(entry.doc.subjectKey, names)}
                       </span>
-                    ) : null}
-                    <span style={metaStyle}>
-                      {[
-                        entry.doc.mood != null
-                          ? `Mood ${MOODS[entry.doc.mood] ?? entry.doc.mood}`
-                          : null,
-                        entry.doc.bodyFeeling != null
-                          ? `Body ${
-                              BODIES[entry.doc.bodyFeeling] ??
-                              entry.doc.bodyFeeling
-                            }`
-                          : null,
-                        entry.doc.context?.moonSignIndex != null
-                          ? `Moon in ${SIGNS[entry.doc.context.moonSignIndex]}`
-                          : null,
-                        entry.doc.context?.planetaryHourRuler
-                          ? `hour of ${entry.doc.context.planetaryHourRuler}`
-                          : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
+                      {quote ? <span style={noteStyle}> — {quote}</span> : null}
+                      <span style={metaStyle}>
+                        {[
+                          entry.doc.mood != null
+                            ? `Mood ${MOODS[entry.doc.mood] ?? entry.doc.mood}`
+                            : null,
+                          entry.doc.bodyFeeling != null
+                            ? `Body ${BODIES[entry.doc.bodyFeeling] ?? entry.doc.bodyFeeling}`
+                            : null,
+                          entry.doc.context?.moonSignIndex != null
+                            ? `Moon in ${SIGNS[entry.doc.context.moonSignIndex]}`
+                            : null,
+                          entry.doc.context?.planetaryHourRuler
+                            ? `hour of ${entry.doc.context.planetaryHourRuler}`
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
                     </span>
-                  </span>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
           </ul>
         </section>
       ))}

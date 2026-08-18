@@ -28,7 +28,7 @@ vi.mock("../../lib/api.js", () => ({
   ApiError: class extends Error {},
 }));
 
-import { namesFrom, RecordRoute, titleOf } from "../RecordRoute.js";
+import { RecordRoute, namesFrom, titleOf } from "../RecordRoute.js";
 
 function renderRoute() {
   const client = new QueryClient({
@@ -96,6 +96,55 @@ describe("titleOf", () => {
 });
 
 describe("namesFrom", () => {
+  it("names a working's item by its title, its rite, or its working", () => {
+    const names = namesFrom([
+      {
+        id: "w1",
+        kind: "working",
+        doc: { row: { name: "The Abramelin" } },
+        updated_at_utc: "2026-08-17T06:00:00Z",
+        deleted_at_utc: null,
+        seq: 1,
+      },
+      {
+        id: "r1",
+        kind: "ritual",
+        doc: { row: { name: "The Bornless" } },
+        updated_at_utc: "2026-08-17T06:00:00Z",
+        deleted_at_utc: null,
+        seq: 2,
+      },
+      {
+        id: "i1",
+        kind: "working-item",
+        doc: { row: { title: "Morning orison", workingId: "w1" } },
+        updated_at_utc: "2026-08-17T06:00:00Z",
+        deleted_at_utc: null,
+        seq: 3,
+      },
+      {
+        id: "i2",
+        kind: "working-item",
+        doc: { row: { title: "", ritualId: "r1", workingId: "w1" } },
+        updated_at_utc: "2026-08-17T06:00:00Z",
+        deleted_at_utc: null,
+        seq: 4,
+      },
+      {
+        id: "i3",
+        kind: "working-item",
+        doc: { row: { title: "", workingId: "w1" } },
+        updated_at_utc: "2026-08-17T06:00:00Z",
+        deleted_at_utc: null,
+        seq: 5,
+      },
+    ] as never);
+    expect(names.get("working-item:i1")).toBe("Morning orison");
+    expect(names.get("working-item:i2")).toBe("The Bornless");
+    expect(names.get("working-item:i3")).toBe("The Abramelin");
+    expect(titleOf("working-item:i2", names)).toBe("The Bornless");
+  });
+
   it("resolves an arrangement through to its subject's name", () => {
     const names = namesFrom([
       {
@@ -205,6 +254,67 @@ describe("RecordRoute", () => {
     expect(screen.getByText(/Moon in Scorpio/)).toBeTruthy();
   });
 
+  it("the rest of the record stands on its days — reckoning, reflection, election", async () => {
+    mocks.apiGet.mockResolvedValue({
+      entries: [
+        {
+          id: "k1",
+          kind: "reckoning",
+          doc: {
+            row: {
+              wrote: "ΑΓΑΠΗ",
+              total: 93,
+              note: "as Θελημα",
+              keptAt: "2026-08-16T10:00:00Z",
+            },
+          },
+          updated_at_utc: "2026-08-16T10:00:01Z",
+          deleted_at_utc: null,
+          seq: 1,
+        },
+        {
+          id: "f1",
+          kind: "reflection",
+          doc: {
+            row: {
+              kind: "reflection",
+              body: "It holds.",
+              writtenAt: "2026-08-16T21:00:00Z",
+            },
+          },
+          updated_at_utc: "2026-08-16T21:00:01Z",
+          deleted_at_utc: null,
+          seq: 2,
+        },
+        {
+          id: "e1",
+          kind: "election",
+          doc: {
+            row: {
+              matterName: "a talisman of the Moon",
+              note: "",
+              createdAt: "2026-08-16T12:00:00Z",
+            },
+          },
+          updated_at_utc: "2026-08-16T12:00:01Z",
+          deleted_at_utc: null,
+          seq: 3,
+        },
+      ],
+      next_since: 3,
+      more: false,
+    });
+    renderRoute();
+    await flush();
+    await flush();
+
+    expect(screen.getByText("A reckoning")).toBeTruthy();
+    expect(screen.getByText(/ΑΓΑΠΗ = 93/)).toBeTruthy();
+    expect(screen.getByText("A reflection")).toBeTruthy();
+    expect(screen.getByText(/It holds\./)).toBeTruthy();
+    expect(screen.getByText("An election — a talisman of the Moon")).toBeTruthy();
+  });
+
   it("honours a tombstone — removed is not shown, and not forgotten", async () => {
     mocks.apiGet.mockResolvedValue({
       entries: [
@@ -248,9 +358,7 @@ describe("RecordRoute", () => {
     await flush();
 
     expect(mocks.apiGet).toHaveBeenCalledTimes(2);
-    expect(mocks.apiGet).toHaveBeenLastCalledWith(
-      "/record/entries?since=1&limit=500",
-    );
+    expect(mocks.apiGet).toHaveBeenLastCalledWith("/record/entries?since=1&limit=500");
     expect(screen.getByText("Moonrise")).toBeTruthy();
     expect(screen.getByText("Moonset")).toBeTruthy();
   });
