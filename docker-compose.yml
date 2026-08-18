@@ -125,6 +125,12 @@ services:
       THEOURGIA_STORAGE_S3_ACCESS_KEY: ${THEOURGIA_STORAGE_S3_ACCESS_KEY:-}
       THEOURGIA_STORAGE_S3_SECRET_KEY: ${THEOURGIA_STORAGE_S3_SECRET_KEY:-}
       THEOURGIA_STORAGE_S3_USE_SSL: ${THEOURGIA_STORAGE_S3_USE_SSL:-true}
+      # Crash reporting via Sentry. Opt-in: an empty DSN makes init_sentry
+      # a no-op (the zero-telemetry default). Same rule as every secret in
+      # this map — listed HERE, valued in .env; .env alone reaches nothing
+      # (see the LINK_CODE_CLIENTS note above). Traces off by default.
+      THEOURGIA_SENTRY_DSN: ${THEOURGIA_SENTRY_DSN:-}
+      THEOURGIA_SENTRY_TRACES_SAMPLE_RATE: ${THEOURGIA_SENTRY_TRACES_SAMPLE_RATE:-0}
     restart: unless-stopped
     networks:
       - theourgia-internal
@@ -170,6 +176,11 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-auto}
+      # Sentry runs on THIS worker too: task errors report here, and the
+      # scheduled-backup task opens/closes its cron check-in (the backup
+      # dead-man's-switch) against the Sentry monitor. Empty DSN = no-op.
+      THEOURGIA_SENTRY_DSN: ${THEOURGIA_SENTRY_DSN:-}
+      THEOURGIA_SENTRY_TRACES_SAMPLE_RATE: ${THEOURGIA_SENTRY_TRACES_SAMPLE_RATE:-0}
     # Override the image's baked-in HEALTHCHECK (curl :8000/healthz —
     # correct for the API service, meaningless here: no HTTP server in
     # this container, so prod showed "unhealthy" while tasks succeeded
@@ -207,6 +218,10 @@ services:
       # v1-033: same instance-identity passthrough as the worker.
       THEOURGIA_BASE_URL: ${THEOURGIA_BASE_URL:-https://theourgia.example.com}
       THEOURGIA_INSTANCE_ID: ${THEOURGIA_INSTANCE_ID:-theourgia.example.com}
+      # Beat schedules the backup but errors here should report too. Empty
+      # DSN = no-op; the check-in itself is opened by the worker task.
+      THEOURGIA_SENTRY_DSN: ${THEOURGIA_SENTRY_DSN:-}
+      THEOURGIA_SENTRY_TRACES_SAMPLE_RATE: ${THEOURGIA_SENTRY_TRACES_SAMPLE_RATE:-0}
     # Disable the image's HTTP HEALTHCHECK — beat serves nothing and
     # exposes no ping; a wrong probe reads as "unhealthy" forever
     # (v1-053). Liveness is the process itself + restart policy.
