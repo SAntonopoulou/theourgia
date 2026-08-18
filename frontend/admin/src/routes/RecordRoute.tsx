@@ -29,18 +29,29 @@ type WireEntry = {
   doc: {
     subjectKey?: string;
     observedAt?: string;
+    occurrenceAt?: string;
     at?: string;
     note?: string;
     body?: string;
     mood?: number | null;
     bodyFeeling?: number | null;
+    durationSeconds?: number | null;
+    sleepQuality?: number | null;
     /** Subject kinds carry the whole device row here. */
     row?: Record<string, unknown>;
     context?: {
+      capturedAt?: string;
       moonSignIndex?: number | null;
+      moonDegreeInSign?: number | null;
+      sunSignIndex?: number | null;
       planetaryHourRuler?: string | null;
+      dayRuler?: string | null;
       sect?: string | null;
+      moonVoidOfCourse?: boolean | null;
+      skyFailureReason?: string | null;
       locationLabel?: string | null;
+      latitude?: number | null;
+      longitude?: number | null;
     } | null;
   };
   updated_at_utc: string;
@@ -180,6 +191,95 @@ export function rowEvent(entry: WireEntry): { title: string; quote: string } | n
     };
   }
   return null;
+}
+
+/** The whole of one entry, as label–value lines for its opened detail.
+ *
+ * Pure, so the claim "everything the capture holds is readable here" is a
+ * test rather than a hope. Empty values are dropped, not shown blank. */
+export function detailsOf(entry: WireEntry): Array<[string, string]> {
+  const out: Array<[string, string]> = [];
+  const doc = entry.doc;
+  const row = doc.row ?? {};
+  const str = (key: string): string => {
+    const value = row[key];
+    return typeof value === "string" ? value : "";
+  };
+  const when = (iso: string | undefined | null): string =>
+    iso
+      ? new Date(iso).toLocaleString(undefined, {
+          dateStyle: "medium",
+          timeStyle: "short",
+        })
+      : "";
+
+  if (entry.kind === "observance") {
+    if (doc.occurrenceAt && doc.occurrenceAt !== doc.observedAt) {
+      out.push(["The moment itself", when(doc.occurrenceAt)]);
+      out.push(["Kept at", when(doc.observedAt)]);
+    }
+    if (doc.durationSeconds != null) {
+      const minutes = Math.floor(doc.durationSeconds / 60);
+      out.push(["Lasted", `${minutes} min ${doc.durationSeconds % 60} s`]);
+    }
+    const sky = doc.context;
+    if (sky) {
+      if (sky.moonSignIndex != null) {
+        const degree = sky.moonDegreeInSign != null ? ` ${sky.moonDegreeInSign.toFixed(1)}°` : "";
+        out.push(["Moon", `${SIGNS[sky.moonSignIndex] ?? ""}${degree}`]);
+      }
+      if (sky.sunSignIndex != null) {
+        out.push(["Sun", SIGNS[sky.sunSignIndex] ?? ""]);
+      }
+      if (sky.planetaryHourRuler) {
+        out.push(["Hour of", sky.planetaryHourRuler]);
+      }
+      if (sky.dayRuler) out.push(["Day of", sky.dayRuler]);
+      if (sky.sect) out.push(["Sect", sky.sect]);
+      if (sky.moonVoidOfCourse) out.push(["Moon", "void of course"]);
+      if (sky.skyFailureReason) {
+        out.push(["No sky", `not captured (${sky.skyFailureReason})`]);
+      }
+      const place =
+        sky.locationLabel ||
+        (sky.latitude != null && sky.longitude != null
+          ? `${sky.latitude.toFixed(2)}, ${sky.longitude.toFixed(2)}`
+          : "");
+      if (place) out.push(["Where", place]);
+    }
+  }
+  if (entry.kind === "day-entry" && doc.sleepQuality != null) {
+    out.push(["Sleep", String(doc.sleepQuality)]);
+  }
+  if (entry.kind === "reckoning") {
+    out.push(["Counted under", `${str("letterTable")} / ${str("normalising")}`]);
+    out.push(["System", `${str("systemId")} · ${str("methodId")}`]);
+    if (str("unread")) {
+      out.push(["⚠ Unread", `${str("unread")} — the total is about less than was typed`]);
+    }
+  }
+  if (entry.kind === "reflection") {
+    const revisit = str("revisitAt");
+    if (revisit) out.push(["Revisit", when(revisit)]);
+    if (str("subjectKey")) out.push(["About", str("subjectKey")]);
+  }
+  if (entry.kind === "election") {
+    if (str("spanFrom") && str("spanUntil")) {
+      out.push(["Asked over", `${when(str("spanFrom"))} — ${when(str("spanUntil"))}`]);
+    }
+    if (typeof row.strictness === "number") {
+      out.push(["Strictness", row.strictness.toFixed(2)]);
+    }
+    if (str("significator")) out.push(["Significator", str("significator")]);
+    const place =
+      str("locationLabel") ||
+      (typeof row.latitude === "number" && typeof row.longitude === "number"
+        ? `${row.latitude.toFixed(2)}, ${row.longitude.toFixed(2)}`
+        : "");
+    if (place) out.push(["Where", place]);
+    if (str("subjectName")) out.push(["For", str("subjectName")]);
+  }
+  return out;
 }
 
 /** The day's own entries, in the phone's words. */
@@ -323,8 +423,9 @@ export function RecordRoute() {
               .map((entry) => {
                 const carried = rowEvent(entry);
                 const quote = carried?.quote || entry.doc.note || entry.doc.body || "";
-                return (
-                  <li key={entry.id} style={rowStyle}>
+                const opened = detailsOf(entry);
+                const line = (
+                  <>
                     <span style={timeStyle}>
                       {new Date(atOf(entry)).toLocaleTimeString(undefined, {
                         hour: "2-digit",
@@ -363,6 +464,30 @@ export function RecordRoute() {
                           .join(" · ")}
                       </span>
                     </span>
+                  </>
+                );
+                // The third level the phone has. Nothing more to say means
+                // nothing to open, and the row stays a plain row.
+                if (opened.length === 0) {
+                  return (
+                    <li key={entry.id} style={rowStyle}>
+                      {line}
+                    </li>
+                  );
+                }
+                return (
+                  <li key={entry.id}>
+                    <details>
+                      <summary style={{ ...rowStyle, cursor: "pointer" }}>{line}</summary>
+                      <dl style={detailStyle}>
+                        {opened.map(([label, value]) => (
+                          <div key={label + value} style={detailRowStyle}>
+                            <dt style={detailLabelStyle}>{label}</dt>
+                            <dd style={detailValueStyle}>{value}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </details>
                   </li>
                 );
               })}
@@ -416,6 +541,31 @@ const timeStyle: CSSProperties = {
 const noteStyle: CSSProperties = {
   color: "var(--ink-soft)",
   fontStyle: "italic",
+};
+
+const detailStyle: CSSProperties = {
+  margin: "0 0 var(--space-2) calc(3.5em + var(--space-3))",
+  padding: "var(--space-2) var(--space-3)",
+  borderLeft: "2px solid var(--line-2)",
+  font: "var(--type-caption)",
+};
+
+const detailRowStyle: CSSProperties = {
+  display: "flex",
+  gap: "var(--space-2)",
+  padding: "1px 0",
+};
+
+const detailLabelStyle: CSSProperties = {
+  color: "var(--muted)",
+  minWidth: "8em",
+  margin: 0,
+};
+
+const detailValueStyle: CSSProperties = {
+  color: "var(--ink-soft)",
+  margin: 0,
+  whiteSpace: "pre-wrap",
 };
 
 const metaStyle: CSSProperties = {

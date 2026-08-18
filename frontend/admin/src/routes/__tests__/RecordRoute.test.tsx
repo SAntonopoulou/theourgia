@@ -28,7 +28,7 @@ vi.mock("../../lib/api.js", () => ({
   ApiError: class extends Error {},
 }));
 
-import { RecordRoute, namesFrom, titleOf } from "../RecordRoute.js";
+import { RecordRoute, detailsOf, namesFrom, titleOf } from "../RecordRoute.js";
 
 function renderRoute() {
   const client = new QueryClient({
@@ -168,6 +168,83 @@ describe("namesFrom", () => {
     expect(names.get("schedule:s1")).toBe("The Star Ruby");
     expect(titleOf("schedule:s1", names)).toBe("The Star Ruby");
     expect(titleOf("schedule:s1#2", names)).toBe("The Star Ruby");
+  });
+});
+
+describe("detailsOf", () => {
+  it("opens a keeping to the whole of its sky", () => {
+    const opened = detailsOf({
+      id: "k1",
+      kind: "observance",
+      doc: {
+        subjectKey: "moonrise",
+        occurrenceAt: "2026-08-17T06:03:00Z",
+        observedAt: "2026-08-17T06:12:00Z",
+        durationSeconds: 125,
+        context: {
+          moonSignIndex: 7,
+          moonDegreeInSign: 13.85,
+          sunSignIndex: 4,
+          planetaryHourRuler: "moon",
+          dayRuler: "sun",
+          sect: "nocturnal",
+          moonVoidOfCourse: true,
+          locationLabel: "Brussels",
+        },
+      },
+      updated_at_utc: "2026-08-17T06:12:01Z",
+      deleted_at_utc: null,
+      seq: 1,
+    } as never);
+    const byLabel = new Map(opened);
+    const moons = opened.filter(([label]) => label === "Moon").map(([, v]) => v);
+    expect(moons[0]).toContain("Scorpio");
+    expect(moons[0]).toContain("13.8°");
+    expect(byLabel.get("Sun")).toBe("Leo");
+    expect(byLabel.get("Sect")).toBe("nocturnal");
+    expect(byLabel.get("Where")).toBe("Brussels");
+    expect(byLabel.get("Lasted")).toBe("2 min 5 s");
+    expect(byLabel.get("Kept at")).toBeTruthy();
+    // Two Moon lines: the sign, and void of course — both facts stand.
+    expect(opened.filter(([label]) => label === "Moon")).toHaveLength(2);
+  });
+
+  it("opens a reckoning to its conventions, loud about the unread", () => {
+    const opened = detailsOf({
+      id: "r1",
+      kind: "reckoning",
+      doc: {
+        row: {
+          wrote: "ΑΓΑΠΗ",
+          total: 93,
+          systemId: "greek",
+          methodId: "standard",
+          letterTable: "default",
+          normalising: "iota-adscript",
+          unread: "𐤀",
+          keptAt: "2026-08-16T10:00:00Z",
+        },
+      },
+      updated_at_utc: "2026-08-16T10:00:01Z",
+      deleted_at_utc: null,
+      seq: 2,
+    } as never);
+    const byLabel = new Map(opened);
+    expect(byLabel.get("Counted under")).toBe("default / iota-adscript");
+    expect(byLabel.get("⚠ Unread")).toContain("𐤀");
+  });
+
+  it("has nothing to open on a bare day entry, and says so", () => {
+    expect(
+      detailsOf({
+        id: "d1",
+        kind: "day-entry",
+        doc: { kind: "note", at: "2026-08-17T05:00:00Z", body: "x" },
+        updated_at_utc: "2026-08-17T05:01:00Z",
+        deleted_at_utc: null,
+        seq: 3,
+      } as never),
+    ).toHaveLength(0);
   });
 });
 
