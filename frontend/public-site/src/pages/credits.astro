@@ -1,0 +1,141 @@
+---
+/**
+ * Credits — public attribution for redistributed corpora.
+ *
+ * Theourgia redistributes a handful of third-party word corpora as
+ * downloadable packs. Two of them are licensed CC-BY-4.0, whose licence
+ * REQUIRES attribution wherever the work is redistributed publicly. That
+ * attribution was not surfaced anywhere public; this page is that
+ * surface.
+ *
+ * The SPDX per pack is the source of truth in
+ * ``backend/tool/build_pack_dist.py`` (the LICENSES map). Only the
+ * BY-required corpora need named attribution here; CC0 and public-domain
+ * packs are listed for completeness without an attribution obligation.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const MAXW = "820px";
+
+// Attribution required by licence (CC-BY-4.0). Kept in sync with the
+// LICENSES map in backend/tool/build_pack_dist.py.
+const BY_REQUIRED = [
+  {
+    pack: "theourgia.words.greek-diorisis",
+    name: "The Diorisis Ancient Greek Corpus",
+    licence: "CC-BY-4.0",
+    licenceHref: "https://creativecommons.org/licenses/by/4.0/",
+    by: "Vatri, A., & McGillivray, B. (2018). The Diorisis Ancient Greek Corpus. Research Data Journal for the Humanities and Social Sciences, 3(1), 55–65.",
+    sourceHref: "https://figshare.com/articles/dataset/The_Diorisis_Ancient_Greek_Corpus/6187256",
+    note: "Used for the Greek word list and morphology. No changes to the underlying corpus text; extracted and repackaged into a lookup form.",
+  },
+  {
+    pack: "theourgia.words.hebrew-wlc",
+    name: "OpenScriptures Hebrew Bible — morphology (Westminster Leningrad Codex)",
+    licence: "CC-BY-4.0",
+    licenceHref: "https://creativecommons.org/licenses/by/4.0/",
+    by: "OpenScriptures Hebrew Bible (OSHB), morphology by the OpenScriptures project and the J. Alan Groves Center / Westminster Hebrew Institute.",
+    sourceHref: "https://github.com/openscriptures/morphhb",
+    note: "The consonantal WLC text is in the public domain; the morphological tagging is CC-BY-4.0. Only the morphology carries the attribution obligation. Extracted and repackaged; no change to the tagging itself.",
+  },
+];
+
+// No attribution obligation, listed for transparency.
+const OTHER = [
+  { pack: "theourgia.words.hebrew-wikidata", licence: "CC0-1.0", desc: "Wikidata Hebrew lexemes (public-domain dedication)." },
+  { pack: "theourgia.words.sanskrit-wikidata", licence: "CC0-1.0", desc: "Wikidata Sanskrit lexemes (public-domain dedication)." },
+  { pack: "theourgia.words.arabic-ayaspell", licence: "MPL-1.1", desc: "ayaspell Arabic word list (Mozilla Public License tri-licence)." },
+  { pack: "theourgia.words.sepher-sephiroth", licence: "Public domain", desc: "Sepher Sephiroth (Crowley, 1912–1913), out of copyright." },
+  { pack: "theourgia.dictation.whisper-base", licence: "MIT", desc: "Pointer to OpenAI Whisper base weights (MIT)." },
+];
+---
+
+<BaseLayout title="Credits & attributions · Theourgia">
+  <main
+    id="om-main"
+    style={`max-width:${MAXW};margin:0 auto;padding:64px clamp(16px,5vw,28px) 80px;display:flex;flex-direction:column;gap:48px`}
+  >
+    <a
+      href="/"
+      style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);text-decoration:none;letter-spacing:.08em;text-transform:uppercase"
+      >← Theourgia</a
+    >
+
+    <header style="display:flex;flex-direction:column;gap:14px">
+      <span
+        style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:.16em"
+      >
+        The corpora we stand on
+      </span>
+      <h1
+        style="margin:0;font-family:var(--font-display);font-size:44px;letter-spacing:-0.01em;color:var(--ink);line-height:1.15"
+      >
+        Credits &amp; attributions
+      </h1>
+      <p
+        style="margin:0;font-family:var(--font-serif);font-size:19px;line-height:1.55;color:var(--ink-soft);max-width:640px"
+      >
+        Theourgia redistributes several third-party word corpora as packs.
+        Where a corpus is licensed <abbr title="Creative Commons Attribution 4.0 International">CC-BY-4.0</abbr>,
+        its licence requires that the original authors be credited. This is
+        that credit.
+      </p>
+    </header>
+
+    <section style="display:flex;flex-direction:column;gap:22px">
+      <h2
+        style="margin:0;font-family:var(--font-display);font-size:24px;color:var(--ink);letter-spacing:.01em"
+      >
+        Attribution required (CC-BY-4.0)
+      </h2>
+      {BY_REQUIRED.map((c) => (
+        <article
+          style="background-color:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:24px 26px;display:flex;flex-direction:column;gap:10px"
+        >
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap">
+            <h3 style="margin:0;font-family:var(--font-display);font-size:18px;color:var(--ink);letter-spacing:.01em">{c.name}</h3>
+            <a href={c.licenceHref} rel="noopener" style="font-family:var(--font-mono);font-size:12px;color:var(--accent);text-decoration:none;white-space:nowrap">{c.licence}</a>
+          </div>
+          <p style="margin:0;font-family:var(--font-serif);font-size:15px;line-height:1.6;color:var(--ink-soft)">{c.by}</p>
+          <p style="margin:0;font-family:var(--font-serif);font-size:14px;line-height:1.55;color:var(--ink-mute)">{c.note}</p>
+          <div style="display:flex;gap:18px;flex-wrap:wrap;font-family:var(--font-ui);font-size:12.5px">
+            <a href={c.sourceHref} rel="noopener" style="color:var(--accent);text-decoration:none">Source →</a>
+            <span style="font-family:var(--font-mono);color:var(--ink-mute)">{c.pack}</span>
+          </div>
+        </article>
+      ))}
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:16px">
+      <h2
+        style="margin:0;font-family:var(--font-display);font-size:24px;color:var(--ink);letter-spacing:.01em"
+      >
+        Other bundled corpora
+      </h2>
+      <p style="margin:0;font-family:var(--font-serif);font-size:14.5px;line-height:1.6;color:var(--ink-mute)">
+        These carry no attribution obligation, but are listed for transparency.
+      </p>
+      <dl style="margin:0;display:grid;grid-template-columns:auto 1fr;gap:12px 22px;font-family:var(--font-ui);font-size:14px">
+        {OTHER.map((o) => (
+          <>
+            <dt style="color:var(--ink);font-family:var(--font-mono);font-size:12.5px">{o.licence}</dt>
+            <dd style="margin:0;color:var(--ink-soft)">{o.desc} <span style="font-family:var(--font-mono);color:var(--ink-mute);font-size:12px">{o.pack}</span></dd>
+          </>
+        ))}
+      </dl>
+    </section>
+
+    <section style="border-top:1px solid var(--line);padding-top:28px">
+      <p style="margin:0;font-family:var(--font-serif);font-size:14.5px;line-height:1.6;color:var(--ink-soft)">
+        Theourgia's own code and content are licensed AGPL-3.0. The licence of
+        each pack is recorded in its manifest and in{" "}
+        <a
+          href="https://github.com/SAntonopoulou/theourgia/blob/main/backend/tool/build_pack_dist.py"
+          rel="noopener"
+          style="color:var(--accent)"
+          >build_pack_dist.py</a
+        >.
+      </p>
+    </section>
+  </main>
+</BaseLayout>

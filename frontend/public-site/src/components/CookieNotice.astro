@@ -34,7 +34,10 @@
 // localStorage key — bumping the suffix re-shows the notice if the
 // factual copy ever materially changes.
 const ACK_KEY = "theourgia.cookieNoticeAck.v1";
-const PRIVACY_HREF = "https://docs.theourgia.com/start/privacy/";
+// Served on theourgia.com itself (src/pages/privacy.astro). The former
+// docs.theourgia.com target has no DNS, so the notice pointed nowhere;
+// the canonical wording is mirrored on-site at /privacy.
+const PRIVACY_HREF = "/privacy";
 ---
 
 <aside

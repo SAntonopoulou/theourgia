@@ -29,10 +29,11 @@ const MAXW = "1180px";
 <BaseLayout title="Blog — A public notebook, kept in Theourgia">
   <div style="background:var(--bg);color:var(--ink);font-family:var(--font-serif);min-height:100vh">
 
-    <PublicChrome active="blog" subscribe="Subscribe" />
+    <PublicChrome active="blog" subscribe="Subscribe" subscribeHref="/newsletter" />
 
+    <main id="om-main">
     <!-- header -->
-    <section id="om-main" style="border-bottom:1px solid var(--line)">
+    <section style="border-bottom:1px solid var(--line)">
       <div style={`max-width:${MAXW};margin:0 auto;padding:52px clamp(16px,5vw,28px) 44px`}>
         <div style="font-family:var(--font-ui);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-mute);margin-bottom:18px;display:flex;align-items:center;gap:12px">
           <span style="width:30px;height:1px;background:var(--accent)"></span>
@@ -60,6 +61,7 @@ const MAXW = "1180px";
         <div id="blog-grid" style="display:none;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden"></div>
       </div>
     </section>
+    </main>
 
     <!-- footer -->
     <footer style="border-top:1px solid var(--line);background:var(--bg-2)">

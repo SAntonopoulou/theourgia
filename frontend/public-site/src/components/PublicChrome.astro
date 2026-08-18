@@ -22,7 +22,8 @@ interface Props {
   /**
    * If set, render a primary CTA button on the right (e.g. "Subscribe"
    * on Blog, "Begin" on Landing). String becomes the button label;
-   * href defaults to ``#subscribe``.
+   * href defaults to ``/newsletter`` (the real subscribe surface) —
+   * there is no ``#subscribe`` anchor on the blog or post pages.
    */
   subscribe?: string;
   subscribeHref?: string;
@@ -40,7 +41,7 @@ const {
     { href: "/#sovereign", label: "Self-host" },
   ],
   subscribe,
-  subscribeHref = "#subscribe",
+  subscribeHref = "/newsletter",
   maxWidth = "1180px",
 } = Astro.props;
 ---

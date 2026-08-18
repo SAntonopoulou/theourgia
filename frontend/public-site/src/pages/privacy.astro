@@ -1,0 +1,211 @@
+---
+/**
+ * Privacy — plain-language privacy note, served on theourgia.com.
+ *
+ * The CookieNotice (mounted site-wide via BaseLayout) links here. It
+ * previously pointed at docs.theourgia.com, which has no DNS; this page
+ * mirrors the canonical wording from
+ * ``docs/site/src/content/docs/start/privacy.md`` so the link resolves
+ * on the site itself.
+ *
+ * Honesty law: state absences plainly, never advertise a capability the
+ * instance has gated off. Federation transport is DISABLED on
+ * theourgia.com today, so the outbound-calls list marks it as not yet
+ * enabled rather than implying it is live.
+ */
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const MAXW = "820px";
+
+const NOT_COLLECTED = [
+  "Usage metrics sent to any third party",
+  "Third-party analytics scripts (Google Analytics, Plausible, Fathom, PostHog, and the like)",
+  "Tracking of which pages you visit, which features you use, or how long you stay",
+  "“Anonymous” usage IDs reported anywhere",
+  "Opt-in telemetry — it is not offered at all",
+];
+
+// What can leave the device / server, and when. Each entry is
+// user-initiated; nothing here fires on its own. Federation transport is
+// currently gated off on theourgia.com, so it is marked as such.
+const OUTBOUND = [
+  {
+    label: "Email delivery",
+    when: "when you send a newsletter or a notification, or use the contact form (delivered via Resend).",
+    live: true,
+  },
+  {
+    label: "Stripe",
+    when: "only when a purchase is made, between your Stripe session and Stripe.",
+    live: true,
+  },
+  {
+    label: "Backup target (e.g. Cloudflare R2)",
+    when: "when a scheduled backup you configured runs.",
+    live: true,
+  },
+  {
+    label: "Cloudflare DNS API",
+    when: "for TLS certificate renewal (DNS-01 challenge).",
+    live: true,
+  },
+  {
+    label: "Federation & ActivityPub messages",
+    when: "the protocol ships in the software, but federation transport on theourgia.com is not yet enabled — no instance-to-instance or Fediverse traffic leaves this host today.",
+    live: false,
+  },
+  {
+    label: "Anthropic API",
+    when: "if and only if you have opted into the AI agent integration (not enabled by default).",
+    live: false,
+  },
+];
+---
+
+<BaseLayout title="Privacy · Theourgia">
+  <main
+    id="om-main"
+    style={`max-width:${MAXW};margin:0 auto;padding:64px clamp(16px,5vw,28px) 80px;display:flex;flex-direction:column;gap:48px`}
+  >
+    <a
+      href="/"
+      style="font-family:var(--font-ui);font-size:12px;color:var(--ink-mute);text-decoration:none;letter-spacing:.08em;text-transform:uppercase"
+      >← Theourgia</a
+    >
+
+    <header style="display:flex;flex-direction:column;gap:14px">
+      <span
+        style="font-family:var(--font-ui);font-size:11.5px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:.16em"
+      >
+        What we do and do not collect
+      </span>
+      <h1
+        style="margin:0;font-family:var(--font-display);font-size:44px;letter-spacing:-0.01em;color:var(--ink);line-height:1.15"
+      >
+        Privacy
+      </h1>
+      <p
+        style="margin:0;font-family:var(--font-serif);font-size:19px;line-height:1.55;color:var(--ink-soft);max-width:640px"
+      >
+        Theourgia ships zero telemetry. It does not phone home. This note
+        states, in plain language, what stays on your device or server, what
+        can leave it, and exactly when.
+      </p>
+    </header>
+
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <h2
+        style="margin:0;font-family:var(--font-display);font-size:24px;color:var(--ink);letter-spacing:.01em"
+      >
+        Your record lives where you keep it
+      </h2>
+      <p style="margin:0;font-family:var(--font-serif);font-size:15px;line-height:1.6;color:var(--ink-soft)">
+        The mobile app keeps your journal, entities, divinations, and workings
+        on your device first. When you use a hosted instance, that record lives
+        on the server you signed into — theourgia.com if that is the instance
+        you chose, or your own machine if you self-host. Either way you can
+        export everything and leave at any time.
+      </p>
+      <p style="margin:0;font-family:var(--font-serif);font-size:15px;line-height:1.6;color:var(--ink-soft)">
+        Two encryption modes are offered per item: <strong>server-side at
+        rest</strong> (the server holds the keys; supports full-text search) and
+        <strong>zero-knowledge client-side</strong> (encrypted in your browser;
+        the server holds only ciphertext and even the operator cannot read it —
+        used for initiation records, oath-ledger entries, and anything you mark
+        sealed).
+      </p>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:16px">
+      <h2
+        style="margin:0;font-family:var(--font-display);font-size:24px;color:var(--ink);letter-spacing:.01em"
+      >
+        What Theourgia does not do
+      </h2>
+      <p style="margin:0;font-family:var(--font-serif);font-size:15px;line-height:1.6;color:var(--ink-soft)">
+        This is a hard guarantee, checked by an automated test in CI: a change
+        that introduced an unauthorised outbound network call would fail the
+        build. Theourgia does not:
+      </p>
+      <ul style="margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-family:var(--font-serif);font-size:15px;line-height:1.55;color:var(--ink-soft)">
+        {NOT_COLLECTED.map((item) => (
+          <li>{item}</li>
+        ))}
+      </ul>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:16px">
+      <h2
+        style="margin:0;font-family:var(--font-display);font-size:24px;color:var(--ink);letter-spacing:.01em"
+      >
+        What can leave the device or server, and when
+      </h2>
+      <p style="margin:0;font-family:var(--font-serif);font-size:15px;line-height:1.6;color:var(--ink-soft)">
+        Every outbound call below is explicitly user-initiated; none fires on
+        its own. Where a destination is not yet enabled on theourgia.com, that
+        is stated.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        {OUTBOUND.map((o) => (
+          <div
+            style="background-color:var(--bg-2);border:1px solid var(--line);border-radius:12px;padding:16px 20px;display:flex;flex-direction:column;gap:6px"
+          >
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span style="font-family:var(--font-display);font-size:16px;color:var(--ink)">{o.label}</span>
+              {!o.live && (
+                <span style="font-family:var(--font-ui);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mute);border:1px solid var(--line-2);border-radius:999px;padding:2px 9px">Not yet enabled here</span>
+              )}
+            </div>
+            <p style="margin:0;font-family:var(--font-serif);font-size:14.5px;line-height:1.55;color:var(--ink-soft)">{o.when}</p>
+          </div>
+        ))}
+      </div>
+      <p style="margin:0;font-family:var(--font-serif);font-size:15px;line-height:1.6;color:var(--ink-soft)">
+        If a new outbound destination is ever added, it is documented and gated
+        behind explicit user action.
+      </p>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <h2
+        style="margin:0;font-family:var(--font-display);font-size:24px;color:var(--ink);letter-spacing:.01em"
+      >
+        Cookies
+      </h2>
+      <p style="margin:0;font-family:var(--font-serif);font-size:15px;line-height:1.6;color:var(--ink-soft)">
+        The only cookie the platform sets is a single first-party session
+        cookie (<code>theourgia_session</code>) — HttpOnly, Secure, strictly
+        essential, and set only once you sign in. There are no analytics,
+        advertising, or third-party cookies, so there is nothing to accept or
+        reject. The site-wide cookie notice remembers itself in your browser's
+        local storage — no cookie of its own.
+      </p>
+    </section>
+
+    <section style="display:flex;flex-direction:column;gap:14px">
+      <h2
+        style="margin:0;font-family:var(--font-display);font-size:24px;color:var(--ink);letter-spacing:.01em"
+      >
+        GDPR
+      </h2>
+      <ul style="margin:0;padding-left:22px;display:flex;flex-direction:column;gap:8px;font-family:var(--font-serif);font-size:15px;line-height:1.55;color:var(--ink-soft)">
+        <li><strong>Right to access</strong> — one-click export of all your data.</li>
+        <li><strong>Right to erasure</strong> — full deletion, with documented limits for federated content that has already propagated to other parties.</li>
+        <li><strong>Data portability</strong> — exports in standard JSON / MBF format.</li>
+        <li><strong>Privacy by design</strong> — minimal collection, encryption at rest, no third-party trackers.</li>
+      </ul>
+    </section>
+
+    <section style="border-top:1px solid var(--line);padding-top:28px">
+      <p style="margin:0;font-family:var(--font-serif);font-size:14.5px;line-height:1.6;color:var(--ink-soft)">
+        The full trust model is documented in{" "}
+        <a
+          href="https://github.com/SAntonopoulou/theourgia/blob/main/ARCHITECTURE.md"
+          rel="noopener"
+          style="color:var(--accent)"
+          >ARCHITECTURE.md §5</a
+        >. Questions: <a href="mailto:contact@theourgia.com" style="color:var(--accent)">contact@theourgia.com</a>.
+      </p>
+    </section>
+  </main>
+</BaseLayout>
