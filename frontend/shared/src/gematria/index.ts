@@ -11,3 +11,4 @@ export type {
   CipherResonance,
   GematriaBreakdown,
 } from "./ciphers.js";
+export { packToCiphers } from "./packCiphers.js";
