@@ -180,6 +180,7 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
     items: [
       { key: "entities", to: "/entities", label: "Magical beings" },
       { key: "library", to: "/library", label: "Library" },
+      { key: "packs", to: "/packs", label: "Packs" },
       { key: "calendar", to: "/calendar", label: "Calendar" },
     ],
   },
