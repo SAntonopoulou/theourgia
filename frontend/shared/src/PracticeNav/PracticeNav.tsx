@@ -227,8 +227,13 @@ export interface PracticeNavItem {
 export interface PracticeNavSection {
   heading: string;
   items: PracticeNavItem[];
-  /** Items behind the in-section "More tools" disclosure (Workbench). */
+  /** Items behind an in-section disclosure (Workbench's "More tools",
+   *  Reference's "More"). */
   moreItems?: PracticeNavItem[];
+  /** The disclosure's labels when closed / open. Default "More tools" /
+   *  "Fewer tools" — Reference overrides to a plain "More" / "Fewer". */
+  moreLabel?: string;
+  fewerLabel?: string;
 }
 
 /** The practice wing — 17 links / 4 sections (+5 behind "More tools"). */
@@ -248,19 +253,26 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
   },
   {
     heading: "Reference",
+    // The four one keeps open; the pack-read surfaces sit behind "More" so the
+    // section reads at a glance rather than as a wall. (Sophia: too much on the
+    // site; the packs belong tucked away.)
     items: [
       { key: "entities", to: "/entities", label: "Magical beings" },
       { key: "library", to: "/library", label: "Library" },
-      { key: "packs", to: "/packs", label: "Packs" },
       { key: "correspondences", to: "/correspondences", label: "Correspondences" },
-      { key: "frames", to: "/frames", label: "Directional frames" },
+      { key: "calendar", to: "/calendar", label: "Calendar" },
+    ],
+    moreItems: [
+      { key: "packs", to: "/packs", label: "Packs" },
+      { key: "wordvalues", to: "/word-values", label: "Word values" },
       { key: "techniques", to: "/techniques", label: "Techniques" },
       { key: "festivals", to: "/festivals", label: "Festivals" },
       { key: "elections", to: "/elections", label: "Elections" },
-      { key: "wordvalues", to: "/word-values", label: "Word values" },
+      { key: "frames", to: "/frames", label: "Directional frames" },
       { key: "decks", to: "/decks", label: "Decks" },
-      { key: "calendar", to: "/calendar", label: "Calendar" },
     ],
+    moreLabel: "More",
+    fewerLabel: "Fewer",
   },
   {
     heading: "Workbench",
@@ -553,11 +565,25 @@ export function PracticeNav({
   const isPractice = wing === "practice";
   const sections = isPractice ? VISIBLE_PRACTICE_SECTIONS : VISIBLE_PLATFORM_SECTIONS;
 
-  // "More tools" starts open when the active key hides behind it, so the
-  // inset highlight is visible on first paint.
-  const [moreOpen, setMoreOpen] = useState<boolean>(() =>
-    VISIBLE_PRACTICE_SECTIONS.some((s) => s.moreItems?.some((i) => i.key === active)),
+  // Each section's disclosure opens on its own — kept by heading, since more
+  // than one section now has a "More" (Reference and Workbench). A disclosure
+  // starts open when the active key hides behind it, so the inset highlight is
+  // visible on first paint.
+  const [openMore, setOpenMore] = useState<ReadonlySet<string>>(
+    () =>
+      new Set(
+        VISIBLE_PRACTICE_SECTIONS.filter((s) => s.moreItems?.some((i) => i.key === active)).map(
+          (s) => s.heading,
+        ),
+      ),
   );
+  const toggleMore = (heading: string) =>
+    setOpenMore((open) => {
+      const next = new Set(open);
+      if (next.has(heading)) next.delete(heading);
+      else next.add(heading);
+      return next;
+    });
 
   function crossOver(): void {
     const next: Wing = isPractice ? "platform" : "practice";
@@ -728,9 +754,13 @@ export function PracticeNav({
               <button
                 type="button"
                 className="pn-more"
-                aria-expanded={moreOpen}
-                onClick={() => setMoreOpen((open) => !open)}
-                title={moreOpen ? _("Fewer tools") : _("More tools")}
+                aria-expanded={openMore.has(section.heading)}
+                onClick={() => toggleMore(section.heading)}
+                title={
+                  openMore.has(section.heading)
+                    ? _(section.fewerLabel ?? "Fewer tools")
+                    : _(section.moreLabel ?? "More tools")
+                }
                 style={{
                   ...ITEM_BASE,
                   color: "var(--ink-mute)",
@@ -741,10 +771,12 @@ export function PracticeNav({
               >
                 <span style={ICO_STYLE}>{MORE_ICON}</span>
                 <span className="pn-label" style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-                  {moreOpen ? _("Fewer tools") : _("More tools")}
+                  {openMore.has(section.heading)
+                    ? _(section.fewerLabel ?? "Fewer tools")
+                    : _(section.moreLabel ?? "More tools")}
                 </span>
               </button>
-              {moreOpen
+              {openMore.has(section.heading)
                 ? section.moreItems.map((item) => {
                     const isActive = item.key === active;
                     return (
