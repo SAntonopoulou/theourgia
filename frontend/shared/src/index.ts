@@ -389,6 +389,17 @@ export {
   packToFrames,
 } from "./directionalFrame/packFrames.js";
 export {
+  FestivalCalendarReference,
+  type FestivalCalendarReferenceProps,
+  type NamedCalendar,
+} from "./festivalCalendar/FestivalCalendarReference.js";
+export {
+  type FestivalCalendar,
+  type Occasion,
+  packToFestivalCalendar,
+  type Reckoning,
+} from "./festivalCalendar/packCalendar.js";
+export {
   TechniqueReference,
   type TechniqueReferenceProps,
 } from "./technique/TechniqueReference.js";

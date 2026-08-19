@@ -90,6 +90,14 @@ const EXTRA_ICONS = {
       <path d="M12 7v5l3 2" />
     </svg>
   ),
+  // Festivals — a calendar leaf, one day marked.
+  festivals: (
+    <svg {...ICON_PROPS}>
+      <rect x="4" y="5" width="16" height="16" rx="2" />
+      <path d="M4 9h16M8 3v4M16 3v4" />
+      <circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none" />
+    </svg>
+  ),
   // The record — an open ledger, its spine centre.
   record: (
     <svg {...ICON_PROPS}>
@@ -173,7 +181,8 @@ export type PracticeNavKey =
   | "packs"
   | "correspondences"
   | "frames"
-  | "techniques";
+  | "techniques"
+  | "festivals";
 
 const ICONS: Record<PracticeNavKey, ReactNode> = {
   ...NAV_ICONS,
@@ -223,6 +232,7 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
       { key: "correspondences", to: "/correspondences", label: "Correspondences" },
       { key: "frames", to: "/frames", label: "Directional frames" },
       { key: "techniques", to: "/techniques", label: "Techniques" },
+      { key: "festivals", to: "/festivals", label: "Festivals" },
       { key: "calendar", to: "/calendar", label: "Calendar" },
     ],
   },
