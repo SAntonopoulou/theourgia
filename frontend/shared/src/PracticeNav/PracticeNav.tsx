@@ -61,6 +61,20 @@ const ICON_PROPS = {
 };
 
 const EXTRA_ICONS = {
+  // A pack — a small box with a corner flap.
+  packs: (
+    <svg {...ICON_PROPS}>
+      <path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z" />
+      <path d="M4 7.5l8 4.5 8-4.5M12 12v9" />
+    </svg>
+  ),
+  // Correspondences — a table of answers, one column set apart.
+  correspondences: (
+    <svg {...ICON_PROPS}>
+      <path d="M4 6h16M4 12h16M4 18h16" />
+      <path d="M10 4v16" />
+    </svg>
+  ),
   // The record — an open ledger, its spine centre.
   record: (
     <svg {...ICON_PROPS}>
@@ -134,7 +148,15 @@ const MORE_ICON = (
 // ─── Keys · superset contract ──────────────────────────────────────────────
 
 /** ``active`` accepts every old VaultNav key plus the H12 additions. */
-export type PracticeNavKey = NavKey | "astragaloi" | "ladder" | "awaitingjudgment" | "agents" | "record";
+export type PracticeNavKey =
+  | NavKey
+  | "astragaloi"
+  | "ladder"
+  | "awaitingjudgment"
+  | "agents"
+  | "record"
+  | "packs"
+  | "correspondences";
 
 const ICONS: Record<PracticeNavKey, ReactNode> = {
   ...NAV_ICONS,
@@ -181,6 +203,7 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
       { key: "entities", to: "/entities", label: "Magical beings" },
       { key: "library", to: "/library", label: "Library" },
       { key: "packs", to: "/packs", label: "Packs" },
+      { key: "correspondences", to: "/correspondences", label: "Correspondences" },
       { key: "calendar", to: "/calendar", label: "Calendar" },
     ],
   },

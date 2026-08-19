@@ -366,6 +366,19 @@ export {
   type PackPayloads,
   parsePackBytes,
 } from "./packs/packContent.js";
+export {
+  CorrespondenceChart,
+  type CorrespondenceChartProps,
+} from "./correspondence/CorrespondenceChart.js";
+export {
+  categoriesFor,
+  type CorrespondenceEntry,
+  type CorrespondenceSource,
+  type CorrespondenceTable,
+  packToCorrespondenceTable,
+  subjectsAcross,
+  valueIn,
+} from "./correspondence/packCorrespondences.js";
 export * from "./PublicationEditor/index.js";
 export * from "./PublicationSettings/index.js";
 export * from "./Publications/index.js";

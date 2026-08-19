@@ -23,6 +23,24 @@
       <enclosure url="https://theourgia.com/packs/theourgia-cards-general-v1.mbf" type="application/x-mbf" length="2869"/>
     </item>
     <item>
+      <title>Liber 777 — Planetary Correspondences 2</title>
+      <guid isPermaLink="false">theourgia.correspondences.liber-777-planets@2</guid>
+      <pubDate>Wed, 19 Aug 2026 08:24:52 +0000</pubDate>
+      <description>The Golden Dawn's planetary correspondences — metal, precious stone and perfume — as Crowley tabulated them in Liber 777 (1909). A second source beside Agrippa: the metals agree, the stones part ways.</description>
+      <pack:id>theourgia.correspondences.liber-777-planets</pack:id>
+      <pack:version>2</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-correspondences-liber-777-planets-v2.mbf" type="application/x-mbf" length="1465"/>
+    </item>
+    <item>
+      <title>Agrippa — Planetary Correspondences 1</title>
+      <guid isPermaLink="false">theourgia.correspondences.agrippa-planets@1</guid>
+      <pubDate>Tue, 18 Aug 2026 20:37:35 +0000</pubDate>
+      <description>The seven planets and the metals, stones, and creatures under them, from Agrippa's Scale of the Number Seven.</description>
+      <pack:id>theourgia.correspondences.agrippa-planets</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-correspondences-agrippa-planets-v1.mbf" type="application/x-mbf" length="1422"/>
+    </item>
+    <item>
       <title>Geomancy — the shield chart 3</title>
       <guid isPermaLink="false">theourgia.derivations.geomancy@3</guid>
       <pubDate>Wed, 05 Aug 2026 02:24:53 +0000</pubDate>
@@ -48,6 +66,24 @@
       <pack:id>theourgia.fields.tasseography</pack:id>
       <pack:version>2</pack:version>
       <enclosure url="https://theourgia.com/packs/theourgia-fields-tasseography-v2.mbf" type="application/x-mbf" length="3597"/>
+    </item>
+    <item>
+      <title>The Anemoi — the winds at the quarters 1</title>
+      <guid isPermaLink="false">theourgia.frames.anemoi@1</guid>
+      <pubDate>Tue, 18 Aug 2026 13:28:01 +0000</pubDate>
+      <description>The four wind gods of the Hellenic reckoning at their quarters: Boreas in the north, Euros in the east, Notos in the south, Zephyros in the west.</description>
+      <pack:id>theourgia.frames.anemoi</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-frames-anemoi-v1.mbf" type="application/x-mbf" length="1209"/>
+    </item>
+    <item>
+      <title>The cardinal rose 1</title>
+      <guid isPermaLink="false">theourgia.frames.cardinal@1</guid>
+      <pubDate>Tue, 18 Aug 2026 13:27:49 +0000</pubDate>
+      <description>North, east, south and west, bare of attribution — the rose as geometry gives it, for a practice that names its own quarters or none.</description>
+      <pack:id>theourgia.frames.cardinal</pack:id>
+      <pack:version>1</pack:version>
+      <enclosure url="https://theourgia.com/packs/theourgia-frames-cardinal-v1.mbf" type="application/x-mbf" length="899"/>
     </item>
     <item>
       <title>Hellenistic Elections 5</title>

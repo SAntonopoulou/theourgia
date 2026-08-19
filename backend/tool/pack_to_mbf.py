@@ -116,6 +116,12 @@ KIND_TO_MBF_TYPE: dict[str, str] = {
     "session-system": "session-protocols",
     "sitting": "sitting-forms",
     "divination": "divination-systems",
+    # 19 Aug: the phone's correspondence charts and ritual-compass frames.
+    # Both read on the web client-side (unzip the .mbf, read the payload); they
+    # need no backend importer, so they ride as opaque-but-listed NEW_TYPES —
+    # the .mbf builds and serves, the web materialises them itself.
+    "correspondence-table": "correspondence-tables",
+    "directional-frame": "directional-frames",
 }
 
 #: The five the catalogue has not met. Adding them is one edit to
