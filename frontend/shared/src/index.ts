@@ -415,6 +415,17 @@ export {
   type TechniqueReferenceProps,
 } from "./technique/TechniqueReference.js";
 export { packToTechniques, type Technique } from "./technique/packTechniques.js";
+export {
+  type CorpusMeta,
+  type CorpusRow,
+  indexByValue,
+  isWordCorpusPack,
+  parseCorpusMeta,
+  parseEntries,
+  type ValueMatches,
+  wordsForValue,
+} from "./wordCorpus/parseCorpus.js";
+export { type LoadedCorpus, readCorpusFromMbf } from "./wordCorpus/readCorpus.js";
 export * from "./PublicationEditor/index.js";
 export * from "./PublicationSettings/index.js";
 export * from "./Publications/index.js";

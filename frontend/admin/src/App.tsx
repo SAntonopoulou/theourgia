@@ -345,6 +345,11 @@ const ElectionRoute = lazy(() =>
     default: m.ElectionRoute,
   })),
 );
+const WordValuesRoute = lazy(() =>
+  import("./routes/WordValuesRoute.js").then((m) => ({
+    default: m.WordValuesRoute,
+  })),
+);
 const DirectionalFrameRoute = lazy(() =>
   import("./routes/DirectionalFrameRoute.js").then((m) => ({
     default: m.DirectionalFrameRoute,
@@ -729,6 +734,7 @@ function navKeyForPath(pathname: string): PracticeNavKey | undefined {
   if (pathname.startsWith("/techniques")) return "techniques";
   if (pathname.startsWith("/festivals")) return "festivals";
   if (pathname.startsWith("/elections")) return "elections";
+  if (pathname.startsWith("/word-values")) return "wordvalues";
   return undefined;
 }
 
@@ -993,6 +999,7 @@ function ShellRoutes() {
             <Route path="/techniques" element={<TechniqueRoute />} />
             <Route path="/festivals" element={<FestivalCalendarRoute />} />
             <Route path="/elections" element={<ElectionRoute />} />
+            <Route path="/word-values" element={<WordValuesRoute />} />
             <Route path="/bundles/:id" element={<BundleDetail />} />
             <Route path="/sandbox" element={<SandboxBrowserRoute />} />
             <Route path="/sandbox/:id" element={<SandboxDetail />} />

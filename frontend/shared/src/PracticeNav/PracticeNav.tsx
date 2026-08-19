@@ -105,6 +105,12 @@ const EXTRA_ICONS = {
       <path d="M7 3c0 4 5 6 5 6s5-2 5-6M7 21c0-4 5-6 5-6s5 2 5 6" />
     </svg>
   ),
+  // Word values — a numeral sign, for letters counted as number.
+  wordvalues: (
+    <svg {...ICON_PROPS}>
+      <path d="M9 4L7 20M17 4l-2 16M4 9h16M3 15h16" />
+    </svg>
+  ),
   // The record — an open ledger, its spine centre.
   record: (
     <svg {...ICON_PROPS}>
@@ -190,7 +196,8 @@ export type PracticeNavKey =
   | "frames"
   | "techniques"
   | "festivals"
-  | "elections";
+  | "elections"
+  | "wordvalues";
 
 const ICONS: Record<PracticeNavKey, ReactNode> = {
   ...NAV_ICONS,
@@ -242,6 +249,7 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
       { key: "techniques", to: "/techniques", label: "Techniques" },
       { key: "festivals", to: "/festivals", label: "Festivals" },
       { key: "elections", to: "/elections", label: "Elections" },
+      { key: "wordvalues", to: "/word-values", label: "Word values" },
       { key: "calendar", to: "/calendar", label: "Calendar" },
     ],
   },
