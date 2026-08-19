@@ -330,6 +330,11 @@ const CorrespondenceRoute = lazy(() =>
     default: m.CorrespondenceRoute,
   })),
 );
+const DirectionalFrameRoute = lazy(() =>
+  import("./routes/DirectionalFrameRoute.js").then((m) => ({
+    default: m.DirectionalFrameRoute,
+  })),
+);
 const BundleDetail = lazy(() =>
   import("./routes/BundleDetail.js").then((m) => ({
     default: m.BundleDetail,
@@ -965,6 +970,7 @@ function ShellRoutes() {
               path="/correspondences"
               element={<CorrespondenceRoute />}
             />
+            <Route path="/frames" element={<DirectionalFrameRoute />} />
             <Route path="/bundles/:id" element={<BundleDetail />} />
             <Route path="/sandbox" element={<SandboxBrowserRoute />} />
             <Route path="/sandbox/:id" element={<SandboxDetail />} />

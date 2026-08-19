@@ -379,6 +379,15 @@ export {
   subjectsAcross,
   valueIn,
 } from "./correspondence/packCorrespondences.js";
+export {
+  DirectionalFrameReference,
+  type DirectionalFrameReferenceProps,
+} from "./directionalFrame/DirectionalFrameReference.js";
+export {
+  type DirectionalFrame,
+  type FrameQuarter,
+  packToFrames,
+} from "./directionalFrame/packFrames.js";
 export * from "./PublicationEditor/index.js";
 export * from "./PublicationSettings/index.js";
 export * from "./Publications/index.js";
