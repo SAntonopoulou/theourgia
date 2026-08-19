@@ -63,12 +63,18 @@ export function PackFeedRoute() {
   const feed = useApiCall(() => fetchPackFeed());
   const installed = useApiCall((signal) => apiMethods.bundlesInstalled({ signal }));
   const [installing, setInstalling] = useState<Set<string>>(new Set());
+  // Packs installed this visit, marked at once. The server's installed-bundles
+  // list can lag a beat behind a just-finished import (read-after-write), which
+  // left a pack reading "Install" until the next click refreshed the list. This
+  // flips the card the moment the import returns; the refresh then reconciles.
+  const [justInstalled, setJustInstalled] = useState<Set<string>>(new Set());
 
   async function install(pack: FeedPack): Promise<void> {
     setInstalling((s) => new Set(s).add(pack.id));
     try {
       const file = await fetchPackMbf(pack);
       const result = await apiMethods.bundlesImport(file);
+      setJustInstalled((s) => new Set(s).add(pack.id));
       Toast.push({
         tone: "success",
         title: `Installed ${pack.title}`,
@@ -202,7 +208,8 @@ export function PackFeedRoute() {
         </span>
       </label>
       {packs.map((pack) => {
-        const isInstalled = installedSlugs.some((s) => slugMatches(s, pack.id));
+        const isInstalled =
+          justInstalled.has(pack.id) || installedSlugs.some((s) => slugMatches(s, pack.id));
         const onAnotherDevice = !isInstalled && phoneOffered.has(pack.id);
         const busy = installing.has(pack.id);
         return (

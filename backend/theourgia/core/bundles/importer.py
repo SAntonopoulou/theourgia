@@ -35,6 +35,8 @@ from dataclasses import dataclass, field
 from typing import Any, Protocol
 from uuid import UUID
 
+from sqlalchemy import select
+
 from theourgia.core.bundles.container import ParsedBundle
 from theourgia.core.bundles.manifest import BundleManifest, build_attribution
 from theourgia.models.bundles import InstalledBundle
@@ -441,6 +443,25 @@ async def import_spiritual_maps(
             )
             continue
 
+        # Already here → skip, don't crash. A map is unique per (owner, slug),
+        # and re-importing a pack that carries one this vault already holds used
+        # to raise the constraint as a 500. Re-import is a no-op for the map
+        # (imported content is immutable provenance, per the MBF rule); the
+        # install record is still written by the caller.
+        slug = _slug_from_ref(ref)
+        already = (
+            await ctx.session.execute(
+                select(SpiritualMap.id).where(
+                    SpiritualMap.owner_id == owner_id,
+                    SpiritualMap.slug == slug,
+                    SpiritualMap.deleted_at.is_(None),
+                )
+            )
+        ).scalar_one_or_none()
+        if already is not None:
+            ctx.skipped(ref, "spiritual-maps", "already installed here")
+            continue
+
         # ⚠ Counted here rather than trusted from the pack. A count a publisher
         # asserts is a claim; a count taken from the document is a fact, and
         # the directory that shows it should not be quoting anybody.
@@ -463,7 +484,7 @@ async def import_spiritual_maps(
 
         row = SpiritualMap(
             owner_id=owner_id,
-            slug=_slug_from_ref(ref),
+            slug=slug,
             name=name,
             tradition=_str_or_none(item.get("tradition")) or "",
             summary=_str_or_none(item.get("summary")) or "",
