@@ -48,13 +48,19 @@ def test_beat_schedule_has_daily_backup() -> None:
     assert daily["options"]["queue"] == "backups"
 
 
-def test_beat_schedule_has_hourly_incremental() -> None:
+def test_beat_schedule_has_daily_full_backup() -> None:
+    # The cadence is one daily full backup. The earlier hourly incremental was
+    # removed when retention was tightened: DEFAULT_POLICY keeps no hourly
+    # snapshots, so a sub-daily run only churned snapshots the next prune
+    # forgot. See beat_schedule in core/tasks/app.py.
     app = build_celery_app()
     schedule = app.conf.beat_schedule
-    assert "theourgia.backup.hourly_incremental" in schedule
-    hourly = schedule["theourgia.backup.hourly_incremental"]
-    assert hourly["task"] == "theourgia.core.tasks.backup.run_scheduled_backup"
-    assert hourly["kwargs"]["incremental"] is True
+    assert "theourgia.backup.daily" in schedule
+    daily = schedule["theourgia.backup.daily"]
+    assert daily["task"] == "theourgia.core.tasks.backup.run_scheduled_backup"
+    assert daily["kwargs"]["incremental"] is False
+    # And no sub-daily incremental remains to churn.
+    assert "theourgia.backup.hourly_incremental" not in schedule
 
 
 def test_task_routes_send_backups_to_dedicated_queue() -> None:
