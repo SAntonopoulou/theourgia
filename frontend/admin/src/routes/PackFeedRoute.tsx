@@ -13,13 +13,19 @@
  * installs "listed but not materialized", and the card says so honestly.
  */
 
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useEffect, useState } from "react";
 
 import {
   type FeedPack,
+  type RecordEntry,
   Toast,
   fetchPackFeed,
   fetchPackMbf,
+  moduleInstallEntry,
+  offeredFromOtherDevices,
+  packSyncEnabled,
+  parseModuleInstalls,
+  setPackSyncEnabled,
   useApiCall,
   useTopbar,
 } from "@theourgia/shared";
@@ -27,6 +33,7 @@ import {
 import { apiMethods } from "../data/api.js";
 import { SurfaceError } from "../lib/SurfaceError.js";
 import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
+import { apiGet, apiPut } from "../lib/api.js";
 
 const CARD: CSSProperties = {
   display: "flex",
@@ -86,6 +93,62 @@ export function PackFeedRoute() {
     }
   }
 
+  const [packSync, setPackSync] = useState<boolean>(() => packSyncEnabled(window.localStorage));
+  // Pack ids another device on this account holds but this browser does not.
+  const [phoneOffered, setPhoneOffered] = useState<Set<string>>(new Set());
+
+  // Pack-install sync (opt-in, per-browser — a browser is a device, like the
+  // phone). When on: advertise the packs this account holds so another device
+  // can be offered them (web → phone), and read the facts other devices
+  // advertised so their packs are badged here (phone → web). The pack never
+  // travels, only the fact. Additive: a failure is "not now", never fatal.
+  useEffect(() => {
+    if (!packSync) return;
+    const feedPacks = feed.data;
+    const bundles = installed.data?.bundles;
+    if (!feedPacks || !bundles) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const slugs = bundles.map((b) => b.slug);
+        const held = feedPacks.filter((p) => slugs.some((s) => slugMatches(s, p.id)));
+        if (held.length > 0) {
+          const now = new Date().toISOString();
+          await apiPut("/record/entries", {
+            entries: held.map((p) => moduleInstallEntry(p, now)),
+          });
+        }
+        const all: RecordEntry[] = [];
+        let since = 0;
+        for (;;) {
+          const page = await apiGet<{ entries: RecordEntry[]; next_since: number; more: boolean }>(
+            `/record/entries?since=${since}&limit=500`,
+          );
+          all.push(...(page.entries ?? []));
+          if (!page.more) break;
+          since = page.next_since;
+        }
+        const feedIds = new Set(feedPacks.map((p) => p.id));
+        const offered = offeredFromOtherDevices(parseModuleInstalls(all), slugs)
+          .map((f) => f.id)
+          .filter((id) => feedIds.has(id));
+        if (!cancelled) setPhoneOffered(new Set(offered));
+      } catch {
+        // Not now — pack sync never blocks browsing or installing.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [packSync, feed.data, installed.data]);
+
+  function toggleSync(): void {
+    const next = !packSync;
+    setPackSyncEnabled(next, window.localStorage);
+    setPackSync(next);
+    if (!next) setPhoneOffered(new Set());
+  }
+
   if (feed.status === "loading") return <SurfaceSkeleton rowCount={6} />;
   if (feed.status === "error") {
     return (
@@ -113,8 +176,34 @@ export function PackFeedRoute() {
         Every pack theourgia publishes — the same {packs.length} you can install on the phone.
         Installing brings the pack here, under your account.
       </p>
+      <label
+        style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "flex-start",
+          fontSize: 12.5,
+          color: "var(--ink-mute)",
+          lineHeight: 1.5,
+          margin: "0 0 20px",
+          cursor: "pointer",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={packSync}
+          onChange={toggleSync}
+          style={{ marginTop: 2, cursor: "pointer" }}
+        />
+        <span>
+          Sync installed packs with your other devices. A pack installed on your phone is marked
+          here to add, and the packs here are offered on your phone — only the fact travels, never
+          the pack itself. Remembered on this browser alone; removing a pack here never removes it
+          elsewhere.
+        </span>
+      </label>
       {packs.map((pack) => {
         const isInstalled = installedSlugs.some((s) => slugMatches(s, pack.id));
+        const onAnotherDevice = !isInstalled && phoneOffered.has(pack.id);
         const busy = installing.has(pack.id);
         return (
           <div key={pack.id} style={CARD}>
@@ -130,8 +219,31 @@ export function PackFeedRoute() {
               >
                 {pack.description}
               </div>
-              <div style={{ fontSize: 11.5, color: "var(--ink-faint, var(--ink-mute))" }}>
-                v{pack.version} · {megabytes(pack.bytes)}
+              <div
+                style={{
+                  fontSize: 11.5,
+                  color: "var(--ink-faint, var(--ink-mute))",
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <span>
+                  v{pack.version} · {megabytes(pack.bytes)}
+                </span>
+                {onAnotherDevice && (
+                  <span
+                    style={{
+                      color: "var(--accent)",
+                      border: "1px solid var(--line)",
+                      borderRadius: 999,
+                      padding: "1px 8px",
+                    }}
+                  >
+                    on another device
+                  </span>
+                )}
               </div>
             </div>
             {isInstalled ? (

@@ -367,6 +367,16 @@ export {
   parsePackBytes,
 } from "./packs/packContent.js";
 export {
+  MODULE_INSTALL_KIND,
+  type ModuleInstallFact,
+  moduleInstallEntry,
+  offeredFromOtherDevices,
+  packSyncEnabled,
+  parseModuleInstalls,
+  type RecordEntry,
+  setPackSyncEnabled,
+} from "./packs/moduleInstallSync.js";
+export {
   CorrespondenceChart,
   type CorrespondenceChartProps,
 } from "./correspondence/CorrespondenceChart.js";
