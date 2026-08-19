@@ -320,6 +320,11 @@ const BundleLibrary = lazy(() =>
     default: m.BundleLibrary,
   })),
 );
+const PackFeedRoute = lazy(() =>
+  import("./routes/PackFeedRoute.js").then((m) => ({
+    default: m.PackFeedRoute,
+  })),
+);
 const BundleDetail = lazy(() =>
   import("./routes/BundleDetail.js").then((m) => ({
     default: m.BundleDetail,
@@ -950,6 +955,7 @@ function ShellRoutes() {
             <Route path="/plugins/:id/configure" element={<PluginConfiguration />} />
             <Route path="/plugins/:id" element={<PluginDetail />} />
             <Route path="/bundles" element={<BundleLibrary />} />
+            <Route path="/packs" element={<PackFeedRoute />} />
             <Route path="/bundles/:id" element={<BundleDetail />} />
             <Route path="/sandbox" element={<SandboxBrowserRoute />} />
             <Route path="/sandbox/:id" element={<SandboxDetail />} />

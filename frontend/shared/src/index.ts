@@ -352,6 +352,12 @@ export * from "./PrintPreview/index.js";
 export * from "./Reader/index.js";
 export * from "./Comments/index.js";
 export * from "./LanguageIME/index.js";
+export {
+  type FeedPack,
+  fetchPackFeed,
+  fetchPackMbf,
+  parsePackFeed,
+} from "./packs/packFeed.js";
 export * from "./PublicationEditor/index.js";
 export * from "./PublicationSettings/index.js";
 export * from "./Publications/index.js";
