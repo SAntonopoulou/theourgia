@@ -8,6 +8,7 @@ export {
 export { devanagariToIast, iastToDevanagari } from "./devanagari.js";
 export {
   canTransliterate,
+  detectScript,
   isRtl,
   readingName,
   SCRIPT_LABELS,

@@ -3,6 +3,7 @@ import { devanagariToIast, iastToDevanagari } from "./devanagari.js";
 import {
   TRANSLITERATION_SCRIPTS,
   canTransliterate,
+  detectScript,
   readingName,
   toLatin,
   toScript,
@@ -83,5 +84,16 @@ describe("canTransliterate", () => {
   it("knows the five scripts", () => {
     for (const s of TRANSLITERATION_SCRIPTS) expect(canTransliterate(s)).toBe(true);
     expect(canTransliterate("latin")).toBe(false);
+  });
+});
+
+describe("detectScript", () => {
+  it("guesses the script from the characters", () => {
+    expect(detectScript("θεός")).toBe("greek");
+    expect(detectScript("שלום")).toBe("hebrew");
+    expect(detectScript("سلام")).toBe("arabic");
+    expect(detectScript("ⲛⲟⲩⲧⲉ")).toBe("coptic");
+    expect(detectScript("कृष्ण")).toBe("sanskrit");
+    expect(detectScript("verbum")).toBeNull();
   });
 });

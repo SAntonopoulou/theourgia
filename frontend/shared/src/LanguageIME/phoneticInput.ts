@@ -56,3 +56,20 @@ export function readingName(script: string): string | null {
 export function isRtl(script: string): boolean {
   return script === "hebrew" || script === "arabic";
 }
+
+/**
+ * Guess a word's script from its first letter in a known Unicode block — for
+ * tap-a-word where the script is not carried alongside the text (the gematria
+ * input). Null if no character falls in a script we read.
+ */
+export function detectScript(text: string): string | null {
+  for (const ch of text) {
+    const c = ch.codePointAt(0) ?? 0;
+    if ((c >= 0x0370 && c <= 0x03ff) || (c >= 0x1f00 && c <= 0x1fff)) return "greek";
+    if (c >= 0x0590 && c <= 0x05ff) return "hebrew";
+    if (c >= 0x0600 && c <= 0x06ff) return "arabic";
+    if (c >= 0x2c80 && c <= 0x2cff) return "coptic";
+    if (c >= 0x0900 && c <= 0x097f) return "sanskrit"; // Devanagari
+  }
+  return null;
+}

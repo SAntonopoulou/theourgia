@@ -18,14 +18,9 @@
  *     parity, rule #13).
  */
 
-import {
-  type CSSProperties,
-  type ReactElement,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { type CSSProperties, type ReactElement, useMemo, useRef, useState } from "react";
 
+import { detectScript, readingName, toLatin } from "../LanguageIME/index.js";
 import {
   BUNDLED_CIPHERS,
   type Cipher,
@@ -52,8 +47,8 @@ import {
   GC_CUSTOM_MAPPING_LABEL_TAIL,
   GC_CUSTOM_NAME_DEFAULT,
   GC_CUSTOM_NAME_FALLBACK,
-  GC_CUSTOM_NAME_PLACEHOLDER,
   GC_CUSTOM_NAME_LABEL,
+  GC_CUSTOM_NAME_PLACEHOLDER,
   GC_CUSTOM_SAVE,
   GC_CUSTOM_TITLE,
   GC_DEFAULT_INPUT,
@@ -230,8 +225,7 @@ const RESONANCE_CARD: CSSProperties = {
   borderStyle: "solid",
   borderColor: "var(--line-2)",
   borderRadius: "var(--r-lg)",
-  background:
-    "linear-gradient(180deg,var(--info-soft),transparent)",
+  background: "linear-gradient(180deg,var(--info-soft),transparent)",
   padding: "18px 20px",
   marginBottom: 24,
 };
@@ -452,10 +446,7 @@ interface GematriaResult {
 
 function buildBreakdown(parts: { letter: string; value: number }[], skipped: string[]): string {
   const partsStr = parts.map((p) => `${p.letter}·${p.value}`).join("   ");
-  const skipStr =
-    skipped.length > 0
-      ? "   " + skipped.map((s) => `${s} (skipped)`).join(" ")
-      : "";
+  const skipStr = skipped.length > 0 ? "   " + skipped.map((s) => `${s} (skipped)`).join(" ") : "";
   return partsStr + skipStr || "—";
 }
 
@@ -490,16 +481,11 @@ export function GematriaCalculatorSurface({
     const q = filter.trim().toLowerCase();
     if (q === "") return ciphers;
     return ciphers.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.language.toLowerCase().includes(q),
+      (c) => c.name.toLowerCase().includes(q) || c.language.toLowerCase().includes(q),
     );
   }, [filter, ciphers]);
 
-  const groups = useMemo(
-    () => groupCiphersByLanguage(filtered),
-    [filtered],
-  );
+  const groups = useMemo(() => groupCiphersByLanguage(filtered), [filtered]);
 
   const selectedCiphers = useMemo(
     () => ciphers.filter((c) => selectedIds.has(c.id)),
@@ -525,11 +511,17 @@ export function GematriaCalculatorSurface({
 
   const hasResults = results.length > 0;
 
+  // Tap-a-word: read the typed word back to roman, its script guessed from the
+  // characters (the gematria input carries no script tag of its own).
+  const readScript = detectScript(input);
+  const reading = readScript ? toLatin(readScript, input) : null;
+
   const resonances = useMemo<CipherResonance[]>(
     () =>
-      findResonances(
-        results.map((r) => ({ cipher_name: r.cipherName, value: r.value })),
-      ).slice(0, 5),
+      findResonances(results.map((r) => ({ cipher_name: r.cipherName, value: r.value }))).slice(
+        0,
+        5,
+      ),
     [results],
   );
 
@@ -746,9 +738,7 @@ export function GematriaCalculatorSurface({
         {/* CENTRE: input + results */}
         <div
           className="scroll"
-          style={
-            stacked ? { ...MAIN_STYLE, overflowY: "visible" } : MAIN_STYLE
-          }
+          style={stacked ? { ...MAIN_STYLE, overflowY: "visible" } : MAIN_STYLE}
         >
           <div style={{ maxWidth: 720, margin: "0 auto" }}>
             <label htmlFor="gc-text-input" style={INPUT_LABEL}>
@@ -767,6 +757,12 @@ export function GematriaCalculatorSurface({
             <div style={INPUT_HELP}>
               {selectedCiphers.length} ciphers selected · {GC_INPUT_HELP_TAIL}
             </div>
+            {reading && readScript && (
+              <div style={INPUT_HELP} data-gc-reading>
+                Reading: <span style={{ fontStyle: "italic", color: "var(--ink)" }}>{reading}</span>{" "}
+                · {readingName(readScript)}
+              </div>
+            )}
 
             {hasResults ? (
               <>
@@ -1003,7 +999,10 @@ export function GematriaCalculatorSurface({
         <InsertIntoDraftModal
           word={input}
           primary={results[0]}
-          alsoNames={results.slice(1).map((r) => r.cipherName).join(", ")}
+          alsoNames={results
+            .slice(1)
+            .map((r) => r.cipherName)
+            .join(", ")}
           onClose={() => setInsertOpen(false)}
           onConfirm={handleInsert}
         />
@@ -1052,13 +1051,7 @@ function CustomCipherModal({ onClose, onSave }: CustomCipherModalProps) {
   };
 
   return (
-    <div
-      ref={panelRef}
-      role="dialog"
-      aria-modal="true"
-      aria-label={GC_CUSTOM_TITLE}
-      style={SCRIM}
-    >
+    <div ref={panelRef} role="dialog" aria-modal="true" aria-label={GC_CUSTOM_TITLE} style={SCRIM}>
       <div onClick={onClose} style={SCRIM_BG} aria-hidden="true" />
       <div className="scroll" style={{ ...MODAL_PANEL, maxHeight: "88vh", overflowY: "auto" }}>
         <h2
@@ -1153,9 +1146,7 @@ function CustomCipherModal({ onClose, onSave }: CustomCipherModalProps) {
           }}
         >
           {GC_CUSTOM_CITATION_LABEL_PREFIX}{" "}
-          <span style={{ color: "var(--ink-mute)" }}>
-            {GC_CUSTOM_CITATION_LABEL_TAIL}
-          </span>
+          <span style={{ color: "var(--ink-mute)" }}>{GC_CUSTOM_CITATION_LABEL_TAIL}</span>
         </label>
         <input
           id="gc-custom-citation"
@@ -1187,9 +1178,7 @@ function CustomCipherModal({ onClose, onSave }: CustomCipherModalProps) {
           }}
         >
           {GC_CUSTOM_MAPPING_LABEL_PREFIX}{" "}
-          <span style={{ color: "var(--ink-mute)" }}>
-            {GC_CUSTOM_MAPPING_LABEL_TAIL}
-          </span>
+          <span style={{ color: "var(--ink-mute)" }}>{GC_CUSTOM_MAPPING_LABEL_TAIL}</span>
         </label>
         <div
           className="scroll"
@@ -1353,13 +1342,7 @@ function InsertIntoDraftModal({
   useEscapeToClose(true, onClose);
   useFocusTrap(panelRef, true);
   return (
-    <div
-      ref={panelRef}
-      role="dialog"
-      aria-modal="true"
-      aria-label={GC_INSERT_TITLE}
-      style={SCRIM}
-    >
+    <div ref={panelRef} role="dialog" aria-modal="true" aria-label={GC_INSERT_TITLE} style={SCRIM}>
       <div onClick={onClose} style={SCRIM_BG} aria-hidden="true" />
       <div style={INSERT_MODAL_PANEL}>
         <h2
