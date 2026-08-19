@@ -14,6 +14,7 @@ import { useEscapeToClose } from "../hooks/useEscapeToClose.js";
 import { useFocusOnOpen } from "../hooks/useFocusOnOpen.js";
 import { useFocusTrap } from "../hooks/useFocusTrap.js";
 
+import { canTransliterate, toScript } from "../LanguageIME/index.js";
 import {
   ELEMENTAL_COLOUR,
   ELEMENTAL_GLYPH,
@@ -123,6 +124,7 @@ export function NewVoceModal({
 }: NewVoceModalProps) {
   const [script, setScript] = useState<VoceScript>(initialScript);
   const [text, setText] = useState(initialText);
+  const [roman, setRoman] = useState("");
   const [translit, setTranslit] = useState(initialTranslit);
   const [ipa, setIpa] = useState("");
   const [citation, setCitation] = useState("");
@@ -215,9 +217,42 @@ export function NewVoceModal({
             color: "var(--ink)",
             fontFamily: "var(--font-display)",
             fontSize: 20,
-            marginBottom: 14,
+            marginBottom: canTransliterate(script) ? 6 : 14,
           }}
         />
+
+        {canTransliterate(script) && (
+          <div style={{ marginBottom: 14 }}>
+            <label style={FIELD_LABEL} htmlFor="voce-phonetic-input">
+              Type it as it sounds
+            </label>
+            <input
+              id="voce-phonetic-input"
+              type="text"
+              value={roman}
+              onChange={(e) => {
+                const value = e.target.value;
+                setRoman(value);
+                setText(toScript(script, value));
+              }}
+              data-voce-phonetic
+              aria-label="Type it as it sounds"
+              placeholder="theos, sophia…"
+              style={{
+                width: "100%",
+                padding: "9px 12px",
+                borderWidth: 1,
+                borderStyle: "solid",
+                borderColor: "var(--line-2)",
+                borderRadius: "var(--r-md)",
+                background: "var(--bg-2)",
+                color: "var(--ink-mute)",
+                fontFamily: "var(--font-mono, monospace)",
+                fontSize: 13,
+              }}
+            />
+          </div>
+        )}
 
         <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
           <div style={{ flex: 1 }}>
@@ -245,10 +280,7 @@ export function NewVoceModal({
           </div>
           <div style={{ flex: 1 }}>
             <label style={FIELD_LABEL}>
-              {VM_IPA_LABEL}{" "}
-              <span style={{ color: "var(--ink-mute)" }}>
-                {VM_IPA_OPTIONAL_TAG}
-              </span>
+              {VM_IPA_LABEL} <span style={{ color: "var(--ink-mute)" }}>{VM_IPA_OPTIONAL_TAG}</span>
             </label>
             <input
               type="text"
@@ -309,9 +341,7 @@ export function NewVoceModal({
 
         <label style={FIELD_LABEL}>
           {VM_CITATION_LABEL}{" "}
-          <span style={{ color: "var(--accent)" }}>
-            {VM_CITATION_REQUIRED_TAG}
-          </span>
+          <span style={{ color: "var(--accent)" }}>{VM_CITATION_REQUIRED_TAG}</span>
         </label>
         <input
           type="text"
