@@ -350,6 +350,11 @@ const WordValuesRoute = lazy(() =>
     default: m.WordValuesRoute,
   })),
 );
+const OracleDeckRoute = lazy(() =>
+  import("./routes/OracleDeckRoute.js").then((m) => ({
+    default: m.OracleDeckRoute,
+  })),
+);
 const DirectionalFrameRoute = lazy(() =>
   import("./routes/DirectionalFrameRoute.js").then((m) => ({
     default: m.DirectionalFrameRoute,
@@ -735,6 +740,7 @@ function navKeyForPath(pathname: string): PracticeNavKey | undefined {
   if (pathname.startsWith("/festivals")) return "festivals";
   if (pathname.startsWith("/elections")) return "elections";
   if (pathname.startsWith("/word-values")) return "wordvalues";
+  if (pathname.startsWith("/decks")) return "decks";
   return undefined;
 }
 
@@ -1000,6 +1006,7 @@ function ShellRoutes() {
             <Route path="/festivals" element={<FestivalCalendarRoute />} />
             <Route path="/elections" element={<ElectionRoute />} />
             <Route path="/word-values" element={<WordValuesRoute />} />
+            <Route path="/decks" element={<OracleDeckRoute />} />
             <Route path="/bundles/:id" element={<BundleDetail />} />
             <Route path="/sandbox" element={<SandboxBrowserRoute />} />
             <Route path="/sandbox/:id" element={<SandboxDetail />} />

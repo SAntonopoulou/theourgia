@@ -405,6 +405,20 @@ export {
   type NamedCalendar,
 } from "./festivalCalendar/FestivalCalendarReference.js";
 export {
+  type NamedDeckSet,
+  OracleDeckReference,
+  type OracleDeckReferenceProps,
+} from "./oracleDeck/OracleDeckReference.js";
+export {
+  groupCards,
+  type OracleCard,
+  type OracleDeck,
+  type OracleDeckPack,
+  type OracleSpread,
+  type OracleSpreadPosition,
+  packToOracleDeck,
+} from "./oracleDeck/packDecks.js";
+export {
   type FestivalCalendar,
   type Occasion,
   packToFestivalCalendar,

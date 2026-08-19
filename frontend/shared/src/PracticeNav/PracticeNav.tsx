@@ -111,6 +111,13 @@ const EXTRA_ICONS = {
       <path d="M9 4L7 20M17 4l-2 16M4 9h16M3 15h16" />
     </svg>
   ),
+  // Decks — two cards, one laid over the other.
+  decks: (
+    <svg {...ICON_PROPS}>
+      <rect x="8" y="4" width="10" height="14" rx="1.5" />
+      <path d="M6 7v11a1.5 1.5 0 0 0 1.5 1.5H15" />
+    </svg>
+  ),
   // The record — an open ledger, its spine centre.
   record: (
     <svg {...ICON_PROPS}>
@@ -197,7 +204,8 @@ export type PracticeNavKey =
   | "techniques"
   | "festivals"
   | "elections"
-  | "wordvalues";
+  | "wordvalues"
+  | "decks";
 
 const ICONS: Record<PracticeNavKey, ReactNode> = {
   ...NAV_ICONS,
@@ -250,6 +258,7 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
       { key: "festivals", to: "/festivals", label: "Festivals" },
       { key: "elections", to: "/elections", label: "Elections" },
       { key: "wordvalues", to: "/word-values", label: "Word values" },
+      { key: "decks", to: "/decks", label: "Decks" },
       { key: "calendar", to: "/calendar", label: "Calendar" },
     ],
   },
