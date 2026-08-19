@@ -5,3 +5,19 @@ export {
   transliterateIast,
   type IastInputRule,
 } from "./iastTransliterator.js";
+export { devanagariToIast, iastToDevanagari } from "./devanagari.js";
+export {
+  canTransliterate,
+  isRtl,
+  readingName,
+  SCRIPT_LABELS,
+  toLatin,
+  toScript,
+  TRANSLITERATION_SCRIPTS,
+  type TransliterationScript,
+} from "./phoneticInput.js";
+export {
+  library as transliterationLibrary,
+  TransliterationLibrary,
+  TransliterationScheme,
+} from "./transliteration.js";
