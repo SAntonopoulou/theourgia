@@ -358,6 +358,14 @@ export {
   fetchPackMbf,
   parsePackFeed,
 } from "./packs/packFeed.js";
+export {
+  fetchPackContent,
+  installedPackPayloads,
+  isClientReadable,
+  MAX_CLIENT_SIDE_BYTES,
+  type PackPayloads,
+  parsePackBytes,
+} from "./packs/packContent.js";
 export * from "./PublicationEditor/index.js";
 export * from "./PublicationSettings/index.js";
 export * from "./Publications/index.js";

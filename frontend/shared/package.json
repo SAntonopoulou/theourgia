@@ -55,6 +55,7 @@
     "@tiptap/starter-kit": "^3.27.1",
     "@tiptap/suggestion": "^3.27.1",
     "epubjs": "^0.3.93",
+    "fflate": "^0.8.2",
     "pdfjs-dist": "^6.1.200",
     "suncalc": "^1.9.0"
   },
