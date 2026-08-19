@@ -340,6 +340,11 @@ const FestivalCalendarRoute = lazy(() =>
     default: m.FestivalCalendarRoute,
   })),
 );
+const ElectionRoute = lazy(() =>
+  import("./routes/ElectionRoute.js").then((m) => ({
+    default: m.ElectionRoute,
+  })),
+);
 const DirectionalFrameRoute = lazy(() =>
   import("./routes/DirectionalFrameRoute.js").then((m) => ({
     default: m.DirectionalFrameRoute,
@@ -723,6 +728,7 @@ function navKeyForPath(pathname: string): PracticeNavKey | undefined {
   if (pathname.startsWith("/frames")) return "frames";
   if (pathname.startsWith("/techniques")) return "techniques";
   if (pathname.startsWith("/festivals")) return "festivals";
+  if (pathname.startsWith("/elections")) return "elections";
   return undefined;
 }
 
@@ -986,6 +992,7 @@ function ShellRoutes() {
             <Route path="/frames" element={<DirectionalFrameRoute />} />
             <Route path="/techniques" element={<TechniqueRoute />} />
             <Route path="/festivals" element={<FestivalCalendarRoute />} />
+            <Route path="/elections" element={<ElectionRoute />} />
             <Route path="/bundles/:id" element={<BundleDetail />} />
             <Route path="/sandbox" element={<SandboxBrowserRoute />} />
             <Route path="/sandbox/:id" element={<SandboxDetail />} />

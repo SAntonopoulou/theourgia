@@ -389,6 +389,17 @@ export {
   packToFrames,
 } from "./directionalFrame/packFrames.js";
 export {
+  ElectionReference,
+  type ElectionReferenceProps,
+} from "./electionRules/ElectionReference.js";
+export {
+  type ElectionClause,
+  type ElectionTemplates,
+  type Matter,
+  packToElectionTemplates,
+  type Ruleset,
+} from "./electionRules/packElections.js";
+export {
   FestivalCalendarReference,
   type FestivalCalendarReferenceProps,
   type NamedCalendar,

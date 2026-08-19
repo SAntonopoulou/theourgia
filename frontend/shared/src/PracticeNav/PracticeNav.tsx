@@ -98,6 +98,13 @@ const EXTRA_ICONS = {
       <circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none" />
     </svg>
   ),
+  // Elections — an hourglass, for choosing the hour.
+  elections: (
+    <svg {...ICON_PROPS}>
+      <path d="M6 3h12M6 21h12" />
+      <path d="M7 3c0 4 5 6 5 6s5-2 5-6M7 21c0-4 5-6 5-6s5 2 5 6" />
+    </svg>
+  ),
   // The record — an open ledger, its spine centre.
   record: (
     <svg {...ICON_PROPS}>
@@ -182,7 +189,8 @@ export type PracticeNavKey =
   | "correspondences"
   | "frames"
   | "techniques"
-  | "festivals";
+  | "festivals"
+  | "elections";
 
 const ICONS: Record<PracticeNavKey, ReactNode> = {
   ...NAV_ICONS,
@@ -233,6 +241,7 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
       { key: "frames", to: "/frames", label: "Directional frames" },
       { key: "techniques", to: "/techniques", label: "Techniques" },
       { key: "festivals", to: "/festivals", label: "Festivals" },
+      { key: "elections", to: "/elections", label: "Elections" },
       { key: "calendar", to: "/calendar", label: "Calendar" },
     ],
   },
