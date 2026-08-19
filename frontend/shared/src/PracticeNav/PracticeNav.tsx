@@ -83,6 +83,13 @@ const EXTRA_ICONS = {
       <path d="M12 8l2.5 5.5L9.5 13.5 12 8z" />
     </svg>
   ),
+  // Techniques — a clock, for the timing the year is read by.
+  techniques: (
+    <svg {...ICON_PROPS}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  ),
   // The record — an open ledger, its spine centre.
   record: (
     <svg {...ICON_PROPS}>
@@ -165,7 +172,8 @@ export type PracticeNavKey =
   | "record"
   | "packs"
   | "correspondences"
-  | "frames";
+  | "frames"
+  | "techniques";
 
 const ICONS: Record<PracticeNavKey, ReactNode> = {
   ...NAV_ICONS,
@@ -214,6 +222,7 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
       { key: "packs", to: "/packs", label: "Packs" },
       { key: "correspondences", to: "/correspondences", label: "Correspondences" },
       { key: "frames", to: "/frames", label: "Directional frames" },
+      { key: "techniques", to: "/techniques", label: "Techniques" },
       { key: "calendar", to: "/calendar", label: "Calendar" },
     ],
   },

@@ -330,6 +330,11 @@ const CorrespondenceRoute = lazy(() =>
     default: m.CorrespondenceRoute,
   })),
 );
+const TechniqueRoute = lazy(() =>
+  import("./routes/TechniqueRoute.js").then((m) => ({
+    default: m.TechniqueRoute,
+  })),
+);
 const DirectionalFrameRoute = lazy(() =>
   import("./routes/DirectionalFrameRoute.js").then((m) => ({
     default: m.DirectionalFrameRoute,
@@ -707,6 +712,11 @@ function navKeyForPath(pathname: string): PracticeNavKey | undefined {
   if (pathname.startsWith("/sandbox")) return "sandbox";
   // H12 — Agents joins the platform wing's Platform section.
   if (pathname.startsWith("/agents")) return "agents";
+  // Reference wing — the pack-read surfaces, so their nav item lights active.
+  if (pathname.startsWith("/packs")) return "packs";
+  if (pathname.startsWith("/correspondences")) return "correspondences";
+  if (pathname.startsWith("/frames")) return "frames";
+  if (pathname.startsWith("/techniques")) return "techniques";
   return undefined;
 }
 
@@ -966,11 +976,9 @@ function ShellRoutes() {
             <Route path="/plugins/:id" element={<PluginDetail />} />
             <Route path="/bundles" element={<BundleLibrary />} />
             <Route path="/packs" element={<PackFeedRoute />} />
-            <Route
-              path="/correspondences"
-              element={<CorrespondenceRoute />}
-            />
+            <Route path="/correspondences" element={<CorrespondenceRoute />} />
             <Route path="/frames" element={<DirectionalFrameRoute />} />
+            <Route path="/techniques" element={<TechniqueRoute />} />
             <Route path="/bundles/:id" element={<BundleDetail />} />
             <Route path="/sandbox" element={<SandboxBrowserRoute />} />
             <Route path="/sandbox/:id" element={<SandboxDetail />} />

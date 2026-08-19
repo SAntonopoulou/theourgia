@@ -388,6 +388,11 @@ export {
   type FrameQuarter,
   packToFrames,
 } from "./directionalFrame/packFrames.js";
+export {
+  TechniqueReference,
+  type TechniqueReferenceProps,
+} from "./technique/TechniqueReference.js";
+export { packToTechniques, type Technique } from "./technique/packTechniques.js";
 export * from "./PublicationEditor/index.js";
 export * from "./PublicationSettings/index.js";
 export * from "./Publications/index.js";
