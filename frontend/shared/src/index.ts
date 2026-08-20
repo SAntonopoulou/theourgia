@@ -419,6 +419,7 @@ export {
 } from "./rites/riteScript.js";
 export { RiteScriptView, type RiteScriptViewProps } from "./rites/RiteScriptView.js";
 export { RitesLibrary, type RitesLibraryProps } from "./rites/RitesLibrary.js";
+export { RiteEditor, type RiteDraft, type RiteEditorProps } from "./rites/RiteEditor.js";
 // The long operations, read from the synced record (the phone's Workings screen).
 export {
   type Working,
@@ -468,6 +469,7 @@ export {
   JOURNAL_KINDS,
   buildDayEntryEntry,
 } from "./keeping/dayEntry.js";
+export { type BuildSubjectInput, buildSubjectEntry } from "./keeping/subject.js";
 // Pure timing for the self-contained practice tools (sitting timer, breath pacer).
 export {
   type BreathPhase,

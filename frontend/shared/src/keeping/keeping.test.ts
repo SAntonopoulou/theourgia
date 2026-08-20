@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { buildDayEntryEntry } from "./dayEntry.js";
 import { buildObservanceEntry } from "./observance.js";
+import { buildSubjectEntry } from "./subject.js";
 import { type ContextPlacement, buildObservanceContext, signIndex } from "./observanceContext.js";
 
 const place = (
@@ -154,5 +155,43 @@ describe("buildDayEntryEntry", () => {
     expect(entry.doc.at).toBe("2026-08-20T12:00:00Z");
     expect(entry.doc.sleepQuality).toBe(4);
     expect(entry.doc.body).toBe("");
+  });
+});
+
+describe("buildSubjectEntry", () => {
+  it("wraps a row as { v: 1, row } and fills id/created/updated/deleted", () => {
+    const entry = buildSubjectEntry({
+      id: "r1",
+      kind: "ritual",
+      now: "2026-08-20T12:00:00Z",
+      row: { name: "Star Ruby", summary: "A banishing", script: "(face East)", keptAt: "[]" },
+    });
+    expect(entry.kind).toBe("ritual");
+    expect(entry.deleted_at_utc).toBeNull();
+    const row = entry.doc.row as Record<string, unknown>;
+    expect(row).toMatchObject({
+      id: "r1",
+      name: "Star Ruby",
+      script: "(face East)",
+      createdAt: "2026-08-20T12:00:00Z",
+      updatedAt: "2026-08-20T12:00:00Z",
+      deletedAt: null,
+    });
+    expect(entry.doc.v).toBe(1);
+  });
+
+  it("preserves an original createdAt and tombstones on delete", () => {
+    const entry = buildSubjectEntry({
+      id: "r1",
+      kind: "ritual",
+      now: "2026-08-21T09:00:00Z",
+      createdAt: "2026-08-01T00:00:00Z",
+      deletedAt: "2026-08-21T09:00:00Z",
+      row: { name: "Gone" },
+    });
+    expect(entry.deleted_at_utc).toBe("2026-08-21T09:00:00Z");
+    const row = entry.doc.row as Record<string, unknown>;
+    expect(row.createdAt).toBe("2026-08-01T00:00:00Z");
+    expect(row.deletedAt).toBe("2026-08-21T09:00:00Z");
   });
 });

@@ -17,6 +17,7 @@ import {
   buildDayEntryEntry,
   buildObservanceContext,
   buildObservanceEntry,
+  buildSubjectEntry,
 } from "@theourgia/shared";
 
 import { apiGet, apiPut } from "../lib/api.js";
@@ -107,6 +108,46 @@ export async function writeDayEntry(input: {
   });
   await apiPut("/record/entries", { entries: [entry] });
   return entry;
+}
+
+/** A rite authored on the web. `id`/`createdAt` absent → a new rite. */
+export async function writeRitual(input: {
+  id?: string;
+  name: string;
+  summary: string;
+  script: string;
+  createdAt?: string | null;
+}): Promise<RecordEntryWrite> {
+  const entry = buildSubjectEntry({
+    id: input.id ?? crypto.randomUUID(),
+    kind: "ritual",
+    now: new Date().toISOString(),
+    createdAt: input.createdAt ?? undefined,
+    // A rite the practitioner wrote has no tradition timing — an empty list.
+    row: { name: input.name, summary: input.summary, script: input.script, keptAt: "[]" },
+  });
+  await apiPut("/record/entries", { entries: [entry] });
+  return entry;
+}
+
+/** Tombstone a rite (the whole row re-sent with deletedAt set). */
+export async function deleteRitual(rite: {
+  id: string;
+  name: string;
+  summary: string;
+  script: string;
+  createdAt?: string | null;
+}): Promise<void> {
+  const now = new Date().toISOString();
+  const entry = buildSubjectEntry({
+    id: rite.id,
+    kind: "ritual",
+    now,
+    createdAt: rite.createdAt ?? undefined,
+    deletedAt: now,
+    row: { name: rite.name, summary: rite.summary, script: rite.script, keptAt: "[]" },
+  });
+  await apiPut("/record/entries", { entries: [entry] });
 }
 
 /** Amend an already-written keeping with mood/body/note (last-writer-wins). */

@@ -28,6 +28,8 @@ export interface Rite {
   hasTraditionTiming: boolean;
   /** ISO instant the rite was last changed, for ordering. Null if absent. */
   updatedAt: string | null;
+  /** ISO instant the rite was first written — preserved when editing. */
+  createdAt: string | null;
 }
 
 function str(value: unknown): string {
@@ -72,6 +74,7 @@ export function ritesFromEntries(entries: readonly RiteRecordEntry[]): Rite[] {
       script: str(row.script),
       hasTraditionTiming: carriesTiming(row.keptAt),
       updatedAt: str(row.updatedAt) || null,
+      createdAt: str(row.createdAt) || null,
     });
   }
   return [...byId.values()].sort((a, b) => {
