@@ -145,6 +145,13 @@ const EXTRA_ICONS = {
       <path d="M12 7v5l3 2" />
     </svg>
   ),
+  // Planetary hours — a sundial: the gnomon and its cast hour lines.
+  planetaryhours: (
+    <svg {...ICON_PROPS}>
+      <path d="M12 21a9 9 0 0 1 0-18" />
+      <path d="M12 3v18M12 12l6-4M12 12l5 3" />
+    </svg>
+  ),
   // Festivals — a calendar leaf, one day marked.
   festivals: (
     <svg {...ICON_PROPS}>
@@ -279,7 +286,8 @@ export type PracticeNavKey =
   | "rituals"
   | "workings"
   | "meditation"
-  | "pranayama";
+  | "pranayama"
+  | "planetaryhours";
 
 const ICONS: Record<PracticeNavKey, ReactNode> = {
   ...NAV_ICONS,
@@ -425,6 +433,7 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
       { key: "correspondences", to: "/correspondences", label: "Correspondences" },
       { key: "astrology", to: "/astrology", label: "Charts" },
       { key: "translit", to: "/transliterations", label: "Transliteration" },
+      { key: "planetaryhours", to: "/hours", label: "Planetary hours" },
     ],
   },
   // ── On the web ───────────────────────────────────────────────────────
