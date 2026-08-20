@@ -43,6 +43,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
+import { activeSetFor, useAdorations } from "../data/useAdorations.js";
 
 /** H12 relabel — Dawn/Noon/Dusk/Night (a prop-level rename, not a fork). */
 export const STATION_LABEL: Record<ReshTransitionWire, string> = {
@@ -78,9 +79,9 @@ function isTodayContext(value: unknown): value is TodayContextRead {
 
 const LUNAR_GLYPH: Record<string, string> = {
   moonrise: "↑",
-  culmination: "☽",
+  upperCulmination: "☽",
   moonset: "↓",
-  nadir: "☾",
+  lowerCulmination: "☾",
 };
 
 function lunarTimeLabel(at: string | null): string {
@@ -100,6 +101,10 @@ export function TodayLunarRow({ lat, lng }: { lat: number; lng: number }) {
   const today = useApiCall<LunarTodayResponse>((signal) =>
     apiMethods.lunarToday({ lat, lng, tz, signal }),
   );
+  // The active adoration set names the stations (Sophia's Hekate set); without
+  // one, the plain station names stand — as on the phone.
+  const adorations = useAdorations();
+  const activeSet = activeSetFor(adorations.data, "lunar");
 
   const card = (children: React.ReactNode): React.ReactNode => (
     <div
@@ -142,7 +147,7 @@ export function TodayLunarRow({ lat, lng }: { lat: number; lng: number }) {
             <span
               style={{ flex: 1, fontFamily: "var(--font-ui)", fontSize: 14, color: "var(--ink)" }}
             >
-              {s.label}
+              {activeSet?.stations[s.key]?.trim() || s.label}
             </span>
             <time
               style={{
@@ -157,18 +162,19 @@ export function TodayLunarRow({ lat, lng }: { lat: number; lng: number }) {
           </li>
         ))}
       </ul>
-      <p
+      <Link
+        to="/adorations/lunar"
         style={{
-          margin: "12px 0 0",
+          display: "inline-block",
+          marginTop: 12,
           fontFamily: "var(--font-ui)",
-          fontSize: 12,
+          fontSize: 12.5,
           color: "var(--ink-mute)",
-          lineHeight: 1.45,
+          textDecoration: "none",
         }}
       >
-        Choosing an adoration set (Hekate and others) will name these stations — that surface is
-        coming to the web.
-      </p>
+        {activeSet ? `Adoration set: ${activeSet.name} — edit →` : "Choose an adoration set →"}
+      </Link>
     </>,
   );
 }

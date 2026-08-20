@@ -41,6 +41,8 @@ export type {
   CastHoraryInput,
   CircleRecord,
   CompassTraditionWire,
+  AdorationSet,
+  AdorationSetsResponse,
   ChartRequestInput,
   ChartResponse,
   CustomCorrespondenceRow,

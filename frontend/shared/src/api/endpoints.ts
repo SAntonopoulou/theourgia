@@ -99,6 +99,8 @@ import type {
   KeyRotationHistoryResponse,
   KeyRotationStatusResponse,
   LadderProgressRead,
+  AdorationSet,
+  AdorationSetsResponse,
   LadderRead,
   LunarTodayResponse,
   MagicSquareRecord,
@@ -1158,6 +1160,21 @@ export function api(client: ApiClient) {
         "/api/v1/users/me/settings/correspondences",
         { method: "PUT", json: input },
       );
+    },
+
+    /** The user's adoration sets (whose adoration each station is). */
+    getMyAdorations(opts?: { signal?: AbortSignal }): Promise<AdorationSetsResponse> {
+      return client.request<AdorationSetsResponse>("/api/v1/users/me/settings/adorations", {
+        signal: opts?.signal,
+      });
+    },
+
+    /** Replace the whole set of the user's adoration sets. */
+    putMyAdorations(input: { sets: AdorationSet[] }): Promise<AdorationSetsResponse> {
+      return client.request<AdorationSetsResponse>("/api/v1/users/me/settings/adorations", {
+        method: "PUT",
+        json: input,
+      });
     },
 
     // ─── Wellbeing — crisis-aware nudge (v1-010, opt-in) ─────────────

@@ -10,6 +10,7 @@
  * awaiting-judgment due slot rendering gracefully empty.
  */
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render as rtlRender, screen, waitFor } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { MemoryRouter } from "react-router-dom";
@@ -18,7 +19,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // The practice pieces render router <Link>s (v1-067 raw-link fix), so
 // every mount needs a Router context.
 function render(ui: ReactElement) {
-  return rtlRender(ui, { wrapper: MemoryRouter });
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return rtlRender(
+    <QueryClientProvider client={client}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </QueryClientProvider>,
+  );
 }
 
 const mocks = vi.hoisted(() => ({
@@ -28,6 +34,7 @@ const mocks = vi.hoisted(() => ({
   createReshAdoration: vi.fn(),
   listAwaitingJudgment: vi.fn(),
   lunarToday: vi.fn(),
+  getMyAdorations: vi.fn(() => Promise.resolve({ sets: [] })),
 }));
 
 vi.mock("../../data/api.js", () => ({
@@ -168,16 +175,16 @@ describe("TodayLunarRow", () => {
     mocks.lunarToday.mockResolvedValue({
       civil_date: "2026-08-20",
       stations: [
-        { key: "nadir", label: "Nadir", at: "2026-08-20T04:07:00Z" },
+        { key: "lowerCulmination", label: "Lower culmination", at: "2026-08-20T04:07:00Z" },
         { key: "moonrise", label: "Moonrise", at: "2026-08-20T11:57:00Z" },
-        { key: "culmination", label: "Culmination", at: "2026-08-20T16:32:00Z" },
+        { key: "upperCulmination", label: "Upper culmination", at: "2026-08-20T16:32:00Z" },
         { key: "moonset", label: "Moonset", at: "2026-08-20T21:04:00Z" },
       ],
       attribution: "Moon stations computed locally.",
     });
     render(<TodayLunarRow lat={37.98} lng={23.72} />);
     expect(await screen.findByText("Moonrise")).toBeInTheDocument();
-    for (const label of ["Culmination", "Moonset", "Nadir"]) {
+    for (const label of ["Upper culmination", "Moonset", "Lower culmination"]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
     expect(mocks.lunarToday).toHaveBeenCalled();

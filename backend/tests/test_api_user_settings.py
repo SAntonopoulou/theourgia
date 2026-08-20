@@ -208,3 +208,48 @@ async def test_read_custom_correspondences_parses_and_drops_bad_tables() -> None
     tables = await read_custom_correspondences(_Session(row), "u")
     assert [t.id for t in tables] == ["t1"]
     assert tables[0].rows[0].cells["Metal"] == "Iron"
+
+
+# ─── adoration sets ─────────────────────────────────────────────────
+
+
+def test_adoration_set_needs_a_name_and_body() -> None:
+    from theourgia.api.routers.v1.user_settings import AdorationSetModel
+
+    with pytest.raises(ValidationError):
+        AdorationSetModel(id="a", name="", body="lunar")  # empty name
+    with pytest.raises(ValidationError):
+        AdorationSetModel(id="a", name="Hekate", body="mars")  # bad body
+
+
+def test_adorations_route_registered() -> None:
+    from theourgia.api.app import create_app
+
+    paths = set(create_app().openapi()["paths"].keys())
+    assert "/api/v1/users/me/settings/adorations" in paths
+
+
+@pytest.mark.anyio
+async def test_read_adoration_sets_defaults_empty() -> None:
+    from theourgia.api.routers.v1.user_settings import read_adoration_sets
+
+    assert await read_adoration_sets(_Session(None), "u") == []
+
+
+@pytest.mark.anyio
+async def test_read_adoration_sets_parses_and_drops_bad() -> None:
+    import json
+
+    from theourgia.api.routers.v1.user_settings import read_adoration_sets
+
+    good = {
+        "id": "s1",
+        "name": "Hekate",
+        "body": "lunar",
+        "active": True,
+        "stations": {"moonrise": "Hekate Phosphoros"},
+    }
+    row = _Row(json.dumps([good, {"id": "s2"}, 3]))
+    sets = await read_adoration_sets(_Session(row), "u")
+    assert [s.id for s in sets] == ["s1"]
+    assert sets[0].stations["moonrise"] == "Hekate Phosphoros"

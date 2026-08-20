@@ -423,6 +423,22 @@ export interface LunarTodayResponse {
   attribution: string;
 }
 
+/** One adoration set — whose adoration each of a body's four stations is. The
+ *  active set per body names the stations on Today. Mirrors the phone's
+ *  `AdorationSet` (`isActive`). `stations` is keyed by RiteStation key. */
+export interface AdorationSet {
+  id: string;
+  name: string;
+  body: "lunar" | "solar";
+  active: boolean;
+  stations: Record<string, string>;
+}
+
+/** Response of ``GET/PUT /api/v1/users/me/settings/adorations``. */
+export interface AdorationSetsResponse {
+  sets: AdorationSet[];
+}
+
 /**
  * One crisis-support resource from the wellbeing starter list.
  * Server data pending maintainer review — the designer's "Sacred Well

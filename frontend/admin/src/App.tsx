@@ -72,6 +72,11 @@ const AstrologyRoute = lazy(() =>
     default: m.AstrologyRoute,
   })),
 );
+const LunarAdorationsRoute = lazy(() =>
+  import("./routes/LunarAdorationsRoute.js").then((m) => ({
+    default: m.LunarAdorationsRoute,
+  })),
+);
 const CommentModerationRoute = lazy(() =>
   import("./routes/CommentModerationRoute.js").then((m) => ({
     default: m.CommentModerationRoute,
@@ -904,6 +909,7 @@ function ShellRoutes() {
             <Route path="/synchronicities" element={<SynchronicityLogRoute />} />
             <Route path="/daily-practice" element={<DailyPracticeRoute />} />
             <Route path="/daily-practice/resh" element={<LiberReshRoute />} />
+            <Route path="/adorations/lunar" element={<LunarAdorationsRoute />} />
             <Route path="/astrology" element={<AstrologyRoute />} />
             <Route path="/practice-logs" element={<PracticeLogsRoute />} />
             <Route path="/record" element={<RecordRoute />} />

@@ -21,7 +21,7 @@ Routes
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
@@ -467,3 +467,119 @@ async def put_my_correspondences(
     )
     await db.commit()
     return CorrespondencesRead(tables=payload.tables)
+
+
+# ─── adoration sets (choose whose adoration each station is) ────────
+#
+# Sophia, 20 Aug: with lunar (or solar) adorations enabled, you must be able to
+# name each of the four stations — build a "Hekate" set and make it active, the
+# way the phone does (lib/features/adorations, AdorationSet.isActive). The active
+# set per body names the stations shown on Today. Stored per user (no migration,
+# same key/value store); station keys are the phone's RiteStation enum names so
+# the two line up (moonrise/upperCulmination/moonset/lowerCulmination for lunar,
+# sunrise/noon/sunset/midnight for solar).
+
+ADORATION_SETS_KEY = "adoration.sets"
+
+_BODY_STATIONS: dict[str, tuple[str, ...]] = {
+    "lunar": ("moonrise", "upperCulmination", "moonset", "lowerCulmination"),
+    "solar": ("sunrise", "noon", "sunset", "midnight"),
+}
+
+
+class AdorationSetModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1, max_length=64)
+    name: str = Field(min_length=1, max_length=200)
+    body: Literal["lunar", "solar"]
+    #: The active set for a body names that body's Today stations. One per body.
+    active: bool = False
+    #: station key → the words/title said at it. Unknown keys are ignored.
+    stations: dict[str, str] = Field(default_factory=dict)
+
+
+class AdorationSetsRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    sets: list[AdorationSetModel]
+
+
+class AdorationSetsWrite(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    sets: list[AdorationSetModel] = Field(default_factory=list, max_length=100)
+
+
+async def read_adoration_sets(db: AsyncSession, user_id) -> list[AdorationSetModel]:
+    """The user's adoration sets, malformed ones dropped."""
+    stmt = select(UserSetting).where(
+        UserSetting.user_id == user_id, UserSetting.key == ADORATION_SETS_KEY
+    )
+    row = (await db.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        return []
+    try:
+        import json
+
+        value = json.loads(row.value_json)
+    except (ValueError, TypeError):
+        return []
+    if not isinstance(value, list):
+        return []
+    out: list[AdorationSetModel] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        try:
+            out.append(AdorationSetModel(**item))
+        except ValidationError:
+            continue
+    return out
+
+
+@router.get(
+    "/users/me/settings/adorations",
+    summary="Read the signed-in user's adoration sets",
+    response_model=AdorationSetsRead,
+)
+async def get_my_adorations(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> AdorationSetsRead:
+    if current_user is None:
+        raise UnauthorizedError("adoration sets require authentication")
+    return AdorationSetsRead(sets=await read_adoration_sets(db, current_user.id))
+
+
+@router.put(
+    "/users/me/settings/adorations",
+    summary="Replace the signed-in user's adoration sets",
+    response_model=AdorationSetsRead,
+)
+async def put_my_adorations(
+    payload: AdorationSetsWrite,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> AdorationSetsRead:
+    if current_user is None:
+        raise UnauthorizedError("adoration sets require authentication")
+
+    ids = [s.id for s in payload.sets]
+    if len(ids) != len(set(ids)):
+        raise ValidationFailedError("Every set needs its own id; found a duplicate.")
+
+    # At most one active set per body — the last one wins if the client sent more.
+    seen_active: set[str] = set()
+    for s in payload.sets:
+        if s.active:
+            if s.body in seen_active:
+                s.active = False
+            else:
+                seen_active.add(s.body)
+
+    await _upsert_value(
+        db, current_user.id, ADORATION_SETS_KEY, [s.model_dump() for s in payload.sets]
+    )
+    await db.commit()
+    return AdorationSetsRead(sets=payload.sets)

@@ -20,21 +20,24 @@ _FLAGS = swe.FLG_MOSEPH
 _RISE = swe.CALC_RISE | swe.BIT_DISC_CENTER | swe.BIT_NO_REFRACTION
 _SET = swe.CALC_SET | swe.BIT_DISC_CENTER | swe.BIT_NO_REFRACTION
 
+# Station keys are the phone's LunarStation enum names verbatim
+# (lib/domain/lunar_station.dart) so the web lines up with the record and any
+# future sync: moonrise / upperCulmination / moonset / lowerCulmination.
 #: station key → the rise_trans mode that finds it.
 _RSMI: dict[str, int] = {
     "moonrise": _RISE,
-    "culmination": swe.CALC_MTRANSIT,  # upper meridian transit
+    "upperCulmination": swe.CALC_MTRANSIT,  # upper meridian transit
     "moonset": _SET,
-    "nadir": swe.CALC_ITRANSIT,  # lower meridian transit
+    "lowerCulmination": swe.CALC_ITRANSIT,  # lower meridian transit (anti-transit)
 }
 
-STATION_KEYS: tuple[str, ...] = ("moonrise", "culmination", "moonset", "nadir")
+STATION_KEYS: tuple[str, ...] = ("moonrise", "upperCulmination", "moonset", "lowerCulmination")
 
 STATION_LABELS: dict[str, str] = {
     "moonrise": "Moonrise",
-    "culmination": "Culmination",
+    "upperCulmination": "Upper culmination",
     "moonset": "Moonset",
-    "nadir": "Nadir",
+    "lowerCulmination": "Lower culmination",
 }
 
 
