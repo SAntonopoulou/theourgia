@@ -17,6 +17,7 @@ import { useMemo } from "react";
 import { NavLink } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
+import { writeConsultation } from "../data/keepObservance.js";
 
 function NavLinkAdapter({
   to,
@@ -78,7 +79,25 @@ export function GeomancyRoute() {
           LinkComponent={NavLinkAdapter}
           hrefFor={(key) => ORACLE_HREF[key] ?? "/"}
         />
-        <GeomancySurface onSave={handleSave} />
+        <GeomancySurface
+          onSave={handleSave}
+          onKeepReading={(r) =>
+            void writeConsultation({
+              systemId: "geomancy",
+              question: r.title,
+              cast: r.cast,
+              reading: r.interpretation,
+            }).then(
+              () => Toast.push({ tone: "success", title: "Kept to the record" }),
+              (e: unknown) =>
+                Toast.push({
+                  tone: "error",
+                  title: "Could not keep",
+                  body: e instanceof Error ? e.message : "An unexpected error occurred.",
+                }),
+            )
+          }
+        />
       </>
     ),
     [],

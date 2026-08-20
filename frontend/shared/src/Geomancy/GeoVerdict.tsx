@@ -32,6 +32,8 @@ export interface GeoVerdictProps {
   shield: GeomancyShield;
   selectedHouse: number;
   onSave?: () => void;
+  /** Keep the shown reading to the record (a consultation that syncs). */
+  onKeep?: () => void;
   className?: string;
   style?: CSSProperties;
 }
@@ -58,6 +60,7 @@ export function GeoVerdict({
   shield,
   selectedHouse,
   onSave,
+  onKeep,
   className,
   style,
 }: GeoVerdictProps) {
@@ -190,6 +193,30 @@ export function GeoVerdict({
         </div>
       </div>
 
+      {onKeep ? (
+        <button
+          type="button"
+          data-action="keep-record"
+          onClick={onKeep}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "9px 16px",
+            marginRight: 10,
+            borderRadius: "var(--r-md)",
+            background: "var(--bg-2)",
+            color: "var(--ink)",
+            fontFamily: "var(--font-ui)",
+            fontWeight: 600,
+            fontSize: 13,
+            border: "1px solid var(--line)",
+            cursor: "pointer",
+          }}
+        >
+          Keep to record
+        </button>
+      ) : null}
       <button
         type="button"
         data-action="save"

@@ -13,10 +13,10 @@ import {
   Toast,
   useTopbar,
 } from "@theourgia/shared";
-import { useMemo } from "react";
 import { NavLink } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
+import { writeConsultation } from "../data/keepObservance.js";
 
 function NavLinkAdapter({
   to,
@@ -71,17 +71,36 @@ export function RunesRoute() {
     }
   };
 
-  return useMemo(
-    () => (
-      <>
-        <OracleTabs
-          active="runes"
-          LinkComponent={NavLinkAdapter}
-          hrefFor={(key) => ORACLE_HREF[key] ?? "/"}
-        />
-        <RunesSurface onSave={handleSave} />
-      </>
-    ),
-    [],
+  const handleKeep = async (reading: { title: string; cast: string; interpretation: string }) => {
+    try {
+      await writeConsultation({
+        systemId: "runes",
+        question: reading.title,
+        cast: reading.cast,
+        reading: reading.interpretation,
+      });
+      Toast.push({
+        tone: "success",
+        title: "Kept to the record",
+        body: "This reading is in your record and syncs to the phone.",
+      });
+    } catch (err) {
+      Toast.push({
+        tone: "error",
+        title: "Could not keep",
+        body: err instanceof Error ? err.message : "An unexpected error occurred.",
+      });
+    }
+  };
+
+  return (
+    <>
+      <OracleTabs
+        active="runes"
+        LinkComponent={NavLinkAdapter}
+        hrefFor={(key) => ORACLE_HREF[key] ?? "/"}
+      />
+      <RunesSurface onSave={handleSave} onKeepReading={(r) => void handleKeep(r)} />
+    </>
   );
 }

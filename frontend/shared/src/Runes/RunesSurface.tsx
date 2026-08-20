@@ -36,6 +36,8 @@ export interface RunesSurfaceProps {
   interpretation?: string;
   onInterpretationChange?: (next: string) => void;
   onSave?: (title: string) => void;
+  /** Keep the shown draw to the record (a consultation that syncs). */
+  onKeepReading?: (reading: { title: string; cast: string; interpretation: string }) => void;
   className?: string;
   style?: CSSProperties;
 }
@@ -64,6 +66,7 @@ export function RunesSurface({
   interpretation,
   onInterpretationChange,
   onSave,
+  onKeepReading,
   className,
   style,
 }: RunesSurfaceProps) {
@@ -90,6 +93,13 @@ export function RunesSurface({
     setSel(0);
   };
 
+  const handleKeep = () => {
+    onKeepReading?.({
+      title: `Runes — ${sizeLabel}`,
+      cast: JSON.stringify({ size, seed, drawn }),
+      interpretation: interp,
+    });
+  };
   const handleSave = () => {
     if (!selectedDrawn) return;
     onSave?.(`Runes — ${sizeLabel}`);
@@ -275,6 +285,29 @@ export function RunesSurface({
               borderTopColor: "var(--line)",
             }}
           >
+            {onKeepReading ? (
+              <button
+                type="button"
+                data-action="keep-record"
+                onClick={handleKeep}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "9px 16px",
+                  borderRadius: "var(--r-md)",
+                  background: "var(--bg-2)",
+                  color: "var(--ink)",
+                  fontFamily: "var(--font-ui)",
+                  fontWeight: 600,
+                  fontSize: 13,
+                  border: "1px solid var(--line)",
+                  cursor: "pointer",
+                }}
+              >
+                Keep to record
+              </button>
+            ) : null}
             <button
               type="button"
               data-action="save"

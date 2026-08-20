@@ -54,6 +54,8 @@ export interface GeomancySurfaceProps {
   /** Save-chart callback; the surface emits the figure name on the
    *  selected house as the title. */
   onSave?: (title: string) => void;
+  /** Keep the shown draw to the record (a consultation that syncs). */
+  onKeepReading?: (reading: { title: string; cast: string; interpretation: string }) => void;
   /** Optional injection for tests: deterministic point generator. */
   random?: () => number;
   className?: string;
@@ -86,6 +88,7 @@ export function GeomancySurface({
   initialMothers = DEFAULT_MOTHERS,
   initialMethod = "gen",
   onSave,
+  onKeepReading,
   random = Math.random,
   className,
   style,
@@ -130,6 +133,15 @@ export function GeomancySurface({
   const handleSave = () => {
     const judgeName = figureName(shield.judge) ?? "—";
     onSave?.(`Geomancy — ${judgeName}`);
+  };
+
+  const handleKeep = () => {
+    const judgeName = figureName(shield.judge) ?? "—";
+    onKeepReading?.({
+      title: `Geomancy — ${judgeName}`,
+      cast: JSON.stringify({ mothers, shield }),
+      interpretation: "",
+    });
   };
 
   return (
@@ -396,6 +408,7 @@ export function GeomancySurface({
               </p>
             </div>
             <GeoVerdict
+              onKeep={onKeepReading ? handleKeep : undefined}
               shield={shield}
               selectedHouse={selectedHouse}
               onSave={handleSave}
