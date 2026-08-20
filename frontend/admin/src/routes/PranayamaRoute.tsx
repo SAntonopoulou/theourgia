@@ -9,12 +9,20 @@
 
 import {
   type BreathRatio,
+  KeepingSheet,
+  type KeepingValues,
+  type RecordEntryWrite,
+  Toast,
   breathPattern,
   cycleSeconds,
   phaseAt,
   useTopbar,
 } from "@theourgia/shared";
 import { useEffect, useRef, useState } from "react";
+
+import { amendObservance, keepObservance } from "../data/keepObservance.js";
+import { useMyLocation } from "../data/useLocation.js";
+import { MOCK_LOCATION } from "../mocks/today.js";
 
 type Status = "idle" | "running" | "paused" | "done";
 
@@ -46,6 +54,13 @@ export function PranayamaRoute() {
   const [status, setStatus] = useState<Status>("idle");
   const [elapsed, setElapsed] = useState(0);
   const tick = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startedAt = useRef<string | null>(null);
+
+  const [sheet, setSheet] = useState<{ entry: RecordEntryWrite; title: string } | null>(null);
+  const [kept, setKept] = useState(false);
+  const [keepBusy, setKeepBusy] = useState(false);
+  const location = useMyLocation({ enabled: true });
+  const loc = location.data ?? MOCK_LOCATION;
 
   const phases = breathPattern(ratio);
   const cycle = cycleSeconds(phases);
@@ -72,11 +87,48 @@ export function PranayamaRoute() {
 
   const begin = (): void => {
     setElapsed(0);
+    setKept(false);
+    startedAt.current = new Date().toISOString();
     setStatus("running");
   };
   const reset = (): void => {
     setElapsed(0);
     setStatus("idle");
+  };
+
+  const keepBreath = async (): Promise<void> => {
+    setKeepBusy(true);
+    try {
+      const entry = await keepObservance({
+        subjectKey: "meditation:web-breath",
+        occurrenceAt: startedAt.current ?? new Date().toISOString(),
+        durationSeconds: elapsed,
+        location: { lat: loc.lat, lng: loc.lng },
+      });
+      setKept(true);
+      setSheet({ entry, title: "Breath" });
+    } catch (e) {
+      Toast.push({
+        tone: "warning",
+        title: "That didn't keep",
+        body: e instanceof Error ? e.message : "Check your connection and try again.",
+      });
+    } finally {
+      setKeepBusy(false);
+    }
+  };
+
+  const keepDetails = async (values: KeepingValues): Promise<void> => {
+    if (!sheet) return;
+    setKeepBusy(true);
+    try {
+      await amendObservance(sheet.entry, values);
+    } catch {
+      // The breath is kept; the note simply didn't attach.
+    } finally {
+      setKeepBusy(false);
+      setSheet(null);
+    }
   };
 
   // The orb's size follows the phase: growing across the in-breath, holding,
@@ -320,9 +372,35 @@ export function PranayamaRoute() {
             <QuietButton onClick={reset}>Reset</QuietButton>
           </>
         ) : (
-          <PrimaryButton onClick={reset}>Breathe again</PrimaryButton>
+          <>
+            {kept ? (
+              <div
+                style={{
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 13,
+                  color: "var(--accent)",
+                  alignSelf: "center",
+                }}
+              >
+                Kept ✓
+              </div>
+            ) : (
+              <QuietButton onClick={() => void keepBreath()}>Keep this breath</QuietButton>
+            )}
+            <PrimaryButton onClick={reset}>Breathe again</PrimaryButton>
+          </>
         )}
       </div>
+
+      {sheet ? (
+        <KeepingSheet
+          title={sheet.title}
+          subtitle="Kept. Add how the breath was, if you like."
+          onKeep={(v) => void keepDetails(v)}
+          onClose={() => setSheet(null)}
+          busy={keepBusy}
+        />
+      ) : null}
     </section>
   );
 }

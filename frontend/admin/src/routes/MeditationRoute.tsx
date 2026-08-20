@@ -7,8 +7,19 @@
  * phone) is a later step; for now it is the sitting itself.
  */
 
-import { formatClock, useTopbar } from "@theourgia/shared";
+import {
+  KeepingSheet,
+  type KeepingValues,
+  type RecordEntryWrite,
+  Toast,
+  formatClock,
+  useTopbar,
+} from "@theourgia/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
+
+import { amendObservance, keepObservance } from "../data/keepObservance.js";
+import { useMyLocation } from "../data/useLocation.js";
+import { MOCK_LOCATION } from "../mocks/today.js";
 
 type Status = "idle" | "running" | "paused" | "done";
 
@@ -57,6 +68,51 @@ export function MeditationRoute() {
   const [status, setStatus] = useState<Status>("idle");
   const [elapsed, setElapsed] = useState(0);
   const tick = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startedAt = useRef<string | null>(null);
+
+  // Keeping the finished sitting to the record.
+  const [sheet, setSheet] = useState<{ entry: RecordEntryWrite; title: string } | null>(null);
+  const [kept, setKept] = useState(false);
+  const [keepBusy, setKeepBusy] = useState(false);
+  const location = useMyLocation({ enabled: true });
+  const loc = location.data ?? MOCK_LOCATION;
+
+  const keepSitting = async (): Promise<void> => {
+    setKeepBusy(true);
+    try {
+      const entry = await keepObservance({
+        // A plan-less web sitting groups under one synthetic id; a saved plan
+        // (later) records under its own.
+        subjectKey: "meditation:web-sitting",
+        occurrenceAt: startedAt.current ?? new Date().toISOString(),
+        durationSeconds: elapsed,
+        location: { lat: loc.lat, lng: loc.lng },
+      });
+      setKept(true);
+      setSheet({ entry, title: "Sitting" });
+    } catch (e) {
+      Toast.push({
+        tone: "warning",
+        title: "That didn't keep",
+        body: e instanceof Error ? e.message : "Check your connection and try again.",
+      });
+    } finally {
+      setKeepBusy(false);
+    }
+  };
+
+  const keepDetails = async (values: KeepingValues): Promise<void> => {
+    if (!sheet) return;
+    setKeepBusy(true);
+    try {
+      await amendObservance(sheet.entry, values);
+    } catch {
+      // The sitting itself is kept; the note simply didn't attach.
+    } finally {
+      setKeepBusy(false);
+      setSheet(null);
+    }
+  };
 
   const stopTick = useCallback((): void => {
     if (tick.current !== null) {
@@ -86,6 +142,8 @@ export function MeditationRoute() {
 
   const begin = (): void => {
     setElapsed(0);
+    setKept(false);
+    startedAt.current = new Date().toISOString();
     setStatus("running");
   };
   const reset = (): void => {
@@ -233,10 +291,34 @@ export function MeditationRoute() {
             >
               You sat {formatClock(elapsed)}.
             </div>
+            {kept ? (
+              <div
+                style={{
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 13,
+                  color: "var(--accent)",
+                  alignSelf: "center",
+                }}
+              >
+                Kept ✓
+              </div>
+            ) : (
+              <QuietButton onClick={() => void keepSitting()}>Keep this sitting</QuietButton>
+            )}
             <PrimaryButton onClick={reset}>Sit again</PrimaryButton>
           </>
         )}
       </div>
+
+      {sheet ? (
+        <KeepingSheet
+          title={sheet.title}
+          subtitle="Kept. Add how the sitting was, if you like."
+          onKeep={(v) => void keepDetails(v)}
+          onClose={() => setSheet(null)}
+          busy={keepBusy}
+        />
+      ) : null}
     </section>
   );
 }
