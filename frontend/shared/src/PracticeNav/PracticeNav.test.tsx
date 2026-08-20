@@ -79,7 +79,7 @@ describe("PracticeNav — practice wing (default)", () => {
     expect(container.querySelector('a[href="/divination/astragaloi"]')).not.toBeNull();
   });
 
-  it("keeps 'More tools' collapsed by default and discloses the five tools", async () => {
+  it("keeps 'More tools' collapsed by default and discloses the four tools", async () => {
     const { container } = render(<PracticeNav />);
     expect(screen.queryByText("Magic squares")).toBeNull();
     const more = screen.getByRole("button", { name: /more tools/i });
@@ -87,15 +87,13 @@ describe("PracticeNav — practice wing (default)", () => {
     await userEvent.setup().click(more);
     expect(more).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("Fewer tools")).toBeInTheDocument();
-    for (const href of [
-      "/magic-squares",
-      "/voces",
-      "/gematria",
-      "/transliterations",
-      "/voces-library",
-    ]) {
+    for (const href of ["/voces", "/gematria", "/transliterations", "/voces-library"]) {
       expect(container.querySelector(`a[href="${href}"]`)).not.toBeNull();
     }
+    // Magic squares is gated out entirely (HIDDEN_UNTIL_FINISHED), not merely
+    // folded — Sophia's call, 20 Aug: it should not be available on the site.
+    expect(screen.queryByText("Magic squares")).toBeNull();
+    expect(container.querySelector('a[href="/magic-squares"]')).toBeNull();
   });
 
   it("opens 'More tools' on first paint when the active key hides behind it", () => {

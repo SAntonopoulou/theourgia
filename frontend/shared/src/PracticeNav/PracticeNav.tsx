@@ -379,6 +379,7 @@ export const HIDDEN_UNTIL_FINISHED: ReadonlySet<PracticeNavKey> = new Set<Practi
   "talismans",
   "circles",
   "tools",
+  "magicsquares",
   // Study — none of it exists on the phone.
   "synchronicities",
   "ladder",
