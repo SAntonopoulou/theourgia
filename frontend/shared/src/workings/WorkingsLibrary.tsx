@@ -9,11 +9,15 @@
 
 import { type CSSProperties, useState } from "react";
 
-import type { Working } from "./recordWorkings.js";
+import type { Working, WorkingItem } from "./recordWorkings.js";
 
 export interface WorkingsLibraryProps {
   workings: readonly Working[];
   emptyMessage?: string;
+  /** When given, each item gets a "Mark performed" action. */
+  onPerform?: (item: WorkingItem, working: Working) => void;
+  /** Subject keys (`working-item:<id>`) already performed today, shown Done ✓. */
+  performedKeys?: ReadonlySet<string>;
   className?: string;
   style?: CSSProperties;
 }
@@ -56,6 +60,8 @@ function statusLabel(w: Working): string {
 export function WorkingsLibrary({
   workings,
   emptyMessage,
+  onPerform,
+  performedKeys,
   className,
   style,
 }: WorkingsLibraryProps) {
@@ -167,6 +173,99 @@ export function WorkingsLibrary({
             >
               For {selected.subjectName}
             </p>
+          ) : null}
+
+          {selected.items.length > 0 ? (
+            <div style={{ marginBottom: 18 }}>
+              <div
+                style={{
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 11,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "var(--ink-mute)",
+                  marginBottom: 8,
+                }}
+              >
+                What it asks
+              </div>
+              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
+                {selected.items.map((item) => {
+                  const done = performedKeys?.has(`working-item:${item.id}`) ?? false;
+                  return (
+                    <li
+                      key={item.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        border: "1px solid var(--line)",
+                        borderRadius: "var(--r-md, 8px)",
+                        padding: "8px 12px",
+                        background: "var(--bg-2)",
+                      }}
+                    >
+                      <span style={{ flex: 1, minWidth: 0 }}>
+                        <span
+                          style={{
+                            display: "block",
+                            fontFamily: "var(--font-display, var(--font-serif))",
+                            fontSize: 15,
+                            color: "var(--ink)",
+                          }}
+                        >
+                          {item.title}
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "var(--font-ui)",
+                            fontSize: 11.5,
+                            color: "var(--ink-mute)",
+                          }}
+                        >
+                          {item.cadence === "timesADay"
+                            ? `${item.perDay}× a day`
+                            : item.cadence === "daily"
+                              ? "Daily"
+                              : "Once"}
+                        </span>
+                      </span>
+                      {onPerform ? (
+                        done ? (
+                          <span
+                            style={{
+                              fontFamily: "var(--font-ui)",
+                              fontSize: 12,
+                              color: "var(--accent)",
+                            }}
+                          >
+                            Done ✓
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => onPerform(item, selected)}
+                            style={{
+                              padding: "6px 12px",
+                              borderRadius: "var(--r-sm, 6px)",
+                              border: "1px solid var(--accent)",
+                              background: "var(--accent-soft)",
+                              color: "var(--ink)",
+                              fontFamily: "var(--font-ui)",
+                              fontSize: 12,
+                              cursor: "pointer",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            Mark performed
+                          </button>
+                        )
+                      ) : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
           ) : null}
 
           {selected.stages.length === 0 ? (

@@ -41,6 +41,23 @@ describe("workingsFromEntries", () => {
     expect(w?.stages[1]?.criterion).toBe("41 days");
   });
 
+  it("gathers a working's performable items in order, dropping orphans", () => {
+    const item = (row: Record<string, unknown>): WorkingRecordEntry => ({
+      kind: "working-item",
+      doc: { row },
+    });
+    const workings = workingsFromEntries([
+      working({ id: "w1", name: "Abramelin" }),
+      item({ id: "i2", workingId: "w1", title: "Evening oration", orderIndex: 1, cadence: "daily" }),
+      item({ id: "i1", workingId: "w1", title: "Morning oration", orderIndex: 0, perDay: 2 }),
+      item({ id: "i9", workingId: "gone", title: "Orphan", orderIndex: 0 }),
+    ]);
+    const w = workings[0];
+    expect(w?.items.map((i) => i.title)).toEqual(["Morning oration", "Evening oration"]);
+    expect(w?.items[0]?.perDay).toBe(2);
+    expect(w?.items[1]?.cadence).toBe("daily");
+  });
+
   it("marks a working not-yet-begun when it has no start", () => {
     const [w] = workingsFromEntries([working({ id: "w1", name: "Unstarted" })]);
     expect(w?.started).toBe(false);

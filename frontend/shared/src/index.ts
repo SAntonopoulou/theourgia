@@ -422,6 +422,7 @@ export { RitesLibrary, type RitesLibraryProps } from "./rites/RitesLibrary.js";
 // The long operations, read from the synced record (the phone's Workings screen).
 export {
   type Working,
+  type WorkingItem,
   type WorkingRecordEntry,
   type WorkingStage,
   workingsFromEntries,

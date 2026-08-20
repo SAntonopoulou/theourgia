@@ -27,6 +27,19 @@ export interface WorkingStage {
   declared: boolean;
 }
 
+/** A performable item of a working — a rite done on a cadence. */
+export interface WorkingItem {
+  id: string;
+  title: string;
+  /** `once`, `daily`, or `timesADay`. */
+  cadence: string;
+  /** How many times a day, when the cadence says so. */
+  perDay: number;
+  /** The stage it belongs to, or null for a "throughout" item. */
+  stageId: string | null;
+  orderIndex: number;
+}
+
 /** One working — a long operation, with its phases. */
 export interface Working {
   id: string;
@@ -41,6 +54,8 @@ export interface Working {
    *  Empty for an operation that turns on nobody's. */
   subjectName: string;
   stages: WorkingStage[];
+  /** The performable items — what a day asks of the working. */
+  items: WorkingItem[];
   updatedAt: string | null;
 }
 
@@ -70,6 +85,24 @@ function stageFrom(
   };
 }
 
+function itemFrom(row: Record<string, unknown>): { workingId: string; item: WorkingItem } | null {
+  const id = str(row.id);
+  const workingId = str(row.workingId);
+  if (id.length === 0 || workingId.length === 0) return null;
+  const stageId = str(row.stageId);
+  return {
+    workingId,
+    item: {
+      id,
+      title: str(row.title) || "Untitled",
+      cadence: str(row.cadence) || "once",
+      perDay: Math.max(1, num(row.perDay) || 1),
+      stageId: stageId.length > 0 ? stageId : null,
+      orderIndex: num(row.orderIndex),
+    },
+  };
+}
+
 /**
  * The workings among a set of record entries, A→Z, each carrying its phases in
  * their declared order. Deleted workings and stages are dropped; a stage whose
@@ -78,6 +111,7 @@ function stageFrom(
 export function workingsFromEntries(entries: readonly WorkingRecordEntry[]): Working[] {
   const workings = new Map<string, Working>();
   const stagesByWorking = new Map<string, WorkingStage[]>();
+  const itemsByWorking = new Map<string, WorkingItem[]>();
 
   for (const entry of entries) {
     if (entry.deleted_at_utc) continue;
@@ -96,6 +130,7 @@ export function workingsFromEntries(entries: readonly WorkingRecordEntry[]): Wor
         startedAt: str(row.startedAt) || null,
         subjectName: str(row.subjectName),
         stages: [],
+        items: [],
         updatedAt: str(row.updatedAt) || null,
       });
     } else if (entry.kind === "working-stage") {
@@ -104,6 +139,12 @@ export function workingsFromEntries(entries: readonly WorkingRecordEntry[]): Wor
       const list = stagesByWorking.get(parsed.workingId) ?? [];
       list.push(parsed.stage);
       stagesByWorking.set(parsed.workingId, list);
+    } else if (entry.kind === "working-item") {
+      const parsed = itemFrom(row);
+      if (!parsed) continue;
+      const list = itemsByWorking.get(parsed.workingId) ?? [];
+      list.push(parsed.item);
+      itemsByWorking.set(parsed.workingId, list);
     }
   }
 
@@ -111,6 +152,11 @@ export function workingsFromEntries(entries: readonly WorkingRecordEntry[]): Wor
     const working = workings.get(workingId);
     if (!working) continue; // an orphan stage — its working is gone
     working.stages = stages.sort((a, b) => a.orderIndex - b.orderIndex);
+  }
+  for (const [workingId, items] of itemsByWorking) {
+    const working = workings.get(workingId);
+    if (!working) continue; // an orphan item — its working is gone
+    working.items = items.sort((a, b) => a.orderIndex - b.orderIndex);
   }
 
   return [...workings.values()].sort((a, b) => {
