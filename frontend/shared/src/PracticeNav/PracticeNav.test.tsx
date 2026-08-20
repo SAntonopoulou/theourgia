@@ -122,6 +122,8 @@ describe("PracticeNav — the phone drawer, mirrored", () => {
       "/daily-practice/resh",
       "/rituals",
       "/workings",
+      "/meditation",
+      "/pranayama",
       "/divination/tarot",
       "/gematria",
     ];
@@ -151,6 +153,8 @@ describe("PracticeNav — the phone drawer, mirrored", () => {
             "solarAdorations",
             "rituals",
             "workings",
+            "meditation",
+            "pranayama",
             "divination",
             "numbers",
           ])

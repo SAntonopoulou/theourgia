@@ -427,6 +427,15 @@ export {
   workingsFromEntries,
 } from "./workings/recordWorkings.js";
 export { WorkingsLibrary, type WorkingsLibraryProps } from "./workings/WorkingsLibrary.js";
+// Pure timing for the self-contained practice tools (sitting timer, breath pacer).
+export {
+  type BreathPhase,
+  type BreathRatio,
+  breathPattern,
+  cycleSeconds,
+  formatClock,
+  phaseAt,
+} from "./practiceTimer/practiceTimer.js";
 export {
   type ElectionClause,
   type ElectionTemplates,

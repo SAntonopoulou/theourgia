@@ -225,6 +225,8 @@ const EXTRA_ICONS = {
   solaradorations: glyphIcon("☉"),
   rituals: glyphIcon("☩"),
   workings: glyphIcon("☿"),
+  meditation: glyphIcon("🜔"),
+  pranayama: glyphIcon("🜁"),
 } as const;
 
 const WING_GRID_ICON = (
@@ -275,7 +277,9 @@ export type PracticeNavKey =
   | "lunaradorations"
   | "solaradorations"
   | "rituals"
-  | "workings";
+  | "workings"
+  | "meditation"
+  | "pranayama";
 
 const ICONS: Record<PracticeNavKey, ReactNode> = {
   ...NAV_ICONS,
@@ -372,6 +376,20 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
         label: "Workings",
         practice: "workings",
         glyph: "☿",
+      },
+      {
+        key: "meditation",
+        to: "/meditation",
+        label: "Meditation",
+        practice: "meditation",
+        glyph: "🜔",
+      },
+      {
+        key: "pranayama",
+        to: "/pranayama",
+        label: "Pranayama",
+        practice: "pranayama",
+        glyph: "🜁",
       },
       {
         key: "divination",
