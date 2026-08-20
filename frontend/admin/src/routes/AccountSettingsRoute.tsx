@@ -26,15 +26,29 @@ import { appHref } from "../lib/appHref.js";
 
 const INHERITANCE_KEY = "theourgia.inheritance.enabled";
 
+// Practices sits first on the hub the Settings gear lands on — Sophia, 20 Aug:
+// the toggles were unfindable, buried behind the /settings/preferences subnav
+// while the gear goes to /settings. This makes "Settings → Practices" two
+// obvious clicks, keeping it in settings as she asked.
+const PRACTICE_SECTION = {
+  key: "practices" as const,
+  title: "Practices",
+  sub: "Turn the built-in disciplines on or off — what appears on Today",
+  links: [{ label: "Manage practices", href: appHref("/settings/practices") }],
+};
+
 // The shared DEFAULT_SECTIONS carry raw absolute hrefs ("/settings/keys").
 // Served under the /app basename those escape the SPA, so resolve every
 // internal link through appHref() once at module scope.
-const SECTIONS = AccountSettingsCopy.DEFAULT_SECTIONS.map((section) => ({
-  ...section,
-  links: section.links.map((l) =>
-    l.href.startsWith("/") ? { ...l, href: appHref(l.href) } : l,
-  ),
-}));
+const SECTIONS = [
+  PRACTICE_SECTION,
+  ...AccountSettingsCopy.DEFAULT_SECTIONS.map((section) => ({
+    ...section,
+    links: section.links.map((l) =>
+      l.href.startsWith("/") ? { ...l, href: appHref(l.href) } : l,
+    ),
+  })),
+];
 
 export function AccountSettingsRoute() {
   useTopbar(() => ({

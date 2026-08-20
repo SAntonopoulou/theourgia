@@ -7,6 +7,7 @@
  */
 
 export type SectionKey =
+  | "practices"
   | "identity"
   | "security"
   | "linked"
