@@ -61,14 +61,6 @@ const ICON_PROPS = {
 };
 
 const EXTRA_ICONS = {
-  // Practices — sliders, for the disciplines switched on or off.
-  practicesettings: (
-    <svg {...ICON_PROPS}>
-      <path d="M4 8h9M17 8h3M4 16h3M11 16h9" />
-      <circle cx="15" cy="8" r="2" />
-      <circle cx="9" cy="16" r="2" />
-    </svg>
-  ),
   // A pack — a small box with a corner flap.
   packs: (
     <svg {...ICON_PROPS}>
@@ -213,8 +205,7 @@ export type PracticeNavKey =
   | "festivals"
   | "elections"
   | "wordvalues"
-  | "decks"
-  | "practicesettings";
+  | "decks";
 
 const ICONS: Record<PracticeNavKey, ReactNode> = {
   ...NAV_ICONS,
@@ -254,9 +245,6 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
       { key: "journal", to: "/journal", label: "Journal" },
       { key: "dailypractice", to: "/daily-practice", label: "Daily rite" },
       { key: "practicelogs", to: "/practice-logs", label: "Practice log" },
-      // Which of the eight built-in disciplines are switched on — the phone's
-      // Settings, mirrored (see `lib/domain/practice.dart`).
-      { key: "practicesettings", to: "/settings/practices", label: "Practices" },
       // The phone's record, synced here — the set of practices done each
       // day, and by Sophia's ruling never the journal and never flattened
       // into it.

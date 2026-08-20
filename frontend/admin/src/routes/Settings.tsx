@@ -26,8 +26,11 @@ import {
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { PracticesSettingsRoute } from "./PracticesSettingsRoute.js";
+
 type SectionKey =
   | "account"
+  | "practices"
   | "security"
   | "networks"
   | "plugins"
@@ -38,6 +41,7 @@ type SectionKey =
 
 const SECTIONS: { key: SectionKey; label: string }[] = [
   { key: "account", label: "Account" },
+  { key: "practices", label: "Practices" },
   { key: "security", label: "Security & encryption" },
   { key: "networks", label: "Networks & federation" },
   { key: "plugins", label: "Plugins" },
@@ -753,7 +757,13 @@ export function Settings() {
           padding: "30px 34px",
         }}
       >
-        {section === "appearance" ? <AppearanceSection /> : <StubSection section={section} />}
+        {section === "appearance" ? (
+          <AppearanceSection />
+        ) : section === "practices" ? (
+          <PracticesSettingsRoute />
+        ) : (
+          <StubSection section={section} />
+        )}
       </div>
     </div>
   );

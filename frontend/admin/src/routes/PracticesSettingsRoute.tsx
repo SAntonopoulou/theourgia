@@ -62,9 +62,9 @@ export function PracticesSettingsRoute() {
   }
 
   return (
-    <section style={{ maxWidth: 640, margin: "0 auto", padding: "var(--space-5, 24px)" }}>
+    <section style={{ maxWidth: 680 }}>
       <header style={{ marginBottom: 20 }}>
-        <h1
+        <h2
           style={{
             margin: 0,
             fontFamily: "var(--font-display, var(--font-serif))",
@@ -73,7 +73,7 @@ export function PracticesSettingsRoute() {
           }}
         >
           Practices
-        </h1>
+        </h2>
         <p
           style={{
             margin: "6px 0 0",
