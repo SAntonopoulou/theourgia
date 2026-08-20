@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -71,6 +71,12 @@ describe("ConfirmDialog", () => {
     render(
       <ConfirmDialog open title="X" confirmLabel="Yes" onConfirm={vi.fn()} onCancel={onCancel} />,
     );
+    // The overlay traps focus inside itself on open via requestAnimationFrame,
+    // and its ESC handler lives on the backdrop — so ESC only closes once focus
+    // is within. Wait for the frame instead of racing it; under CI load a
+    // too-eager keypress fires on <body> and the spy sees nothing (same flake
+    // that was fixed for AlertDialog).
+    await waitFor(() => expect(document.body).not.toHaveFocus());
     await userEvent.setup().keyboard("{Escape}");
     expect(onCancel).toHaveBeenCalledOnce();
   });
