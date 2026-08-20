@@ -38,6 +38,8 @@ export interface WorkingItem {
   /** The stage it belongs to, or null for a "throughout" item. */
   stageId: string | null;
   orderIndex: number;
+  /** ISO instant first written — preserved when editing. */
+  createdAt: string | null;
 }
 
 /** One working — a long operation, with its phases. */
@@ -57,6 +59,8 @@ export interface Working {
   /** The performable items — what a day asks of the working. */
   items: WorkingItem[];
   updatedAt: string | null;
+  /** ISO instant first written — preserved when editing. */
+  createdAt: string | null;
 }
 
 function str(value: unknown): string {
@@ -99,6 +103,7 @@ function itemFrom(row: Record<string, unknown>): { workingId: string; item: Work
       perDay: Math.max(1, num(row.perDay) || 1),
       stageId: stageId.length > 0 ? stageId : null,
       orderIndex: num(row.orderIndex),
+      createdAt: str(row.createdAt) || null,
     },
   };
 }
@@ -132,6 +137,7 @@ export function workingsFromEntries(entries: readonly WorkingRecordEntry[]): Wor
         stages: [],
         items: [],
         updatedAt: str(row.updatedAt) || null,
+        createdAt: str(row.createdAt) || null,
       });
     } else if (entry.kind === "working-stage") {
       const parsed = stageFrom(row);

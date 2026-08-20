@@ -150,6 +150,110 @@ export async function deleteRitual(rite: {
   await apiPut("/record/entries", { entries: [entry] });
 }
 
+/** One performable item as the working editor holds it. */
+export interface WorkingItemDraft {
+  id?: string;
+  createdAt?: string | null;
+  title: string;
+  cadence: string;
+  perDay: number;
+  orderIndex: number;
+}
+
+function workingRow(name: string, summary: string, subjectName: string): Record<string, unknown> {
+  return {
+    name,
+    summary,
+    startedAt: null,
+    breakRule: "askMe",
+    nativityStanding: "not-sought",
+    subjectBirthId: null,
+    subjectName,
+  };
+}
+
+function itemRow(workingId: string, it: WorkingItemDraft): Record<string, unknown> {
+  return {
+    workingId,
+    stageId: null,
+    ritualId: null,
+    script: "",
+    title: it.title,
+    cadence: it.cadence,
+    perDay: it.perDay,
+    orderIndex: it.orderIndex,
+  };
+}
+
+/** A working authored on the web — the working row plus its items, and
+ *  tombstones for items removed in this edit. All in one batch. */
+export async function writeWorking(input: {
+  id?: string;
+  createdAt?: string | null;
+  name: string;
+  summary: string;
+  subjectName: string;
+  items: WorkingItemDraft[];
+  removedItems?: WorkingItemDraft[];
+}): Promise<void> {
+  const now = new Date().toISOString();
+  const workingId = input.id ?? crypto.randomUUID();
+  const entries: RecordEntryWrite[] = [
+    buildSubjectEntry({
+      id: workingId,
+      kind: "working",
+      now,
+      createdAt: input.createdAt ?? undefined,
+      row: workingRow(input.name, input.summary, input.subjectName),
+    }),
+  ];
+  for (const it of input.items) {
+    entries.push(
+      buildSubjectEntry({
+        id: it.id ?? crypto.randomUUID(),
+        kind: "working-item",
+        now,
+        createdAt: it.createdAt ?? undefined,
+        row: itemRow(workingId, it),
+      }),
+    );
+  }
+  for (const it of input.removedItems ?? []) {
+    if (!it.id) continue;
+    entries.push(
+      buildSubjectEntry({
+        id: it.id,
+        kind: "working-item",
+        now,
+        createdAt: it.createdAt ?? undefined,
+        deletedAt: now,
+        row: itemRow(workingId, it),
+      }),
+    );
+  }
+  await apiPut("/record/entries", { entries });
+}
+
+/** Tombstone a working (its items cascade-delete on the phone). */
+export async function deleteWorking(w: {
+  id: string;
+  name: string;
+  summary: string;
+  subjectName: string;
+  createdAt?: string | null;
+}): Promise<void> {
+  const now = new Date().toISOString();
+  const entry = buildSubjectEntry({
+    id: w.id,
+    kind: "working",
+    now,
+    createdAt: w.createdAt ?? undefined,
+    deletedAt: now,
+    row: workingRow(w.name, w.summary, w.subjectName),
+  });
+  await apiPut("/record/entries", { entries: [entry] });
+}
+
 /** Amend an already-written keeping with mood/body/note (last-writer-wins). */
 export async function amendObservance(
   entry: RecordEntryWrite,

@@ -18,9 +18,23 @@ export interface WorkingsLibraryProps {
   onPerform?: (item: WorkingItem, working: Working) => void;
   /** Subject keys (`working-item:<id>`) already performed today, shown Done ✓. */
   performedKeys?: ReadonlySet<string>;
+  /** Authoring hooks. */
+  onNew?: () => void;
+  onEdit?: (working: Working) => void;
   className?: string;
   style?: CSSProperties;
 }
+
+const actionButton: CSSProperties = {
+  padding: "7px 14px",
+  borderRadius: "var(--r-md, 8px)",
+  border: "1px solid var(--accent)",
+  background: "var(--accent-soft)",
+  color: "var(--ink)",
+  fontFamily: "var(--font-ui)",
+  fontSize: 13,
+  cursor: "pointer",
+};
 
 const CARD_BASE: CSSProperties = {
   display: "block",
@@ -62,6 +76,8 @@ export function WorkingsLibrary({
   emptyMessage,
   onPerform,
   performedKeys,
+  onNew,
+  onEdit,
   className,
   style,
 }: WorkingsLibraryProps) {
@@ -69,19 +85,27 @@ export function WorkingsLibrary({
 
   if (workings.length === 0) {
     return (
-      <p
-        style={{
-          fontFamily: "var(--font-ui)",
-          fontSize: 14,
-          color: "var(--ink-mute)",
-          lineHeight: 1.5,
-          maxWidth: 460,
-          ...style,
-        }}
-      >
-        {emptyMessage ??
-          "The operations you are running will appear here once your phone syncs. Link it under Settings to bring them across."}
-      </p>
+      <div style={style}>
+        {onNew ? (
+          <div style={{ marginBottom: 14 }}>
+            <button type="button" onClick={onNew} style={actionButton}>
+              New working
+            </button>
+          </div>
+        ) : null}
+        <p
+          style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 14,
+            color: "var(--ink-mute)",
+            lineHeight: 1.5,
+            maxWidth: 460,
+          }}
+        >
+          {emptyMessage ??
+            "The operations you are running will appear here once your phone syncs — or begin one here."}
+        </p>
+      </div>
     );
   }
 
@@ -99,6 +123,15 @@ export function WorkingsLibrary({
       }}
     >
       <nav aria-label="Your workings" style={{ minWidth: 0 }}>
+        {onNew ? (
+          <button
+            type="button"
+            onClick={onNew}
+            style={{ ...actionButton, width: "100%", marginBottom: 10 }}
+          >
+            New working
+          </button>
+        ) : null}
         {workings.map((w) => {
           const isActive = w.id === selected?.id;
           return (
@@ -149,6 +182,25 @@ export function WorkingsLibrary({
               {selected.name || "Untitled working"}
             </h2>
             <span style={PILL}>{statusLabel(selected)}</span>
+            {onEdit ? (
+              <button
+                type="button"
+                onClick={() => onEdit(selected)}
+                style={{
+                  marginLeft: "auto",
+                  padding: "5px 12px",
+                  borderRadius: "var(--r-sm, 6px)",
+                  border: "1px solid var(--line)",
+                  background: "var(--bg-2)",
+                  color: "var(--ink-soft)",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 12.5,
+                  cursor: "pointer",
+                }}
+              >
+                Edit
+              </button>
+            ) : null}
           </div>
           {selected.summary ? (
             <p

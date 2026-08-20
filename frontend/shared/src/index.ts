@@ -429,6 +429,12 @@ export {
   workingsFromEntries,
 } from "./workings/recordWorkings.js";
 export { WorkingsLibrary, type WorkingsLibraryProps } from "./workings/WorkingsLibrary.js";
+export {
+  WorkingEditor,
+  type WorkingDraft,
+  type WorkingEditorProps,
+  type WorkingItemInput,
+} from "./workings/WorkingEditor.js";
 // The day's agenda — which scheduled rites/sittings fall on a day (the phone's
 // Recurrence, ported), for a real Today.
 export {
