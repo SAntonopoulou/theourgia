@@ -18,6 +18,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { apiMethods } from "../data/api.js";
+import { ElectionFinder } from "./ElectionFinder.js";
 import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
 
 export function ElectionRoute() {
@@ -58,5 +59,10 @@ export function ElectionRoute() {
   }, []);
 
   if (templates === null) return <SurfaceSkeleton rowCount={5} />;
-  return <ElectionReference templates={templates} />;
+  return (
+    <div style={{ maxWidth: 760, margin: "0 auto", padding: "var(--space-5, 24px)" }}>
+      <ElectionFinder />
+      <ElectionReference templates={templates} />
+    </div>
+  );
 }
