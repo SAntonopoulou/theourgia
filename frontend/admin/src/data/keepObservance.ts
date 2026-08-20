@@ -254,6 +254,53 @@ export async function deleteWorking(w: {
   await apiPut("/record/entries", { entries: [entry] });
 }
 
+/**
+ * A divination reading, kept to the record as a `consultation` — the shown
+ * draw, not a fresh server re-cast. It crosses to the phone and shows in its
+ * divination history. `cast` is the drawn result (JSON/text); `reading` the
+ * interpretation.
+ */
+export async function writeConsultation(input: {
+  systemId: string;
+  question: string;
+  cast: string;
+  reading?: string;
+  /** How it was arrived at — `drawn`, `thrown`, `scried`… */
+  source?: string;
+}): Promise<RecordEntryWrite> {
+  const now = new Date().toISOString();
+  const entry = buildSubjectEntry({
+    id: crypto.randomUUID(),
+    kind: "consultation",
+    now,
+    row: {
+      systemId: input.systemId,
+      question: input.question,
+      cast: input.cast,
+      source: input.source ?? "drawn",
+      standing: "read",
+      reading: input.reading ?? null,
+      field: null,
+      session: null,
+      bound: null,
+      selfInfluence: null,
+      askedAt: now,
+      entryLabel: "",
+      presiding: "",
+      verdict: "",
+      note: "",
+      outcome: "",
+      outcomeAt: null,
+      forAnother: false,
+      nativityStanding: "not-sought",
+      subjectBirthId: null,
+      subjectName: "",
+    },
+  });
+  await apiPut("/record/entries", { entries: [entry] });
+  return entry;
+}
+
 /** Amend an already-written keeping with mood/body/note (last-writer-wins). */
 export async function amendObservance(
   entry: RecordEntryWrite,

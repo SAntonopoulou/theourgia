@@ -58,6 +58,14 @@ export interface TarotSurfaceProps {
   onInterpretationChange?: (next: string) => void;
   /** Save-reading-to-journal click handler. */
   onSave?: (saveTitle: string) => void;
+  /** Keep the SHOWN reading to the record (a consultation that syncs to the
+   *  phone). Given the drawn cards, the spread, and the interpretation. */
+  onKeepReading?: (reading: {
+    title: string;
+    spread: SpreadKind;
+    drawn: DrawnCard[];
+    interpretation: string;
+  }) => void;
   /** Past readings to render in the History view. */
   pastReadings?: readonly TarotPastReading[];
   /** Override the deterministic seed for the initial draw. Useful
@@ -168,6 +176,7 @@ export function TarotSurface({
   interpretation,
   onInterpretationChange,
   onSave,
+  onKeepReading,
   pastReadings,
   initialSeed = 7,
   className,
@@ -426,6 +435,31 @@ export function TarotSurface({
                   {SAVE_ICON}
                   Save reading to journal
                 </button>
+                {onKeepReading ? (
+                  <button
+                    type="button"
+                    data-action="keep-record"
+                    onClick={() =>
+                      onKeepReading({ title: saveTitle, spread, drawn, interpretation: interp })
+                    }
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      padding: "9px 16px",
+                      borderRadius: "var(--r-md)",
+                      background: "var(--bg-2)",
+                      color: "var(--ink)",
+                      fontFamily: "var(--font-ui)",
+                      fontWeight: 600,
+                      fontSize: 13,
+                      border: "1px solid var(--line)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Keep to record
+                  </button>
+                ) : null}
                 <span
                   style={{
                     fontFamily: "var(--font-ui)",

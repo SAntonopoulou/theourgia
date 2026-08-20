@@ -10,6 +10,7 @@
  */
 
 import {
+  type DrawnCard,
   OracleTabs,
   type OracleTabsLinkProps,
   type SpreadKind,
@@ -23,6 +24,7 @@ import { useMemo } from "react";
 import { NavLink } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
+import { writeConsultation } from "../data/keepObservance.js";
 
 function NavLinkAdapter({
   to,
@@ -120,17 +122,42 @@ export function TarotRoute() {
   );
 
   const handleSave = (title: string) => {
-    // Persistence via POST /tarot/cast requires selecting a deck + spread
-    // and passing the drawn seed through the surface, which the current
-    // TarotSurface prop shape doesn't expose. Track that as a follow-up
-    // (needs a small surface prop extension); for now, honestly report
-    // that saves are queued on the client until the surface plumbing
-    // lands.
+    // The server /tarot/cast persistence needs a server deck + the seed; the
+    // robust, decoupled path is "Keep to record" below, which writes the shown
+    // reading as a consultation that syncs to the phone.
     Toast.push({
       tone: "info",
-      title: "Save queued",
-      body: `“${title}” — full-reading persistence needs the surface to expose the drawn seed. History view now reflects real backend readings, however.`,
+      title: "Use “Keep to record”",
+      body: `“${title}” — keeping the reading to the record syncs it to the phone and its history.`,
     });
+  };
+
+  const handleKeep = async (reading: {
+    title: string;
+    spread: SpreadKind;
+    drawn: DrawnCard[];
+    interpretation: string;
+  }) => {
+    try {
+      await writeConsultation({
+        systemId: "tarot",
+        question: reading.title,
+        cast: JSON.stringify({ spread: reading.spread, cards: reading.drawn }),
+        reading: reading.interpretation,
+        source: "drawn",
+      });
+      Toast.push({
+        tone: "success",
+        title: "Kept to the record",
+        body: "This reading is in your record and syncs to the phone.",
+      });
+    } catch (e) {
+      Toast.push({
+        tone: "warning",
+        title: "That didn't keep",
+        body: e instanceof Error ? e.message : "Check your connection and try again.",
+      });
+    }
   };
 
   // Wire the OracleTabs nav at the top of the surface body.
@@ -141,7 +168,11 @@ export function TarotRoute() {
         LinkComponent={NavLinkAdapter}
         hrefFor={(key) => ORACLE_HREF[key] ?? "/"}
       />
-      <TarotSurface pastReadings={pastReadings} onSave={handleSave} />
+      <TarotSurface
+        pastReadings={pastReadings}
+        onSave={handleSave}
+        onKeepReading={(r) => void handleKeep(r)}
+      />
     </>
   );
 }
