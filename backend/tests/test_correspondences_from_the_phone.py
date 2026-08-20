@@ -102,6 +102,13 @@ def _pack() -> dict[str, Any]:
     return MINIATURE
 
 
+class _NoRow:
+    """An empty query result — nothing already installed."""
+
+    def scalar_one_or_none(self) -> None:
+        return None
+
+
 class _Session:
     """Just enough session to catch what an importer adds."""
 
@@ -110,6 +117,12 @@ class _Session:
 
     def add(self, row: Any) -> None:
         self.added.append(row)
+
+    async def execute(self, *_args: Any, **_kwargs: Any) -> _NoRow:
+        # The spiritual-map importer now checks for an existing (owner, slug)
+        # before inserting, so it does not 500 on re-import. In this fixture the
+        # vault is empty, so every lookup finds nothing and the import proceeds.
+        return _NoRow()
 
 
 def _container(pack: dict[str, Any]) -> bytes:
