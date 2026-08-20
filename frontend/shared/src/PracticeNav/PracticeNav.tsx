@@ -223,6 +223,7 @@ const EXTRA_ICONS = {
   // surfaces. See ``GLYPH_ICON`` for how the rest of the tier is drawn.
   lunaradorations: glyphIcon("☽"),
   solaradorations: glyphIcon("☉"),
+  rituals: glyphIcon("☩"),
 } as const;
 
 const WING_GRID_ICON = (
@@ -271,7 +272,8 @@ export type PracticeNavKey =
   // Liber Resh); the rest of the eight reuse existing keys (``divination``,
   // ``gematria``) or arrive with their surface.
   | "lunaradorations"
-  | "solaradorations";
+  | "solaradorations"
+  | "rituals";
 
 const ICONS: Record<PracticeNavKey, ReactNode> = {
   ...NAV_ICONS,
@@ -354,6 +356,13 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
         label: "Solar adorations",
         practice: "solarAdorations",
         glyph: "☉",
+      },
+      {
+        key: "rituals",
+        to: "/rituals",
+        label: "Rituals",
+        practice: "rituals",
+        glyph: "☩",
       },
       {
         key: "divination",

@@ -78,6 +78,11 @@ const LunarAdorationsRoute = lazy(() =>
     default: m.LunarAdorationsRoute,
   })),
 );
+const RitualsRoute = lazy(() =>
+  import("./routes/RitualsRoute.js").then((m) => ({
+    default: m.RitualsRoute,
+  })),
+);
 const CommentModerationRoute = lazy(() =>
   import("./routes/CommentModerationRoute.js").then((m) => ({
     default: m.CommentModerationRoute,
@@ -702,6 +707,7 @@ function navKeyForPath(pathname: string): PracticeNavKey | undefined {
   // /daily-practice/resh URL must be matched before the bare /daily-practice.
   if (pathname.startsWith("/daily-practice/resh")) return "solaradorations";
   if (pathname.startsWith("/adorations/lunar")) return "lunaradorations";
+  if (pathname.startsWith("/rituals")) return "rituals";
   if (pathname.startsWith("/daily-practice")) return "dailypractice";
   if (pathname.startsWith("/practice-logs")) return "practicelogs";
   if (pathname.startsWith("/record")) return "record";
@@ -930,6 +936,7 @@ function ShellRoutes() {
             <Route path="/daily-practice" element={<DailyPracticeRoute />} />
             <Route path="/daily-practice/resh" element={<LiberReshRoute />} />
             <Route path="/adorations/lunar" element={<LunarAdorationsRoute />} />
+            <Route path="/rituals" element={<RitualsRoute />} />
             <Route path="/astrology" element={<AstrologyRoute />} />
             <Route path="/practice-logs" element={<PracticeLogsRoute />} />
             <Route path="/record" element={<RecordRoute />} />

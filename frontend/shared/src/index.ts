@@ -402,6 +402,23 @@ export {
   ElectionReference,
   type ElectionReferenceProps,
 } from "./electionRules/ElectionReference.js";
+// The written rites, read from the synced record (the web mirror of the phone's
+// Rituals screen).
+export {
+  type Rite,
+  type RiteRecordEntry,
+  ritesFromEntries,
+} from "./rites/recordRites.js";
+export {
+  RITE_SYNTAX_HINT,
+  type ScriptBlock,
+  type ScriptSpan,
+  isRiteEmpty,
+  parseRite,
+  spokenOnly,
+} from "./rites/riteScript.js";
+export { RiteScriptView, type RiteScriptViewProps } from "./rites/RiteScriptView.js";
+export { RitesLibrary, type RitesLibraryProps } from "./rites/RitesLibrary.js";
 export {
   type ElectionClause,
   type ElectionTemplates,

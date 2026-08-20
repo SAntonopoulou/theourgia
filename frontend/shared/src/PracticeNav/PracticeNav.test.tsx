@@ -117,7 +117,13 @@ describe("PracticeNav — the phone drawer, mirrored", () => {
 
   it("lists the built practices in the phone's declaration order", () => {
     const { container } = render(<PracticeNav />);
-    const order = ["/adorations/lunar", "/daily-practice/resh", "/divination/tarot", "/gematria"];
+    const order = [
+      "/adorations/lunar",
+      "/daily-practice/resh",
+      "/rituals",
+      "/divination/tarot",
+      "/gematria",
+    ];
     const hrefs = Array.from(container.querySelectorAll("a[href]")).map((a) =>
       a.getAttribute("href"),
     );
@@ -139,7 +145,7 @@ describe("PracticeNav — the phone drawer, mirrored", () => {
     render(
       <PracticeNav
         disabledPractices={
-          new Set(["lunarAdorations", "solarAdorations", "divination", "numbers"])
+          new Set(["lunarAdorations", "solarAdorations", "rituals", "divination", "numbers"])
         }
       />,
     );
