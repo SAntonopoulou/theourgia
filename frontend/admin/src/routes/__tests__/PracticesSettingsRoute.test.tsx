@@ -5,8 +5,15 @@
  * reconciles from the response.
  */
 
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactElement } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+function renderRoute(ui: ReactElement) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>);
+}
 
 const mocks = vi.hoisted(() => {
   const PRACTICES = {
@@ -59,7 +66,7 @@ afterEach(() => {
 
 describe("PracticesSettingsRoute", () => {
   it("renders each discipline with its switch reflecting on/off", async () => {
-    render(<PracticesSettingsRoute />);
+    renderRoute(<PracticesSettingsRoute />);
     expect(await screen.findByText("Lunar adorations")).toBeInTheDocument();
     expect(screen.getByText("Rituals")).toBeInTheDocument();
 
@@ -74,7 +81,7 @@ describe("PracticesSettingsRoute", () => {
   });
 
   it("switching one off PUTs the whole off-set and reconciles", async () => {
-    render(<PracticesSettingsRoute />);
+    renderRoute(<PracticesSettingsRoute />);
     const lunar = await screen.findByRole("switch", { name: "Lunar adorations" });
 
     await act(async () => {
@@ -82,12 +89,16 @@ describe("PracticesSettingsRoute", () => {
     });
 
     // Rituals was already off; turning Lunar off makes the set both keys.
-    expect(mocks.putMyPractices).toHaveBeenCalledWith({
-      disabled: ["lunarAdorations", "rituals"],
-    });
-    expect(screen.getByRole("switch", { name: "Lunar adorations" })).toHaveAttribute(
-      "aria-checked",
-      "false",
+    await waitFor(() =>
+      expect(mocks.putMyPractices).toHaveBeenCalledWith({
+        disabled: ["lunarAdorations", "rituals"],
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("switch", { name: "Lunar adorations" })).toHaveAttribute(
+        "aria-checked",
+        "false",
+      ),
     );
   });
 });

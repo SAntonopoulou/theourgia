@@ -18,47 +18,40 @@ import {
   Skeleton,
   Switch,
   Toast,
-  useApiCall,
 } from "@theourgia/shared";
-import { useEffect, useState } from "react";
 
-import { apiMethods } from "../data/api.js";
+import { usePractices, useSetPractices } from "../data/usePractices.js";
 
 export function PracticesSettingsRoute() {
-  const { status, data, error, refresh } = useApiCall((signal) =>
-    apiMethods.getMyPractices({ signal }),
-  );
+  // Shared cache — the same one Today reads, so a toggle here shows there with
+  // no reload. The mutation updates the cache optimistically.
+  const query = usePractices();
+  const setPractices = useSetPractices();
 
-  // The list we render, held locally so a toggle feels instant. Seeded from
-  // the server and re-seeded from every PUT response (the source of truth).
-  const [view, setView] = useState<PracticeToggle[] | null>(null);
-  const [saving, setSaving] = useState(false);
+  const view = query.data?.practices ?? null;
+  const status = query.isPending ? "loading" : query.isError ? "error" : "ok";
+  const error = query.error;
+  const saving = setPractices.isPending;
+  const refresh = (): void => {
+    void query.refetch();
+  };
 
-  useEffect(() => {
-    if (data) setView(data.practices);
-  }, [data]);
-
-  async function toggle(key: string): Promise<void> {
+  function toggle(key: string): void {
     if (!view || saving) return;
-    const before = view;
-    const next = view.map((p) => (p.key === key ? { ...p, enabled: !p.enabled } : p));
-    setView(next); // optimistic
-    setSaving(true);
-    try {
-      const res = await apiMethods.putMyPractices({
-        disabled: next.filter((p) => !p.enabled).map((p) => p.key),
-      });
-      setView(res.practices); // reconcile with the server's answer
-    } catch (e) {
-      setView(before); // roll back
-      Toast.push({
-        tone: "warning",
-        title: "That change didn't save",
-        body: e instanceof Error ? e.message : "Check your connection and try again.",
-      });
-    } finally {
-      setSaving(false);
-    }
+    // The new enabled state of each row; the switched-off set is what we PUT.
+    const nextEnabled = (p: PracticeToggle): boolean => (p.key === key ? !p.enabled : p.enabled);
+    const disabled = view.filter((p) => !nextEnabled(p)).map((p) => p.key);
+    setPractices.mutate(
+      { disabled },
+      {
+        onError: (e) =>
+          Toast.push({
+            tone: "warning",
+            title: "That change didn't save",
+            body: e instanceof Error ? e.message : "Check your connection and try again.",
+          }),
+      },
+    );
   }
 
   return (
@@ -88,7 +81,7 @@ export function PracticesSettingsRoute() {
         </p>
       </header>
 
-      {status === "loading" || status === "idle" ? (
+      {status === "loading" ? (
         <div style={{ display: "grid", gap: 10 }}>
           {["a", "b", "c", "d", "e", "f"].map((k) => (
             <Skeleton key={k} kind="rect" height={44} />

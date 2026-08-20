@@ -37,6 +37,7 @@ import { Link } from "react-router-dom";
 import { apiMethods } from "../data/api.js";
 import { createEntry, useRecentEntries } from "../data/useEntries.js";
 import { useMyLocation } from "../data/useLocation.js";
+import { usePractices } from "../data/usePractices.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
 import { AwaitingJudgmentCard, TodayLunarChip, TodayRiteRow } from "./TodayPractice.js";
 
@@ -837,9 +838,7 @@ export function Today() {
   // off practice's stations (lib/data/day_assembly.dart; the toggle set is
   // default-ON, subtractive). Here that means the solar rite and the lunar
   // chip only mount when their discipline is enabled.
-  const practices = useApiCall((signal) => apiMethods.getMyPractices({ signal }), {
-    skip: session === null,
-  });
+  const practices = usePractices({ enabled: session !== null });
   const enabledPractices = useMemo(() => {
     const set = new Set<string>();
     for (const p of practices.data?.practices ?? []) {
