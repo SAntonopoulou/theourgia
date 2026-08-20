@@ -159,3 +159,52 @@ async def test_read_disabled_practices_tolerates_garbage() -> None:
     from theourgia.api.routers.v1.user_settings import read_disabled_practices
 
     assert await read_disabled_practices(_Session(_Row("not json")), "u") == set()
+
+
+# ─── custom correspondence tables ───────────────────────────────────
+
+
+def test_correspondence_table_needs_a_title() -> None:
+    from theourgia.api.routers.v1.user_settings import CustomCorrespondenceTable
+
+    with pytest.raises(ValidationError):
+        CustomCorrespondenceTable(id="a", title="", columns=[], rows=[])
+
+
+def test_correspondences_write_defaults_to_no_tables() -> None:
+    from theourgia.api.routers.v1.user_settings import CorrespondencesWrite
+
+    assert CorrespondencesWrite().tables == []
+
+
+def test_correspondences_route_registered() -> None:
+    from theourgia.api.app import create_app
+
+    paths = set(create_app().openapi()["paths"].keys())
+    assert "/api/v1/users/me/settings/correspondences" in paths
+
+
+@pytest.mark.anyio
+async def test_read_custom_correspondences_defaults_empty() -> None:
+    from theourgia.api.routers.v1.user_settings import read_custom_correspondences
+
+    assert await read_custom_correspondences(_Session(None), "u") == []
+
+
+@pytest.mark.anyio
+async def test_read_custom_correspondences_parses_and_drops_bad_tables() -> None:
+    import json
+
+    from theourgia.api.routers.v1.user_settings import read_custom_correspondences
+
+    good = {
+        "id": "t1",
+        "title": "My 777",
+        "columns": ["Metal", "Colour"],
+        "rows": [{"subject": "Mars", "cells": {"Metal": "Iron", "Colour": "Red"}}],
+    }
+    bad = {"id": "t2", "title": ""}  # empty title — refused
+    row = _Row(json.dumps([good, bad, "not-a-table"]))
+    tables = await read_custom_correspondences(_Session(row), "u")
+    assert [t.id for t in tables] == ["t1"]
+    assert tables[0].rows[0].cells["Metal"] == "Iron"

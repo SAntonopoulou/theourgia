@@ -386,6 +386,27 @@ export interface PracticeToggleSettings {
   practices: PracticeToggle[];
 }
 
+/** One row of a user-built correspondence table: a subject and its cells,
+ *  keyed by column name. A 777-style grid stored long-ways. */
+export interface CustomCorrespondenceRow {
+  subject: string;
+  cells: Record<string, string>;
+}
+
+/** A correspondence table the practitioner built themselves (distinct from the
+ *  read-only tables that arrive in installed packs). */
+export interface CustomCorrespondenceTable {
+  id: string;
+  title: string;
+  columns: string[];
+  rows: CustomCorrespondenceRow[];
+}
+
+/** Response of ``GET/PUT /api/v1/users/me/settings/correspondences``. */
+export interface CustomCorrespondencesResponse {
+  tables: CustomCorrespondenceTable[];
+}
+
 /**
  * One crisis-support resource from the wellbeing starter list.
  * Server data pending maintainer review — the designer's "Sacred Well

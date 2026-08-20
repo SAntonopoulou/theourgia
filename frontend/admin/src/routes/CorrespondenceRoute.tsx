@@ -4,7 +4,9 @@
  * The web mirror of the phone's correspondence charts (#87). Reads the account's
  * installed correspondence-table packs (Agrippa, Liber 777) client-side from the
  * feed and lays their sources side by side: a subject read down its categories,
- * each source's value beside another's. No backend — pure client materialization.
+ * each source's value beside another's. The packs are read-only; beneath them,
+ * the practitioner's OWN tables (20 Aug — Sophia: people must be able to build
+ * their own 777) are editable via CustomCorrespondenceEditor.
  */
 
 import {
@@ -19,6 +21,7 @@ import { useEffect, useState } from "react";
 
 import { apiMethods } from "../data/api.js";
 import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
+import { CustomCorrespondenceEditor } from "./CustomCorrespondenceEditor.js";
 
 export function CorrespondenceRoute() {
   useTopbar(
@@ -53,6 +56,14 @@ export function CorrespondenceRoute() {
     };
   }, []);
 
-  if (tables === null) return <SurfaceSkeleton rowCount={5} />;
-  return <CorrespondenceChart tables={tables} />;
+  return (
+    <div>
+      {tables === null ? (
+        <SurfaceSkeleton rowCount={5} />
+      ) : tables.length > 0 ? (
+        <CorrespondenceChart tables={tables} />
+      ) : null}
+      <CustomCorrespondenceEditor />
+    </div>
+  );
 }

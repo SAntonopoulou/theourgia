@@ -173,6 +173,8 @@ import type {
   UpdateTalismanInput,
   UpdateToolInput,
   UpdateVoceInput,
+  CustomCorrespondenceTable,
+  CustomCorrespondencesResponse,
   PracticeToggleSettings,
   UserLocation,
   VoceRecordWire,
@@ -1134,6 +1136,27 @@ export function api(client: ApiClient) {
         method: "PUT",
         json: input,
       });
+    },
+
+    /** The user's own correspondence tables (the packs' tables are read
+     *  separately from installed bundles). */
+    getMyCorrespondences(opts?: {
+      signal?: AbortSignal;
+    }): Promise<CustomCorrespondencesResponse> {
+      return client.request<CustomCorrespondencesResponse>(
+        "/api/v1/users/me/settings/correspondences",
+        { signal: opts?.signal },
+      );
+    },
+
+    /** Replace the whole set of the user's own tables. */
+    putMyCorrespondences(input: {
+      tables: CustomCorrespondenceTable[];
+    }): Promise<CustomCorrespondencesResponse> {
+      return client.request<CustomCorrespondencesResponse>(
+        "/api/v1/users/me/settings/correspondences",
+        { method: "PUT", json: input },
+      );
     },
 
     // ─── Wellbeing — crisis-aware nudge (v1-010, opt-in) ─────────────

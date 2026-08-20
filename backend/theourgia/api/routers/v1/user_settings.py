@@ -15,6 +15,8 @@ Routes
 ``PUT    /api/v1/users/me/settings/calendars``  → replaces the list, requires auth
 ``GET    /api/v1/users/me/settings/practices``  → {practices: [{key,…,enabled}]}
 ``PUT    /api/v1/users/me/settings/practices``  → replaces the off-set, requires auth
+``GET    /api/v1/users/me/settings/correspondences``  → {tables: [...]}
+``PUT    /api/v1/users/me/settings/correspondences``  → replaces the user's tables
 """
 
 from __future__ import annotations
@@ -22,7 +24,7 @@ from __future__ import annotations
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -116,7 +118,7 @@ async def _read_value(db: AsyncSession, user_id, key: str) -> float | None:
         return None
 
 
-async def _upsert_value(db: AsyncSession, user_id, key: str, value: float | list[str]) -> None:
+async def _upsert_value(db: AsyncSession, user_id, key: str, value: object) -> None:
     import json
 
     stmt = select(UserSetting).where(UserSetting.user_id == user_id, UserSetting.key == key)
@@ -349,3 +351,119 @@ async def put_my_practices(
             for p in PRACTICES
         ]
     )
+
+
+# ─── custom correspondence tables (the practitioner's own 777) ──────
+#
+# Sophia, 20 Aug: the correspondence surface must let people build their own
+# tables — a 777 / Skinner-style grid of subjects down the side, categories
+# across the top. The shipped tables come from installed packs (read-only); a
+# user's own tables live here, as one JSON blob per user (no new table, no
+# migration — same key/value store as location, calendars and practices).
+#
+# A table is stored as a grid, which the web converts to the same
+# subject/category/value entries a pack table renders as — so a custom table
+# draws in the identical chart component.
+
+CUSTOM_CORRESPONDENCES_KEY = "correspondences.custom"
+
+
+class CorrespondenceRow(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    subject: str = Field(min_length=1, max_length=200)
+    #: category name → cell value. Missing/blank cells are simply absent.
+    cells: dict[str, str] = Field(default_factory=dict)
+
+
+class CustomCorrespondenceTable(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    #: Client-generated stable id (a uuid), so edits target the right table.
+    id: str = Field(min_length=1, max_length=64)
+    title: str = Field(min_length=1, max_length=200)
+    columns: list[str] = Field(default_factory=list, max_length=64)
+    rows: list[CorrespondenceRow] = Field(default_factory=list, max_length=2000)
+
+
+class CorrespondencesRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    tables: list[CustomCorrespondenceTable]
+
+
+class CorrespondencesWrite(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    tables: list[CustomCorrespondenceTable] = Field(default_factory=list, max_length=200)
+
+
+async def read_custom_correspondences(db: AsyncSession, user_id) -> list[CustomCorrespondenceTable]:
+    """The user's own correspondence tables, or an empty list. Malformed rows
+    are dropped rather than raised — a single bad table never hides the rest."""
+    stmt = select(UserSetting).where(
+        UserSetting.user_id == user_id, UserSetting.key == CUSTOM_CORRESPONDENCES_KEY
+    )
+    row = (await db.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        return []
+    try:
+        import json
+
+        value = json.loads(row.value_json)
+    except (ValueError, TypeError):
+        return []
+    if not isinstance(value, list):
+        return []
+    tables: list[CustomCorrespondenceTable] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        try:
+            tables.append(CustomCorrespondenceTable(**item))
+        except ValidationError:
+            continue
+    return tables
+
+
+@router.get(
+    "/users/me/settings/correspondences",
+    summary="Read the signed-in user's own correspondence tables",
+    description="Returns the tables the user built themselves (the packs' tables are separate).",
+    response_model=CorrespondencesRead,
+)
+async def get_my_correspondences(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> CorrespondencesRead:
+    if current_user is None:
+        raise UnauthorizedError("correspondence tables require authentication")
+    return CorrespondencesRead(tables=await read_custom_correspondences(db, current_user.id))
+
+
+@router.put(
+    "/users/me/settings/correspondences",
+    summary="Replace the signed-in user's own correspondence tables",
+    response_model=CorrespondencesRead,
+)
+async def put_my_correspondences(
+    payload: CorrespondencesWrite,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> CorrespondencesRead:
+    if current_user is None:
+        raise UnauthorizedError("correspondence tables require authentication")
+
+    # Two tables sharing an id would make an edit ambiguous.
+    ids = [t.id for t in payload.tables]
+    if len(ids) != len(set(ids)):
+        raise ValidationFailedError("Every table needs its own id; found a duplicate.")
+
+    await _upsert_value(
+        db,
+        current_user.id,
+        CUSTOM_CORRESPONDENCES_KEY,
+        [t.model_dump() for t in payload.tables],
+    )
+    await db.commit()
+    return CorrespondencesRead(tables=payload.tables)
