@@ -407,6 +407,22 @@ export interface CustomCorrespondencesResponse {
   tables: CustomCorrespondenceTable[];
 }
 
+/** One lunar station of the day — the lunar counterpart of a Resh solar
+ *  transition. `at` is an ISO instant, or null where the moon gives no such
+ *  event (polar days). */
+export interface LunarStationRead {
+  key: string;
+  label: string;
+  at: string | null;
+}
+
+/** Response of ``GET /api/v1/lunar/today`` — the four lunar adoration stations. */
+export interface LunarTodayResponse {
+  civil_date: string;
+  stations: LunarStationRead[];
+  attribution: string;
+}
+
 /**
  * One crisis-support resource from the wellbeing starter list.
  * Server data pending maintainer review — the designer's "Sacred Well

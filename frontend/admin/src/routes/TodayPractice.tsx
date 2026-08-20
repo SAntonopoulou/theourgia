@@ -22,6 +22,7 @@
 import {
   type AwaitingJudgmentRead,
   LunarDayChip,
+  type LunarTodayResponse,
   RESH_STATION_ORDER,
   type ReshAdorationRead,
   type ReshModeWire,
@@ -72,6 +73,103 @@ function isTodayContext(value: unknown): value is TodayContextRead {
     !Array.isArray(value) &&
     "attic" in value &&
     "moon" in value
+  );
+}
+
+const LUNAR_GLYPH: Record<string, string> = {
+  moonrise: "↑",
+  culmination: "☽",
+  moonset: "↓",
+  nadir: "☾",
+};
+
+function lunarTimeLabel(at: string | null): string {
+  if (!at) return "—";
+  return new Date(at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+}
+
+/**
+ * The four lunar stations of the day — the lunar counterpart of the solar
+ * Resh rite, so enabling lunar adorations shows a real rite rather than
+ * nothing (20 Aug). Reads `GET /api/v1/lunar/today`. Station NAMES come from a
+ * chosen adoration set on the phone; the web has no set-selection surface yet,
+ * so the plain station names stand until it does.
+ */
+export function TodayLunarRow({ lat, lng }: { lat: number; lng: number }) {
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const today = useApiCall<LunarTodayResponse>((signal) =>
+    apiMethods.lunarToday({ lat, lng, tz, signal }),
+  );
+
+  const card = (children: React.ReactNode): React.ReactNode => (
+    <div
+      style={{
+        padding: "15px 17px",
+        border: "1px solid var(--line)",
+        borderRadius: "var(--r-lg, 14px)",
+        background: "var(--bg-2)",
+      }}
+    >
+      {children}
+    </div>
+  );
+
+  if (today.status === "loading" || today.status === "idle") {
+    return card(<Skeleton kind="text" width="60%" />);
+  }
+  if (today.status === "error" || !today.data) return null;
+
+  return card(
+    <>
+      <div
+        style={{
+          fontFamily: "var(--font-ui)",
+          fontSize: 11,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          color: "var(--ink-mute)",
+          marginBottom: 10,
+        }}
+      >
+        Lunar adorations · the four stations
+      </div>
+      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
+        {today.data.stations.map((s) => (
+          <li key={s.key} style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+            <span aria-hidden="true" style={{ width: 18, color: "var(--ink-soft)" }}>
+              {LUNAR_GLYPH[s.key] ?? "·"}
+            </span>
+            <span
+              style={{ flex: 1, fontFamily: "var(--font-ui)", fontSize: 14, color: "var(--ink)" }}
+            >
+              {s.label}
+            </span>
+            <time
+              style={{
+                fontFamily: "var(--font-ui)",
+                fontSize: 14,
+                color: "var(--ink-soft)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {lunarTimeLabel(s.at)}
+            </time>
+          </li>
+        ))}
+      </ul>
+      <p
+        style={{
+          margin: "12px 0 0",
+          fontFamily: "var(--font-ui)",
+          fontSize: 12,
+          color: "var(--ink-mute)",
+          lineHeight: 1.45,
+        }}
+      >
+        Choosing an adoration set (Hekate and others) will name these stations — that surface is
+        coming to the web.
+      </p>
+    </>,
   );
 }
 

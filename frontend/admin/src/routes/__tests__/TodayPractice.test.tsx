@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => ({
   listReshAdorations: vi.fn(),
   createReshAdoration: vi.fn(),
   listAwaitingJudgment: vi.fn(),
+  lunarToday: vi.fn(),
 }));
 
 vi.mock("../../data/api.js", () => ({
@@ -36,7 +37,12 @@ vi.mock("../../data/api.js", () => ({
   API_BASE_URL: "",
 }));
 
-import { AwaitingJudgmentCard, TodayLunarChip, TodayRiteRow } from "../TodayPractice.js";
+import {
+  AwaitingJudgmentCard,
+  TodayLunarChip,
+  TodayLunarRow,
+  TodayRiteRow,
+} from "../TodayPractice.js";
 
 const TODAY_CONTEXT = {
   date: "2026-07-25",
@@ -154,6 +160,27 @@ describe("TodayLunarChip", () => {
       // The loading skeleton must also be gone — not stuck.
       expect(container.textContent).toBe("");
     });
+  });
+});
+
+describe("TodayLunarRow", () => {
+  it("renders the four lunar stations with their times", async () => {
+    mocks.lunarToday.mockResolvedValue({
+      civil_date: "2026-08-20",
+      stations: [
+        { key: "nadir", label: "Nadir", at: "2026-08-20T04:07:00Z" },
+        { key: "moonrise", label: "Moonrise", at: "2026-08-20T11:57:00Z" },
+        { key: "culmination", label: "Culmination", at: "2026-08-20T16:32:00Z" },
+        { key: "moonset", label: "Moonset", at: "2026-08-20T21:04:00Z" },
+      ],
+      attribution: "Moon stations computed locally.",
+    });
+    render(<TodayLunarRow lat={37.98} lng={23.72} />);
+    expect(await screen.findByText("Moonrise")).toBeInTheDocument();
+    for (const label of ["Culmination", "Moonset", "Nadir"]) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+    expect(mocks.lunarToday).toHaveBeenCalled();
   });
 });
 

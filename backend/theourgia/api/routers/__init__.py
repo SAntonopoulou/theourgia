@@ -47,6 +47,7 @@ from theourgia.api.routers.v1 import activitypub as v1_activitypub
 from theourgia.api.routers.v1 import identities as v1_identities
 from theourgia.api.routers.v1 import initiations as v1_initiations
 from theourgia.api.routers.v1 import library as v1_library
+from theourgia.api.routers.v1 import lunar as v1_lunar
 from theourgia.api.routers.v1 import link_codes as v1_link_codes
 from theourgia.api.routers.v1 import magic_squares as v1_magic_squares
 from theourgia.api.routers.v1 import meta as v1_meta
@@ -189,6 +190,7 @@ def register_routers(app: FastAPI) -> None:
     v1.include_router(v1_practices.router, tags=["practices"])
     # H01-H03 backend gap-fills
     v1.include_router(v1_resh.router, tags=["resh"])
+    v1.include_router(v1_lunar.router, tags=["lunar"])
     v1.include_router(v1_today_ledger.router, tags=["today"])
     # Sprint I-B (H12): astragaloi · two-gate covenant · tetraktys ladder
     v1.include_router(v1_astragaloi.router, tags=["astragaloi"])

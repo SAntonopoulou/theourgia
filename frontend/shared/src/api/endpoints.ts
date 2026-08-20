@@ -69,6 +69,8 @@ import type {
   CurriculumItemComplete,
   CurriculumItemCreate,
   CurriculumItemRead,
+  CustomCorrespondenceTable,
+  CustomCorrespondencesResponse,
   DataExportResponse,
   DecideSubmissionInput,
   DeclaredIntentRead,
@@ -98,6 +100,7 @@ import type {
   KeyRotationStatusResponse,
   LadderProgressRead,
   LadderRead,
+  LunarTodayResponse,
   MagicSquareRecord,
   MaintainerQueueResponse,
   MeRead,
@@ -115,6 +118,7 @@ import type {
   PlanetarySquareWire,
   PracticeRecord,
   PracticeStatusWrite,
+  PracticeToggleSettings,
   PracticesToday,
   PresetCircle,
   PromotePluginInput,
@@ -173,9 +177,6 @@ import type {
   UpdateTalismanInput,
   UpdateToolInput,
   UpdateVoceInput,
-  CustomCorrespondenceTable,
-  CustomCorrespondencesResponse,
-  PracticeToggleSettings,
   UserLocation,
   VoceRecordWire,
   VoceRecordingRecord,
@@ -1527,6 +1528,20 @@ export function api(client: ApiClient) {
       if (opts.date) params.set("date", opts.date);
       if (opts.tz) params.set("tz", opts.tz);
       return client.request<ReshTodayRead>(`/api/v1/resh/today?${params.toString()}`, {
+        signal: opts.signal,
+      });
+    },
+
+    /** The four lunar stations of the day — the lunar counterpart of resh. */
+    lunarToday(opts: {
+      lat: number;
+      lng: number;
+      tz?: string;
+      signal?: AbortSignal;
+    }): Promise<LunarTodayResponse> {
+      const params = new URLSearchParams({ lat: String(opts.lat), lng: String(opts.lng) });
+      if (opts.tz) params.set("tz", opts.tz);
+      return client.request<LunarTodayResponse>(`/api/v1/lunar/today?${params.toString()}`, {
         signal: opts.signal,
       });
     },

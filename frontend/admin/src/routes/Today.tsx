@@ -39,7 +39,12 @@ import { createEntry, useRecentEntries } from "../data/useEntries.js";
 import { useMyLocation } from "../data/useLocation.js";
 import { usePractices } from "../data/usePractices.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
-import { AwaitingJudgmentCard, TodayLunarChip, TodayRiteRow } from "./TodayPractice.js";
+import {
+  AwaitingJudgmentCard,
+  TodayLunarChip,
+  TodayLunarRow,
+  TodayRiteRow,
+} from "./TodayPractice.js";
 
 // ─── Static maps ────────────────────────────────────────────────────────────
 
@@ -920,6 +925,12 @@ export function Today() {
                 calendar and what that day asks. Gated by lunar adorations,
                 the discipline it belongs to (20 Aug — like the phone). */}
             {practiceOn("lunarAdorations") ? <TodayLunarChip /> : null}
+
+            {/* The four lunar stations — the lunar counterpart of the solar
+                rite below, so lunar adorations is no longer just a chip. */}
+            {practiceOn("lunarAdorations") ? (
+              <TodayLunarRow lat={location.lat} lng={location.lng} />
+            ) : null}
 
             {/* H12 — the four-station rite row: first mount of the
                 LiberResh family on the home surface. Gated by solar
