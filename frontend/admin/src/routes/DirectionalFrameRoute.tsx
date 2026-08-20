@@ -18,6 +18,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { apiMethods } from "../data/api.js";
+import { LiveCompass } from "./LiveCompass.js";
 import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
 
 export function DirectionalFrameRoute() {
@@ -52,5 +53,10 @@ export function DirectionalFrameRoute() {
   }, []);
 
   if (frames === null) return <SurfaceSkeleton rowCount={3} />;
-  return <DirectionalFrameReference frames={frames} />;
+  return (
+    <div style={{ maxWidth: 720, margin: "0 auto", padding: "var(--space-5, 24px)" }}>
+      <LiveCompass />
+      <DirectionalFrameReference frames={frames} />
+    </div>
+  );
 }
