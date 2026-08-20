@@ -428,16 +428,13 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
     ],
   },
   // ── On the web ───────────────────────────────────────────────────────
-  // What the phone has no place for. The journal is Sophia's named example;
-  // packs live here because the phone keeps them in Settings and the site has
-  // no Settings home for them yet (a later migration moves packs there and this
-  // row goes with them).
+  // What the phone has no place for. The journal is Sophia's named example.
+  // (Packs used to sit here; they now live in the Settings gear, as on the
+  // phone — a pack is what the app is furnished with, not a practice worked
+  // with. The route stays in the Graveyard so /packs still answers.)
   {
     heading: "On the web",
-    items: [
-      { key: "journal", to: "/journal", label: "Journal" },
-      { key: "packs", to: "/packs", label: "Packs" },
-    ],
+    items: [{ key: "journal", to: "/journal", label: "Journal" }],
   },
   // ── Graveyard (never shown) ──────────────────────────────────────────
   // Every remaining VaultNav route, kept addressable. All keys here are in
@@ -447,6 +444,9 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
   {
     heading: "Graveyard",
     items: [
+      // Packs are reached from the Settings gear now (phone parity); the route
+      // stays here so its URL still answers.
+      { key: "packs", to: "/packs", label: "Packs" },
       { key: "dailypractice", to: "/daily-practice", label: "Daily rite" },
       { key: "practicelogs", to: "/practice-logs", label: "Practice log" },
       { key: "entities", to: "/entities", label: "Magical beings" },
@@ -546,6 +546,8 @@ export const HIDDEN_UNTIL_FINISHED: ReadonlySet<PracticeNavKey> = new Set<Practi
   // A divination sub-kind (astragaloi) — reached inside Divination on the
   // phone, not a menu row of its own.
   "astragaloi",
+  // Packs live in the Settings gear now, as on the phone — not the sidebar.
+  "packs",
   // Pack-reference surfaces — the phone folds these into the packs a practice
   // consumes, not the drawer.
   "wordvalues",

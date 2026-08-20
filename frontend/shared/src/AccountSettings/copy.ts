@@ -8,6 +8,7 @@
 
 export type SectionKey =
   | "practices"
+  | "packs"
   | "identity"
   | "security"
   | "linked"

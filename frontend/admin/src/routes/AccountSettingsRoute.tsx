@@ -37,11 +37,22 @@ const PRACTICE_SECTION = {
   links: [{ label: "Manage practices", href: appHref("/settings/practices") }],
 };
 
+// Packs live in Settings, as they do on the phone: a pack is what the app is
+// furnished with, not a practice worked with, so it belongs beside the choices
+// the packs themselves leave open — not in the practice sidebar.
+const PACKS_SECTION = {
+  key: "packs" as const,
+  title: "Packs",
+  sub: "Install and manage the packs that furnish your practice",
+  links: [{ label: "Browse & install packs", href: appHref("/packs") }],
+};
+
 // The shared DEFAULT_SECTIONS carry raw absolute hrefs ("/settings/keys").
 // Served under the /app basename those escape the SPA, so resolve every
 // internal link through appHref() once at module scope.
 const SECTIONS = [
   PRACTICE_SECTION,
+  PACKS_SECTION,
   ...AccountSettingsCopy.DEFAULT_SECTIONS.map((section) => ({
     ...section,
     links: section.links.map((l) =>
