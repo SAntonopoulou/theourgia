@@ -428,6 +428,17 @@ export {
   workingsFromEntries,
 } from "./workings/recordWorkings.js";
 export { WorkingsLibrary, type WorkingsLibraryProps } from "./workings/WorkingsLibrary.js";
+// The day's agenda — which scheduled rites/sittings fall on a day (the phone's
+// Recurrence, ported), for a real Today.
+export {
+  type RecurrenceKind,
+  type Schedule,
+  type ScheduleRecordEntry,
+  isoWeekday,
+  scheduleDueOn,
+  scheduleSubjectKey,
+  schedulesFromEntries,
+} from "./agenda/scheduleAgenda.js";
 // Keeping — recording a practice as done, the way the phone captures it (sky
 // context + mood/body/note), written back to the record so it crosses to the phone.
 export {

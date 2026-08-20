@@ -35,6 +35,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
+import { TodayAgenda } from "./TodayAgenda.js";
 import { createEntry, useRecentEntries } from "../data/useEntries.js";
 import { useMyLocation } from "../data/useLocation.js";
 import { usePractices } from "../data/usePractices.js";
@@ -921,6 +922,11 @@ export function Today() {
               gap: 22,
             }}
           >
+            {/* What today asks beyond adorations — scheduled rites/sittings due
+                today and the working items, each one-tap keepable (self-hides
+                when there's nothing scheduled or running). */}
+            {session !== null ? <TodayAgenda /> : null}
+
             {/* H12 — the lunar-day chip: what day it is in the Attic
                 calendar and what that day asks. Gated by lunar adorations,
                 the discipline it belongs to (20 Aug — like the phone). */}
