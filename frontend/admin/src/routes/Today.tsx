@@ -35,6 +35,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
+import { DayBook } from "./DayBook.js";
 import { TodayAgenda } from "./TodayAgenda.js";
 import { createEntry, useRecentEntries } from "../data/useEntries.js";
 import { useMyLocation } from "../data/useLocation.js";
@@ -984,6 +985,10 @@ export function Today() {
 
             {/* Quick capture */}
             <QuickCapture onCapture={(input) => setPending(input)} />
+
+            {/* The day book — waking/sleeping/dreams/notes into the record, the
+                phone's day journal (writes that cross to the phone). */}
+            {session !== null ? <DayBook /> : null}
 
             {/* Recent entries */}
             <div>
