@@ -67,6 +67,11 @@ const LiberReshRoute = lazy(() =>
     default: m.LiberReshRoute,
   })),
 );
+const PracticesSettingsRoute = lazy(() =>
+  import("./routes/PracticesSettingsRoute.js").then((m) => ({
+    default: m.PracticesSettingsRoute,
+  })),
+);
 const CommentModerationRoute = lazy(() =>
   import("./routes/CommentModerationRoute.js").then((m) => ({
     default: m.CommentModerationRoute,
@@ -687,6 +692,7 @@ function navKeyForPath(pathname: string): PracticeNavKey | undefined {
   if (pathname === "/" || pathname === "") return "today";
   if (pathname.startsWith("/journal")) return "journal";
   if (pathname.startsWith("/synchronicities")) return "synchronicities";
+  if (pathname.startsWith("/settings/practices")) return "practicesettings";
   if (pathname.startsWith("/daily-practice")) return "dailypractice";
   if (pathname.startsWith("/practice-logs")) return "practicelogs";
   if (pathname.startsWith("/record")) return "record";
@@ -898,6 +904,7 @@ function ShellRoutes() {
             <Route path="/synchronicities" element={<SynchronicityLogRoute />} />
             <Route path="/daily-practice" element={<DailyPracticeRoute />} />
             <Route path="/daily-practice/resh" element={<LiberReshRoute />} />
+            <Route path="/settings/practices" element={<PracticesSettingsRoute />} />
             <Route path="/practice-logs" element={<PracticeLogsRoute />} />
             <Route path="/record" element={<RecordRoute />} />
             <Route path="/entities" element={<Entities />} />

@@ -369,6 +369,24 @@ export interface UserLocation {
 }
 
 /**
+ * One built-in discipline and whether the user keeps it on. Mirrors the
+ * phone's `Practice` enum (`lib/domain/practice.dart`); the `key` is the
+ * cross-repo contract string, so it is never shown, only the `label`.
+ */
+export interface PracticeToggle {
+  key: string;
+  label: string;
+  glyph: string;
+  detail: string;
+  enabled: boolean;
+}
+
+/** Response of ``GET/PUT /api/v1/users/me/settings/practices``. */
+export interface PracticeToggleSettings {
+  practices: PracticeToggle[];
+}
+
+/**
  * One crisis-support resource from the wellbeing starter list.
  * Server data pending maintainer review — the designer's "Sacred Well
  * Directory" placeholder rule applies to whatever copy eventually

@@ -13,6 +13,8 @@ Routes
 ``PUT    /api/v1/users/me/settings/location``   → updates both, requires auth
 ``GET    /api/v1/users/me/settings/calendars``  → {enabled: [...]}
 ``PUT    /api/v1/users/me/settings/calendars``  → replaces the list, requires auth
+``GET    /api/v1/users/me/settings/practices``  → {practices: [{key,…,enabled}]}
+``PUT    /api/v1/users/me/settings/practices``  → replaces the off-set, requires auth
 """
 
 from __future__ import annotations
@@ -73,10 +75,34 @@ class CalendarsWrite(BaseModel):
     enabled: list[str] = Field(max_length=32)
 
 
+class PracticeToggleView(BaseModel):
+    """One built-in discipline and whether the user keeps it on."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    key: str
+    label: str
+    glyph: str
+    detail: str
+    enabled: bool
+
+
+class PracticesRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    practices: list[PracticeToggleView]
+
+
+class PracticesWrite(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    # We persist the switched-OFF set, so a discipline added in a later
+    # version is on for everyone until they turn it off — the phone's rule.
+    disabled: list[str] = Field(default_factory=list, max_length=32)
+
+
 async def _read_value(db: AsyncSession, user_id, key: str) -> float | None:
-    stmt = select(UserSetting).where(
-        UserSetting.user_id == user_id, UserSetting.key == key
-    )
+    stmt = select(UserSetting).where(UserSetting.user_id == user_id, UserSetting.key == key)
     result = await db.execute(stmt)
     row = result.scalar_one_or_none()
     if row is None:
@@ -90,14 +116,10 @@ async def _read_value(db: AsyncSession, user_id, key: str) -> float | None:
         return None
 
 
-async def _upsert_value(
-    db: AsyncSession, user_id, key: str, value: float | list[str]
-) -> None:
+async def _upsert_value(db: AsyncSession, user_id, key: str, value: float | list[str]) -> None:
     import json
 
-    stmt = select(UserSetting).where(
-        UserSetting.user_id == user_id, UserSetting.key == key
-    )
+    stmt = select(UserSetting).where(UserSetting.user_id == user_id, UserSetting.key == key)
     result = await db.execute(stmt)
     row = result.scalar_one_or_none()
     encoded = json.dumps(value)
@@ -134,11 +156,36 @@ async def read_enabled_calendars(db: AsyncSession, user_id) -> list[str]:
         value = json.loads(row.value_json)
     except (ValueError, TypeError):
         return list(DEFAULT_CALENDARS)
-    if not isinstance(value, list) or not all(
-        isinstance(item, str) for item in value
-    ):
+    if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
         return list(DEFAULT_CALENDARS)
     return value
+
+
+# The switched-off disciplines. Absent / malformed → none disabled → all on,
+# matching the phone's "everything not explicitly switched off" default.
+PRACTICES_DISABLED_KEY = "practices.disabled"
+
+
+async def read_disabled_practices(db: AsyncSession, user_id) -> set[str]:
+    """The keys the user switched off, filtered to ones this build still ships
+    (a key naming a since-removed discipline is ignored, not surfaced)."""
+    from theourgia.core.practices_catalog import PRACTICE_KEYS
+
+    stmt = select(UserSetting).where(
+        UserSetting.user_id == user_id, UserSetting.key == PRACTICES_DISABLED_KEY
+    )
+    row = (await db.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        return set()
+    try:
+        import json
+
+        value = json.loads(row.value_json)
+    except (ValueError, TypeError):
+        return set()
+    if not isinstance(value, list):
+        return set()
+    return {item for item in value if isinstance(item, str) and item in PRACTICE_KEYS}
 
 
 @router.get(
@@ -194,9 +241,7 @@ async def get_my_calendars(
 ) -> CalendarsRead:
     if current_user is None:
         raise UnauthorizedError("calendar settings require authentication")
-    return CalendarsRead(
-        enabled=await read_enabled_calendars(db, current_user.id)
-    )
+    return CalendarsRead(enabled=await read_enabled_calendars(db, current_user.id))
 
 
 @router.put(
@@ -229,3 +274,78 @@ async def put_my_calendars(
     await _upsert_value(db, current_user.id, CALENDARS_KEY, deduped)
     await db.commit()
     return CalendarsRead(enabled=deduped)
+
+
+@router.get(
+    "/users/me/settings/practices",
+    summary="Read the signed-in user's built-in practice toggles",
+    description=(
+        "The eight built-in disciplines with the user's on/off state. "
+        "Everything not explicitly switched off is on — a fresh user keeps "
+        "all eight."
+    ),
+    response_model=PracticesRead,
+)
+async def get_my_practices(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> PracticesRead:
+    if current_user is None:
+        raise UnauthorizedError("practice settings require authentication")
+    from theourgia.core.practices_catalog import PRACTICES
+
+    disabled = await read_disabled_practices(db, current_user.id)
+    return PracticesRead(
+        practices=[
+            PracticeToggleView(
+                key=p.key,
+                label=p.label,
+                glyph=p.glyph,
+                detail=p.detail,
+                enabled=p.key not in disabled,
+            )
+            for p in PRACTICES
+        ]
+    )
+
+
+@router.put(
+    "/users/me/settings/practices",
+    summary="Update which built-in practices are switched off",
+    response_model=PracticesRead,
+)
+async def put_my_practices(
+    payload: PracticesWrite,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> PracticesRead:
+    if current_user is None:
+        raise UnauthorizedError("practice settings require authentication")
+    from theourgia.core.practices_catalog import PRACTICE_KEYS, PRACTICES
+
+    # Every key must name a shipped discipline — a typo or a not-yet-built key
+    # would silently switch nothing off and read back as still-on, hiding the bug.
+    unknown = [k for k in payload.disabled if k not in PRACTICE_KEYS]
+    if unknown:
+        raise ValidationFailedError(
+            f"Unknown practice keys: {', '.join(sorted(unknown))}. "
+            f"Known: {', '.join(sorted(PRACTICE_KEYS))}."
+        )
+
+    deduped = list(dict.fromkeys(payload.disabled))
+    await _upsert_value(db, current_user.id, PRACTICES_DISABLED_KEY, deduped)
+    await db.commit()
+
+    off = set(deduped)
+    return PracticesRead(
+        practices=[
+            PracticeToggleView(
+                key=p.key,
+                label=p.label,
+                glyph=p.glyph,
+                detail=p.detail,
+                enabled=p.key not in off,
+            )
+            for p in PRACTICES
+        ]
+    )

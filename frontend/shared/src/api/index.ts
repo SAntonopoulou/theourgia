@@ -184,6 +184,8 @@ export type {
   UpdateTalismanInput,
   UpdateToolInput,
   UpdateVoceInput,
+  PracticeToggle,
+  PracticeToggleSettings,
   UserLocation,
   VoceRecordWire,
   VoceRecordingRecord,

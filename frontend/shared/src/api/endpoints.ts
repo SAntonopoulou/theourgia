@@ -173,6 +173,7 @@ import type {
   UpdateTalismanInput,
   UpdateToolInput,
   UpdateVoceInput,
+  PracticeToggleSettings,
   UserLocation,
   VoceRecordWire,
   VoceRecordingRecord,
@@ -1117,6 +1118,21 @@ export function api(client: ApiClient) {
       return client.request<UserLocation>("/api/v1/users/me/settings/location", {
         method: "PUT",
         json: location,
+      });
+    },
+
+    /** The eight built-in disciplines with the user's on/off state. */
+    getMyPractices(opts?: { signal?: AbortSignal }): Promise<PracticeToggleSettings> {
+      return client.request<PracticeToggleSettings>("/api/v1/users/me/settings/practices", {
+        signal: opts?.signal,
+      });
+    },
+
+    /** Replace the switched-off set. `disabled` holds the keys to turn off. */
+    putMyPractices(input: { disabled: string[] }): Promise<PracticeToggleSettings> {
+      return client.request<PracticeToggleSettings>("/api/v1/users/me/settings/practices", {
+        method: "PUT",
+        json: input,
       });
     },
 
