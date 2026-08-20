@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -45,6 +45,12 @@ describe("AlertDialog", () => {
         onAcknowledge={onAcknowledge}
       />,
     );
+    // The overlay traps focus inside itself on open via requestAnimationFrame,
+    // and ESC only reaches the handler (which lives on the backdrop) once focus
+    // is within. Wait for that frame to land instead of racing it — under CI
+    // load a too-eager keypress fires on <body>, misses the portal, and the
+    // spy sees nothing. That race is the whole of this test's historic flake.
+    await waitFor(() => expect(screen.getByRole("button", { name: "OK" })).toHaveFocus());
     await userEvent.setup().keyboard("{Escape}");
     expect(onAcknowledge).toHaveBeenCalledOnce();
   });
