@@ -24,6 +24,9 @@ describe("PracticeNav — practice wing (default)", () => {
     // hand goes stale the day a feature is finished, and then reads as a
     // failure when it is actually the news.
     for (const section of VISIBLE_PRACTICE_SECTIONS) {
+      // Today renders as a single unlabelled row (the phone mirror) — it has
+      // no heading text to find.
+      if (!section.heading) continue;
       expect(screen.getByText(section.heading)).toBeInTheDocument();
     }
     expect(screen.queryByText("Publications")).toBeNull();
@@ -73,34 +76,89 @@ describe("PracticeNav — practice wing (default)", () => {
     }
   });
 
-  it("keeps divination and astragaloi, which the phone has", () => {
+  it("keeps divination, which the phone has, and folds astragaloi under it", () => {
     const { container } = render(<PracticeNav />);
+    // Divination is a Practices-tier row.
     expect(container.querySelector('a[href="/divination/tarot"]')).not.toBeNull();
-    expect(container.querySelector('a[href="/divination/astragaloi"]')).not.toBeNull();
+    // Astragaloi is a divination sub-kind, reached inside Divination on the
+    // phone — not a menu row of its own. Its route still answers.
+    expect(container.querySelector('a[href="/divination/astragaloi"]')).toBeNull();
+    expect(HIDDEN_UNTIL_FINISHED.has("astragaloi")).toBe(true);
   });
 
-  it("keeps 'More tools' collapsed by default and discloses the four tools", async () => {
+  it("surfaces voces, gematria and transliteration as plain rows (no 'More tools')", () => {
     const { container } = render(<PracticeNav />);
-    expect(screen.queryByText("Magic squares")).toBeNull();
-    const more = screen.getByRole("button", { name: /more tools/i });
-    expect(more).toHaveAttribute("aria-expanded", "false");
-    await userEvent.setup().click(more);
-    expect(more).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText("Fewer tools")).toBeInTheDocument();
-    for (const href of ["/voces", "/gematria", "/transliterations", "/voces-library"]) {
+    // The phone has no disclosure — its utilities and letters-and-numbers are
+    // just rows. So there is no "More tools" button here any more.
+    expect(screen.queryByRole("button", { name: /more tools/i })).toBeNull();
+    for (const href of ["/voces", "/gematria", "/transliterations"]) {
       expect(container.querySelector(`a[href="${href}"]`)).not.toBeNull();
     }
-    // Magic squares is gated out entirely (HIDDEN_UNTIL_FINISHED), not merely
-    // folded — Sophia's call, 20 Aug: it should not be available on the site.
+    // Magic squares stays gated out entirely — Sophia's call, 20 Aug.
     expect(screen.queryByText("Magic squares")).toBeNull();
     expect(container.querySelector('a[href="/magic-squares"]')).toBeNull();
   });
 
-  it("opens 'More tools' on first paint when the active key hides behind it", () => {
+  it("highlights the letters-and-numbers row when its route is active", () => {
     render(<PracticeNav active="gematria" />);
-    expect(screen.getByText("Gematria")).toBeInTheDocument();
-    const link = screen.getByText("Gematria").closest("a") as HTMLElement;
+    const link = screen.getByText("Letters and numbers").closest("a") as HTMLElement;
     expect(link.style.background).toBe("var(--accent-soft)");
+  });
+});
+
+describe("PracticeNav — the phone drawer, mirrored", () => {
+  it("puts Today first, then Practices, then Utilities", () => {
+    render(<PracticeNav />);
+    // The three tiers the phone opens with, in order.
+    expect(screen.getByText("Today")).toBeInTheDocument();
+    expect(screen.getByText("Practices")).toBeInTheDocument();
+    expect(screen.getByText("Utilities")).toBeInTheDocument();
+  });
+
+  it("lists the built practices in the phone's declaration order", () => {
+    const { container } = render(<PracticeNav />);
+    const order = ["/adorations/lunar", "/daily-practice/resh", "/divination/tarot", "/gematria"];
+    const hrefs = Array.from(container.querySelectorAll("a[href]")).map((a) =>
+      a.getAttribute("href"),
+    );
+    const seen = order.filter((h) => hrefs.includes(h));
+    expect(seen).toEqual(order); // present, and in this order
+  });
+
+  it("hides a practice the instant it is switched off, keeping the rest", () => {
+    const { container } = render(
+      <PracticeNav disabledPractices={new Set(["divination"])} />,
+    );
+    expect(container.querySelector('a[href="/divination/tarot"]')).toBeNull();
+    // The others stand.
+    expect(container.querySelector('a[href="/adorations/lunar"]')).not.toBeNull();
+    expect(container.querySelector('a[href="/gematria"]')).not.toBeNull();
+  });
+
+  it("keeps the Practices tier visible with a note when every practice is off", () => {
+    render(
+      <PracticeNav
+        disabledPractices={
+          new Set(["lunarAdorations", "solarAdorations", "divination", "numbers"])
+        }
+      />,
+    );
+    // The heading stays; the tier says nothing is on rather than vanishing.
+    expect(screen.getByText("Practices")).toBeInTheDocument();
+    expect(screen.getByText(/no practices switched on/i)).toBeInTheDocument();
+  });
+
+  it("shows all built practices when the on/off set is unknown (default-on)", () => {
+    const { container } = render(<PracticeNav />);
+    for (const href of ["/adorations/lunar", "/daily-practice/resh", "/gematria"]) {
+      expect(container.querySelector(`a[href="${href}"]`)).not.toBeNull();
+    }
+  });
+
+  it("keeps the journal — the web-only addition Sophia named", () => {
+    const { container } = render(<PracticeNav />);
+    expect(container.querySelector('a[href="/journal"]')).not.toBeNull();
+    expect(screen.getByText("On the web")).toBeInTheDocument();
   });
 });
 
@@ -138,10 +196,12 @@ describe("PracticeNav — active superset contract", () => {
   // type still accepts them and `wingForKey` still places them — and the
   // highlight returns with the link the day either leaves
   // HIDDEN_UNTIL_FINISHED.
-  it.each(["astragaloi"] as const)("highlights the new H12 key %s", (key) => {
+  it.each([
+    ["record", "The record"],
+    ["lunaradorations", "Lunar adorations"],
+  ] as const)("highlights the visible key %s", (key, label) => {
     render(<PracticeNav active={key} />);
-    const labelByKey = { astragaloi: "Astragaloi" } as const;
-    const link = screen.getByText(labelByKey[key]).closest("a") as HTMLElement;
+    const link = screen.getByText(label).closest("a") as HTMLElement;
     expect(link.style.background).toBe("var(--accent-soft)");
     expect(link.style.boxShadow).toBe("inset 2px 0 0 var(--accent)");
   });

@@ -2,24 +2,40 @@
  * PracticeNav — the practice-first admin sidebar (H12, successor to
  * ``VaultNav``).
  *
- * Faithful re-implementation of ``PracticeNav.dc.html`` +
- * ``NavArchitecture.dc.html`` from handoff H12 (The Keybearer's Record).
+ * ## The sidebar mirrors the phone drawer (Sophia, 20 Aug 2026)
  *
- * One control, two wings:
+ * *"the interface on the side menu … should mimic as much as possible the side
+ * menu of the mobile so it's easy to jump between one and the other — just
+ * having the additions for the other features (like the journal) that are on
+ * the website and not on the mobile device."*
  *
- *   Practice wing (default) · Practice / Reference / Workbench / Study —
- *       17 links, 4 sections, unscrolled on a 1080p laptop. Five tools sit
- *       behind a "More tools" disclosure inside Workbench.
- *   Platform wing · Publishing (6) / Network (4) / Platform (4) — every
- *       route from the old VaultNav survives; nothing is deleted.
+ * The phone's drawer (``lib/features/shell/app_shell.dart``) is three tiers:
  *
- * The foot **wing switcher** is a single button that names the wing you
- * are going to and lists that wing's sections beneath, so the destination
- * is never a guess. The wing persists per session.
+ *   Today · one row at the top, all practices at once.
+ *   Practices · only the ones switched on, in the enum's declaration order so
+ *       the menu never rearranges under a thumb, each drawn with its glyph.
+ *   Utilities · visited, not inhabited — the record, calendar, voces,
+ *       elections, the compass, correspondences, charts, transliteration.
  *
- * The **Awaiting judgment** entry carries a quiet count — the only number
- * in the practice wing; a workload, not a score. It renders nothing when
- * the count is zero or the queue endpoint doesn't exist yet.
+ * So this nav is those three tiers, plus one web-only section (**On the web**)
+ * for what the phone has no place for — the journal, and packs (the phone keeps
+ * packs in Settings; the site has no Settings home for them yet). Settings is a
+ * gear at the foot, never a tier — exactly as on the phone.
+ *
+ * The **Practices** tier is gated the phone's way: a practice appears only when
+ * switched on. The on/off set arrives live as ``disabledPractices`` (fed from
+ * ``usePractices`` in the shell), so flipping a toggle in Settings adds or
+ * removes its row with no reload. Only practices that HAVE a web surface are
+ * listed; the rest (rituals, workings, meditation, pranayama) join as each is
+ * built.
+ *
+ * ## Nothing is deleted, only hidden
+ *
+ * Every route the old VaultNav reached still lives in the trees below. What is
+ * not part of the phone mirror sits in a hidden ``graveyard`` section — gated
+ * out of view by ``HIDDEN_UNTIL_FINISHED`` but present in the data, so its URL
+ * still answers and un-hiding it is one line. The ``PLATFORM_WING`` is likewise
+ * intact but empty under the parity gate, so its foot switcher is absent.
  *
  * Responsive contract (all five breakpoints) is driven off a
  * ``data-nav-mode`` attribute so tests and spec surfaces can force a
@@ -31,12 +47,18 @@
  *             the content column, not the nav)
  *   drawer / rail / compact / full · forced states for tests + specs.
  *
- * ``active`` is a SUPERSET of VaultNav's keys (adds ``astragaloi``,
- * ``ladder``, ``awaitingjudgment``, ``agents``) — no existing call site
- * needs rewriting.
+ * ``active`` is a SUPERSET of VaultNav's keys — no existing call site needs
+ * rewriting.
  */
 
-import { type CSSProperties, type ComponentType, type ReactNode, useEffect, useState } from "react";
+import {
+  type CSSProperties,
+  type ComponentType,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
   NAV_ICONS,
@@ -59,6 +81,31 @@ const ICON_PROPS = {
   strokeLinejoin: "round" as const,
   "aria-hidden": true,
 };
+
+/**
+ * A practice's glyph, drawn to the same 18×18 footprint as the engraved SVG
+ * icons so a glyph row and an icon row line up. The phone marks every practice
+ * with its glyph (``lib/domain/practice.dart``); the Practices tier does the
+ * same, in ``currentColor`` so the active-accent highlight still carries.
+ */
+function glyphIcon(glyph: string): ReactNode {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 18,
+        height: 18,
+        fontSize: 15,
+        lineHeight: 1,
+      }}
+    >
+      {glyph}
+    </span>
+  );
+}
 
 const EXTRA_ICONS = {
   // Astrology — a chart wheel: the zodiac ring, the angles, the core.
@@ -171,6 +218,11 @@ const EXTRA_ICONS = {
       <path d="M3.5 12v3M20.5 12v3" />
     </svg>
   ),
+  // The two adorations wear the phone's own glyphs — the moon and the sun —
+  // rather than a drawn icon, so the Practices tier reads the same on both
+  // surfaces. See ``GLYPH_ICON`` for how the rest of the tier is drawn.
+  lunaradorations: glyphIcon("☽"),
+  solaradorations: glyphIcon("☉"),
 } as const;
 
 const WING_GRID_ICON = (
@@ -214,7 +266,12 @@ export type PracticeNavKey =
   | "elections"
   | "wordvalues"
   | "decks"
-  | "astrology";
+  | "astrology"
+  // The two adoration practices got their own web surfaces (lunar rite,
+  // Liber Resh); the rest of the eight reuse existing keys (``divination``,
+  // ``gematria``) or arrive with their surface.
+  | "lunaradorations"
+  | "solaradorations";
 
 const ICONS: Record<PracticeNavKey, ReactNode> = {
   ...NAV_ICONS,
@@ -231,9 +288,18 @@ export interface PracticeNavItem {
   key: PracticeNavKey;
   to: string;
   label: string;
+  /** When set, this row is a built-in practice and is shown only while that
+   *  practice is switched on (its key is NOT in ``disabledPractices``). The
+   *  string is the phone's practice-enum key — ``lunarAdorations`` etc. */
+  practice?: string;
+  /** Override the row's icon with a glyph (the Practices tier, to match the
+   *  phone). Falls back to ``ICONS[key]`` when unset. */
+  glyph?: string;
 }
 
 export interface PracticeNavSection {
+  /** The eyebrow heading. Empty string renders no heading — used for the
+   *  Today tier, which the phone shows as a single unlabelled row. */
   heading: string;
   items: PracticeNavItem[];
   /** Items behind an in-section disclosure (Workbench's "More tools",
@@ -243,68 +309,123 @@ export interface PracticeNavSection {
    *  "Fewer tools" — Reference overrides to a plain "More" / "Fewer". */
   moreLabel?: string;
   fewerLabel?: string;
+  /** Shown (muted) when the section renders with zero visible items instead of
+   *  vanishing — the Practices tier keeps its heading and says nothing is on,
+   *  the way the phone drawer does. Sections without this are dropped when
+   *  empty. */
+  emptyNote?: string;
 }
 
-/** The practice wing — 17 links / 4 sections (+5 behind "More tools"). */
+/**
+ * The practice wing, as the phone drawer: Today · Practices · Utilities ·
+ * (web-only) On the web — then a hidden graveyard that keeps every remaining
+ * VaultNav route addressable without showing it (see ``HIDDEN_UNTIL_FINISHED``
+ * and the "nothing deleted" test).
+ */
 export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
+  // ── Today ────────────────────────────────────────────────────────────
+  // One unlabelled row, above the practices, all of them at once — the phone's
+  // top tier exactly.
   {
-    heading: "Practice",
+    heading: "",
+    items: [{ key: "today", to: "/", label: "Today" }],
+  },
+  // ── Practices ────────────────────────────────────────────────────────
+  // The phone's eight, in declaration order, each gated by whether it is
+  // switched on (``practice`` key + ``disabledPractices``) and drawn with its
+  // glyph. Only the four with a web surface are here; rituals, workings,
+  // meditation and pranayama join as their surfaces are built. ``emptyNote``
+  // keeps the tier visible, saying nothing is on, rather than vanishing.
+  {
+    heading: "Practices",
+    emptyNote: "No practices switched on — turn them on in Settings.",
     items: [
-      { key: "today", to: "/", label: "Today" },
+      {
+        key: "lunaradorations",
+        to: "/adorations/lunar",
+        label: "Lunar adorations",
+        practice: "lunarAdorations",
+        glyph: "☽",
+      },
+      {
+        // Liber Resh is the solar adoration — sunrise, noon, sunset, midnight.
+        key: "solaradorations",
+        to: "/daily-practice/resh",
+        label: "Solar adorations",
+        practice: "solarAdorations",
+        glyph: "☉",
+      },
+      {
+        key: "divination",
+        to: "/divination/tarot",
+        label: "Divination",
+        practice: "divination",
+        glyph: "☍",
+      },
+      {
+        // The phone names this "Letters and numbers", not numerology — the
+        // key stays ``gematria`` (its route and VaultNav contract), the label
+        // and glyph match the phone.
+        key: "gematria",
+        to: "/gematria",
+        label: "Letters and numbers",
+        practice: "numbers",
+        glyph: "Ϡ",
+      },
+    ],
+  },
+  // ── Utilities ────────────────────────────────────────────────────────
+  // Visited, not inhabited — the phone's utility list, in its order, minus the
+  // two without a web surface yet (spiritual map, planetary hours). The record
+  // is the phone's, synced here; by Sophia's ruling never the journal.
+  {
+    heading: "Utilities",
+    items: [
+      { key: "record", to: "/record", label: "The record" },
+      { key: "calendar", to: "/calendar", label: "Calendar" },
+      { key: "voces", to: "/voces", label: "Voces magicae" },
+      { key: "elections", to: "/elections", label: "Elections" },
+      { key: "frames", to: "/frames", label: "Ritual compass" },
+      { key: "correspondences", to: "/correspondences", label: "Correspondences" },
+      { key: "astrology", to: "/astrology", label: "Charts" },
+      { key: "translit", to: "/transliterations", label: "Transliteration" },
+    ],
+  },
+  // ── On the web ───────────────────────────────────────────────────────
+  // What the phone has no place for. The journal is Sophia's named example;
+  // packs live here because the phone keeps them in Settings and the site has
+  // no Settings home for them yet (a later migration moves packs there and this
+  // row goes with them).
+  {
+    heading: "On the web",
+    items: [
       { key: "journal", to: "/journal", label: "Journal" },
+      { key: "packs", to: "/packs", label: "Packs" },
+    ],
+  },
+  // ── Graveyard (never shown) ──────────────────────────────────────────
+  // Every remaining VaultNav route, kept addressable. All keys here are in
+  // HIDDEN_UNTIL_FINISHED, so ``shown()`` drops this whole section from view —
+  // but the routes still answer and the "nothing deleted" test still passes.
+  // Un-hiding any of these is one line: remove its key from that set.
+  {
+    heading: "Graveyard",
+    items: [
       { key: "dailypractice", to: "/daily-practice", label: "Daily rite" },
       { key: "practicelogs", to: "/practice-logs", label: "Practice log" },
-      // The phone's record, synced here — the set of practices done each
-      // day, and by Sophia's ruling never the journal and never flattened
-      // into it.
-      { key: "record", to: "/record", label: "The record" },
-    ],
-  },
-  {
-    heading: "Reference",
-    // The few one keeps open; the pack-read surfaces sit behind "More" so the
-    // section reads at a glance rather than as a wall. (Sophia: too much on the
-    // site; the packs belong tucked away.)
-    items: [
       { key: "entities", to: "/entities", label: "Magical beings" },
       { key: "library", to: "/library", label: "Library" },
-      { key: "correspondences", to: "/correspondences", label: "Correspondences" },
-      { key: "calendar", to: "/calendar", label: "Calendar" },
-      { key: "astrology", to: "/astrology", label: "Astrology" },
-    ],
-    moreItems: [
-      { key: "packs", to: "/packs", label: "Packs" },
-      { key: "wordvalues", to: "/word-values", label: "Word values" },
-      { key: "techniques", to: "/techniques", label: "Techniques" },
-      { key: "festivals", to: "/festivals", label: "Festivals" },
-      { key: "elections", to: "/elections", label: "Elections" },
-      { key: "frames", to: "/frames", label: "Directional frames" },
-      { key: "decks", to: "/decks", label: "Decks" },
-    ],
-    moreLabel: "More",
-    fewerLabel: "Fewer",
-  },
-  {
-    heading: "Workbench",
-    items: [
-      { key: "divination", to: "/divination/tarot", label: "Divination" },
-      { key: "astragaloi", to: "/divination/astragaloi", label: "Astragaloi" },
       { key: "sigils", to: "/sigils", label: "Sigils" },
+      { key: "magicsquares", to: "/magic-squares", label: "Magic squares" },
       { key: "talismans", to: "/talismans", label: "Talismans" },
       { key: "circles", to: "/circles", label: "Magical circle" },
       { key: "tools", to: "/tools", label: "Tool registry" },
-    ],
-    moreItems: [
-      { key: "magicsquares", to: "/magic-squares", label: "Magic squares" },
-      { key: "voces", to: "/voces", label: "Voces magicae" },
-      { key: "gematria", to: "/gematria", label: "Gematria" },
-      { key: "translit", to: "/transliterations", label: "Transliteration" },
       { key: "voceslib", to: "/voces-library", label: "Voces library" },
-    ],
-  },
-  {
-    heading: "Study",
-    items: [
+      { key: "astragaloi", to: "/divination/astragaloi", label: "Astragaloi" },
+      { key: "wordvalues", to: "/word-values", label: "Word values" },
+      { key: "techniques", to: "/techniques", label: "Techniques" },
+      { key: "festivals", to: "/festivals", label: "Festivals" },
+      { key: "decks", to: "/decks", label: "Decks" },
       { key: "synchronicities", to: "/synchronicities", label: "Synchronicities" },
       { key: "ladder", to: "/order/ladder", label: "Tetraktys ladder" },
       { key: "awaitingjudgment", to: "/verdicts", label: "Awaiting judgment" },
@@ -371,7 +492,12 @@ export const PLATFORM_WING_SECTIONS: PracticeNavSection[] = [
 // spiritual map, charts and planetary hours. Parity cuts both ways and those
 // are the gaps in the other direction; they are not hidden, they are missing.
 export const HIDDEN_UNTIL_FINISHED: ReadonlySet<PracticeNavKey> = new Set<PracticeNavKey>([
-  // Reference — no counterpart on the phone.
+  // The graveyard — everything the phone drawer has no tier for. Each is still
+  // in the trees (its URL answers) but drawn nowhere.
+  //
+  // Web-only surfaces the phone never had; not part of the mirror.
+  "dailypractice",
+  "practicelogs",
   "entities",
   "library",
   // Workbench — the phone has divination and letters-and-numbers, not these.
@@ -380,6 +506,16 @@ export const HIDDEN_UNTIL_FINISHED: ReadonlySet<PracticeNavKey> = new Set<Practi
   "circles",
   "tools",
   "magicsquares",
+  "voceslib",
+  // A divination sub-kind (astragaloi) — reached inside Divination on the
+  // phone, not a menu row of its own.
+  "astragaloi",
+  // Pack-reference surfaces — the phone folds these into the packs a practice
+  // consumes, not the drawer.
+  "wordvalues",
+  "techniques",
+  "festivals",
+  "decks",
   // Study — none of it exists on the phone.
   "synchronicities",
   "ladder",
@@ -474,6 +610,11 @@ export interface PracticeNavProps {
   /** Quiet Awaiting-judgment queue count. Omit (or 0) until the
    *  endpoint exists — the chip renders nothing. */
   awaitingJudgmentCount?: number;
+  /** The switched-OFF practices, by phone-enum key. The Practices tier hides
+   *  any row whose ``practice`` is in this set — live, so a Settings toggle
+   *  adds or removes its row with no reload. Undefined (loading, signed out)
+   *  shows all built practices, matching the phone's default-on. */
+  disabledPractices?: ReadonlySet<string>;
   /** Custom link renderer (e.g. react-router NavLink). Defaults to ``<a>``. */
   LinkComponent?: ComponentType<VaultNavLinkProps>;
   /** Fired when any link is picked (e.g. close the phone drawer). */
@@ -553,6 +694,7 @@ export function PracticeNav({
   onWingChange,
   navMode = "auto",
   awaitingJudgmentCount,
+  disabledPractices,
   LinkComponent = DefaultLink,
   onNavigate,
   onQuickCapture,
@@ -574,7 +716,16 @@ export function PracticeNav({
 
   const wing = wingProp ?? wingState;
   const isPractice = wing === "practice";
-  const sections = isPractice ? VISIBLE_PRACTICE_SECTIONS : VISIBLE_PLATFORM_SECTIONS;
+  // Gate the Practices tier by what's switched on — the phone's rule, applied
+  // live. Undefined/empty means show all built practices (default-on).
+  const sections = useMemo(() => {
+    const base = isPractice ? VISIBLE_PRACTICE_SECTIONS : VISIBLE_PLATFORM_SECTIONS;
+    if (!isPractice || !disabledPractices || disabledPractices.size === 0) return base;
+    return base.map((section) => ({
+      ...section,
+      items: section.items.filter((i) => !i.practice || !disabledPractices.has(i.practice)),
+    }));
+  }, [isPractice, disabledPractices]);
 
   // Each section's disclosure opens on its own — kept by heading, since more
   // than one section now has a "More" (Reference and Workbench). A disclosure
@@ -720,10 +871,25 @@ export function PracticeNav({
 
       {/* Sections of the current wing */}
       {sections.map((section) => (
-        <div key={section.heading}>
-          <div className="pn-head" style={HEADING_STYLE}>
-            {_(section.heading)}
-          </div>
+        <div key={section.heading || "today"}>
+          {section.heading ? (
+            <div className="pn-head" style={HEADING_STYLE}>
+              {_(section.heading)}
+            </div>
+          ) : null}
+          {section.items.length === 0 && section.emptyNote ? (
+            <div
+              className="pn-label"
+              style={{
+                ...ITEM_BASE,
+                color: "var(--ink-mute)",
+                fontStyle: "italic",
+                fontSize: 12.5,
+              }}
+            >
+              {_(section.emptyNote)}
+            </div>
+          ) : null}
           {section.items.map((item) => {
             const isActive = item.key === active;
             const isJudgment = item.key === "awaitingjudgment";
@@ -735,7 +901,7 @@ export function PracticeNav({
                 style={isActive ? ITEM_ACTIVE : ITEM_BASE}
               >
                 <span style={ICO_STYLE} title={_(item.label)}>
-                  {ICONS[item.key]}
+                  {item.glyph ? glyphIcon(item.glyph) : ICONS[item.key]}
                 </span>
                 <span
                   className="pn-label"

@@ -26,7 +26,7 @@ import {
   VaultTopbar,
   useAuth,
 } from "@theourgia/shared";
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useMemo } from "react";
 import {
   BrowserRouter,
   NavLink,
@@ -38,6 +38,7 @@ import {
 } from "react-router-dom";
 
 import { apiMethods } from "./data/api.js";
+import { usePractices } from "./data/usePractices.js";
 import { SurfaceSkeleton } from "./lib/SurfaceSkeleton.js";
 import { APP_BASENAME, appHref } from "./lib/appHref.js";
 import { queryClient } from "./lib/queryClient.js";
@@ -697,6 +698,10 @@ function navKeyForPath(pathname: string): PracticeNavKey | undefined {
   if (pathname === "/" || pathname === "") return "today";
   if (pathname.startsWith("/journal")) return "journal";
   if (pathname.startsWith("/synchronicities")) return "synchronicities";
+  // Practices tier (phone mirror): the solar adoration is Liber Resh, so its
+  // /daily-practice/resh URL must be matched before the bare /daily-practice.
+  if (pathname.startsWith("/daily-practice/resh")) return "solaradorations";
+  if (pathname.startsWith("/adorations/lunar")) return "lunaradorations";
   if (pathname.startsWith("/daily-practice")) return "dailypractice";
   if (pathname.startsWith("/practice-logs")) return "practicelogs";
   if (pathname.startsWith("/record")) return "record";
@@ -720,6 +725,7 @@ function navKeyForPath(pathname: string): PracticeNavKey | undefined {
   if (pathname.startsWith("/divination/astragaloi")) return "astragaloi";
   if (pathname.startsWith("/order/ladder")) return "ladder";
   if (pathname.startsWith("/verdicts")) return "awaitingjudgment";
+  if (pathname.startsWith("/gematria")) return "gematria";
   if (pathname.startsWith("/divination")) return "divination";
   if (pathname.startsWith("/sigils") || pathname.startsWith("/sigil")) return "sigils";
   if (pathname.startsWith("/magic-squares")) return "magicsquares";
@@ -773,6 +779,19 @@ function Shell({ children }: { children: React.ReactNode }) {
   const awaitingJudgmentCount = Array.isArray(awaitingJudgment.data)
     ? awaitingJudgment.data.length
     : 0;
+
+  // The switched-off practices, fed to PracticeNav so its Practices tier hides
+  // what's off — live, sharing the one query cache Today and Settings use, so a
+  // toggle there adds or removes its sidebar row with no reload. Undefined while
+  // loading (or signed out) → the nav shows all built practices (default-on).
+  const practices = usePractices({ enabled: auth.session !== null });
+  const disabledPractices = useMemo(() => {
+    const data = practices.data;
+    if (!data) return undefined;
+    const off = new Set<string>();
+    for (const p of data.practices) if (!p.enabled) off.add(p.key);
+    return off;
+  }, [practices.data]);
 
   async function handleSignOut(): Promise<void> {
     try {
@@ -841,6 +860,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           LinkComponent={NavLinkAdapter}
           identity={navIdentity}
           awaitingJudgmentCount={awaitingJudgmentCount}
+          disabledPractices={disabledPractices}
           onSettings={() => navigate("/settings")}
         />
       }
