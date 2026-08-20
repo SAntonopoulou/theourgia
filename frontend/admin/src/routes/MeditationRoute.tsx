@@ -10,15 +10,23 @@
 import {
   KeepingSheet,
   type KeepingValues,
+  type MeditationPlanSummary,
   type RecordEntryWrite,
   Toast,
   formatClock,
+  meditationPlansFromEntries,
   useTopbar,
 } from "@theourgia/shared";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { amendObservance, keepObservance } from "../data/keepObservance.js";
+import {
+  amendObservance,
+  deleteMeditationPlan,
+  keepObservance,
+  writeMeditationPlan,
+} from "../data/keepObservance.js";
 import { useMyLocation } from "../data/useLocation.js";
+import { apiGet } from "../lib/api.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
 
 type Status = "idle" | "running" | "paused" | "done";
@@ -77,13 +85,42 @@ export function MeditationRoute() {
   const location = useMyLocation({ enabled: true });
   const loc = location.data ?? MOCK_LOCATION;
 
+  // Saved sittings, and which one (if any) is running now.
+  const [plans, setPlans] = useState<MeditationPlanSummary[]>([]);
+  const [planId, setPlanId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<{ plan: MeditationPlanSummary | null } | null>(null);
+  const [planBusy, setPlanBusy] = useState(false);
+
+  const loadPlans = useCallback(async (): Promise<void> => {
+    try {
+      type E = { kind: string; deleted_at_utc?: string | null; doc?: { row?: Record<string, unknown> | null } | null };
+      const all: E[] = [];
+      let since = 0;
+      for (;;) {
+        const page = await apiGet<{ entries: E[]; next_since: number; more: boolean }>(
+          `/record/entries?since=${since}&limit=500`,
+        );
+        all.push(...(page.entries ?? []));
+        since = page.next_since;
+        if (!page.more) break;
+      }
+      setPlans(meditationPlansFromEntries(all));
+    } catch {
+      // The timer still works without saved sits.
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadPlans();
+  }, [loadPlans]);
+
   const keepSitting = async (): Promise<void> => {
     setKeepBusy(true);
     try {
       const entry = await keepObservance({
-        // A plan-less web sitting groups under one synthetic id; a saved plan
-        // (later) records under its own.
-        subjectKey: "meditation:web-sitting",
+        // A running saved plan records under its own id; an ad-hoc sit groups
+        // under one synthetic id.
+        subjectKey: planId ? `meditation:${planId}` : "meditation:web-sitting",
         occurrenceAt: startedAt.current ?? new Date().toISOString(),
         durationSeconds: elapsed,
         location: { lat: loc.lat, lng: loc.lng },
@@ -157,6 +194,59 @@ export function MeditationRoute() {
     playChime();
   };
 
+  const runPlan = (plan: MeditationPlanSummary): void => {
+    setPlanId(plan.id);
+    setTargetMin(Math.max(1, Math.round(plan.seconds / 60)));
+    setElapsed(0);
+    setKept(false);
+    startedAt.current = new Date().toISOString();
+    setStatus("running");
+  };
+
+  const savePlan = async (name: string, minutes: number, bell: boolean): Promise<void> => {
+    setPlanBusy(true);
+    try {
+      await writeMeditationPlan({
+        id: editing?.plan?.id,
+        createdAt: editing?.plan?.createdAt,
+        name,
+        summary: "",
+        minutes,
+        bell,
+      });
+      await loadPlans();
+      setEditing(null);
+      Toast.push({ tone: "success", title: editing?.plan ? "Sit saved" : "Sit created" });
+    } catch (e) {
+      Toast.push({
+        tone: "warning",
+        title: "That didn't save",
+        body: e instanceof Error ? e.message : "Try again.",
+      });
+    } finally {
+      setPlanBusy(false);
+    }
+  };
+
+  const removePlan = async (plan: MeditationPlanSummary): Promise<void> => {
+    setPlanBusy(true);
+    try {
+      await deleteMeditationPlan({
+        id: plan.id,
+        name: plan.name,
+        summary: plan.summary,
+        minutes: Math.round(plan.seconds / 60),
+        bell: plan.bell,
+        createdAt: plan.createdAt,
+      });
+      await loadPlans();
+    } catch {
+      Toast.push({ tone: "warning", title: "That didn't delete" });
+    } finally {
+      setPlanBusy(false);
+    }
+  };
+
   const shown = remaining === null ? elapsed : remaining;
   const progress =
     targetSeconds === null
@@ -172,6 +262,101 @@ export function MeditationRoute() {
         textAlign: "center",
       }}
     >
+      {/* Saved sits — authored here, synced to the phone's meditation library. */}
+      {status === "idle" ? (
+        editing ? (
+          <SitEditor
+            initial={
+              editing.plan
+                ? {
+                    name: editing.plan.name,
+                    minutes: Math.max(1, Math.round(editing.plan.seconds / 60)),
+                    bell: editing.plan.bell,
+                  }
+                : undefined
+            }
+            busy={planBusy}
+            onSave={(n, m, b) => void savePlan(n, m, b)}
+            onCancel={() => setEditing(null)}
+          />
+        ) : (
+          <div style={{ marginBottom: 24 }}>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 8,
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              {plans.map((p) => (
+                <span
+                  key={p.id}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    border: "1px solid var(--line)",
+                    borderRadius: 999,
+                    padding: "5px 6px 5px 12px",
+                    background: "var(--bg-2)",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => runPlan(p)}
+                    style={{
+                      border: "none",
+                      background: "transparent",
+                      color: "var(--ink)",
+                      fontFamily: "var(--font-ui)",
+                      fontSize: 12.5,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {p.name || "Sit"} · {Math.max(1, Math.round(p.seconds / 60))}m
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Edit ${p.name}`}
+                    onClick={() => setEditing({ plan: p })}
+                    style={{ border: "none", background: "transparent", color: "var(--ink-mute)", cursor: "pointer", fontSize: 12 }}
+                  >
+                    ✎
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Delete ${p.name}`}
+                    disabled={planBusy}
+                    onClick={() => void removePlan(p)}
+                    style={{ border: "none", background: "transparent", color: "var(--danger)", cursor: "pointer", fontSize: 12 }}
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+              <button
+                type="button"
+                onClick={() => setEditing({ plan: null })}
+                style={{
+                  border: "1px dashed var(--line)",
+                  borderRadius: 999,
+                  padding: "6px 12px",
+                  background: "transparent",
+                  color: "var(--ink-soft)",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 12.5,
+                  cursor: "pointer",
+                }}
+              >
+                ＋ New sit
+              </button>
+            </div>
+          </div>
+        )
+      ) : null}
+
       {/* Length — chosen before the sit, locked while it runs. */}
       <div
         role="group"
@@ -193,7 +378,10 @@ export function MeditationRoute() {
               type="button"
               disabled={status !== "idle"}
               aria-pressed={active}
-              onClick={() => setTargetMin(p.minutes)}
+              onClick={() => {
+                setTargetMin(p.minutes);
+                setPlanId(null);
+              }}
               style={{
                 padding: "7px 14px",
                 borderRadius: 999,
@@ -363,5 +551,73 @@ function QuietButton({ onClick, children }: { onClick: () => void; children: Rea
     >
       {children}
     </button>
+  );
+}
+
+const sitField = {
+  padding: "7px 9px",
+  fontFamily: "var(--font-ui)",
+  fontSize: 14,
+  border: "1px solid var(--line)",
+  borderRadius: "var(--r-sm, 6px)",
+  background: "var(--bg)",
+  color: "var(--ink)",
+} as const;
+
+function SitEditor({
+  initial,
+  onSave,
+  onCancel,
+  busy,
+}: {
+  initial?: { name: string; minutes: number; bell: boolean };
+  onSave: (name: string, minutes: number, bell: boolean) => void;
+  onCancel: () => void;
+  busy?: boolean;
+}) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [minutes, setMinutes] = useState(initial?.minutes ?? 10);
+  const [bell, setBell] = useState(initial?.bell ?? true);
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 10,
+        justifyContent: "center",
+        alignItems: "center",
+        marginBottom: 24,
+        padding: 14,
+        border: "1px solid var(--line)",
+        borderRadius: "var(--r-lg, 14px)",
+        background: "var(--bg-2)",
+      }}
+    >
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Name this sit"
+        style={{ ...sitField, width: 160 }}
+      />
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--ink-soft)" }}>
+        <input
+          type="number"
+          min={1}
+          max={180}
+          value={minutes}
+          onChange={(e) => setMinutes(Math.max(1, Number(e.target.value) || 1))}
+          style={{ ...sitField, width: 64 }}
+        />
+        min
+      </label>
+      <label style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--ink-soft)" }}>
+        <input type="checkbox" checked={bell} onChange={(e) => setBell(e.target.checked)} />
+        Bell at end
+      </label>
+      <QuietButton onClick={onCancel}>Cancel</QuietButton>
+      <PrimaryButton onClick={() => onSave(name.trim() || "Sit", minutes, bell)}>
+        {busy ? "Saving…" : initial ? "Save" : "Create"}
+      </PrimaryButton>
+    </div>
   );
 }

@@ -476,6 +476,14 @@ export {
   buildDayEntryEntry,
 } from "./keeping/dayEntry.js";
 export { type BuildSubjectInput, buildSubjectEntry } from "./keeping/subject.js";
+// Saved sittings — read and authored on the web (silent sits; breath stays on the phone).
+export {
+  type MeditationPlanSummary,
+  type MeditationRecordEntry,
+  buildSitPlanJson,
+  meditationPlansFromEntries,
+  planTotals,
+} from "./meditation/meditationPlans.js";
 // Pure timing for the self-contained practice tools (sitting timer, breath pacer).
 export {
   type BreathPhase,

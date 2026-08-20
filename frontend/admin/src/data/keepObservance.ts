@@ -17,6 +17,7 @@ import {
   buildDayEntryEntry,
   buildObservanceContext,
   buildObservanceEntry,
+  buildSitPlanJson,
   buildSubjectEntry,
 } from "@theourgia/shared";
 
@@ -299,6 +300,60 @@ export async function writeConsultation(input: {
   });
   await apiPut("/record/entries", { entries: [entry] });
   return entry;
+}
+
+function sitPlanRow(name: string, summary: string, minutes: number, bell: boolean): Record<string, unknown> {
+  return {
+    setId: null,
+    name,
+    summary,
+    sourceKind: "silence",
+    source: '{"source":"silence"}',
+    kind: "sitting",
+    plan: buildSitPlanJson(minutes, bell),
+    breath: null,
+    orderIndex: 0,
+  };
+}
+
+/** A silent-sit meditation plan authored on the web (a `meditation` row). */
+export async function writeMeditationPlan(input: {
+  id?: string;
+  createdAt?: string | null;
+  name: string;
+  summary: string;
+  minutes: number;
+  bell: boolean;
+}): Promise<void> {
+  const entry = buildSubjectEntry({
+    id: input.id ?? crypto.randomUUID(),
+    kind: "meditation",
+    now: new Date().toISOString(),
+    createdAt: input.createdAt ?? undefined,
+    row: sitPlanRow(input.name, input.summary, input.minutes, input.bell),
+  });
+  await apiPut("/record/entries", { entries: [entry] });
+}
+
+/** Tombstone a saved sitting. */
+export async function deleteMeditationPlan(p: {
+  id: string;
+  name: string;
+  summary: string;
+  minutes: number;
+  bell: boolean;
+  createdAt?: string | null;
+}): Promise<void> {
+  const now = new Date().toISOString();
+  const entry = buildSubjectEntry({
+    id: p.id,
+    kind: "meditation",
+    now,
+    createdAt: p.createdAt ?? undefined,
+    deletedAt: now,
+    row: sitPlanRow(p.name, p.summary, p.minutes, p.bell),
+  });
+  await apiPut("/record/entries", { entries: [entry] });
 }
 
 /** Amend an already-written keeping with mood/body/note (last-writer-wins). */
