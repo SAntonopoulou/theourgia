@@ -61,6 +61,14 @@ const ICON_PROPS = {
 };
 
 const EXTRA_ICONS = {
+  // Astrology — a chart wheel: the zodiac ring, the angles, the core.
+  astrology: (
+    <svg {...ICON_PROPS}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="3.5" />
+      <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
+    </svg>
+  ),
   // A pack — a small box with a corner flap.
   packs: (
     <svg {...ICON_PROPS}>
@@ -205,7 +213,8 @@ export type PracticeNavKey =
   | "festivals"
   | "elections"
   | "wordvalues"
-  | "decks";
+  | "decks"
+  | "astrology";
 
 const ICONS: Record<PracticeNavKey, ReactNode> = {
   ...NAV_ICONS,
@@ -253,7 +262,7 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
   },
   {
     heading: "Reference",
-    // The four one keeps open; the pack-read surfaces sit behind "More" so the
+    // The few one keeps open; the pack-read surfaces sit behind "More" so the
     // section reads at a glance rather than as a wall. (Sophia: too much on the
     // site; the packs belong tucked away.)
     items: [
@@ -261,6 +270,7 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
       { key: "library", to: "/library", label: "Library" },
       { key: "correspondences", to: "/correspondences", label: "Correspondences" },
       { key: "calendar", to: "/calendar", label: "Calendar" },
+      { key: "astrology", to: "/astrology", label: "Astrology" },
     ],
     moreItems: [
       { key: "packs", to: "/packs", label: "Packs" },

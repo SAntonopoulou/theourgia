@@ -41,6 +41,8 @@ export type {
   CastHoraryInput,
   CircleRecord,
   CompassTraditionWire,
+  ChartRequestInput,
+  ChartResponse,
   CompletionInput,
   CompletionStatusWire,
   ConsecrateToolPayload,

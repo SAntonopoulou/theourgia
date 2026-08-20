@@ -67,6 +67,11 @@ const LiberReshRoute = lazy(() =>
     default: m.LiberReshRoute,
   })),
 );
+const AstrologyRoute = lazy(() =>
+  import("./routes/AstrologyRoute.js").then((m) => ({
+    default: m.AstrologyRoute,
+  })),
+);
 const CommentModerationRoute = lazy(() =>
   import("./routes/CommentModerationRoute.js").then((m) => ({
     default: m.CommentModerationRoute,
@@ -705,6 +710,7 @@ function navKeyForPath(pathname: string): PracticeNavKey | undefined {
   }
   if (pathname.startsWith("/library")) return "library";
   if (pathname.startsWith("/calendar")) return "calendar";
+  if (pathname.startsWith("/astrology")) return "astrology";
   // H12 — the practice wing's three new surfaces (F2 placeholders today).
   if (pathname.startsWith("/divination/astragaloi")) return "astragaloi";
   if (pathname.startsWith("/order/ladder")) return "ladder";
@@ -898,6 +904,7 @@ function ShellRoutes() {
             <Route path="/synchronicities" element={<SynchronicityLogRoute />} />
             <Route path="/daily-practice" element={<DailyPracticeRoute />} />
             <Route path="/daily-practice/resh" element={<LiberReshRoute />} />
+            <Route path="/astrology" element={<AstrologyRoute />} />
             <Route path="/practice-logs" element={<PracticeLogsRoute />} />
             <Route path="/record" element={<RecordRoute />} />
             <Route path="/entities" element={<Entities />} />
