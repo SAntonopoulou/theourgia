@@ -7,7 +7,13 @@
  * of the cycle is the tested `practiceTimer` core.
  */
 
-import { type BreathRatio, breathPattern, cycleSeconds, phaseAt, useTopbar } from "@theourgia/shared";
+import {
+  type BreathRatio,
+  breathPattern,
+  cycleSeconds,
+  phaseAt,
+  useTopbar,
+} from "@theourgia/shared";
 import { useEffect, useRef, useState } from "react";
 
 type Status = "idle" | "running" | "paused" | "done";
@@ -23,14 +29,19 @@ const MIN_SCALE = 0.55;
 const MAX_SCALE = 1;
 
 export function PranayamaRoute() {
-  useTopbar(() => ({ title: "Pranayama", subtitle: "The breath, counted in ratios and rounds" }), []);
+  useTopbar(
+    () => ({ title: "Pranayama", subtitle: "The breath, counted in ratios and rounds" }),
+    [],
+  );
 
-  const [ratio, setRatio] = useState<BreathRatio>(PRESETS[0]?.ratio ?? {
-    inhale: 4,
-    holdIn: 4,
-    exhale: 4,
-    holdOut: 4,
-  });
+  const [ratio, setRatio] = useState<BreathRatio>(
+    PRESETS[0]?.ratio ?? {
+      inhale: 4,
+      holdIn: 4,
+      exhale: 4,
+      holdOut: 4,
+    },
+  );
   const [roundsTarget, setRoundsTarget] = useState<number | null>(6);
   const [status, setStatus] = useState<Status>("idle");
   const [elapsed, setElapsed] = useState(0);
@@ -90,12 +101,23 @@ export function PranayamaRoute() {
 
   return (
     <section
-      style={{ maxWidth: 520, margin: "0 auto", padding: "var(--space-5, 24px)", textAlign: "center" }}
+      style={{
+        maxWidth: 520,
+        margin: "0 auto",
+        padding: "var(--space-5, 24px)",
+        textAlign: "center",
+      }}
     >
       {/* Ratio + rounds, set before the breath and locked while it runs. */}
       <div style={{ opacity: status === "idle" ? 1 : 0.5, marginBottom: 26 }}>
         <div
-          style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginBottom: 14 }}
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 8,
+            justifyContent: "center",
+            marginBottom: 14,
+          }}
         >
           {PRESETS.map((p) => {
             const active =
@@ -201,7 +223,14 @@ export function PranayamaRoute() {
             />
           </label>
         </div>
-        <p style={{ fontFamily: "var(--font-ui)", fontSize: 11.5, color: "var(--ink-mute)", marginTop: 8 }}>
+        <p
+          style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 11.5,
+            color: "var(--ink-mute)",
+            marginTop: 8,
+          }}
+        >
           A count of 0 drops that hold. Rounds 0 means an open breath.
         </p>
       </div>
@@ -259,7 +288,12 @@ export function PranayamaRoute() {
       </div>
 
       <div
-        style={{ fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--ink-mute)", marginBottom: 16 }}
+        style={{
+          fontFamily: "var(--font-ui)",
+          fontSize: 13,
+          color: "var(--ink-mute)",
+          marginBottom: 16,
+        }}
       >
         {status === "done"
           ? `${round} round${round === 1 ? "" : "s"} breathed.`

@@ -82,5 +82,7 @@ export function phaseAt(
   }
   // Unreachable while total > 0, but keeps the function total.
   const last = phases[phases.length - 1];
-  return last ? { phase: last, index: phases.length - 1, intoPhase: 0, remaining: last.seconds } : null;
+  return last
+    ? { phase: last, index: phases.length - 1, intoPhase: 0, remaining: last.seconds }
+    : null;
 }

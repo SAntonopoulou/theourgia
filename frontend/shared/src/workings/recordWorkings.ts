@@ -52,7 +52,9 @@ function num(value: unknown): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
-function stageFrom(row: Record<string, unknown>): { workingId: string; stage: WorkingStage } | null {
+function stageFrom(
+  row: Record<string, unknown>,
+): { workingId: string; stage: WorkingStage } | null {
   const id = str(row.id);
   const workingId = str(row.workingId);
   if (id.length === 0 || workingId.length === 0) return null;

@@ -24,10 +24,7 @@ type PullResult = {
 };
 
 export function RitualsRoute() {
-  useTopbar(
-    () => ({ title: "Rituals", subtitle: "The rites you have written" }),
-    [],
-  );
+  useTopbar(() => ({ title: "Rituals", subtitle: "The rites you have written" }), []);
 
   const [rites, setRites] = useState<Rite[] | null>(null);
   const [error, setError] = useState<string | null>(null);
