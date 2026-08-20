@@ -152,6 +152,15 @@ const EXTRA_ICONS = {
       <path d="M12 3v18M12 12l6-4M12 12l5 3" />
     </svg>
   ),
+  // Spiritual map — a figure of nodes: a crown node over two branches worked.
+  spiritualmap: (
+    <svg {...ICON_PROPS}>
+      <circle cx="12" cy="5" r="2" />
+      <circle cx="6" cy="18" r="2" />
+      <circle cx="18" cy="18" r="2" />
+      <path d="M11 6.6 7 16.2M13 6.6l4 9.6" />
+    </svg>
+  ),
   // Festivals — a calendar leaf, one day marked.
   festivals: (
     <svg {...ICON_PROPS}>
@@ -287,7 +296,8 @@ export type PracticeNavKey =
   | "workings"
   | "meditation"
   | "pranayama"
-  | "planetaryhours";
+  | "planetaryhours"
+  | "spiritualmap";
 
 const ICONS: Record<PracticeNavKey, ReactNode> = {
   ...NAV_ICONS,
@@ -419,8 +429,7 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
     ],
   },
   // ── Utilities ────────────────────────────────────────────────────────
-  // Visited, not inhabited — the phone's utility list, in its order, minus the
-  // two without a web surface yet (spiritual map, planetary hours). The record
+  // Visited, not inhabited — the phone's utility list, in its order. The record
   // is the phone's, synced here; by Sophia's ruling never the journal.
   {
     heading: "Utilities",
@@ -434,6 +443,7 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
       { key: "astrology", to: "/astrology", label: "Charts" },
       { key: "translit", to: "/transliterations", label: "Transliteration" },
       { key: "planetaryhours", to: "/hours", label: "Planetary hours" },
+      { key: "spiritualmap", to: "/map", label: "Spiritual map" },
     ],
   },
   // ── On the web ───────────────────────────────────────────────────────

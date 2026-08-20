@@ -103,6 +103,11 @@ const PlanetaryHoursRoute = lazy(() =>
     default: m.PlanetaryHoursRoute,
   })),
 );
+const SpiritualMapRoute = lazy(() =>
+  import("./routes/SpiritualMapRoute.js").then((m) => ({
+    default: m.SpiritualMapRoute,
+  })),
+);
 const CommentModerationRoute = lazy(() =>
   import("./routes/CommentModerationRoute.js").then((m) => ({
     default: m.CommentModerationRoute,
@@ -732,6 +737,7 @@ function navKeyForPath(pathname: string): PracticeNavKey | undefined {
   if (pathname.startsWith("/meditation")) return "meditation";
   if (pathname.startsWith("/pranayama")) return "pranayama";
   if (pathname.startsWith("/hours")) return "planetaryhours";
+  if (pathname.startsWith("/map")) return "spiritualmap";
   if (pathname.startsWith("/daily-practice")) return "dailypractice";
   if (pathname.startsWith("/practice-logs")) return "practicelogs";
   if (pathname.startsWith("/record")) return "record";
@@ -965,6 +971,7 @@ function ShellRoutes() {
             <Route path="/meditation" element={<MeditationRoute />} />
             <Route path="/pranayama" element={<PranayamaRoute />} />
             <Route path="/hours" element={<PlanetaryHoursRoute />} />
+            <Route path="/map" element={<SpiritualMapRoute />} />
             <Route path="/astrology" element={<AstrologyRoute />} />
             <Route path="/practice-logs" element={<PracticeLogsRoute />} />
             <Route path="/record" element={<RecordRoute />} />

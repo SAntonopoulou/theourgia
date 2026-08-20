@@ -439,6 +439,29 @@ export interface AdorationSetsResponse {
   sets: AdorationSet[];
 }
 
+/** One node of a spiritual map — a place on the figure that is worked and kept.
+ *  The phone's maps are figures of nodes worked one at a time; on the web the
+ *  figure is authored here, and each node's *work* is kept to the record as an
+ *  observance (`subjectKey` = ``map:<mapId>:<nodeId>:work``) so it crosses over. */
+export interface SpiritualMapNode {
+  id: string;
+  name: string;
+  note: string;
+}
+
+/** A spiritual map authored on the web — a named figure of nodes. */
+export interface SpiritualMap {
+  id: string;
+  name: string;
+  summary: string;
+  nodes: SpiritualMapNode[];
+}
+
+/** Response of ``GET/PUT /api/v1/users/me/settings/maps``. */
+export interface SpiritualMapsResponse {
+  maps: SpiritualMap[];
+}
+
 /**
  * One crisis-support resource from the wellbeing starter list.
  * Server data pending maintainer review — the designer's "Sacred Well

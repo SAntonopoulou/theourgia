@@ -253,3 +253,50 @@ async def test_read_adoration_sets_parses_and_drops_bad() -> None:
     sets = await read_adoration_sets(_Session(row), "u")
     assert [s.id for s in sets] == ["s1"]
     assert sets[0].stations["moonrise"] == "Hekate Phosphoros"
+
+
+# ─── spiritual maps ─────────────────────────────────────────────────
+
+
+def test_spiritual_map_needs_a_name_and_node_names() -> None:
+    from theourgia.api.routers.v1.user_settings import (
+        SpiritualMapModel,
+        SpiritualMapNodeModel,
+    )
+
+    with pytest.raises(ValidationError):
+        SpiritualMapModel(id="m", name="")  # empty name
+    with pytest.raises(ValidationError):
+        SpiritualMapNodeModel(id="n", name="")  # empty node name
+
+
+def test_maps_route_registered() -> None:
+    from theourgia.api.app import create_app
+
+    paths = set(create_app().openapi()["paths"].keys())
+    assert "/api/v1/users/me/settings/maps" in paths
+
+
+@pytest.mark.anyio
+async def test_read_maps_defaults_empty() -> None:
+    from theourgia.api.routers.v1.user_settings import read_maps
+
+    assert await read_maps(_Session(None), "u") == []
+
+
+@pytest.mark.anyio
+async def test_read_maps_parses_and_drops_bad() -> None:
+    import json
+
+    from theourgia.api.routers.v1.user_settings import read_maps
+
+    good = {
+        "id": "map1",
+        "name": "The Tree",
+        "summary": "",
+        "nodes": [{"id": "kether", "name": "Kether", "note": "The crown"}],
+    }
+    row = _Row(json.dumps([good, {"id": "m2"}, 7]))
+    maps = await read_maps(_Session(row), "u")
+    assert [m.id for m in maps] == ["map1"]
+    assert maps[0].nodes[0].name == "Kether"

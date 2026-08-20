@@ -583,3 +583,108 @@ async def put_my_adorations(
     )
     await db.commit()
     return AdorationSetsRead(sets=payload.sets)
+
+
+# ─── spiritual maps (a figure of named nodes, worked one at a time) ──────
+#
+# The phone's spiritual map is a figure whose nodes are "worked" and kept. Its
+# node graphs are local; here the web authors its own maps (stored as this
+# per-user setting), and the WORK of a node is kept through the record store as
+# an observance — so the works cross to the phone even though the figure is the
+# web's own.
+
+MAPS_KEY = "spiritual.maps"
+
+
+class SpiritualMapNodeModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1, max_length=64)
+    name: str = Field(min_length=1, max_length=200)
+    note: str = Field(default="", max_length=2000)
+
+
+class SpiritualMapModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1, max_length=64)
+    name: str = Field(min_length=1, max_length=200)
+    summary: str = Field(default="", max_length=2000)
+    nodes: list[SpiritualMapNodeModel] = Field(default_factory=list, max_length=200)
+
+
+class MapsRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    maps: list[SpiritualMapModel]
+
+
+class MapsWrite(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    maps: list[SpiritualMapModel] = Field(default_factory=list, max_length=100)
+
+
+async def read_maps(db: AsyncSession, user_id) -> list[SpiritualMapModel]:
+    """The user's spiritual maps, malformed ones dropped."""
+    stmt = select(UserSetting).where(
+        UserSetting.user_id == user_id, UserSetting.key == MAPS_KEY
+    )
+    row = (await db.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        return []
+    try:
+        import json
+
+        value = json.loads(row.value_json)
+    except (ValueError, TypeError):
+        return []
+    if not isinstance(value, list):
+        return []
+    out: list[SpiritualMapModel] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        try:
+            out.append(SpiritualMapModel(**item))
+        except ValidationError:
+            continue
+    return out
+
+
+@router.get(
+    "/users/me/settings/maps",
+    summary="Read the signed-in user's spiritual maps",
+    response_model=MapsRead,
+)
+async def get_my_maps(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> MapsRead:
+    if current_user is None:
+        raise UnauthorizedError("spiritual maps require authentication")
+    return MapsRead(maps=await read_maps(db, current_user.id))
+
+
+@router.put(
+    "/users/me/settings/maps",
+    summary="Replace the signed-in user's spiritual maps",
+    response_model=MapsRead,
+)
+async def put_my_maps(
+    payload: MapsWrite,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> MapsRead:
+    if current_user is None:
+        raise UnauthorizedError("spiritual maps require authentication")
+
+    ids = [m.id for m in payload.maps]
+    if len(ids) != len(set(ids)):
+        raise ValidationFailedError("Every map needs its own id; found a duplicate.")
+
+    await _upsert_value(
+        db, current_user.id, MAPS_KEY, [m.model_dump() for m in payload.maps]
+    )
+    await db.commit()
+    return MapsRead(maps=payload.maps)

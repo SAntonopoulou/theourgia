@@ -101,6 +101,8 @@ import type {
   LadderProgressRead,
   AdorationSet,
   AdorationSetsResponse,
+  SpiritualMap,
+  SpiritualMapsResponse,
   LadderRead,
   LunarTodayResponse,
   MagicSquareRecord,
@@ -1172,6 +1174,21 @@ export function api(client: ApiClient) {
     /** Replace the whole set of the user's adoration sets. */
     putMyAdorations(input: { sets: AdorationSet[] }): Promise<AdorationSetsResponse> {
       return client.request<AdorationSetsResponse>("/api/v1/users/me/settings/adorations", {
+        method: "PUT",
+        json: input,
+      });
+    },
+
+    /** The user's spiritual maps (figures of nodes worked one at a time). */
+    getMyMaps(opts?: { signal?: AbortSignal }): Promise<SpiritualMapsResponse> {
+      return client.request<SpiritualMapsResponse>("/api/v1/users/me/settings/maps", {
+        signal: opts?.signal,
+      });
+    },
+
+    /** Replace the whole set of the user's spiritual maps. */
+    putMyMaps(input: { maps: SpiritualMap[] }): Promise<SpiritualMapsResponse> {
+      return client.request<SpiritualMapsResponse>("/api/v1/users/me/settings/maps", {
         method: "PUT",
         json: input,
       });
