@@ -724,8 +724,8 @@ function StubSection({ section }: { section: SectionKey }) {
   );
 }
 
-export function Settings() {
-  const [section, setSection] = useState<SectionKey>("appearance");
+export function Settings({ initialSection = "appearance" }: { initialSection?: SectionKey } = {}) {
+  const [section, setSection] = useState<SectionKey>(initialSection);
   useTopbar(
     () => ({
       title: "Settings",

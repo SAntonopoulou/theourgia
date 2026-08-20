@@ -1062,6 +1062,9 @@ function ShellRoutes() {
             <Route path="/settings/linked-applications" element={<LinkedApplicationsRoute />} />
             <Route path="/settings/accessibility" element={<AccessibilityAndMotionRoute />} />
             <Route path="/settings/preferences" element={<Settings />} />
+            {/* Direct deep-link to the built-in-practice toggles, so "manage
+                practices" from Today lands straight on them (20 Aug). */}
+            <Route path="/settings/practices" element={<Settings initialSection="practices" />} />
             <Route path="/comments-moderation" element={<CommentModerationRoute />} />
             <Route path="/settings/keys" element={<KeyRotationRoute />} />
             <Route path="/settings/webauthn" element={<WebAuthnEnrollmentRoute />} />

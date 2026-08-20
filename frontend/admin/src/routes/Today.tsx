@@ -831,6 +831,27 @@ export function Today() {
     skip: session === null,
   });
 
+  // Web parity with the phone (20 Aug): the eight built-in disciplines are
+  // gated by the practitioner's on/off toggles. A switched-off practice must
+  // not appear on Today — the phone's day assembler never even assembles an
+  // off practice's stations (lib/data/day_assembly.dart; the toggle set is
+  // default-ON, subtractive). Here that means the solar rite and the lunar
+  // chip only mount when their discipline is enabled.
+  const practices = useApiCall((signal) => apiMethods.getMyPractices({ signal }), {
+    skip: session === null,
+  });
+  const enabledPractices = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of practices.data?.practices ?? []) {
+      if (p.enabled) set.add(p.key);
+    }
+    return set;
+  }, [practices.data]);
+  // Signed out → show (the demo view); signed in → wait for the toggle set to
+  // load, then honor it, so a disabled discipline never flashes in first.
+  const practiceOn = (key: string): boolean =>
+    session === null ? true : practices.data != null && enabledPractices.has(key);
+
   useEffect(() => {
     if (entries.status === "error") {
       Toast.push({
@@ -897,12 +918,33 @@ export function Today() {
             }}
           >
             {/* H12 — the lunar-day chip: what day it is in the Attic
-                calendar and what that day asks. */}
-            <TodayLunarChip />
+                calendar and what that day asks. Gated by lunar adorations,
+                the discipline it belongs to (20 Aug — like the phone). */}
+            {practiceOn("lunarAdorations") ? <TodayLunarChip /> : null}
 
             {/* H12 — the four-station rite row: first mount of the
-                LiberResh family on the home surface. */}
-            <TodayRiteRow lat={location.lat} lng={location.lng} />
+                LiberResh family on the home surface. Gated by solar
+                adorations, so switching that discipline off removes it. */}
+            {practiceOn("solarAdorations") ? (
+              <TodayRiteRow lat={location.lat} lng={location.lng} />
+            ) : null}
+
+            {/* Discoverable path to the on/off toggles — what appears here is
+                governed by which practices are switched on. */}
+            {session !== null ? (
+              <Link
+                to="/settings/practices"
+                style={{
+                  alignSelf: "flex-start",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 12.5,
+                  color: "var(--ink-mute)",
+                  textDecoration: "none",
+                }}
+              >
+                Manage practices →
+              </Link>
+            ) : null}
 
             {/* Celestial row — small cards for the planetary hour + transits */}
             <div
