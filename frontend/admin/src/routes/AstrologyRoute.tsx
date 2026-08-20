@@ -22,6 +22,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { apiMethods } from "../data/api.js";
+import { writeDayEntry } from "../data/keepObservance.js";
 
 type Zodiac = "tropical" | "sidereal";
 type HouseSystem = "placidus" | "whole-sign";
@@ -40,6 +41,8 @@ const SIGNS = [
   "Aquarius",
   "Pisces",
 ] as const;
+
+const LUMINARIES = new Set(["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn"]);
 
 function signOf(longitude: number): string {
   return SIGNS[Math.floor((((longitude % 360) + 360) % 360) / 30)] ?? "";
@@ -136,6 +139,8 @@ export function AstrologyRoute() {
   const [chart, setChart] = useState<ChartResponse | null>(null);
   const [casting, setCasting] = useState(false);
   const [castError, setCastError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const didInitialCast = useRef(false);
 
   const cast = useCallback(
@@ -157,6 +162,7 @@ export function AstrologyRoute() {
           house_system: houseSystem === "whole-sign" ? "whole-sign" : "placidus",
         });
         setChart(result);
+        setSaved(false);
       } catch (e) {
         const msg = e instanceof Error ? e.message : "The chart could not be cast.";
         setCastError(msg);
@@ -167,6 +173,32 @@ export function AstrologyRoute() {
     },
     [lat, lng, when, zodiac, houseSystem],
   );
+
+  const saveChart = async (): Promise<void> => {
+    if (!chart) return;
+    setSaving(true);
+    try {
+      const asc = `Asc ${degInSign(chart.houses.ascendant)} ${signOf(chart.houses.ascendant)}`;
+      const bodies = chart.placements
+        .filter((p) => LUMINARIES.has(p.body_name))
+        .map((p) => `${p.body_name} ${degInSign(p.tropical_longitude)} ${p.tropical_sign}`);
+      await writeDayEntry({ kind: "sky", at: chart.instant, body: [asc, ...bodies].join(" · ") });
+      setSaved(true);
+      Toast.push({
+        tone: "success",
+        title: "Kept to the record",
+        body: "This chart is in your record and will sync to the phone.",
+      });
+    } catch (e) {
+      Toast.push({
+        tone: "warning",
+        title: "Couldn't save the chart",
+        body: e instanceof Error ? e.message : "Try again.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // Seed the location from the user's saved setting, then cast "now" once.
   useEffect(() => {
@@ -335,6 +367,11 @@ export function AstrologyRoute() {
           >
             Ascendant {degInSign(chart.houses.ascendant)} {signOf(chart.houses.ascendant)} ·
             Midheaven {degInSign(chart.houses.midheaven)} {signOf(chart.houses.midheaven)}
+          </div>
+          <div style={{ marginBottom: 14 }}>
+            <Button variant="quiet" onClick={() => void saveChart()} disabled={saving || saved}>
+              {saved ? "Kept to the record ✓" : saving ? "Saving…" : "Save to record"}
+            </Button>
           </div>
           <div
             style={{

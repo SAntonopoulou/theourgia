@@ -462,6 +462,12 @@ export {
   type KeepingSheetProps,
   type KeepingValues,
 } from "./keeping/KeepingSheet.js";
+export {
+  type BuildDayEntryInput,
+  type DayEntryKind,
+  JOURNAL_KINDS,
+  buildDayEntryEntry,
+} from "./keeping/dayEntry.js";
 // Pure timing for the self-contained practice tools (sitting timer, breath pacer).
 export {
   type BreathPhase,

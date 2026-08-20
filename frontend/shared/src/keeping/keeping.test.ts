@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { buildDayEntryEntry } from "./dayEntry.js";
 import { buildObservanceEntry } from "./observance.js";
 import { type ContextPlacement, buildObservanceContext, signIndex } from "./observanceContext.js";
 
@@ -119,5 +120,39 @@ describe("buildObservanceEntry", () => {
     expect(entry.doc.note).toBe("");
     expect(entry.doc.mood).toBeNull();
     expect(entry.doc.durationSeconds).toBeNull();
+  });
+});
+
+describe("buildDayEntryEntry", () => {
+  it("builds a day-entry with the discriminating kind and required fields", () => {
+    const entry = buildDayEntryEntry({
+      id: "de-1",
+      now: "2026-08-20T12:00:00Z",
+      kind: "dream",
+      at: "2026-08-20T06:00:00Z",
+      body: "I dreamt of a door",
+    });
+    expect(entry.kind).toBe("day-entry");
+    expect(entry.doc).toMatchObject({
+      v: 1,
+      kind: "dream",
+      at: "2026-08-20T06:00:00Z",
+      body: "I dreamt of a door",
+      sleepQuality: null,
+      observanceId: null,
+      createdAt: "2026-08-20T12:00:00Z",
+    });
+  });
+
+  it("defaults `at` to now and keeps sleepQuality when given", () => {
+    const entry = buildDayEntryEntry({
+      id: "de-2",
+      now: "2026-08-20T12:00:00Z",
+      kind: "waking",
+      sleepQuality: 4,
+    });
+    expect(entry.doc.at).toBe("2026-08-20T12:00:00Z");
+    expect(entry.doc.sleepQuality).toBe(4);
+    expect(entry.doc.body).toBe("");
   });
 });

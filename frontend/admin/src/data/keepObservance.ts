@@ -11,8 +11,10 @@
 
 import {
   type ChartResponse,
+  type DayEntryKind,
   type ObservanceContext,
   type RecordEntryWrite,
+  buildDayEntryEntry,
   buildObservanceContext,
   buildObservanceEntry,
 } from "@theourgia/shared";
@@ -82,6 +84,26 @@ export async function keepObservance(input: KeepInput): Promise<RecordEntryWrite
     durationSeconds: input.durationSeconds ?? null,
     subjectName: input.subjectName,
     context,
+  });
+  await apiPut("/record/entries", { entries: [entry] });
+  return entry;
+}
+
+/** Write a day-journal entry (a note, a dream, a waking, a kept sky…) to the
+ *  record; it crosses to the phone on its next sync. */
+export async function writeDayEntry(input: {
+  kind: DayEntryKind;
+  at?: string;
+  body?: string;
+  sleepQuality?: number | null;
+}): Promise<RecordEntryWrite> {
+  const entry = buildDayEntryEntry({
+    id: crypto.randomUUID(),
+    now: new Date().toISOString(),
+    kind: input.kind,
+    at: input.at,
+    body: input.body,
+    sleepQuality: input.sleepQuality ?? null,
   });
   await apiPut("/record/entries", { entries: [entry] });
   return entry;
