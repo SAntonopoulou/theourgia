@@ -427,6 +427,29 @@ export {
   workingsFromEntries,
 } from "./workings/recordWorkings.js";
 export { WorkingsLibrary, type WorkingsLibraryProps } from "./workings/WorkingsLibrary.js";
+// Keeping — recording a practice as done, the way the phone captures it (sky
+// context + mood/body/note), written back to the record so it crosses to the phone.
+export {
+  BODY_LABELS,
+  MOOD_LABELS,
+  type BuildObservanceInput,
+  type RecordEntryWrite,
+  buildObservanceEntry,
+} from "./keeping/observance.js";
+export {
+  type BuildContextInput,
+  type ContextHours,
+  type ContextPlacement,
+  type ObservanceContext,
+  SIGN_NAMES,
+  buildObservanceContext,
+  signIndex,
+} from "./keeping/observanceContext.js";
+export {
+  KeepingSheet,
+  type KeepingSheetProps,
+  type KeepingValues,
+} from "./keeping/KeepingSheet.js";
 // Pure timing for the self-contained practice tools (sitting timer, breath pacer).
 export {
   type BreathPhase,
