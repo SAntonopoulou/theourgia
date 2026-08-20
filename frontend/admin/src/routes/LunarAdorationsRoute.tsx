@@ -9,11 +9,23 @@
  * a set renames Today's stations at once).
  */
 
-import { Button, type LunarTodayResponse, Toast, useApiCall, useTopbar } from "@theourgia/shared";
+import {
+  Button,
+  KeepingSheet,
+  type KeepingValues,
+  type LunarTodayResponse,
+  type RecordEntryWrite,
+  Toast,
+  useApiCall,
+  useTopbar,
+} from "@theourgia/shared";
+import { useEffect, useState } from "react";
 
 import { apiMethods } from "../data/api.js";
+import { amendObservance, keepObservance } from "../data/keepObservance.js";
 import { useAdorations, useSetAdorations } from "../data/useAdorations.js";
 import { useMyLocation } from "../data/useLocation.js";
+import { apiGet } from "../lib/api.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
 
 const LUNAR_STATIONS: { key: string; label: string }[] = [
@@ -58,6 +70,95 @@ export function LunarAdorationsRoute() {
   const today = useApiCall<LunarTodayResponse>((signal) =>
     apiMethods.lunarToday({ lat: loc.lat, lng: loc.lng, tz, signal }),
   );
+
+  // Which of today's stations are already kept (from the synced record), plus
+  // the keeping sheet offered after a mark.
+  const [keptKeys, setKeptKeys] = useState<Set<string>>(new Set());
+  const [sheet, setSheet] = useState<{ entry: RecordEntryWrite; title: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const stationKeys = new Set(LUNAR_STATIONS.map((s) => s.key));
+        const todayStr = new Date().toDateString();
+        const kept = new Set<string>();
+        let since = 0;
+        for (;;) {
+          const page = await apiGet<{
+            entries: {
+              kind: string;
+              deleted_at_utc?: string | null;
+              doc?: Record<string, unknown> | null;
+            }[];
+            next_since: number;
+            more: boolean;
+          }>(`/record/entries?since=${since}&limit=500`);
+          for (const e of page.entries ?? []) {
+            if (e.kind !== "observance" || e.deleted_at_utc) continue;
+            const key = e.doc?.subjectKey;
+            const occ = e.doc?.occurrenceAt;
+            if (
+              typeof key === "string" &&
+              stationKeys.has(key) &&
+              typeof occ === "string" &&
+              new Date(occ).toDateString() === todayStr
+            ) {
+              kept.add(key);
+            }
+          }
+          since = page.next_since;
+          if (!page.more) break;
+        }
+        if (!cancelled) setKeptKeys(kept);
+      } catch {
+        // The marks simply don't show as kept; marking still works.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const mark = async (key: string, label: string): Promise<void> => {
+    const at = today.data?.stations.find((s) => s.key === key)?.at;
+    setBusy(true);
+    try {
+      const entry = await keepObservance({
+        subjectKey: key,
+        occurrenceAt: at ?? new Date().toISOString(),
+        location: { lat: loc.lat, lng: loc.lng },
+      });
+      setKeptKeys((prev) => new Set(prev).add(key));
+      setSheet({ entry, title: label });
+    } catch (e) {
+      Toast.push({
+        tone: "warning",
+        title: "That didn't keep",
+        body: e instanceof Error ? e.message : "Check your connection and try again.",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const keepDetails = async (values: KeepingValues): Promise<void> => {
+    if (!sheet) return;
+    setBusy(true);
+    try {
+      await amendObservance(sheet.entry, values);
+    } catch (e) {
+      Toast.push({
+        tone: "warning",
+        title: "The note didn't save",
+        body: e instanceof Error ? e.message : "The mark itself stands.",
+      });
+    } finally {
+      setBusy(false);
+      setSheet(null);
+    }
+  };
 
   const query = useAdorations();
   const setAdorations = useSetAdorations();
@@ -149,6 +250,25 @@ export function LunarAdorationsRoute() {
             >
               {timeFor(st.key)}
             </div>
+            <button
+              type="button"
+              disabled={busy || keptKeys.has(st.key)}
+              onClick={() => void mark(st.key, st.label)}
+              style={{
+                marginTop: 8,
+                width: "100%",
+                padding: "6px 8px",
+                borderRadius: "var(--r-sm, 6px)",
+                border: `1px solid ${keptKeys.has(st.key) ? "var(--accent)" : "var(--line)"}`,
+                background: keptKeys.has(st.key) ? "var(--accent-soft)" : "var(--bg)",
+                color: keptKeys.has(st.key) ? "var(--accent)" : "var(--ink-soft)",
+                fontFamily: "var(--font-ui)",
+                fontSize: 12,
+                cursor: busy || keptKeys.has(st.key) ? "default" : "pointer",
+              }}
+            >
+              {keptKeys.has(st.key) ? "Kept ✓" : "Mark kept"}
+            </button>
           </div>
         ))}
       </div>
@@ -258,6 +378,16 @@ export function LunarAdorationsRoute() {
           ))}
         </div>
       )}
+
+      {sheet ? (
+        <KeepingSheet
+          title={sheet.title}
+          subtitle="Kept. Add how the adoration was, if you like."
+          onKeep={(v) => void keepDetails(v)}
+          onClose={() => setSheet(null)}
+          busy={busy}
+        />
+      ) : null}
     </section>
   );
 }

@@ -8,10 +8,22 @@
  * room for what the phone holds.
  */
 
-import { type Rite, RitesLibrary, ritesFromEntries, useTopbar } from "@theourgia/shared";
+import {
+  KeepingSheet,
+  type KeepingValues,
+  type RecordEntryWrite,
+  type Rite,
+  RitesLibrary,
+  ritesFromEntries,
+  Toast,
+  useTopbar,
+} from "@theourgia/shared";
 import { useEffect, useState } from "react";
 
+import { amendObservance, keepObservance } from "../data/keepObservance.js";
+import { useMyLocation } from "../data/useLocation.js";
 import { apiGet } from "../lib/api.js";
+import { MOCK_LOCATION } from "../mocks/today.js";
 
 type PullResult = {
   entries: {
@@ -28,6 +40,48 @@ export function RitualsRoute() {
 
   const [rites, setRites] = useState<Rite[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sheet, setSheet] = useState<{ entry: RecordEntryWrite; title: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const location = useMyLocation({ enabled: true });
+  const loc = location.data ?? MOCK_LOCATION;
+
+  const perform = async (rite: Rite): Promise<void> => {
+    setBusy(true);
+    try {
+      const entry = await keepObservance({
+        subjectKey: `ritual:${rite.id}`,
+        occurrenceAt: new Date().toISOString(),
+        subjectName: rite.name,
+        location: { lat: loc.lat, lng: loc.lng },
+      });
+      setSheet({ entry, title: rite.name || "Rite" });
+    } catch (e) {
+      Toast.push({
+        tone: "warning",
+        title: "That didn't keep",
+        body: e instanceof Error ? e.message : "Check your connection and try again.",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const keepDetails = async (values: KeepingValues): Promise<void> => {
+    if (!sheet) return;
+    setBusy(true);
+    try {
+      await amendObservance(sheet.entry, values);
+    } catch (e) {
+      Toast.push({
+        tone: "warning",
+        title: "The note didn't save",
+        body: e instanceof Error ? e.message : "The mark itself stands.",
+      });
+    } finally {
+      setBusy(false);
+      setSheet(null);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -75,8 +129,18 @@ export function RitualsRoute() {
       ) : rites === null ? (
         <p style={{ fontFamily: "var(--font-ui)", color: "var(--ink-mute)" }}>Loading…</p>
       ) : (
-        <RitesLibrary rites={rites} />
+        <RitesLibrary rites={rites} onPerform={(r) => void perform(r)} />
       )}
+
+      {sheet ? (
+        <KeepingSheet
+          title={sheet.title}
+          subtitle="Kept. Add how the rite was, if you like."
+          onKeep={(v) => void keepDetails(v)}
+          onClose={() => setSheet(null)}
+          busy={busy}
+        />
+      ) : null}
     </section>
   );
 }

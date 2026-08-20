@@ -17,6 +17,11 @@ export interface RitesLibraryProps {
   rites: readonly Rite[];
   /** Shown when there are no rites — e.g. before the phone has synced. */
   emptyMessage?: string;
+  /** When given, a "Mark performed" action on the open rite keeps it. */
+  onPerform?: (rite: Rite) => void;
+  /** When given, an "Edit" action on the open rite, and "New rite" up top. */
+  onEdit?: (rite: Rite) => void;
+  onNew?: () => void;
   className?: string;
   style?: CSSProperties;
 }
@@ -40,24 +45,58 @@ const CARD_ACTIVE: CSSProperties = {
   boxShadow: "inset 2px 0 0 var(--accent)",
 };
 
-export function RitesLibrary({ rites, emptyMessage, className, style }: RitesLibraryProps) {
+const actionButton: CSSProperties = {
+  padding: "7px 14px",
+  borderRadius: "var(--r-md, 8px)",
+  border: "1px solid var(--accent)",
+  background: "var(--accent-soft)",
+  color: "var(--ink)",
+  fontFamily: "var(--font-ui)",
+  fontSize: 13,
+  cursor: "pointer",
+};
+
+const quietButton: CSSProperties = {
+  ...actionButton,
+  border: "1px solid var(--line)",
+  background: "var(--bg-2)",
+  color: "var(--ink-soft)",
+};
+
+export function RitesLibrary({
+  rites,
+  emptyMessage,
+  onPerform,
+  onEdit,
+  onNew,
+  className,
+  style,
+}: RitesLibraryProps) {
   const [selectedId, setSelectedId] = useState<string | null>(rites[0]?.id ?? null);
 
   if (rites.length === 0) {
     return (
-      <p
-        style={{
-          fontFamily: "var(--font-ui)",
-          fontSize: 14,
-          color: "var(--ink-mute)",
-          lineHeight: 1.5,
-          maxWidth: 460,
-          ...style,
-        }}
-      >
-        {emptyMessage ??
-          "The rites you have written will appear here once your phone syncs. Link it under Settings to bring them across."}
-      </p>
+      <div style={style}>
+        {onNew ? (
+          <div style={{ marginBottom: 14 }}>
+            <button type="button" onClick={onNew} style={actionButton}>
+              New rite
+            </button>
+          </div>
+        ) : null}
+        <p
+          style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 14,
+            color: "var(--ink-mute)",
+            lineHeight: 1.5,
+            maxWidth: 460,
+          }}
+        >
+          {emptyMessage ??
+            "The rites you have written will appear here once your phone syncs. Link it under Settings to bring them across, or write one here."}
+        </p>
+      </div>
     );
   }
 
@@ -75,6 +114,15 @@ export function RitesLibrary({ rites, emptyMessage, className, style }: RitesLib
       }}
     >
       <nav aria-label="Your rites" style={{ minWidth: 0 }}>
+        {onNew ? (
+          <button
+            type="button"
+            onClick={onNew}
+            style={{ ...actionButton, width: "100%", marginBottom: 10 }}
+          >
+            New rite
+          </button>
+        ) : null}
         {rites.map((rite) => {
           const isActive = rite.id === selected?.id;
           return (
@@ -150,6 +198,20 @@ export function RitesLibrary({ rites, emptyMessage, className, style }: RitesLib
             >
               {selected.summary}
             </p>
+          ) : null}
+          {onPerform || onEdit ? (
+            <div style={{ display: "flex", gap: 10, margin: "0 0 16px" }}>
+              {onPerform ? (
+                <button type="button" onClick={() => onPerform(selected)} style={actionButton}>
+                  Mark performed
+                </button>
+              ) : null}
+              {onEdit ? (
+                <button type="button" onClick={() => onEdit(selected)} style={quietButton}>
+                  Edit
+                </button>
+              ) : null}
+            </div>
           ) : null}
           <RiteScriptView script={selected.script} emptyMessage="This rite has no words yet." />
         </article>
