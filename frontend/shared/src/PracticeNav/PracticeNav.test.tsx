@@ -121,6 +121,7 @@ describe("PracticeNav — the phone drawer, mirrored", () => {
       "/adorations/lunar",
       "/daily-practice/resh",
       "/rituals",
+      "/workings",
       "/divination/tarot",
       "/gematria",
     ];
@@ -145,7 +146,14 @@ describe("PracticeNav — the phone drawer, mirrored", () => {
     render(
       <PracticeNav
         disabledPractices={
-          new Set(["lunarAdorations", "solarAdorations", "rituals", "divination", "numbers"])
+          new Set([
+            "lunarAdorations",
+            "solarAdorations",
+            "rituals",
+            "workings",
+            "divination",
+            "numbers",
+          ])
         }
       />,
     );

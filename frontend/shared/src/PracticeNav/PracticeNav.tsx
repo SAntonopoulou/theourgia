@@ -224,6 +224,7 @@ const EXTRA_ICONS = {
   lunaradorations: glyphIcon("☽"),
   solaradorations: glyphIcon("☉"),
   rituals: glyphIcon("☩"),
+  workings: glyphIcon("☿"),
 } as const;
 
 const WING_GRID_ICON = (
@@ -273,7 +274,8 @@ export type PracticeNavKey =
   // ``gematria``) or arrive with their surface.
   | "lunaradorations"
   | "solaradorations"
-  | "rituals";
+  | "rituals"
+  | "workings";
 
 const ICONS: Record<PracticeNavKey, ReactNode> = {
   ...NAV_ICONS,
@@ -363,6 +365,13 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
         label: "Rituals",
         practice: "rituals",
         glyph: "☩",
+      },
+      {
+        key: "workings",
+        to: "/workings",
+        label: "Workings",
+        practice: "workings",
+        glyph: "☿",
       },
       {
         key: "divination",

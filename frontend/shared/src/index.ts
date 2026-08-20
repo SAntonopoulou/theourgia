@@ -419,6 +419,14 @@ export {
 } from "./rites/riteScript.js";
 export { RiteScriptView, type RiteScriptViewProps } from "./rites/RiteScriptView.js";
 export { RitesLibrary, type RitesLibraryProps } from "./rites/RitesLibrary.js";
+// The long operations, read from the synced record (the phone's Workings screen).
+export {
+  type Working,
+  type WorkingRecordEntry,
+  type WorkingStage,
+  workingsFromEntries,
+} from "./workings/recordWorkings.js";
+export { WorkingsLibrary, type WorkingsLibraryProps } from "./workings/WorkingsLibrary.js";
 export {
   type ElectionClause,
   type ElectionTemplates,
