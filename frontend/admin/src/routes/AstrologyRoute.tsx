@@ -60,6 +60,36 @@ function toLocalInput(d: Date): string {
   )}`;
 }
 
+const HOUR_MS = 3_600_000;
+
+/** The spans one full drag of the scrubber covers, mirroring the phone's Hour/
+ *  Day/Week/Month strip in `quick_chart_screen`. */
+const SCRUB_SPANS = [
+  { key: "hour", label: "Hour", unit: "hour", ms: HOUR_MS },
+  { key: "day", label: "Day", unit: "day", ms: 24 * HOUR_MS },
+  { key: "week", label: "Week", unit: "week", ms: 7 * 24 * HOUR_MS },
+  { key: "month", label: "Month", unit: "month", ms: 30 * 24 * HOUR_MS },
+] as const;
+
+type ScrubSpanKey = (typeof SCRUB_SPANS)[number]["key"];
+
+/** A signed millisecond offset as a short human label: "+3h", "−2d 4h", "now". */
+function offsetLabel(ms: number): string {
+  if (Math.abs(ms) < 60_000) return "at the cast moment";
+  const sign = ms < 0 ? "−" : "+";
+  let s = Math.abs(Math.round(ms / 1000));
+  const d = Math.floor(s / 86400);
+  s -= d * 86400;
+  const h = Math.floor(s / 3600);
+  s -= h * 3600;
+  const m = Math.floor(s / 60);
+  const parts: string[] = [];
+  if (d) parts.push(`${d}d`);
+  if (h) parts.push(`${h}h`);
+  if (m && !d) parts.push(`${m}m`);
+  return `${sign}${parts.join(" ") || "0m"}`;
+}
+
 const SEG_BASE = {
   padding: "6px 12px",
   fontFamily: "var(--font-ui)",
@@ -143,6 +173,15 @@ export function AstrologyRoute() {
   const [saved, setSaved] = useState(false);
   const didInitialCast = useRef(false);
 
+  // The time-scrubber: drag the chart through time from a base anchor (the last
+  // moment cast explicitly). The slider's value is the fraction of one span away
+  // from that anchor, in [-1, 1]; the span is Hour/Day/Week/Month.
+  const [scrubSpanKey, setScrubSpanKey] = useState<ScrubSpanKey>("day");
+  const [scrubOffset, setScrubOffset] = useState(0);
+  const scrubBaseRef = useRef<number>(Date.now());
+  const scrubTokenRef = useRef(0);
+  const scrubSpanMs = SCRUB_SPANS.find((s) => s.key === scrubSpanKey)?.ms ?? 24 * HOUR_MS;
+
   const cast = useCallback(
     async (over?: { lat?: number; lng?: number; whenIso?: string }) => {
       const latN = over?.lat ?? Number(lat);
@@ -151,16 +190,21 @@ export function AstrologyRoute() {
         setCastError("Enter a latitude and longitude first.");
         return;
       }
+      const whenIso = over?.whenIso ?? new Date(when).toISOString();
       setCasting(true);
       setCastError(null);
       try {
         const result = await apiMethods.getChart({
-          when: over?.whenIso ?? new Date(when).toISOString(),
+          when: whenIso,
           latitude: latN,
           longitude: lngN,
           zodiac,
           house_system: houseSystem === "whole-sign" ? "whole-sign" : "placidus",
         });
+        // An explicit cast is the scrubber's new anchor: centre the slider on it.
+        scrubTokenRef.current += 1;
+        scrubBaseRef.current = new Date(whenIso).getTime();
+        setScrubOffset(0);
         setChart(result);
         setSaved(false);
       } catch (e) {
@@ -216,6 +260,52 @@ export function AstrologyRoute() {
     const now = new Date();
     setWhen(toLocalInput(now));
     void cast({ whenIso: now.toISOString() });
+  };
+
+  // A latest-wins cast for the scrubber: dragging fires many casts, and a slower
+  // earlier response must not overwrite a later one, so each carries a token and
+  // only the newest to return is allowed to land.
+  const castAt = useCallback(
+    async (whenIso: string) => {
+      const latN = Number(lat);
+      const lngN = Number(lng);
+      if (!Number.isFinite(latN) || !Number.isFinite(lngN)) return;
+      scrubTokenRef.current += 1;
+      const token = scrubTokenRef.current;
+      setCasting(true);
+      try {
+        const result = await apiMethods.getChart({
+          when: whenIso,
+          latitude: latN,
+          longitude: lngN,
+          zodiac,
+          house_system: houseSystem === "whole-sign" ? "whole-sign" : "placidus",
+        });
+        if (token !== scrubTokenRef.current) return;
+        setChart(result);
+        setSaved(false);
+      } catch {
+        // A scrub that fails is quiet — the previous chart stays; the next drag retries.
+      } finally {
+        if (token === scrubTokenRef.current) setCasting(false);
+      }
+    },
+    [lat, lng, zodiac, houseSystem],
+  );
+
+  const scrubTo = (offset: number) => {
+    setScrubOffset(offset);
+    const moment = new Date(scrubBaseRef.current + offset * scrubSpanMs);
+    setWhen(toLocalInput(moment));
+    void castAt(moment.toISOString());
+  };
+
+  // Changing the span rebases onto the shown moment and re-centres, so the chart
+  // never jumps — only how far a full drag reaches changes.
+  const changeSpan = (key: ScrubSpanKey) => {
+    scrubBaseRef.current += scrubOffset * scrubSpanMs;
+    setScrubOffset(0);
+    setScrubSpanKey(key);
   };
 
   return (
@@ -368,6 +458,105 @@ export function AstrologyRoute() {
             Ascendant {degInSign(chart.houses.ascendant)} {signOf(chart.houses.ascendant)} ·
             Midheaven {degInSign(chart.houses.midheaven)} {signOf(chart.houses.midheaven)}
           </div>
+
+          <div
+            style={{
+              border: "1px solid var(--line)",
+              borderRadius: "var(--r-lg, 14px)",
+              padding: "13px 16px",
+              marginBottom: 14,
+              background: "var(--bg-2)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-end",
+                justifyContent: "space-between",
+                flexWrap: "wrap",
+                gap: 12,
+                marginBottom: 10,
+              }}
+            >
+              <Segmented
+                label="Scrub by"
+                value={scrubSpanKey}
+                onChange={changeSpan}
+                options={SCRUB_SPANS.map((s) => ({ key: s.key, label: s.label }))}
+              />
+              <div style={{ textAlign: "right" }}>
+                <div
+                  style={{
+                    fontFamily: "var(--font-ui)",
+                    fontSize: 13.5,
+                    color: "var(--ink)",
+                    fontVariantNumeric: "tabular-nums",
+                  }}
+                >
+                  {Number.isNaN(new Date(when).getTime())
+                    ? ""
+                    : new Date(when).toLocaleString(undefined, {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                </div>
+                <div
+                  style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--ink-mute)" }}
+                >
+                  {offsetLabel(scrubOffset * scrubSpanMs)}
+                  {scrubOffset !== 0 ? (
+                    <>
+                      {" · "}
+                      <button
+                        type="button"
+                        onClick={setNow}
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          padding: 0,
+                          font: "inherit",
+                          color: "var(--accent)",
+                          cursor: "pointer",
+                          textDecoration: "underline",
+                        }}
+                      >
+                        back to now
+                      </button>
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+            <input
+              type="range"
+              min={-1}
+              max={1}
+              step={0.0001}
+              value={scrubOffset}
+              onChange={(e) => scrubTo(Number(e.target.value))}
+              aria-label="Scrub the chart through time"
+              style={{ width: "100%", accentColor: "var(--accent)", cursor: "ew-resize" }}
+            />
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontFamily: "var(--font-ui)",
+                fontSize: 11,
+                color: "var(--ink-mute)",
+                marginTop: 2,
+              }}
+            >
+              <span>
+                −1 {SCRUB_SPANS.find((s) => s.key === scrubSpanKey)?.unit ?? scrubSpanKey}
+              </span>
+              <span>the cast moment</span>
+              <span>
+                +1 {SCRUB_SPANS.find((s) => s.key === scrubSpanKey)?.unit ?? scrubSpanKey}
+              </span>
+            </div>
+          </div>
+
           <div style={{ marginBottom: 14 }}>
             <Button variant="quiet" onClick={() => void saveChart()} disabled={saving || saved}>
               {saved ? "Kept to the record ✓" : saving ? "Saving…" : "Save to record"}
