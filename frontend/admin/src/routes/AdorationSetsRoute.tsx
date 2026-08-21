@@ -19,7 +19,7 @@ import {
   stationKeysFor,
   useTopbar,
 } from "@theourgia/shared";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
@@ -64,10 +64,17 @@ export function AdorationSetsRoute({
   const packed = usePackedAdorationSets();
   const offered = (packed.data ?? []).filter((s) => s.body === body);
   const [busy, setBusy] = useState(false);
+  // ⚠ A ref, not `busy`: `setBusy(true)` is async, so a second click (or a
+  // double-fired handler) in the same tick sails past `disabled={busy}` and
+  // writes a SECOND record — the duplicate sets Sophia saw. The ref flips
+  // synchronously, so a re-entrant call is dropped before it can write.
+  const inFlight = useRef(false);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ADORATION_SETS_KEY });
 
   const guard = async (work: () => Promise<void>): Promise<void> => {
+    if (inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
     try {
       await work();
@@ -79,6 +86,7 @@ export function AdorationSetsRoute({
         body: e instanceof Error ? e.message : "Check your connection and try again.",
       });
     } finally {
+      inFlight.current = false;
       setBusy(false);
     }
   };
