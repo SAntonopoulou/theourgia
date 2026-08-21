@@ -361,12 +361,29 @@ export {
 } from "./packs/packFeed.js";
 export {
   fetchPackContent,
+  installedPackDocuments,
   installedPackPayloads,
   isClientReadable,
   MAX_CLIENT_SIDE_BYTES,
   type PackPayloads,
   parsePackBytes,
 } from "./packs/packContent.js";
+export {
+  type ModuleChoiceDef,
+  type ModuleOptionDef,
+  moduleOptionsFromPayload,
+  type PackModuleOptions,
+  packModuleOptions,
+} from "./packs/packModuleOptions.js";
+export {
+  buildModuleSettingEntry,
+  chosenValue,
+  clearModuleSettingEntry,
+  MODULE_SETTING_KIND,
+  type ModuleSettingEntry,
+  moduleSettingId,
+  moduleSettingsFromEntries,
+} from "./packs/moduleSettings.js";
 export {
   MODULE_INSTALL_KIND,
   type ModuleInstallFact,

@@ -371,6 +371,11 @@ const PackFeedRoute = lazy(() =>
     default: m.PackFeedRoute,
   })),
 );
+const PackSettingsRoute = lazy(() =>
+  import("./routes/PackSettingsRoute.js").then((m) => ({
+    default: m.PackSettingsRoute,
+  })),
+);
 const CorrespondenceRoute = lazy(() =>
   import("./routes/CorrespondenceRoute.js").then((m) => ({
     default: m.CorrespondenceRoute,
@@ -1082,6 +1087,7 @@ function ShellRoutes() {
             <Route path="/plugins/:id" element={<PluginDetail />} />
             <Route path="/bundles" element={<BundleLibrary />} />
             <Route path="/packs" element={<PackFeedRoute />} />
+            <Route path="/pack-settings" element={<PackSettingsRoute />} />
             <Route path="/correspondences" element={<CorrespondenceRoute />} />
             <Route path="/frames" element={<DirectionalFrameRoute />} />
             <Route path="/techniques" element={<TechniqueRoute />} />

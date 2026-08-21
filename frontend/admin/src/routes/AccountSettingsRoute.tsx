@@ -13,12 +13,7 @@
  * Mounted at /settings.
  */
 
-import {
-  AccountSettingsCopy,
-  AccountSettingsSurface,
-  useAuth,
-  useTopbar,
-} from "@theourgia/shared";
+import { AccountSettingsCopy, AccountSettingsSurface, useAuth, useTopbar } from "@theourgia/shared";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -44,7 +39,10 @@ const PACKS_SECTION = {
   key: "packs" as const,
   title: "Packs",
   sub: "Install and manage the packs that furnish your practice",
-  links: [{ label: "Browse & install packs", href: appHref("/packs") }],
+  links: [
+    { label: "Browse & install packs", href: appHref("/packs") },
+    { label: "Pack settings", href: appHref("/pack-settings") },
+  ],
 };
 
 // The shared DEFAULT_SECTIONS carry raw absolute hrefs ("/settings/keys").
@@ -55,9 +53,7 @@ const SECTIONS = [
   PACKS_SECTION,
   ...AccountSettingsCopy.DEFAULT_SECTIONS.map((section) => ({
     ...section,
-    links: section.links.map((l) =>
-      l.href.startsWith("/") ? { ...l, href: appHref(l.href) } : l,
-    ),
+    links: section.links.map((l) => (l.href.startsWith("/") ? { ...l, href: appHref(l.href) } : l)),
   })),
 ];
 
@@ -83,8 +79,7 @@ export function AccountSettingsRoute() {
   // Operator is whoever is signed in on this self-hosted instance
   // (the "operator" IS the vault owner). Falls back to a generic
   // label when no session is available (e.g. first-run wizard).
-  const operator =
-    auth.session?.display_name || auth.session?.magickal_name || "This instance";
+  const operator = auth.session?.display_name || auth.session?.magickal_name || "This instance";
 
   const about = {
     operator,

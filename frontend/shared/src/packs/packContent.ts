@@ -86,3 +86,31 @@ export async function installedPackPayloads(
   }
   return out;
 }
+
+/**
+ * Every installed, client-readable pack's payload document(s), each tagged with
+ * its kind. Payload-agnostic, for a surface that must look across packs of every
+ * kind rather than one — the pack-settings screen, which reads the `options:*`
+ * items a pack of any kind may carry.
+ */
+export async function installedPackDocuments(
+  feed: FeedPack[],
+  installedSlugs: readonly string[],
+): Promise<{ pack: FeedPack; kind: string; payload: unknown }[]> {
+  const installed = new Set(installedSlugs);
+  const matches = feed.filter(
+    (p) => isClientReadable(p) && (installed.has(p.id) || installed.has(p.id.replaceAll(".", "-"))),
+  );
+  const out: { pack: FeedPack; kind: string; payload: unknown }[] = [];
+  for (const pack of matches) {
+    try {
+      const content = await fetchPackContent(pack);
+      for (const [kind, payload] of Object.entries(content.payloads)) {
+        out.push({ pack, kind, payload });
+      }
+    } catch {
+      // A pack that won't read is skipped, not fatal — the others still load.
+    }
+  }
+  return out;
+}
