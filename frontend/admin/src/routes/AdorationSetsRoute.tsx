@@ -34,6 +34,7 @@ import {
   writeStationAdoration,
 } from "../data/adorationRecords.js";
 import { useMyLocation } from "../data/useLocation.js";
+import { CelestialTrackers } from "./CelestialTrackers.js";
 import { TodayLunarRow, TodayRiteRow } from "./TodayPractice.js";
 
 const cellInput = {
@@ -116,11 +117,18 @@ export function AdorationSetsRoute({
         there is no default set.
       </p>
 
-      {/* Today's stations, drawn as on the home page — the practice itself, not
-          just the set editor. The same rows Today shows, so a set activated
-          below appears here at once. */}
+      {/* The practice itself, drawn as on the home page — not just the set
+          editor. The sun's and moon's arcs (where each is on its course now),
+          then the four stations as cards. A set activated below appears here at
+          once. */}
       {location.data ? (
-        <div style={{ marginBottom: 24 }}>
+        <div style={{ marginBottom: 24, display: "grid", gap: 16 }}>
+          <CelestialTrackers
+            lat={location.data.lat}
+            lng={location.data.lng}
+            solarOn={body === "solar"}
+            lunarOn={body === "lunar"}
+          />
           {body === "lunar" ? (
             <TodayLunarRow lat={location.data.lat} lng={location.data.lng} />
           ) : (
