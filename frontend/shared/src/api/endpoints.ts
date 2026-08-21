@@ -9,6 +9,8 @@
 
 import type { ApiClient } from "./client.js";
 import type {
+  AdorationSet,
+  AdorationSetsResponse,
   AgentAuditQueryResponse,
   AgentCostSummaryResponse,
   AgentCostWindow,
@@ -99,10 +101,6 @@ import type {
   KeyRotationHistoryResponse,
   KeyRotationStatusResponse,
   LadderProgressRead,
-  AdorationSet,
-  AdorationSetsResponse,
-  SpiritualMap,
-  SpiritualMapsResponse,
   LadderRead,
   LunarTodayResponse,
   MagicSquareRecord,
@@ -154,6 +152,8 @@ import type {
   SphereGatePass,
   SphereGateRead,
   SphereRead,
+  SpiritualMap,
+  SpiritualMapsResponse,
   StartAgentRunInput,
   StartScryingSessionInput,
   SubmitPluginInput,
@@ -758,6 +758,12 @@ export function api(client: ApiClient) {
         `/api/v1/publications/${encodeURIComponent(id)}`,
         { method: "PATCH", json: patch },
       );
+    },
+
+    deletePublication(id: string): Promise<void> {
+      return client.request<void>(`/api/v1/publications/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
     },
 
     createPublicationChapter(

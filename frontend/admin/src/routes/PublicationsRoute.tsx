@@ -98,9 +98,34 @@ export function PublicationsRoute() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => apiMethods.deletePublication(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["publications"] });
+      Toast.push({ tone: "success", title: "Moved to the bin" });
+    },
+    onError: (err) => {
+      Toast.push({
+        tone: "error",
+        title: "Could not delete",
+        body: err instanceof Error ? err.message : String(err),
+      });
+    },
+  });
+
   const publications = useMemo<PublicationCardRecord[]>(
     () => (query.data ?? []).map(toCard),
     [query.data],
+  );
+
+  const handleDelete = useCallback(
+    (id: string, title: string) => {
+      const ok = window.confirm(
+        `Delete “${title}”? It leaves the journal — you can ask an administrator to restore it.`,
+      );
+      if (ok) deleteMutation.mutate(id);
+    },
+    [deleteMutation],
   );
 
   const handleNew = useCallback(
@@ -122,6 +147,7 @@ export function PublicationsRoute() {
       publications={publications.length > 0 ? publications : []}
       onNew={handleNew}
       onSelect={handleSelect}
+      onDelete={handleDelete}
     />
   );
 }

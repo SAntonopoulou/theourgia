@@ -18,12 +18,7 @@
  *     never block on an upload).
  */
 
-import {
-  type CSSProperties,
-  type ReactElement,
-  useMemo,
-  useState,
-} from "react";
+import { type CSSProperties, type ReactElement, useMemo, useState } from "react";
 
 import {
   PUB_EMPTY_BODY,
@@ -65,14 +60,7 @@ export interface PublicationCardRecord {
   created_at: string;
 }
 
-const FILTER_ORDER: PublicationFilter[] = [
-  "all",
-  "drafts",
-  "published",
-  "paid",
-  "free",
-  "books",
-];
+const FILTER_ORDER: PublicationFilter[] = ["all", "drafts", "published", "paid", "free", "books"];
 
 const NEW_KIND_ORDER: PublicationKind[] = ["book", "essay", "post", "page"];
 
@@ -272,10 +260,7 @@ function TypographicCover({
 
 // ── Filtering ──────────────────────────────────────────────────────
 
-function filterMatches(
-  pub: PublicationCardRecord,
-  filter: PublicationFilter,
-): boolean {
+function filterMatches(pub: PublicationCardRecord, filter: PublicationFilter): boolean {
   const isPaid =
     pub.pricing.model === "one-time" ||
     pub.pricing.model === "subscribe" ||
@@ -307,6 +292,9 @@ export interface PublicationsSurfaceProps {
   onNew?: (kind: PublicationKind) => void;
   /** Fired when the practitioner clicks a card. */
   onSelect?: (id: string) => void;
+  /** Fired when the practitioner deletes a card. When omitted, no delete
+   *  affordance is shown. The caller is expected to confirm and refresh. */
+  onDelete?: (id: string, title: string) => void;
   className?: string;
   style?: CSSProperties;
 }
@@ -315,6 +303,7 @@ export function PublicationsSurface({
   publications,
   onNew,
   onSelect,
+  onDelete,
   className,
   style,
 }: PublicationsSurfaceProps) {
@@ -440,10 +429,7 @@ export function PublicationsSurface({
                     textAlign: "left",
                   }}
                 >
-                  <span
-                    aria-hidden="true"
-                    style={{ display: "flex", color: "var(--accent)" }}
-                  >
+                  <span aria-hidden="true" style={{ display: "flex", color: "var(--accent)" }}>
                     {kindIcon(k)}
                   </span>
                   {PUB_NEW_KINDS[k]}
@@ -454,12 +440,7 @@ export function PublicationsSurface({
         </div>
       </header>
 
-      <div
-        className="scroll"
-        role="group"
-        aria-label="Filter"
-        style={FILTER_ROW}
-      >
+      <div className="scroll" role="group" aria-label="Filter" style={FILTER_ROW}>
         {FILTER_ORDER.map((f) => {
           const on = filter === f;
           return (
@@ -564,173 +545,216 @@ export function PublicationsSurface({
             {filtered.map((p) => {
               const chip = stateChipColor(p.state);
               const price = formatPrice(p.pricing);
-              const showCount =
-                p.state === "live" && price.isPaid && p.purchase_count > 0;
+              const showCount = p.state === "live" && price.isPaid && p.purchase_count > 0;
               const opacity = p.state === "withdrawn" ? 0.5 : 1;
               return (
-                <button
-                  key={p.id}
-                  type="button"
-                  data-pub-id={p.id}
-                  data-pub-state={p.state}
-                  onClick={() => onSelect?.(p.id)}
-                  style={{
-                    ...CARD_BASE,
-                    opacity,
-                    background: "var(--bg-2)",
-                  }}
-                >
-                  <div
+                <div key={p.id} style={{ position: "relative" }}>
+                  <button
+                    type="button"
+                    data-pub-id={p.id}
+                    data-pub-state={p.state}
+                    onClick={() => onSelect?.(p.id)}
                     style={{
-                      aspectRatio: "3/4",
-                      position: "relative",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      padding: 18,
-                      background:
-                        "linear-gradient(180deg, var(--bg-3), var(--bg-sunk))",
-                      borderBottomWidth: 1,
-                      borderBottomStyle: "solid",
-                      borderBottomColor: "var(--line)",
+                      ...CARD_BASE,
+                      opacity,
+                      background: "var(--bg-2)",
                     }}
                   >
-                    {p.cover_url ? (
-                      <img
-                        src={p.cover_url}
-                        alt=""
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          position: "absolute",
-                          inset: 0,
-                        }}
-                      />
-                    ) : (
-                      <TypographicCover
-                        title={p.title}
-                        accent="var(--accent)"
-                      />
-                    )}
-                    <span
+                    <div
                       style={{
-                        position: "absolute",
-                        top: 10,
-                        left: 10,
-                        display: "inline-flex",
+                        aspectRatio: "3/4",
+                        position: "relative",
+                        display: "flex",
                         alignItems: "center",
-                        padding: "3px 9px",
-                        borderRadius: 20,
-                        background: "rgba(0,0,0,.35)",
-                        fontFamily: "var(--font-ui)",
-                        fontSize: 10,
-                        letterSpacing: "0.05em",
-                        color: "#fff",
+                        justifyContent: "center",
+                        padding: 18,
+                        background: "linear-gradient(180deg, var(--bg-3), var(--bg-sunk))",
+                        borderBottomWidth: 1,
+                        borderBottomStyle: "solid",
+                        borderBottomColor: "var(--line)",
                       }}
                     >
-                      {PUB_NEW_KINDS[p.kind]}
-                    </span>
-                    {p.cited ? (
+                      {p.cover_url ? (
+                        <img
+                          src={p.cover_url}
+                          alt=""
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            position: "absolute",
+                            inset: 0,
+                          }}
+                        />
+                      ) : (
+                        <TypographicCover title={p.title} accent="var(--accent)" />
+                      )}
                       <span
-                        title="Citation present (CC / PD / etc.)"
-                        aria-label="Cited"
                         style={{
                           position: "absolute",
                           top: 10,
-                          right: 10,
+                          left: 10,
                           display: "inline-flex",
                           alignItems: "center",
-                          justifyContent: "center",
-                          width: 18,
-                          height: 18,
-                          borderRadius: 4,
-                          background: "var(--accent-soft)",
-                          color: "var(--accent)",
-                          fontFamily: "var(--font-glyph)",
-                          fontSize: 11,
-                        }}
-                      >
-                        ‡
-                      </span>
-                    ) : null}
-                  </div>
-                  <div style={{ padding: "13px 14px 15px" }}>
-                    <div
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: 16,
-                        lineHeight: 1.2,
-                        color: "var(--ink)",
-                        marginBottom: 3,
-                      }}
-                    >
-                      {p.title}
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: "var(--font-ui)",
-                        fontSize: 11.5,
-                        color: "var(--ink-mute)",
-                        marginBottom: 10,
-                      }}
-                    >
-                      {p.author_label}
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <span
-                        data-state-chip={p.state}
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 5,
-                          padding: "2px 9px",
-                          borderWidth: 1,
-                          borderStyle: "solid",
-                          borderColor: chip.border,
+                          padding: "3px 9px",
                           borderRadius: 20,
+                          background: "rgba(0,0,0,.35)",
                           fontFamily: "var(--font-ui)",
-                          fontSize: 10.5,
-                          color: chip.color,
+                          fontSize: 10,
+                          letterSpacing: "0.05em",
+                          color: "#fff",
                         }}
                       >
-                        {PUB_STATE_LABELS[p.state]}
+                        {PUB_NEW_KINDS[p.kind]}
                       </span>
-                      <span
-                        data-price
-                        style={{
-                          fontFamily: "var(--font-ui)",
-                          fontSize: 12,
-                          color: price.isPaid
-                            ? "var(--money)"
-                            : "var(--ink-soft)",
-                        }}
-                      >
-                        {price.label}
-                      </span>
-                      {showCount ? (
+                      {p.cited ? (
                         <span
-                          data-purchase-count
+                          title="Citation present (CC / PD / etc.)"
+                          aria-label="Cited"
                           style={{
-                            marginLeft: "auto",
-                            fontFamily: "var(--font-mono)",
+                            position: "absolute",
+                            top: 10,
+                            right: 10,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 18,
+                            height: 18,
+                            borderRadius: 4,
+                            background: "var(--accent-soft)",
+                            color: "var(--accent)",
+                            fontFamily: "var(--font-glyph)",
                             fontSize: 11,
-                            color: "var(--ink-mute)",
                           }}
                         >
-                          {p.purchase_count} purchased
+                          ‡
                         </span>
                       ) : null}
                     </div>
-                  </div>
-                </button>
+                    <div style={{ padding: "13px 14px 15px" }}>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-display)",
+                          fontSize: 16,
+                          lineHeight: 1.2,
+                          color: "var(--ink)",
+                          marginBottom: 3,
+                        }}
+                      >
+                        {p.title}
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: "var(--font-ui)",
+                          fontSize: 11.5,
+                          color: "var(--ink-mute)",
+                          marginBottom: 10,
+                        }}
+                      >
+                        {p.author_label}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <span
+                          data-state-chip={p.state}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 5,
+                            padding: "2px 9px",
+                            borderWidth: 1,
+                            borderStyle: "solid",
+                            borderColor: chip.border,
+                            borderRadius: 20,
+                            fontFamily: "var(--font-ui)",
+                            fontSize: 10.5,
+                            color: chip.color,
+                          }}
+                        >
+                          {PUB_STATE_LABELS[p.state]}
+                        </span>
+                        <span
+                          data-price
+                          style={{
+                            fontFamily: "var(--font-ui)",
+                            fontSize: 12,
+                            color: price.isPaid ? "var(--money)" : "var(--ink-soft)",
+                          }}
+                        >
+                          {price.label}
+                        </span>
+                        {showCount ? (
+                          <span
+                            data-purchase-count
+                            style={{
+                              marginLeft: "auto",
+                              fontFamily: "var(--font-mono)",
+                              fontSize: 11,
+                              color: "var(--ink-mute)",
+                            }}
+                          >
+                            {p.purchase_count} purchased
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  </button>
+                  {onDelete ? (
+                    <button
+                      type="button"
+                      data-pub-delete={p.id}
+                      aria-label={`Delete ${p.title}`}
+                      title="Delete"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(p.id, p.title);
+                      }}
+                      style={{
+                        position: "absolute",
+                        top: 8,
+                        right: 8,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: 28,
+                        height: 28,
+                        borderRadius: 7,
+                        border: "1px solid var(--line)",
+                        background: "var(--bg-1, var(--bg-2))",
+                        color: "var(--ink-mute)",
+                        cursor: "pointer",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.color = "var(--danger, #b5573f)";
+                        e.currentTarget.style.borderColor = "var(--danger, #b5573f)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.color = "var(--ink-mute)";
+                        e.currentTarget.style.borderColor = "var(--line)";
+                      }}
+                    >
+                      <svg
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6" />
+                      </svg>
+                    </button>
+                  ) : null}
+                </div>
               );
             })}
           </div>
