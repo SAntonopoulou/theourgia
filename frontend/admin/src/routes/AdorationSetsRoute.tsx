@@ -24,10 +24,12 @@ import { useState } from "react";
 import {
   ADORATION_SETS_KEY,
   activateAdorationSet,
+  adoptAdorationSet,
   createAdorationSet,
   deleteAdorationSet,
   renameAdorationSet,
   useAdorationSets,
+  usePackedAdorationSets,
   writeStationAdoration,
 } from "../data/adorationRecords.js";
 
@@ -58,6 +60,8 @@ export function AdorationSetsRoute({
   const query = useAdorationSets();
   const all = query.data ?? [];
   const sets = all.filter((s) => s.body === body);
+  const packed = usePackedAdorationSets();
+  const offered = (packed.data ?? []).filter((s) => s.body === body);
   const [busy, setBusy] = useState(false);
 
   const refresh = () => qc.invalidateQueries({ queryKey: ADORATION_SETS_KEY });
@@ -130,6 +134,77 @@ export function AdorationSetsRoute({
           New set
         </Button>
       </div>
+
+      {offered.length > 0 ? (
+        <div
+          style={{
+            border: "1px solid var(--line)",
+            borderRadius: "var(--r-lg, 14px)",
+            padding: 16,
+            marginBottom: 20,
+            background: "var(--bg-2)",
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "var(--font-ui)",
+              fontSize: 11,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "var(--ink-mute)",
+              marginBottom: 10,
+            }}
+          >
+            From installed packs
+          </div>
+          <div style={{ display: "grid", gap: 8 }}>
+            {offered.map((p, i) => (
+              <div
+                key={`${p.name}-${i}`}
+                style={{ display: "flex", alignItems: "center", gap: 12 }}
+              >
+                <span
+                  style={{
+                    flex: 1,
+                    fontFamily: "var(--font-ui)",
+                    fontSize: 14,
+                    color: "var(--ink)",
+                  }}
+                >
+                  {p.name}
+                  <span style={{ color: "var(--ink-mute)", fontSize: 12.5 }}>
+                    {" "}
+                    · {p.adorations.length} station{p.adorations.length === 1 ? "" : "s"}
+                  </span>
+                </span>
+                <Button
+                  variant="quiet"
+                  disabled={busy}
+                  onClick={() =>
+                    void guard(async () => {
+                      await adoptAdorationSet({ body, name: p.name, adorations: p.adorations });
+                    })
+                  }
+                >
+                  Adopt
+                </Button>
+              </div>
+            ))}
+          </div>
+          <p
+            style={{
+              margin: "10px 0 0",
+              fontFamily: "var(--font-ui)",
+              fontSize: 12,
+              color: "var(--ink-mute)",
+              lineHeight: 1.5,
+            }}
+          >
+            Adopting copies the words into a set of your own to edit and activate — a pack is a
+            source, never a link.
+          </p>
+        </div>
+      ) : null}
 
       {query.isPending ? (
         <p style={{ fontFamily: "var(--font-ui)", color: "var(--ink-mute)" }}>Loading…</p>

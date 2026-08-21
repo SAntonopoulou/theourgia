@@ -169,6 +169,52 @@ export function wordAtStation(set: RecordedAdorationSet | undefined, stationKey:
   return set.adorations.find((a) => a.stationKeys.includes(stationKey))?.script ?? "";
 }
 
+// ─── adopting from a pack ───────────────────────────────────────────
+
+/** A set as an installed adoration-set pack publishes it, before adoption. */
+export interface PackedAdorationSet {
+  name: string;
+  body: AdorationBody;
+  adorations: { script: string; title: string; stationKeys: string[] }[];
+}
+
+/**
+ * The adoration sets in an installed pack payload.
+ *
+ * Adoration-set packs share the MBF `ritual-set` container with rite and
+ * working packs, so this reads the same payload but keeps only the items that
+ * are adoration sets — an item with a `body` (lunar/solar) and an `adorations`
+ * list, which a rite (steps) or a working never has. The words are byte-exact.
+ */
+export function packedAdorationSetsFromPayload(payload: unknown): PackedAdorationSet[] {
+  const items =
+    payload && typeof payload === "object" && Array.isArray((payload as { items?: unknown }).items)
+      ? ((payload as { items: unknown[] }).items ?? [])
+      : [];
+  const out: PackedAdorationSet[] = [];
+  for (const item of items) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    const body = bodyOf(row.body);
+    if (body === null || !Array.isArray(row.adorations)) continue;
+    const adorations = (row.adorations as unknown[])
+      .map((a) => {
+        const ao = a && typeof a === "object" ? (a as Record<string, unknown>) : {};
+        return {
+          script: str(ao.script),
+          title: str(ao.title),
+          stationKeys: Array.isArray(ao.stations)
+            ? (ao.stations as unknown[]).filter((s): s is string => typeof s === "string")
+            : [],
+        };
+      })
+      .filter((a) => a.script.length > 0);
+    if (adorations.length === 0) continue;
+    out.push({ name: str(row.name) || "Adoration set", body, adorations });
+  }
+  return out;
+}
+
 // ─── writers: the same documents back ───────────────────────────────
 
 /** Build an `adoration-set` record entry. */

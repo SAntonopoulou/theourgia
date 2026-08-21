@@ -5,6 +5,7 @@ import {
   adorationSetsFromEntries,
   buildAdorationEntry,
   buildAdorationSetEntry,
+  packedAdorationSetsFromPayload,
 } from "./adorationRecords.js";
 
 const NOW = "2026-08-21T10:00:00.000Z";
@@ -93,5 +94,42 @@ describe("adoration sets, round-tripped through the record", () => {
       deletedAt: "2026-08-21T11:00:00.000Z",
     });
     expect(adorationSetsFromEntries([setEntry, deletedSet])).toHaveLength(0);
+  });
+});
+
+describe("adopting sets from an installed pack", () => {
+  it("keeps adoration items (body + adorations), drops rites (steps)", () => {
+    // The real MBF ritual-set container mixes all three phone kinds.
+    const payload = {
+      items: [
+        {
+          name: "Keybearers · solar",
+          body: "solar",
+          ref: "self:a",
+          adorations: [
+            { script: "Χαῖρε Ἥλιε", title: "☀ Dawn", stations: ["sunrise"] },
+            { script: "", title: "empty — dropped", stations: ["noon"] },
+          ],
+        },
+        // A rite item — no body, has steps. Must be ignored.
+        { name: "The Star Ruby", ref: "self:b", steps: [], summary: "" },
+      ],
+    };
+    const sets = packedAdorationSetsFromPayload(payload);
+    expect(sets).toHaveLength(1);
+    const [set] = sets;
+    expect(set).toBeDefined();
+    if (!set) return;
+    expect(set.body).toBe("solar");
+    expect(set.name).toBe("Keybearers · solar");
+    // Only the adoration with words survives.
+    expect(set.adorations).toHaveLength(1);
+    expect(set.adorations[0]?.script).toBe("Χαῖρε Ἥλιε");
+    expect(set.adorations[0]?.stationKeys).toEqual(["sunrise"]);
+  });
+
+  it("is empty for a non-pack payload", () => {
+    expect(packedAdorationSetsFromPayload(null)).toEqual([]);
+    expect(packedAdorationSetsFromPayload({ items: "nope" })).toEqual([]);
   });
 });

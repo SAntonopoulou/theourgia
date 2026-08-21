@@ -12,14 +12,19 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   type AdorationBody,
+  type PackedAdorationSet,
   type RecordEntryWrite,
   type RecordedAdorationSet,
   adorationSetsFromEntries,
   buildAdorationEntry,
   buildAdorationSetEntry,
+  fetchPackFeed,
+  installedPackPayloads,
+  packedAdorationSetsFromPayload,
 } from "@theourgia/shared";
 
 import { apiGet, apiPut } from "../lib/api.js";
+import { apiMethods } from "./api.js";
 
 /** One shared TanStack cache for the record-backed adoration sets, so the
  *  selection surface and Today re-render together. */
@@ -84,6 +89,24 @@ export function useLunarStreak() {
   return useQuery<number, Error>({
     queryKey: ["lunar-streak", "record"],
     queryFn: fetchLunarStreakDays,
+  });
+}
+
+/** The adoration sets on offer from installed packs — read from the client's
+ *  own .mbf files (adoration-set packs share the `ritual-set` container, so the
+ *  rite/working items are filtered out). Adopting one copies it into an owned,
+ *  editable set — a pack is a source, never a link. */
+export async function fetchPackedAdorationSets(): Promise<PackedAdorationSet[]> {
+  const [feed, installed] = await Promise.all([fetchPackFeed(), apiMethods.bundlesInstalled()]);
+  const slugs = installed.bundles.map((b) => b.slug);
+  const payloads = await installedPackPayloads(feed, slugs, "ritual-set");
+  return payloads.flatMap((p) => packedAdorationSetsFromPayload(p));
+}
+
+export function usePackedAdorationSets() {
+  return useQuery<PackedAdorationSet[], Error>({
+    queryKey: ["packed-adoration-sets"],
+    queryFn: fetchPackedAdorationSets,
   });
 }
 
