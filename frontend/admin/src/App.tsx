@@ -893,6 +893,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             <ActingAsSwitcher
               identities={actingIdentities}
               manageHref={appHref("/identities")}
+              onSettings={() => navigate("/settings")}
               onManage={() => navigate("/identities")}
               onSignOut={() => void handleSignOut()}
             />

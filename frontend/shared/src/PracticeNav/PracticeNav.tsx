@@ -268,6 +268,24 @@ const MORE_ICON = (
   </svg>
 );
 
+// A small disclosure chevron for a collapsible section heading (points down
+// when open; the caller rotates it -90° when the section is folded).
+const CHEVRON_ICON = (
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M6 9l6 6 6-6" />
+  </svg>
+);
+
 // ─── Keys · superset contract ──────────────────────────────────────────────
 
 /** ``active`` accepts every old VaultNav key plus the H12 additions. */
@@ -340,6 +358,10 @@ export interface PracticeNavSection {
    *  the way the phone drawer does. Sections without this are dropped when
    *  empty. */
   emptyNote?: string;
+  /** When true, the whole section folds under its heading — click to collapse
+   *  or expand every item at once, so a long "tools" list needn't overwhelm.
+   *  The open/closed choice is remembered per heading. */
+  collapsible?: boolean;
 }
 
 /**
@@ -435,6 +457,7 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
   // is the phone's, synced here; by Sophia's ruling never the journal.
   {
     heading: "Utilities",
+    collapsible: true,
     items: [
       { key: "record", to: "/record", label: "The record" },
       { key: "calendar", to: "/calendar", label: "Calendar" },
@@ -569,6 +592,9 @@ export const HIDDEN_UNTIL_FINISHED: ReadonlySet<PracticeNavKey> = new Set<Practi
   "astragaloi",
   // Packs live in the Settings gear now, as on the phone — not the sidebar.
   "packs",
+  // The ritual compass is not needed on the web right now (it may return); the
+  // route still answers, it is just drawn nowhere.
+  "frames",
   // Pack-reference surfaces — the phone folds these into the packs a practice
   // consumes, not the drawer.
   "wordvalues",
@@ -737,6 +763,9 @@ const HEADING_STYLE: CSSProperties = {
 
 const ICO_STYLE: CSSProperties = { display: "flex", flex: "none" };
 
+/** localStorage key for which collapsible sections the reader has folded. */
+const COLLAPSE_KEY = "theourgia.nav.collapsedSections";
+
 // ─── Component ─────────────────────────────────────────────────────────────
 
 function DefaultLink({ to, children, className, style, onClick }: VaultNavLinkProps) {
@@ -803,6 +832,31 @@ export function PracticeNav({
       const next = new Set(open);
       if (next.has(heading)) next.delete(heading);
       else next.add(heading);
+      return next;
+    });
+
+  // Whole-section collapse (the Utilities/"tools" group), remembered per heading
+  // so a fold survives a reload. Kept separate from the "More tools" disclosure.
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => {
+    try {
+      const raw = typeof localStorage !== "undefined" ? localStorage.getItem(COLLAPSE_KEY) : null;
+      return new Set(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch {
+      return new Set();
+    }
+  });
+  const toggleCollapsed = (heading: string) =>
+    setCollapsed((open) => {
+      const next = new Set(open);
+      if (next.has(heading)) next.delete(heading);
+      else next.add(heading);
+      try {
+        if (typeof localStorage !== "undefined") {
+          localStorage.setItem(COLLAPSE_KEY, JSON.stringify([...next]));
+        }
+      } catch {
+        /* storage unavailable (private mode / SSR) — fold stays in memory */
+      }
       return next;
     });
 
@@ -929,110 +983,160 @@ export function PracticeNav({
       </button>
 
       {/* Sections of the current wing */}
-      {sections.map((section) => (
-        <div key={section.heading || "today"}>
-          {section.heading ? (
-            <div className="pn-head" style={HEADING_STYLE}>
-              {_(section.heading)}
-            </div>
-          ) : null}
-          {section.items.length === 0 && section.emptyNote ? (
-            <div
-              className="pn-label"
-              style={{
-                ...ITEM_BASE,
-                color: "var(--ink-mute)",
-                fontStyle: "italic",
-                fontSize: 12.5,
-              }}
-            >
-              {_(section.emptyNote)}
-            </div>
-          ) : null}
-          {section.items.map((item) => {
-            const isActive = item.key === active;
-            const isJudgment = item.key === "awaitingjudgment";
-            return (
-              <LinkComponent
-                key={item.key}
-                to={item.to}
-                onClick={() => onNavigate?.()}
-                style={isActive ? ITEM_ACTIVE : ITEM_BASE}
-              >
-                <span style={ICO_STYLE} title={_(item.label)}>
-                  {item.glyph ? glyphIcon(item.glyph) : ICONS[item.key]}
-                </span>
-                <span
-                  className="pn-label"
-                  style={isJudgment ? { flex: 1, minWidth: 0 } : undefined}
+      {sections.map((section) => {
+        const isCollapsible = !!section.collapsible && section.heading !== "";
+        // Never fold away the section that holds the active row.
+        const isCollapsed =
+          isCollapsible &&
+          collapsed.has(section.heading) &&
+          !section.items.some((i) => i.key === active) &&
+          !section.moreItems?.some((i) => i.key === active);
+        return (
+          <div key={section.heading || "today"}>
+            {section.heading ? (
+              isCollapsible ? (
+                <button
+                  type="button"
+                  className="pn-head"
+                  aria-expanded={!isCollapsed}
+                  onClick={() => toggleCollapsed(section.heading)}
+                  style={{
+                    ...HEADING_STYLE,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    width: "100%",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
                 >
-                  {_(item.label)}
-                </span>
-                {isJudgment && judgmentCount > 0 ? (
                   <span
-                    className="pn-label"
-                    data-judgment-count
-                    aria-label={_("{n} awaiting judgment", { n: judgmentCount })}
+                    aria-hidden="true"
                     style={{
-                      fontFamily: "var(--font-mono)",
-                      fontSize: 11,
-                      color: "var(--ink-mute)",
+                      display: "inline-flex",
+                      transition: "transform 120ms ease",
+                      transform: isCollapsed ? "rotate(-90deg)" : "none",
                     }}
                   >
-                    {judgmentCount}
+                    {CHEVRON_ICON}
                   </span>
+                  <span className="pn-label" style={{ flex: 1, minWidth: 0 }}>
+                    {_(section.heading)}
+                  </span>
+                </button>
+              ) : (
+                <div className="pn-head" style={HEADING_STYLE}>
+                  {_(section.heading)}
+                </div>
+              )
+            ) : null}
+            {isCollapsed ? null : (
+              <>
+                {section.items.length === 0 && section.emptyNote ? (
+                  <div
+                    className="pn-label"
+                    style={{
+                      ...ITEM_BASE,
+                      color: "var(--ink-mute)",
+                      fontStyle: "italic",
+                      fontSize: 12.5,
+                    }}
+                  >
+                    {_(section.emptyNote)}
+                  </div>
                 ) : null}
-              </LinkComponent>
-            );
-          })}
-          {section.moreItems ? (
-            <>
-              <button
-                type="button"
-                className="pn-more"
-                aria-expanded={openMore.has(section.heading)}
-                onClick={() => toggleMore(section.heading)}
-                title={
-                  openMore.has(section.heading)
-                    ? _(section.fewerLabel ?? "Fewer tools")
-                    : _(section.moreLabel ?? "More tools")
-                }
-                style={{
-                  ...ITEM_BASE,
-                  color: "var(--ink-mute)",
-                  width: "100%",
-                  textAlign: "left",
-                  cursor: "pointer",
-                }}
-              >
-                <span style={ICO_STYLE}>{MORE_ICON}</span>
-                <span className="pn-label" style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
-                  {openMore.has(section.heading)
-                    ? _(section.fewerLabel ?? "Fewer tools")
-                    : _(section.moreLabel ?? "More tools")}
-                </span>
-              </button>
-              {openMore.has(section.heading)
-                ? section.moreItems.map((item) => {
-                    const isActive = item.key === active;
-                    return (
-                      <LinkComponent
-                        key={item.key}
-                        to={item.to}
-                        onClick={() => onNavigate?.()}
-                        style={isActive ? SUB_ITEM_ACTIVE : SUB_ITEM_BASE}
+                {section.items.map((item) => {
+                  const isActive = item.key === active;
+                  const isJudgment = item.key === "awaitingjudgment";
+                  return (
+                    <LinkComponent
+                      key={item.key}
+                      to={item.to}
+                      onClick={() => onNavigate?.()}
+                      style={isActive ? ITEM_ACTIVE : ITEM_BASE}
+                    >
+                      <span style={ICO_STYLE} title={_(item.label)}>
+                        {item.glyph ? glyphIcon(item.glyph) : ICONS[item.key]}
+                      </span>
+                      <span
+                        className="pn-label"
+                        style={isJudgment ? { flex: 1, minWidth: 0 } : undefined}
                       >
-                        <span className="pn-label" title={_(item.label)}>
-                          {_(item.label)}
+                        {_(item.label)}
+                      </span>
+                      {isJudgment && judgmentCount > 0 ? (
+                        <span
+                          className="pn-label"
+                          data-judgment-count
+                          aria-label={_("{n} awaiting judgment", { n: judgmentCount })}
+                          style={{
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 11,
+                            color: "var(--ink-mute)",
+                          }}
+                        >
+                          {judgmentCount}
                         </span>
-                      </LinkComponent>
-                    );
-                  })
-                : null}
-            </>
-          ) : null}
-        </div>
-      ))}
+                      ) : null}
+                    </LinkComponent>
+                  );
+                })}
+                {section.moreItems ? (
+                  <>
+                    <button
+                      type="button"
+                      className="pn-more"
+                      aria-expanded={openMore.has(section.heading)}
+                      onClick={() => toggleMore(section.heading)}
+                      title={
+                        openMore.has(section.heading)
+                          ? _(section.fewerLabel ?? "Fewer tools")
+                          : _(section.moreLabel ?? "More tools")
+                      }
+                      style={{
+                        ...ITEM_BASE,
+                        color: "var(--ink-mute)",
+                        width: "100%",
+                        textAlign: "left",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <span style={ICO_STYLE}>{MORE_ICON}</span>
+                      <span
+                        className="pn-label"
+                        style={{ flex: 1, minWidth: 0, textAlign: "left" }}
+                      >
+                        {openMore.has(section.heading)
+                          ? _(section.fewerLabel ?? "Fewer tools")
+                          : _(section.moreLabel ?? "More tools")}
+                      </span>
+                    </button>
+                    {openMore.has(section.heading)
+                      ? section.moreItems.map((item) => {
+                          const isActive = item.key === active;
+                          return (
+                            <LinkComponent
+                              key={item.key}
+                              to={item.to}
+                              onClick={() => onNavigate?.()}
+                              style={isActive ? SUB_ITEM_ACTIVE : SUB_ITEM_BASE}
+                            >
+                              <span className="pn-label" title={_(item.label)}>
+                                {_(item.label)}
+                              </span>
+                            </LinkComponent>
+                          );
+                        })
+                      : null}
+                  </>
+                ) : null}
+              </>
+            )}
+          </div>
+        );
+      })}
 
       {/* Wing switcher — the answer to the design question: a single
           button at the sidebar foot, naming its destination.
@@ -1150,6 +1254,7 @@ export function PracticeNav({
             alignItems: "center",
           }}
         >
+          {/* A proper toothed cog — the old circle-with-rays read as a sun. */}
           <svg
             width="18"
             height="18"
@@ -1161,8 +1266,8 @@ export function PracticeNav({
             strokeLinejoin="round"
             aria-hidden="true"
           >
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
             <circle cx="12" cy="12" r="3" />
-            <path d="M12 2.5v2.5M12 19v2.5M21.5 12H19M5 12H2.5M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4L5.6 5.6" />
           </svg>
         </button>
       </div>

@@ -48,6 +48,12 @@ export interface ActingAsSwitcherProps {
    * the row is hidden (dev tools + Storybook path).
    */
   onSignOut?: () => void;
+  /**
+   * Optional callback for a "Settings" footer row. Typical use:
+   * ``() => navigate("/settings")``. When omitted the row is hidden, so
+   * settings stays reachable from the sidebar gear alone.
+   */
+  onSettings?: () => void;
 }
 
 const chipBase: CSSProperties = {
@@ -156,6 +162,27 @@ function GearIcon(): ReactNode {
   );
 }
 
+function SettingsCog(): ReactNode {
+  // A proper toothed cog for the Settings row — the radial-ray "gear" reads
+  // as a sun, so settings gets the unmistakable one.
+  return (
+    <svg
+      width="15"
+      height="15"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
 function SignOutIcon(): ReactNode {
   return (
     <svg
@@ -176,7 +203,10 @@ function SignOutIcon(): ReactNode {
   );
 }
 
-function IdentityMedallion({ identity, size = 30 }: { identity: Identity; size?: number }): ReactNode {
+function IdentityMedallion({
+  identity,
+  size = 30,
+}: { identity: Identity; size?: number }): ReactNode {
   const tone = identity.glyphTone ?? "accent";
   return (
     <span
@@ -203,6 +233,7 @@ function IdentityMedallion({ identity, size = 30 }: { identity: Identity; size?:
 
 export function ActingAsSwitcher({
   identities,
+  onSettings,
   onManage,
   manageHref = "/identities",
   onSignOut,
@@ -315,7 +346,8 @@ export function ActingAsSwitcher({
                   <span
                     style={{
                       display: "block",
-                      fontFamily: id.glyphTone === "mute" ? "var(--font-mono)" : "var(--font-display)",
+                      fontFamily:
+                        id.glyphTone === "mute" ? "var(--font-mono)" : "var(--font-display)",
                       fontSize: id.glyphTone === "mute" ? 13.5 : 15,
                       color: "var(--ink)",
                     }}
@@ -338,6 +370,41 @@ export function ActingAsSwitcher({
             );
           })}
           <div style={{ borderTop: "1px solid var(--line)", margin: "6px 4px 0", paddingTop: 6 }}>
+            {onSettings ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  onSettings();
+                }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 9,
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: "var(--r-md)",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 12.5,
+                  color: "var(--ink-soft)",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  textAlign: "left",
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "var(--bg-3)";
+                  (e.currentTarget as HTMLButtonElement).style.color = "var(--ink)";
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                  (e.currentTarget as HTMLButtonElement).style.color = "var(--ink-soft)";
+                }}
+              >
+                <SettingsCog />
+                Settings
+              </button>
+            ) : null}
             <a
               href={manageHref}
               onClick={(e) => {
@@ -395,7 +462,8 @@ export function ActingAsSwitcher({
                   cursor: "pointer",
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background = "var(--warn-soft, var(--bg-3))";
+                  (e.currentTarget as HTMLButtonElement).style.background =
+                    "var(--warn-soft, var(--bg-3))";
                 }}
                 onMouseLeave={(e) => {
                   (e.currentTarget as HTMLButtonElement).style.background = "transparent";
