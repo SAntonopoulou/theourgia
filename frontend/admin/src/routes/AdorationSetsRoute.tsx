@@ -9,7 +9,7 @@
  * body has no words, exactly as on the phone.
  */
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   type AdorationBody,
   Button,
@@ -22,11 +22,12 @@ import {
 import { useState } from "react";
 
 import {
+  ADORATION_SETS_KEY,
   activateAdorationSet,
   createAdorationSet,
   deleteAdorationSet,
-  fetchAdorationSets,
   renameAdorationSet,
+  useAdorationSets,
   writeStationAdoration,
 } from "../data/adorationRecords.js";
 
@@ -42,8 +43,6 @@ const cellInput = {
   color: "var(--ink)",
 };
 
-export const ADORATION_SETS_KEY = ["adoration-sets", "record"] as const;
-
 export function AdorationSetsRoute({
   body,
   title,
@@ -56,10 +55,7 @@ export function AdorationSetsRoute({
   useTopbar(() => ({ title, subtitle }), [title, subtitle]);
 
   const qc = useQueryClient();
-  const query = useQuery<RecordedAdorationSet[], Error>({
-    queryKey: ADORATION_SETS_KEY,
-    queryFn: fetchAdorationSets,
-  });
+  const query = useAdorationSets();
   const all = query.data ?? [];
   const sets = all.filter((s) => s.body === body);
   const [busy, setBusy] = useState(false);

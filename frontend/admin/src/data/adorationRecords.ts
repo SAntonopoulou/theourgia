@@ -9,6 +9,7 @@
  * on the phone.
  */
 
+import { useQuery } from "@tanstack/react-query";
 import {
   type AdorationBody,
   type RecordEntryWrite,
@@ -19,6 +20,17 @@ import {
 } from "@theourgia/shared";
 
 import { apiGet, apiPut } from "../lib/api.js";
+
+/** One shared TanStack cache for the record-backed adoration sets, so the
+ *  selection surface and Today re-render together. */
+export const ADORATION_SETS_KEY = ["adoration-sets", "record"] as const;
+
+export function useAdorationSets() {
+  return useQuery<RecordedAdorationSet[], Error>({
+    queryKey: ADORATION_SETS_KEY,
+    queryFn: fetchAdorationSets,
+  });
+}
 
 let counter = 0;
 function newId(prefix: string): string {

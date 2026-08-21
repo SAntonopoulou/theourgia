@@ -15,8 +15,8 @@
  * a body has no words — exactly as on the phone.
  */
 
-import { buildSubjectEntry } from "../keeping/subject.js";
 import type { RecordEntryWrite } from "../keeping/observance.js";
+import { buildSubjectEntry } from "../keeping/subject.js";
 
 export type AdorationBody = "lunar" | "solar";
 
@@ -160,6 +160,13 @@ export function activeSetFor(
   body: AdorationBody,
 ): RecordedAdorationSet | undefined {
   return sets.find((s) => s.body === body && s.active);
+}
+
+/** The words said at one station of a set — the script of the adoration
+ *  assigned there, or empty. Empty when there is no set (no default). */
+export function wordAtStation(set: RecordedAdorationSet | undefined, stationKey: string): string {
+  if (!set) return "";
+  return set.adorations.find((a) => a.stationKeys.includes(stationKey))?.script ?? "";
 }
 
 // ─── writers: the same documents back ───────────────────────────────

@@ -11,14 +11,9 @@
  * does not own a clock.
  */
 
-import { type CSSProperties, type ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
-import {
-  type ReshAdoration,
-  RESH_STATION_META,
-  type ReshStation,
-  formatMinute,
-} from "./resh.js";
+import { RESH_STATION_META, type ReshAdoration, type ReshStation, formatMinute } from "./resh.js";
 
 export interface ReshNextAdorationProps {
   station: ReshStation;
@@ -63,8 +58,7 @@ export function ReshNextAdoration({
         borderColor: "var(--line-2)",
         borderRadius: "var(--r-lg, 14px)",
         overflow: "hidden",
-        background:
-          "linear-gradient(135deg, var(--accent-soft), var(--bg-2) 60%)",
+        background: "linear-gradient(135deg, var(--accent-soft), var(--bg-2) 60%)",
         ...style,
       }}
     >
@@ -139,38 +133,44 @@ export function ReshNextAdoration({
             >
               {stationLabel}
             </span>
-            <span
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: 20,
-                color: "var(--accent)",
-              }}
-            >
-              {adoration.godform}
-            </span>
-            <span
-              style={{
-                fontFamily: "var(--font-ui)",
-                fontSize: 12.5,
-                color: "var(--ink-mute)",
-              }}
-            >
-              facing {adoration.direction}
-            </span>
+            {adoration.godform ? (
+              <span
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: 20,
+                  color: "var(--accent)",
+                }}
+              >
+                {adoration.godform}
+              </span>
+            ) : null}
+            {adoration.direction ? (
+              <span
+                style={{
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 12.5,
+                  color: "var(--ink-mute)",
+                }}
+              >
+                facing {adoration.direction}
+              </span>
+            ) : null}
           </div>
-          <p
-            style={{
-              fontFamily: "var(--font-serif)",
-              fontStyle: "italic",
-              fontSize: 15,
-              lineHeight: 1.5,
-              color: "var(--ink-soft)",
-              margin: "9px 0 0",
-              maxWidth: "46ch",
-            }}
-          >
-            “{adoration.invocation}”
-          </p>
+          {adoration.invocation ? (
+            <p
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontStyle: "italic",
+                fontSize: 15,
+                lineHeight: 1.5,
+                color: "var(--ink-soft)",
+                margin: "9px 0 0",
+                maxWidth: "46ch",
+              }}
+            >
+              “{adoration.invocation}”
+            </p>
+          ) : null}
         </div>
 
         <div

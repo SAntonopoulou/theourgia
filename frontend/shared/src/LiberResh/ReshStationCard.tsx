@@ -27,12 +27,7 @@
 
 import { type CSSProperties, type ReactNode, useState } from "react";
 
-import {
-  type ReshAdoration,
-  RESH_STATION_META,
-  type ReshStation,
-  formatMinute,
-} from "./resh.js";
+import { RESH_STATION_META, type ReshAdoration, type ReshStation, formatMinute } from "./resh.js";
 
 export interface ReshStationCardProps {
   station: ReshStation;
@@ -178,11 +173,7 @@ export function ReshStationCard({
   const invocationLong = adoration.invocation.length > INVOCATION_CLAMP_CHARS;
   const [invocationOpen, setInvocationOpen] = useState(false);
   const invocationClamped = invocationLong && !invocationOpen;
-  const iconColor = observed
-    ? "var(--success)"
-    : isNext
-      ? "var(--sun-warm)"
-      : "var(--ink-soft)";
+  const iconColor = observed ? "var(--success)" : isNext ? "var(--sun-warm)" : "var(--ink-soft)";
 
   const cardStyle: CSSProperties = {
     background: isNext ? "var(--bg-3)" : "var(--bg-2)",
@@ -216,16 +207,18 @@ export function ReshStationCard({
           >
             {label ?? RESH_STATION_META[station].label}
           </div>
-          <div
-            style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: 14,
-              color: "var(--accent)",
-              marginTop: 0,
-            }}
-          >
-            {adoration.godform}
-          </div>
+          {adoration.godform ? (
+            <div
+              style={{
+                fontFamily: "var(--font-serif)",
+                fontSize: 14,
+                color: "var(--accent)",
+                marginTop: 0,
+              }}
+            >
+              {adoration.godform}
+            </div>
+          ) : null}
           {/* Chips — time, position, minimum-viable — in normal document
               flow, wrapping under the title. Never absolutely positioned,
               never a right-aligned block that collides with the name. */}
@@ -239,24 +232,24 @@ export function ReshStationCard({
             }}
           >
             <span data-chip-time style={chipStyle}>
-              <span style={{ fontSize: 12, color: "var(--ink)" }}>
-                {formatMinute(stationMin)}
-              </span>
+              <span style={{ fontSize: 12, color: "var(--ink)" }}>{formatMinute(stationMin)}</span>
               <span style={{ fontSize: 9.5, color: "var(--ink-mute)" }}>
                 {formatMinute(stationMinUtc)}Z
               </span>
             </span>
-            <span
-              data-chip-direction
-              style={{
-                ...chipStyle,
-                fontFamily: "var(--font-ui)",
-                fontSize: 11,
-                color: "var(--ink-mute)",
-              }}
-            >
-              {adoration.direction}
-            </span>
+            {adoration.direction ? (
+              <span
+                data-chip-direction
+                style={{
+                  ...chipStyle,
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 11,
+                  color: "var(--ink-mute)",
+                }}
+              >
+                {adoration.direction}
+              </span>
+            ) : null}
             {isMinimum ? (
               <span
                 data-minimum-viable
@@ -276,67 +269,69 @@ export function ReshStationCard({
         </div>
       </div>
 
-      <div style={{ margin: "11px 0 12px" }}>
-        <p
-          data-invocation
-          data-clamped={invocationClamped ? "true" : "false"}
-          style={{
-            fontFamily: "var(--font-serif)",
-            fontStyle: "italic",
-            fontSize: 13,
-            lineHeight: 1.5,
-            color: "var(--ink-mute)",
-            margin: 0,
-            ...(invocationClamped
-              ? {
-                  display: "-webkit-box",
-                  WebkitLineClamp: 3,
-                  WebkitBoxOrient: "vertical" as const,
-                  overflow: "hidden",
-                }
-              : {}),
-          }}
-        >
-          “{adoration.invocation}”
-        </p>
-        {invocationLong ? (
-          <button
-            type="button"
-            data-invocation-toggle
-            aria-expanded={invocationOpen}
-            onClick={() => setInvocationOpen((o) => !o)}
+      {adoration.invocation ? (
+        <div style={{ margin: "11px 0 12px" }}>
+          <p
+            data-invocation
+            data-clamped={invocationClamped ? "true" : "false"}
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 5,
-              marginTop: 5,
-              padding: 0,
-              background: "transparent",
-              border: "none",
-              fontFamily: "var(--font-ui)",
-              fontSize: 11.5,
-              color: "var(--accent)",
-              cursor: "pointer",
+              fontFamily: "var(--font-serif)",
+              fontStyle: "italic",
+              fontSize: 13,
+              lineHeight: 1.5,
+              color: "var(--ink-mute)",
+              margin: 0,
+              ...(invocationClamped
+                ? {
+                    display: "-webkit-box",
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: "vertical" as const,
+                    overflow: "hidden",
+                  }
+                : {}),
             }}
           >
-            {invocationOpen ? "Hide invocation" : "Show invocation"}
-            <svg
-              width="11"
-              height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              style={{ transform: invocationOpen ? "rotate(180deg)" : "none" }}
+            “{adoration.invocation}”
+          </p>
+          {invocationLong ? (
+            <button
+              type="button"
+              data-invocation-toggle
+              aria-expanded={invocationOpen}
+              onClick={() => setInvocationOpen((o) => !o)}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                marginTop: 5,
+                padding: 0,
+                background: "transparent",
+                border: "none",
+                fontFamily: "var(--font-ui)",
+                fontSize: 11.5,
+                color: "var(--accent)",
+                cursor: "pointer",
+              }}
             >
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
-        ) : null}
-      </div>
+              {invocationOpen ? "Hide invocation" : "Show invocation"}
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                style={{ transform: invocationOpen ? "rotate(180deg)" : "none" }}
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       {observed ? (
         <Footer>

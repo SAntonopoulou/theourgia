@@ -44,6 +44,13 @@ vi.mock("../../data/api.js", () => ({
   API_BASE_URL: "",
 }));
 
+// The adoration rows read the synced record store for the active set; with no
+// entries there is no active set (and so no words) — which is the point.
+vi.mock("../../lib/api.js", () => ({
+  apiGet: vi.fn(() => Promise.resolve({ entries: [], next_since: 0, more: false })),
+  apiPut: vi.fn(() => Promise.resolve({})),
+}));
+
 import {
   AwaitingJudgmentCard,
   TodayLunarChip,
@@ -202,9 +209,10 @@ describe("TodayRiteRow", () => {
     for (const label of ["Noon", "Night"]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
-    // Hellenic invocation text arrives from the wire, not a local table —
-    // it shows on the dusk card AND the next-adoration hero (dusk is next).
-    expect(screen.getAllByText(/Hail Helios, setting/).length).toBeGreaterThanOrEqual(2);
+    // No default: the words come from the active adoration set (record store),
+    // and with none chosen nothing is said — the server's preset invocation
+    // must NOT appear. The stations and their times still show.
+    expect(screen.queryByText(/Hail Helios, setting/)).toBeNull();
   });
 
   it("gives dusk the minimum-viable chip and the only primary CTA (rule 66)", async () => {

@@ -37,13 +37,15 @@ import {
   SunArcDiagram,
   Toast,
   type TodayContextRead,
+  activeSetFor,
   useApiCall,
+  wordAtStation,
 } from "@theourgia/shared";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
+import { useAdorationSets } from "../data/adorationRecords.js";
 import { apiMethods } from "../data/api.js";
-import { activeSetFor, useAdorations } from "../data/useAdorations.js";
 
 /** H12 relabel — Dawn/Noon/Dusk/Night (a prop-level rename, not a fork). */
 export const STATION_LABEL: Record<ReshTransitionWire, string> = {
@@ -102,9 +104,10 @@ export function TodayLunarRow({ lat, lng }: { lat: number; lng: number }) {
     apiMethods.lunarToday({ lat, lng, tz, signal }),
   );
   // The active adoration set names the stations (Sophia's Hekate set); without
-  // one, the plain station names stand — as on the phone.
-  const adorations = useAdorations();
-  const activeSet = activeSetFor(adorations.data, "lunar");
+  // one, the plain station names stand — as on the phone. Read from the synced
+  // record store, so a set chosen on either surface shows here.
+  const setsQuery = useAdorationSets();
+  const activeSet = activeSetFor(setsQuery.data ?? [], "lunar");
 
   const card = (children: React.ReactNode): React.ReactNode => (
     <div
@@ -147,7 +150,7 @@ export function TodayLunarRow({ lat, lng }: { lat: number; lng: number }) {
             <span
               style={{ flex: 1, fontFamily: "var(--font-ui)", fontSize: 14, color: "var(--ink)" }}
             >
-              {activeSet?.stations[s.key]?.trim() || s.label}
+              {wordAtStation(activeSet, s.key).trim() || s.label}
             </span>
             <time
               style={{
@@ -291,6 +294,12 @@ export function TodayRiteRow({ lat, lng }: TodayRiteRowProps) {
   const adorations = useApiCall<ReshAdorationRead[]>((signal) =>
     apiMethods.listReshAdorations({ since: localIsoDate(STREAK_WINDOW_DAYS - 1), signal }),
   );
+  // The words said at each solar station come from the active adoration set
+  // (record store, synced), not a built-in preset — so nothing is said until a
+  // set is chosen. No default: an empty active set shows the stations and times
+  // with no words, exactly as on the phone.
+  const solarSets = useAdorationSets();
+  const activeSolar = activeSetFor(solarSets.data ?? [], "solar");
 
   // HOME/XENOS liturgy form — posts with the adoration. Defaults to the
   // day's most recent observed form, else home.
@@ -500,16 +509,16 @@ export function TodayRiteRow({ lat, lng }: TodayRiteRowProps) {
             station={next.transition}
             label={STATION_LABEL[next.transition]}
             adoration={{
-              godform: next.godform,
-              direction: next.direction,
-              invocation: next.short_invocation,
+              godform: "",
+              direction: "",
+              invocation: wordAtStation(activeSolar, next.transition),
             }}
             stationMin={minuteOfDayLocal(next.at)}
             stationMinUtc={minuteOfDayUtc(next.at)}
             countdown={fmtCountdown(new Date(next.at).getTime() - now)}
             liturgyAction={
               <Link
-                to="/daily-practice/resh"
+                to="/adorations/solar"
                 style={{
                   fontFamily: "var(--font-ui)",
                   fontSize: 12.5,
@@ -517,7 +526,7 @@ export function TodayRiteRow({ lat, lng }: TodayRiteRowProps) {
                   textDecoration: "none",
                 }}
               >
-                Open full liturgy →
+                {activeSolar ? "Edit the words →" : "Choose an adoration set →"}
               </Link>
             }
           />
@@ -562,9 +571,9 @@ export function TodayRiteRow({ lat, lng }: TodayRiteRowProps) {
                 station={s.transition}
                 label={STATION_LABEL[s.transition]}
                 adoration={{
-                  godform: s.godform,
-                  direction: s.direction,
-                  invocation: s.short_invocation,
+                  godform: "",
+                  direction: "",
+                  invocation: wordAtStation(activeSolar, s.transition),
                 }}
                 stationMin={minuteOfDayLocal(s.at)}
                 stationMinUtc={minuteOfDayUtc(s.at)}
