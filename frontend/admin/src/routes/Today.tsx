@@ -41,6 +41,7 @@ import { usePractices } from "../data/usePractices.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
 import { CelestialTrackers } from "./CelestialTrackers.js";
 import { DayBook } from "./DayBook.js";
+import { SortableList } from "./SortableList.js";
 import { TodayAgenda } from "./TodayAgenda.js";
 import {
   AwaitingJudgmentCard,
@@ -924,38 +925,44 @@ export function Today() {
               gap: 22,
             }}
           >
-            {/* What today asks beyond adorations — scheduled rites/sittings due
-                today and the working items, each one-tap keepable (self-hides
-                when there's nothing scheduled or running). */}
-            {session !== null ? <TodayAgenda /> : null}
-
-            {/* The sun's course and the moon's, side by side — each with its
-                adoration streak below, so a streak stays under its own tracker
-                as they stack on a narrow screen. */}
-            <CelestialTrackers
-              lat={location.lat}
-              lng={location.lng}
-              solarOn={practiceOn("solarAdorations")}
-              lunarOn={practiceOn("lunarAdorations")}
+            {/* The practice cards — drag each by the grip in its corner to
+                reorder, and the arrangement is remembered per browser so Today
+                opens the way you left it. A switched-off practice holds its
+                place in the order but is not shown. (agenda · sun/moon
+                trackers · lunar-day chip · lunar stations · solar rite.) */}
+            <SortableList
+              storageKey="today.practices.order"
+              items={[
+                { id: "agenda", node: session !== null ? <TodayAgenda /> : null },
+                {
+                  id: "celestial-trackers",
+                  node: (
+                    <CelestialTrackers
+                      lat={location.lat}
+                      lng={location.lng}
+                      solarOn={practiceOn("solarAdorations")}
+                      lunarOn={practiceOn("lunarAdorations")}
+                    />
+                  ),
+                },
+                {
+                  id: "lunar-chip",
+                  node: practiceOn("lunarAdorations") ? <TodayLunarChip /> : null,
+                },
+                {
+                  id: "lunar-row",
+                  node: practiceOn("lunarAdorations") ? (
+                    <TodayLunarRow lat={location.lat} lng={location.lng} />
+                  ) : null,
+                },
+                {
+                  id: "rite-row",
+                  node: practiceOn("solarAdorations") ? (
+                    <TodayRiteRow lat={location.lat} lng={location.lng} />
+                  ) : null,
+                },
+              ]}
             />
-
-            {/* H12 — the lunar-day chip: what day it is in the Attic
-                calendar and what that day asks. Gated by lunar adorations,
-                the discipline it belongs to (20 Aug — like the phone). */}
-            {practiceOn("lunarAdorations") ? <TodayLunarChip /> : null}
-
-            {/* The four lunar stations — the lunar counterpart of the solar
-                rite below, so lunar adorations is no longer just a chip. */}
-            {practiceOn("lunarAdorations") ? (
-              <TodayLunarRow lat={location.lat} lng={location.lng} />
-            ) : null}
-
-            {/* H12 — the four-station rite row: first mount of the
-                LiberResh family on the home surface. Gated by solar
-                adorations, so switching that discipline off removes it. */}
-            {practiceOn("solarAdorations") ? (
-              <TodayRiteRow lat={location.lat} lng={location.lng} />
-            ) : null}
 
             {/* Discoverable path to the on/off toggles — what appears here is
                 governed by which practices are switched on. */}
