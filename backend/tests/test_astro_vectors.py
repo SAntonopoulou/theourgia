@@ -20,7 +20,7 @@ fixture without a test that reads it fails the suite.
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -33,7 +33,7 @@ from theourgia.core.astro.profections import (
     profection_monthly_at,
     profection_year_bounds,
 )
-from theourgia.core.astro.releasing import BondRule, first_level, second_level, sub_level
+from theourgia.core.astro.releasing import first_level, second_level, sub_level
 from theourgia.core.astro.solar_return import nearest_return, return_for_age
 from theourgia.core.divination.derive import derive, layers_from_payload
 
@@ -207,7 +207,8 @@ class TestTheDerivationPrimitives:
 
 
 class TestZodiacalReleasing:
-    """Valens' periods, and the three readings of the loosing of the bond."""
+    """Valens' periods, canonical (AstroPractise) — the general period never
+    looses, and the arithmetic is the 360-day year in whole minutes."""
 
     @pytest.mark.parametrize("case", _cases("zodiacal-releasing"), ids=_ids("zodiacal-releasing"))
     def test_every_period_matches_the_phone(self, case: dict[str, Any]) -> None:
@@ -215,42 +216,42 @@ class TestZodiacalReleasing:
             datetime.fromisoformat(case["born"]),
             case["start_sign"],
             years=case["years"],
-            bond=BondRule(case["bond"]),
+            fortune_sign=case["fortune_sign"],
         )
         want = case["periods"]
         assert len(got) == len(want), case["case"]
         for g, w in zip(got, want, strict=True):
-            assert g.sign == w["sign"], case["case"]
-            # ⚠ The LENGTH in whole days, not just the sign. round(years *
-            # 365.2422) — fifteen years of Aries is 5479 days, not 5478.633.
-            # A float implementation drifts a day per period and is a
-            # fortnight out by the end of a life.
-            assert (g.until - g.start).days == w["days"], case["case"]
-            assert g.start == datetime.fromisoformat(w["from"]), case["case"]
-            assert g.is_loosing_of_the_bond == w["loosing"], case["case"]
+            where = case["case"]
+            assert g.sign == w["sign"], where
+            # ⚠ The LENGTH in whole minutes — units * 518400, the idealised
+            # 360-day year. Exact, nothing rounds, so the two devices agree to
+            # the minute rather than drifting a day per period.
+            assert (g.until - g.start) == timedelta(minutes=w["minutes"]), where
+            assert g.start == datetime.fromisoformat(w["from"]), where
+            assert g.until == datetime.fromisoformat(w["until"]), where
+            assert g.is_loosing_of_the_bond == w["loosing"], where
+            assert g.is_peak == w["peak"], where
+            assert g.is_truncated == w["truncated"], where
 
-    def test_the_three_rules_give_visibly_different_lives(self) -> None:
-        """⚠ Anything reporting a time lord must say which rule it used."""
+    def test_the_general_period_never_looses(self) -> None:
+        """⚠ A loosing at level one is a modern addition the source never
+        prescribes. Over 400 years the L1 sequence completes its own twelve
+        signs — exactly where the old, wrong rule used to fire — and still it
+        walks strictly forward."""
         born = datetime.fromisoformat("1984-03-02T18:00:00Z")
-        runs = {
-            rule: [p.sign for p in first_level(born, 5, years=160, bond=rule)] for rule in BondRule
-        }
-        assert runs[BondRule.NONE] != runs[BondRule.SKIP]
-        assert runs[BondRule.NONE] != runs[BondRule.TO_START]
-        # SKIP never reaches the opposite sign at all, so nothing is loosed.
-        assert 11 not in runs[BondRule.SKIP]
-        # TO_START returns to Leo after the loosing rather than going on.
-        assert runs[BondRule.TO_START][-2:] == [5, 6]
+        periods = first_level(born, 3, years=400)  # from Gemini
+        assert len(periods) > 12
+        assert not any(p.is_loosing_of_the_bond for p in periods)
+        # Cancer steps forward to Leo, never jumps to Capricorn.
+        cancer = first_level(born, 4, years=60)
+        assert [cancer[0].sign, cancer[1].sign] == [4, 5]
 
 
 class TestZodiacalReleasingSubLevels:
-    """The four levels, descending the first period of each — two precisions.
-
-    ⚠ The second level is whole DAYS (`round(units * 365.2422 / 12)`); the
-    third and fourth are MICROSECONDS (`round(units * 365.2422 * 86400e6 /
-    12**parentLevel)`). Both are the phone's; rounding the deep levels to
-    days would collapse most fourth-level periods to nothing.
-    """
+    """The four levels, descending the first period of each. ⚠ Every level is
+    one twelfth of the one above, in whole minutes (43200, 3600, 300); nothing
+    rounds. The loosing of the bond lives here, at the subperiod levels: a single
+    jump to the sign opposite the sub-sequence's start."""
 
     @pytest.mark.parametrize(
         "case",
@@ -258,16 +259,16 @@ class TestZodiacalReleasingSubLevels:
         ids=_ids("zodiacal-releasing-sub"),
     )
     def test_every_level_matches_the_phone(self, case: dict[str, Any]) -> None:
-        bond = BondRule(case["bond"])
+        fortune_sign = case["fortune_sign"]
         l1 = first_level(
             datetime.fromisoformat(case["born"]),
             case["start_sign"],
             years=160,
-            bond=bond,
+            fortune_sign=fortune_sign,
         )[0]
-        l2 = second_level(l1, bond=bond)
-        l3 = sub_level(l2[0], bond=bond)
-        l4 = sub_level(l3[0], bond=bond)
+        l2 = second_level(l1, fortune_sign=fortune_sign)
+        l3 = sub_level(l2[0], fortune_sign=fortune_sign)
+        l4 = sub_level(l3[0], fortune_sign=fortune_sign)
 
         for level, got in (("level2", l2), ("level3", l3), ("level4", l4)):
             want = case[level]
@@ -278,10 +279,11 @@ class TestZodiacalReleasingSubLevels:
                 assert g.start == datetime.fromisoformat(w["from"]), where
                 assert g.until == datetime.fromisoformat(w["until"]), where
                 assert g.is_loosing_of_the_bond == w["loosing"], where
+                assert g.is_completion_period == w["completion"], where
 
     def test_a_first_level_parent_is_refused(self) -> None:
-        """second_level is the door into a first-level period, and the
-        distinct arithmetic is the reason there are two doors at all."""
+        """second_level is the door into a first-level period, and the assertion
+        is what keeps a caller from deepening the wrong one."""
         born = datetime.fromisoformat("1984-03-02T18:00:00Z")
         l1 = first_level(born, 5)[0]
         with pytest.raises(ValueError, match="second_level"):

@@ -1,6 +1,6 @@
 {
-  "_note": "Emitted from practiseapp — the source of truth. See README.md. A new primitive without a vector is not finished.",
-  "generated": "2026-08-15",
+  "_note": "Emitted from practiseapp — the source of truth. See README.md. Releasing was reconciled to AstroPractise (the canonical engine) on 21 Aug: the 360-day integer-minute year, no loosing at level one, and the single-jump loosing at the subperiod levels. A new primitive without a vector is not finished.",
+  "generated": "2026-08-21",
   "source": "practiseapp lib/domain/astrology/time_lords.dart",
   "_emitted": "The derivation cases were EMITTED by practiseapp running (test/emit_astro_vectors_test.dart). The profection cases were derived from its source; regenerate them the same way when the emitter grows a chart fixture.",
   "derivation-layers": {
@@ -541,1003 +541,427 @@
   ],
   "zodiacal-releasing": [
     {
-      "case": "from Leo, $releasingYears years, bond: ${rule.name}",
+      "case": "from Leo, 160 years, fortune in Taurus",
       "born": "1984-03-02T18:00:00Z",
       "start_sign": 5,
       "years": 160,
-      "bond": "none",
+      "fortune_sign": 2,
       "periods": [
         {
           "sign": 5,
           "from": "1984-03-02T18:00:00.000Z",
-          "until": "2003-03-03T18:00:00.000Z",
-          "days": 6940,
-          "loosing": false
+          "until": "2002-11-23T18:00:00.000Z",
+          "minutes": 9849600,
+          "loosing": false,
+          "peak": true,
+          "truncated": false
         },
         {
           "sign": 6,
-          "from": "2003-03-03T18:00:00.000Z",
-          "until": "2023-03-03T18:00:00.000Z",
-          "days": 7305,
-          "loosing": false
+          "from": "2002-11-23T18:00:00.000Z",
+          "until": "2022-08-10T18:00:00.000Z",
+          "minutes": 10368000,
+          "loosing": false,
+          "peak": false,
+          "truncated": false
         },
         {
           "sign": 7,
-          "from": "2023-03-03T18:00:00.000Z",
-          "until": "2031-03-03T18:00:00.000Z",
-          "days": 2922,
-          "loosing": false
+          "from": "2022-08-10T18:00:00.000Z",
+          "until": "2030-06-29T18:00:00.000Z",
+          "minutes": 4147200,
+          "loosing": false,
+          "peak": false,
+          "truncated": false
         },
         {
           "sign": 8,
-          "from": "2031-03-03T18:00:00.000Z",
-          "until": "2046-03-03T18:00:00.000Z",
-          "days": 5479,
-          "loosing": false
+          "from": "2030-06-29T18:00:00.000Z",
+          "until": "2045-04-11T18:00:00.000Z",
+          "minutes": 7776000,
+          "loosing": false,
+          "peak": true,
+          "truncated": false
         },
         {
           "sign": 9,
-          "from": "2046-03-03T18:00:00.000Z",
-          "until": "2058-03-03T18:00:00.000Z",
-          "days": 4383,
-          "loosing": false
+          "from": "2045-04-11T18:00:00.000Z",
+          "until": "2057-02-07T18:00:00.000Z",
+          "minutes": 6220800,
+          "loosing": false,
+          "peak": false,
+          "truncated": false
         },
         {
           "sign": 10,
-          "from": "2058-03-03T18:00:00.000Z",
-          "until": "2085-03-03T18:00:00.000Z",
-          "days": 9862,
-          "loosing": false
+          "from": "2057-02-07T18:00:00.000Z",
+          "until": "2083-09-19T18:00:00.000Z",
+          "minutes": 13996800,
+          "loosing": false,
+          "peak": false,
+          "truncated": false
         },
         {
           "sign": 11,
-          "from": "2085-03-03T18:00:00.000Z",
-          "until": "2115-03-04T18:00:00.000Z",
-          "days": 10957,
-          "loosing": true
+          "from": "2083-09-19T18:00:00.000Z",
+          "until": "2113-04-15T18:00:00.000Z",
+          "minutes": 15552000,
+          "loosing": false,
+          "peak": true,
+          "truncated": false
         },
         {
           "sign": 12,
-          "from": "2115-03-04T18:00:00.000Z",
-          "until": "2127-03-04T18:00:00.000Z",
-          "days": 4383,
-          "loosing": false
+          "from": "2113-04-15T18:00:00.000Z",
+          "until": "2125-02-11T18:00:00.000Z",
+          "minutes": 6220800,
+          "loosing": false,
+          "peak": false,
+          "truncated": false
         },
         {
           "sign": 1,
-          "from": "2127-03-04T18:00:00.000Z",
-          "until": "2142-03-04T18:00:00.000Z",
-          "days": 5479,
-          "loosing": false
+          "from": "2125-02-11T18:00:00.000Z",
+          "until": "2139-11-25T18:00:00.000Z",
+          "minutes": 7776000,
+          "loosing": false,
+          "peak": false,
+          "truncated": false
         },
         {
           "sign": 2,
-          "from": "2142-03-04T18:00:00.000Z",
-          "until": "2150-03-04T18:00:00.000Z",
-          "days": 2922,
-          "loosing": false
-        }
-      ]
-    },
-    {
-      "case": "from Leo, $releasingYears years, bond: ${rule.name}",
-      "born": "1984-03-02T18:00:00Z",
-      "start_sign": 5,
-      "years": 160,
-      "bond": "toStart",
-      "periods": [
-        {
-          "sign": 5,
-          "from": "1984-03-02T18:00:00.000Z",
-          "until": "2003-03-03T18:00:00.000Z",
-          "days": 6940,
-          "loosing": false
-        },
-        {
-          "sign": 6,
-          "from": "2003-03-03T18:00:00.000Z",
-          "until": "2023-03-03T18:00:00.000Z",
-          "days": 7305,
-          "loosing": false
-        },
-        {
-          "sign": 7,
-          "from": "2023-03-03T18:00:00.000Z",
-          "until": "2031-03-03T18:00:00.000Z",
-          "days": 2922,
-          "loosing": false
-        },
-        {
-          "sign": 8,
-          "from": "2031-03-03T18:00:00.000Z",
-          "until": "2046-03-03T18:00:00.000Z",
-          "days": 5479,
-          "loosing": false
-        },
-        {
-          "sign": 9,
-          "from": "2046-03-03T18:00:00.000Z",
-          "until": "2058-03-03T18:00:00.000Z",
-          "days": 4383,
-          "loosing": false
-        },
-        {
-          "sign": 10,
-          "from": "2058-03-03T18:00:00.000Z",
-          "until": "2085-03-03T18:00:00.000Z",
-          "days": 9862,
-          "loosing": false
-        },
-        {
-          "sign": 11,
-          "from": "2085-03-03T18:00:00.000Z",
-          "until": "2115-03-04T18:00:00.000Z",
-          "days": 10957,
-          "loosing": true
-        },
-        {
-          "sign": 5,
-          "from": "2115-03-04T18:00:00.000Z",
-          "until": "2134-03-04T18:00:00.000Z",
-          "days": 6940,
-          "loosing": false
-        },
-        {
-          "sign": 6,
-          "from": "2134-03-04T18:00:00.000Z",
-          "until": "2154-03-04T18:00:00.000Z",
-          "days": 7305,
-          "loosing": false
-        }
-      ]
-    },
-    {
-      "case": "from Leo, $releasingYears years, bond: ${rule.name}",
-      "born": "1984-03-02T18:00:00Z",
-      "start_sign": 5,
-      "years": 160,
-      "bond": "skip",
-      "periods": [
-        {
-          "sign": 5,
-          "from": "1984-03-02T18:00:00.000Z",
-          "until": "2003-03-03T18:00:00.000Z",
-          "days": 6940,
-          "loosing": false
-        },
-        {
-          "sign": 6,
-          "from": "2003-03-03T18:00:00.000Z",
-          "until": "2023-03-03T18:00:00.000Z",
-          "days": 7305,
-          "loosing": false
-        },
-        {
-          "sign": 7,
-          "from": "2023-03-03T18:00:00.000Z",
-          "until": "2031-03-03T18:00:00.000Z",
-          "days": 2922,
-          "loosing": false
-        },
-        {
-          "sign": 8,
-          "from": "2031-03-03T18:00:00.000Z",
-          "until": "2046-03-03T18:00:00.000Z",
-          "days": 5479,
-          "loosing": false
-        },
-        {
-          "sign": 9,
-          "from": "2046-03-03T18:00:00.000Z",
-          "until": "2058-03-03T18:00:00.000Z",
-          "days": 4383,
-          "loosing": false
-        },
-        {
-          "sign": 10,
-          "from": "2058-03-03T18:00:00.000Z",
-          "until": "2085-03-03T18:00:00.000Z",
-          "days": 9862,
-          "loosing": false
-        },
-        {
-          "sign": 12,
-          "from": "2085-03-03T18:00:00.000Z",
-          "until": "2097-03-03T18:00:00.000Z",
-          "days": 4383,
-          "loosing": false
-        },
-        {
-          "sign": 1,
-          "from": "2097-03-03T18:00:00.000Z",
-          "until": "2112-03-04T18:00:00.000Z",
-          "days": 5479,
-          "loosing": false
-        },
-        {
-          "sign": 2,
-          "from": "2112-03-04T18:00:00.000Z",
-          "until": "2120-03-04T18:00:00.000Z",
-          "days": 2922,
-          "loosing": false
-        },
-        {
-          "sign": 3,
-          "from": "2120-03-04T18:00:00.000Z",
-          "until": "2140-03-04T18:00:00.000Z",
-          "days": 7305,
-          "loosing": false
-        },
-        {
-          "sign": 4,
-          "from": "2140-03-04T18:00:00.000Z",
-          "until": "2165-03-04T18:00:00.000Z",
-          "days": 9131,
-          "loosing": false
+          "from": "2139-11-25T18:00:00.000Z",
+          "until": "2141-11-14T18:00:00.000Z",
+          "minutes": 1036800,
+          "loosing": false,
+          "peak": true,
+          "truncated": true
         }
       ]
     }
   ],
   "zodiacal-releasing-sub": [
     {
-      "case": "from Leo, descending the first period of each level, bond: none",
+      "case": "from Leo, descending the first period of each level",
       "born": "1984-03-02T18:00:00Z",
       "start_sign": 5,
-      "bond": "none",
+      "fortune_sign": 2,
       "level2": [
         {
           "sign": 5,
           "from": "1984-03-02T18:00:00.000Z",
-          "until": "1985-10-01T18:00:00.000Z",
-          "loosing": false
+          "until": "1985-09-23T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 6,
-          "from": "1985-10-01T18:00:00.000Z",
-          "until": "1987-06-02T18:00:00.000Z",
-          "loosing": false
+          "from": "1985-09-23T18:00:00.000Z",
+          "until": "1987-05-16T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 7,
-          "from": "1987-06-02T18:00:00.000Z",
-          "until": "1988-01-31T18:00:00.000Z",
-          "loosing": false
+          "from": "1987-05-16T18:00:00.000Z",
+          "until": "1988-01-11T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 8,
-          "from": "1988-01-31T18:00:00.000Z",
-          "until": "1989-05-02T18:00:00.000Z",
-          "loosing": false
+          "from": "1988-01-11T18:00:00.000Z",
+          "until": "1989-04-05T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 9,
-          "from": "1989-05-02T18:00:00.000Z",
-          "until": "1990-05-02T18:00:00.000Z",
-          "loosing": false
+          "from": "1989-04-05T18:00:00.000Z",
+          "until": "1990-03-31T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 10,
-          "from": "1990-05-02T18:00:00.000Z",
-          "until": "1992-08-01T18:00:00.000Z",
-          "loosing": false
+          "from": "1990-03-31T18:00:00.000Z",
+          "until": "1992-06-18T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 11,
-          "from": "1992-08-01T18:00:00.000Z",
-          "until": "1995-01-31T18:00:00.000Z",
-          "loosing": true
+          "from": "1992-06-18T18:00:00.000Z",
+          "until": "1994-12-05T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 12,
-          "from": "1995-01-31T18:00:00.000Z",
-          "until": "1996-01-31T18:00:00.000Z",
-          "loosing": false
+          "from": "1994-12-05T18:00:00.000Z",
+          "until": "1995-11-30T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 1,
-          "from": "1996-01-31T18:00:00.000Z",
-          "until": "1997-05-02T18:00:00.000Z",
-          "loosing": false
+          "from": "1995-11-30T18:00:00.000Z",
+          "until": "1997-02-22T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 2,
-          "from": "1997-05-02T18:00:00.000Z",
-          "until": "1997-12-31T18:00:00.000Z",
-          "loosing": false
+          "from": "1997-02-22T18:00:00.000Z",
+          "until": "1997-10-20T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 3,
-          "from": "1997-12-31T18:00:00.000Z",
-          "until": "1999-09-01T18:00:00.000Z",
-          "loosing": false
+          "from": "1997-10-20T18:00:00.000Z",
+          "until": "1999-06-12T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 4,
-          "from": "1999-09-01T18:00:00.000Z",
-          "until": "2001-10-01T18:00:00.000Z",
-          "loosing": false
+          "from": "1999-06-12T18:00:00.000Z",
+          "until": "2001-07-01T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
-          "sign": 5,
-          "from": "2001-10-01T18:00:00.000Z",
-          "until": "2003-03-03T18:00:00.000Z",
-          "loosing": false
+          "sign": 11,
+          "from": "2001-07-01T18:00:00.000Z",
+          "until": "2002-11-23T18:00:00.000Z",
+          "loosing": true,
+          "completion": false,
+          "truncated": true
         }
       ],
       "level3": [
         {
           "sign": 5,
           "from": "1984-03-02T18:00:00.000Z",
-          "until": "1984-04-19T22:36:01.080Z",
-          "loosing": false
+          "until": "1984-04-19T06:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 6,
-          "from": "1984-04-19T22:36:01.080Z",
-          "until": "1984-06-09T16:04:27.480Z",
-          "loosing": false
+          "from": "1984-04-19T06:00:00.000Z",
+          "until": "1984-06-08T06:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 7,
-          "from": "1984-06-09T16:04:27.480Z",
-          "until": "1984-06-29T23:03:50.040Z",
-          "loosing": false
+          "from": "1984-06-08T06:00:00.000Z",
+          "until": "1984-06-28T06:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 8,
-          "from": "1984-06-29T23:03:50.040Z",
-          "until": "1984-08-07T00:10:09.840Z",
-          "loosing": false
+          "from": "1984-06-28T06:00:00.000Z",
+          "until": "1984-08-04T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 9,
-          "from": "1984-08-07T00:10:09.840Z",
-          "until": "1984-09-06T10:39:13.680Z",
-          "loosing": false
+          "from": "1984-08-04T18:00:00.000Z",
+          "until": "1984-09-03T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 10,
-          "from": "1984-09-06T10:39:13.680Z",
-          "until": "1984-11-13T22:14:37.320Z",
-          "loosing": false
+          "from": "1984-09-03T18:00:00.000Z",
+          "until": "1984-11-10T06:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 11,
-          "from": "1984-11-13T22:14:37.320Z",
-          "until": "1985-01-29T00:27:16.920Z",
-          "loosing": true
+          "from": "1984-11-10T06:00:00.000Z",
+          "until": "1985-01-24T06:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 12,
-          "from": "1985-01-29T00:27:16.920Z",
-          "until": "1985-02-28T10:56:20.760Z",
-          "loosing": false
+          "from": "1985-01-24T06:00:00.000Z",
+          "until": "1985-02-23T06:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 1,
-          "from": "1985-02-28T10:56:20.760Z",
-          "until": "1985-04-07T12:02:40.560Z",
-          "loosing": false
+          "from": "1985-02-23T06:00:00.000Z",
+          "until": "1985-04-01T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 2,
-          "from": "1985-04-07T12:02:40.560Z",
-          "until": "1985-04-27T19:02:03.120Z",
-          "loosing": false
+          "from": "1985-04-01T18:00:00.000Z",
+          "until": "1985-04-21T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 3,
-          "from": "1985-04-27T19:02:03.120Z",
-          "until": "1985-06-17T12:30:29.520Z",
-          "loosing": false
+          "from": "1985-04-21T18:00:00.000Z",
+          "until": "1985-06-10T18:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 4,
-          "from": "1985-06-17T12:30:29.520Z",
-          "until": "1985-08-19T22:21:02.520Z",
-          "loosing": false
+          "from": "1985-06-10T18:00:00.000Z",
+          "until": "1985-08-12T06:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
-          "sign": 5,
-          "from": "1985-08-19T22:21:02.520Z",
-          "until": "1985-10-01T18:00:00.000Z",
-          "loosing": false
+          "sign": 11,
+          "from": "1985-08-12T06:00:00.000Z",
+          "until": "1985-09-23T18:00:00.000Z",
+          "loosing": true,
+          "completion": false,
+          "truncated": true
         }
       ],
       "level4": [
         {
           "sign": 5,
           "from": "1984-03-02T18:00:00.000Z",
-          "until": "1984-03-06T18:23:00.090Z",
-          "loosing": false
+          "until": "1984-03-06T17:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 6,
-          "from": "1984-03-06T18:23:00.090Z",
-          "until": "1984-03-10T23:50:22.290Z",
-          "loosing": false
+          "from": "1984-03-06T17:00:00.000Z",
+          "until": "1984-03-10T21:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 7,
-          "from": "1984-03-10T23:50:22.290Z",
-          "until": "1984-03-12T16:25:19.170Z",
-          "loosing": false
+          "from": "1984-03-10T21:00:00.000Z",
+          "until": "1984-03-12T13:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 8,
-          "from": "1984-03-12T16:25:19.170Z",
-          "until": "1984-03-15T20:30:50.820Z",
-          "loosing": false
+          "from": "1984-03-12T13:00:00.000Z",
+          "until": "1984-03-15T16:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 9,
-          "from": "1984-03-15T20:30:50.820Z",
-          "until": "1984-03-18T09:23:16.140Z",
-          "loosing": false
+          "from": "1984-03-15T16:00:00.000Z",
+          "until": "1984-03-18T04:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 10,
-          "from": "1984-03-18T09:23:16.140Z",
-          "until": "1984-03-24T02:21:13.110Z",
-          "loosing": false
+          "from": "1984-03-18T04:00:00.000Z",
+          "until": "1984-03-23T19:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 11,
-          "from": "1984-03-24T02:21:13.110Z",
-          "until": "1984-03-30T10:32:16.410Z",
-          "loosing": true
+          "from": "1984-03-23T19:00:00.000Z",
+          "until": "1984-03-30T01:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 12,
-          "from": "1984-03-30T10:32:16.410Z",
-          "until": "1984-04-01T23:24:41.730Z",
-          "loosing": false
+          "from": "1984-03-30T01:00:00.000Z",
+          "until": "1984-04-01T13:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 1,
-          "from": "1984-04-01T23:24:41.730Z",
-          "until": "1984-04-05T03:30:13.380Z",
-          "loosing": false
+          "from": "1984-04-01T13:00:00.000Z",
+          "until": "1984-04-04T16:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 2,
-          "from": "1984-04-05T03:30:13.380Z",
-          "until": "1984-04-06T20:05:10.260Z",
-          "loosing": false
+          "from": "1984-04-04T16:00:00.000Z",
+          "until": "1984-04-06T08:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 3,
-          "from": "1984-04-06T20:05:10.260Z",
-          "until": "1984-04-11T01:32:32.460Z",
-          "loosing": false
+          "from": "1984-04-06T08:00:00.000Z",
+          "until": "1984-04-10T12:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 4,
-          "from": "1984-04-11T01:32:32.460Z",
-          "until": "1984-04-16T08:21:45.210Z",
-          "loosing": false
-        },
-        {
-          "sign": 5,
-          "from": "1984-04-16T08:21:45.210Z",
-          "until": "1984-04-19T22:36:01.080Z",
-          "loosing": false
-        }
-      ]
-    },
-    {
-      "case": "from Leo, descending the first period of each level, bond: toStart",
-      "born": "1984-03-02T18:00:00Z",
-      "start_sign": 5,
-      "bond": "toStart",
-      "level2": [
-        {
-          "sign": 5,
-          "from": "1984-03-02T18:00:00.000Z",
-          "until": "1985-10-01T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 6,
-          "from": "1985-10-01T18:00:00.000Z",
-          "until": "1987-06-02T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 7,
-          "from": "1987-06-02T18:00:00.000Z",
-          "until": "1988-01-31T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 8,
-          "from": "1988-01-31T18:00:00.000Z",
-          "until": "1989-05-02T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 9,
-          "from": "1989-05-02T18:00:00.000Z",
-          "until": "1990-05-02T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 10,
-          "from": "1990-05-02T18:00:00.000Z",
-          "until": "1992-08-01T18:00:00.000Z",
-          "loosing": false
+          "from": "1984-04-10T12:00:00.000Z",
+          "until": "1984-04-15T17:00:00.000Z",
+          "loosing": false,
+          "completion": false,
+          "truncated": false
         },
         {
           "sign": 11,
-          "from": "1992-08-01T18:00:00.000Z",
-          "until": "1995-01-31T18:00:00.000Z",
-          "loosing": true
-        },
-        {
-          "sign": 5,
-          "from": "1995-01-31T18:00:00.000Z",
-          "until": "1996-08-31T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 6,
-          "from": "1996-08-31T18:00:00.000Z",
-          "until": "1998-05-02T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 7,
-          "from": "1998-05-02T18:00:00.000Z",
-          "until": "1998-12-31T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 8,
-          "from": "1998-12-31T18:00:00.000Z",
-          "until": "2000-04-01T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 9,
-          "from": "2000-04-01T18:00:00.000Z",
-          "until": "2001-04-01T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 10,
-          "from": "2001-04-01T18:00:00.000Z",
-          "until": "2003-03-03T18:00:00.000Z",
-          "loosing": false
-        }
-      ],
-      "level3": [
-        {
-          "sign": 5,
-          "from": "1984-03-02T18:00:00.000Z",
-          "until": "1984-04-19T22:36:01.080Z",
-          "loosing": false
-        },
-        {
-          "sign": 6,
-          "from": "1984-04-19T22:36:01.080Z",
-          "until": "1984-06-09T16:04:27.480Z",
-          "loosing": false
-        },
-        {
-          "sign": 7,
-          "from": "1984-06-09T16:04:27.480Z",
-          "until": "1984-06-29T23:03:50.040Z",
-          "loosing": false
-        },
-        {
-          "sign": 8,
-          "from": "1984-06-29T23:03:50.040Z",
-          "until": "1984-08-07T00:10:09.840Z",
-          "loosing": false
-        },
-        {
-          "sign": 9,
-          "from": "1984-08-07T00:10:09.840Z",
-          "until": "1984-09-06T10:39:13.680Z",
-          "loosing": false
-        },
-        {
-          "sign": 10,
-          "from": "1984-09-06T10:39:13.680Z",
-          "until": "1984-11-13T22:14:37.320Z",
-          "loosing": false
-        },
-        {
-          "sign": 11,
-          "from": "1984-11-13T22:14:37.320Z",
-          "until": "1985-01-29T00:27:16.920Z",
-          "loosing": true
-        },
-        {
-          "sign": 5,
-          "from": "1985-01-29T00:27:16.920Z",
-          "until": "1985-03-18T05:03:18.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 6,
-          "from": "1985-03-18T05:03:18.000Z",
-          "until": "1985-05-07T22:31:44.400Z",
-          "loosing": false
-        },
-        {
-          "sign": 7,
-          "from": "1985-05-07T22:31:44.400Z",
-          "until": "1985-05-28T05:31:06.960Z",
-          "loosing": false
-        },
-        {
-          "sign": 8,
-          "from": "1985-05-28T05:31:06.960Z",
-          "until": "1985-07-05T06:37:26.760Z",
-          "loosing": false
-        },
-        {
-          "sign": 9,
-          "from": "1985-07-05T06:37:26.760Z",
-          "until": "1985-08-04T17:06:30.600Z",
-          "loosing": false
-        },
-        {
-          "sign": 10,
-          "from": "1985-08-04T17:06:30.600Z",
-          "until": "1985-10-01T18:00:00.000Z",
-          "loosing": false
-        }
-      ],
-      "level4": [
-        {
-          "sign": 5,
-          "from": "1984-03-02T18:00:00.000Z",
-          "until": "1984-03-06T18:23:00.090Z",
-          "loosing": false
-        },
-        {
-          "sign": 6,
-          "from": "1984-03-06T18:23:00.090Z",
-          "until": "1984-03-10T23:50:22.290Z",
-          "loosing": false
-        },
-        {
-          "sign": 7,
-          "from": "1984-03-10T23:50:22.290Z",
-          "until": "1984-03-12T16:25:19.170Z",
-          "loosing": false
-        },
-        {
-          "sign": 8,
-          "from": "1984-03-12T16:25:19.170Z",
-          "until": "1984-03-15T20:30:50.820Z",
-          "loosing": false
-        },
-        {
-          "sign": 9,
-          "from": "1984-03-15T20:30:50.820Z",
-          "until": "1984-03-18T09:23:16.140Z",
-          "loosing": false
-        },
-        {
-          "sign": 10,
-          "from": "1984-03-18T09:23:16.140Z",
-          "until": "1984-03-24T02:21:13.110Z",
-          "loosing": false
-        },
-        {
-          "sign": 11,
-          "from": "1984-03-24T02:21:13.110Z",
-          "until": "1984-03-30T10:32:16.410Z",
-          "loosing": true
-        },
-        {
-          "sign": 5,
-          "from": "1984-03-30T10:32:16.410Z",
-          "until": "1984-04-03T10:55:16.500Z",
-          "loosing": false
-        },
-        {
-          "sign": 6,
-          "from": "1984-04-03T10:55:16.500Z",
-          "until": "1984-04-07T16:22:38.700Z",
-          "loosing": false
-        },
-        {
-          "sign": 7,
-          "from": "1984-04-07T16:22:38.700Z",
-          "until": "1984-04-09T08:57:35.580Z",
-          "loosing": false
-        },
-        {
-          "sign": 8,
-          "from": "1984-04-09T08:57:35.580Z",
-          "until": "1984-04-12T13:03:07.230Z",
-          "loosing": false
-        },
-        {
-          "sign": 9,
-          "from": "1984-04-12T13:03:07.230Z",
-          "until": "1984-04-15T01:55:32.550Z",
-          "loosing": false
-        },
-        {
-          "sign": 10,
-          "from": "1984-04-15T01:55:32.550Z",
-          "until": "1984-04-19T22:36:01.080Z",
-          "loosing": false
-        }
-      ]
-    },
-    {
-      "case": "from Leo, descending the first period of each level, bond: skip",
-      "born": "1984-03-02T18:00:00Z",
-      "start_sign": 5,
-      "bond": "skip",
-      "level2": [
-        {
-          "sign": 5,
-          "from": "1984-03-02T18:00:00.000Z",
-          "until": "1985-10-01T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 6,
-          "from": "1985-10-01T18:00:00.000Z",
-          "until": "1987-06-02T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 7,
-          "from": "1987-06-02T18:00:00.000Z",
-          "until": "1988-01-31T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 8,
-          "from": "1988-01-31T18:00:00.000Z",
-          "until": "1989-05-02T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 9,
-          "from": "1989-05-02T18:00:00.000Z",
-          "until": "1990-05-02T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 10,
-          "from": "1990-05-02T18:00:00.000Z",
-          "until": "1992-08-01T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 12,
-          "from": "1992-08-01T18:00:00.000Z",
-          "until": "1993-08-01T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 1,
-          "from": "1993-08-01T18:00:00.000Z",
-          "until": "1994-11-01T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 2,
-          "from": "1994-11-01T18:00:00.000Z",
-          "until": "1995-07-02T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 3,
-          "from": "1995-07-02T18:00:00.000Z",
-          "until": "1997-03-02T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 4,
-          "from": "1997-03-02T18:00:00.000Z",
-          "until": "1999-04-02T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 5,
-          "from": "1999-04-02T18:00:00.000Z",
-          "until": "2000-10-31T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 6,
-          "from": "2000-10-31T18:00:00.000Z",
-          "until": "2002-07-02T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 7,
-          "from": "2002-07-02T18:00:00.000Z",
-          "until": "2003-03-02T18:00:00.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 8,
-          "from": "2003-03-02T18:00:00.000Z",
-          "until": "2003-03-03T18:00:00.000Z",
-          "loosing": false
-        }
-      ],
-      "level3": [
-        {
-          "sign": 5,
-          "from": "1984-03-02T18:00:00.000Z",
-          "until": "1984-04-19T22:36:01.080Z",
-          "loosing": false
-        },
-        {
-          "sign": 6,
-          "from": "1984-04-19T22:36:01.080Z",
-          "until": "1984-06-09T16:04:27.480Z",
-          "loosing": false
-        },
-        {
-          "sign": 7,
-          "from": "1984-06-09T16:04:27.480Z",
-          "until": "1984-06-29T23:03:50.040Z",
-          "loosing": false
-        },
-        {
-          "sign": 8,
-          "from": "1984-06-29T23:03:50.040Z",
-          "until": "1984-08-07T00:10:09.840Z",
-          "loosing": false
-        },
-        {
-          "sign": 9,
-          "from": "1984-08-07T00:10:09.840Z",
-          "until": "1984-09-06T10:39:13.680Z",
-          "loosing": false
-        },
-        {
-          "sign": 10,
-          "from": "1984-09-06T10:39:13.680Z",
-          "until": "1984-11-13T22:14:37.320Z",
-          "loosing": false
-        },
-        {
-          "sign": 12,
-          "from": "1984-11-13T22:14:37.320Z",
-          "until": "1984-12-14T08:43:41.160Z",
-          "loosing": false
-        },
-        {
-          "sign": 1,
-          "from": "1984-12-14T08:43:41.160Z",
-          "until": "1985-01-21T09:50:00.960Z",
-          "loosing": false
-        },
-        {
-          "sign": 2,
-          "from": "1985-01-21T09:50:00.960Z",
-          "until": "1985-02-10T16:49:23.520Z",
-          "loosing": false
-        },
-        {
-          "sign": 3,
-          "from": "1985-02-10T16:49:23.520Z",
-          "until": "1985-04-02T10:17:49.920Z",
-          "loosing": false
-        },
-        {
-          "sign": 4,
-          "from": "1985-04-02T10:17:49.920Z",
-          "until": "1985-06-04T20:08:22.920Z",
-          "loosing": false
-        },
-        {
-          "sign": 5,
-          "from": "1985-06-04T20:08:22.920Z",
-          "until": "1985-07-23T00:44:24.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 6,
-          "from": "1985-07-23T00:44:24.000Z",
-          "until": "1985-09-11T18:12:50.400Z",
-          "loosing": false
-        },
-        {
-          "sign": 7,
-          "from": "1985-09-11T18:12:50.400Z",
-          "until": "1985-10-01T18:00:00.000Z",
-          "loosing": false
-        }
-      ],
-      "level4": [
-        {
-          "sign": 5,
-          "from": "1984-03-02T18:00:00.000Z",
-          "until": "1984-03-06T18:23:00.090Z",
-          "loosing": false
-        },
-        {
-          "sign": 6,
-          "from": "1984-03-06T18:23:00.090Z",
-          "until": "1984-03-10T23:50:22.290Z",
-          "loosing": false
-        },
-        {
-          "sign": 7,
-          "from": "1984-03-10T23:50:22.290Z",
-          "until": "1984-03-12T16:25:19.170Z",
-          "loosing": false
-        },
-        {
-          "sign": 8,
-          "from": "1984-03-12T16:25:19.170Z",
-          "until": "1984-03-15T20:30:50.820Z",
-          "loosing": false
-        },
-        {
-          "sign": 9,
-          "from": "1984-03-15T20:30:50.820Z",
-          "until": "1984-03-18T09:23:16.140Z",
-          "loosing": false
-        },
-        {
-          "sign": 10,
-          "from": "1984-03-18T09:23:16.140Z",
-          "until": "1984-03-24T02:21:13.110Z",
-          "loosing": false
-        },
-        {
-          "sign": 12,
-          "from": "1984-03-24T02:21:13.110Z",
-          "until": "1984-03-26T15:13:38.430Z",
-          "loosing": false
-        },
-        {
-          "sign": 1,
-          "from": "1984-03-26T15:13:38.430Z",
-          "until": "1984-03-29T19:19:10.080Z",
-          "loosing": false
-        },
-        {
-          "sign": 2,
-          "from": "1984-03-29T19:19:10.080Z",
-          "until": "1984-03-31T11:54:06.960Z",
-          "loosing": false
-        },
-        {
-          "sign": 3,
-          "from": "1984-03-31T11:54:06.960Z",
-          "until": "1984-04-04T17:21:29.160Z",
-          "loosing": false
-        },
-        {
-          "sign": 4,
-          "from": "1984-04-04T17:21:29.160Z",
-          "until": "1984-04-10T00:10:41.910Z",
-          "loosing": false
-        },
-        {
-          "sign": 5,
-          "from": "1984-04-10T00:10:41.910Z",
-          "until": "1984-04-14T00:33:42.000Z",
-          "loosing": false
-        },
-        {
-          "sign": 6,
-          "from": "1984-04-14T00:33:42.000Z",
-          "until": "1984-04-18T06:01:04.200Z",
-          "loosing": false
-        },
-        {
-          "sign": 7,
-          "from": "1984-04-18T06:01:04.200Z",
-          "until": "1984-04-19T22:36:01.080Z",
-          "loosing": false
+          "from": "1984-04-15T17:00:00.000Z",
+          "until": "1984-04-19T06:00:00.000Z",
+          "loosing": true,
+          "completion": false,
+          "truncated": true
         }
       ]
     }

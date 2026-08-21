@@ -1,55 +1,58 @@
-"""Zodiacal releasing — Valens' periods, matching practiseapp exactly.
+"""Zodiacal releasing (*aphesis*) — Valens' periods, canonical (AstroPractise).
 
 The life is divided into periods, one sign at a time, each as many years as
-Valens gives that sign. The sign holding the period is the time lord; the
-period opposite the one releasing began from is the **loosing of the bond**.
+Valens gives that sign. The sign holding the period is the time lord; a
+subperiod sequence, having walked all twelve signs, jumps to the sign opposite
+its start — the **loosing of the bond**.
 
-⚠ Ported from `practiseapp/lib/domain/astrology/time_lords.dart` and held to
-vectors that code emitted while running — see `tests/vectors/README.md`. The
-phone is the source of truth.
+⚠ Reconciled to AstroPractise (``lib/domain/astrology/releasing.dart``), the
+canonical engine, and held to the shared vectors the phone emits from the same
+model — see ``tests/vectors/README.md``. Phone and site compute the identical
+result.
 
-## ⚠ A period is a whole number of DAYS, and the rounding matters
+## ⚠ Arithmetic in whole minutes, from the birth instant — the 360-day year
 
-`round(years * 365.2422)`. Fifteen years of Aries is **5479 days**, not
-5478.633. A site computing in float years would drift a day per period and be
-a fortnight out by the end of a life — and every period boundary after the
-first would fall on a different date from the phone's.
+Every unit is a whole number of minutes: 518400 (a 360-day general year), 43200
+(a 30-day month), 3600 (2½ days), 300 (5 hours). Every level is exactly one
+twelfth of the one above, so nothing rounds and the two devices cannot drift
+apart. This is NOT ``round(years * 365.2422)`` days — the idealised year is the
+one the technique is counted in, and one worked case in the literature turns on
+a two-day margin.
 
-## ⚠ Three readings of the loosing, and the app does not pick for you
+## ⚠ The general period never looses
 
-`BondRule.NONE` marks the period and changes nothing. It is the default, and
-the phone's comment gives the reason: it is *the only one that adds nothing*,
-so somebody who has not chosen has not been given a jump they did not ask for.
-Riley's footnote to Valens IV.5 supports it — the passage describes what to
-expect interpretively at the handoff and prescribes no jump at all.
-
-`BondRule.SKIP` passes over the opposite sign. `BondRule.TO_START` returns to
-the sign releasing began from once the loosed period ends.
-
-⚠ They produce **visibly different lives**: from Leo over 160 years, `NONE`
-gives ten periods, `TO_START` nine, and `SKIP` eleven with no loosing at all.
-Anything that reports a time lord must say which rule it used.
+A loosing at level one is a modern addition made for mundane work; Valens never
+prescribes it. The general period walks strictly forward in zodiacal order. The
+loosing of the bond is a **subperiod** rule: it fires once, when a subperiod
+sequence would return to the sign it began from, jumping instead to the sign
+opposite that start. Coming round a second time it returns to the start without
+a second jump — the completion period.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from enum import Enum
 from typing import Final
 
 __all__ = [
+    "RELEASING_CYCLE_TOTAL",
     "SIGN_PERIODS",
-    "BondRule",
+    "UNIT_MINUTES",
     "ReleasingPeriod",
+    "contains_loosing",
     "first_level",
+    "high_point",
+    "is_peak_sign",
+    "loosing_signs",
+    "period_at",
     "second_level",
     "sub_level",
 ]
 
 
-#: Valens' years per sign. ⚠ The table, not a formula — the numbers are not
-#: derivable from anything and are the tradition's own.
+#: Valens' years per sign. ⚠ The table, not a formula — the numbers are the
+#: tradition's own, and they sum to 211 (a full level-2 cycle in months).
 SIGN_PERIODS: Final[dict[int, int]] = {
     1: 15,  # Aries
     2: 8,  # Taurus
@@ -65,31 +68,61 @@ SIGN_PERIODS: Final[dict[int, int]] = {
     12: 12,  # Pisces
 }
 
-#: ⚠ The tropical year the phone uses. Not 365.25, and not 365 — changing it
-#: moves every period boundary in every chart.
-DAYS_IN_YEAR: Final[float] = 365.2422
+#: A full level-2 cycle is 211 months — 17 years 7 months — the same number the
+#: periods sum to. It decides which general periods are long enough to loose.
+RELEASING_CYCLE_TOTAL: Final[int] = 211
 
-
-class BondRule(str, Enum):
-    """What happens at the loosing of the bond. See the module note."""
-
-    NONE = "none"
-    SKIP = "skip"
-    TO_START = "toStart"
+#: One unit at each level, in whole minutes: a 360-day year, a 30-day month,
+#: 2½ days, 5 hours. Every level is exactly one twelfth of the one above.
+UNIT_MINUTES: Final[dict[int, int]] = {
+    1: 518_400,  # 360 days
+    2: 43_200,  # 30 days
+    3: 3_600,  # 2½ days
+    4: 300,  # 5 hours
+}
 
 
 @dataclass(frozen=True, slots=True)
 class ReleasingPeriod:
     level: int
-    sign: int
+    sign: int  # 1..12
     start: datetime
     until: datetime
     is_loosing_of_the_bond: bool
+    is_completion_period: bool = False
+    is_truncated: bool = False
+    is_peak: bool = False
 
 
-def _length(sign: int) -> timedelta:
-    """⚠ Whole days, rounded — see the module note."""
-    return timedelta(days=round(SIGN_PERIODS[sign] * DAYS_IN_YEAR))
+def _next(sign: int) -> int:
+    return (sign % 12) + 1
+
+
+def _opposite(sign: int) -> int:
+    return ((sign - 1 + 6) % 12) + 1
+
+
+def contains_loosing(sign: int) -> bool:
+    """Whether a general period in ``sign`` is long enough to contain a full
+    level-2 cycle, and so to have a loosing inside it — its months exceed 211."""
+    return SIGN_PERIODS[sign] * 12 > RELEASING_CYCLE_TOTAL
+
+
+def loosing_signs() -> list[int]:
+    """The signs whose general periods contain a loosing, derived not listed."""
+    return [s for s in range(1, 13) if contains_loosing(s)]
+
+
+def is_peak_sign(sign: int, fortune: int) -> bool:
+    """Whether ``sign`` is angular from Fortune — the 1st, 4th, 7th or 10th
+    counting from Fortune's own sign. ⚠ Counted from Fortune, not the Ascendant."""
+    distance = (sign - fortune) % 12
+    return distance in (0, 3, 6, 9)
+
+
+def high_point(fortune: int) -> int:
+    """The 10th sign from Fortune — the high point of the scheme."""
+    return ((fortune - 1 + 9) % 12) + 1
 
 
 def first_level(
@@ -97,14 +130,12 @@ def first_level(
     start_sign: int,
     *,
     years: int = 120,
-    bond: BondRule = BondRule.NONE,
+    fortune_sign: int | None = None,
 ) -> list[ReleasingPeriod]:
-    """The first-level periods from ``start_sign``, covering ``years``.
+    """The first-level periods from ``start_sign``, covering ``years`` from birth.
 
-    ⚠ The window is `round(years * 365.2422)` days from birth, and a period is
-    included when it BEGINS inside it — so the last one commonly runs past the
-    end. That is the shape of the technique rather than an off-by-one: a period
-    is not truncated by the question being asked in the middle of it.
+    ⚠ The general period never looses: the sequence walks strictly forward. The
+    last period is truncated to the query window, which is normal and reported.
     """
     if start_sign not in SIGN_PERIODS:
         raise ValueError(f"start_sign must be 1..12; got {start_sign}.")
@@ -112,112 +143,124 @@ def first_level(
         raise ValueError("born must be timezone-aware (a naive one has no instant)")
 
     born_utc = born.astimezone(UTC)
-    ends = born_utc + timedelta(days=round(years * DAYS_IN_YEAR))
-    opposite = ((start_sign - 1 + 6) % 12) + 1
+    unit = UNIT_MINUTES[1]
+    ends = born_utc + timedelta(minutes=years * unit)
 
     periods: list[ReleasingPeriod] = []
     at = born_utc
     sign = start_sign
-
-    while at < ends:
-        if bond is BondRule.SKIP and sign == opposite and periods:
-            # ⚠ Skipped WITHOUT advancing time — the next sign takes the
-            # period, it does not begin late.
-            sign = (sign % 12) + 1
-            continue
-
-        loosed = sign == opposite
-        until = at + _length(sign)
+    # A bound, not `while True`: a bug is a finite list rather than a hang.
+    for _ in range(4000):
+        if at >= ends:
+            break
+        end = at + timedelta(minutes=SIGN_PERIODS[sign] * unit)
+        truncated = end > ends
+        if truncated:
+            end = ends
         periods.append(
             ReleasingPeriod(
                 level=1,
                 sign=sign,
                 start=at,
-                until=until,
-                is_loosing_of_the_bond=loosed,
+                until=end,
+                is_loosing_of_the_bond=False,  # ⚠ never at level one
+                is_truncated=truncated,
+                is_peak=fortune_sign is not None and is_peak_sign(sign, fortune_sign),
             )
         )
-        at = until
-        sign = start_sign if (loosed and bond is BondRule.TO_START) else (sign % 12) + 1
+        at = end
+        sign = _next(sign)  # strictly forward
+    return periods
 
+
+def _sub_sequence(
+    parent: ReleasingPeriod,
+    *,
+    fortune_sign: int | None = None,
+) -> list[ReleasingPeriod]:
+    """The shared subperiod walk for levels two and below — where the loosing of
+    the bond lives. Walk forward from the parent's sign; when the sequence would
+    return to that sign, jump once to its opposite (the loosing), then on the
+    next full circuit return to the start as the completion period."""
+    level = parent.level + 1
+    unit = UNIT_MINUTES.get(level)
+    if unit is None:  # levels five and deeper are neither computed nor read
+        return []
+
+    start_sign = parent.sign
+    periods: list[ReleasingPeriod] = []
+    at = parent.start
+    sign = start_sign
+    loosed = False
+    arrived_by_loosing = False
+    arrived_by_completion = False
+
+    for _ in range(4000):
+        if at >= parent.until:
+            break
+        end = at + timedelta(minutes=SIGN_PERIODS[sign] * unit)
+        truncated = end > parent.until
+        # Cut to the parent: a sub-period cannot outlive the period it is inside.
+        if truncated:
+            end = parent.until
+        periods.append(
+            ReleasingPeriod(
+                level=level,
+                sign=sign,
+                start=at,
+                until=end,
+                is_loosing_of_the_bond=arrived_by_loosing,
+                is_completion_period=arrived_by_completion,
+                is_truncated=truncated,
+                is_peak=fortune_sign is not None and is_peak_sign(sign, fortune_sign),
+            )
+        )
+        at = end
+        arrived_by_loosing = False
+        arrived_by_completion = False
+
+        nxt = _next(sign)
+        if nxt == start_sign:
+            if not loosed:
+                # ⚠⚠ THE LOOSING — a jump to the sign opposite the start.
+                nxt = _opposite(start_sign)
+                loosed = True
+                arrived_by_loosing = True
+            else:
+                # Come round a second time: back to the start, no second jump.
+                arrived_by_completion = True
+        sign = nxt
     return periods
 
 
 def second_level(
     parent: ReleasingPeriod,
     *,
-    bond: BondRule = BondRule.NONE,
+    fortune_sign: int | None = None,
 ) -> list[ReleasingPeriod]:
-    """The second-level periods inside ``parent`` — the months.
-
-    ⚠ The phone's arithmetic exactly: `round(units * 365.2422 / 12)` whole
-    DAYS per period, the sequence beginning from the parent's own sign, the
-    last period CUT to the parent, the loosing judged against the parent's
-    opposite. The rounding is day-scale like the first level, and the shared
-    vectors pin it.
-    """
-    return _below(parent, bond=bond, day_rounded=True)
+    """The second-level periods inside ``parent`` — the months. The first level
+    at which the loosing of the bond can fire."""
+    return _sub_sequence(parent, fortune_sign=fortune_sign)
 
 
 def sub_level(
     parent: ReleasingPeriod,
     *,
-    bond: BondRule = BondRule.NONE,
+    fortune_sign: int | None = None,
 ) -> list[ReleasingPeriod]:
     """The periods one level deeper than ``parent`` — third inside second,
-    fourth inside third.
-
-    ⚠ MICROSECONDS, not days: `round(units * 365.2422 * 86400e6 / 12**level)`
-    where ``level`` is the parent's. At the fourth level a day of rounding is
-    bigger than most of the periods, and a table rounded there would be noise
-    wearing the technique's clothes. The first two levels keep their
-    day-rounded arithmetic — two precisions, on purpose, both the phone's.
-    """
+    fourth inside third. Same shape as the second level."""
     if parent.level < 2:
         raise ValueError(
             "sub_level deepens a second-level period or below; use second_level inside a first"
         )
-    return _below(parent, bond=bond, day_rounded=False)
+    return _sub_sequence(parent, fortune_sign=fortune_sign)
 
 
-def _below(
-    parent: ReleasingPeriod,
-    *,
-    bond: BondRule,
-    day_rounded: bool,
-) -> list[ReleasingPeriod]:
-    opposite = ((parent.sign - 1 + 6) % 12) + 1
-    periods: list[ReleasingPeriod] = []
-    at = parent.start
-    sign = parent.sign
-
-    while at < parent.until:
-        if bond is BondRule.SKIP and sign == opposite and periods:
-            sign = (sign % 12) + 1
-            continue
-
-        units = SIGN_PERIODS[sign]
-        if day_rounded:
-            # ⚠ Dart's `.round()` is half-away-from-zero; Python's is
-            # half-to-even. `int(x + 0.5)` matches the phone for the
-            # positive values these always are.
-            length = timedelta(days=int(units * DAYS_IN_YEAR / 12 + 0.5))
-        else:
-            length = timedelta(
-                microseconds=int(units * DAYS_IN_YEAR * 86_400_000_000 / 12**parent.level + 0.5)
-            )
-        until = at + length
-        loosed = sign == opposite
-        periods.append(
-            ReleasingPeriod(
-                level=parent.level + 1,
-                sign=sign,
-                start=at,
-                until=min(until, parent.until),
-                is_loosing_of_the_bond=loosed,
-            )
-        )
-        at = until
-        sign = parent.sign if (loosed and bond is BondRule.TO_START) else (sign % 12) + 1
-
-    return periods
+def period_at(periods: list[ReleasingPeriod], moment: datetime) -> ReleasingPeriod | None:
+    """The period in force at ``moment``, from a list."""
+    t = moment.astimezone(UTC)
+    for period in periods:
+        if period.start <= t < period.until:
+            return period
+    return None
