@@ -29,3 +29,5 @@ export type {
 
 export { SunArcDiagram } from "./SunArcDiagram.js";
 export type { SunArcDiagramProps } from "./SunArcDiagram.js";
+export { MoonArcDiagram } from "./MoonArcDiagram.js";
+export type { MoonArcDiagramProps } from "./MoonArcDiagram.js";
