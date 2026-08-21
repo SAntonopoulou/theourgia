@@ -24,7 +24,7 @@
  * rendered in the SVG footer per the AGPL-3.0 license obligations.
  */
 
-import type { CSSProperties } from "react";
+import { type CSSProperties, type PointerEvent as ReactPointerEvent, useRef } from "react";
 
 export interface ChartPlacement {
   body_id: string;
@@ -68,13 +68,30 @@ export interface ChartProps {
   size?: number;
   /** Swiss Ephemeris attribution string (carried in the SVG footer). */
   attribution?: string;
+  /**
+   * Drag-to-scrub. When set, dragging the wheel rotates it and advances time:
+   * the callback receives the fraction of a full turn dragged (a full 360°
+   * turn = 1.0), which the caller maps to a time span. Matches the phone, where
+   * the whole wheel turns under the Ascendant rather than the Ascendant alone.
+   */
+  onScrub?: (turnFraction: number) => void;
   className?: string;
   style?: CSSProperties;
 }
 
 const SIGN_GLYPHS = [
-  "♈", "♉", "♊", "♋", "♌", "♍",
-  "♎", "♏", "♐", "♑", "♒", "♓",
+  "♈",
+  "♉",
+  "♊",
+  "♋",
+  "♌",
+  "♍",
+  "♎",
+  "♏",
+  "♐",
+  "♑",
+  "♒",
+  "♓",
 ] as const;
 
 const ASPECT_COLOR: Record<ChartAspect["kind"], string> = {
@@ -102,26 +119,26 @@ const ASPECT_OPACITY: Record<ChartAspect["kind"], number> = {
 };
 
 /**
- * Convert an ecliptic longitude (0..360°, Aries 0° at the East) to
- * an SVG point on a circle of given radius. The chart convention
- * places **0° Aries at the 9 o'clock** position (the traditional
- * Ascendant location for natal charts cast facing south) — but we
- * follow the more common modern UI convention of **placing the
- * Ascendant at the 9 o'clock position**, which means the zodiac
- * ring is offset by the Ascendant's longitude.
+ * Convert an ecliptic longitude to an SVG point on a circle of given
+ * radius, in the **Ascendant-anchored** chart convention — the same one
+ * the phone draws (`chart_wheel.dart`): the Ascendant sits due left
+ * (9 o'clock), the zodiac rising over it, the Midheaven near the top.
  *
- * For this simplified renderer (no rotation), we place 0° Aries at
- * the right (3 o'clock) and proceed counter-clockwise — the
- * astronomical convention. The astrologer's-eye-view rotation
- * lands as a follow-up when the chart UI gets its design pass.
+ * ``drawnAngle = 180° − (longitude − ascendant)``, then the usual polar
+ * map with the SVG y-axis inverted. So the Ascendant's own degree lands
+ * at the left and everything else is placed relative to it — which means
+ * that when the chart is cast forward in time, the **whole wheel turns**
+ * (signs and planets alike) while the Ascendant stays put, instead of
+ * only the angle markers sweeping across a zodiac nailed to Aries.
  */
-function polarToCartesian(
+function pointOn(
   longitude: number,
   radius: number,
   center: number,
+  ascendant: number,
 ): { x: number; y: number } {
-  // SVG y-axis is inverted; we negate sin to get counter-clockwise motion.
-  const rad = ((longitude - 0) * Math.PI) / 180;
+  const delta = (((longitude - ascendant) % 360) + 360) % 360;
+  const rad = ((180 - delta) * Math.PI) / 180;
   return {
     x: center + radius * Math.cos(rad),
     y: center - radius * Math.sin(rad),
@@ -138,6 +155,7 @@ export function Chart({
   showHouses = true,
   size = 480,
   attribution,
+  onScrub,
   className,
   style,
 }: ChartProps) {
@@ -148,14 +166,67 @@ export function Chart({
   const planetRadius = size * 0.28;
   const aspectRadius = size * 0.24;
 
-  return (
+  // Every point is placed relative to the Ascendant, so the whole wheel turns
+  // with the chart's time rather than only the angle markers.
+  const place = (longitude: number, radius: number) =>
+    pointOn(longitude, radius, center, houses.ascendant);
+
+  // Drag-to-scrub lives on the wrapper below, not the SVG, so the chart itself
+  // stays a presentational `role="img"`. The pointer's angle around the wheel's
+  // centre becomes a fraction of a full revolution handed to `onScrub`.
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const dragAngle = useRef<number | null>(null);
+
+  const angleAt = (e: ReactPointerEvent): number | null => {
+    const box = wrapRef.current;
+    if (!box) return null;
+    const rect = box.getBoundingClientRect();
+    // The wheel occupies the top square of the SVG; its centre in screen space
+    // is half the rendered width in from the left and down from the top.
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.width / 2;
+    // SVG y grows downward, so negate to read a standard counter-clockwise angle.
+    return (Math.atan2(-(e.clientY - cy), e.clientX - cx) * 180) / Math.PI;
+  };
+
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const a = angleAt(e);
+    if (a === null) return;
+    dragAngle.current = a;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (dragAngle.current === null) return;
+    const a = angleAt(e);
+    if (a === null) return;
+    // Shortest signed step, in degrees, then a full turn = one span.
+    let step = a - dragAngle.current;
+    if (step > 180) step -= 360;
+    else if (step < -180) step += 360;
+    dragAngle.current = a;
+    // Turning the wheel clockwise (angle decreasing) advances time.
+    onScrub?.(-step / 360);
+  };
+
+  const endDrag = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (dragAngle.current === null) return;
+    dragAngle.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* pointer already released */
+    }
+  };
+
+  const wheel = (
     <svg
       role="img"
       viewBox={`0 0 ${size} ${size + 30}`}
       width={size}
       height={size + 30}
-      className={className}
-      style={style}
+      className={onScrub ? undefined : className}
+      style={onScrub ? undefined : style}
       xmlns="http://www.w3.org/2000/svg"
     >
       <title>{title}</title>
@@ -182,8 +253,8 @@ export function Chart({
       {/* — Zodiac sign divisions (12 spokes at 30° intervals) — */}
       {Array.from({ length: 12 }, (_, i) => {
         const lon = i * 30;
-        const start = polarToCartesian(lon, zodiacInnerRadius, center);
-        const end = polarToCartesian(lon, outerRadius, center);
+        const start = place(lon, zodiacInnerRadius);
+        const end = place(lon, outerRadius);
         return (
           <line
             key={`zodiac-spoke-${i}`}
@@ -201,11 +272,7 @@ export function Chart({
       {/* — Sign glyphs in the zodiac ring — */}
       {SIGN_GLYPHS.map((glyph, i) => {
         const lon = i * 30 + 15;
-        const { x, y } = polarToCartesian(
-          lon,
-          (outerRadius + zodiacInnerRadius) / 2,
-          center,
-        );
+        const { x, y } = place(lon, (outerRadius + zodiacInnerRadius) / 2);
         return (
           <text
             key={`sign-${i}`}
@@ -226,8 +293,8 @@ export function Chart({
       {/* — House cusps (12 lines) — */}
       {showHouses
         ? houses.cusps.map((cusp, i) => {
-            const start = polarToCartesian(cusp, 0, center);
-            const end = polarToCartesian(cusp, houseRadius, center);
+            const start = place(cusp, 0);
+            const end = place(cusp, houseRadius);
             const isAngle = i === 0 || i === 3 || i === 6 || i === 9;
             return (
               <line
@@ -252,8 +319,8 @@ export function Chart({
             const a = placements.find((p) => p.body_id === aspect.body_a);
             const b = placements.find((p) => p.body_id === aspect.body_b);
             if (!a || !b) return null;
-            const pa = polarToCartesian(a.tropical_longitude, aspectRadius, center);
-            const pb = polarToCartesian(b.tropical_longitude, aspectRadius, center);
+            const pa = place(a.tropical_longitude, aspectRadius);
+            const pb = place(b.tropical_longitude, aspectRadius);
             return (
               <line
                 key={`aspect-${i}`}
@@ -273,7 +340,7 @@ export function Chart({
 
       {/* — Planet glyphs — */}
       {placements.map((p) => {
-        const { x, y } = polarToCartesian(p.tropical_longitude, planetRadius, center);
+        const { x, y } = place(p.tropical_longitude, planetRadius);
         const degreeText = `${Math.floor(p.tropical_longitude % 30)}°`;
         const summary = `${p.body_name}${p.is_retrograde ? " (retrograde)" : ""} at ${degreeText} ${p.tropical_sign}, house ${p.house}`;
         return (
@@ -310,8 +377,8 @@ export function Chart({
       {/* — Ascendant / Midheaven labels — */}
       <g aria-hidden="true">
         {(() => {
-          const asc = polarToCartesian(houses.ascendant, outerRadius + size * 0.02, center);
-          const mc = polarToCartesian(houses.midheaven, outerRadius + size * 0.02, center);
+          const asc = place(houses.ascendant, outerRadius + size * 0.02);
+          const mc = place(houses.midheaven, outerRadius + size * 0.02);
           return (
             <>
               <text
@@ -360,5 +427,28 @@ export function Chart({
         </g>
       ) : null}
     </svg>
+  );
+
+  if (!onScrub) return wheel;
+
+  // The interactive wrapper: grabbing it turns the wheel and scrubs time.
+  return (
+    <div
+      ref={wrapRef}
+      className={className}
+      style={{
+        display: "inline-block",
+        lineHeight: 0,
+        cursor: "grab",
+        touchAction: "none",
+        ...style,
+      }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+    >
+      {wheel}
+    </div>
   );
 }

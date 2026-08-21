@@ -20,7 +20,13 @@ import {
   Toast,
   useApiCall,
 } from "@theourgia/shared";
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  type PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { apiMethods } from "../data/api.js";
 import { writeDayEntry } from "../data/keepObservance.js";
@@ -174,13 +180,16 @@ export function AstrologyRoute() {
   const [saved, setSaved] = useState(false);
   const didInitialCast = useRef(false);
 
-  // The time-scrubber: drag the chart through time from a base anchor (the last
-  // moment cast explicitly). The slider's value is the fraction of one span away
-  // from that anchor, in [-1, 1]; the span is Hour/Day/Week/Month.
+  // The time-scrubber: drag the chart (or the wheel itself) through time,
+  // relative and unbounded — like the phone. `scrubBaseRef` is the currently
+  // shown moment, which each drag advances; `scrubAnchorRef` is the last moment
+  // cast explicitly, so the label can say how far the scrub has wandered from it.
   const [scrubSpanKey, setScrubSpanKey] = useState<ScrubSpanKey>("day");
-  const [scrubOffset, setScrubOffset] = useState(0);
   const scrubBaseRef = useRef<number>(Date.now());
+  const scrubAnchorRef = useRef<number>(Date.now());
   const scrubTokenRef = useRef(0);
+  const castThrottleRef = useRef(0);
+  const castTrailRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrubSpanMs = SCRUB_SPANS.find((s) => s.key === scrubSpanKey)?.ms ?? 24 * HOUR_MS;
 
   const cast = useCallback(
@@ -202,10 +211,10 @@ export function AstrologyRoute() {
           zodiac,
           house_system: houseSystem === "whole-sign" ? "whole-sign" : "placidus",
         });
-        // An explicit cast is the scrubber's new anchor: centre the slider on it.
+        // An explicit cast is the scrubber's new anchor and its current moment.
         scrubTokenRef.current += 1;
         scrubBaseRef.current = new Date(whenIso).getTime();
-        setScrubOffset(0);
+        scrubAnchorRef.current = scrubBaseRef.current;
         setChart(result);
         setSaved(false);
       } catch (e) {
@@ -294,20 +303,64 @@ export function AstrologyRoute() {
     [lat, lng, zodiac, houseSystem],
   );
 
-  const scrubTo = (offset: number) => {
-    setScrubOffset(offset);
-    const moment = new Date(scrubBaseRef.current + offset * scrubSpanMs);
-    setWhen(toLocalInput(moment));
-    void castAt(moment.toISOString());
+  // Relative scrubbing: advance the shown moment by a fraction of the current
+  // span and re-cast. Unbounded — one gesture flows into the next, so you can
+  // travel as far through time as you like, exactly like the phone.
+  const scrubBy = useCallback(
+    (spanFraction: number) => {
+      const moment = new Date(scrubBaseRef.current + spanFraction * scrubSpanMs);
+      scrubBaseRef.current = moment.getTime();
+      setWhen(toLocalInput(moment));
+      const iso = moment.toISOString();
+      // A drag fires many deltas; throttle the network casts and guarantee a
+      // trailing one so the wheel settles exactly on the final moment.
+      const now = performance.now();
+      if (now - castThrottleRef.current > 80) {
+        castThrottleRef.current = now;
+        void castAt(iso);
+      } else {
+        if (castTrailRef.current) clearTimeout(castTrailRef.current);
+        castTrailRef.current = setTimeout(() => {
+          castThrottleRef.current = performance.now();
+          void castAt(iso);
+        }, 110);
+      }
+    },
+    [scrubSpanMs, castAt],
+  );
+
+  // The scrub strip: drag left for earlier, right for later. A full strip-width
+  // drag moves one span; because it is relative you can keep going indefinitely.
+  const stripRef = useRef<HTMLDivElement>(null);
+  const stripDragX = useRef<number | null>(null);
+  const onStripDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    stripDragX.current = e.clientX;
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onStripMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (stripDragX.current === null) return;
+    const width = stripRef.current?.clientWidth ?? 1;
+    const dx = e.clientX - stripDragX.current;
+    stripDragX.current = e.clientX;
+    scrubBy(dx / width);
+  };
+  const onStripUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (stripDragX.current === null) return;
+    stripDragX.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* pointer already released */
+    }
   };
 
-  // Changing the span rebases onto the shown moment and re-centres, so the chart
-  // never jumps — only how far a full drag reaches changes.
-  const changeSpan = (key: ScrubSpanKey) => {
-    scrubBaseRef.current += scrubOffset * scrubSpanMs;
-    setScrubOffset(0);
-    setScrubSpanKey(key);
-  };
+  // Changing the span only changes how far a drag reaches; the shown moment
+  // stays put, because scrubbing is relative to it.
+  const changeSpan = (key: ScrubSpanKey) => setScrubSpanKey(key);
+
+  const scrubbedMs = Number.isNaN(new Date(when).getTime())
+    ? 0
+    : new Date(when).getTime() - scrubAnchorRef.current;
 
   return (
     <section style={{ maxWidth: 900, margin: "0 auto", padding: "var(--space-5, 24px)" }}>
@@ -504,8 +557,8 @@ export function AstrologyRoute() {
                 <div
                   style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--ink-mute)" }}
                 >
-                  {offsetLabel(scrubOffset * scrubSpanMs)}
-                  {scrubOffset !== 0 ? (
+                  {offsetLabel(scrubbedMs)}
+                  {Math.abs(scrubbedMs) > 1000 ? (
                     <>
                       {" · "}
                       <button
@@ -528,33 +581,76 @@ export function AstrologyRoute() {
                 </div>
               </div>
             </div>
-            <input
-              type="range"
-              min={-1}
-              max={1}
-              step={0.0001}
-              value={scrubOffset}
-              onChange={(e) => scrubTo(Number(e.target.value))}
-              aria-label="Scrub the chart through time"
-              style={{ width: "100%", accentColor: "var(--accent)", cursor: "ew-resize" }}
-            />
+            <div
+              ref={stripRef}
+              role="slider"
+              tabIndex={0}
+              aria-label="Scrub the chart through time — drag left for earlier, right for later"
+              aria-valuemin={-100}
+              aria-valuemax={100}
+              aria-valuenow={Math.max(
+                -100,
+                Math.min(100, Math.round((scrubbedMs / scrubSpanMs) * 10) / 10),
+              )}
+              aria-valuetext={offsetLabel(scrubbedMs)}
+              onPointerDown={onStripDown}
+              onPointerMove={onStripMove}
+              onPointerUp={onStripUp}
+              onPointerCancel={onStripUp}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowLeft") scrubBy(-0.1);
+                else if (e.key === "ArrowRight") scrubBy(0.1);
+                else return;
+                e.preventDefault();
+              }}
+              style={{
+                position: "relative",
+                height: 36,
+                borderRadius: 8,
+                border: "1px solid var(--line)",
+                background: "var(--bg-2)",
+                cursor: "ew-resize",
+                touchAction: "none",
+                userSelect: "none",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {/* The anchor tick, at the strip's centre. */}
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  top: 7,
+                  bottom: 7,
+                  width: 2,
+                  background: "var(--line-2)",
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 12,
+                  color: "var(--ink-mute)",
+                  pointerEvents: "none",
+                }}
+              >
+                ‹ drag through time · one strip = one{" "}
+                {SCRUB_SPANS.find((s) => s.key === scrubSpanKey)?.unit ?? scrubSpanKey} ›
+              </span>
+            </div>
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
                 fontFamily: "var(--font-ui)",
                 fontSize: 11,
                 color: "var(--ink-mute)",
-                marginTop: 2,
+                marginTop: 4,
+                textAlign: "center",
               }}
             >
-              <span>
-                −1 {SCRUB_SPANS.find((s) => s.key === scrubSpanKey)?.unit ?? scrubSpanKey}
-              </span>
-              <span>the cast moment</span>
-              <span>
-                +1 {SCRUB_SPANS.find((s) => s.key === scrubSpanKey)?.unit ?? scrubSpanKey}
-              </span>
+              The wheel turns too — drag it to travel as far through time as you like.
             </div>
           </div>
 
@@ -578,6 +674,7 @@ export function AstrologyRoute() {
               aspects={chart.aspects}
               size={440}
               attribution={chart.attribution}
+              onScrub={scrubBy}
             />
             <div style={{ flex: 1, minWidth: 280 }}>
               <ChartLegend placements={chart.placements} />
