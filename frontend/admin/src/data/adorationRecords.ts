@@ -100,7 +100,10 @@ export async function fetchPackedAdorationSets(): Promise<PackedAdorationSet[]> 
   const [feed, installed] = await Promise.all([fetchPackFeed(), apiMethods.bundlesInstalled()]);
   const slugs = installed.bundles.map((b) => b.slug);
   const payloads = await installedPackPayloads(feed, slugs, "ritual-set");
-  return payloads.flatMap((p) => packedAdorationSetsFromPayload(p));
+  // ⚠ installedPackPayloads returns { pack, payload }; the parser wants the
+  // payload itself (it reads `.items`). Passing the wrapper made every pack
+  // yield nothing — the reason "From installed packs" was always empty.
+  return payloads.flatMap((p) => packedAdorationSetsFromPayload(p.payload));
 }
 
 export function usePackedAdorationSets() {
