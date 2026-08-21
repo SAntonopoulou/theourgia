@@ -10,6 +10,7 @@
  * package.json::exports — those are static assets, not JS exports.
  */
 
+export * from "./adorations/index.js";
 export * from "./AliasGraph/index.js";
 export * from "./api/index.js";
 export * from "./AppShell/index.js";
