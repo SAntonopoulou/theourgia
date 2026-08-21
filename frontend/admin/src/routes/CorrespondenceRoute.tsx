@@ -20,6 +20,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { apiMethods } from "../data/api.js";
+import { fetchDisabledModuleIds } from "../data/packSettings.js";
 import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
 import { CustomCorrespondenceEditor } from "./CustomCorrespondenceEditor.js";
 
@@ -42,7 +43,12 @@ export function CorrespondenceRoute() {
           apiMethods.bundlesInstalled(),
         ]);
         const slugs = installed.bundles.map((b) => b.slug);
-        const found = await installedPackPayloads(feed, slugs, "correspondence-tables");
+        const found = await installedPackPayloads(
+          feed,
+          slugs,
+          "correspondence-tables",
+          await fetchDisabledModuleIds(),
+        );
         const parsed = found
           .map((f) => packToCorrespondenceTable(f.payload))
           .filter((t): t is CorrespondenceTable => t !== null);

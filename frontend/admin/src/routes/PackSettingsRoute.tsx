@@ -10,12 +10,16 @@
  */
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, Toast, chosenValue, useTopbar } from "@theourgia/shared";
+import { Button, Switch, Toast, chosenValue, useTopbar } from "@theourgia/shared";
 import { useState } from "react";
 
 import {
+  DISABLED_PACKS_KEY,
   MODULE_SETTINGS_KEY,
   setModuleChoice,
+  setPackEnabled,
+  useDisabledModuleIds,
+  useInstalledPacks,
   useModuleSettings,
   usePackModuleOptions,
 } from "../data/packSettings.js";
@@ -29,19 +33,18 @@ export function PackSettingsRoute() {
   const qc = useQueryClient();
   const packsQuery = usePackModuleOptions();
   const settingsQuery = useModuleSettings();
+  const installedQuery = useInstalledPacks();
+  const disabledQuery = useDisabledModuleIds();
   const packs = packsQuery.data ?? [];
   const settings = settingsQuery.data ?? new Map<string, string>();
+  const installed = installedQuery.data ?? [];
+  const disabled = new Set(disabledQuery.data ?? []);
   const [busy, setBusy] = useState(false);
 
-  const choose = async (
-    moduleId: string,
-    optionKey: string,
-    value: string | null,
-  ): Promise<void> => {
+  const guarded = async (work: () => Promise<void>): Promise<void> => {
     setBusy(true);
     try {
-      await setModuleChoice({ moduleId, optionKey, value });
-      await qc.invalidateQueries({ queryKey: MODULE_SETTINGS_KEY });
+      await work();
     } catch (e) {
       Toast.push({
         tone: "warning",
@@ -52,6 +55,18 @@ export function PackSettingsRoute() {
       setBusy(false);
     }
   };
+
+  const choose = (moduleId: string, optionKey: string, value: string | null): Promise<void> =>
+    guarded(async () => {
+      await setModuleChoice({ moduleId, optionKey, value });
+      await qc.invalidateQueries({ queryKey: MODULE_SETTINGS_KEY });
+    });
+
+  const toggleEnabled = (moduleId: string, enabled: boolean): Promise<void> =>
+    guarded(async () => {
+      await setPackEnabled(moduleId, enabled);
+      await qc.invalidateQueries({ queryKey: DISABLED_PACKS_KEY });
+    });
 
   return (
     <section style={{ maxWidth: 720, margin: "0 auto", padding: "var(--space-5, 24px)" }}>
@@ -67,6 +82,72 @@ export function PackSettingsRoute() {
         Some packs leave a genuinely contested choice to you. Make it here, and it holds across your
         devices. Until you choose, each pack's own default stands.
       </p>
+
+      {installed.length > 0 ? (
+        <div style={{ marginBottom: 28 }}>
+          <h2
+            style={{
+              margin: "0 0 4px",
+              fontFamily: "var(--font-display, var(--font-serif))",
+              fontSize: 20,
+              color: "var(--ink)",
+            }}
+          >
+            In use
+          </h2>
+          <p
+            style={{
+              margin: "0 0 12px",
+              fontFamily: "var(--font-ui)",
+              fontSize: 13,
+              color: "var(--ink-mute)",
+              lineHeight: 1.5,
+            }}
+          >
+            Turn a pack off to stop the web drawing on its content — its ciphers, tables and words —
+            without uninstalling it. Installed, it stays; off, it is simply not used.
+          </p>
+          <div
+            style={{
+              border: "1px solid var(--line)",
+              borderRadius: "var(--r-lg, 14px)",
+              background: "var(--bg-2)",
+              overflow: "hidden",
+            }}
+          >
+            {installed.map((pack, i) => (
+              <div
+                key={pack.moduleId}
+                style={{
+                  padding: "12px 16px",
+                  borderTop: i === 0 ? "none" : "1px solid var(--line)",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 14,
+                }}
+              >
+                <Switch
+                  checked={!disabled.has(pack.moduleId)}
+                  disabled={busy || disabledQuery.isPending}
+                  onChange={(next) => void toggleEnabled(pack.moduleId, next)}
+                  label={pack.name}
+                  labelPosition="start"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      <h2
+        style={{
+          margin: "0 0 6px",
+          fontFamily: "var(--font-display, var(--font-serif))",
+          fontSize: 20,
+          color: "var(--ink)",
+        }}
+      >
+        Options
+      </h2>
 
       {packsQuery.isPending || settingsQuery.isPending ? (
         <p style={{ fontFamily: "var(--font-ui)", color: "var(--ink-mute)" }}>Loading…</p>

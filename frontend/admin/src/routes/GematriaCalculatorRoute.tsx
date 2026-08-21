@@ -21,6 +21,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { apiMethods } from "../data/api.js";
+import { fetchDisabledModuleIds } from "../data/packSettings.js";
 
 export function GematriaCalculatorRoute() {
   useTopbar(
@@ -44,7 +45,12 @@ export function GematriaCalculatorRoute() {
           apiMethods.bundlesInstalled(),
         ]);
         const slugs = installed.bundles.map((b) => b.slug);
-        const found = await installedPackPayloads(feed, slugs, "gematria-systems");
+        const found = await installedPackPayloads(
+          feed,
+          slugs,
+          "gematria-systems",
+          await fetchDisabledModuleIds(),
+        );
         if (!cancelled) {
           setPackCiphers(found.flatMap((f) => packToCiphers(f.payload)));
         }

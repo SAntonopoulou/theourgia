@@ -11,11 +11,13 @@
 
 import { useQuery } from "@tanstack/react-query";
 import {
+  ENABLED_OPTION_KEY,
   MODULE_SETTING_KIND,
   type ModuleSettingEntry,
   type PackModuleOptions,
   buildModuleSettingEntry,
   clearModuleSettingEntry,
+  disabledModuleIdsFromEntries,
   fetchPackFeed,
   installedPackDocuments,
   moduleSettingsFromEntries,
@@ -24,6 +26,29 @@ import {
 
 import { apiGet, apiPut } from "../lib/api.js";
 import { apiMethods } from "./api.js";
+
+/** The installed packs the web can read client-side, each with the id its
+ *  option/enabled choices are keyed under and a human name. */
+export interface InstalledPack {
+  moduleId: string;
+  name: string;
+}
+
+export async function fetchInstalledPacks(): Promise<InstalledPack[]> {
+  const [feed, installed] = await Promise.all([fetchPackFeed(), apiMethods.bundlesInstalled()]);
+  const slugs = new Set(installed.bundles.map((b) => b.slug));
+  return feed
+    .filter((p) => slugs.has(p.id) || slugs.has(p.id.replaceAll(".", "-")))
+    .map((p) => ({ moduleId: p.id, name: p.title || p.id }))
+    .sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+}
+
+export function useInstalledPacks() {
+  return useQuery<InstalledPack[], Error>({
+    queryKey: ["installed-packs"],
+    queryFn: fetchInstalledPacks,
+  });
+}
 
 /** The option-bearing installed packs, read from their `.mbf` files. */
 export async function fetchPackModuleOptions(): Promise<PackModuleOptions[]> {
@@ -48,8 +73,8 @@ type PullPage = {
   more: boolean;
 };
 
-/** Every chosen module-option value in the record, keyed module→option→value. */
-export async function fetchModuleSettings(): Promise<Map<string, string>> {
+/** Every module-setting entry in the record — choices and enabled standing. */
+async function fetchModuleSettingEntries(): Promise<ModuleSettingEntry[]> {
   const all: ModuleSettingEntry[] = [];
   let since = 0;
   for (;;) {
@@ -60,13 +85,32 @@ export async function fetchModuleSettings(): Promise<Map<string, string>> {
     since = page.next_since;
     if (!page.more) break;
   }
-  return moduleSettingsFromEntries(all);
+  return all;
+}
+
+/** Every chosen module-option value in the record, keyed module→option→value. */
+export async function fetchModuleSettings(): Promise<Map<string, string>> {
+  return moduleSettingsFromEntries(await fetchModuleSettingEntries());
 }
 
 export function useModuleSettings() {
   return useQuery<Map<string, string>, Error>({
     queryKey: MODULE_SETTINGS_KEY,
     queryFn: fetchModuleSettings,
+  });
+}
+
+export const DISABLED_PACKS_KEY = ["disabled-packs", "record"] as const;
+
+/** The module ids the practitioner has turned off — packs the web won't use. */
+export async function fetchDisabledModuleIds(): Promise<string[]> {
+  return disabledModuleIdsFromEntries(await fetchModuleSettingEntries());
+}
+
+export function useDisabledModuleIds() {
+  return useQuery<string[], Error>({
+    queryKey: DISABLED_PACKS_KEY,
+    queryFn: fetchDisabledModuleIds,
   });
 }
 
@@ -87,4 +131,14 @@ export async function setModuleChoice(input: {
           now,
         });
   await apiPut("/record/entries", { entries: [entry] });
+}
+
+/** Turn a pack's content on or off for the web. Enabled is the default, so
+ *  enabling clears the setting (a tombstone) and disabling writes "false". */
+export async function setPackEnabled(moduleId: string, enabled: boolean): Promise<void> {
+  await setModuleChoice({
+    moduleId,
+    optionKey: ENABLED_OPTION_KEY,
+    value: enabled ? null : "false",
+  });
 }

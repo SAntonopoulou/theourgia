@@ -18,6 +18,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { apiMethods } from "../data/api.js";
+import { fetchDisabledModuleIds } from "../data/packSettings.js";
 import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
 
 export function TechniqueRoute() {
@@ -39,7 +40,12 @@ export function TechniqueRoute() {
           apiMethods.bundlesInstalled(),
         ]);
         const slugs = installed.bundles.map((b) => b.slug);
-        const found = await installedPackPayloads(feed, slugs, "astro-techniques");
+        const found = await installedPackPayloads(
+          feed,
+          slugs,
+          "astro-techniques",
+          await fetchDisabledModuleIds(),
+        );
         const parsed = found.flatMap((f) => packToTechniques(f.payload));
         if (!cancelled) setTechniques(parsed);
       } catch {

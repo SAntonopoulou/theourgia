@@ -18,8 +18,9 @@ import {
 import { useEffect, useState } from "react";
 
 import { apiMethods } from "../data/api.js";
-import { ElectionFinder } from "./ElectionFinder.js";
+import { fetchDisabledModuleIds } from "../data/packSettings.js";
 import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
+import { ElectionFinder } from "./ElectionFinder.js";
 
 export function ElectionRoute() {
   useTopbar(
@@ -40,7 +41,12 @@ export function ElectionRoute() {
           apiMethods.bundlesInstalled(),
         ]);
         const slugs = installed.bundles.map((b) => b.slug);
-        const found = await installedPackPayloads(feed, slugs, "election-templates");
+        const found = await installedPackPayloads(
+          feed,
+          slugs,
+          "election-templates",
+          await fetchDisabledModuleIds(),
+        );
         // Merge across installed election packs into one set of rules.
         const merged: ElectionTemplates = { matters: [], rulesets: [] };
         for (const f of found) {

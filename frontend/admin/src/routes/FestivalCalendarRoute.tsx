@@ -18,6 +18,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { apiMethods } from "../data/api.js";
+import { fetchDisabledModuleIds } from "../data/packSettings.js";
 import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
 
 export function FestivalCalendarRoute() {
@@ -39,7 +40,12 @@ export function FestivalCalendarRoute() {
           apiMethods.bundlesInstalled(),
         ]);
         const slugs = installed.bundles.map((b) => b.slug);
-        const found = await installedPackPayloads(feed, slugs, "festival-calendar");
+        const found = await installedPackPayloads(
+          feed,
+          slugs,
+          "festival-calendar",
+          await fetchDisabledModuleIds(),
+        );
         const parsed = found.map((f) => ({
           title: f.pack.title,
           calendar: packToFestivalCalendar(f.payload),

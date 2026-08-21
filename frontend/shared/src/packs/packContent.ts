@@ -31,6 +31,14 @@ export function isClientReadable(pack: FeedPack): boolean {
   return pack.bytes >= 0 && pack.bytes <= MAX_CLIENT_SIDE_BYTES;
 }
 
+/** A pack the practitioner has turned off — matched on either naming form, so
+ *  the same disabled-set works whether it holds dotted ids or dashed slugs. */
+function isDisabled(pack: FeedPack, disabledModuleIds: readonly string[]): boolean {
+  if (disabledModuleIds.length === 0) return false;
+  const off = new Set(disabledModuleIds);
+  return off.has(pack.id) || off.has(pack.id.replaceAll(".", "-"));
+}
+
 /** Parse `.mbf` bytes into manifest + payloads. Pure — no network. */
 export function parsePackBytes(buf: Uint8Array): PackPayloads {
   const files = unzipSync(buf);
@@ -69,10 +77,14 @@ export async function installedPackPayloads(
   feed: FeedPack[],
   installedSlugs: readonly string[],
   kind: string,
+  disabledModuleIds: readonly string[] = [],
 ): Promise<{ pack: FeedPack; payload: unknown }[]> {
   const installed = new Set(installedSlugs);
   const matches = feed.filter(
-    (p) => isClientReadable(p) && (installed.has(p.id) || installed.has(p.id.replaceAll(".", "-"))),
+    (p) =>
+      isClientReadable(p) &&
+      (installed.has(p.id) || installed.has(p.id.replaceAll(".", "-"))) &&
+      !isDisabled(p, disabledModuleIds),
   );
   const out: { pack: FeedPack; payload: unknown }[] = [];
   for (const pack of matches) {
@@ -96,10 +108,14 @@ export async function installedPackPayloads(
 export async function installedPackDocuments(
   feed: FeedPack[],
   installedSlugs: readonly string[],
+  disabledModuleIds: readonly string[] = [],
 ): Promise<{ pack: FeedPack; kind: string; payload: unknown }[]> {
   const installed = new Set(installedSlugs);
   const matches = feed.filter(
-    (p) => isClientReadable(p) && (installed.has(p.id) || installed.has(p.id.replaceAll(".", "-"))),
+    (p) =>
+      isClientReadable(p) &&
+      (installed.has(p.id) || installed.has(p.id.replaceAll(".", "-"))) &&
+      !isDisabled(p, disabledModuleIds),
   );
   const out: { pack: FeedPack; kind: string; payload: unknown }[] = [];
   for (const pack of matches) {

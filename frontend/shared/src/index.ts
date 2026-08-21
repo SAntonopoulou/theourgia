@@ -379,6 +379,8 @@ export {
   buildModuleSettingEntry,
   chosenValue,
   clearModuleSettingEntry,
+  disabledModuleIdsFromEntries,
+  ENABLED_OPTION_KEY,
   MODULE_SETTING_KIND,
   type ModuleSettingEntry,
   moduleSettingId,

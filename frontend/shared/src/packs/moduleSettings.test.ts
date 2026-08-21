@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ENABLED_OPTION_KEY,
   buildModuleSettingEntry,
   chosenValue,
   clearModuleSettingEntry,
+  disabledModuleIdsFromEntries,
   moduleSettingId,
   moduleSettingsFromEntries,
 } from "./moduleSettings.js";
@@ -49,6 +51,30 @@ describe("module option choices on the record", () => {
       now: "2026-08-21T13:00:00.000Z",
     });
     expect(chosenValue(moduleSettingsFromEntries([set, cleared]), "m", "k")).toBeUndefined();
+  });
+
+  it("reads which packs are turned off — default on, tombstone re-enables", () => {
+    const off = buildModuleSettingEntry({
+      moduleId: "pack.a",
+      optionKey: ENABLED_OPTION_KEY,
+      value: "false",
+      now: NOW,
+    });
+    const onAgain = buildModuleSettingEntry({
+      moduleId: "pack.b",
+      optionKey: ENABLED_OPTION_KEY,
+      value: "true",
+      now: NOW,
+    });
+    expect(disabledModuleIdsFromEntries([off, onAgain])).toEqual(["pack.a"]);
+
+    // Resetting the disabled pack turns it back on.
+    const reset = clearModuleSettingEntry({
+      moduleId: "pack.a",
+      optionKey: ENABLED_OPTION_KEY,
+      now: "2026-08-21T13:00:00.000Z",
+    });
+    expect(disabledModuleIdsFromEntries([off, reset])).toEqual([]);
   });
 
   it("ignores other kinds and malformed docs", () => {
