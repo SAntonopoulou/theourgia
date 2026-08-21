@@ -1,0 +1,348 @@
+{
+  "source": "JPL Horizons (ssd.jpl.nasa.gov/api/horizons.api)",
+  "fetched": "committed fixture \u2014 see tool/fetch_horizons.py to refresh",
+  "provenance": "INDEPENDENT",
+  "quantity": "31 \u2014 observer ecliptic longitude and latitude",
+  "center": "500@399 (geocentric)",
+  "frame": "apparent position, true ecliptic and equinox of date",
+  "timeScale": "UT \u2014 matches swe_calc_ut",
+  "caveat": "The Swiss Ephemeris is itself derived from JPL's DE ephemerides, so agreement does not independently confirm the underlying planetary theory. It confirms the integration layer \u2014 time scale, frame, apparent-vs-geometric, Julian Day conversion, unit handling \u2014 which is where errors actually occur and where they would otherwise be invisible.",
+  "rows": [
+    {
+      "instantUtc": "1900-01-01T12:00:00Z",
+      "julianDayUt": 2415021.0,
+      "body": "sun",
+      "horizonsCommand": "10",
+      "eclipticLongitude": 280.6632209,
+      "eclipticLatitude": 8.43e-05
+    },
+    {
+      "instantUtc": "1900-01-01T12:00:00Z",
+      "julianDayUt": 2415021.0,
+      "body": "moon",
+      "horizonsCommand": "301",
+      "eclipticLongitude": 279.6163189,
+      "eclipticLatitude": 1.7442764
+    },
+    {
+      "instantUtc": "1900-01-01T12:00:00Z",
+      "julianDayUt": 2415021.0,
+      "body": "mercury",
+      "horizonsCommand": "199",
+      "eclipticLongitude": 259.6392831,
+      "eclipticLatitude": 1.0559217
+    },
+    {
+      "instantUtc": "1900-01-01T12:00:00Z",
+      "julianDayUt": 2415021.0,
+      "body": "venus",
+      "horizonsCommand": "299",
+      "eclipticLongitude": 306.9960853,
+      "eclipticLatitude": -1.6864262
+    },
+    {
+      "instantUtc": "1900-01-01T12:00:00Z",
+      "julianDayUt": 2415021.0,
+      "body": "mars",
+      "horizonsCommand": "499",
+      "eclipticLongitude": 284.2529683,
+      "eclipticLatitude": -0.928232
+    },
+    {
+      "instantUtc": "1900-01-01T12:00:00Z",
+      "julianDayUt": 2415021.0,
+      "body": "jupiter",
+      "horizonsCommand": "599",
+      "eclipticLongitude": 241.2335461,
+      "eclipticLatitude": 0.8144197
+    },
+    {
+      "instantUtc": "1900-01-01T12:00:00Z",
+      "julianDayUt": 2415021.0,
+      "body": "saturn",
+      "horizonsCommand": "699",
+      "eclipticLongitude": 267.7748827,
+      "eclipticLatitude": 1.0073267
+    },
+    {
+      "instantUtc": "1950-06-15T03:00:00Z",
+      "julianDayUt": 2433447.625,
+      "body": "sun",
+      "horizonsCommand": "10",
+      "eclipticLongitude": 83.4514974,
+      "eclipticLatitude": 0.0002089
+    },
+    {
+      "instantUtc": "1950-06-15T03:00:00Z",
+      "julianDayUt": 2433447.625,
+      "body": "moon",
+      "horizonsCommand": "301",
+      "eclipticLongitude": 77.4548594,
+      "eclipticLatitude": 4.7986561
+    },
+    {
+      "instantUtc": "1950-06-15T03:00:00Z",
+      "julianDayUt": 2433447.625,
+      "body": "mercury",
+      "horizonsCommand": "199",
+      "eclipticLongitude": 60.631399,
+      "eclipticLatitude": -2.9816673
+    },
+    {
+      "instantUtc": "1950-06-15T03:00:00Z",
+      "julianDayUt": 2433447.625,
+      "body": "venus",
+      "horizonsCommand": "299",
+      "eclipticLongitude": 45.6050945,
+      "eclipticLatitude": -2.0992768
+    },
+    {
+      "instantUtc": "1950-06-15T03:00:00Z",
+      "julianDayUt": 2433447.625,
+      "body": "mars",
+      "horizonsCommand": "499",
+      "eclipticLongitude": 181.2289045,
+      "eclipticLatitude": 0.3826197
+    },
+    {
+      "instantUtc": "1950-06-15T03:00:00Z",
+      "julianDayUt": 2433447.625,
+      "body": "jupiter",
+      "horizonsCommand": "599",
+      "eclipticLongitude": 337.2261139,
+      "eclipticLatitude": -1.0178819
+    },
+    {
+      "instantUtc": "1950-06-15T03:00:00Z",
+      "julianDayUt": 2433447.625,
+      "body": "saturn",
+      "horizonsCommand": "699",
+      "eclipticLongitude": 163.3840734,
+      "eclipticLatitude": 2.043459
+    },
+    {
+      "instantUtc": "1990-10-05T21:30:00Z",
+      "julianDayUt": 2448170.3958333335,
+      "body": "sun",
+      "horizonsCommand": "10",
+      "eclipticLongitude": 192.3811969,
+      "eclipticLatitude": 0.0001145
+    },
+    {
+      "instantUtc": "1990-10-05T21:30:00Z",
+      "julianDayUt": 2448170.3958333335,
+      "body": "moon",
+      "horizonsCommand": "301",
+      "eclipticLongitude": 31.479481,
+      "eclipticLatitude": 5.0284273
+    },
+    {
+      "instantUtc": "1990-10-05T21:30:00Z",
+      "julianDayUt": 2448170.3958333335,
+      "body": "mercury",
+      "horizonsCommand": "199",
+      "eclipticLongitude": 180.2720005,
+      "eclipticLatitude": 1.9107083
+    },
+    {
+      "instantUtc": "1990-10-05T21:30:00Z",
+      "julianDayUt": 2448170.3958333335,
+      "body": "venus",
+      "horizonsCommand": "299",
+      "eclipticLongitude": 185.4720336,
+      "eclipticLatitude": 1.4168181
+    },
+    {
+      "instantUtc": "1990-10-05T21:30:00Z",
+      "julianDayUt": 2448170.3958333335,
+      "body": "mars",
+      "horizonsCommand": "499",
+      "eclipticLongitude": 73.0145919,
+      "eclipticLatitude": -0.9526691
+    },
+    {
+      "instantUtc": "1990-10-05T21:30:00Z",
+      "julianDayUt": 2448170.3958333335,
+      "body": "jupiter",
+      "horizonsCommand": "599",
+      "eclipticLongitude": 129.0626381,
+      "eclipticLatitude": 0.3942541
+    },
+    {
+      "instantUtc": "1990-10-05T21:30:00Z",
+      "julianDayUt": 2448170.3958333335,
+      "body": "saturn",
+      "horizonsCommand": "699",
+      "eclipticLongitude": 288.8373147,
+      "eclipticLatitude": -0.0424097
+    },
+    {
+      "instantUtc": "2000-01-01T12:00:00Z",
+      "julianDayUt": 2451545.0,
+      "body": "sun",
+      "horizonsCommand": "10",
+      "eclipticLongitude": 280.3689092,
+      "eclipticLatitude": 0.0002381
+    },
+    {
+      "instantUtc": "2000-01-01T12:00:00Z",
+      "julianDayUt": 2451545.0,
+      "body": "moon",
+      "horizonsCommand": "301",
+      "eclipticLongitude": 223.323786,
+      "eclipticLatitude": 5.1707422
+    },
+    {
+      "instantUtc": "2000-01-01T12:00:00Z",
+      "julianDayUt": 2451545.0,
+      "body": "mercury",
+      "horizonsCommand": "199",
+      "eclipticLongitude": 271.8892699,
+      "eclipticLatitude": -0.994819
+    },
+    {
+      "instantUtc": "2000-01-01T12:00:00Z",
+      "julianDayUt": 2451545.0,
+      "body": "venus",
+      "horizonsCommand": "299",
+      "eclipticLongitude": 241.5657794,
+      "eclipticLatitude": 2.0663548
+    },
+    {
+      "instantUtc": "2000-01-01T12:00:00Z",
+      "julianDayUt": 2451545.0,
+      "body": "mars",
+      "horizonsCommand": "499",
+      "eclipticLongitude": 327.9632921,
+      "eclipticLatitude": -1.0677752
+    },
+    {
+      "instantUtc": "2000-01-01T12:00:00Z",
+      "julianDayUt": 2451545.0,
+      "body": "jupiter",
+      "horizonsCommand": "599",
+      "eclipticLongitude": 25.2530685,
+      "eclipticLatitude": -1.2621868
+    },
+    {
+      "instantUtc": "2000-01-01T12:00:00Z",
+      "julianDayUt": 2451545.0,
+      "body": "saturn",
+      "horizonsCommand": "699",
+      "eclipticLongitude": 40.3956366,
+      "eclipticLatitude": -2.4448533
+    },
+    {
+      "instantUtc": "2024-03-20T03:06:00Z",
+      "julianDayUt": 2460389.629166667,
+      "body": "sun",
+      "horizonsCommand": "10",
+      "eclipticLongitude": 359.9997093,
+      "eclipticLatitude": 0.0001109
+    },
+    {
+      "instantUtc": "2024-03-20T03:06:00Z",
+      "julianDayUt": 2460389.629166667,
+      "body": "moon",
+      "horizonsCommand": "301",
+      "eclipticLongitude": 123.8151802,
+      "eclipticLatitude": 5.0063811
+    },
+    {
+      "instantUtc": "2024-03-20T03:06:00Z",
+      "julianDayUt": 2460389.629166667,
+      "body": "mercury",
+      "horizonsCommand": "199",
+      "eclipticLongitude": 17.4409072,
+      "eclipticLatitude": 1.4774826
+    },
+    {
+      "instantUtc": "2024-03-20T03:06:00Z",
+      "julianDayUt": 2460389.629166667,
+      "body": "venus",
+      "horizonsCommand": "299",
+      "eclipticLongitude": 340.1712838,
+      "eclipticLatitude": -1.289975
+    },
+    {
+      "instantUtc": "2024-03-20T03:06:00Z",
+      "julianDayUt": 2460389.629166667,
+      "body": "mars",
+      "horizonsCommand": "499",
+      "eclipticLongitude": 327.7733973,
+      "eclipticLatitude": -1.1734256
+    },
+    {
+      "instantUtc": "2024-03-20T03:06:00Z",
+      "julianDayUt": 2460389.629166667,
+      "body": "jupiter",
+      "horizonsCommand": "599",
+      "eclipticLongitude": 44.8856241,
+      "eclipticLatitude": -0.8526435
+    },
+    {
+      "instantUtc": "2024-03-20T03:06:00Z",
+      "julianDayUt": 2460389.629166667,
+      "body": "saturn",
+      "horizonsCommand": "699",
+      "eclipticLongitude": 342.2254263,
+      "eclipticLatitude": -1.6453503
+    },
+    {
+      "instantUtc": "2050-07-04T00:00:00Z",
+      "julianDayUt": 2469991.5,
+      "body": "sun",
+      "horizonsCommand": "10",
+      "eclipticLongitude": 102.2583778,
+      "eclipticLatitude": 0.0001479
+    },
+    {
+      "instantUtc": "2050-07-04T00:00:00Z",
+      "julianDayUt": 2469991.5,
+      "body": "moon",
+      "horizonsCommand": "301",
+      "eclipticLongitude": 271.7174828,
+      "eclipticLatitude": 3.4202098
+    },
+    {
+      "instantUtc": "2050-07-04T00:00:00Z",
+      "julianDayUt": 2469991.5,
+      "body": "mercury",
+      "horizonsCommand": "199",
+      "eclipticLongitude": 117.7076239,
+      "eclipticLatitude": 1.8739779
+    },
+    {
+      "instantUtc": "2050-07-04T00:00:00Z",
+      "julianDayUt": 2469991.5,
+      "body": "venus",
+      "horizonsCommand": "299",
+      "eclipticLongitude": 144.8706477,
+      "eclipticLatitude": 1.628932
+    },
+    {
+      "instantUtc": "2050-07-04T00:00:00Z",
+      "julianDayUt": 2469991.5,
+      "body": "mars",
+      "horizonsCommand": "499",
+      "eclipticLongitude": 325.898312,
+      "eclipticLatitude": -4.8821178
+    },
+    {
+      "instantUtc": "2050-07-04T00:00:00Z",
+      "julianDayUt": 2469991.5,
+      "body": "jupiter",
+      "horizonsCommand": "599",
+      "eclipticLongitude": 127.9426835,
+      "eclipticLatitude": 0.5848689
+    },
+    {
+      "instantUtc": "2050-07-04T00:00:00Z",
+      "julianDayUt": 2469991.5,
+      "body": "saturn",
+      "horizonsCommand": "699",
+      "eclipticLongitude": 307.3156559,
+      "eclipticLatitude": -0.5117977
+    }
+  ]
+}
