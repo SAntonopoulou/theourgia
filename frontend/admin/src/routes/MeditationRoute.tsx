@@ -25,6 +25,7 @@ import {
   keepObservance,
   writeMeditationPlan,
 } from "../data/keepObservance.js";
+import { adoptSitting, usePackedSittings } from "../data/packedSittings.js";
 import { useMyLocation } from "../data/useLocation.js";
 import { apiGet } from "../lib/api.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
@@ -93,7 +94,11 @@ export function MeditationRoute() {
 
   const loadPlans = useCallback(async (): Promise<void> => {
     try {
-      type E = { kind: string; deleted_at_utc?: string | null; doc?: { row?: Record<string, unknown> | null } | null };
+      type E = {
+        kind: string;
+        deleted_at_utc?: string | null;
+        doc?: { row?: Record<string, unknown> | null } | null;
+      };
       const all: E[] = [];
       let since = 0;
       for (;;) {
@@ -113,6 +118,34 @@ export function MeditationRoute() {
   useEffect(() => {
     void loadPlans();
   }, [loadPlans]);
+
+  // Sittings offered by installed packs, and adopting one into an owned plan.
+  const packedSittings = usePackedSittings("sitting");
+  const adoptInFlight = useRef(false);
+  const adoptPackedSitting = async (sitting: {
+    name: string;
+    detail: string;
+    kind: string;
+    minutes: number;
+  }): Promise<void> => {
+    if (adoptInFlight.current) return;
+    adoptInFlight.current = true;
+    setPlanBusy(true);
+    try {
+      await adoptSitting(sitting);
+      await loadPlans();
+      Toast.push({ tone: "success", title: `Adopted "${sitting.name}"` });
+    } catch (e) {
+      Toast.push({
+        tone: "warning",
+        title: "That didn't adopt",
+        body: e instanceof Error ? e.message : "Check your connection and try again.",
+      });
+    } finally {
+      adoptInFlight.current = false;
+      setPlanBusy(false);
+    }
+  };
 
   const keepSitting = async (): Promise<void> => {
     setKeepBusy(true);
@@ -280,80 +313,171 @@ export function MeditationRoute() {
             onCancel={() => setEditing(null)}
           />
         ) : (
-          <div style={{ marginBottom: 24 }}>
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 8,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              {plans.map((p) => (
-                <span
-                  key={p.id}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 6,
-                    border: "1px solid var(--line)",
-                    borderRadius: 999,
-                    padding: "5px 6px 5px 12px",
-                    background: "var(--bg-2)",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={() => runPlan(p)}
-                    style={{
-                      border: "none",
-                      background: "transparent",
-                      color: "var(--ink)",
-                      fontFamily: "var(--font-ui)",
-                      fontSize: 12.5,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {p.name || "Sit"} · {Math.max(1, Math.round(p.seconds / 60))}m
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Edit ${p.name}`}
-                    onClick={() => setEditing({ plan: p })}
-                    style={{ border: "none", background: "transparent", color: "var(--ink-mute)", cursor: "pointer", fontSize: 12 }}
-                  >
-                    ✎
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Delete ${p.name}`}
-                    disabled={planBusy}
-                    onClick={() => void removePlan(p)}
-                    style={{ border: "none", background: "transparent", color: "var(--danger)", cursor: "pointer", fontSize: 12 }}
-                  >
-                    ✕
-                  </button>
-                </span>
-              ))}
-              <button
-                type="button"
-                onClick={() => setEditing({ plan: null })}
+          <>
+            <div style={{ marginBottom: 24 }}>
+              <div
                 style={{
-                  border: "1px dashed var(--line)",
-                  borderRadius: 999,
-                  padding: "6px 12px",
-                  background: "transparent",
-                  color: "var(--ink-soft)",
-                  fontFamily: "var(--font-ui)",
-                  fontSize: 12.5,
-                  cursor: "pointer",
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  justifyContent: "center",
+                  alignItems: "center",
                 }}
               >
-                ＋ New sit
-              </button>
+                {plans.map((p) => (
+                  <span
+                    key={p.id}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      border: "1px solid var(--line)",
+                      borderRadius: 999,
+                      padding: "5px 6px 5px 12px",
+                      background: "var(--bg-2)",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => runPlan(p)}
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        color: "var(--ink)",
+                        fontFamily: "var(--font-ui)",
+                        fontSize: 12.5,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {p.name || "Sit"} · {Math.max(1, Math.round(p.seconds / 60))}m
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Edit ${p.name}`}
+                      onClick={() => setEditing({ plan: p })}
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        color: "var(--ink-mute)",
+                        cursor: "pointer",
+                        fontSize: 12,
+                      }}
+                    >
+                      ✎
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Delete ${p.name}`}
+                      disabled={planBusy}
+                      onClick={() => void removePlan(p)}
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        color: "var(--danger)",
+                        cursor: "pointer",
+                        fontSize: 12,
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setEditing({ plan: null })}
+                  style={{
+                    border: "1px dashed var(--line)",
+                    borderRadius: 999,
+                    padding: "6px 12px",
+                    background: "transparent",
+                    color: "var(--ink-soft)",
+                    fontFamily: "var(--font-ui)",
+                    fontSize: 12.5,
+                    cursor: "pointer",
+                  }}
+                >
+                  ＋ New sit
+                </button>
+              </div>
             </div>
-          </div>
+            {(packedSittings.data ?? []).length > 0 ? (
+              <div
+                style={{
+                  maxWidth: 460,
+                  margin: "0 auto 24px",
+                  border: "1px solid var(--line)",
+                  borderRadius: "var(--r-lg, 14px)",
+                  padding: 16,
+                  background: "var(--bg-2)",
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: "var(--font-ui)",
+                    fontSize: 11,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                    color: "var(--ink-mute)",
+                    marginBottom: 10,
+                  }}
+                >
+                  From installed packs
+                </div>
+                <div style={{ display: "grid", gap: 8 }}>
+                  {(packedSittings.data ?? []).map((s, i) => (
+                    <div
+                      key={`${s.name}-${i}`}
+                      style={{ display: "flex", alignItems: "center", gap: 12 }}
+                    >
+                      <span
+                        style={{
+                          flex: 1,
+                          fontFamily: "var(--font-ui)",
+                          fontSize: 14,
+                          color: "var(--ink)",
+                        }}
+                      >
+                        {s.name}
+                        <span style={{ color: "var(--ink-mute)", fontSize: 12.5 }}>
+                          {" "}
+                          · {s.minutes} min
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        disabled={planBusy}
+                        onClick={() => void adoptPackedSitting(s)}
+                        style={{
+                          border: "1px solid var(--line)",
+                          borderRadius: 8,
+                          padding: "5px 12px",
+                          background: "transparent",
+                          color: "var(--ink-soft)",
+                          fontFamily: "var(--font-ui)",
+                          fontSize: 12.5,
+                          cursor: planBusy ? "default" : "pointer",
+                        }}
+                      >
+                        Adopt
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <p
+                  style={{
+                    margin: "10px 0 0",
+                    fontFamily: "var(--font-ui)",
+                    fontSize: 12,
+                    color: "var(--ink-mute)",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Adopting copies it into a sitting of your own to edit and use — a pack is a
+                  source, never a link.
+                </p>
+              </div>
+            ) : null}
+          </>
         )
       ) : null}
 
@@ -599,7 +723,16 @@ function SitEditor({
         placeholder="Name this sit"
         style={{ ...sitField, width: 160 }}
       />
-      <label style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--ink-soft)" }}>
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          fontFamily: "var(--font-ui)",
+          fontSize: 13,
+          color: "var(--ink-soft)",
+        }}
+      >
         <input
           type="number"
           min={1}
@@ -610,7 +743,16 @@ function SitEditor({
         />
         min
       </label>
-      <label style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: "var(--font-ui)", fontSize: 13, color: "var(--ink-soft)" }}>
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          fontFamily: "var(--font-ui)",
+          fontSize: 13,
+          color: "var(--ink-soft)",
+        }}
+      >
         <input type="checkbox" checked={bell} onChange={(e) => setBell(e.target.checked)} />
         Bell at end
       </label>
