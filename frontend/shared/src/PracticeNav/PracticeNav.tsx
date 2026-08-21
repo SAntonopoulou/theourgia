@@ -374,9 +374,11 @@ export const PRACTICE_WING_SECTIONS: PracticeNavSection[] = [
         glyph: "☽",
       },
       {
-        // Liber Resh is the solar adoration — sunrise, noon, sunset, midnight.
+        // Solar adorations (Liber Resh) — sunrise, noon, sunset, midnight.
+        // The set-selection surface, like lunar; the /daily-practice/resh
+        // config lives on beside it.
         key: "solaradorations",
-        to: "/daily-practice/resh",
+        to: "/adorations/solar",
         label: "Solar adorations",
         practice: "solarAdorations",
         glyph: "☉",

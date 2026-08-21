@@ -73,9 +73,14 @@ const AstrologyRoute = lazy(() =>
     default: m.AstrologyRoute,
   })),
 );
-const LunarAdorationsRoute = lazy(() =>
-  import("./routes/LunarAdorationsRoute.js").then((m) => ({
-    default: m.LunarAdorationsRoute,
+const LunarAdorationSetsRoute = lazy(() =>
+  import("./routes/AdorationSetsRoute.js").then((m) => ({
+    default: m.LunarAdorationSetsRoute,
+  })),
+);
+const SolarAdorationSetsRoute = lazy(() =>
+  import("./routes/AdorationSetsRoute.js").then((m) => ({
+    default: m.SolarAdorationSetsRoute,
   })),
 );
 const RitualsRoute = lazy(() =>
@@ -731,6 +736,7 @@ function navKeyForPath(pathname: string): PracticeNavKey | undefined {
   // Practices tier (phone mirror): the solar adoration is Liber Resh, so its
   // /daily-practice/resh URL must be matched before the bare /daily-practice.
   if (pathname.startsWith("/daily-practice/resh")) return "solaradorations";
+  if (pathname.startsWith("/adorations/solar")) return "solaradorations";
   if (pathname.startsWith("/adorations/lunar")) return "lunaradorations";
   if (pathname.startsWith("/rituals")) return "rituals";
   if (pathname.startsWith("/workings")) return "workings";
@@ -965,7 +971,8 @@ function ShellRoutes() {
             <Route path="/synchronicities" element={<SynchronicityLogRoute />} />
             <Route path="/daily-practice" element={<DailyPracticeRoute />} />
             <Route path="/daily-practice/resh" element={<LiberReshRoute />} />
-            <Route path="/adorations/lunar" element={<LunarAdorationsRoute />} />
+            <Route path="/adorations/lunar" element={<LunarAdorationSetsRoute />} />
+            <Route path="/adorations/solar" element={<SolarAdorationSetsRoute />} />
             <Route path="/rituals" element={<RitualsRoute />} />
             <Route path="/workings" element={<WorkingsRoute />} />
             <Route path="/meditation" element={<MeditationRoute />} />

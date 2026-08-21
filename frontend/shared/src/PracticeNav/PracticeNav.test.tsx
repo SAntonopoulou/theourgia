@@ -119,7 +119,7 @@ describe("PracticeNav — the phone drawer, mirrored", () => {
     const { container } = render(<PracticeNav />);
     const order = [
       "/adorations/lunar",
-      "/daily-practice/resh",
+      "/adorations/solar",
       "/rituals",
       "/workings",
       "/meditation",
@@ -168,7 +168,7 @@ describe("PracticeNav — the phone drawer, mirrored", () => {
 
   it("shows all built practices when the on/off set is unknown (default-on)", () => {
     const { container } = render(<PracticeNav />);
-    for (const href of ["/adorations/lunar", "/daily-practice/resh", "/gematria"]) {
+    for (const href of ["/adorations/lunar", "/adorations/solar", "/gematria"]) {
       expect(container.querySelector(`a[href="${href}"]`)).not.toBeNull();
     }
   });
