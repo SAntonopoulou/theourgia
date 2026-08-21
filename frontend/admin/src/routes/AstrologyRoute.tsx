@@ -12,6 +12,7 @@
 import {
   Button,
   Chart,
+  ChartDetail,
   ChartLegend,
   type ChartResponse,
   EmptyState,
@@ -581,6 +582,9 @@ export function AstrologyRoute() {
             <div style={{ flex: 1, minWidth: 280 }}>
               <ChartLegend placements={chart.placements} />
             </div>
+          </div>
+          <div style={{ marginTop: 28 }}>
+            <ChartDetail chart={chart} />
           </div>
         </div>
       ) : casting ? (

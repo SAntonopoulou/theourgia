@@ -68,9 +68,10 @@ describe("AstrologyRoute", () => {
   it("casts from the saved location and draws the placements", async () => {
     render(<AstrologyRoute />);
 
-    // The legend lists the server's bodies once the cast returns.
-    expect(await screen.findByText("Sun")).toBeInTheDocument();
-    expect(screen.getByText("Moon")).toBeInTheDocument();
+    // The bodies reach the surface once the cast returns — they appear in both
+    // the legend and the dignities table, so there is more than one of each.
+    expect((await screen.findAllByText("Sun")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Moon").length).toBeGreaterThan(0);
 
     // It cast at the user's stored coordinates.
     expect(mocks.getChart).toHaveBeenCalledWith(
@@ -79,5 +80,10 @@ describe("AstrologyRoute", () => {
 
     // The angles are read off the returned houses.
     expect(screen.getByText(/Ascendant/)).toBeInTheDocument();
+
+    // The traditional reading is derived and shown: the Sun below the horizon
+    // (house 5) makes this a nocturnal chart, and the Lots are named.
+    expect(screen.getByText(/nocturnal/i)).toBeInTheDocument();
+    expect(screen.getByText("Fortune")).toBeInTheDocument();
   });
 });
