@@ -668,7 +668,14 @@ const SigilGeneratorRoute = lazy(() =>
 const RitualFeed = lazy(() =>
   import("./routes/RitualFeed.js").then((m) => ({ default: m.RitualFeed })),
 );
-const Settings = lazy(() => import("./routes/Settings.js").then((m) => ({ default: m.Settings })));
+const AppearanceRoute = lazy(() =>
+  import("./routes/AppearanceRoute.js").then((m) => ({ default: m.AppearanceRoute })),
+);
+const PracticesSettingsRoute = lazy(() =>
+  import("./routes/PracticesSettingsRoute.js").then((m) => ({
+    default: m.PracticesSettingsRoute,
+  })),
+);
 const AccountSettingsRoute = lazy(() =>
   import("./routes/AccountSettingsRoute.js").then((m) => ({
     default: m.AccountSettingsRoute,
@@ -1143,10 +1150,17 @@ function ShellRoutes() {
             <Route path="/settings/sessions" element={<SessionsAndDevicesRoute />} />
             <Route path="/settings/linked-applications" element={<LinkedApplicationsRoute />} />
             <Route path="/settings/accessibility" element={<AccessibilityAndMotionRoute />} />
-            <Route path="/settings/preferences" element={<Settings />} />
+            <Route path="/settings/appearance" element={<AppearanceRoute />} />
+            {/* The old /settings/preferences hub is retired — its one real
+                surface is now /settings/appearance. Redirect stale links. */}
+            <Route
+              path="/settings/preferences"
+              element={<Navigate to="/settings/appearance" replace />}
+            />
             {/* Direct deep-link to the built-in-practice toggles, so "manage
-                practices" from Today lands straight on them (20 Aug). */}
-            <Route path="/settings/practices" element={<Settings initialSection="practices" />} />
+                practices" from Today lands straight on them (20 Aug). Now the
+                dedicated page, not the retired hub's practices tab. */}
+            <Route path="/settings/practices" element={<PracticesSettingsRoute />} />
             <Route path="/comments-moderation" element={<CommentModerationRoute />} />
             <Route path="/settings/keys" element={<KeyRotationRoute />} />
             <Route path="/settings/webauthn" element={<WebAuthnEnrollmentRoute />} />

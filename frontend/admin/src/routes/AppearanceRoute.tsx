@@ -1,109 +1,27 @@
 /**
- * Settings.
+ * Appearance — theme, language, font roles and the basic accessibility
+ * switches. Reached from the one settings hub (``/settings``) at
+ * ``/settings/appearance``.
  *
- * Composition tracks ``Theourgia Settings.dc.html``:
- *   Topbar  · "Settings" + "Appearance, security, networks & plugins".
- *   Subnav  · 8 sections (Account · Security & encryption · Networks &
- *             federation · Plugins · Appearance (default) · Accessibility ·
- *             Billing · About).
- *   Body    · Appearance section ships first with theme cards, mode
- *             toggle, font-role table, accessibility switches, and the
- *             encryption-per-content-type panel.
- *
- * Other sections render a "lands soon" stub until their backend wiring
- * arrives. The earlier Phase-02 identity-management UI moves into the
- * Account section in a later batch.
+ * This was once a nine-tab "Settings" hub whose other eight tabs were
+ * either stubs or duplicated dedicated routes the ``/settings`` hub
+ * already links to (sessions, accessibility, networks, plugins, billing).
+ * It parallelled — and competed with — that hub, which is the "two
+ * settings screens" disjointedness Sophia flagged. The stub hub is
+ * retired; only its one real, unique surface (Appearance) survives, now
+ * a plain sub-page of the single hub.
  */
 
 import {
-  applyThemeState,
   LanguagePicker,
   type Mode,
-  readThemeState,
   type Theme,
+  applyThemeState,
+  readThemeState,
   useTopbar,
 } from "@theourgia/shared";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-
-import { PracticesSettingsRoute } from "./PracticesSettingsRoute.js";
-
-type SectionKey =
-  | "account"
-  | "practices"
-  | "security"
-  | "networks"
-  | "plugins"
-  | "appearance"
-  | "accessibility"
-  | "billing"
-  | "about";
-
-const SECTIONS: { key: SectionKey; label: string }[] = [
-  { key: "account", label: "Account" },
-  { key: "practices", label: "Practices" },
-  { key: "security", label: "Security & encryption" },
-  { key: "networks", label: "Networks & federation" },
-  { key: "plugins", label: "Plugins" },
-  { key: "appearance", label: "Appearance" },
-  { key: "accessibility", label: "Accessibility" },
-  { key: "billing", label: "Billing" },
-  { key: "about", label: "About" },
-];
-
-function Subnav({
-  active,
-  onChange,
-}: {
-  active: SectionKey;
-  onChange: (k: SectionKey) => void;
-}) {
-  return (
-    <nav
-      className="scroll st-side"
-      style={{
-        flex: "none",
-        width: 212,
-        borderRight: "1px solid var(--line)",
-        background: "var(--bg-2)",
-        padding: "18px 14px",
-        overflowY: "auto",
-        overflowX: "hidden",
-        minHeight: 0,
-        fontFamily: "var(--font-ui)",
-        fontSize: 13.5,
-      }}
-    >
-      {SECTIONS.map((s) => {
-        const selected = s.key === active;
-        return (
-          <button
-            key={s.key}
-            type="button"
-            onClick={() => onChange(s.key)}
-            style={{
-              display: "block",
-              width: "100%",
-              padding: "9px 12px",
-              borderRadius: "var(--r-md, 8px)",
-              color: selected ? "var(--ink)" : "var(--ink-soft)",
-              background: selected ? "var(--accent-soft)" : "transparent",
-              boxShadow: selected ? "inset 2px 0 0 var(--accent)" : "none",
-              border: "none",
-              fontFamily: "inherit",
-              fontSize: "inherit",
-              cursor: "pointer",
-              textAlign: "left",
-              marginBottom: 2,
-            }}
-          >
-            {s.label}
-          </button>
-        );
-      })}
-    </nav>
-  );
-}
 
 function ThemeCard({
   theme,
@@ -358,9 +276,7 @@ function AppearanceSection() {
   const hc = a11y.contrast;
   const rm = a11y.reducedMotion;
   const lt = a11y.textScale > 1;
-  const applyA11y = (
-    patch: Partial<typeof a11y>,
-  ) => {
+  const applyA11y = (patch: Partial<typeof a11y>) => {
     const next = { ...a11y, ...patch };
     setA11y(next);
     writeA11yPrefs(next);
@@ -583,8 +499,8 @@ function AppearanceSection() {
           margin: "0 0 16px",
         }}
       >
-        Set the interface language. The catalog ships English, Modern Greek (Ελληνικά), and
-        Hebrew (עברית); right-to-left scripts flip the layout automatically.
+        Set the interface language. The catalog ships English, Modern Greek (Ελληνικά), and Hebrew
+        (עברית); right-to-left scripts flip the layout automatically.
       </p>
       <div style={{ marginBottom: 28 }}>
         <LanguagePicker label="Interface language" />
@@ -636,8 +552,7 @@ function AppearanceSection() {
           lineHeight: 1.55,
         }}
       >
-        For finer control (contrast levels · text-scale slider ·
-        autoplay), open the dedicated{" "}
+        For finer control (contrast levels · text-scale slider · autoplay), open the dedicated{" "}
         <Link to="/settings/accessibility" style={{ color: "var(--accent)" }}>
           Accessibility &amp; motion
         </Link>{" "}
@@ -647,124 +562,18 @@ function AppearanceSection() {
   );
 }
 
-// Sections that have a dedicated route on the admin nav — the
-// subnav here just points to them so a practitioner following the
-// design's expected layout still ends up on the real page.
-const SECTION_HREF: Partial<Record<SectionKey, string>> = {
-  account: "/settings",
-  security: "/settings/sessions",
-  networks: "/networks",
-  plugins: "/plugins",
-  accessibility: "/settings/accessibility",
-  billing: "/pricing-distribution",
-};
-
-function StubSection({ section }: { section: SectionKey }) {
-  const label = SECTIONS.find((s) => s.key === section)?.label ?? "Section";
-  const href = SECTION_HREF[section];
-  return (
-    <div style={{ maxWidth: 680 }}>
-      <h2
-        style={{
-          fontFamily: "var(--font-display, var(--font-serif))",
-          fontSize: 24,
-          margin: "0 0 4px",
-        }}
-      >
-        {label}
-      </h2>
-      <p
-        style={{
-          fontFamily: "var(--font-ui)",
-          fontSize: 13.5,
-          color: "var(--ink-mute)",
-          margin: "0 0 22px",
-        }}
-      >
-        The dedicated {label.toLowerCase()} surface lives at its own route.
-      </p>
-      {href ? (
-        <Link
-          to={href}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "9px 16px",
-            borderRadius: "var(--r-md, 8px)",
-            background: "var(--accent)",
-            color: "var(--accent-ink)",
-            fontFamily: "var(--font-ui)",
-            fontWeight: 700,
-            fontSize: 13.5,
-            border: "none",
-            textDecoration: "none",
-          }}
-        >
-          Open {label} →
-        </Link>
-      ) : (
-        <div
-          style={{
-            padding: 24,
-            border: "1px solid var(--line)",
-            borderRadius: "var(--r-lg, 14px)",
-            background: "var(--bg-2)",
-            fontFamily: "var(--font-serif)",
-            fontSize: 14.5,
-            lineHeight: 1.55,
-            color: "var(--ink-mute)",
-            textAlign: "center",
-          }}
-        >
-          {label} controls will appear here once the underlying systems land.
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function Settings({ initialSection = "appearance" }: { initialSection?: SectionKey } = {}) {
-  const [section, setSection] = useState<SectionKey>(initialSection);
+export function AppearanceRoute() {
   useTopbar(
     () => ({
-      title: "Settings",
-      subtitle: "Appearance, security, networks & plugins",
+      title: "Appearance",
+      subtitle: "Theme, language & display",
     }),
     [],
   );
 
   return (
-    <div
-      className="st-cols"
-      style={{
-        // Cancels the shell padding exactly — a hardcoded -28px overshoots
-        // on phones where --shell-pad is 16 (8/8 sweep).
-        margin: "0 calc(-1 * var(--shell-pad, 28px))",
-        display: "flex",
-        minHeight: 0,
-      }}
-    >
-      <Subnav active={section} onChange={setSection} />
-      <div
-        className="scroll"
-        style={{
-          flex: 1,
-          minWidth: 0,
-          overflowY: "auto",
-          overflowX: "hidden",
-          minHeight: 0,
-          padding: "30px 34px",
-        }}
-      >
-        {section === "appearance" ? (
-          <AppearanceSection />
-        ) : section === "practices" ? (
-          <PracticesSettingsRoute />
-        ) : (
-          <StubSection section={section} />
-        )}
-      </div>
+    <div style={{ padding: "4px 2px" }}>
+      <AppearanceSection />
     </div>
   );
 }

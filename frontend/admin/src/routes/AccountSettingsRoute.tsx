@@ -45,12 +45,23 @@ const PACKS_SECTION = {
   ],
 };
 
+// Appearance is the one real surface rescued from the retired /settings/
+// preferences hub — theme, language, font roles, basic a11y switches. It
+// belongs on the single hub, not a parallel one.
+const APPEARANCE_SECTION = {
+  key: "appearance" as const,
+  title: "Appearance",
+  sub: "Theme, language and how the vault is displayed",
+  links: [{ label: "Theme & display", href: appHref("/settings/appearance") }],
+};
+
 // The shared DEFAULT_SECTIONS carry raw absolute hrefs ("/settings/keys").
 // Served under the /app basename those escape the SPA, so resolve every
 // internal link through appHref() once at module scope.
 const SECTIONS = [
   PRACTICE_SECTION,
   PACKS_SECTION,
+  APPEARANCE_SECTION,
   ...AccountSettingsCopy.DEFAULT_SECTIONS.map((section) => ({
     ...section,
     links: section.links.map((l) => (l.href.startsWith("/") ? { ...l, href: appHref(l.href) } : l)),

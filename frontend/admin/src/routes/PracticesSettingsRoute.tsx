@@ -18,11 +18,21 @@ import {
   Skeleton,
   Switch,
   Toast,
+  useTopbar,
 } from "@theourgia/shared";
 
 import { usePractices, useSetPractices } from "../data/usePractices.js";
 
 export function PracticesSettingsRoute() {
+  // Its own topbar now it stands alone — it used to inherit the retired
+  // Settings hub's "Settings" bar; routed directly, it must set its own.
+  useTopbar(
+    () => ({
+      title: "Practices",
+      subtitle: "Turn the built-in disciplines on or off",
+    }),
+    [],
+  );
   // Shared cache — the same one Today reads, so a toggle here shows there with
   // no reload. The mutation updates the cache optimistically.
   const query = usePractices();
