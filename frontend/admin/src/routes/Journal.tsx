@@ -345,11 +345,13 @@ function EntryRow({
   isLast,
   now,
   onOpen,
+  onArchive,
 }: {
   entry: EntryRecord;
   isLast: boolean;
   now: Date;
   onOpen: (id: string) => void;
+  onArchive: (entry: EntryRecord) => void;
 }) {
   const color = TYPE_COLOR[entry.type];
   const label = TYPE_LABEL[entry.type];
@@ -423,6 +425,34 @@ function EntryRow({
         {/* Tag chips + visibility marker — both stubbed until backend supports
             tags + ACL. Empty row keeps the layout honest. */}
       </div>
+      {/* Delete (archive) — stops propagation so it doesn't also open the
+          entry; the row itself is a role="button". Keydown is swallowed too,
+          or Enter on the button would bubble up and open the entry. */}
+      <button
+        type="button"
+        className="entry-row__delete"
+        aria-label={`Delete ${entry.title || "entry"}`}
+        title="Delete entry"
+        onClick={(e) => {
+          e.stopPropagation();
+          onArchive(entry);
+        }}
+        onKeyDown={(e) => e.stopPropagation()}
+        style={{
+          flex: "none",
+          alignSelf: "center",
+          border: "none",
+          background: "transparent",
+          color: "var(--ink-mute)",
+          cursor: "pointer",
+          fontSize: 15,
+          lineHeight: 1,
+          padding: 6,
+          borderRadius: "var(--r-sm, 6px)",
+        }}
+      >
+        ✕
+      </button>
     </article>
   );
 }
@@ -432,11 +462,13 @@ function GroupedSection({
   entries,
   now,
   onOpen,
+  onArchive,
 }: {
   heading: string;
   entries: EntryRecord[];
   now: Date;
   onOpen: (id: string) => void;
+  onArchive: (entry: EntryRecord) => void;
 }) {
   if (entries.length === 0) return null;
   return (
@@ -470,6 +502,7 @@ function GroupedSection({
             isLast={i === entries.length - 1}
             now={now}
             onOpen={onOpen}
+            onArchive={onArchive}
           />
         ))}
       </div>
@@ -900,6 +933,28 @@ export function Journal() {
     navigate(`/editor/${id}`);
   }
 
+  async function archiveEntry(entry: EntryRecord): Promise<void> {
+    const name = entry.title?.trim() || "this entry";
+    if (
+      !window.confirm(
+        `Delete “${name}”? It is removed from your journal. This can’t be undone here.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      await apiMethods.archiveEntry(entry.id);
+      Toast.push({ tone: "success", title: "Entry deleted" });
+      await entries.refresh();
+    } catch (e) {
+      Toast.push({
+        tone: "error",
+        title: "Could not delete entry",
+        body: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
+
   useTopbar(
     () => ({
       title: "Journal",
@@ -1112,24 +1167,28 @@ export function Journal() {
                   entries={grouped.today}
                   now={now}
                   onOpen={openEntry}
+                  onArchive={archiveEntry}
                 />
                 <GroupedSection
                   heading={groupHeading("thisWeek", now)}
                   entries={grouped.thisWeek}
                   now={now}
                   onOpen={openEntry}
+                  onArchive={archiveEntry}
                 />
                 <GroupedSection
                   heading={groupHeading("thisMonth", now)}
                   entries={grouped.thisMonth}
                   now={now}
                   onOpen={openEntry}
+                  onArchive={archiveEntry}
                 />
                 <GroupedSection
                   heading={groupHeading("earlier", now)}
                   entries={grouped.earlier}
                   now={now}
                   onOpen={openEntry}
+                  onArchive={archiveEntry}
                 />
               </>
             )}

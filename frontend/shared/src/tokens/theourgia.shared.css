@@ -489,6 +489,29 @@ select:focus-visible {
   background: var(--bg-3);
 }
 
+/* The row's delete (archive) button — quiet until the row or the button
+ * itself is hovered, then it warms to the danger colour. */
+.entry-row__delete {
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+.entry-row:hover .entry-row__delete,
+.entry-row:focus-within .entry-row__delete,
+.entry-row__delete:focus-visible {
+  opacity: 1;
+}
+.entry-row__delete:hover,
+.entry-row__delete:focus-visible {
+  color: var(--danger);
+  background: var(--bg-2);
+}
+/* Touch devices have no hover to reveal it — keep it visible there. */
+@media (hover: none) {
+  .entry-row__delete {
+    opacity: 1;
+  }
+}
+
 /* ── Sigil draw-in animation (Sigil Studio) ─────────────────────────────── */
 @keyframes sigil-draw {
   to {
