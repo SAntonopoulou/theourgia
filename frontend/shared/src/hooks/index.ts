@@ -1,6 +1,6 @@
 export { useApiCall } from "./useApiCall.js";
-export { moonArc } from "./moonArc.js";
-export type { MoonArc } from "./moonArc.js";
+export { moonArc, sunArc } from "./moonArc.js";
+export type { MoonArc, SunArc } from "./moonArc.js";
 export type {
   ApiCallState,
   ApiCallStatus,

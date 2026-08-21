@@ -32,6 +32,61 @@ export function useAdorationSets() {
   });
 }
 
+const LUNAR_OBSERVANCE_KEYS = new Set([
+  "moonrise",
+  "upperCulmination",
+  "moonset",
+  "lowerCulmination",
+]);
+
+function localDay(d: Date): string {
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+/**
+ * The lunar adoration streak — consecutive days a lunar station was kept,
+ * counted back from today (or yesterday, if today is not yet kept, so an alive
+ * streak is not shown as broken before the day is done). Computed from the
+ * synced record, the web counterpart of the solar `streak_days` the Resh
+ * endpoint returns.
+ */
+export async function fetchLunarStreakDays(): Promise<number> {
+  const days = new Set<string>();
+  let since = 0;
+  for (;;) {
+    const page = await apiGet<PullPage>(`/record/entries?since=${since}&limit=500`);
+    for (const e of page.entries ?? []) {
+      if (e.kind !== "observance" || e.deleted_at_utc) continue;
+      const doc = e.doc as { subjectKey?: unknown; observedAt?: unknown } | null;
+      const key = typeof doc?.subjectKey === "string" ? doc.subjectKey : "";
+      const at = typeof doc?.observedAt === "string" ? doc.observedAt : "";
+      if (!LUNAR_OBSERVANCE_KEYS.has(key) || at.length === 0) continue;
+      days.add(localDay(new Date(at)));
+    }
+    since = page.next_since;
+    if (!page.more) break;
+  }
+
+  const cursor = new Date();
+  if (!days.has(localDay(cursor))) {
+    cursor.setDate(cursor.getDate() - 1);
+    if (!days.has(localDay(cursor))) return 0;
+  }
+  let streak = 0;
+  while (days.has(localDay(cursor))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+export function useLunarStreak() {
+  return useQuery<number, Error>({
+    queryKey: ["lunar-streak", "record"],
+    queryFn: fetchLunarStreakDays,
+  });
+}
+
 let counter = 0;
 function newId(prefix: string): string {
   try {

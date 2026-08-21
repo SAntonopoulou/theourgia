@@ -19,6 +19,27 @@ export interface MoonArc {
   isUp: boolean;
 }
 
+export interface SunArc {
+  /** 0..1 through daylight (sunrise → sunset); -1 at polar night. */
+  daylightFraction: number;
+  isDay: boolean;
+}
+
+/** Where the sun is on its day-arc — the fraction SunArcDiagram is drawn from.
+ *  Simpler than the moon: sunrise and sunset are the same civil day except at
+ *  the poles, where it falls back to the sun's actual altitude. */
+export function sunArc(now: Date, lat: number, lng: number): SunArc {
+  const times = SunCalc.getTimes(now, lat, lng);
+  const rise = times.sunrise?.getTime();
+  const set = times.sunset?.getTime();
+  const t = now.getTime();
+  if (rise == null || set == null || Number.isNaN(rise) || Number.isNaN(set) || set <= rise) {
+    const up = SunCalc.getPosition(now, lat, lng).altitude > 0;
+    return { daylightFraction: up ? 0.5 : -1, isDay: up };
+  }
+  return { daylightFraction: (t - rise) / (set - rise), isDay: t >= rise && t <= set };
+}
+
 export function moonArc(now: Date, lat: number, lng: number): MoonArc {
   const isUp = SunCalc.getMoonPosition(now, lat, lng).altitude > 0;
   if (!isUp) return { aboveFraction: -1, isUp: false };

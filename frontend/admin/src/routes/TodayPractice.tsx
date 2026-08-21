@@ -34,7 +34,6 @@ import {
   type ReshTodayRead,
   type ReshTransitionWire,
   Skeleton,
-  SunArcDiagram,
   Toast,
   type TodayContextRead,
   activeSetFor,
@@ -372,15 +371,6 @@ export function TodayRiteRow({ lat, lng }: TodayRiteRowProps) {
   ).filter((s): s is ReshStationRead => s !== undefined);
   const next = ordered.find((s) => s.at !== null && new Date(s.at).getTime() > now) ?? null;
 
-  // Sun-arc position from the day's real transitions.
-  const sunrise = ordered.find((s) => s.transition === "sunrise")?.at ?? null;
-  const sunset = ordered.find((s) => s.transition === "sunset")?.at ?? null;
-  const daylightFraction =
-    sunrise && sunset
-      ? (now - new Date(sunrise).getTime()) /
-        Math.max(1, new Date(sunset).getTime() - new Date(sunrise).getTime())
-      : null;
-
   const keptGrid = buildKeptDays(
     Array.isArray(adorations.data) ? adorations.data : [],
     minimumStation,
@@ -596,34 +586,9 @@ export function TodayRiteRow({ lat, lng }: TodayRiteRowProps) {
           })}
         </div>
 
-        {/* Sun arc + dusk-kept record */}
-        <div
-          className="td-two"
-          style={{
-            display: "grid",
-            gap: 13,
-            alignItems: "stretch",
-          }}
-        >
-          {daylightFraction !== null ? (
-            <SunArcDiagram
-              daylightFraction={daylightFraction}
-              caption={`${STATION_LABEL.sunrise} and ${STATION_LABEL.noon.toLowerCase()} pass whether or not they are kept; ${minimumLabel.toLowerCase()} is the one the record asks for.`}
-            />
-          ) : (
-            <div
-              style={{
-                border: "1px dashed var(--line)",
-                borderRadius: "var(--r-lg, 14px)",
-                padding: "15px 16px",
-                fontFamily: "var(--font-ui)",
-                fontSize: 12.5,
-                color: "var(--ink-mute)",
-              }}
-            >
-              No sun arc at this latitude today (polar day or night).
-            </div>
-          )}
+        {/* The dusk-kept record. The sun's arc now lives beside the moon's in
+            the sun/moon overview at the top of Today (CelestialTrackers). */}
+        <div>
           <ReshStreakGrid
             days={keptGrid}
             streakOverride={streakDays}

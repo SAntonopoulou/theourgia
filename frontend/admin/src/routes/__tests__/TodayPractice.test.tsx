@@ -260,11 +260,11 @@ describe("TodayRiteRow", () => {
     const { container } = render(<TodayRiteRow lat={37.98} lng={23.72} />);
     await screen.findByText("The four stations");
     // v1-068: .td-rite is the container-query root; .td-stations stacks
-    // 4→2→1 columns and .td-two collapses to one column against the REAL
-    // content-column width (theourgia.shared.css @container block).
+    // 4→2→1 columns against the REAL content-column width
+    // (theourgia.shared.css @container block). The sun arc moved to the
+    // sun/moon overview at the top of Today, so .td-two is no longer here.
     expect(container.querySelector("section.td-rite")).not.toBeNull();
     expect(container.querySelector(".td-stations")).not.toBeNull();
-    expect(container.querySelector(".td-two")).not.toBeNull();
   });
 
   it("states the penalty rule once under the header — never per card (v1-068)", async () => {

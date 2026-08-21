@@ -35,12 +35,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
-import { DayBook } from "./DayBook.js";
-import { TodayAgenda } from "./TodayAgenda.js";
 import { createEntry, useRecentEntries } from "../data/useEntries.js";
 import { useMyLocation } from "../data/useLocation.js";
 import { usePractices } from "../data/usePractices.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
+import { CelestialTrackers } from "./CelestialTrackers.js";
+import { DayBook } from "./DayBook.js";
+import { TodayAgenda } from "./TodayAgenda.js";
 import {
   AwaitingJudgmentCard,
   TodayLunarChip,
@@ -927,6 +928,16 @@ export function Today() {
                 today and the working items, each one-tap keepable (self-hides
                 when there's nothing scheduled or running). */}
             {session !== null ? <TodayAgenda /> : null}
+
+            {/* The sun's course and the moon's, side by side — each with its
+                adoration streak below, so a streak stays under its own tracker
+                as they stack on a narrow screen. */}
+            <CelestialTrackers
+              lat={location.lat}
+              lng={location.lng}
+              solarOn={practiceOn("solarAdorations")}
+              lunarOn={practiceOn("lunarAdorations")}
+            />
 
             {/* H12 — the lunar-day chip: what day it is in the Attic
                 calendar and what that day asks. Gated by lunar adorations,
