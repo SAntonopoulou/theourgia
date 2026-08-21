@@ -33,6 +33,8 @@ import {
   usePackedAdorationSets,
   writeStationAdoration,
 } from "../data/adorationRecords.js";
+import { useMyLocation } from "../data/useLocation.js";
+import { TodayLunarRow, TodayRiteRow } from "./TodayPractice.js";
 
 const cellInput = {
   width: "100%",
@@ -63,6 +65,7 @@ export function AdorationSetsRoute({
   const sets = all.filter((s) => s.body === body);
   const packed = usePackedAdorationSets();
   const offered = (packed.data ?? []).filter((s) => s.body === body);
+  const location = useMyLocation({ enabled: true });
   const [busy, setBusy] = useState(false);
   // ⚠ A ref, not `busy`: `setBusy(true)` is async, so a second click (or a
   // double-fired handler) in the same tick sails past `disabled={busy}` and
@@ -112,6 +115,19 @@ export function AdorationSetsRoute({
         and make it active; the active set is the one Today reads. Nothing is said until you do:
         there is no default set.
       </p>
+
+      {/* Today's stations, drawn as on the home page — the practice itself, not
+          just the set editor. The same rows Today shows, so a set activated
+          below appears here at once. */}
+      {location.data ? (
+        <div style={{ marginBottom: 24 }}>
+          {body === "lunar" ? (
+            <TodayLunarRow lat={location.data.lat} lng={location.data.lng} />
+          ) : (
+            <TodayRiteRow lat={location.data.lat} lng={location.data.lng} />
+          )}
+        </div>
+      ) : null}
 
       <div
         style={{
