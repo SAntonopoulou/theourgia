@@ -90,6 +90,155 @@ function lunarTimeLabel(at: string | null): string {
   return new Date(at).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
 }
 
+/** One lunar station, drawn as a card in the same language as the solar
+ *  Resh stations — an emblem, the station name, its time, and the adoration's
+ *  words (clamped behind "Show adoration" when long). So the lunar office reads
+ *  as the same kind of thing as the solar one, not a wall of text beside it. */
+function LunarStationCard({
+  glyph,
+  label,
+  timeLabel,
+  script,
+  isNext,
+  isPassed,
+}: {
+  glyph: string;
+  label: string;
+  timeLabel: string;
+  script: string;
+  isNext: boolean;
+  isPassed: boolean;
+}) {
+  const long = script.length > 180;
+  const [open, setOpen] = useState(false);
+  const clamped = long && !open;
+  return (
+    <article
+      style={{
+        background: isNext ? "var(--bg-3)" : "var(--bg-2)",
+        border: `1px solid ${isNext ? "var(--line-2)" : "var(--line)"}`,
+        boxShadow: isNext ? "inset 0 0 0 1.5px var(--accent-soft)" : "none",
+        borderRadius: "var(--r-lg, 14px)",
+        padding: "15px 16px",
+        opacity: isPassed && !isNext ? 0.62 : 1,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+        <span
+          aria-hidden="true"
+          style={{
+            width: 34,
+            height: 34,
+            flex: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "50%",
+            border: `1px solid ${isNext ? "var(--line-2)" : "var(--line)"}`,
+            color: isNext ? "var(--accent)" : "var(--ink-soft)",
+            fontSize: 16,
+          }}
+        >
+          {glyph}
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 18, color: "var(--ink)" }}>
+            {label}
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "baseline",
+                gap: 5,
+                padding: "2px 8px",
+                borderRadius: 6,
+                border: "1px solid var(--line)",
+                background: "var(--bg)",
+                fontSize: 12,
+                color: "var(--ink)",
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              {timeLabel}
+            </span>
+            {isNext ? (
+              <span
+                style={{
+                  padding: "2px 8px",
+                  borderRadius: 6,
+                  border: "1px solid var(--line-2)",
+                  background: "var(--accent-soft)",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 10,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  color: "var(--accent)",
+                }}
+              >
+                next
+              </span>
+            ) : null}
+          </div>
+        </div>
+      </div>
+      {script ? (
+        <div style={{ margin: "11px 0 0" }}>
+          <p
+            style={{
+              fontFamily: "var(--font-serif)",
+              fontStyle: "italic",
+              fontSize: 13,
+              lineHeight: 1.5,
+              color: "var(--ink-mute)",
+              margin: 0,
+              ...(clamped
+                ? {
+                    display: "-webkit-box",
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: "vertical" as const,
+                    overflow: "hidden",
+                  }
+                : {}),
+            }}
+          >
+            {script}
+          </p>
+          {long ? (
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              style={{
+                marginTop: 6,
+                background: "transparent",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                fontFamily: "var(--font-ui)",
+                fontSize: 12,
+                color: "var(--ink-mute)",
+              }}
+            >
+              {open ? "Show less" : "Show adoration"}
+            </button>
+          ) : null}
+        </div>
+      ) : (
+        <p
+          style={{
+            margin: "11px 0 0",
+            fontFamily: "var(--font-ui)",
+            fontSize: 12.5,
+            color: "var(--ink-mute)",
+          }}
+        >
+          No words yet — edit the set to give this station its adoration.
+        </p>
+      )}
+    </article>
+  );
+}
+
 /**
  * The four lunar stations of the day — the lunar counterpart of the solar
  * Resh rite, so enabling lunar adorations shows a real rite rather than
@@ -126,58 +275,72 @@ export function TodayLunarRow({ lat, lng }: { lat: number; lng: number }) {
   }
   if (today.status === "error" || !today.data) return null;
 
-  return card(
-    <>
+  const now = Date.now();
+  const stations = today.data.stations;
+  const nextKey = stations.find((s) => s.at && new Date(s.at).getTime() > now)?.key ?? null;
+
+  return (
+    <section
+      style={{
+        border: "1px solid var(--line)",
+        borderRadius: "var(--r-lg, 14px)",
+        background: "var(--bg-2)",
+        overflow: "hidden",
+      }}
+    >
       <div
         style={{
-          fontFamily: "var(--font-ui)",
-          fontSize: 11,
-          textTransform: "uppercase",
-          letterSpacing: "0.06em",
-          color: "var(--ink-mute)",
-          marginBottom: 10,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          padding: "14px 17px",
+          borderBottom: "1px solid var(--line)",
+          flexWrap: "wrap",
         }}
       >
-        Lunar adorations · the four stations
+        <div
+          style={{
+            fontFamily: "var(--font-display, var(--font-serif))",
+            fontSize: 17,
+            color: "var(--ink)",
+          }}
+        >
+          Lunar adorations · the four stations
+        </div>
+        <Link
+          to="/adorations/lunar"
+          style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 12.5,
+            color: "var(--accent)",
+            textDecoration: "none",
+          }}
+        >
+          {activeSet ? `Set: ${activeSet.name} — edit →` : "Choose an adoration set →"}
+        </Link>
       </div>
-      <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
-        {today.data.stations.map((s) => (
-          <li key={s.key} style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
-            <span aria-hidden="true" style={{ width: 18, color: "var(--ink-soft)" }}>
-              {LUNAR_GLYPH[s.key] ?? "·"}
-            </span>
-            <span
-              style={{ flex: 1, fontFamily: "var(--font-ui)", fontSize: 14, color: "var(--ink)" }}
-            >
-              {wordAtStation(activeSet, s.key).trim() || s.label}
-            </span>
-            <time
-              style={{
-                fontFamily: "var(--font-ui)",
-                fontSize: 14,
-                color: "var(--ink-soft)",
-                fontVariantNumeric: "tabular-nums",
-              }}
-            >
-              {lunarTimeLabel(s.at)}
-            </time>
-          </li>
-        ))}
-      </ul>
-      <Link
-        to="/adorations/lunar"
+      <div
         style={{
-          display: "inline-block",
-          marginTop: 12,
-          fontFamily: "var(--font-ui)",
-          fontSize: 12.5,
-          color: "var(--ink-mute)",
-          textDecoration: "none",
+          padding: "14px 17px",
+          display: "grid",
+          gap: 12,
+          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
         }}
       >
-        {activeSet ? `Adoration set: ${activeSet.name} — edit →` : "Choose an adoration set →"}
-      </Link>
-    </>,
+        {stations.map((s) => (
+          <LunarStationCard
+            key={s.key}
+            glyph={LUNAR_GLYPH[s.key] ?? "·"}
+            label={s.label}
+            timeLabel={lunarTimeLabel(s.at)}
+            script={wordAtStation(activeSet, s.key).trim()}
+            isNext={s.key === nextKey}
+            isPassed={!!s.at && new Date(s.at).getTime() < now}
+          />
+        ))}
+      </div>
+    </section>
   );
 }
 
