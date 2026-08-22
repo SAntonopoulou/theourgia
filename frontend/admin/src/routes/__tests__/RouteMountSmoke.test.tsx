@@ -282,6 +282,36 @@ const ROUTES: ReadonlyArray<[string, () => Promise<{ Component: React.ComponentT
         Component: m.TetraktysLadderRoute,
       })),
   ],
+  // The walk (22 Aug) — the practice surfaces the adopt-from-packs and
+  // in-context install program reworked; none were covered here before.
+  ["RitualsRoute", () => import("../RitualsRoute.js").then((m) => ({ Component: m.RitualsRoute }))],
+  [
+    "WorkingsRoute",
+    () => import("../WorkingsRoute.js").then((m) => ({ Component: m.WorkingsRoute })),
+  ],
+  [
+    "MeditationRoute",
+    () => import("../MeditationRoute.js").then((m) => ({ Component: m.MeditationRoute })),
+  ],
+  [
+    "PranayamaRoute",
+    () => import("../PranayamaRoute.js").then((m) => ({ Component: m.PranayamaRoute })),
+  ],
+  [
+    "CorrespondenceRoute",
+    () => import("../CorrespondenceRoute.js").then((m) => ({ Component: m.CorrespondenceRoute })),
+  ],
+  [
+    "PackFeedRoute",
+    () => import("../PackFeedRoute.js").then((m) => ({ Component: m.PackFeedRoute })),
+  ],
+  [
+    "AdorationSetsRoute (lunar)",
+    () =>
+      import("../AdorationSetsRoute.js").then((m) => ({
+        Component: () => <m.AdorationSetsRoute body="lunar" title="Lunar adorations" subtitle="" />,
+      })),
+  ],
 ];
 
 describe("route mount smoke suite", () => {
