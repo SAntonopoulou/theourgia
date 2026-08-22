@@ -18,6 +18,7 @@ import { NavLink } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
 import { writeConsultation } from "../data/keepObservance.js";
+import { ConsultationHistory } from "../lib/ConsultationHistory.js";
 
 function NavLinkAdapter({ to, current, children, style, onClick }: OracleTabsLinkProps) {
   return (
@@ -92,6 +93,7 @@ export function GeomancyRoute() {
             )
           }
         />
+        <ConsultationHistory systemId="geomancy" />
       </>
     ),
     [],

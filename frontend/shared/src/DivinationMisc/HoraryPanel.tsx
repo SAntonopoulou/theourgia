@@ -6,7 +6,7 @@
  * the right ending in the verbatim provisional judgement.
  */
 
-import { type CSSProperties } from "react";
+import { type CSSProperties, useState } from "react";
 
 import {
   HORARY_DEFAULT_STEPS,
@@ -27,6 +27,11 @@ export interface HoraryStepRow {
   note: string;
 }
 
+export interface HoraryPastQuestion {
+  question: string;
+  askedAt: string;
+}
+
 export interface HoraryPanelProps {
   /** Cast-moment caption. Defaults to a placeholder prompt. */
   momentLabel?: string;
@@ -35,6 +40,12 @@ export interface HoraryPanelProps {
   /** Verbatim provisional judgement text. */
   provisional?: string;
   onSave?: () => void;
+  /** Cast and keep the QUESTION — the question is the chart's whole
+   *  occasion, so the save button asks for it and refuses without it.
+   *  When provided, this wins over `onSave`. */
+  onCast?: (question: string) => void;
+  /** Questions already asked, newest first. */
+  past?: readonly HoraryPastQuestion[];
   className?: string;
   style?: CSSProperties;
 }
@@ -52,9 +63,12 @@ export function HoraryPanel({
   steps = HORARY_DEFAULT_STEPS,
   provisional = HORARY_PROVISIONAL_DEFAULT,
   onSave,
+  onCast,
+  past,
   className,
   style,
 }: HoraryPanelProps) {
+  const [question, setQuestion] = useState("");
   return (
     <div
       data-component="horary-panel"
@@ -120,6 +134,30 @@ export function HoraryPanel({
       </div>
 
       <aside style={{ flex: "1 1 360px", minWidth: 0 }}>
+        {onCast ? (
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ ...EYEBROW, marginBottom: 8 }}>The question</div>
+            <input
+              data-horary-question
+              value={question}
+              onChange={(event) => setQuestion(event.target.value)}
+              placeholder="Asked in its own words — the chart is cast for the moment of true asking."
+              style={{
+                width: "100%",
+                boxSizing: "border-box",
+                padding: "9px 12px",
+                fontFamily: "var(--font-serif)",
+                fontSize: 14,
+                color: "var(--ink)",
+                background: "var(--bg-2)",
+                borderWidth: 1,
+                borderStyle: "solid",
+                borderColor: "var(--line)",
+                borderRadius: "var(--r-md)",
+              }}
+            />
+          </div>
+        ) : null}
         <div style={{ ...EYEBROW, marginBottom: 12 }}>
           {HORARY_STEPS_EYEBROW}
         </div>
@@ -238,7 +276,17 @@ export function HoraryPanel({
         <button
           type="button"
           data-action="save"
-          onClick={onSave}
+          disabled={onCast ? question.trim() === "" : false}
+          onClick={
+            onCast
+              ? () => {
+                  const asked = question.trim();
+                  if (asked === "") return;
+                  onCast(asked);
+                  setQuestion("");
+                }
+              : onSave
+          }
           style={{
             display: "inline-flex",
             alignItems: "center",
@@ -270,6 +318,49 @@ export function HoraryPanel({
           </svg>
           {HORARY_SAVE_LABEL}
         </button>
+
+        {past && past.length > 0 ? (
+          <div data-horary-past style={{ marginTop: 22 }}>
+            <div style={{ ...EYEBROW, marginBottom: 8 }}>Past questions</div>
+            <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
+              {past.map((one, i) => (
+                <li
+                  // biome-ignore lint/suspicious/noArrayIndexKey: readings arrive newest-first, fixed per render
+                  key={i}
+                  style={{
+                    padding: "8px 0",
+                    borderTopWidth: 1,
+                    borderTopStyle: "solid",
+                    borderTopColor: "var(--line)",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "var(--font-serif)",
+                      fontSize: 14,
+                      color: "var(--ink)",
+                      display: "block",
+                    }}
+                  >
+                    {one.question}
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-ui)",
+                      fontSize: 11.5,
+                      color: "var(--ink-mute)",
+                    }}
+                  >
+                    {new Date(one.askedAt).toLocaleString(undefined, {
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </aside>
     </div>
   );

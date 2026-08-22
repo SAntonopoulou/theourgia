@@ -12,7 +12,7 @@
 import { type CSSProperties, useState } from "react";
 
 import { BibliomancyPanel } from "./BibliomancyPanel.js";
-import { HoraryPanel } from "./HoraryPanel.js";
+import { type HoraryPastQuestion, HoraryPanel } from "./HoraryPanel.js";
 import { MethodTablist } from "./MethodTablist.js";
 import { PendulumPanel } from "./PendulumPanel.js";
 import { type ScrySessionLog, ScryingPanel } from "./ScryingPanel.js";
@@ -27,6 +27,10 @@ export interface DivinationMiscSurfaceProps {
   onSavePendulum?: (entry: unknown) => void;
   onSaveBibliomancy?: (entry: unknown) => void;
   onSaveHorary?: () => void;
+  /** Cast and keep a horary question; wins over `onSaveHorary`. */
+  onCastHorary?: (question: string) => void;
+  /** Horary questions already asked, newest first. */
+  horaryPast?: readonly HoraryPastQuestion[];
   onSaveScrying?: (entry: unknown) => void;
   /** Scrying "Past sessions" rail — from ``GET /api/v1/scrying/sessions``. */
   scryPastSessions?: readonly ScrySessionLog[];
@@ -42,6 +46,8 @@ export function DivinationMiscSurface({
   onSavePendulum,
   onSaveBibliomancy,
   onSaveHorary,
+  onCastHorary,
+  horaryPast,
   onSaveScrying,
   scryPastSessions,
   scryPlanetaryHour,
@@ -72,7 +78,9 @@ export function DivinationMiscSurface({
 
           {method === "pendulum" ? <PendulumPanel onAsk={onSavePendulum} /> : null}
           {method === "biblio" ? <BibliomancyPanel onLog={onSaveBibliomancy} /> : null}
-          {method === "horary" ? <HoraryPanel onSave={onSaveHorary} /> : null}
+          {method === "horary" ? (
+            <HoraryPanel onSave={onSaveHorary} onCast={onCastHorary} past={horaryPast} />
+          ) : null}
           {method === "scrying" ? (
             <ScryingPanel
               onSave={onSaveScrying}

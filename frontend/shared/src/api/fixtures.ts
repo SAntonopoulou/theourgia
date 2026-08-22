@@ -1099,6 +1099,24 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
           seq: 1,
         },
         {
+          id: "rec-6",
+          kind: "consultation",
+          doc: {
+            row: {
+              systemId: "iching",
+              question: "Should the work begin this season?",
+              cast: "Hexagram 46 · Sheng — Pushing Upward · line 2 moving",
+              reading: "Effort in the right direction; small accumulations.",
+              askedAt: day(2, 19),
+              source: "thrown",
+              standing: "read",
+            },
+          },
+          updated_at_utc: day(2, 19),
+          deleted_at_utc: null,
+          seq: 1,
+        },
+        {
           id: "rec-5",
           kind: "reckoning",
           doc: {

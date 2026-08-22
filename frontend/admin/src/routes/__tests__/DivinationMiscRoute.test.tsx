@@ -6,9 +6,8 @@
  *   - pendulum Ask → POST /api/v1/pendulum/readings payload
  *   - scrying save → POST /api/v1/scrying/sessions + …/{id}/end
  *   - error paths toast the bibliomancy-shaped error titles
- *   - horary save shows the honest "Nothing to log" guard (the
- *     designed panel captures neither question nor location, which
- *     POST /api/v1/horary/cast requires) and never posts
+ *   - horary casts the TYPED question through POST /api/v1/horary/cast
+ *     (the panel captures it now) and never fabricates one unasked
  *   - the scrying "Past sessions" rail hydrates from the list endpoint
  */
 
@@ -178,20 +177,44 @@ describe("DivinationMiscRoute — pendulum wiring", () => {
   });
 });
 
-describe("DivinationMiscRoute — horary guard", () => {
-  it("save shows 'Nothing to log' and never fabricates a cast", async () => {
+describe("DivinationMiscRoute — horary", () => {
+  it("save is disabled until a question is asked — never a fabricated cast", async () => {
     render(withProviders(<DivinationMiscRoute />));
     fireEvent.click(screen.getByText("Horary"));
-    fireEvent.click(await screen.findByText("Save chart & reading"));
-    expect(await screen.findByText("Nothing to log")).toBeInTheDocument();
+    const save = await screen.findByText("Save chart & reading");
+    fireEvent.click(save);
     expect(mocks.castHorary).not.toHaveBeenCalled();
   });
 
-  it("the retired 'no data collected' info toast never appears", async () => {
+  it("a typed question casts and keeps through POST /horary/cast", async () => {
+    mocks.castHorary.mockResolvedValue({
+      id: "h1",
+      question: "Will the letter arrive?",
+      asked_at: "2026-08-23T10:00:00Z",
+    });
     render(withProviders(<DivinationMiscRoute />));
     fireEvent.click(screen.getByText("Horary"));
-    fireEvent.click(await screen.findByText("Save chart & reading"));
-    await screen.findByText("Nothing to log");
-    expect(screen.queryByText(/no data collected/)).toBeNull();
+    const input = await screen.findByPlaceholderText(/moment of true asking/);
+    fireEvent.change(input, { target: { value: "Will the letter arrive?" } });
+    fireEvent.click(screen.getByText("Save chart & reading"));
+    await waitFor(() =>
+      expect(mocks.castHorary).toHaveBeenCalledWith(
+        expect.objectContaining({ question: "Will the letter arrive?" }),
+      ),
+    );
+    expect(await screen.findByText("The chart is cast and kept")).toBeInTheDocument();
+  });
+
+  it("past questions hydrate from GET /horary/readings", async () => {
+    mocks.listHoraryReadings.mockResolvedValue([
+      {
+        id: "h2",
+        question: "Is the ship safe?",
+        asked_at: "2026-08-20T09:00:00Z",
+      },
+    ]);
+    render(withProviders(<DivinationMiscRoute />));
+    fireEvent.click(screen.getByText("Horary"));
+    expect(await screen.findByText("Is the ship safe?")).toBeInTheDocument();
   });
 });

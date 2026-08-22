@@ -8,7 +8,7 @@
  * the end call), and the scrying "Past sessions" rail hydrates from
  * GET /api/v1/scrying/sessions. Horary is the one holdout: the
  * designed panel captures neither the question nor the cast location
- * that POST /api/v1/horary/cast requires, so its save shows the same
+ * that POST /api/v1/horary/cast requires — captured by the panel now, so a
  * "Nothing to log" guard bibliomancy uses rather than fabricating a
  * cast — `apiMethods.castHorary` is ready for when the capture
  * fields land.
@@ -31,6 +31,7 @@ import { useCallback, useMemo } from "react";
 import { NavLink } from "react-router-dom";
 
 import { apiClient, apiMethods } from "../data/api.js";
+import { useMyLocation } from "../data/useLocation.js";
 
 function NavLinkAdapter({ to, current, children, style, onClick }: OracleTabsLinkProps) {
   return (
@@ -108,6 +109,24 @@ export function DivinationMiscRoute() {
     }),
     [],
   );
+
+  const location = useMyLocation({ enabled: true });
+  const loc = location.data ?? { lat: 51.4769, lng: 0 };
+
+  const horaryQuery = useQuery({
+    queryKey: ["horary", "readings"],
+    queryFn: async () => apiMethods.listHoraryReadings(),
+    staleTime: 30_000,
+  });
+  const horaryPast = useMemo(
+    () =>
+      (horaryQuery.data ?? []).map((one) => ({
+        question: one.question,
+        askedAt: one.asked_at,
+      })),
+    [horaryQuery.data],
+  );
+  const refetchHorary = horaryQuery.refetch;
 
   const sessionsQuery = useQuery({
     queryKey: ["scrying-sessions"],
@@ -194,16 +213,32 @@ export function DivinationMiscRoute() {
     }
   }, []);
 
-  const handleHorary = useCallback(() => {
-    // The designed horary panel has no question / location capture,
-    // and POST /api/v1/horary/cast requires both — never fabricate a
-    // cast. Same guard shape as bibliomancy's missing-passage case.
-    Toast.push({
-      tone: "warning",
-      title: "Nothing to log",
-      body: "Cast a chart first, then save.",
-    });
-  }, []);
+  // The panel captures the question now — the chart is cast for the
+  // moment of true asking, computed and kept server-side in one act.
+  const handleCastHorary = useCallback(
+    async (question: string) => {
+      try {
+        await apiMethods.castHorary({
+          question,
+          latitude: loc.lat,
+          longitude: loc.lng,
+        });
+        Toast.push({
+          tone: "success",
+          title: "The chart is cast and kept",
+          body: "Read it under Past questions — perfection and judgement can be added as they come.",
+        });
+        void refetchHorary();
+      } catch (err) {
+        Toast.push({
+          tone: "error",
+          title: "Couldn't cast the question",
+          body: err instanceof Error ? err.message : String(err),
+        });
+      }
+    },
+    [loc.lat, loc.lng, refetchHorary],
+  );
 
   const handleScrying = useCallback(
     async (entryUnknown: unknown) => {
@@ -259,12 +294,13 @@ export function DivinationMiscRoute() {
         <DivinationMiscSurface
           onSavePendulum={(entry) => void handlePendulum(entry)}
           onSaveBibliomancy={(entry) => void handleBibliomancy(entry)}
-          onSaveHorary={handleHorary}
+          onCastHorary={(q) => void handleCastHorary(q)}
+          horaryPast={horaryPast}
           onSaveScrying={(entry) => void handleScrying(entry)}
           scryPastSessions={scryPastSessions}
         />
       </>
     ),
-    [handlePendulum, handleBibliomancy, handleHorary, handleScrying, scryPastSessions],
+    [handlePendulum, handleBibliomancy, handleCastHorary, handleScrying, scryPastSessions, horaryPast],
   );
 }
