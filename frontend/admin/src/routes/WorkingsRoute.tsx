@@ -32,6 +32,7 @@ import {
 } from "../data/keepObservance.js";
 import { type PackedWorking, adoptWorking, usePackedWorkings } from "../data/packedWorkings.js";
 import { useMyLocation } from "../data/useLocation.js";
+import { PracticePacks } from "../lib/PracticePacks.js";
 import { apiGet } from "../lib/api.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
 
@@ -324,6 +325,9 @@ export function WorkingsRoute() {
               onEdit={(w) => setEditing({ working: w })}
             />
           )}
+
+          {/* The working packs themselves, installable in context. */}
+          <PracticePacks kinds={["working"]} onInstalled={() => void packedWorkings.refetch()} />
 
           {/* Operations on offer from installed packs — adopted whole:
               phases, items, scripts, per-phase cadences. Nothing begins

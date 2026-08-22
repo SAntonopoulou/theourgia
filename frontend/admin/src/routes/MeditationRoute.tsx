@@ -27,6 +27,7 @@ import {
 } from "../data/keepObservance.js";
 import { type PackedSitting, adoptSitting, usePackedSittings } from "../data/packedSittings.js";
 import { useMyLocation } from "../data/useLocation.js";
+import { PracticePacks } from "../lib/PracticePacks.js";
 import { apiGet } from "../lib/api.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
 
@@ -394,6 +395,13 @@ export function MeditationRoute() {
                   ＋ New sit
                 </button>
               </div>
+            </div>
+            <div style={{ maxWidth: 460, margin: "0 auto 24px" }}>
+              {/* The sitting packs themselves, installable in context. */}
+              <PracticePacks
+                kinds={["sitting"]}
+                onInstalled={() => void packedSittings.refetch()}
+              />
             </div>
             {(packedSittings.data ?? []).length > 0 ? (
               <div

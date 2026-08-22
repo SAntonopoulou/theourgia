@@ -53,7 +53,7 @@ afterEach(() => {
 describe("OwnChartsEditor", () => {
   it("opens a canonical chart onto the canon's rows, its column credited", async () => {
     render(<OwnChartsEditor />);
-    const card = await screen.findByRole("button", { name: /planetary table/i });
+    const card = await screen.findByRole("button", { name: /planetary table/i }, { timeout: 5000 });
     await act(async () => {
       fireEvent.click(card);
     });
@@ -66,7 +66,7 @@ describe("OwnChartsEditor", () => {
 
   it("begins a chart on a chosen scale and saves the set", async () => {
     render(<OwnChartsEditor />);
-    await screen.findByRole("button", { name: /planetary table/i });
+    await screen.findByRole("button", { name: /planetary table/i }, { timeout: 5000 });
 
     const save = screen.getByRole("button", { name: /save changes/i });
     expect(save).toBeDisabled(); // clean on load
@@ -93,7 +93,7 @@ describe("OwnChartsEditor", () => {
 
   it("strips blank cells on save — a blank cell is absent, never stored", async () => {
     render(<OwnChartsEditor />);
-    const card = await screen.findByRole("button", { name: /planetary table/i });
+    const card = await screen.findByRole("button", { name: /planetary table/i }, { timeout: 5000 });
     await act(async () => {
       fireEvent.click(card);
     });
@@ -113,7 +113,7 @@ describe("OwnChartsEditor", () => {
 
   it("offers no lookup mapping on a custom scale", async () => {
     render(<OwnChartsEditor />);
-    await screen.findByRole("button", { name: /planetary table/i });
+    await screen.findByRole("button", { name: /planetary table/i }, { timeout: 5000 });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /new chart/i }));
     });

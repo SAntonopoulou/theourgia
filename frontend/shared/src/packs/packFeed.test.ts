@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parsePackFeed } from "./packFeed.js";
+import { packOffersKind, parsePackFeed } from "./packFeed.js";
 
 const SAMPLE = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:pack="https://theourgia.com/ns/pack">
@@ -17,7 +17,16 @@ const SAMPLE = `<?xml version="1.0" encoding="UTF-8"?>
       <title>Greek isopsephy 2</title>
       <pack:id>theourgia.numbers.greek</pack:id>
       <pack:version>2</pack:version>
+      <pack:kind>number-system</pack:kind>
       <enclosure url="https://theourgia.com/packs/theourgia-numbers-greek-v2.mbf" type="application/x-mbf" length="4096"/>
+    </item>
+    <item>
+      <title>The whole tradition 3</title>
+      <pack:id>theourgia.bundle</pack:id>
+      <pack:version>3</pack:version>
+      <pack:kind>bundle</pack:kind>
+      <pack:contains>calendar rite adoration-set</pack:contains>
+      <enclosure url="https://theourgia.com/packs/theourgia-bundle-v3.mbf" type="application/x-mbf" length="99999"/>
     </item>
     <item>
       <title>broken, no id or url</title>
@@ -28,7 +37,22 @@ const SAMPLE = `<?xml version="1.0" encoding="UTF-8"?>
 describe("parsePackFeed", () => {
   it("parses each well-formed item and skips the broken one", () => {
     const packs = parsePackFeed(SAMPLE);
-    expect(packs).toHaveLength(2);
+    expect(packs).toHaveLength(3);
+  });
+
+  it("reads the kind, and a bundle's contained kinds", () => {
+    const packs = parsePackFeed(SAMPLE);
+    // A feed written before the field: kind "", contains [] — tolerated.
+    expect(packs[0]?.kind).toBe("");
+    expect(packs[0]?.contains).toEqual([]);
+    expect(packs[1]?.kind).toBe("number-system");
+    const bundle = packs[2];
+    expect(bundle?.kind).toBe("bundle");
+    expect(bundle?.contains).toEqual(["calendar", "rite", "adoration-set"]);
+    // A practice surface asks by kind; a bundle answers for what it contains.
+    if (!bundle) return;
+    expect(packOffersKind(bundle, ["rite"])).toBe(true);
+    expect(packOffersKind(bundle, ["sitting"])).toBe(false);
   });
 
   it("reads id, version, url, size, and decodes entities", () => {

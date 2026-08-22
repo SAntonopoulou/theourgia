@@ -30,6 +30,7 @@ import {
 } from "../data/keepObservance.js";
 import { type PackedRite, adoptRite, usePackedRites } from "../data/packedRites.js";
 import { useMyLocation } from "../data/useLocation.js";
+import { PracticePacks } from "../lib/PracticePacks.js";
 import { apiGet } from "../lib/api.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
 
@@ -247,6 +248,11 @@ export function RitualsRoute() {
               onNew={() => setEditing({ rite: null })}
             />
           )}
+
+          {/* The rite packs themselves, installable here — the phone's
+              in-context packs sheet, so nobody leaves the rite to go find
+              the rite's pack. */}
+          <PracticePacks kinds={["rite"]} onInstalled={() => void packedRites.refetch()} />
 
           {/* Rites on offer from installed packs — already-adopted ones
               (same name, same words) stay listed; adopting twice simply

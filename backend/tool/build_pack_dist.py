@@ -142,6 +142,24 @@ def main() -> None:
         spdx = LICENSES.get(pack_id, FALLBACK_LICENSE)
         name = f"{_slug(pack_id)}-v{version}.mbf"
 
+        # The pack's kind (the phone's ModuleKind key), and — for a bundle —
+        # the kinds it contains, so a practice surface can offer exactly the
+        # packs that matter to it without downloading every artifact to look
+        # inside. Data the manifest already had; the feed just says it.
+        kind = str(manifest.get("kind", ""))
+        contains: list[str] = []
+        if kind == "bundle":
+            sub = pack.get("payload", {}).get("packs", [])
+            if isinstance(sub, list):
+                seen_kinds: set[str] = set()
+                for entry in sub:
+                    if not isinstance(entry, dict):
+                        continue
+                    sub_kind = str(entry.get("manifest", {}).get("kind", ""))
+                    if sub_kind and sub_kind not in seen_kinds:
+                        seen_kinds.add(sub_kind)
+                        contains.append(sub_kind)
+
         # A published versioned artifact is immutable, byte for byte. The
         # embedded creation time follows the source file's mtime, so a
         # rebuild would otherwise rewrite every artifact it did not change
@@ -169,7 +187,13 @@ def main() -> None:
             "</description>\n"
             f"      <pack:id>{escape(pack_id)}</pack:id>\n"
             f"      <pack:version>{version}</pack:version>\n"
-            f'      <enclosure url="{args.base_url}/{name}" '
+            + (f"      <pack:kind>{escape(kind)}</pack:kind>\n" if kind else "")
+            + (
+                f"      <pack:contains>{escape(' '.join(contains))}</pack:contains>\n"
+                if contains
+                else ""
+            )
+            + f'      <enclosure url="{args.base_url}/{name}" '
             f'type="application/x-mbf" length="{len(blob)}"/>\n'
             "    </item>"
         )

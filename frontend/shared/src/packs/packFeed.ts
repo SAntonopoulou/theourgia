@@ -17,6 +17,19 @@ export interface FeedPack {
   description: string;
   mbfUrl: string;
   bytes: number;
+  /** The phone's ModuleKind key (`rite`, `sitting`, `correspondence-table`,
+   *  `bundle`…), or "" from a feed written before the field existed. */
+  kind: string;
+  /** For a bundle: the kinds it contains, so a practice surface can offer
+   *  exactly the packs that matter to it. Empty otherwise. */
+  contains: string[];
+}
+
+/** Whether a pack offers content of one of [kinds] — its own kind, or, for a
+ *  bundle, one of the kinds it contains. */
+export function packOffersKind(pack: FeedPack, kinds: readonly string[]): boolean {
+  if (kinds.includes(pack.kind)) return true;
+  return pack.contains.some((k) => kinds.includes(k));
 }
 
 function decodeEntities(s: string): string {
@@ -52,6 +65,8 @@ export function parsePackFeed(xml: string): FeedPack[] {
       description: field(block, "description"),
       mbfUrl: url,
       bytes: Number(attrs.match(/length="(\d+)"/)?.[1] ?? 0),
+      kind: field(block, "pack:kind"),
+      contains: field(block, "pack:contains").split(/\s+/).filter(Boolean),
     });
   }
   return packs;

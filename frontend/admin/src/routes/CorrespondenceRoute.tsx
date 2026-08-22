@@ -27,6 +27,7 @@ import { type CSSProperties, useEffect, useMemo, useState } from "react";
 
 import { apiMethods } from "../data/api.js";
 import { fetchDisabledModuleIds } from "../data/packSettings.js";
+import { PracticePacks } from "../lib/PracticePacks.js";
 import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
 import { OwnChartsEditor } from "./OwnChartsEditor.js";
 
@@ -54,6 +55,8 @@ export function CorrespondenceRoute() {
   const [mode, setMode] = useState<Mode>("lookup");
   const [packTables, setPackTables] = useState<CorrespondenceTable[] | null>(null);
   const [charts, setCharts] = useState<OwnChart[]>([]);
+  // Bumped when a pack is installed in context, so the lookup re-reads.
+  const [rev, setRev] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -89,7 +92,7 @@ export function CorrespondenceRoute() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [rev]);
 
   // The packs' tables, then the practitioner's mapped columns — each mapped
   // column one table under its own source, exactly as the phone merges them.
@@ -146,7 +149,16 @@ export function CorrespondenceRoute() {
         tables === null ? (
           <SurfaceSkeleton rowCount={5} />
         ) : (
-          <CorrespondenceChart tables={tables} />
+          <>
+            <CorrespondenceChart tables={tables} />
+            {/* The correspondence packs themselves, installable in context. */}
+            <div style={{ maxWidth: 820, margin: "0 auto" }}>
+              <PracticePacks
+                kinds={["correspondence-table"]}
+                onInstalled={() => setRev((r) => r + 1)}
+              />
+            </div>
+          </>
         )
       ) : (
         <OwnChartsEditor onSaved={setCharts} />

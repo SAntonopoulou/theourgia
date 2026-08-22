@@ -25,6 +25,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { amendObservance, keepObservance } from "../data/keepObservance.js";
 import { type PackedSitting, adoptSitting, usePackedSittings } from "../data/packedSittings.js";
 import { useMyLocation } from "../data/useLocation.js";
+import { PracticePacks } from "../lib/PracticePacks.js";
 import { apiGet } from "../lib/api.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
 
@@ -548,6 +549,12 @@ export function PranayamaRoute() {
           </div>
         </div>
       ) : null}
+
+      {/* The sitting packs themselves, installable in context — breath forms
+          arrive in the same packs as sittings. */}
+      <div style={{ textAlign: "left" }}>
+        <PracticePacks kinds={["sitting"]} onInstalled={() => void packedBreaths.refetch()} />
+      </div>
 
       {/* Breath forms on offer from installed packs. */}
       {(packedBreaths.data ?? []).length > 0 ? (

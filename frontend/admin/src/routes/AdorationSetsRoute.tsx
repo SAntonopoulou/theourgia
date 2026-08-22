@@ -34,6 +34,7 @@ import {
   writeStationAdoration,
 } from "../data/adorationRecords.js";
 import { useMyLocation } from "../data/useLocation.js";
+import { PracticePacks } from "../lib/PracticePacks.js";
 import { CelestialTrackers } from "./CelestialTrackers.js";
 import { TodayLunarRow, TodayRiteRow } from "./TodayPractice.js";
 
@@ -166,6 +167,11 @@ export function AdorationSetsRoute({
         >
           New set
         </Button>
+      </div>
+
+      {/* The adoration packs themselves, installable in context. */}
+      <div style={{ marginBottom: 20, marginTop: -4 }}>
+        <PracticePacks kinds={["adoration-set"]} onInstalled={() => void packed.refetch()} />
       </div>
 
       <div

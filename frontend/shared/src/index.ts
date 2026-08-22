@@ -357,6 +357,7 @@ export {
   type FeedPack,
   fetchPackFeed,
   fetchPackMbf,
+  packOffersKind,
   parsePackFeed,
 } from "./packs/packFeed.js";
 export {
