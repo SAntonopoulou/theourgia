@@ -11,9 +11,16 @@
  * does not own a clock. It also serves the LUNAR hero: a caller with no
  * solar station passes `label` + `emblem` (and the Moon's own colour)
  * and everything else reads the same.
+ *
+ * Long words are clamped so the two heroes stay visually even — Sophia's
+ * lunar scripts run longer than the Resh paragraphs, and a hero twice the
+ * other's height reads as a different kind of card. The clamp is six
+ * lines, roughly the longest Resh invocation; "Show adoration" opens the
+ * whole text in place for the performance, exactly as the station cards
+ * below it do.
  */
 
-import type { CSSProperties, ReactNode } from "react";
+import { type CSSProperties, type ReactNode, useState } from "react";
 
 import { RESH_STATION_META, type ReshAdoration, type ReshStation, formatMinute } from "./resh.js";
 
@@ -59,6 +66,12 @@ export function ReshNextAdoration({
   style,
 }: ReshNextAdorationProps) {
   const stationLabel = label ?? (station ? RESH_STATION_META[station].label : "");
+
+  // ~6 lines at the paragraph's 46ch measure. A threshold on characters,
+  // like the station cards' — the DOM keeps the full text either way.
+  const longInvocation = (adoration.invocation?.length ?? 0) > 300;
+  const [showAll, setShowAll] = useState(false);
+  const clamped = longInvocation && !showAll;
   return (
     <div
       className={className}
@@ -173,19 +186,47 @@ export function ReshNextAdoration({
             ) : null}
           </div>
           {adoration.invocation ? (
-            <p
-              style={{
-                fontFamily: "var(--font-serif)",
-                fontStyle: "italic",
-                fontSize: 15,
-                lineHeight: 1.5,
-                color: "var(--ink-soft)",
-                margin: "9px 0 0",
-                maxWidth: "46ch",
-              }}
-            >
-              “{adoration.invocation}”
-            </p>
+            <>
+              <p
+                style={{
+                  fontFamily: "var(--font-serif)",
+                  fontStyle: "italic",
+                  fontSize: 15,
+                  lineHeight: 1.5,
+                  color: "var(--ink-soft)",
+                  margin: "9px 0 0",
+                  maxWidth: "46ch",
+                  ...(clamped
+                    ? {
+                        display: "-webkit-box",
+                        WebkitLineClamp: 6,
+                        WebkitBoxOrient: "vertical" as const,
+                        overflow: "hidden",
+                      }
+                    : {}),
+                }}
+              >
+                “{adoration.invocation}”
+              </p>
+              {longInvocation ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAll((v) => !v)}
+                  style={{
+                    marginTop: 6,
+                    background: "transparent",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    fontFamily: "var(--font-ui)",
+                    fontSize: 12,
+                    color: "var(--ink-mute)",
+                  }}
+                >
+                  {showAll ? "Show less" : "Show adoration"}
+                </button>
+              ) : null}
+            </>
           ) : null}
         </div>
 

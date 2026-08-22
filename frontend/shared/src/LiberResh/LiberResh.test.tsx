@@ -1,30 +1,17 @@
-import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 
-import {
-  RESH_STATION_ORDER,
-  RESH_THELEMIC,
-  RESH_TRADITIONS,
-  formatMinute,
-} from "./resh.js";
 import { ReshNextAdoration } from "./ReshNextAdoration.js";
 import { ReshStationCard } from "./ReshStationCard.js";
-import {
-  type ReshStreakDay,
-  ReshStreakGrid,
-} from "./ReshStreakGrid.js";
+import { type ReshStreakDay, ReshStreakGrid } from "./ReshStreakGrid.js";
 import { SunArcDiagram } from "./SunArcDiagram.js";
+import { RESH_STATION_ORDER, RESH_THELEMIC, RESH_TRADITIONS, formatMinute } from "./resh.js";
 
 // ─── resh.ts constants + helpers ───────────────────────────────────
 
 describe("Liber Resh constants", () => {
   it("exposes exactly four stations in canonical order", () => {
-    expect(RESH_STATION_ORDER).toEqual([
-      "sunrise",
-      "noon",
-      "sunset",
-      "midnight",
-    ]);
+    expect(RESH_STATION_ORDER).toEqual(["sunrise", "noon", "sunset", "midnight"]);
   });
 
   it("includes the Thelemic invocations verbatim (Liber CC 1911 PD)", () => {
@@ -70,9 +57,7 @@ describe("ReshStationCard", () => {
 
   it("renders the verbatim invocation inside curly quotes", () => {
     render(<ReshStationCard {...props} />);
-    expect(
-      screen.getByText(/Hail unto Thee who art Ra in Thy rising/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Hail unto Thee who art Ra in Thy rising/)).toBeInTheDocument();
   });
 
   it("renders the local + UTC time strings", () => {
@@ -99,10 +84,7 @@ describe("ReshStationCard", () => {
 
   it("hides 'Mark observed' when an observation is provided", () => {
     render(
-      <ReshStationCard
-        {...props}
-        observation={{ atMin: 6 * 60 + 9, note: "Sea very still." }}
-      />,
+      <ReshStationCard {...props} observation={{ atMin: 6 * 60 + 9, note: "Sea very still." }} />,
     );
     expect(screen.queryByText("Mark observed")).toBeNull();
     expect(screen.getByText("Observed at 06:09")).toBeInTheDocument();
@@ -160,9 +142,9 @@ describe("ReshStationCard", () => {
 
   it("renders short (Liber CC) invocations whole — no clamp, no toggle", () => {
     const { container } = render(<ReshStationCard {...props} />);
-    expect(
-      container.querySelector("[data-invocation]")?.getAttribute("data-clamped"),
-    ).toBe("false");
+    expect(container.querySelector("[data-invocation]")?.getAttribute("data-clamped")).toBe(
+      "false",
+    );
     expect(container.querySelector("[data-invocation-toggle]")).toBeNull();
   });
 
@@ -176,10 +158,7 @@ describe("ReshStationCard", () => {
 
   it("does not include --danger in the structural styling", () => {
     const { container } = render(
-      <ReshStationCard
-        {...props}
-        observation={{ atMin: 6 * 60 + 9 }}
-      />,
+      <ReshStationCard {...props} observation={{ atMin: 6 * 60 + 9 }} />,
     );
     expect(container.innerHTML).not.toContain("--danger");
   });
@@ -196,16 +175,12 @@ function buildDays(counts: number[]): ReshStreakDay[] {
 
 describe("ReshStreakGrid", () => {
   it("renders one square per day", () => {
-    const { container } = render(
-      <ReshStreakGrid days={buildDays([4, 4, 3, 4, 0, 4])} />,
-    );
+    const { container } = render(<ReshStreakGrid days={buildDays([4, 4, 3, 4, 0, 4])} />);
     expect(container.querySelectorAll("[data-day]")).toHaveLength(6);
   });
 
   it("marks today (last entry) with data-is-today=true", () => {
-    const { container } = render(
-      <ReshStreakGrid days={buildDays([4, 4, 3])} />,
-    );
+    const { container } = render(<ReshStreakGrid days={buildDays([4, 4, 3])} />);
     const todays = container.querySelectorAll('[data-is-today="true"]');
     expect(todays).toHaveLength(1);
     expect(todays[0]?.getAttribute("data-day")).toBe("2026-06-03");
@@ -218,29 +193,18 @@ describe("ReshStreakGrid", () => {
   });
 
   it("honours a streakOverride from the caller", () => {
-    render(
-      <ReshStreakGrid
-        days={buildDays([4, 4])}
-        streakOverride={42}
-      />,
-    );
-    expect(
-      document.querySelector("[data-streak-count]")?.textContent,
-    ).toBe("42");
+    render(<ReshStreakGrid days={buildDays([4, 4])} streakOverride={42} />);
+    expect(document.querySelector("[data-streak-count]")?.textContent).toBe("42");
   });
 
   it("renders the legend with five swatches (0..4)", () => {
-    const { container } = render(
-      <ReshStreakGrid days={buildDays([1])} />,
-    );
+    const { container } = render(<ReshStreakGrid days={buildDays([1])} />);
     const legend = container.querySelector("[data-legend]");
     expect(legend?.querySelectorAll("[data-legend-count]")).toHaveLength(5);
   });
 
   it("never uses --danger in the streak palette", () => {
-    const { container } = render(
-      <ReshStreakGrid days={buildDays([0, 0, 0])} />,
-    );
+    const { container } = render(<ReshStreakGrid days={buildDays([0, 0, 0])} />);
     expect(container.innerHTML).not.toContain("--danger");
   });
 });
@@ -307,9 +271,58 @@ describe("ReshNextAdoration", () => {
         countdown="9h 56m"
       />,
     );
-    expect(container.firstElementChild?.getAttribute("data-station")).toBe(
-      "midnight",
+    expect(container.firstElementChild?.getAttribute("data-station")).toBe("midnight");
+  });
+
+  it("serves a non-solar caller: label + emblem, no station required", () => {
+    render(
+      <ReshNextAdoration
+        label="Upper culmination"
+        emblem={<span>☽</span>}
+        emblemColor="var(--moon-light)"
+        adoration={{ godform: "", direction: "", invocation: "Χαῖρε Ἑκάτη" }}
+        stationMin={21 * 60 + 24}
+        stationMinUtc={19 * 60 + 24}
+        countdown="47m"
+      />,
     );
+    expect(screen.getByText("Upper culmination")).toBeInTheDocument();
+    expect(screen.getByText("☽")).toBeInTheDocument();
+    expect(screen.getByText(/Χαῖρε Ἑκάτη/)).toBeInTheDocument();
+  });
+
+  it("clamps a long invocation behind Show adoration, and opens it in place", () => {
+    // Long lunar scripts must not make one hero twice the other's height:
+    // past ~six lines the words clamp, and the toggle opens the whole text
+    // for the performance — the same affordance the station cards use.
+    const long = "Χαῖρε Ἑκάτη Εἰνοδία, Τριοδῖτι, Νυκτερία, Χθονία. ".repeat(10).trim();
+    render(
+      <ReshNextAdoration
+        label="Moonrise"
+        emblem={<span>☽</span>}
+        adoration={{ godform: "", direction: "", invocation: long }}
+        stationMin={0}
+        stationMinUtc={0}
+        countdown="1h"
+      />,
+    );
+    const toggle = screen.getByRole("button", { name: "Show adoration" });
+    fireEvent.click(toggle);
+    expect(screen.getByRole("button", { name: "Show less" })).toBeInTheDocument();
+  });
+
+  it("keeps a short invocation whole — no toggle", () => {
+    render(
+      <ReshNextAdoration
+        label="Moonset"
+        emblem={<span>☽</span>}
+        adoration={{ godform: "", direction: "", invocation: "Short words." }}
+        stationMin={0}
+        stationMinUtc={0}
+        countdown="1h"
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Show adoration" })).toBeNull();
   });
 });
 
@@ -347,8 +360,6 @@ describe("SunArcDiagram", () => {
         caption="Ra-Hoor-Khuit at the East, Hadit at the height."
       />,
     );
-    expect(
-      screen.getByText(/Ra-Hoor-Khuit at the East/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Ra-Hoor-Khuit at the East/)).toBeInTheDocument();
   });
 });
