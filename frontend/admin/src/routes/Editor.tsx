@@ -49,10 +49,9 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
-import { publicHref } from "../lib/publicHref.js";
 import {
   createEntry,
   patchEntry,
@@ -63,6 +62,7 @@ import {
   useEntities,
   useEntryDetail,
 } from "../data/useEntries.js";
+import { publicHref } from "../lib/publicHref.js";
 
 const LINE = "var(--line)";
 const AUTOSAVE_DEBOUNCE_MS = 1000;
@@ -73,6 +73,25 @@ type SaveStatus =
   | { state: "saving" }
   | { state: "saved"; at: Date }
   | { state: "error"; message: string };
+
+/** Whether the viewport has room for the metadata rail beside the
+ *  writing column. Keyed to the same 1200px the layout CSS uses. */
+function useWideEditor(): boolean {
+  // Guarded: the test DOM has no matchMedia; wide is the honest default
+  // there (the rail renders, the disclosure does not).
+  const canQuery = typeof window !== "undefined" && typeof window.matchMedia === "function";
+  const [wide, setWide] = useState<boolean>(() =>
+    canQuery ? window.matchMedia("(min-width: 1200px)").matches : true,
+  );
+  useEffect(() => {
+    if (!canQuery) return;
+    const mq = window.matchMedia("(min-width: 1200px)");
+    const onChange = () => setWide(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [canQuery]);
+  return wide;
+}
 
 interface VisibilityChipProps {
   entryId: string | null;
@@ -1096,6 +1115,10 @@ export function Editor() {
   const [metaDescription, setMetaDescription] = useState<string>("");
   const [categories, setCategories] = useState<string[]>([]);
   const [scheduledAt, setScheduledAt] = useState<string | null>(null);
+  // v1-045 — leave, and destroy, from the writing page itself.
+  const wide = useWideEditor();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   // Hydrate from detail on first successful fetch.
   useEffect(() => {
@@ -1121,6 +1144,32 @@ export function Editor() {
       setScheduledAt(detail.data.scheduled_publish_at ?? null);
     }
   }, [detail.status, detail.data, entryId]);
+
+  // v1-045 — back to the journal, the title flushed first (blur does
+  // not reliably fire when the input unmounts mid-navigation).
+  const backToJournal = () => {
+    void onTitleBlur(title);
+    navigate("/journal");
+  };
+
+  // v1-045 — delete (or discard a fresh draft) from the writing page.
+  const confirmDeleteEntry = async (): Promise<void> => {
+    if (entryId === null) return;
+    setDeleteBusy(true);
+    try {
+      await apiMethods.archiveEntry(entryId);
+      Toast.push({ tone: "success", title: "Entry deleted" });
+      navigate("/journal");
+    } catch (cause) {
+      Toast.push({
+        tone: "error",
+        title: "Could not delete entry",
+        body: cause instanceof Error ? cause.message : String(cause),
+      });
+      setDeleteBusy(false);
+      setDeleteOpen(false);
+    }
+  };
 
   // b108-2hw: PATCH the entry title on blur. Blur is chosen over
   // per-keystroke debouncing so the URL doesn't flicker in the
@@ -1329,9 +1378,9 @@ export function Editor() {
             color: "var(--ink-mute)",
           }}
         >
-          <span>Journal</span>
-          <span style={{ opacity: 0.5 }}>/</span>
-          <span style={{ color: "var(--ink-soft)" }}>Workings</span>
+          <Link to="/journal" style={{ color: "var(--ink-mute)", textDecoration: "none" }}>
+            Journal
+          </Link>
           <span style={{ opacity: 0.5 }}>/</span>
           <span style={{ color: "var(--ink)" }}>
             {entryId === null ? "Untitled draft" : (detail.data?.title ?? "Loading…")}
@@ -1383,6 +1432,218 @@ export function Editor() {
     ],
   );
 
+  // v1-045 — the entry's metadata, gathered off the writing surface:
+  // a rail beside the text when there is room, a quiet disclosure above
+  // it when there is not. One definition, both placements.
+  const railContent = (
+    <div className="ed-rail-content">
+      <div
+        data-role="entry-tags-rows"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+          marginBottom: 16,
+        }}
+      >
+        <EntryTagsRow
+          label="Tags"
+          values={tags}
+          onChange={(next) => void onTagsChange("tags", next)}
+        />
+        <EntryTagsRow
+          label="Tradition tags"
+          values={traditionTags}
+          onChange={(next) => void onTagsChange("tradition_tags", next)}
+          placeholder="Add a tradition"
+        />
+        <EntryTagsRow
+          label="Categories"
+          values={categories}
+          onChange={(next) => {
+            setCategories(next);
+            if (entryId !== null) {
+              void patchEntry(entryId, { categories: next }).catch((cause) => {
+                Toast.push({
+                  tone: "warning",
+                  title: "Categories didn't save",
+                  body: cause instanceof Error ? cause.message : "Try again.",
+                });
+              });
+            }
+          }}
+          placeholder="Add a category"
+        />
+      </div>
+
+      {/* v1-044 — the post's public face: its URL words and the line a
+            search result shows. Inline, not buried — the CMS surface is
+            the point of this journal. */}
+      <div
+        data-role="entry-post-settings"
+        style={{
+          display: "grid",
+          gap: 10,
+          marginBottom: 16,
+          padding: "12px 14px",
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-md, 10px)",
+          background: "var(--bg-2)",
+        }}
+      >
+        <label
+          style={{
+            display: "grid",
+            gap: 4,
+            fontFamily: "var(--font-ui)",
+            fontSize: 11,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "var(--ink-mute)",
+          }}
+        >
+          Slug — the post's address
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span
+              style={{
+                fontFamily: "var(--font-ui)",
+                fontSize: 13,
+                textTransform: "none",
+                letterSpacing: 0,
+                color: "var(--ink-mute)",
+              }}
+            >
+              /blog/
+            </span>
+            <input
+              type="text"
+              value={slug}
+              placeholder="derived from the title on publish"
+              onChange={(e) => setSlug(e.target.value)}
+              onBlur={() => {
+                if (entryId === null) return;
+                const trimmed = slug.trim();
+                if (trimmed === (detail.data?.slug ?? "")) return;
+                void patchEntry(entryId, { slug: trimmed })
+                  .then((next) => setSlug((next as { slug?: string | null }).slug ?? ""))
+                  .catch((cause) => {
+                    setSlug(detail.data?.slug ?? "");
+                    Toast.push({
+                      tone: "warning",
+                      title: "That slug didn't take",
+                      body: cause instanceof Error ? cause.message : "Try another.",
+                    });
+                  });
+              }}
+              aria-label="Post slug"
+              style={{
+                flex: 1,
+                minWidth: 0,
+                padding: "6px 9px",
+                border: "1px solid var(--line)",
+                borderRadius: "var(--r-sm, 6px)",
+                background: "var(--bg)",
+                color: "var(--ink)",
+                fontFamily: "ui-monospace, monospace",
+                fontSize: 13,
+                textTransform: "none",
+                letterSpacing: 0,
+              }}
+            />
+          </span>
+        </label>
+        <label
+          style={{
+            display: "grid",
+            gap: 4,
+            fontFamily: "var(--font-ui)",
+            fontSize: 11,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "var(--ink-mute)",
+          }}
+        >
+          <span>
+            Meta description — the search-result line
+            <span
+              style={{
+                marginLeft: 8,
+                color:
+                  metaDescription.length > 160 ? "var(--warn, var(--accent))" : "var(--ink-mute)",
+              }}
+            >
+              {metaDescription.length}/160
+            </span>
+          </span>
+          <textarea
+            value={metaDescription}
+            rows={2}
+            placeholder="One or two honest sentences — what a searcher finds here. Falls back to the excerpt."
+            onChange={(e) => setMetaDescription(e.target.value)}
+            onBlur={() => {
+              if (entryId === null) return;
+              if (metaDescription === (detail.data?.meta_description ?? "")) return;
+              void patchEntry(entryId, { meta_description: metaDescription }).catch((cause) => {
+                Toast.push({
+                  tone: "warning",
+                  title: "The description didn't save",
+                  body: cause instanceof Error ? cause.message : "Try again.",
+                });
+              });
+            }}
+            aria-label="Meta description"
+            style={{
+              padding: "6px 9px",
+              border: "1px solid var(--line)",
+              borderRadius: "var(--r-sm, 6px)",
+              background: "var(--bg)",
+              color: "var(--ink)",
+              fontFamily: "var(--font-ui)",
+              fontSize: 13,
+              lineHeight: 1.5,
+              resize: "vertical",
+              textTransform: "none",
+              letterSpacing: 0,
+            }}
+          />
+        </label>
+      </div>
+      {(() => {
+        const astroLabel = formatAstroSnapshot(detail.data?.astro_snapshot);
+        const calendarLabel = formatCalendarSnapshot(detail.data?.calendar_snapshot);
+        if (!astroLabel && !calendarLabel) return null;
+        return (
+          <div style={{ marginBottom: 20 }} data-role="entry-autostamp">
+            <AutoStampChip astro={astroLabel ?? undefined} calendar={calendarLabel ?? undefined} />
+          </div>
+        );
+      })()}
+      <div style={{ marginBottom: 20 }} data-role="entry-history">
+        <RevisionHistory entryId={entryId} sealed={sealed} onRestored={onRestored} />
+      </div>
+      <button
+        type="button"
+        data-role="entry-delete"
+        onClick={() => setDeleteOpen(true)}
+        disabled={entryId === null}
+        style={{
+          marginTop: 6,
+          padding: "7px 12px",
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-md, 8px)",
+          background: "transparent",
+          color: "var(--danger)",
+          fontFamily: "var(--font-ui)",
+          fontSize: 12.5,
+          cursor: "pointer",
+          alignSelf: "flex-start",
+        }}
+      >
+        Delete this entry
+      </button>
+    </div>
+  );
+
   if (entryId !== null && detail.status === "loading") {
     return (
       <div
@@ -1416,284 +1677,137 @@ export function Editor() {
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
-        minHeight: 0,
-        flex: 1,
         // Cancels the shell padding exactly — a hardcoded -28px overshoots
-        // on phones where --shell-pad is 16 (8/8 sweep).
+        // on phones where --shell-pad is 16 (8/8 sweep). The page flows and
+        // the shell scrolls; the writing column and the metadata rail sit
+        // side by side when there is room (v1-045).
         margin: "0 calc(-1 * var(--shell-pad, 28px))",
       }}
     >
-      <div
-        style={{
-          maxWidth: 720,
-          margin: "0 auto",
-          padding: "44px 28px 0",
-          width: "100%",
-          boxSizing: "border-box",
-        }}
-        data-role="entry-title-container"
-      >
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onBlur={(e) => void onTitleBlur(e.target.value)}
-          placeholder="Title your entry"
-          aria-label="Entry title"
-          data-role="entry-title-input"
-          style={{
-            width: "100%",
-            border: "none",
-            outline: "none",
-            background: "transparent",
-            fontFamily: "var(--font-display)",
-            fontWeight: 700,
-            fontSize: 40,
-            lineHeight: 1.1,
-            color: "var(--ink)",
-            padding: 0,
-            marginBottom: 16,
-          }}
-        />
-        <div
-          data-role="entry-tags-rows"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-            marginBottom: 16,
-          }}
-        >
-          <EntryTagsRow
-            label="Tags"
-            values={tags}
-            onChange={(next) => void onTagsChange("tags", next)}
-          />
-          <EntryTagsRow
-            label="Tradition tags"
-            values={traditionTags}
-            onChange={(next) => void onTagsChange("tradition_tags", next)}
-            placeholder="Add a tradition"
-          />
-          <EntryTagsRow
-            label="Categories"
-            values={categories}
-            onChange={(next) => {
-              setCategories(next);
-              if (entryId !== null) {
-                void patchEntry(entryId, { categories: next }).catch((cause) => {
-                  Toast.push({
-                    tone: "warning",
-                    title: "Categories didn't save",
-                    body: cause instanceof Error ? cause.message : "Try again.",
-                  });
-                });
-              }
-            }}
-            placeholder="Add a category"
-          />
-        </div>
-
-        {/* v1-044 — the post's public face: its URL words and the line a
-            search result shows. Inline, not buried — the CMS surface is
-            the point of this journal. */}
-        <div
-          data-role="entry-post-settings"
-          style={{
-            display: "grid",
-            gap: 10,
-            marginBottom: 16,
-            padding: "12px 14px",
-            border: "1px solid var(--line)",
-            borderRadius: "var(--r-md, 10px)",
-            background: "var(--bg-2)",
-          }}
-        >
-          <label
+      <div className="ed-cols">
+        <div className="ed-main" style={{ minWidth: 0 }}>
+          <div
             style={{
-              display: "grid",
-              gap: 4,
-              fontFamily: "var(--font-ui)",
-              fontSize: 11,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: "var(--ink-mute)",
+              maxWidth: 720,
+              margin: "0 auto",
+              padding: "24px 28px 0",
+              width: "100%",
+              boxSizing: "border-box",
             }}
+            data-role="entry-title-container"
           >
-            Slug — the post's address
-            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span
-                style={{
-                  fontFamily: "var(--font-ui)",
-                  fontSize: 13,
-                  textTransform: "none",
-                  letterSpacing: 0,
-                  color: "var(--ink-mute)",
-                }}
-              >
-                /blog/
-              </span>
-              <input
-                type="text"
-                value={slug}
-                placeholder="derived from the title on publish"
-                onChange={(e) => setSlug(e.target.value)}
-                onBlur={() => {
-                  if (entryId === null) return;
-                  const trimmed = slug.trim();
-                  if (trimmed === (detail.data?.slug ?? "")) return;
-                  void patchEntry(entryId, { slug: trimmed })
-                    .then((next) => setSlug((next as { slug?: string | null }).slug ?? ""))
-                    .catch((cause) => {
-                      setSlug(detail.data?.slug ?? "");
-                      Toast.push({
-                        tone: "warning",
-                        title: "That slug didn't take",
-                        body: cause instanceof Error ? cause.message : "Try another.",
-                      });
-                    });
-                }}
-                aria-label="Post slug"
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  padding: "6px 9px",
-                  border: "1px solid var(--line)",
-                  borderRadius: "var(--r-sm, 6px)",
-                  background: "var(--bg)",
-                  color: "var(--ink)",
-                  fontFamily: "ui-monospace, monospace",
-                  fontSize: 13,
-                  textTransform: "none",
-                  letterSpacing: 0,
-                }}
-              />
-            </span>
-          </label>
-          <label
-            style={{
-              display: "grid",
-              gap: 4,
-              fontFamily: "var(--font-ui)",
-              fontSize: 11,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: "var(--ink-mute)",
-            }}
-          >
-            <span>
-              Meta description — the search-result line
-              <span
-                style={{
-                  marginLeft: 8,
-                  color:
-                    metaDescription.length > 160 ? "var(--warn, var(--accent))" : "var(--ink-mute)",
-                }}
-              >
-                {metaDescription.length}/160
-              </span>
-            </span>
-            <textarea
-              value={metaDescription}
-              rows={2}
-              placeholder="One or two honest sentences — what a searcher finds here. Falls back to the excerpt."
-              onChange={(e) => setMetaDescription(e.target.value)}
-              onBlur={() => {
-                if (entryId === null) return;
-                if (metaDescription === (detail.data?.meta_description ?? "")) return;
-                void patchEntry(entryId, { meta_description: metaDescription }).catch((cause) => {
-                  Toast.push({
-                    tone: "warning",
-                    title: "The description didn't save",
-                    body: cause instanceof Error ? cause.message : "Try again.",
-                  });
-                });
-              }}
-              aria-label="Meta description"
+            <button
+              type="button"
+              data-role="entry-back"
+              onClick={backToJournal}
               style={{
-                padding: "6px 9px",
-                border: "1px solid var(--line)",
-                borderRadius: "var(--r-sm, 6px)",
-                background: "var(--bg)",
-                color: "var(--ink)",
+                border: "none",
+                background: "transparent",
+                color: "var(--ink-mute)",
                 fontFamily: "var(--font-ui)",
-                fontSize: 13,
-                lineHeight: 1.5,
-                resize: "vertical",
-                textTransform: "none",
-                letterSpacing: 0,
+                fontSize: 12.5,
+                cursor: "pointer",
+                padding: 0,
+                marginBottom: 18,
+              }}
+            >
+              ‹ Back to the journal
+            </button>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={(e) => void onTitleBlur(e.target.value)}
+              placeholder="Title your entry"
+              aria-label="Entry title"
+              data-role="entry-title-input"
+              style={{
+                width: "100%",
+                border: "none",
+                outline: "none",
+                background: "transparent",
+                fontFamily: "var(--font-display)",
+                fontWeight: 700,
+                fontSize: 40,
+                lineHeight: 1.1,
+                color: "var(--ink)",
+                padding: 0,
+                marginBottom: 12,
               }}
             />
-          </label>
-        </div>
-        {(() => {
-          const astroLabel = formatAstroSnapshot(detail.data?.astro_snapshot);
-          const calendarLabel = formatCalendarSnapshot(detail.data?.calendar_snapshot);
-          if (!astroLabel && !calendarLabel) return null;
-          return (
-            <div style={{ marginBottom: 20 }} data-role="entry-autostamp">
-              <AutoStampChip
-                astro={astroLabel ?? undefined}
-                calendar={calendarLabel ?? undefined}
-              />
+            {wide ? null : (
+              <details className="ed-details" data-role="entry-details-disclosure">
+                <summary>Entry details — tags, address, history</summary>
+                {railContent}
+              </details>
+            )}
+          </div>
+          {sealed ? (
+            <div
+              data-role="entry-sealed-body"
+              style={{
+                maxWidth: 720,
+                margin: "0 auto",
+                padding: "0 28px 120px",
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            >
+              {revealedDoc === null ? (
+                <SealedContentsBlock
+                  body="The server cannot read it, cannot search it, and cannot recover it if your key is ever lost."
+                  footer="Only on a device with your passphrase"
+                  onUnlock={() => setRevealPromptOpen(true)}
+                />
+              ) : (
+                <div data-role="entry-sealed-preview">
+                  {tiptapParagraphs(JSON.stringify(revealedDoc)).map((text, i) => (
+                    <p
+                      // biome-ignore lint/suspicious/noArrayIndexKey: positional read-only paragraphs
+                      key={`sealed-paragraph-${i}`}
+                      style={{
+                        margin: "0 0 22px",
+                        fontFamily: "var(--font-serif)",
+                        fontSize: 19,
+                        lineHeight: 1.7,
+                        color: "var(--ink)",
+                      }}
+                    >
+                      {text}
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
-          );
-        })()}
-        <div style={{ marginBottom: 20 }} data-role="entry-history">
-          <RevisionHistory entryId={entryId} sealed={sealed} onRestored={onRestored} />
-        </div>
-      </div>
-      {sealed ? (
-        <div
-          data-role="entry-sealed-body"
-          style={{
-            maxWidth: 720,
-            margin: "0 auto",
-            padding: "0 28px 120px",
-            width: "100%",
-            boxSizing: "border-box",
-          }}
-        >
-          {revealedDoc === null ? (
-            <SealedContentsBlock
-              body="The server cannot read it, cannot search it, and cannot recover it if your key is ever lost."
-              footer="Only on a device with your passphrase"
-              onUnlock={() => setRevealPromptOpen(true)}
+          ) : doc !== null ? (
+            <TiptapEditor
+              key={`doc-${docEpoch}`}
+              initialDoc={doc}
+              onChange={onChange}
+              placeholder="Begin writing…"
+              entities={entities.data ?? undefined}
+              books={books.data ?? undefined}
+              fetchChart={fetchChart}
+              transcribeAudio={transcribeAudio}
             />
-          ) : (
-            <div data-role="entry-sealed-preview">
-              {tiptapParagraphs(JSON.stringify(revealedDoc)).map((text, i) => (
-                <p
-                  // biome-ignore lint/suspicious/noArrayIndexKey: positional read-only paragraphs
-                  key={`sealed-paragraph-${i}`}
-                  style={{
-                    margin: "0 0 22px",
-                    fontFamily: "var(--font-serif)",
-                    fontSize: 19,
-                    lineHeight: 1.7,
-                    color: "var(--ink)",
-                  }}
-                >
-                  {text}
-                </p>
-              ))}
-            </div>
-          )}
+          ) : null}
         </div>
-      ) : doc !== null ? (
-        <TiptapEditor
-          key={`doc-${docEpoch}`}
-          initialDoc={doc}
-          onChange={onChange}
-          placeholder="Begin writing…"
-          entities={entities.data ?? undefined}
-          books={books.data ?? undefined}
-          fetchChart={fetchChart}
-          transcribeAudio={transcribeAudio}
-        />
-      ) : null}
+        {wide ? (
+          <aside className="ed-rail" data-role="entry-rail" aria-label="Entry details">
+            {railContent}
+          </aside>
+        ) : null}
+      </div>
+      {/* v1-045 — delete (or discard) from the writing page. */}
+      <ConfirmDialog
+        open={deleteOpen}
+        tone="destructive"
+        title={`Delete “${title.trim() || "this entry"}”?`}
+        body="It leaves your journal. If it was published, its public page goes with it."
+        confirmLabel={deleteBusy ? "Deleting…" : "Delete"}
+        onConfirm={() => void confirmDeleteEntry()}
+        onCancel={() => setDeleteOpen(false)}
+      />
       {/* v1-033 — passphrase prompt for the client-side seal. */}
       <SealUnlock
         open={sealPromptOpen}
@@ -1716,11 +1830,63 @@ export function Editor() {
         }}
       />
       <style>{`
-        .theourgia-editor {
+        /* v1-045 — the writing column and the metadata rail. One column
+           by default; the rail joins at 1200px (the useWideEditor hook
+           keys to the same width, so the details-disclosure and the
+           aside never render together). */
+        .ed-cols {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+        }
+        @media (min-width: 1200px) {
+          .ed-cols {
+            grid-template-columns: minmax(0, 1fr) 320px;
+          }
+        }
+        .ed-rail {
+          border-left: 1px solid var(--line);
+          padding: 24px 20px 40px;
+          position: sticky;
+          top: 0;
+          align-self: start;
+          max-height: 100vh;
           overflow-y: auto;
-          overflow-x: hidden;
-          flex: 1;
-          min-height: 0;
+          box-sizing: border-box;
+        }
+        .ed-rail-content {
+          display: flex;
+          flex-direction: column;
+        }
+        .ed-details {
+          margin: 0 0 18px;
+          border: 1px solid var(--line);
+          border-radius: var(--r-md, 10px);
+          background: var(--bg-2);
+          padding: 0 14px;
+        }
+        .ed-details > summary {
+          cursor: pointer;
+          list-style: none;
+          padding: 10px 0;
+          font-family: var(--font-ui);
+          font-size: 11px;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: var(--ink-mute);
+        }
+        .ed-details > summary::-webkit-details-marker { display: none; }
+        .ed-details > summary::after { content: " ▾"; }
+        .ed-details[open] > summary::after { content: " ▴"; }
+        .ed-details > .ed-rail-content { padding: 4px 0 14px; }
+        /* The page scrolls as one; the format toolbar keeps its seat. */
+        .theourgia-editor {
+          overflow: visible;
+        }
+        [data-editor-toolbar] {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          background: var(--bg);
         }
         .theourgia-editor .ProseMirror {
           padding: 8px 28px 120px;
