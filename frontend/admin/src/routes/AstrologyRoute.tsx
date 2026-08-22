@@ -185,6 +185,13 @@ export function AstrologyRoute() {
   const [castError, setCastError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  // Snapshots taken while scrubbing, compared side by side — Sophia's
+  // design: the question a scrub answers is rarely "what is the sky at
+  // 3pm" and usually "which of these hours serves best", and that is a
+  // question about the differences.
+  const [snapshots, setSnapshots] = useState<ChartResponse[]>([]);
+  const [comparing, setComparing] = useState(false);
+  const [snapNote, setSnapNote] = useState("");
   const didInitialCast = useRef(false);
 
   // The time-scrubber: drag the chart (or the wheel itself) through time,
@@ -688,11 +695,46 @@ export function AstrologyRoute() {
             </div>
           </div>
 
-          <div style={{ marginBottom: 14 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, marginBottom: 14 }}>
             <Button variant="quiet" onClick={() => void saveChart()} disabled={saving || saved}>
               {saved ? "Kept to the record ✓" : saving ? "Saving…" : "Save to record"}
             </Button>
+            <Button
+              variant="quiet"
+              onClick={() => {
+                setSnapshots([...snapshots, chart]);
+                setSnapNote(
+                  `Snapshot ${snapshots.length + 1} taken. Compare them when you have two.`,
+                );
+              }}
+            >
+              Take a snapshot
+            </Button>
+            {snapshots.length > 0 ? (
+              <Button variant="quiet" onClick={() => setComparing(!comparing)}>
+                {comparing ? "Close the comparison" : `Compare (${snapshots.length})`}
+              </Button>
+            ) : null}
+            {snapNote ? (
+              <span style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--ink-mute)" }}>
+                {snapNote}
+              </span>
+            ) : null}
           </div>
+          {comparing && snapshots.length > 0 ? (
+            <SnapshotCompare
+              snapshots={snapshots}
+              onOpen={(one) => {
+                setChart(one);
+                setComparing(false);
+              }}
+              onClear={() => {
+                setSnapshots([]);
+                setComparing(false);
+                setSnapNote("");
+              }}
+            />
+          ) : null}
           <div
             style={{
               display: "flex",
@@ -726,5 +768,167 @@ export function AstrologyRoute() {
         <Skeleton kind="rect" height={440} />
       ) : null}
     </section>
+  );
+}
+
+// ── snapshots, side by side ────────────────────────────────────────────
+//
+// Moments in columns and points in rows, because what changed between
+// the columns IS the reading. Sign and degree with retrogradation
+// marked — a comparison drawn in full detail would be four charts to
+// read instead of one difference to see. A column's header opens that
+// snapshot on the wheel above.
+
+const COMPARE_SIGN_GLYPHS = ["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"].map(
+  (g) => `${g}\uFE0E`,
+);
+
+function comparePosition(longitude: number): string {
+  const lon = ((longitude % 360) + 360) % 360;
+  const within = lon % 30;
+  let degrees = Math.floor(within);
+  let minutes = Math.round((within - degrees) * 60);
+  if (minutes === 60) {
+    degrees += 1;
+    minutes = 0;
+  }
+  return `${COMPARE_SIGN_GLYPHS[Math.floor(lon / 30)]} ${degrees}°${String(minutes).padStart(2, "0")}′`;
+}
+
+function SnapshotCompare({
+  snapshots,
+  onOpen,
+  onClear,
+}: {
+  snapshots: ChartResponse[];
+  onOpen: (chart: ChartResponse) => void;
+  onClear: () => void;
+}) {
+  const first = snapshots[0];
+  if (!first) return null;
+  // The first snapshot names the rows; the rest are matched by body id,
+  // so a point one chart somehow lacks shows as absent rather than
+  // shifting every row under it.
+  const rows: { key: string; label: string; of: (c: ChartResponse) => string | null }[] = [
+    ...first.placements.map((p) => ({
+      key: p.body_id,
+      label: `${p.glyph}\uFE0E ${p.body_name}`,
+      of: (c: ChartResponse) => {
+        const found = c.placements.find((one) => one.body_id === p.body_id);
+        if (!found) return null;
+        return `${comparePosition(found.tropical_longitude)}${found.is_retrograde ? " ℞" : ""}`;
+      },
+    })),
+    { key: "asc", label: "Ascendant", of: (c) => comparePosition(c.houses.ascendant) },
+    { key: "mc", label: "Midheaven", of: (c) => comparePosition(c.houses.midheaven) },
+  ];
+  const header = (c: ChartResponse): string =>
+    new Date(c.instant).toLocaleString(undefined, {
+      day: "numeric",
+      month: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  return (
+    <div
+      style={{
+        border: "1px solid var(--line)",
+        borderRadius: "var(--r-md, 10px)",
+        background: "var(--bg-2)",
+        padding: "12px 14px",
+        marginBottom: 18,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 8 }}>
+        <span
+          style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: "var(--ink-mute)",
+          }}
+        >
+          Snapshots, side by side
+        </span>
+        <button
+          type="button"
+          onClick={onClear}
+          style={{
+            marginLeft: "auto",
+            border: "none",
+            background: "none",
+            padding: 0,
+            cursor: "pointer",
+            fontFamily: "var(--font-ui)",
+            fontSize: 12,
+            color: "var(--ink-mute)",
+          }}
+        >
+          Let them go
+        </button>
+      </div>
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ borderCollapse: "collapse", fontVariantNumeric: "tabular-nums" }}>
+          <thead>
+            <tr>
+              <th aria-label="Point" />
+              {snapshots.map((c, i) => (
+                <th key={`${c.instant}-${i}`} style={{ padding: "4px 12px", textAlign: "left" }}>
+                  <button
+                    type="button"
+                    onClick={() => onOpen(c)}
+                    title="Open this snapshot on the wheel"
+                    style={{
+                      border: "none",
+                      background: "none",
+                      padding: 0,
+                      cursor: "pointer",
+                      fontFamily: "var(--font-ui)",
+                      fontSize: 12,
+                      color: "var(--accent)",
+                    }}
+                  >
+                    {header(c)}
+                  </button>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.key} style={{ borderTop: "1px solid var(--line)" }}>
+                <td
+                  style={{
+                    padding: "5px 12px 5px 0",
+                    fontFamily: "var(--font-ui)",
+                    fontSize: 12,
+                    color: "var(--ink-mute)",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {row.label}
+                </td>
+                {snapshots.map((c, i) => (
+                  <td
+                    key={`${c.instant}-${i}`}
+                    style={{
+                      padding: "5px 12px",
+                      fontFamily: "var(--font-ui)",
+                      fontSize: 13,
+                      color: "var(--ink)",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {row.of(c) ?? "—"}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
