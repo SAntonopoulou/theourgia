@@ -25,7 +25,16 @@ const TECHNIQUES_PAYLOAD = {
 };
 
 function pack(over: Partial<FeedPack> & { id: string }): FeedPack {
-  return { version: 1, title: over.id, description: "", mbfUrl: "", bytes: 100, ...over };
+  return {
+    version: 1,
+    title: over.id,
+    description: "",
+    mbfUrl: "",
+    kind: "reference",
+    contains: [],
+    bytes: 100,
+    ...over,
+  };
 }
 
 describe("reading a pack's option definitions", () => {

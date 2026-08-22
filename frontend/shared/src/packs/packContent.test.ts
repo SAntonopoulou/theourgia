@@ -49,6 +49,8 @@ describe("isClientReadable", () => {
     title: "P",
     description: "",
     mbfUrl: "https://h/p.mbf",
+    kind: "reference",
+    contains: [],
     bytes,
   });
 
