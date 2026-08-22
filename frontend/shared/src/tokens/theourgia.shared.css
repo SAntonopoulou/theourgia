@@ -529,3 +529,15 @@ select:focus-visible {
     stroke-dashoffset: 0;
   }
 }
+
+/* ── Today's sortable cards ─────────────────────────────────────────────
+   A card whose component rendered nothing must take its drag grip with it:
+   a grip floating over zero-height content is an anchor attached to
+   nothing. The second selector catches the empty-wrapper case — a
+   component that keeps its <section> but has nothing to put in it. The
+   gap between cards comes from the flex column, so a collapsed item
+   leaves no double-gap behind. */
+.td-sortable-item:has(> .td-sortable-body:empty),
+.td-sortable-item:has(> .td-sortable-body > :only-child:empty) {
+  display: none;
+}

@@ -618,6 +618,79 @@ function EntryRow({ entry, isLast }: { entry: EntryRecord; isLast: boolean }) {
   );
 }
 
+/** The journal's tail on Today. A card like the others so it drags like the
+ *  others; the header keeps clear of the grip in the corner. */
+function RecentEntriesCard({
+  status,
+  recent,
+}: {
+  status: "idle" | "loading" | "error" | "ok";
+  recent: EntryRecord[];
+}) {
+  return (
+    <div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          marginBottom: 14,
+          paddingRight: 30,
+        }}
+      >
+        <h2
+          style={{
+            margin: 0,
+            fontFamily: "var(--font-display, var(--font-serif))",
+            fontSize: 22,
+          }}
+        >
+          Recent entries
+        </h2>
+        <Link
+          to="/journal"
+          style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 13,
+            color: "var(--accent)",
+            textDecoration: "none",
+          }}
+        >
+          Open journal →
+        </Link>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-lg, 12px)",
+          overflow: "hidden",
+          background: "var(--bg-2)",
+        }}
+      >
+        {status === "loading" ? (
+          <RecentEntriesSkeleton />
+        ) : recent.length > 0 ? (
+          recent.map((e, i) => <EntryRow key={e.id} entry={e} isLast={i === recent.length - 1} />)
+        ) : (
+          <div
+            style={{
+              padding: "24px 18px",
+              fontFamily: "var(--font-serif)",
+              fontSize: 14.5,
+              color: "var(--ink-mute)",
+              textAlign: "center",
+            }}
+          >
+            No entries yet. Capture an observation above to begin.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function RecentEntriesSkeleton() {
   return (
     <>
@@ -925,11 +998,11 @@ export function Today() {
               gap: 22,
             }}
           >
-            {/* The practice cards — drag each by the grip in its corner to
-                reorder, and the arrangement is remembered per browser so Today
-                opens the way you left it. A switched-off practice holds its
-                place in the order but is not shown. (agenda · sun/moon
-                trackers · lunar-day chip · lunar stations · solar rite.) */}
+            {/* Every card in this column — drag any by the grip in its corner
+                to reorder, and the arrangement is remembered per browser so
+                Today opens the way you left it. A switched-off practice (or a
+                signed-out surface) holds its place in the order but is not
+                shown, so turning it back on returns it where it was. */}
             <SortableList
               storageKey="today.practices.order"
               items={[
@@ -961,6 +1034,44 @@ export function Today() {
                     <TodayRiteRow lat={location.lat} lng={location.lng} />
                   ) : null,
                 },
+                {
+                  id: "hour-and-transits",
+                  // One card, not two: the pair shares a responsive grid, and
+                  // a vertical sort cannot hold two things side by side.
+                  node: (
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fit, minmax(178px, 1fr))",
+                        gap: 16,
+                      }}
+                    >
+                      <PlanetaryHourCard c={celestial} />
+                      <TransitsCard c={celestial} />
+                    </div>
+                  ),
+                },
+                {
+                  id: "lunar-widget",
+                  node: (
+                    <LunarPhaseWidget
+                      daysSinceNewMoon={celestial.lunarPhase * 29.53059}
+                      hemisphere={location.lat >= 0 ? "north" : "south"}
+                    />
+                  ),
+                },
+                {
+                  id: "quick-capture",
+                  node: <QuickCapture onCapture={(input) => setPending(input)} />,
+                },
+                {
+                  id: "day-book",
+                  node: session !== null ? <DayBook /> : null,
+                },
+                {
+                  id: "recent-entries",
+                  node: <RecentEntriesCard status={entries.status} recent={recent} />,
+                },
               ]}
             />
 
@@ -980,116 +1091,34 @@ export function Today() {
                 Manage practices →
               </Link>
             ) : null}
-
-            {/* Celestial row — small cards for the planetary hour + transits */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(178px, 1fr))",
-                gap: 16,
-              }}
-            >
-              <PlanetaryHourCard c={celestial} />
-              <TransitsCard c={celestial} />
-            </div>
-
-            {/* The bigger lunar embed — designer-specified per the H01-H03
-                Today Widgets handoff. Hemisphere follows the practitioner's
-                latitude (lat > 0 → northern; equatorial defaults to north). */}
-            <LunarPhaseWidget
-              daysSinceNewMoon={celestial.lunarPhase * 29.53059}
-              hemisphere={location.lat >= 0 ? "north" : "south"}
-            />
-
-            {/* Quick capture */}
-            <QuickCapture onCapture={(input) => setPending(input)} />
-
-            {/* The day book — waking/sleeping/dreams/notes into the record, the
-                phone's day journal (writes that cross to the phone). */}
-            {session !== null ? <DayBook /> : null}
-
-            {/* Recent entries */}
-            <div>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  justifyContent: "space-between",
-                  marginBottom: 14,
-                }}
-              >
-                <h2
-                  style={{
-                    margin: 0,
-                    fontFamily: "var(--font-display, var(--font-serif))",
-                    fontSize: 22,
-                  }}
-                >
-                  Recent entries
-                </h2>
-                <Link
-                  to="/journal"
-                  style={{
-                    fontFamily: "var(--font-ui)",
-                    fontSize: 13,
-                    color: "var(--accent)",
-                    textDecoration: "none",
-                  }}
-                >
-                  Open journal →
-                </Link>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  border: "1px solid var(--line)",
-                  borderRadius: "var(--r-lg, 12px)",
-                  overflow: "hidden",
-                  background: "var(--bg-2)",
-                }}
-              >
-                {entries.status === "loading" ? (
-                  <RecentEntriesSkeleton />
-                ) : recent.length > 0 ? (
-                  recent.map((e, i) => (
-                    <EntryRow key={e.id} entry={e} isLast={i === recent.length - 1} />
-                  ))
-                ) : (
-                  <div
-                    style={{
-                      padding: "24px 18px",
-                      fontFamily: "var(--font-serif)",
-                      fontSize: 14.5,
-                      color: "var(--ink-mute)",
-                      textAlign: "center",
-                    }}
-                  >
-                    No entries yet. Capture an observation above to begin.
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
 
-          {/* RIGHT RAIL */}
-          <aside
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 22,
-              minWidth: 0,
-            }}
-          >
-            <HoursOfDayCard c={celestial} />
-            {ledger.status === "ok" && ledger.data ? (
-              <TodayLedgerCards ledger={ledger.data} formatRelative={relativeTimeBidirectional} />
-            ) : null}
-            {/* H12 — the due row's verdict slot; gracefully empty until
-                the two-gate queue endpoint exists. Replaces the old
-                "On this day" placeholder card. */}
-            <AwaitingJudgmentCard />
-            <MottoCard />
+          {/* RIGHT RAIL — its cards drag too, remembered separately from the
+              main column's order. */}
+          <aside style={{ minWidth: 0 }}>
+            <SortableList
+              storageKey="today.rail.order"
+              items={[
+                { id: "hours-of-day", node: <HoursOfDayCard c={celestial} /> },
+                {
+                  id: "ledger",
+                  node:
+                    ledger.status === "ok" && ledger.data ? (
+                      <TodayLedgerCards
+                        ledger={ledger.data}
+                        formatRelative={relativeTimeBidirectional}
+                      />
+                    ) : null,
+                },
+                {
+                  // H12 — the due row's verdict slot; gracefully empty until
+                  // the two-gate queue endpoint exists.
+                  id: "awaiting-judgment",
+                  node: <AwaitingJudgmentCard />,
+                },
+                { id: "motto", node: <MottoCard /> },
+              ]}
+            />
           </aside>
         </div>
       </div>

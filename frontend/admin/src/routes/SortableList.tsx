@@ -64,8 +64,15 @@ function SortableItem({ id, children }: { id: string; children: ReactNode }) {
     id,
   });
   return (
+    // td-sortable-item + td-sortable-body: a card whose component renders
+    // NOTHING (an empty agenda, a row that errored) collapses entirely via
+    // the :has(:empty) rule in theourgia.shared.css — otherwise its grip
+    // would float over zero-height content, a drag anchor attached to
+    // nothing. The null-filter below can only see gating done in Today;
+    // this catches the nulls rendered inside the components themselves.
     <div
       ref={setNodeRef}
+      className="td-sortable-item"
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
@@ -98,7 +105,7 @@ function SortableItem({ id, children }: { id: string; children: ReactNode }) {
       >
         ⠿
       </button>
-      {children}
+      <div className="td-sortable-body">{children}</div>
     </div>
   );
 }

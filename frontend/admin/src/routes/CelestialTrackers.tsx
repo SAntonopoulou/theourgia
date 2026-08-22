@@ -90,6 +90,12 @@ export function CelestialTrackers({
   const lunar = useLunarStreak();
   const lunarStreak = lunarOn ? (lunar.data ?? 0) : null;
 
+  // Both disciplines off: render nothing at all, not an empty section. An
+  // empty section under Today's sortable list left a drag grip floating
+  // over zero height — an anchor attached to nothing, and the bug Sophia
+  // reported.
+  if (!solarOn && !lunarOn) return null;
+
   return (
     <section
       aria-label="The sun and moon today"
