@@ -31,13 +31,21 @@ export interface ApiCallState<T> {
 export interface UseApiCallOptions {
   /** Skip the initial call. Default false. */
   skip?: boolean;
+  /**
+   * Inputs the call closes over (a lat/lng, an id). When one changes the
+   * call re-runs — without this the hook fetches once and holds whatever
+   * the FIRST render's inputs were, which is how Today's solar stations
+   * stayed computed for Greenwich after the user's stored location arrived.
+   * Values are compared by JSON serialisation; keep them primitive.
+   */
+  deps?: readonly (string | number | boolean | null | undefined)[];
 }
 
 export function useApiCall<T>(
   fn: (signal: AbortSignal) => Promise<T>,
   options: UseApiCallOptions = {},
 ): ApiCallState<T> {
-  const { skip = false } = options;
+  const { skip = false, deps } = options;
   const [status, setStatus] = useState<ApiCallStatus>(skip ? "idle" : "loading");
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -73,10 +81,13 @@ export function useApiCall<T>(
     }
   }, []);
 
+  // A change of declared inputs re-runs the call; the serialised key keeps
+  // the dependency array a fixed length for the rules of hooks.
+  const depsKey = deps === undefined ? null : JSON.stringify(deps);
   useEffect(() => {
     if (skip) return;
     void run();
-  }, [skip, run]);
+  }, [skip, run, depsKey]);
 
   return { status, data, error, refresh: run };
 }

@@ -67,8 +67,10 @@ export function LunarAdorationsRoute() {
   const location = useMyLocation({ enabled: true });
   const loc = location.data ?? MOCK_LOCATION;
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const today = useApiCall<LunarTodayResponse>((signal) =>
-    apiMethods.lunarToday({ lat: loc.lat, lng: loc.lng, tz, signal }),
+  // deps: recompute when the stored location replaces the Greenwich stand-in.
+  const today = useApiCall<LunarTodayResponse>(
+    (signal) => apiMethods.lunarToday({ lat: loc.lat, lng: loc.lng, tz, signal }),
+    { deps: [loc.lat, loc.lng, tz] },
   );
 
   // Which of today's stations are already kept (from the synced record), plus

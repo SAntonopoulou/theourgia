@@ -78,7 +78,9 @@ export function CelestialTrackers({
   // adorations are on (its streak is what the number below the sun shows).
   const resh = useApiCall<ReshTodayRead>(
     (signal) => apiMethods.reshToday({ lat, lng, tz, signal }),
-    { skip: !solarOn },
+    // deps: recompute when the stored location replaces the Greenwich
+    // stand-in — a mount-once call would hold the wrong sky.
+    { skip: !solarOn, deps: [lat, lng, tz] },
   );
   const solarStreak =
     solarOn && resh.data && typeof (resh.data as ReshTodayRead).streak_days === "number"

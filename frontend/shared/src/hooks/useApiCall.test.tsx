@@ -52,6 +52,46 @@ describe("useApiCall", () => {
     expect(fn).not.toHaveBeenCalled();
   });
 
+  it("re-runs when a declared dep changes — the stale-Greenwich bug", async () => {
+    // Today's rite row mounts with a stand-in location; the stored one
+    // arrives a beat later as new props. The call must follow the inputs.
+    const fn = vi.fn(async () => "ok");
+    const { result, rerender } = renderHook(({ lat }) => useApiCall(fn, { deps: [lat] }), {
+      initialProps: { lat: 51.4769 },
+    });
+    await waitFor(() => {
+      expect(result.current.status).toBe("ok");
+    });
+    expect(fn).toHaveBeenCalledTimes(1);
+
+    rerender({ lat: 37.9838 });
+    await waitFor(() => {
+      expect(fn).toHaveBeenCalledTimes(2);
+    });
+
+    // An unchanged dep does not re-run the call.
+    rerender({ lat: 37.9838 });
+    await waitFor(() => {
+      expect(result.current.status).toBe("ok");
+    });
+    expect(fn).toHaveBeenCalledTimes(2);
+  });
+
+  it("without deps, changed props do NOT re-run (the documented default)", async () => {
+    const fn = vi.fn(async () => "ok");
+    const { result, rerender } = renderHook(({ lat: _lat }) => useApiCall(fn), {
+      initialProps: { lat: 51.4769 },
+    });
+    await waitFor(() => {
+      expect(result.current.status).toBe("ok");
+    });
+    rerender({ lat: 37.9838 });
+    await waitFor(() => {
+      expect(result.current.status).toBe("ok");
+    });
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
   it("aborts in-flight call on unmount (state doesn't update after)", async () => {
     const resolveRef: { current: ((v: string) => void) | null } = { current: null };
     const fn = vi.fn(

@@ -248,8 +248,11 @@ function LunarStationCard({
  */
 export function TodayLunarRow({ lat, lng }: { lat: number; lng: number }) {
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const today = useApiCall<LunarTodayResponse>((signal) =>
-    apiMethods.lunarToday({ lat, lng, tz, signal }),
+  // deps: the row mounts before the stored location arrives (Greenwich stands
+  // in), so the stations must be recomputed when the real lat/lng land.
+  const today = useApiCall<LunarTodayResponse>(
+    (signal) => apiMethods.lunarToday({ lat, lng, tz, signal }),
+    { deps: [lat, lng, tz] },
   );
   // The active adoration set names the stations (Sophia's Hekate set); without
   // one, the plain station names stand — as on the phone. Read from the synced
@@ -450,8 +453,12 @@ export interface TodayRiteRowProps {
 
 export function TodayRiteRow({ lat, lng }: TodayRiteRowProps) {
   const tz = useMemo(() => Intl.DateTimeFormat().resolvedOptions().timeZone, []);
-  const today = useApiCall<ReshTodayRead>((signal) =>
-    apiMethods.reshToday({ lat, lng, tz, signal }),
+  // deps: the row mounts once the practice toggles load, often before the
+  // stored location does — without them the stations stayed computed for the
+  // Greenwich stand-in forever (the "solar adorations not working" bug).
+  const today = useApiCall<ReshTodayRead>(
+    (signal) => apiMethods.reshToday({ lat, lng, tz, signal }),
+    { deps: [lat, lng, tz] },
   );
   const adorations = useApiCall<ReshAdorationRead[]>((signal) =>
     apiMethods.listReshAdorations({ since: localIsoDate(STREAK_WINDOW_DAYS - 1), signal }),

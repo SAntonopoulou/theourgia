@@ -448,7 +448,8 @@ export function LiberReshRoute() {
 
   const today = useApiCall<ReshTodayRead>(
     (signal) => apiMethods.reshToday({ lat: lat ?? 0, lng: lng ?? 0, tz, signal }),
-    { skip: lat === undefined || lng === undefined },
+    // deps: a location edited in settings recomputes the stations.
+    { skip: lat === undefined || lng === undefined, deps: [lat, lng, tz] },
   );
   const adorations = useApiCall<ReshAdorationRead[]>((signal) =>
     apiMethods.listReshAdorations({ since: localIsoDate(STREAK_DAYS - 1), signal }),
