@@ -1688,7 +1688,7 @@ export function Editor() {
         <div className="ed-main" style={{ minWidth: 0 }}>
           <div
             style={{
-              maxWidth: 720,
+              maxWidth: 820,
               margin: "0 auto",
               padding: "24px 28px 0",
               width: "100%",
@@ -1746,7 +1746,7 @@ export function Editor() {
             <div
               data-role="entry-sealed-body"
               style={{
-                maxWidth: 720,
+                maxWidth: 820,
                 margin: "0 auto",
                 padding: "0 28px 120px",
                 width: "100%",
@@ -1889,7 +1889,7 @@ export function Editor() {
           position: sticky;
           top: 8px;
           z-index: 20;
-          max-width: 720px;
+          max-width: 820px;
           width: calc(100% - 24px);
           box-sizing: border-box;
           margin: 0 auto 6px;
@@ -1899,7 +1899,7 @@ export function Editor() {
         .theourgia-editor .ProseMirror {
           padding: 8px 28px 120px;
           outline: none;
-          max-width: 720px;
+          max-width: 820px;
           margin: 0 auto;
         }
         .theourgia-editor .ProseMirror h1 {
