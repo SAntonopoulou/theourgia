@@ -1091,3 +1091,154 @@ async def events_today_context(
         ),
         attribution=ATTRIBUTION,
     )
+
+
+# ════════════════════════════════════════════════════════════════════════
+# /astro/elect — the phone's elector: any pack ruleset, judged over a span
+# ════════════════════════════════════════════════════════════════════════
+
+
+class ElectRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    #: The election-rules pack JSON, verbatim as packs carry it — the
+    #: closed vocabulary of conditions is validated server-side and a
+    #: ruleset asking for a condition this build lacks is refused by name.
+    ruleset: dict
+    start: datetime
+    end: datetime
+    step_minutes: int = Field(default=30, ge=5, le=720)
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    #: Fills a ruleset's ``$subject`` / ``$house`` placeholders.
+    subject_body: str | None = None
+    subject_house: int | None = Field(default=None, ge=1, le=12)
+
+
+class ElectFindingRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    held: bool
+    veto: bool
+    weight: int
+    because: str
+    #: The fact stated — "The Moon is void of course", not a rule name.
+    says: str
+    detail: str
+
+
+class ElectWindowRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    start: datetime
+    end: datetime
+    score: int
+    out_of: int
+    fraction: float | None
+    vetoed: bool
+    findings: list[ElectFindingRead]
+
+
+class ElectResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+    summary: str
+    best_possible: int
+    samples: int
+    step_minutes: int
+    #: Windows that clear the 60%-of-best bar; when none do, the
+    #: strongest few are offered anyway with the shortfall visible.
+    favourable: list[ElectWindowRead]
+    weaker: list[ElectWindowRead]
+    ruled_out: list[ElectWindowRead]
+    void_rule: str
+    attribution: str
+
+
+_ELECT_MAX_SAMPLES = 1500
+
+
+def _window_read(w) -> ElectWindowRead:
+    from theourgia.core.astro.elector import says as _says_fact
+
+    return ElectWindowRead(
+        start=w.from_,
+        end=w.until,
+        score=w.judgement.score,
+        out_of=w.judgement.out_of,
+        fraction=w.fraction,
+        vetoed=w.is_vetoed,
+        findings=[
+            ElectFindingRead(
+                held=f.held,
+                veto=f.clause.is_veto,
+                weight=f.clause.weight,
+                because=f.clause.because,
+                says=_says_fact(f),
+                detail=f.detail,
+            )
+            for f in w.judgement.findings
+        ],
+    )
+
+
+@router.post("/astro/elect", response_model=ElectResponse, tags=["astro"])
+async def astro_elect(
+    req: ElectRequest,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: OptionalCurrentUser,
+) -> ElectResponse:
+    """Judge every sample of the span against the ruleset and fold the
+    verdicts into windows — the phone's elector, under the caller's own
+    doctrine (solar-phase orbs, void-of-course rule, exaltation degrees).
+    """
+    from theourgia.core.astro.elector import ElectError, elect, sort_windows
+
+    start = req.start if req.start.tzinfo else req.start.replace(tzinfo=UTC)
+    end = req.end if req.end.tzinfo else req.end.replace(tzinfo=UTC)
+    if end <= start:
+        raise HTTPException(status_code=422, detail="The span ends before it begins.")
+    step = timedelta(minutes=req.step_minutes)
+    samples = int((end - start) / step)
+    if samples > _ELECT_MAX_SAMPLES:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"That span at that step is {samples} charts; the elector "
+                f"computes at most {_ELECT_MAX_SAMPLES} per request. Widen "
+                "the step or shorten the span."
+            ),
+        )
+    doctrine = (
+        await read_astro_doctrine(db, current_user.id)
+        if current_user is not None
+        else AstroDoctrineModel()
+    )
+    try:
+        rules, windows = elect(
+            req.ruleset,
+            start=start,
+            end=end,
+            step=step,
+            latitude=req.latitude,
+            longitude=req.longitude,
+            doctrine=doctrine,
+            subject_body=req.subject_body,
+            subject_house=req.subject_house,
+        )
+    except ElectError as refusal:
+        raise HTTPException(status_code=422, detail=str(refusal)) from refusal
+    favourable, weaker, ruled_out = sort_windows(windows)
+    return ElectResponse(
+        name=rules.name,
+        summary=rules.summary,
+        best_possible=rules.best_possible,
+        samples=samples,
+        step_minutes=req.step_minutes,
+        favourable=[_window_read(w) for w in favourable],
+        weaker=[_window_read(w) for w in weaker],
+        ruled_out=[_window_read(w) for w in ruled_out],
+        void_rule=doctrine.void_of_course,
+        attribution=ATTRIBUTION,
+    )
