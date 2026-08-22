@@ -207,88 +207,151 @@ export function PackFeedRoute() {
           elsewhere.
         </span>
       </label>
-      {packs.map((pack) => {
-        const isInstalled =
-          justInstalled.has(pack.id) || installedSlugs.some((s) => slugMatches(s, pack.id));
-        const onAnotherDevice = !isInstalled && phoneOffered.has(pack.id);
-        const busy = installing.has(pack.id);
-        return (
-          <div key={pack.id} style={CARD}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 16 }}>{pack.title}</div>
-              <div
-                style={{
-                  fontSize: 12.5,
-                  color: "var(--ink-mute)",
-                  lineHeight: 1.5,
-                  margin: "4px 0 6px",
-                }}
-              >
-                {pack.description}
-              </div>
-              <div
-                style={{
-                  fontSize: 11.5,
-                  color: "var(--ink-faint, var(--ink-mute))",
-                  display: "flex",
-                  gap: 8,
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                }}
-              >
-                <span>
-                  v{pack.version} · {megabytes(pack.bytes)}
-                </span>
-                {onAnotherDevice && (
-                  <span
-                    style={{
-                      color: "var(--accent)",
-                      border: "1px solid var(--line)",
-                      borderRadius: 999,
-                      padding: "1px 8px",
-                    }}
-                  >
-                    on another device
-                  </span>
-                )}
-              </div>
-            </div>
-            {isInstalled ? (
-              <span
-                style={{
-                  fontSize: 12,
-                  color: "var(--accent)",
-                  alignSelf: "center",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                ✓ Installed
-              </span>
-            ) : (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void install(pack)}
-                style={{
-                  alignSelf: "center",
-                  padding: "8px 14px",
-                  borderRadius: "var(--r-md)",
-                  borderWidth: 1,
-                  borderStyle: "solid",
-                  borderColor: "var(--accent)",
-                  background: busy ? "var(--bg-2)" : "var(--accent-soft)",
-                  color: "var(--ink)",
-                  fontSize: 13,
-                  cursor: busy ? "default" : "pointer",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {busy ? "Installing…" : "Install"}
-              </button>
-            )}
-          </div>
-        );
-      })}
+      {groupPacks(packs).map(([groupLabel, group]) => (
+        <section key={groupLabel}>
+          <h2
+            style={{
+              margin: "22px 0 10px",
+              fontFamily: "var(--font-ui)",
+              fontSize: 11,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "var(--ink-mute)",
+            }}
+          >
+            {groupLabel}
+          </h2>
+          {group.map((pack) => renderPack(pack))}
+        </section>
+      ))}
     </div>
   );
+
+  function renderPack(pack: FeedPack) {
+    {
+      const isInstalled =
+        justInstalled.has(pack.id) || installedSlugs.some((s) => slugMatches(s, pack.id));
+      const onAnotherDevice = !isInstalled && phoneOffered.has(pack.id);
+      const busy = installing.has(pack.id);
+      return (
+        <div key={pack.id} style={CARD}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 16 }}>{pack.title}</div>
+            <div
+              style={{
+                fontSize: 12.5,
+                color: "var(--ink-mute)",
+                lineHeight: 1.5,
+                margin: "4px 0 6px",
+              }}
+            >
+              {pack.description}
+            </div>
+            <div
+              style={{
+                fontSize: 11.5,
+                color: "var(--ink-faint, var(--ink-mute))",
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <span>
+                v{pack.version} · {megabytes(pack.bytes)}
+              </span>
+              {onAnotherDevice && (
+                <span
+                  style={{
+                    color: "var(--accent)",
+                    border: "1px solid var(--line)",
+                    borderRadius: 999,
+                    padding: "1px 8px",
+                  }}
+                >
+                  on another device
+                </span>
+              )}
+            </div>
+          </div>
+          {isInstalled ? (
+            <span
+              style={{
+                fontSize: 12,
+                color: "var(--accent)",
+                alignSelf: "center",
+                whiteSpace: "nowrap",
+              }}
+            >
+              ✓ Installed
+            </span>
+          ) : (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void install(pack)}
+              style={{
+                alignSelf: "center",
+                padding: "8px 14px",
+                borderRadius: "var(--r-md)",
+                borderWidth: 1,
+                borderStyle: "solid",
+                borderColor: "var(--accent)",
+                background: busy ? "var(--bg-2)" : "var(--accent-soft)",
+                color: "var(--ink)",
+                fontSize: 13,
+                cursor: busy ? "default" : "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {busy ? "Installing…" : "Install"}
+            </button>
+          )}
+        </div>
+      );
+    }
+  }
+}
+
+/** What a kind is called on the shelf. A kind this build has no word for
+ *  shows its key rather than hiding the pack. */
+const KIND_LABELS: Record<string, string> = {
+  bundle: "Whole traditions",
+  rite: "Rites",
+  "adoration-set": "Adorations",
+  sitting: "Sittings & breath",
+  working: "Workings",
+  calendar: "Calendars",
+  "correspondence-table": "Correspondences",
+  "card-system": "Cards",
+  divination: "Divination",
+  "number-system": "Number systems",
+  derivation: "Derivations",
+  "word-list": "Word corpora",
+  "spiritual-map": "Spiritual maps",
+  "directional-frame": "Directional frames",
+  "election-rules": "Elections",
+  "field-system": "Fields",
+  "session-system": "Sessions",
+  technique: "Techniques",
+};
+
+/** The feed grouped by kind for the shelf: bundles first (the whole-tradition
+ *  installs), then each kind in label order, each group A→Z by title. */
+function groupPacks(packs: FeedPack[]): [string, FeedPack[]][] {
+  const byLabel = new Map<string, FeedPack[]>();
+  for (const pack of packs) {
+    const label = KIND_LABELS[pack.kind] ?? (pack.kind || "Other packs");
+    const list = byLabel.get(label) ?? [];
+    list.push(pack);
+    byLabel.set(label, list);
+  }
+  for (const list of byLabel.values()) {
+    list.sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" }));
+  }
+  return [...byLabel.entries()].sort(([a], [b]) => {
+    if (a === "Whole traditions") return -1;
+    if (b === "Whole traditions") return 1;
+    return a.localeCompare(b);
+  });
 }
