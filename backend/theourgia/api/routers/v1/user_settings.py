@@ -23,7 +23,9 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -1070,5 +1072,87 @@ async def put_my_astro_doctrine(
     if current_user is None:
         raise UnauthorizedError("doctrine settings require authentication")
     await _upsert_value(db, current_user.id, ASTRO_DOCTRINE_KEY, payload.model_dump())
+    await db.commit()
+    return payload
+
+
+# ─── the practitioner's nativity (astro.nativity) ─────────────────────────
+#
+# The birth the timing techniques run against — profection and releasing
+# are chart arithmetic FROM a nativity, and asking for the birth details on
+# every visit would make the techniques page a form. One nativity per
+# account for now, matching the phone's "mine" chart; named others can
+# follow when the phone's birth store grows its sync half.
+
+ASTRO_NATIVITY_KEY = "astro.nativity"
+
+
+class AstroNativityModel(BaseModel):
+    """The saved nativity the techniques read from. Unset until the
+    practitioner enters it — endpoints answer 404 rather than a default,
+    because there is no default birth."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = ""
+    birth: datetime
+    latitude: float = Field(ge=-90.0, le=90.0)
+    longitude: float = Field(ge=-180.0, le=180.0)
+
+
+async def read_astro_nativity(db: AsyncSession, user_id) -> AstroNativityModel | None:
+    """The user's saved nativity, or None where none has been entered."""
+    stmt = select(UserSetting).where(
+        UserSetting.user_id == user_id, UserSetting.key == ASTRO_NATIVITY_KEY
+    )
+    row = (await db.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        return None
+    try:
+        import json
+
+        value = json.loads(row.value_json)
+    except (ValueError, TypeError):
+        return None
+    if not isinstance(value, dict):
+        return None
+    try:
+        return AstroNativityModel(**value)
+    except ValidationError:
+        return None
+
+
+@router.get(
+    "/users/me/settings/astro-nativity",
+    summary="Read the signed-in user's saved nativity",
+    response_model=AstroNativityModel,
+)
+async def get_my_astro_nativity(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> AstroNativityModel:
+    if current_user is None:
+        raise UnauthorizedError("nativity settings require authentication")
+    nativity = await read_astro_nativity(db, current_user.id)
+    if nativity is None:
+        raise HTTPException(404, "No nativity saved yet.")
+    return nativity
+
+
+@router.put(
+    "/users/me/settings/astro-nativity",
+    summary="Save the signed-in user's nativity",
+    response_model=AstroNativityModel,
+)
+async def put_my_astro_nativity(
+    payload: AstroNativityModel,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> AstroNativityModel:
+    if current_user is None:
+        raise UnauthorizedError("nativity settings require authentication")
+    await _upsert_value(
+        db, current_user.id, ASTRO_NATIVITY_KEY, payload.model_dump(mode="json")
+    )
     await db.commit()
     return payload

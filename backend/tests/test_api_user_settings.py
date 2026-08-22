@@ -592,3 +592,37 @@ async def test_read_astro_doctrine_tolerates_garbage() -> None:
     assert d.solar_phase == "paulus"
     d = await read_astro_doctrine(_Session(_Row('["a list"]')), "user-1")
     assert d.exaltation_degrees == "signLevel"
+
+
+# ─── astro.nativity — the saved birth the techniques run against ─────────
+
+
+def test_astro_nativity_requires_a_birth() -> None:
+    # No default birth exists; the model refuses to invent one.
+    from theourgia.api.routers.v1.user_settings import AstroNativityModel
+
+    with pytest.raises(ValidationError):
+        AstroNativityModel(name="Mine", latitude=37.98, longitude=23.72)
+
+
+def test_astro_nativity_round_trips_as_json() -> None:
+    # model_dump(mode="json") is what _upsert_value stores — the datetime
+    # must serialize, and the stored dict must parse back to the model.
+    from theourgia.api.routers.v1.user_settings import AstroNativityModel
+
+    m = AstroNativityModel(
+        name="Mine", birth="1990-04-12T08:30:00Z", latitude=37.98, longitude=23.72
+    )
+    stored = m.model_dump(mode="json")
+    assert isinstance(stored["birth"], str)
+    again = AstroNativityModel(**stored)
+    assert again == m
+
+
+def test_astro_nativity_bounds_the_coordinates() -> None:
+    from theourgia.api.routers.v1.user_settings import AstroNativityModel
+
+    with pytest.raises(ValidationError):
+        AstroNativityModel(birth="1990-04-12T08:30:00Z", latitude=91, longitude=0)
+    with pytest.raises(ValidationError):
+        AstroNativityModel(birth="1990-04-12T08:30:00Z", latitude=0, longitude=181)

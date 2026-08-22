@@ -438,3 +438,75 @@ def test_transits_rejects_non_positive_orb(client: TestClient) -> None:
         },
     )
     assert resp.status_code == 422
+
+
+# ───── /astro/profections (monthly) + /astro/releasing ──────────────────
+
+
+def test_profections_carries_the_month(client: TestClient) -> None:
+    resp = client.get("/api/v1/astro/profections", params={
+        "birth": "1990-04-12T08:30:00Z",
+        "latitude": ATHENS_LAT,
+        "longitude": ATHENS_LON,
+        "on_date": "2026-08-22",
+    })
+    assert resp.status_code == 200
+    body = resp.json()
+    # The year's arithmetic is untouched…
+    assert body["age"] == 36
+    assert 1 <= body["profected_house"] <= 12
+    # …and the month — a twelfth of the actual year — rides beside it.
+    assert 1 <= body["month_house"] <= 12
+    assert body["month_sign_name"]
+    assert body["month_lord"]
+
+
+def test_releasing_returns_the_chain_and_first_level(client: TestClient) -> None:
+    resp = client.get("/api/v1/astro/releasing", params={
+        "birth": "1990-04-12T08:30:00Z",
+        "latitude": ATHENS_LAT,
+        "longitude": ATHENS_LON,
+        "at": "2026-08-22T12:00:00Z",
+    })
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["from_lot"] == "fortune"
+    assert 1 <= body["start_sign"] <= 12
+    # The chain lights the way to "now": years, months, days, hours.
+    assert [p["level"] for p in body["chain"]] == [1, 2, 3, 4]
+    assert all(p["holds_now"] for p in body["chain"])
+    # No path: the first level is shown, indexed for descent.
+    assert body["path"] == []
+    assert all(p["level"] == 1 for p in body["shown"])
+    assert [p["index"] for p in body["shown"]] == list(range(len(body["shown"])))
+    # The general period never looses.
+    assert not any(p["is_loosing_of_the_bond"] for p in body["shown"])
+
+
+def test_releasing_descends_by_path(client: TestClient) -> None:
+    params = {
+        "birth": "1990-04-12T08:30:00Z",
+        "latitude": ATHENS_LAT,
+        "longitude": ATHENS_LON,
+        "at": "2026-08-22T12:00:00Z",
+    }
+    top = client.get("/api/v1/astro/releasing", params=params).json()
+    idx = top["chain"][0]["index"]
+    resp = client.get("/api/v1/astro/releasing", params={**params, "path": str(idx)})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert [p["sign"] for p in body["path"]] == [top["chain"][0]["sign"]]
+    assert all(p["level"] == 2 for p in body["shown"])
+    # The months tile their year exactly.
+    assert body["shown"][0]["start"] == top["chain"][0]["start"]
+    assert body["shown"][-1]["until"] == top["chain"][0]["until"]
+
+
+def test_releasing_refuses_a_path_past_the_end(client: TestClient) -> None:
+    resp = client.get("/api/v1/astro/releasing", params={
+        "birth": "1990-04-12T08:30:00Z",
+        "latitude": ATHENS_LAT,
+        "longitude": ATHENS_LON,
+        "path": "99",
+    })
+    assert resp.status_code == 422

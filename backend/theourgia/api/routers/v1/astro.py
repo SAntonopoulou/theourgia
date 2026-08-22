@@ -61,7 +61,7 @@ from theourgia.core.election import (
 )
 from theourgia.core.astro.aspects import AspectKind
 from theourgia.core.astro.planetary_hours import Planet
-from theourgia.core.astro.profections import profection_for_date
+from theourgia.core.astro.profections import profection_for_date, profection_monthly_at
 from theourgia.core.astro.transits import DEFAULT_TRANSIT_ORB, transits_to_natal
 from theourgia.core.calendars.attic import attic_context
 from theourgia.core.festivals import festivals_for_year, get_festival
@@ -628,6 +628,12 @@ class ProfectionResponse(BaseModel):
     profected_sign: int
     profected_sign_name: str
     year_lord: str
+    #: The monthly profection in force on ``on_date`` — a twelfth of the
+    #: actual birthday-to-birthday year, not a calendar month.
+    month_house: int
+    month_sign: int
+    month_sign_name: str
+    month_lord: str
     ascendant_sign: int
     ascendant_sign_name: str
     attribution: str
@@ -663,6 +669,8 @@ async def astro_profections(
     asc = natal.ascendant
     try:
         prof = profection_for_date(birth.date(), target, asc.sign)
+        at_moment = datetime(target.year, target.month, target.day, 12, tzinfo=UTC)
+        month = profection_monthly_at(birth, at_moment, asc.sign)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
     return ProfectionResponse(
@@ -673,6 +681,10 @@ async def astro_profections(
         profected_sign=prof.profected_sign,
         profected_sign_name=prof.profected_sign_name,
         year_lord=prof.year_lord.value,
+        month_house=month.profected_house,
+        month_sign=month.profected_sign,
+        month_sign_name=month.profected_sign_name,
+        month_lord=month.year_lord.value,
         ascendant_sign=asc.sign,
         ascendant_sign_name=asc.sign_name,
         attribution=ATTRIBUTION,
@@ -1244,5 +1256,193 @@ async def astro_elect(
         ruled_out=[_window_read(w) for w in ruled_out],
         dropped=list(rules.dropped),
         void_rule=doctrine.void_of_course,
+        attribution=ATTRIBUTION,
+    )
+
+
+# ════════════════════════════════════════════════════════════════════════
+# /astro/releasing — the four levels of zodiacal releasing, one at a time
+# ════════════════════════════════════════════════════════════════════════
+
+
+class ReleasingPeriodRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    level: int
+    sign: int
+    sign_name: str
+    #: The sign's traditional ruler — the time lord of the period.
+    lord: str
+    start: datetime
+    until: datetime
+    #: 1..12, counted from the lot released from.
+    house_from_lot: int
+    is_loosing_of_the_bond: bool
+    is_completion_period: bool
+    is_peak: bool
+    is_truncated: bool
+    holds_now: bool
+    #: This period's index in its own level list — the descent key.
+    index: int
+
+
+class ReleasingResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    birth: datetime
+    at: datetime
+    from_lot: str
+    start_sign: int
+    start_sign_name: str
+    fortune_sign: int
+    fortune_sign_name: str
+    #: The period holding ``at`` on every level, outermost first — the way
+    #: to "now", lit the whole way down.
+    chain: list[ReleasingPeriodRead]
+    #: The steps the caller's ``path`` walked, outermost first.
+    path: list[ReleasingPeriodRead]
+    #: The periods one level inside the last path step (or the first level
+    #: when the path is empty).
+    shown: list[ReleasingPeriodRead]
+    attribution: str
+
+
+def _releasing_read(p, start_sign: int, moment: datetime, index: int) -> ReleasingPeriodRead:
+    from theourgia.core.astro.profections import TRADITIONAL_RULERS
+    from theourgia.core.astro.zodiac import SIGNS
+
+    return ReleasingPeriodRead(
+        level=p.level,
+        sign=p.sign,
+        sign_name=SIGNS[p.sign],
+        lord=TRADITIONAL_RULERS[p.sign].value,
+        start=p.start,
+        until=p.until,
+        house_from_lot=((p.sign - start_sign) % 12) + 1,
+        is_loosing_of_the_bond=p.is_loosing_of_the_bond,
+        is_completion_period=p.is_completion_period,
+        is_peak=p.is_peak,
+        is_truncated=p.is_truncated,
+        holds_now=p.start <= moment < p.until,
+        index=index,
+    )
+
+
+@router.get("/astro/releasing", response_model=ReleasingResponse, tags=["astro"])
+async def astro_releasing(
+    birth: datetime,
+    latitude: float = Query(ge=-90.0, le=90.0),
+    longitude: float = Query(ge=-180.0, le=180.0),
+    from_lot: Literal["fortune", "spirit"] = Query(default="fortune"),
+    at: datetime | None = Query(default=None),
+    path: str = Query(
+        default="",
+        description=(
+            "Comma-separated period indexes walking down from the first "
+            "level — '3,7' opens the fourth general period's eighth month. "
+            "Empty shows the first level."
+        ),
+        pattern=r"^(\d+(,\d+){0,2})?$",
+    ),
+) -> ReleasingResponse:
+    """Zodiacal releasing from Fortune or Spirit — Valens' periods, from
+    the canonical engine the phone and site share vectors for. Returns the
+    chain of periods holding ``at`` (years → months → days → hours) and
+    one level of the descent, chosen by ``path``.
+
+    ⚠ Peaks are counted from Fortune whichever lot the release begins
+    from, and the general period never looses — the loosing of the bond
+    is a subperiod rule.
+    """
+    from theourgia.core.astro.hellenistic.lots import LotInputs, fortune, spirit
+    from theourgia.core.astro.hellenistic.sect import determine
+    from theourgia.core.astro.releasing import (
+        first_level,
+        period_at,
+        second_level,
+        sub_level,
+    )
+
+    if birth.tzinfo is None:
+        birth = birth.replace(tzinfo=UTC)
+    moment = at or datetime.now(tz=UTC)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    moment = moment.astimezone(UTC)
+
+    natal = compute_chart(ChartRequest(
+        instant=birth,
+        latitude=latitude,
+        longitude=longitude,
+        house_system=HouseSystem.WHOLE_SIGN,
+    ))
+    lons = {p.body.id: p.tropical.longitude for p in natal.placements}
+    asc = natal.ascendant.longitude
+    sect = determine(lons["sun"], asc).sect
+    inputs = LotInputs(
+        ascendant=asc,
+        sun=lons["sun"],
+        moon=lons["moon"],
+        mercury=lons["mercury"],
+        venus=lons["venus"],
+        mars=lons["mars"],
+        jupiter=lons["jupiter"],
+        saturn=lons["saturn"],
+        sect=sect,
+    )
+    fortune_lon = fortune(inputs)
+    lot_lon = fortune_lon if from_lot == "fortune" else spirit(inputs)
+    start_sign = int(lot_lon % 360 // 30) + 1
+    fortune_sign = int(fortune_lon % 360 // 30) + 1
+
+    level1 = first_level(birth, start_sign, fortune_sign=fortune_sign)
+
+    def deepen(parent):
+        return (
+            second_level(parent, fortune_sign=fortune_sign)
+            if parent.level == 1
+            else sub_level(parent, fortune_sign=fortune_sign)
+        )
+
+    # The chain of "now", years down to hours.
+    chain = []
+    periods = level1
+    for _ in range(4):
+        held = period_at(periods, moment)
+        if held is None:
+            break
+        chain.append(_releasing_read(held, start_sign, moment, periods.index(held)))
+        if held.level >= 4:
+            break
+        periods = deepen(held)
+
+    # The caller's descent.
+    steps = []
+    shown_source = level1
+    if path:
+        for raw in path.split(","):
+            idx = int(raw)
+            if idx >= len(shown_source):
+                raise HTTPException(422, "That path walks past the end of a level.")
+            parent = shown_source[idx]
+            steps.append(_releasing_read(parent, start_sign, moment, idx))
+            shown_source = deepen(parent)
+
+    from theourgia.core.astro.zodiac import SIGNS
+
+    return ReleasingResponse(
+        birth=birth,
+        at=moment,
+        from_lot=from_lot,
+        start_sign=start_sign,
+        start_sign_name=SIGNS[start_sign],
+        fortune_sign=fortune_sign,
+        fortune_sign_name=SIGNS[fortune_sign],
+        chain=chain,
+        path=steps,
+        shown=[
+            _releasing_read(p, start_sign, moment, i)
+            for i, p in enumerate(shown_source)
+        ],
         attribution=ATTRIBUTION,
     )
