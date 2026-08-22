@@ -1042,6 +1042,94 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     };
   }
 
+  // /api/v1/record/entries — a few days of a kept record, sky and all,
+  // so the record page renders whole in mock walks.
+  if (bare === "/api/v1/record/entries" && method === "GET") {
+    const day = (offset: number, hour: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() - offset);
+      d.setHours(hour, 12, 0, 0);
+      return d.toISOString();
+    };
+    const keeping = (
+      id: string,
+      offset: number,
+      hour: number,
+      subjectKey: string,
+      note: string,
+      sky: Record<string, unknown>,
+    ) => ({
+      id,
+      kind: "observance",
+      doc: {
+        subjectKey,
+        observedAt: day(offset, hour),
+        occurrenceAt: day(offset, hour),
+        note,
+        mood: 4,
+        context: { latitude: 51.5, longitude: -0.1, ...sky },
+      },
+      updated_at_utc: day(offset, hour),
+      deleted_at_utc: null,
+      seq: 1,
+    });
+    return {
+      entries: [
+        keeping("rec-1", 0, 6, "sunrise", "Clear dawn.", {
+          moonSignIndex: 7, moonDegreeInSign: 13.9, sunSignIndex: 4,
+          planetaryHourRuler: "venus", dayRuler: "sun", sect: "diurnal",
+          moonVoidOfCourse: false,
+        }),
+        keeping("rec-2", 0, 12, "noon", "", {
+          moonSignIndex: 7, moonDegreeInSign: 17.2, sunSignIndex: 4,
+          planetaryHourRuler: "mercury", dayRuler: "sun", sect: "diurnal",
+          moonVoidOfCourse: true,
+        }),
+        keeping("rec-3", 1, 21, "moonrise", "The Moon over the rooftops.", {
+          moonSignIndex: 6, moonDegreeInSign: 28.4, sunSignIndex: 4,
+          planetaryHourRuler: "moon", dayRuler: "venus", sect: "nocturnal",
+          moonVoidOfCourse: false,
+        }),
+        {
+          id: "rec-4",
+          kind: "day-entry",
+          doc: { kind: "dream", at: day(1, 5), body: "A staircase of water." },
+          updated_at_utc: day(1, 5),
+          deleted_at_utc: null,
+          seq: 1,
+        },
+        {
+          id: "rec-5",
+          kind: "reckoning",
+          doc: {
+            row: {
+              wrote: "ΑΓΑΠΗ", total: 93, systemId: "greek", methodId: "standard",
+              letterTable: "default", normalising: "iota-adscript",
+              keptAt: day(2, 15),
+            },
+          },
+          updated_at_utc: day(2, 15),
+          deleted_at_utc: null,
+          seq: 1,
+        },
+      ],
+      next_since: 5,
+      more: false,
+    };
+  }
+
+  // /api/v1/record/day-frames — a boundary per day at the asked frame.
+  if (bare === "/api/v1/record/day-frames" && method === "GET") {
+    const out: string[] = [];
+    for (let offset = 6; offset >= -1; offset -= 1) {
+      const d = new Date();
+      d.setDate(d.getDate() - offset);
+      d.setHours(5, 47, 0, 0);
+      out.push(d.toISOString());
+    }
+    return { boundaries: out };
+  }
+
   // /api/v1/astro/profections — a fixed nativity's year and month.
   if (bare?.startsWith("/api/v1/astro/profections") && method === "GET") {
     return {

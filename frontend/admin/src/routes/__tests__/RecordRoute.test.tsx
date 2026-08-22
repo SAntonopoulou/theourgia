@@ -29,7 +29,18 @@ vi.mock("../../lib/api.js", () => ({
   ApiError: class extends Error {},
 }));
 
-import { RecordRoute, detailsOf, namesFrom, titleOf } from "../RecordRoute.js";
+import {
+  RecordRoute,
+  detailsOf,
+  matchesWords,
+  namesFrom,
+  skyClauseLabel,
+  skyClausesOf,
+  spanLabel,
+  startOfSpan,
+  stepSpan,
+  titleOf,
+} from "../RecordRoute.js";
 
 function renderRoute() {
   const client = new QueryClient({
@@ -552,5 +563,62 @@ describe("RecordRoute", () => {
     const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent ?? "");
     expect(headings).toHaveLength(2);
     expect(headings.every((h) => h.includes("from moonrise at"))).toBe(true);
+  });
+});
+
+describe("the span, stepped as the phone steps it", () => {
+  it("starts the week on Monday, the practitioner's week", () => {
+    // 2026-08-22 is a Saturday; its week began Monday the 17th.
+    const from = startOfSpan(new Date(2026, 7, 22), "week");
+    expect(from.getDay()).toBe(1);
+    expect(from.getDate()).toBe(17);
+  });
+
+  it("steps months by the calendar, not by thirty days", () => {
+    const jan = startOfSpan(new Date(2026, 0, 31), "month");
+    const feb = stepSpan(jan, "month", 1);
+    expect(feb.getMonth()).toBe(1);
+    expect(feb.getDate()).toBe(1);
+  });
+
+  it("labels the week across a month boundary with both months", () => {
+    const from = startOfSpan(new Date(2026, 7, 31), "week");
+    expect(spanLabel(from, "week")).toBe("31 Aug – 6 Sep");
+  });
+});
+
+describe("what to look for", () => {
+  const kept = {
+    id: "k9",
+    kind: "observance",
+    doc: {
+      subjectKey: "moonrise",
+      observedAt: "2026-08-17T06:12:00Z",
+      note: "clear night",
+      context: {
+        moonSignIndex: 7,
+        planetaryHourRuler: "venus",
+        sect: "nocturnal",
+        moonVoidOfCourse: true,
+      },
+    },
+    updated_at_utc: "2026-08-17T06:12:01Z",
+    deleted_at_utc: null,
+    seq: 9,
+  } as never;
+
+  it("reads an entry's sky into chips, spoken as the phone speaks them", () => {
+    const clauses = skyClausesOf(kept);
+    expect(clauses).toEqual(["moon:7", "hour:venus", "sect:nocturnal", "void"]);
+    expect(skyClauseLabel("moon:7")).toBe("Moon in Scorpio");
+    expect(skyClauseLabel("hour:venus")).toBe("hour of Venus");
+    expect(skyClauseLabel("void")).toBe("Moon void of course");
+  });
+
+  it("matches words against what the entry carries", () => {
+    expect(matchesWords(kept, "clear", new Map())).toBe(true);
+    expect(matchesWords(kept, "moonrise", new Map())).toBe(true);
+    expect(matchesWords(kept, "thunder", new Map())).toBe(false);
+    expect(matchesWords(kept, "  ", new Map())).toBe(true);
   });
 });

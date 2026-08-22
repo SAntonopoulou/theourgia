@@ -312,6 +312,110 @@ const SIGNS = [
 const MOODS = ["", "Grim", "Low", "Level", "Glad", "Radiant"];
 const BODIES = ["", "Spent", "Weary", "Steady", "Rested", "Vital"];
 
+// ── the span, stepped as the phone steps it ────────────────────────────
+
+export type RecordSpan = "week" | "month" | "year";
+
+const SPAN_LABELS: Record<RecordSpan, string> = {
+  week: "Week",
+  month: "Month",
+  year: "Year",
+};
+
+/** The span's start containing `at` — the week from Monday, because the
+ *  week a practitioner names is the week they live in. */
+export function startOfSpan(at: Date, span: RecordSpan): Date {
+  const day = new Date(at.getFullYear(), at.getMonth(), at.getDate());
+  if (span === "week") {
+    const weekday = (day.getDay() + 6) % 7; // Monday 0
+    day.setDate(day.getDate() - weekday);
+    return day;
+  }
+  if (span === "month") return new Date(at.getFullYear(), at.getMonth(), 1);
+  return new Date(at.getFullYear(), 0, 1);
+}
+
+export function endOfSpan(from: Date, span: RecordSpan): Date {
+  if (span === "week") {
+    const until = new Date(from);
+    until.setDate(until.getDate() + 7);
+    return until;
+  }
+  if (span === "month") return new Date(from.getFullYear(), from.getMonth() + 1, from.getDate());
+  return new Date(from.getFullYear() + 1, from.getMonth(), from.getDate());
+}
+
+export function stepSpan(from: Date, span: RecordSpan, direction: 1 | -1): Date {
+  if (span === "week") {
+    const at = new Date(from);
+    at.setDate(at.getDate() + 7 * direction);
+    return at;
+  }
+  if (span === "month") return new Date(from.getFullYear(), from.getMonth() + direction, 1);
+  return new Date(from.getFullYear() + direction, 0, 1);
+}
+
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+export function spanLabel(from: Date, span: RecordSpan): string {
+  if (span === "week") {
+    const last = endOfSpan(from, span);
+    last.setDate(last.getDate() - 1);
+    return `${from.getDate()} ${MONTHS_SHORT[from.getMonth()]} – ${last.getDate()} ${MONTHS_SHORT[last.getMonth()]}`;
+  }
+  if (span === "month") return `${from.toLocaleDateString(undefined, { month: "long" })} ${from.getFullYear()}`;
+  return String(from.getFullYear());
+}
+
+// ── what to look for ───────────────────────────────────────────────────
+
+/** The kinds an entry may be, in the record's own words. */
+const KIND_CHOICES: { kind: string; label: string }[] = [
+  { kind: "observance", label: "Keepings" },
+  { kind: "day-entry", label: "The day's entries" },
+  { kind: "reckoning", label: "Reckonings" },
+  { kind: "reflection", label: "Reflections" },
+  { kind: "election", label: "Elections" },
+];
+
+/** A sky condition an entry was kept under, encoded for the chip set. */
+export function skyClausesOf(entry: WireEntry): string[] {
+  const sky = entry.doc.context;
+  if (!sky) return [];
+  const out: string[] = [];
+  if (sky.moonSignIndex != null) out.push(`moon:${sky.moonSignIndex}`);
+  if (sky.planetaryHourRuler) out.push(`hour:${sky.planetaryHourRuler}`);
+  if (sky.sect) out.push(`sect:${sky.sect}`);
+  if (sky.moonVoidOfCourse) out.push("void");
+  return out;
+}
+
+export function skyClauseLabel(clause: string): string {
+  const [kind, value] = clause.split(":");
+  if (kind === "moon") return `Moon in ${SIGNS[Number(value)] ?? "?"}`;
+  if (kind === "hour")
+    return `hour of ${(value ?? "").charAt(0).toUpperCase()}${(value ?? "").slice(1)}`;
+  if (kind === "sect") return `${(value ?? "").charAt(0).toUpperCase()}${(value ?? "").slice(1)}`;
+  return "Moon void of course";
+}
+
+/** Free text against the words an entry carries or is named by. */
+export function matchesWords(entry: WireEntry, words: string, names: Map<string, string>): boolean {
+  const needle = words.trim().toLowerCase();
+  if (!needle) return true;
+  const carried = rowEvent(entry);
+  const haystack = [
+    carried?.title ?? "",
+    carried?.quote ?? "",
+    String(entry.doc.note ?? ""),
+    String(entry.doc.body ?? ""),
+    titleOf(entry.doc.subjectKey, names),
+  ]
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(needle);
+}
+
 export function RecordRoute() {
   useTopbar(
     () => ({
@@ -322,6 +426,14 @@ export function RecordRoute() {
   );
 
   const [entries, setEntries] = useState<WireEntry[] | null>(null);
+  // Month, because a practice kept daily is read a month at a time — long
+  // enough to see a shape, short enough to hold in the head.
+  const [span, setSpan] = useState<RecordSpan>("month");
+  const [from, setFrom] = useState<Date>(() => startOfSpan(new Date(), "month"));
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [kindFilter, setKindFilter] = useState<Set<string>>(new Set());
+  const [skyFilter, setSkyFilter] = useState<Set<string>>(new Set());
+  const [words, setWords] = useState("");
   const [frame, setFrame] = useState<"civil" | "sunrise" | "moonrise">("civil");
   const [frameBounds, setFrameBounds] = useState<string[] | null>(null);
   const [frameNote, setFrameNote] = useState("");
@@ -470,9 +582,39 @@ export function RecordRoute() {
   // the shelf holds definitions beside events: the definitions lend their
   // names and stay off the days.
   const names = namesFrom(entries.filter((e) => e.deleted_at_utc === null));
-  const standing = entries.filter((e) => e.deleted_at_utc === null && EVENT_KINDS.has(e.kind));
+  const everything = entries.filter((e) => e.deleted_at_utc === null && EVENT_KINDS.has(e.kind));
+  const until = endOfSpan(from, span);
+  const filterCount = kindFilter.size + skyFilter.size + (words.trim() ? 1 : 0);
+  const standing = everything.filter((e) => {
+    const at = new Date(atOf(e));
+    if (at < from || at >= until) return false;
+    if (kindFilter.size > 0 && !kindFilter.has(e.kind)) return false;
+    if (skyFilter.size > 0) {
+      const held = new Set(skyClausesOf(e));
+      for (const clause of skyFilter) if (!held.has(clause)) return false;
+    }
+    return matchesWords(e, words, names);
+  });
 
-  if (standing.length === 0) {
+  // The chips offer only what the record holds, each with how often —
+  // the difference between a condition worth asking about and a
+  // coincidence, as the phone's filter sheet shows it.
+  const skyVocabulary = new Map<string, number>();
+  for (const e of everything) {
+    for (const clause of skyClausesOf(e)) {
+      skyVocabulary.set(clause, (skyVocabulary.get(clause) ?? 0) + 1);
+    }
+  }
+  const vocabulary = [...skyVocabulary.entries()].sort((a, b) => b[1] - a[1]);
+
+  const toggle = (held: Set<string>, key: string, write: (next: Set<string>) => void) => {
+    const next = new Set(held);
+    if (next.has(key)) next.delete(key);
+    else next.add(key);
+    write(next);
+  };
+
+  if (everything.length === 0) {
     return (
       <div style={pageStyle}>
         <div style={cardStyle}>
@@ -543,6 +685,120 @@ export function RecordRoute() {
 
   return (
     <div style={pageStyle} data-route="record">
+      <div style={spanBarStyle}>
+        <div style={{ display: "flex", gap: 6 }}>
+          {(Object.keys(SPAN_LABELS) as RecordSpan[]).map((one) => (
+            <button
+              key={one}
+              type="button"
+              aria-pressed={one === span}
+              onClick={() => {
+                setSpan(one);
+                setFrom(startOfSpan(new Date(), one));
+              }}
+              style={{
+                ...spanPillStyle,
+                borderColor: one === span ? "var(--accent)" : "var(--line)",
+                color: one === span ? "var(--accent)" : "var(--ink-soft)",
+              }}
+            >
+              {SPAN_LABELS[one]}
+            </button>
+          ))}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginLeft: "auto" }}>
+          <button
+            type="button"
+            aria-label="Earlier"
+            onClick={() => setFrom(stepSpan(from, span, -1))}
+            style={stepStyle}
+          >
+            ‹
+          </button>
+          <span style={{ font: "var(--type-caption)", color: "var(--ink)", minWidth: "7.5em", textAlign: "center" }}>
+            {spanLabel(from, span)}
+          </span>
+          <button
+            type="button"
+            aria-label="Later"
+            onClick={() => setFrom(stepSpan(from, span, 1))}
+            style={stepStyle}
+          >
+            ›
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterOpen(!filterOpen)}
+            style={{
+              ...stepStyle,
+              color: filterCount > 0 ? "var(--accent)" : "var(--muted)",
+              fontSize: 13,
+            }}
+          >
+            What to look for
+          </button>
+        </div>
+      </div>
+
+      {filterOpen ? (
+        <div style={filterPanelStyle}>
+          <div style={filterEyebrowStyle}>What kind</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {KIND_CHOICES.map(({ kind, label }) => (
+              <button
+                key={kind}
+                type="button"
+                aria-pressed={kindFilter.has(kind)}
+                onClick={() => toggle(kindFilter, kind, setKindFilter)}
+                style={{
+                  ...chipStyle,
+                  borderColor: kindFilter.has(kind) ? "var(--accent)" : "var(--line)",
+                  color: kindFilter.has(kind) ? "var(--accent)" : "var(--ink-soft)",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {vocabulary.length > 0 ? (
+            <>
+              <div style={filterEyebrowStyle}>Under what sky</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {vocabulary.map(([clause, count]) => (
+                  <button
+                    key={clause}
+                    type="button"
+                    aria-pressed={skyFilter.has(clause)}
+                    onClick={() => toggle(skyFilter, clause, setSkyFilter)}
+                    style={{
+                      ...chipStyle,
+                      borderColor: skyFilter.has(clause) ? "var(--accent)" : "var(--line)",
+                      color: skyFilter.has(clause) ? "var(--accent)" : "var(--ink-soft)",
+                    }}
+                  >
+                    {skyClauseLabel(clause)}{" "}
+                    <span style={{ color: "var(--muted)" }}>{count}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : null}
+          <div style={filterEyebrowStyle}>Words</div>
+          <input
+            value={words}
+            onChange={(event) => setWords(event.target.value)}
+            placeholder="In the entry's own words…"
+            style={wordsInputStyle}
+          />
+        </div>
+      ) : null}
+
+      {filterCount > 0 ? (
+        <button type="button" onClick={() => setFilterOpen(true)} style={lookingForStyle}>
+          {filterCount === 1 ? "Looking for one thing." : `Looking for ${filterCount} things at once.`}
+        </button>
+      ) : null}
+
       <p style={hintStyle}>
         An entry opened here can be mended or removed; the devices learn of it at their next sync,
         by the same rules they push with.
@@ -565,6 +821,13 @@ export function RecordRoute() {
             " minute of a boundary can sit on a different day than in the app."}
         {frameNote ? ` ${frameNote}` : ""}
       </p>
+      {days.length === 0 ? (
+        <p style={{ ...proseStyle, color: "var(--ink-soft)", padding: "var(--space-5) 0", textAlign: "center" }}>
+          {filterCount === 0
+            ? "Nothing was recorded in this span."
+            : "Nothing in this span answers what you are looking for."}
+        </p>
+      ) : null}
       {days.map(([day, list]) => (
         <section key={day} style={{ ...cardStyle, marginBottom: "var(--space-4)" }}>
           <h2 style={{ font: "var(--type-h4)", marginTop: 0 }}>{day}</h2>
@@ -766,4 +1029,79 @@ const metaStyle: CSSProperties = {
   font: "var(--type-caption)",
   color: "var(--muted)",
   marginTop: 2,
+};
+
+const spanBarStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: "var(--space-3)",
+  marginBottom: "var(--space-3)",
+};
+
+const spanPillStyle: CSSProperties = {
+  font: "var(--type-caption)",
+  padding: "5px 12px",
+  borderRadius: 999,
+  border: "1px solid var(--line)",
+  background: "none",
+  cursor: "pointer",
+};
+
+const stepStyle: CSSProperties = {
+  font: "var(--type-body)",
+  color: "var(--muted)",
+  background: "none",
+  border: "none",
+  cursor: "pointer",
+  padding: "2px 6px",
+};
+
+const filterPanelStyle: CSSProperties = {
+  border: "1px solid var(--line-2)",
+  borderRadius: "var(--r-lg)",
+  background: "var(--bg-2)",
+  padding: "var(--space-3) var(--space-4)",
+  marginBottom: "var(--space-3)",
+};
+
+const filterEyebrowStyle: CSSProperties = {
+  font: "var(--type-caption)",
+  letterSpacing: "0.1em",
+  textTransform: "uppercase",
+  color: "var(--muted)",
+  margin: "var(--space-3) 0 var(--space-2)",
+};
+
+const chipStyle: CSSProperties = {
+  font: "var(--type-caption)",
+  padding: "4px 10px",
+  borderRadius: 999,
+  border: "1px solid var(--line)",
+  background: "none",
+  cursor: "pointer",
+};
+
+const wordsInputStyle: CSSProperties = {
+  font: "var(--type-body)",
+  color: "var(--ink)",
+  background: "var(--bg)",
+  border: "1px solid var(--line)",
+  borderRadius: "var(--r-md, 8px)",
+  padding: "7px 10px",
+  width: "100%",
+  maxWidth: 360,
+  marginBottom: "var(--space-2)",
+};
+
+const lookingForStyle: CSSProperties = {
+  display: "block",
+  font: "var(--type-caption)",
+  color: "var(--accent)",
+  background: "none",
+  border: "none",
+  padding: 0,
+  cursor: "pointer",
+  margin: "0 0 var(--space-3)",
+  textAlign: "left",
 };
