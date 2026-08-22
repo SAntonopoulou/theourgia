@@ -621,3 +621,15 @@ export * from "./VaultNav/index.js";
 export * from "./VaultTopbar/index.js";
 export * from "./Visibility/index.js";
 export * from "./VocesMagicae/index.js";
+export {
+  MapFigureView,
+  type MapFigureViewProps,
+  placeNodes,
+} from "./spiritualMap/MapFigureView.js";
+export {
+  type PackMapEdge,
+  type PackMapLine,
+  type PackMapNode,
+  type PackSpiritualMap,
+  packToSpiritualMaps,
+} from "./spiritualMap/packSpiritualMaps.js";

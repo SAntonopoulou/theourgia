@@ -14,15 +14,22 @@ import {
   Button,
   KeepingSheet,
   type KeepingValues,
+  MapFigureView,
+  type PackSpiritualMap,
   type RecordEntryWrite,
   type SpiritualMap,
   type SpiritualMapNode,
   Toast,
+  fetchPackFeed,
+  installedPackPayloads,
+  packToSpiritualMaps,
   useTopbar,
 } from "@theourgia/shared";
 import { useEffect, useState } from "react";
 
 import { amendObservance, keepObservance } from "../data/keepObservance.js";
+import { apiMethods } from "../data/api.js";
+import { fetchDisabledModuleIds } from "../data/packSettings.js";
 import { useMyLocation } from "../data/useLocation.js";
 import { mapNodeSubjectKey, useMaps, useSetMaps } from "../data/useMaps.js";
 import { apiGet } from "../lib/api.js";
@@ -69,6 +76,32 @@ export function SpiritualMapRoute() {
   const [workedCounts, setWorkedCounts] = useState<Map<string, number>>(new Map());
   const [sheet, setSheet] = useState<{ entry: RecordEntryWrite; title: string } | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // The figures the packs carry — coordinates and all. Drawn, not listed:
+  // a triangular lattice of ten and a Tree of three pillars both arrive
+  // as the same list of points, and only the pack knows which it draws.
+  const [packMaps, setPackMaps] = useState<PackSpiritualMap[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [feed, installed] = await Promise.all([
+          fetchPackFeed(),
+          apiMethods.bundlesInstalled(),
+        ]);
+        const slugs = installed.bundles.map((b) => b.slug);
+        const disabled = await fetchDisabledModuleIds().catch(() => []);
+        const found = await installedPackPayloads(feed, slugs, "spiritual-map", disabled);
+        const parsed = found.flatMap((f) => packToSpiritualMaps(f.payload));
+        if (!cancelled) setPackMaps(parsed);
+      } catch {
+        if (!cancelled) setPackMaps([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -204,6 +237,69 @@ export function SpiritualMapRoute() {
         spheres. Author the figure here; working a node keeps it to your record, and it crosses to
         the phone with everything else.
       </p>
+
+      {packMaps.length > 0 ? (
+        <div style={{ marginBottom: 28 }}>
+          <h2
+            style={{
+              margin: "0 0 4px",
+              fontFamily: "var(--font-display, var(--font-serif))",
+              fontSize: 20,
+              color: "var(--ink)",
+            }}
+          >
+            From your packs
+          </h2>
+          <p style={{ margin: "0 0 14px", fontFamily: "var(--font-ui)", fontSize: 12.5, color: "var(--ink-mute)", lineHeight: 1.5 }}>
+            The figure as the tradition draws it — its coordinates come from
+            the pack. Work a position by clicking it; positions already
+            worked stand picked out.
+          </p>
+          <div style={{ display: "grid", gap: 22 }}>
+            {packMaps.map((packMap) => {
+              const worked = new Set(
+                packMap.nodes
+                  .filter(
+                    (n) => (workedCounts.get(mapNodeSubjectKey(packMap.id, n.id)) ?? 0) > 0,
+                  )
+                  .map((n) => n.id),
+              );
+              return (
+                <div
+                  key={packMap.id}
+                  style={{
+                    border: "1px solid var(--line)",
+                    borderRadius: "var(--r-lg, 14px)",
+                    padding: 16,
+                    background: "var(--bg-2)",
+                  }}
+                >
+                  <div style={{ fontFamily: "var(--font-display, var(--font-serif))", fontSize: 17, color: "var(--ink)" }}>
+                    {packMap.name}
+                  </div>
+                  {packMap.summary ? (
+                    <div style={{ fontFamily: "var(--font-ui)", fontSize: 12, color: "var(--ink-mute)", margin: "2px 0 10px" }}>
+                      {packMap.summary}
+                    </div>
+                  ) : null}
+                  <MapFigureView
+                    map={packMap}
+                    chosen={worked}
+                    onNodeClick={(nodeId) => {
+                      const node = packMap.nodes.find((n) => n.id === nodeId);
+                      if (!node || busy) return;
+                      void work(
+                        { id: packMap.id, name: packMap.name, summary: "", nodes: [] },
+                        { id: node.id, name: node.name, note: "" },
+                      );
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
 
       <div
         style={{
