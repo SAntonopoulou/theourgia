@@ -18,6 +18,9 @@ export interface PackedSitting {
   /** "sitting" (adopts into Meditation) or "breath" (the breath pacer). */
   kind: string;
   minutes: number;
+  /** A warning that travels with the form. Several breath techniques are not
+   *  safe for everybody; a pack's caution must never be dropped on adopt. */
+  caution: string;
 }
 
 function str(v: unknown): string {
@@ -48,6 +51,7 @@ export function packedSittingsFromPayload(payload: unknown): PackedSitting[] {
       detail: str(row.detail),
       kind: str(row.kind) || "sitting",
       minutes: num(row.minutes, 10),
+      caution: str(row.caution),
     });
   }
   return out;
@@ -83,12 +87,17 @@ export function usePackedSittings(kind: "sitting" | "breath" = "sitting") {
   });
 }
 
-/** Adopt a packed sitting — copy it into an owned, editable meditation plan. */
+/** Adopt a packed sitting — copy it into an owned, editable meditation plan
+ *  of its own kind, the caution folded into the summary as on the phone. */
 export async function adoptSitting(sitting: PackedSitting): Promise<void> {
   await writeMeditationPlan({
     name: sitting.name,
-    summary: sitting.detail,
+    summary: [
+      ...(sitting.detail.length > 0 ? [sitting.detail] : []),
+      ...(sitting.caution.length > 0 ? [`Take care: ${sitting.caution}`] : []),
+    ].join("\n\n"),
     minutes: sitting.minutes,
     bell: false,
+    kind: sitting.kind === "breath" ? "breath" : "sitting",
   });
 }

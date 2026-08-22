@@ -73,10 +73,13 @@ export function planTotals(planJson: string): { seconds: number; bell: boolean }
   }
 }
 
-/** The silent sittings among a set of record entries, newest first. Breath
- *  plans (`kind: "breath"`) are left out — the web pacer does those. */
+/** The saved plans of one kind among a set of record entries, newest first —
+ *  `"sitting"` for the Meditation surface, `"breath"` for the pacer. The two
+ *  share one store on both platforms (the phone's meditations table); the
+ *  kind decides which page shows a plan, never where it lives. */
 export function meditationPlansFromEntries(
   entries: readonly MeditationRecordEntry[],
+  kind: "sitting" | "breath" = "sitting",
 ): MeditationPlanSummary[] {
   const byId = new Map<string, MeditationPlanSummary>();
   for (const entry of entries) {
@@ -87,8 +90,8 @@ export function meditationPlansFromEntries(
       byId.delete(str(row.id));
       continue;
     }
-    // Only sittings — breath plans stay on the phone.
-    if (str(row.kind) === "breath") continue;
+    // A row without a kind predates the field and is a sitting.
+    if ((str(row.kind) || "sitting") !== kind) continue;
     const id = str(row.id);
     if (id.length === 0) continue;
     const { seconds, bell } = planTotals(str(row.plan));

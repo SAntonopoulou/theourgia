@@ -16,11 +16,11 @@ import {
   type RiteDraft,
   RiteEditor,
   RitesLibrary,
-  ritesFromEntries,
   Toast,
+  ritesFromEntries,
   useTopbar,
 } from "@theourgia/shared";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   amendObservance,
@@ -28,6 +28,7 @@ import {
   keepObservance,
   writeRitual,
 } from "../data/keepObservance.js";
+import { type PackedRite, adoptRite, usePackedRites } from "../data/packedRites.js";
 import { useMyLocation } from "../data/useLocation.js";
 import { apiGet } from "../lib/api.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
@@ -88,6 +89,31 @@ export function RitualsRoute() {
       cancelled = true;
     };
   }, []);
+
+  // Rites offered by installed packs, adopted into owned rituals — the
+  // phone's model: install a pack in Settings, adopt on the practice page.
+  const packedRites = usePackedRites();
+  const adoptInFlight = useRef(false);
+  const [adoptBusy, setAdoptBusy] = useState(false);
+  const adoptPackedRite = async (rite: PackedRite): Promise<void> => {
+    if (adoptInFlight.current) return;
+    adoptInFlight.current = true;
+    setAdoptBusy(true);
+    try {
+      await adoptRite(rite);
+      await refresh();
+      Toast.push({ tone: "success", title: `Adopted "${rite.name}"` });
+    } catch (e) {
+      Toast.push({
+        tone: "warning",
+        title: "That didn't adopt",
+        body: e instanceof Error ? e.message : "Check your connection and try again.",
+      });
+    } finally {
+      adoptInFlight.current = false;
+      setAdoptBusy(false);
+    }
+  };
 
   const perform = async (rite: Rite): Promise<void> => {
     setBusy(true);
@@ -221,6 +247,98 @@ export function RitualsRoute() {
               onNew={() => setEditing({ rite: null })}
             />
           )}
+
+          {/* Rites on offer from installed packs — already-adopted ones
+              (same name, same words) stay listed; adopting twice simply
+              makes a second copy of one's own, as on the phone. */}
+          {(packedRites.data ?? []).length > 0 ? (
+            <div
+              style={{
+                marginTop: 26,
+                border: "1px solid var(--line)",
+                borderRadius: "var(--r-lg, 14px)",
+                padding: 16,
+                background: "var(--bg-2)",
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 11,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: "var(--ink-mute)",
+                  marginBottom: 10,
+                }}
+              >
+                From installed packs
+              </div>
+              <div style={{ display: "grid", gap: 8 }}>
+                {(packedRites.data ?? []).map((rite, i) => (
+                  <div
+                    key={`${rite.name}-${i}`}
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
+                    <span
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        fontFamily: "var(--font-ui)",
+                        fontSize: 14,
+                        color: "var(--ink)",
+                      }}
+                    >
+                      {rite.name}
+                      {rite.summary.length > 0 ? (
+                        <span
+                          style={{
+                            display: "block",
+                            color: "var(--ink-mute)",
+                            fontSize: 12.5,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {rite.summary}
+                        </span>
+                      ) : null}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={adoptBusy}
+                      onClick={() => void adoptPackedRite(rite)}
+                      style={{
+                        border: "1px solid var(--line)",
+                        borderRadius: 8,
+                        padding: "5px 12px",
+                        background: "transparent",
+                        color: "var(--ink-soft)",
+                        fontFamily: "var(--font-ui)",
+                        fontSize: 12.5,
+                        cursor: adoptBusy ? "default" : "pointer",
+                        flexShrink: 0,
+                      }}
+                    >
+                      Adopt
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <p
+                style={{
+                  margin: "10px 0 0",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 12,
+                  color: "var(--ink-mute)",
+                  lineHeight: 1.5,
+                }}
+              >
+                Adopting copies the rite into one of your own to edit and perform — a pack is a
+                source, never a link, and nothing is scheduled on your behalf.
+              </p>
+            </div>
+          ) : null}
         </>
       )}
 

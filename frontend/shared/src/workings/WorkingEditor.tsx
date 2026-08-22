@@ -19,6 +19,15 @@ export interface WorkingItemInput {
   title: string;
   cadence: string;
   perDay: number;
+  /** The phase this item belongs to, or null for a "throughout" item. The
+   *  editor never touches it — phases are authored on the phone or arrive
+   *  from a pack, and a save that dropped the assignment would silently
+   *  flatten a staged operation. Carried, never edited. */
+  stageId?: string | null;
+  /** The item's own script, carried untouched for the same reason. */
+  script?: string;
+  /** A rite of the practitioner's this item points at, carried untouched. */
+  ritualId?: string | null;
   /** Local-only React key. */
   _uid?: number;
 }
@@ -71,8 +80,8 @@ export function WorkingEditor({ initial, onSave, onCancel, onDelete, busy }: Wor
   const [name, setName] = useState(initial?.name ?? "");
   const [summary, setSummary] = useState(initial?.summary ?? "");
   const [subjectName, setSubjectName] = useState(initial?.subjectName ?? "");
-  const [items, setItems] = useState<WorkingItemInput[]>(
-    () => (initial?.items ?? []).map((i) => ({ ...i, _uid: uidSeq++ })),
+  const [items, setItems] = useState<WorkingItemInput[]>(() =>
+    (initial?.items ?? []).map((i) => ({ ...i, _uid: uidSeq++ })),
   );
   const [removed, setRemoved] = useState<WorkingItemInput[]>([]);
 
@@ -197,12 +206,12 @@ export function WorkingEditor({ initial, onSave, onCancel, onDelete, busy }: Wor
                 name: name.trim(),
                 summary: summary.trim(),
                 subjectName: subjectName.trim(),
-                items: items.map((i) => ({
-                  id: i.id,
-                  createdAt: i.createdAt,
-                  title: i.title.trim(),
-                  cadence: i.cadence,
-                  perDay: i.perDay,
+                // Everything but the local key survives the save — including
+                // the fields this editor does not edit (stageId, script,
+                // ritualId), so a staged working is never flattened here.
+                items: items.map(({ _uid, ...rest }) => ({
+                  ...rest,
+                  title: rest.title.trim(),
                 })),
               },
               removed,
@@ -215,7 +224,12 @@ export function WorkingEditor({ initial, onSave, onCancel, onDelete, busy }: Wor
           Cancel
         </Button>
         {onDelete ? (
-          <Button variant="danger" onClick={onDelete} disabled={busy} style={{ marginLeft: "auto" }}>
+          <Button
+            variant="danger"
+            onClick={onDelete}
+            disabled={busy}
+            style={{ marginLeft: "auto" }}
+          >
             Delete
           </Button>
         ) : null}

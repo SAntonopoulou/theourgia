@@ -13,16 +13,16 @@ import {
   KeepingSheet,
   type KeepingValues,
   type RecordEntryWrite,
+  Toast,
   type Working,
   type WorkingDraft,
   WorkingEditor,
   type WorkingItem,
   WorkingsLibrary,
-  Toast,
   useTopbar,
   workingsFromEntries,
 } from "@theourgia/shared";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   amendObservance,
@@ -30,6 +30,7 @@ import {
   keepObservance,
   writeWorking,
 } from "../data/keepObservance.js";
+import { type PackedWorking, adoptWorking, usePackedWorkings } from "../data/packedWorkings.js";
 import { useMyLocation } from "../data/useLocation.js";
 import { apiGet } from "../lib/api.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
@@ -38,7 +39,11 @@ type PullResult = {
   entries: {
     kind: string;
     deleted_at_utc?: string | null;
-    doc?: { row?: Record<string, unknown> | null; subjectKey?: unknown; occurrenceAt?: unknown } | null;
+    doc?: {
+      row?: Record<string, unknown> | null;
+      subjectKey?: unknown;
+      occurrenceAt?: unknown;
+    } | null;
   }[];
   next_since: number;
   more: boolean;
@@ -122,6 +127,31 @@ export function WorkingsRoute() {
     };
   }, []);
 
+  // Workings offered by installed packs, adopted whole — phases, items,
+  // scripts and per-phase cadences. Nothing is begun on adopt.
+  const packedWorkings = usePackedWorkings();
+  const adoptInFlight = useRef(false);
+  const [adoptBusy, setAdoptBusy] = useState(false);
+  const adoptPackedWorking = async (w: PackedWorking): Promise<void> => {
+    if (adoptInFlight.current) return;
+    adoptInFlight.current = true;
+    setAdoptBusy(true);
+    try {
+      await adoptWorking(w);
+      await refresh();
+      Toast.push({ tone: "success", title: `Adopted "${w.name}"` });
+    } catch (e) {
+      Toast.push({
+        tone: "warning",
+        title: "That didn't adopt",
+        body: e instanceof Error ? e.message : "Check your connection and try again.",
+      });
+    } finally {
+      adoptInFlight.current = false;
+      setAdoptBusy(false);
+    }
+  };
+
   const save = async (draft: WorkingDraft, removed: WorkingDraft["items"]): Promise<void> => {
     const existing = editing?.working;
     setBusy(true);
@@ -132,6 +162,8 @@ export function WorkingsRoute() {
         name: draft.name,
         summary: draft.summary,
         subjectName: draft.subjectName,
+        // stageId/script/ritualId ride through untouched — the phone (or a
+        // pack) authored them, and this editor edits only what it shows.
         items: draft.items.map((it, i) => ({
           id: it.id,
           createdAt: it.createdAt,
@@ -139,6 +171,9 @@ export function WorkingsRoute() {
           cadence: it.cadence,
           perDay: it.perDay,
           orderIndex: i,
+          stageId: it.stageId ?? null,
+          script: it.script ?? "",
+          ritualId: it.ritualId ?? null,
         })),
         removedItems: removed.map((it, i) => ({
           id: it.id,
@@ -147,6 +182,9 @@ export function WorkingsRoute() {
           cadence: it.cadence,
           perDay: it.perDay,
           orderIndex: i,
+          stageId: it.stageId ?? null,
+          script: it.script ?? "",
+          ritualId: it.ritualId ?? null,
         })),
       });
       await refresh();
@@ -242,6 +280,9 @@ export function WorkingsRoute() {
                     title: i.title,
                     cadence: i.cadence,
                     perDay: i.perDay,
+                    stageId: i.stageId,
+                    script: i.script,
+                    ritualId: i.ritualId,
                   })),
                 }
               : undefined
@@ -264,8 +305,8 @@ export function WorkingsRoute() {
             }}
           >
             A working is a rite kept over time — begin one here with the items a day asks of it, or
-            mark what a synced working asks as you perform it. Phase criteria stay the practitioner’s
-            to declare on the phone.
+            mark what a synced working asks as you perform it. Phase criteria stay the
+            practitioner’s to declare on the phone.
           </p>
 
           {error ? (
@@ -283,6 +324,105 @@ export function WorkingsRoute() {
               onEdit={(w) => setEditing({ working: w })}
             />
           )}
+
+          {/* Operations on offer from installed packs — adopted whole:
+              phases, items, scripts, per-phase cadences. Nothing begins
+              until the practitioner starts it. */}
+          {(packedWorkings.data ?? []).length > 0 ? (
+            <div
+              style={{
+                marginTop: 26,
+                border: "1px solid var(--line)",
+                borderRadius: "var(--r-lg, 14px)",
+                padding: 16,
+                background: "var(--bg-2)",
+              }}
+            >
+              <div
+                style={{
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 11,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: "var(--ink-mute)",
+                  marginBottom: 10,
+                }}
+              >
+                From installed packs
+              </div>
+              <div style={{ display: "grid", gap: 8 }}>
+                {(packedWorkings.data ?? []).map((w, i) => (
+                  <div
+                    key={`${w.name}-${i}`}
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
+                    <span
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        fontFamily: "var(--font-ui)",
+                        fontSize: 14,
+                        color: "var(--ink)",
+                      }}
+                    >
+                      {w.name}
+                      <span style={{ color: "var(--ink-mute)", fontSize: 12.5 }}>
+                        {" "}
+                        ·{" "}
+                        {w.stages.length > 0
+                          ? `${w.stages.length} ${w.stages.length === 1 ? "phase" : "phases"}`
+                          : `${w.items.length} ${w.items.length === 1 ? "item" : "items"}`}
+                      </span>
+                      {w.summary.length > 0 ? (
+                        <span
+                          style={{
+                            display: "block",
+                            color: "var(--ink-mute)",
+                            fontSize: 12.5,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {w.summary}
+                        </span>
+                      ) : null}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={adoptBusy}
+                      onClick={() => void adoptPackedWorking(w)}
+                      style={{
+                        border: "1px solid var(--line)",
+                        borderRadius: 8,
+                        padding: "5px 12px",
+                        background: "transparent",
+                        color: "var(--ink-soft)",
+                        fontFamily: "var(--font-ui)",
+                        fontSize: 12.5,
+                        cursor: adoptBusy ? "default" : "pointer",
+                        flexShrink: 0,
+                      }}
+                    >
+                      Adopt
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <p
+                style={{
+                  margin: "10px 0 0",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 12,
+                  color: "var(--ink-mute)",
+                  lineHeight: 1.5,
+                }}
+              >
+                Adopting copies the whole operation — phases and all — into one of your own. Writing
+                it out and starting it are different acts; nothing begins until you start it.
+              </p>
+            </div>
+          ) : null}
         </>
       )}
 

@@ -37,6 +37,10 @@ export interface WorkingItem {
   perDay: number;
   /** The stage it belongs to, or null for a "throughout" item. */
   stageId: string | null;
+  /** The item's own words — what performing it actually says and does. */
+  script: string;
+  /** A rite of the practitioner's this item points at, or null. */
+  ritualId: string | null;
   orderIndex: number;
   /** ISO instant first written — preserved when editing. */
   createdAt: string | null;
@@ -94,6 +98,7 @@ function itemFrom(row: Record<string, unknown>): { workingId: string; item: Work
   const workingId = str(row.workingId);
   if (id.length === 0 || workingId.length === 0) return null;
   const stageId = str(row.stageId);
+  const ritualId = str(row.ritualId);
   return {
     workingId,
     item: {
@@ -102,6 +107,8 @@ function itemFrom(row: Record<string, unknown>): { workingId: string; item: Work
       cadence: str(row.cadence) || "once",
       perDay: Math.max(1, num(row.perDay) || 1),
       stageId: stageId.length > 0 ? stageId : null,
+      script: str(row.script),
+      ritualId: ritualId.length > 0 ? ritualId : null,
       orderIndex: num(row.orderIndex),
       createdAt: str(row.createdAt) || null,
     },

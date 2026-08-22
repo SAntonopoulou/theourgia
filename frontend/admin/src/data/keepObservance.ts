@@ -111,21 +111,29 @@ export async function writeDayEntry(input: {
   return entry;
 }
 
-/** A rite authored on the web. `id`/`createdAt` absent → a new rite. */
+/** A rite authored on the web. `id`/`createdAt` absent → a new rite. A rite
+ *  the practitioner wrote has no tradition timing; one adopted from a pack
+ *  carries the tradition's own statement of when it is kept (`keptAt`, a
+ *  JSON list, verbatim from the pack). */
 export async function writeRitual(input: {
   id?: string;
   name: string;
   summary: string;
   script: string;
   createdAt?: string | null;
+  keptAt?: string;
 }): Promise<RecordEntryWrite> {
   const entry = buildSubjectEntry({
     id: input.id ?? crypto.randomUUID(),
     kind: "ritual",
     now: new Date().toISOString(),
     createdAt: input.createdAt ?? undefined,
-    // A rite the practitioner wrote has no tradition timing — an empty list.
-    row: { name: input.name, summary: input.summary, script: input.script, keptAt: "[]" },
+    row: {
+      name: input.name,
+      summary: input.summary,
+      script: input.script,
+      keptAt: input.keptAt ?? "[]",
+    },
   });
   await apiPut("/record/entries", { entries: [entry] });
   return entry;
@@ -151,7 +159,9 @@ export async function deleteRitual(rite: {
   await apiPut("/record/entries", { entries: [entry] });
 }
 
-/** One performable item as the working editor holds it. */
+/** One performable item as the working editor holds it. `stageId`, `script`
+ *  and `ritualId` are carried untouched — the web editor does not author
+ *  phases, and a save that dropped them would flatten a staged operation. */
 export interface WorkingItemDraft {
   id?: string;
   createdAt?: string | null;
@@ -159,6 +169,9 @@ export interface WorkingItemDraft {
   cadence: string;
   perDay: number;
   orderIndex: number;
+  stageId?: string | null;
+  script?: string;
+  ritualId?: string | null;
 }
 
 function workingRow(name: string, summary: string, subjectName: string): Record<string, unknown> {
@@ -173,12 +186,66 @@ function workingRow(name: string, summary: string, subjectName: string): Record<
   };
 }
 
+/** One phase of a working, as adopt writes it. Every column of the phone's
+ *  WorkingStages table is present — its sync applies the row with a strict
+ *  fromJson, so an absent field is not a default but a failure. */
+export interface WorkingStageDraft {
+  id: string;
+  name: string;
+  orderIndex: number;
+  /** `onCompletion`, `onDate`, `afterSpan` or `whenDeclared`. */
+  openRule: string;
+  /** SkySpan JSON, when the rule is `afterSpan`. */
+  openSpan?: string | null;
+  /** `forDays`, `everyItemOnce` or `untilSky`. */
+  requirement: string;
+  requiredDays?: number;
+  /** SkySpan JSON, when the requirement is measured by the sky. */
+  requiredSpan?: string | null;
+  criterion?: string;
+  /** `previous` or `start`. */
+  countFrom?: string;
+  opensNoEarlierThanDay?: number | null;
+  greek?: string;
+  phaseKey?: string;
+  namesAre?: string;
+  /** Per-item phase cadences, JSON keyed by item id; '' for none. */
+  cadences?: string;
+}
+
+function stageRow(workingId: string, s: WorkingStageDraft): Record<string, unknown> {
+  return {
+    workingId,
+    name: s.name,
+    orderIndex: s.orderIndex,
+    openRule: s.openRule,
+    openOn: null,
+    spanDays: null,
+    openSpan: s.openSpan ?? null,
+    requiredSpan: s.requiredSpan ?? null,
+    criterion: s.criterion ?? "",
+    declaredAt: null,
+    declaredNote: "",
+    countFrom: s.countFrom ?? "previous",
+    opensNoEarlierThanDay: s.opensNoEarlierThanDay ?? null,
+    greek: s.greek ?? "",
+    phaseKey: s.phaseKey ?? "",
+    namesAre: s.namesAre ?? "",
+    cadences: s.cadences ?? "",
+    requirement: s.requirement,
+    requiredDays: s.requiredDays ?? 1,
+    openedAt: null,
+    breakRule: null,
+    completedAt: null,
+  };
+}
+
 function itemRow(workingId: string, it: WorkingItemDraft): Record<string, unknown> {
   return {
     workingId,
-    stageId: null,
-    ritualId: null,
-    script: "",
+    stageId: it.stageId ?? null,
+    ritualId: it.ritualId ?? null,
+    script: it.script ?? "",
     title: it.title,
     cadence: it.cadence,
     perDay: it.perDay,
@@ -186,8 +253,9 @@ function itemRow(workingId: string, it: WorkingItemDraft): Record<string, unknow
   };
 }
 
-/** A working authored on the web — the working row plus its items, and
- *  tombstones for items removed in this edit. All in one batch. */
+/** A working authored on the web — the working row plus its items (and, when
+ *  adopting from a pack, its phases), and tombstones for items removed in
+ *  this edit. All in one batch. */
 export async function writeWorking(input: {
   id?: string;
   createdAt?: string | null;
@@ -196,6 +264,9 @@ export async function writeWorking(input: {
   subjectName: string;
   items: WorkingItemDraft[];
   removedItems?: WorkingItemDraft[];
+  /** Written only when creating (adopt) — the web editor never edits phases,
+   *  so an ordinary save must not touch them. */
+  stages?: WorkingStageDraft[];
 }): Promise<void> {
   const now = new Date().toISOString();
   const workingId = input.id ?? crypto.randomUUID();
@@ -208,6 +279,16 @@ export async function writeWorking(input: {
       row: workingRow(input.name, input.summary, input.subjectName),
     }),
   ];
+  for (const s of input.stages ?? []) {
+    entries.push(
+      buildSubjectEntry({
+        id: s.id,
+        kind: "working-stage",
+        now,
+        row: stageRow(workingId, s),
+      }),
+    );
+  }
   for (const it of input.items) {
     entries.push(
       buildSubjectEntry({
@@ -302,21 +383,30 @@ export async function writeConsultation(input: {
   return entry;
 }
 
-function sitPlanRow(name: string, summary: string, minutes: number, bell: boolean): Record<string, unknown> {
+function sitPlanRow(
+  name: string,
+  summary: string,
+  minutes: number,
+  bell: boolean,
+  kind: "sitting" | "breath",
+): Record<string, unknown> {
   return {
     setId: null,
     name,
     summary,
     sourceKind: "silence",
     source: '{"source":"silence"}',
-    kind: "sitting",
+    // The phone's PracticeKind key — a breath form lives in the same store
+    // and syncs to the phone's meditations table under its own kind.
+    kind,
     plan: buildSitPlanJson(minutes, bell),
     breath: null,
     orderIndex: 0,
   };
 }
 
-/** A silent-sit meditation plan authored on the web (a `meditation` row). */
+/** A meditation plan authored on the web (a `meditation` row) — a silent sit
+ *  by default, or a breath form for the pacer. */
 export async function writeMeditationPlan(input: {
   id?: string;
   createdAt?: string | null;
@@ -324,18 +414,19 @@ export async function writeMeditationPlan(input: {
   summary: string;
   minutes: number;
   bell: boolean;
+  kind?: "sitting" | "breath";
 }): Promise<void> {
   const entry = buildSubjectEntry({
     id: input.id ?? crypto.randomUUID(),
     kind: "meditation",
     now: new Date().toISOString(),
     createdAt: input.createdAt ?? undefined,
-    row: sitPlanRow(input.name, input.summary, input.minutes, input.bell),
+    row: sitPlanRow(input.name, input.summary, input.minutes, input.bell, input.kind ?? "sitting"),
   });
   await apiPut("/record/entries", { entries: [entry] });
 }
 
-/** Tombstone a saved sitting. */
+/** Tombstone a saved sitting or breath form. */
 export async function deleteMeditationPlan(p: {
   id: string;
   name: string;
@@ -343,6 +434,7 @@ export async function deleteMeditationPlan(p: {
   minutes: number;
   bell: boolean;
   createdAt?: string | null;
+  kind?: "sitting" | "breath";
 }): Promise<void> {
   const now = new Date().toISOString();
   const entry = buildSubjectEntry({
@@ -351,7 +443,7 @@ export async function deleteMeditationPlan(p: {
     now,
     createdAt: p.createdAt ?? undefined,
     deletedAt: now,
-    row: sitPlanRow(p.name, p.summary, p.minutes, p.bell),
+    row: sitPlanRow(p.name, p.summary, p.minutes, p.bell, p.kind ?? "sitting"),
   });
   await apiPut("/record/entries", { entries: [entry] });
 }

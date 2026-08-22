@@ -25,7 +25,7 @@ import {
   keepObservance,
   writeMeditationPlan,
 } from "../data/keepObservance.js";
-import { adoptSitting, usePackedSittings } from "../data/packedSittings.js";
+import { type PackedSitting, adoptSitting, usePackedSittings } from "../data/packedSittings.js";
 import { useMyLocation } from "../data/useLocation.js";
 import { apiGet } from "../lib/api.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
@@ -122,12 +122,7 @@ export function MeditationRoute() {
   // Sittings offered by installed packs, and adopting one into an owned plan.
   const packedSittings = usePackedSittings("sitting");
   const adoptInFlight = useRef(false);
-  const adoptPackedSitting = async (sitting: {
-    name: string;
-    detail: string;
-    kind: string;
-    minutes: number;
-  }): Promise<void> => {
+  const adoptPackedSitting = async (sitting: PackedSitting): Promise<void> => {
     if (adoptInFlight.current) return;
     adoptInFlight.current = true;
     setPlanBusy(true);
