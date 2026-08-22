@@ -1152,6 +1152,9 @@ class ElectResponse(BaseModel):
     favourable: list[ElectWindowRead]
     weaker: list[ElectWindowRead]
     ruled_out: list[ElectWindowRead]
+    #: Conditions the ruleset asked for that this build cannot answer —
+    #: dropped exactly as the phone drops them, but named.
+    dropped: list[str]
     void_rule: str
     attribution: str
 
@@ -1239,6 +1242,7 @@ async def astro_elect(
         favourable=[_window_read(w) for w in favourable],
         weaker=[_window_read(w) for w in weaker],
         ruled_out=[_window_read(w) for w in ruled_out],
+        dropped=list(rules.dropped),
         void_rule=doctrine.void_of_course,
         attribution=ATTRIBUTION,
     )

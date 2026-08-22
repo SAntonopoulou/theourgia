@@ -253,7 +253,22 @@ def test_house_token_filled() -> None:
     assert rules.clauses[0].house == 10
 
 
-def test_unknown_condition_refused_by_name() -> None:
+def test_unknown_condition_dropped_and_named() -> None:
+    # The phone drops what it cannot answer and judges by the rest — same
+    # verdicts here, but the dropped condition is named for the caller.
+    rules = parse_ruleset(
+        {"id": "t", "name": "t", "summary": "",
+         "clauses": [
+             {"condition": "moon-in-decan", "because": "t"},
+             {"condition": "moon-not-void", "because": "t"},
+         ]})
+    assert len(rules.clauses) == 1
+    assert rules.dropped == ("moon-in-decan",)
+
+
+def test_ruleset_of_only_unknowns_refused_by_name() -> None:
+    # A ruleset that lost every clause would judge every moment perfect,
+    # which is worse than one that does not appear.
     with pytest.raises(ElectError, match="moon-in-decan"):
         parse_ruleset(
             {"id": "t", "name": "t", "summary": "",

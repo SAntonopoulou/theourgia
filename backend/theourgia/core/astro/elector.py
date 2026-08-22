@@ -150,6 +150,11 @@ class Rules:
     name: str
     summary: str
     clauses: tuple[Clause, ...]
+    #: Conditions the pack asked for that this build cannot answer. The
+    #: phone drops them silently and judges by what remains; the web does
+    #: the same — same verdicts — but says so, because a window scored
+    #: without a clause should admit it.
+    dropped: tuple[str, ...] = ()
 
     @property
     def best_possible(self) -> int:
@@ -161,7 +166,10 @@ def _is_token(body: object) -> bool:
 
 
 def _parse_clause(
-    json: dict, subject_body: str | None, subject_house: int | None,
+    json: dict,
+    subject_body: str | None,
+    subject_house: int | None,
+    dropped: list[str],
 ) -> Clause | None:
     # Compound first — the phone's shape exactly.
     for key in ("all", "any"):
@@ -175,7 +183,7 @@ def _parse_clause(
             c
             for part in parts
             if isinstance(part, dict)
-            and (c := _parse_clause(part, subject_body, subject_house))
+            and (c := _parse_clause(part, subject_body, subject_house, dropped))
         )
         if not read:
             return None
@@ -195,10 +203,11 @@ def _parse_clause(
     if not isinstance(condition, str):
         return None
     if condition not in AVAILABLE_CONDITIONS:
-        raise ElectError(
-            f"This ruleset asks for {condition!r}, which this build cannot "
-            "answer — refused by name rather than half-performed."
-        )
+        # The phone drops what it cannot answer and judges by the rest —
+        # the web must reach the same verdicts, so it does the same and
+        # only NAMES what fell (surfaced through Rules.dropped).
+        dropped.append(condition)
+        return None
 
     raw_body = json.get("body")
     body = subject_body if _is_token(raw_body) else raw_body
@@ -247,20 +256,30 @@ def parse_ruleset(
     subject_body: str | None = None,
     subject_house: int | None = None,
 ) -> Rules:
-    """A pack ruleset, `$subject`/`$house` filled, unknown conditions refused."""
+    """A pack ruleset, `$subject`/`$house` filled. Conditions this build
+    cannot answer are dropped exactly as the phone drops them (recorded in
+    ``Rules.dropped``); a ruleset that loses every clause is refused, since
+    it would judge every moment perfect."""
+    dropped: list[str] = []
     clauses = tuple(
         c
         for raw in (json.get("clauses") or [])
         if isinstance(raw, dict)
-        and (c := _parse_clause(raw, subject_body, subject_house))
+        and (c := _parse_clause(raw, subject_body, subject_house, dropped))
     )
     if not clauses:
+        if dropped:
+            raise ElectError(
+                "This ruleset asks only for conditions this build cannot "
+                f"answer: {', '.join(dropped)}."
+            )
         raise ElectError("This ruleset carries no readable clauses.")
     return Rules(
         id=str(json.get("id") or ""),
         name=str(json.get("name") or ""),
         summary=str(json.get("summary") or ""),
         clauses=clauses,
+        dropped=tuple(dropped),
     )
 
 
