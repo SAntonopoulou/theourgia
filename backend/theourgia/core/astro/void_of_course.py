@@ -1,31 +1,35 @@
-"""Moon void-of-course computation.
+"""Moon void-of-course computation, under either of the two doctrines.
 
-The traditional (Lilly / horary) definition: the Moon is void of
-course from the moment of her last exact Ptolemaic aspect —
-conjunction, sextile, square, trine, or opposition — to a classical
-planet until she ingresses into the next sign.
+The two rules are genuinely different doctrines, not two orbs on one
+idea, and the practitioner chooses between them (``astro.doctrine``):
 
-Equivalently (and how we compute it): the Moon is void *right now*
-iff NO exact Ptolemaic aspect to Sun, Mercury, Venus, Mars, Jupiter,
-or Saturn perfects between now and her next sign ingress.
+* ``thirtyDegrees`` — Hellenistic *kenodromia* (Anthology, B p. 304):
+  the Moon completes no exact configuration, bodily or by degree,
+  within her next THIRTY DEGREES OF TRAVEL, **regardless of sign
+  boundaries**. Canon is explicit that the scan must not truncate at
+  the sign's edge; voids are rare under this reading, and the rarity
+  is the doctrine. This is the ledger default.
+* ``signExit`` — the later (Lilly / horary) rule: void iff no exact
+  Ptolemaic aspect to a classical planet perfects between now and her
+  next sign ingress. This is what most modern software implements.
 
 Implementation notes:
 
-* The next ingress is found by scanning forward hourly (the Moon
-  needs at most ~2.8 days to cross a sign) and bisecting the sign
-  boundary — the same bracketing technique as
-  :mod:`theourgia.core.astro.events`.
+* The ingress (and the thirty-degree instant) are found by scanning
+  forward hourly and bisecting the crossing — the same bracketing
+  technique as :mod:`theourgia.core.astro.events`.
 * Aspect perfection is detected by sampling the Moon-planet angular
-  separation on a 30-minute grid between now and the ingress and
-  watching for the separation to cross an exact aspect angle. The
-  separation changes by well under a degree per sample step, so a
-  crossing cannot be skipped.
+  separation on a 30-minute grid up to the bound and watching for the
+  separation to cross an exact aspect angle. The separation changes
+  by well under a degree per sample step, so a crossing cannot be
+  skipped.
 * Everything runs on the bundled Moshier ephemeris (``FLG_MOSEPH``),
   matching the rest of the astro engine.
 
-The outer planets are excluded on purpose — the classical VoC rule
-predates their discovery, and including them would make void periods
-vanishingly rare. This is the mainstream convention.
+The outer planets are excluded on purpose — both rules predate their
+discovery. The nodes are excluded too: they are points, not bodies,
+and the sources do not have the Moon perfecting to them (the phone's
+engines refuse them the same way).
 """
 
 from __future__ import annotations
@@ -34,7 +38,11 @@ from datetime import UTC, datetime, timedelta
 
 import swisseph as swe
 
-__all__ = ["is_void_of_course", "moon_next_sign_ingress"]
+__all__ = [
+    "is_void_of_course",
+    "moon_next_sign_ingress",
+    "moon_advances_by",
+]
 
 
 #: Ptolemaic aspect angles as Moon-minus-planet longitude deltas in
@@ -116,6 +124,38 @@ def moon_next_sign_ingress(moment: datetime) -> datetime:
     return deadline
 
 
+def moon_advances_by(moment: datetime, degrees: float) -> datetime:
+    """The instant the Moon stands ``degrees`` forward of where she stood.
+
+    Scanned hourly and bisected, like the ingress. The forward arc is
+    monotone — the Moon never retrogrades — so a first-crossing search is
+    sound. Thirty degrees takes at most ~61 hours; the four-day cap exists
+    so a broken ephemeris cannot spin forever.
+    """
+    start = _ensure_utc(moment)
+    start_lon = _longitude(_to_jd(start), swe.MOON)
+
+    def arc_at(t: datetime) -> float:
+        return (_longitude(_to_jd(t), swe.MOON) - start_lon) % 360
+
+    step = timedelta(hours=1)
+    deadline = start + _MAX_INGRESS_SCAN
+    t = start
+    while t < deadline:
+        t_next = t + step
+        if arc_at(t_next) >= degrees:
+            lo, hi = t, t_next
+            for _ in range(40):
+                mid = lo + (hi - lo) / 2
+                if arc_at(mid) < degrees:
+                    lo = mid
+                else:
+                    hi = mid
+            return hi
+        t = t_next
+    return deadline
+
+
 def _delta(jd: float, body: int) -> float:
     """Moon-minus-body ecliptic longitude delta in [0, 360).
 
@@ -134,19 +174,25 @@ def _crossed(a: float, b: float, target: float) -> bool:
     return 0 < off <= span
 
 
-def is_void_of_course(moment: datetime) -> bool:
-    """True iff the Moon is void of course at ``moment``.
+def is_void_of_course(moment: datetime, rule: str = "thirtyDegrees") -> bool:
+    """True iff the Moon is void of course at ``moment`` under ``rule``.
 
-    Checks whether any exact Ptolemaic aspect to a classical planet
-    perfects between ``moment`` and the Moon's next sign ingress.
+    ``thirtyDegrees`` (the ledger default) scans to the instant the Moon
+    has travelled thirty degrees — straight across any sign boundary, as
+    canon demands. ``signExit`` scans only to her next ingress. An unknown
+    rule reads as the default rather than raising: the caller's stored
+    doctrine may be older or newer than this build.
     """
     start = _ensure_utc(moment)
-    ingress = moon_next_sign_ingress(start)
+    if rule == "signExit":
+        bound = moon_next_sign_ingress(start)
+    else:
+        bound = moon_advances_by(start, 30.0)
 
     prev = {body: _delta(_to_jd(start), body) for body in _VOC_BODIES}
     t = start
-    while t < ingress:
-        t_next = min(t + _SAMPLE_STEP, ingress)
+    while t < bound:
+        t_next = min(t + _SAMPLE_STEP, bound)
         jd_next = _to_jd(t_next)
         for body in _VOC_BODIES:
             cur = _delta(jd_next, body)
@@ -155,7 +201,7 @@ def is_void_of_course(moment: datetime) -> bool:
                 for target in _ASPECT_DELTAS
             ):
                 # An exact aspect perfects inside this sample step,
-                # before the ingress — the Moon is not void.
+                # before the bound — the Moon is not void.
                 return False
             prev[body] = cur
         t = t_next

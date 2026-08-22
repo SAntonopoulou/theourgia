@@ -494,7 +494,7 @@ def test_astro_doctrine_defaults_are_the_ledger() -> None:
     assert d.saturn_exaltation_degree == 21
     assert d.venus_exaltation_degree == 27
     assert d.maltreatment_contested_sextile is True
-    assert d.void_of_course == "signBounded"
+    assert d.void_of_course == "thirtyDegrees"
 
 
 def test_astro_doctrine_values_are_the_phone_enum_names() -> None:
@@ -575,12 +575,12 @@ async def test_read_astro_doctrine_salvages_field_by_field() -> None:
     stored = {
         "solar_phase": "lilly1647",
         "saturn_exaltation_degree": 19,  # the rejected artefact
-        "void_of_course": "orbBased",
+        "void_of_course": "signExit",
         "some_future_field": "ignored",
     }
     d = await read_astro_doctrine(_Session(_Row(json.dumps(stored))), "user-1")
     assert d.solar_phase == "lilly1647"
-    assert d.void_of_course == "orbBased"
+    assert d.void_of_course == "signExit"
     assert d.saturn_exaltation_degree == 21
 
 

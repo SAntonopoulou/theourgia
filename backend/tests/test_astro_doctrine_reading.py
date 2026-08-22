@@ -181,3 +181,48 @@ async def test_anonymous_reading_uses_the_ledger_defaults() -> None:
     )
     assert reading.doctrine.predominator == "valensWholeSign"
     assert reading.doctrine.exaltation_degrees == "signLevel"
+
+
+# ─── void of course, under either doctrine ───────────────────────────────
+
+
+def test_moon_advances_by_thirty_degrees_lands_on_the_arc() -> None:
+    from theourgia.core.astro.void_of_course import moon_advances_by
+
+    import swisseph as swe
+
+    start = datetime(2026, 8, 22, 12, 0, tzinfo=UTC)
+    reached = moon_advances_by(start, 30.0)
+    # The Moon covers 30° in roughly 47–61 hours.
+    hours = (reached - start).total_seconds() / 3600
+    assert 40 < hours < 65
+
+    def lon(d: datetime) -> float:
+        jd = swe.julday(d.year, d.month, d.day, d.hour + d.minute / 60)
+        pos, _ = swe.calc_ut(jd, swe.MOON, swe.FLG_MOSEPH)
+        return float(pos[0]) % 360
+
+    arc = (lon(reached) - lon(start)) % 360
+    assert abs(arc - 30.0) < 0.01
+
+
+def test_thirty_degree_void_implies_sign_exit_void() -> None:
+    # The sign boundary always falls inside the thirty-degree arc, so a Moon
+    # void under kenodromia is void under the later rule too — never the
+    # reverse. Sampled across a fortnight so the property is exercised on
+    # skies nobody hand-picked.
+    from theourgia.core.astro.void_of_course import is_void_of_course
+
+    for day in range(0, 14, 2):
+        moment = datetime(2026, 8, 1 + day, 6, 0, tzinfo=UTC)
+        if is_void_of_course(moment, rule="thirtyDegrees"):
+            assert is_void_of_course(moment, rule="signExit")
+
+
+def test_unknown_rule_reads_as_the_default() -> None:
+    from theourgia.core.astro.void_of_course import is_void_of_course
+
+    moment = datetime(2026, 8, 22, 12, 0, tzinfo=UTC)
+    assert is_void_of_course(moment, rule="orbBased") == is_void_of_course(
+        moment, rule="thirtyDegrees"
+    )

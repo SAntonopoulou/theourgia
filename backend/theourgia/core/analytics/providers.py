@@ -113,6 +113,9 @@ class LiveAstroProvider:
             "planetary_day": day_ruler(utc).value,
             "sun_sign": sign_of(sun_lon).sign_name.lower(),
             "moon_sign": sign_of(moon_lon).sign_name.lower(),
+            # The ledger-default rule (Hellenistic thirty degrees). This
+            # stamp has no user in scope; when it gains one, it should read
+            # the practitioner's astro.doctrine instead of the default.
             "void_of_course": is_void_of_course(utc),
         }
 

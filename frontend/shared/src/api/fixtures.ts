@@ -1037,7 +1037,7 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
         saturn_exaltation_degree: 21,
         venus_exaltation_degree: 27,
         maltreatment_contested_sextile: true,
-        void_of_course: "signBounded",
+        void_of_course: "thirtyDegrees",
       },
       attribution: "Swiss Ephemeris (mock fixture)",
     };
@@ -1053,7 +1053,7 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
       saturn_exaltation_degree: 21,
       venus_exaltation_degree: 27,
       maltreatment_contested_sextile: true,
-      void_of_course: "signBounded",
+      void_of_course: "thirtyDegrees",
     };
   }
 

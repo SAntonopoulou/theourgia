@@ -282,7 +282,9 @@ export interface AstroDoctrineSettings {
   saturn_exaltation_degree: number;
   venus_exaltation_degree: number;
   maltreatment_contested_sextile: boolean;
-  void_of_course: "signBounded" | "orbBased";
+  /** Hellenistic kenodromia (30° of travel, no sign boundary — the default)
+   *  vs the later sign-exit rule most software implements. */
+  void_of_course: "thirtyDegrees" | "signExit";
 }
 
 /** Response from ``GET /api/v1/astro/chart/doctrine`` — the server-derived

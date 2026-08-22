@@ -970,9 +970,14 @@ class AstroDoctrineModel(BaseModel):
     #: Maltreatment counts the contested sextile (George's worked charts do);
     #: off is the stricter reading.
     maltreatment_contested_sextile: bool = True
-    #: Void of course: next application within the sign (Hellenistic) vs
-    #: within orb regardless of sign (the later definition).
-    void_of_course: Literal["signBounded", "orbBased"] = "signBounded"
+    #: Void of course — two genuinely different doctrines, not two orbs on
+    #: one idea. Hellenistic *kenodromia* (B p. 304): no exact configuration
+    #: perfects within the Moon's next thirty degrees of travel, sign
+    #: boundaries crossed — voids are rare, and the rarity is the doctrine.
+    #: The later rule: nothing perfects before she leaves her sign. The
+    #: first ledger entry named this pair wrongly ("signBounded"/"orbBased");
+    #: the values below are the phone's enum names and the canon pair.
+    void_of_course: Literal["thirtyDegrees", "signExit"] = "thirtyDegrees"
 
     @field_validator("saturn_exaltation_degree")
     @classmethod

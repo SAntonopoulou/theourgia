@@ -35,19 +35,19 @@ const SOLAR_PHASE: Choice<AstroDoctrineSettings["solar_phase"]>[] = [
     value: "paulus",
     label: "Paulus of Alexandria (ch. 14)",
     detail:
-      "Under the beams within 15°, combust within 9°, extreme within 3°, cazimi in the heart. The verbatim Hellenistic text.",
+      "Under the beams within 15°, combust within 9°, extreme within 3°, the heart at 1° (Rhetorius' enkardios; Paulus' same-degree rule agrees to within a minute). The verbatim Hellenistic text.",
   },
   {
     value: "lilly1647",
     label: "William Lilly, 1647",
     detail:
-      "17° under the beams, 8°30′ combust — derived arithmetically from the Sun's aspect orb, not from visibility. Lilly himself: “I know many are against this opinion.”",
+      "17° under the beams, 8°30′ combust, 17′ cazimi — derived arithmetically from the Sun's aspect orb, not from visibility. Lilly himself: “I know many are against this opinion.”",
   },
   {
     value: "medievalUnattributed",
     label: "Medieval (unattributed)",
     detail:
-      "The 12° figure that circulates without a named ancient author. Offered honestly as what it is — it is not Hellenistic.",
+      "The 12° combustion that circulates without a named ancient author; the heart at 16′ (al-Bīrūnī, al-Qabīsī, Bonatti). Offered honestly as what it is — it is not Hellenistic.",
   },
 ];
 
@@ -55,8 +55,7 @@ const PREDOMINATOR: Choice<AstroDoctrineSettings["predominator"]>[] = [
   {
     value: "valensWholeSign",
     label: "Valens — whole sign",
-    detail:
-      "The spine of the app's timing work, in the app's own house frame. 2nd century CE.",
+    detail: "The spine of the app's timing work, in the app's own house frame. 2nd century CE.",
   },
   {
     value: "porphyry",
@@ -88,16 +87,15 @@ const PREDOMINATOR: Choice<AstroDoctrineSettings["predominator"]>[] = [
 
 const VOID_OF_COURSE: Choice<AstroDoctrineSettings["void_of_course"]>[] = [
   {
-    value: "signBounded",
-    label: "Sign-bounded (Hellenistic)",
+    value: "thirtyDegrees",
+    label: "Within thirty degrees (Hellenistic)",
     detail:
-      "The Moon is void when her next application falls outside the sign she is in — the reading that matches the frame everywhere else in the app.",
+      "Kenodromia: the Moon completes no exact configuration within her next 30° of travel, regardless of sign boundaries. Voids are rare under this reading — the rarity is the doctrine. Differs from what most software implements.",
   },
   {
-    value: "orbBased",
-    label: "Within orb (later)",
-    detail:
-      "The later definition: void until the next application within orb, regardless of sign boundary.",
+    value: "signExit",
+    label: "Before leaving the sign (later)",
+    detail: "The familiar modern rule: void until she perfects nothing more in the sign she is in.",
   },
 ];
 
@@ -318,9 +316,9 @@ export function DoctrineSettingsRoute() {
           <div style={sectionCard}>
             <h3 style={sectionTitle}>The Predominator</h3>
             <p style={sectionSub}>
-              Which procedure names the predominating luminary. Each option carries its house
-              frame, because two procedures naming the same point under different divisions are
-              not agreeing.
+              Which procedure names the predominating luminary. Each option carries its house frame,
+              because two procedures naming the same point under different divisions are not
+              agreeing.
             </p>
             <ChoiceGroup
               name="Predominator"
@@ -334,9 +332,9 @@ export function DoctrineSettingsRoute() {
           <div style={sectionCard}>
             <h3 style={sectionTitle}>Exaltation degrees</h3>
             <p style={sectionSub}>
-              The exaltation signs are unanimous and are not an option. Whether the specific
-              degree is read as a refinement — and which attested degree, where the sources
-              conflict — is yours to choose.
+              The exaltation signs are unanimous and are not an option. Whether the specific degree
+              is read as a refinement — and which attested degree, where the sources conflict — is
+              yours to choose.
             </p>
             <ChoiceGroup
               name="Exaltation degrees"
@@ -391,8 +389,8 @@ export function DoctrineSettingsRoute() {
           <div style={sectionCard}>
             <h3 style={sectionTitle}>Maltreatment</h3>
             <p style={sectionSub}>
-              Whether a malefic's sextile counts toward maltreatment. George admits the contest
-              and still awards it in her worked charts; switching it off is the stricter reading.
+              Whether a malefic's sextile counts toward maltreatment. George admits the contest and
+              still awards it in her worked charts; switching it off is the stricter reading.
             </p>
             <ChoiceGroup
               name="Maltreatment"
@@ -417,8 +415,9 @@ export function DoctrineSettingsRoute() {
           <div style={sectionCard}>
             <h3 style={sectionTitle}>Void of course</h3>
             <p style={sectionSub}>
-              The Hellenistic and later definitions genuinely differ; the app's election rules
-              carry the same wording, so this choice unifies with them.
+              Two genuinely different doctrines, not two orbs on one idea. The phone's engines and
+              this site read the same choice, so no two surfaces can call the same Moon two
+              different things.
             </p>
             <ChoiceGroup
               name="Void of course"
