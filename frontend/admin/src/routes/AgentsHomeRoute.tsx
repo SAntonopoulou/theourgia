@@ -11,14 +11,14 @@
  * Mounted at /agents-home.
  */
 
+import { useQuery } from "@tanstack/react-query";
 import {
   type AgentRow,
   type AgentSubnavKey,
-  type DisabledAgentRow,
   AgentsHomeSurface,
+  type DisabledAgentRow,
   useTopbar,
 } from "@theourgia/shared";
-import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -28,12 +28,13 @@ import { appHref } from "../lib/appHref.js";
 // Subnav targets, resolved against the SPA basename. The shared
 // SUBNAV_ITEMS defaults carry the design's raw paths ("/agents/cost"),
 // which are neither real routes (App.tsx mounts /agents-cost et al.)
-// nor basename-safe in prod. "memory" has no standalone route yet —
-// it stays an in-SPA path so the router's Lost placeholder catches it.
-const SUBNAV_HREF: Record<AgentSubnavKey, string> = {
+// nor basename-safe in prod. "memory" has no standalone route yet, so
+// it is NOT offered — a subnav entry that lands on the Lost page is a
+// dead end wearing a menu item, and per-agent memory already lives on
+// each agent's own page.
+const SUBNAV_HREF: Partial<Record<AgentSubnavKey, string>> = {
   agents: appHref("/agents-home"),
   marketplace: appHref("/agents-marketplace"),
-  memory: appHref("/agents/memory"),
   cost: appHref("/agents-cost"),
   settings: appHref("/agents-keys"),
 };
@@ -99,8 +100,7 @@ export function AgentsHomeRoute() {
     const activeRows: AgentRow[] = [];
     const disabledRows: DisabledAgentRow[] = [];
     for (const row of installsQuery.data?.installs ?? []) {
-      const lastSeen =
-        lastActiveByInstall.get(row.id) ?? row.created_at;
+      const lastSeen = lastActiveByInstall.get(row.id) ?? row.created_at;
       if (row.state === "active" || row.state === "inactive") {
         activeRows.push({
           id: row.id,
@@ -134,7 +134,7 @@ export function AgentsHomeRoute() {
       active={active}
       disabled={disabled}
       activeNav="agents"
-      subnavHrefFor={(key) => SUBNAV_HREF[key] ?? SUBNAV_HREF.agents}
+      subnavHrefFor={(key) => SUBNAV_HREF[key] ?? appHref("/agents-home")}
       onOpen={(id) => navigate(`/agents/${id}/compose`)}
       onBrowseMarketplace={() => navigate("/agents-marketplace")}
     />

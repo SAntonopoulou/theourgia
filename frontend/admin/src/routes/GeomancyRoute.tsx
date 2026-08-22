@@ -1,9 +1,9 @@
 /**
  * Geomancy route — composes the shared GeomancySurface with OracleTabs.
  *
- * Backend wiring (POST /api/v1/geomancy/cast) lands when the
- * geomancy persistence endpoint ships. Save fires a Toast
- * acknowledging the future write.
+ * Live-wired: castGeomancy casts against the backend and Save writes the
+ * consultation to the record. (An earlier draft of this header said Save
+ * was a stand-in Toast — the audit found the comment stale, not the code.)
  */
 
 import {
@@ -19,13 +19,7 @@ import { NavLink } from "react-router-dom";
 import { apiMethods } from "../data/api.js";
 import { writeConsultation } from "../data/keepObservance.js";
 
-function NavLinkAdapter({
-  to,
-  current,
-  children,
-  style,
-  onClick,
-}: OracleTabsLinkProps) {
+function NavLinkAdapter({ to, current, children, style, onClick }: OracleTabsLinkProps) {
   return (
     <NavLink to={to} aria-current={current} style={style} onClick={onClick}>
       {children}

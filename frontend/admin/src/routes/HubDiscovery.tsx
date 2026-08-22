@@ -11,20 +11,13 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-import {
-  type HubDiscoveryCard,
-  HubDiscoverySurface,
-  useTopbar,
-} from "@theourgia/shared";
+import { type HubDiscoveryCard, HubDiscoverySurface, useTopbar } from "@theourgia/shared";
 
 import { SurfaceError } from "../lib/SurfaceError.js";
 import { SurfaceSkeleton } from "../lib/SurfaceSkeleton.js";
 import { type Hub, useHubs } from "../lib/hubs.js";
 
-const POLICY_TO_CARD: Record<
-  Hub["membership_policy"],
-  HubDiscoveryCard["policy"]
-> = {
+const POLICY_TO_CARD: Record<Hub["membership_policy"], HubDiscoveryCard["policy"]> = {
   open: "public",
   request_to_join: "open-with-approval",
   invite_only: "private",
@@ -94,10 +87,5 @@ export function HubDiscovery() {
     );
   }
 
-  return (
-    <HubDiscoverySurface
-      hubs={cards}
-      onRequestJoin={(hubId) => navigate(`/networks/hubs/${hubId}`)}
-    />
-  );
+  return <HubDiscoverySurface hubs={cards} onRequestJoin={(hubId) => navigate(`/hubs/${hubId}`)} />;
 }

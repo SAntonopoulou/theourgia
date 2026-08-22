@@ -1,9 +1,9 @@
 /**
  * I Ching route — composes the shared IChingSurface with OracleTabs.
  *
- * Backend wiring (POST /api/v1/iching/cast + GET /api/v1/iching/
- * hexagrams/{n}) lands when the I Ching reading-persistence + texts
- * endpoints ship. Save fires a Toast acknowledging the future write.
+ * Live-wired: castIching casts against the backend and Save writes the
+ * consultation to the record. (An earlier draft of this header said Save
+ * was a stand-in Toast — the audit found the comment stale, not the code.)
  */
 
 import {
@@ -19,20 +19,9 @@ import { NavLink } from "react-router-dom";
 import { apiMethods } from "../data/api.js";
 import { writeConsultation } from "../data/keepObservance.js";
 
-function NavLinkAdapter({
-  to,
-  current,
-  children,
-  style,
-  onClick,
-}: OracleTabsLinkProps) {
+function NavLinkAdapter({ to, current, children, style, onClick }: OracleTabsLinkProps) {
   return (
-    <NavLink
-      to={to}
-      aria-current={current}
-      style={style}
-      onClick={onClick}
-    >
+    <NavLink to={to} aria-current={current} style={style} onClick={onClick}>
       {children}
     </NavLink>
   );
@@ -51,8 +40,7 @@ export function IChingRoute() {
   useTopbar(
     () => ({
       title: "I Ching",
-      subtitle:
-        "易經 · the Book of Changes — cast six lines, read what moves",
+      subtitle: "易經 · the Book of Changes — cast six lines, read what moves",
     }),
     [],
   );

@@ -42,7 +42,7 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
 import { createEntry, publishEntry, unpublishEntry } from "../data/useEntries.js";
@@ -107,10 +107,10 @@ type JournalView = "timeline" | "tags" | "entities" | "traditions" | "workings";
 
 const VIEW_TABS: { key: JournalView; label: string }[] = [
   { key: "timeline", label: "Timeline" },
-  { key: "tags", label: "By tag" },
-  { key: "entities", label: "By entity" },
-  { key: "traditions", label: "By tradition" },
-  { key: "workings", label: "By working" },
+  // "By tag" / "By entity" / "By tradition" / "By working" are deliberately
+  // absent until the aggregation endpoints exist — a clickable tab whose
+  // whole content is "arrives later" is a dead end wearing a view. They
+  // return with the endpoints; the JournalView type already knows them.
 ];
 
 const LATIN_DAY: Record<number, string> = {
@@ -235,11 +235,13 @@ function ViewTabs({
 function FilterBar({
   search,
   onSearchChange,
+  autoFocusSearch = false,
   active,
   onToggle,
 }: {
   search: string;
   onSearchChange: (v: string) => void;
+  autoFocusSearch?: boolean;
   active: Set<ChipFilter>;
   onToggle: (key: ChipFilter) => void;
 }) {
@@ -287,6 +289,8 @@ function FilterBar({
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search entries…"
           aria-label="Search entries"
+          // Today's topbar search box lands here asking for the cursor.
+          autoFocus={autoFocusSearch}
           style={{
             flex: 1,
             minWidth: 0,
@@ -1081,6 +1085,10 @@ export function Journal() {
   // kind chips pass through as `kind` filters (AND with the query).
   const trimmedSearch = search.trim();
   const searchActive = trimmedSearch.length >= SEARCH_MIN_CHARS;
+  // Today's topbar search box navigates here with ?focus=search; the box's
+  // whole promise is a cursor ready to type into.
+  const [searchParams] = useSearchParams();
+  const focusSearchOnArrival = searchParams.get("focus") === "search";
 
   const activeKinds = useMemo(
     () =>
@@ -1184,6 +1192,7 @@ export function Journal() {
             <FilterBar
               search={search}
               onSearchChange={setSearch}
+              autoFocusSearch={focusSearchOnArrival}
               active={activeChips}
               onToggle={toggleChip}
             />

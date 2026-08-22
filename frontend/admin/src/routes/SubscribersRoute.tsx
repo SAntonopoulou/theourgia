@@ -1,19 +1,19 @@
 /**
  * Subscribers — admin route (H07 §S3 surface 10).
  *
- * Phase 10 backend is unbuilt by design; the route holds fixture
- * data. Stripe customer + refund actions Toast pending the
- * stripe-portal hand-off.
+ * Live-wired to the subscribers endpoints. The Stripe customer +
+ * refund actions still Toast pending the stripe-portal hand-off —
+ * those two remain the only stand-ins here.
  */
 
+import { useQuery } from "@tanstack/react-query";
 import {
   type SubscriberRow,
-  SubscribersSurface,
   type SubscribersStats,
+  SubscribersSurface,
   Toast,
   useTopbar,
 } from "@theourgia/shared";
-import { useQuery } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 
 import { apiMethods } from "../data/api.js";
@@ -46,7 +46,6 @@ function toRow(s: WireSubscriber): SubscriberRow {
   };
 }
 
-
 export function SubscribersRoute() {
   useTopbar(
     () => ({
@@ -58,15 +57,11 @@ export function SubscribersRoute() {
 
   const query = useQuery({
     queryKey: ["subscribers"],
-    queryFn: async () =>
-      (await apiMethods.listSubscribers()) as unknown as WireSubscriber[],
+    queryFn: async () => (await apiMethods.listSubscribers()) as unknown as WireSubscriber[],
     staleTime: 30_000,
   });
 
-  const rows = useMemo<SubscriberRow[]>(
-    () => (query.data ?? []).map(toRow),
-    [query.data],
-  );
+  const rows = useMemo<SubscriberRow[]>(() => (query.data ?? []).map(toRow), [query.data]);
 
   // Aggregate stats client-side until the backend exposes an
   // aggregation endpoint.

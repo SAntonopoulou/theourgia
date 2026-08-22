@@ -59,10 +59,7 @@ export function MyNetworks() {
 
   const { data, isLoading, error, refetch } = useHubs();
 
-  const hubs = useMemo(
-    () => (data ? data.map(toCard) : []),
-    [data],
-  );
+  const hubs = useMemo(() => (data ? data.map(toCard) : []), [data]);
 
   // Invitations endpoint queued with federation transport.
   const invites: HubInvitationCard[] = [];
@@ -88,7 +85,7 @@ export function MyNetworks() {
       hubs={hubs}
       invites={invites}
       onDiscover={() => navigate("/networks/discover")}
-      onOpenHub={(hubId) => navigate(`/networks/hubs/${hubId}`)}
+      onOpenHub={(hubId) => navigate(`/hubs/${hubId}`)}
       onAcceptInvite={() => {
         // Stubbed until the invitations endpoint ships.
       }}

@@ -111,6 +111,7 @@ const ALLOWLIST: Readonly<Record<string, readonly string[]>> = {
   // Raw design defaults, resolved via appHref() at the admin call site
   // (AccountSettingsRoute SECTIONS map). Kept raw for root-served hosts.
   "shared/src/AccountSettings/copy.ts": [
+    'href: "/settings/password"',
     'href: "/settings/keys"',
     'href: "/settings/sessions"',
     'href: "/settings/webauthn"',
@@ -125,7 +126,6 @@ const ALLOWLIST: Readonly<Record<string, readonly string[]>> = {
   "shared/src/AgentsHome/copy.ts": [
     'href: "/agents"',
     'href: "/agents/marketplace"',
-    'href: "/agents/memory"',
     'href: "/agents/cost"',
     'href: "/agents/settings/keys"',
   ],

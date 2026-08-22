@@ -92,17 +92,20 @@ type AnalyticsQueryResponse = {
 function coerceValue(axisType: QBAxis["type"], cmp: string, raw: string): unknown {
   if (cmp === "in" || cmp === "nin") {
     // Comma-separated list.
-    return raw.split(",").map((s) => s.trim()).filter((s) => s.length > 0);
+    return raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
   }
   if (cmp === "between") {
     const parts = raw.split(",").map((s) => s.trim());
     if (parts.length !== 2) return [raw, raw];
-    if (axisType === "int") return parts.map((p) => parseInt(p, 10));
-    if (axisType === "float") return parts.map((p) => parseFloat(p));
+    if (axisType === "int") return parts.map((p) => Number.parseInt(p, 10));
+    if (axisType === "float") return parts.map((p) => Number.parseFloat(p));
     return parts;
   }
-  if (axisType === "int") return parseInt(raw, 10);
-  if (axisType === "float") return parseFloat(raw);
+  if (axisType === "int") return Number.parseInt(raw, 10);
+  if (axisType === "float") return Number.parseFloat(raw);
   if (axisType === "bool") return raw === "true";
   return raw;
 }
@@ -117,9 +120,7 @@ function buildPayload(
     subject,
     filters: filters.map((f) => {
       const axis = axesByField.get(f.field);
-      const value = axis
-        ? coerceValue(axis.type, f.cmp, f.value)
-        : f.value;
+      const value = axis ? coerceValue(axis.type, f.cmp, f.value) : f.value;
       return { field: f.field, cmp: f.cmp, value };
     }),
   };
@@ -132,18 +133,8 @@ function rowsToResult(api: AnalyticsQueryResponse): ExecutedQueryResult {
     rows: api.rows.map((r) => ({
       id: r.id,
       date_label: (r.created_at ?? r.occurred_at ?? "").slice(0, 10),
-      title:
-        r.title ??
-        r.description ??
-        r.entry_type ??
-        r.category ??
-        "(no title)",
-      meta:
-        r.entry_type
-          ? r.entry_type
-          : r.category
-            ? r.category
-            : undefined,
+      title: r.title ?? r.description ?? r.entry_type ?? r.category ?? "(no title)",
+      meta: r.entry_type ? r.entry_type : r.category ? r.category : undefined,
     })),
   };
 }
@@ -154,8 +145,7 @@ export function QueryBuilderRoute() {
   useTopbar(
     () => ({
       title: "Query Builder",
-      subtitle:
-        "A question, chained from filters; the answer with its sample size.",
+      subtitle: "A question, chained from filters; the answer with its sample size.",
     }),
     [],
   );
@@ -166,9 +156,7 @@ export function QueryBuilderRoute() {
   const [lastSubject, setLastSubject] = useState<QBSubject>("entry");
   const [lastFilters, setLastFilters] = useState<readonly QBFilterRow[]>([]);
 
-  const axesByField = new Map<string, QBAxis>(
-    AXES.map((a) => [a.field, a]),
-  );
+  const axesByField = new Map<string, QBAxis>(AXES.map((a) => [a.field, a]));
 
   const handleRun = useCallback(
     (payload: { subject: QBSubject; filters: readonly QBFilterRow[] }) => {
@@ -263,7 +251,8 @@ export function QueryBuilderRoute() {
         });
         return;
       }
-      navigate(`/journal/${id}`);
+      // The entry's real surface is the editor — /journal/:id never existed.
+      navigate(`/editor/${id}`);
     },
     [navigate, lastSubject],
   );

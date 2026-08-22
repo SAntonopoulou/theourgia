@@ -19,12 +19,7 @@
  * apps wire react-router's NavLink.
  */
 
-import {
-  type CSSProperties,
-  type ComponentType,
-  type MouseEvent,
-  type ReactNode,
-} from "react";
+import type { CSSProperties, ComponentType, MouseEvent, ReactNode } from "react";
 
 // ─── Tabs ──────────────────────────────────────────────────────────────
 
@@ -118,7 +113,9 @@ const TABS: readonly TabDef[] = [
   { key: "initiations", label: "Initiations", iconToken: "--bt-initiations" },
   { key: "servitors", label: "Servitors", iconToken: "--bt-servitors" },
   { key: "attestations", label: "Attestations", iconToken: "--bt-attestations" },
-  { key: "aliases", label: "Aliases", iconToken: "--bt-aliases" },
+  // "aliases" is deliberately absent until its surface is composed — the
+  // route currently renders a placeholder, and a live tab into an empty
+  // room teaches people not to trust the tabs. It returns with the surface.
 ];
 
 // Default routes — admin apps can override via `hrefFor`.
@@ -156,13 +153,7 @@ export interface BeingsTabsProps {
   style?: CSSProperties;
 }
 
-function DefaultLink({
-  to,
-  children,
-  current,
-  style,
-  onClick,
-}: BeingsTabsLinkProps) {
+function DefaultLink({ to, children, current, style, onClick }: BeingsTabsLinkProps) {
   // `aria-current` is omitted when undefined per the designer's spec
   // (the markup carries `aria-current="page"` only on the active tab).
   return current ? (

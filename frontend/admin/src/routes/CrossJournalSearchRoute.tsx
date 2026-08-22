@@ -36,8 +36,7 @@ export function CrossJournalSearchRoute() {
   useTopbar(
     () => ({
       title: "Cross-Journal Gematria Search",
-      subtitle:
-        "Find every phrase in your journal that sums to a value.",
+      subtitle: "Find every phrase in your journal that sums to a value.",
     }),
     [],
   );
@@ -50,9 +49,10 @@ export function CrossJournalSearchRoute() {
   useEffect(() => {
     let cancelled = false;
     apiClient
-      .request<
-        { id: string; name: string; language: string; personal: boolean }[]
-      >("/api/v1/ciphers?include_personal=true", { method: "GET" })
+      .request<{ id: string; name: string; language: string; personal: boolean }[]>(
+        "/api/v1/ciphers?include_personal=true",
+        { method: "GET" },
+      )
       .then((rows) => {
         if (cancelled) return;
         setCiphers(
@@ -96,32 +96,35 @@ export function CrossJournalSearchRoute() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleSave = useCallback((payload: SearchPayload) => {
-    apiClient
-      .request<{ id: string }>("/api/v1/studies", {
-        method: "POST",
-        json: {
-          name: `Search for ${payload.value}`,
-          kind: "gematria_search",
-          query: payload,
-        },
-      })
-      .then((s) => {
-        Toast.push({
-          tone: "info",
-          title: "Study saved",
-          body: "Open it from Studies to re-run later.",
+  const handleSave = useCallback(
+    (payload: SearchPayload) => {
+      apiClient
+        .request<{ id: string }>("/api/v1/studies", {
+          method: "POST",
+          json: {
+            name: `Search for ${payload.value}`,
+            kind: "gematria_search",
+            query: payload,
+          },
+        })
+        .then((s) => {
+          Toast.push({
+            tone: "info",
+            title: "Study saved",
+            body: "Open it from Studies to re-run later.",
+          });
+          navigate(`/studies/${s.id}`);
+        })
+        .catch((err) => {
+          Toast.push({
+            tone: "info",
+            title: "Save failed",
+            body: String((err as Error).message ?? err),
+          });
         });
-        navigate(`/studies/${s.id}`);
-      })
-      .catch((err) => {
-        Toast.push({
-          tone: "info",
-          title: "Save failed",
-          body: String((err as Error).message ?? err),
-        });
-      });
-  }, [navigate]);
+    },
+    [navigate],
+  );
 
   const handleCsv = useCallback((payload: SearchPayload) => {
     // The CSV endpoint streams text/csv with Content-Disposition.
@@ -152,9 +155,13 @@ export function CrossJournalSearchRoute() {
       });
   }, []);
 
-  const handleOpenEntry = useCallback((entry_id: string) => {
-    navigate(`/journal/${entry_id}`);
-  }, [navigate]);
+  const handleOpenEntry = useCallback(
+    (entry_id: string) => {
+      // The entry's real surface is the editor — /journal/:id never existed.
+      navigate(`/editor/${entry_id}`);
+    },
+    [navigate],
+  );
 
   const handleUnlockSealed = useCallback(() => {
     Toast.push({

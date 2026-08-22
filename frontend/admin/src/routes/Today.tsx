@@ -15,7 +15,9 @@
  */
 
 import {
+  ASPECT_GLYPHS,
   type CelestialState,
+  type ChartResponse,
   type EntryRecord,
   LunarPhaseWidget,
   type Planet,
@@ -32,7 +34,7 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
 import { createEntry, useRecentEntries } from "../data/useEntries.js";
@@ -336,25 +338,81 @@ function PlanetaryHourCard({ c }: { c: CelestialState }) {
   );
 }
 
-function TransitsCard({ c: _c }: { c: CelestialState }) {
-  // Design's Transits card shows planet-aspect glyphs (☽ □ ♂, ☉ △ ♄, ☿ → ♋
-  // with exact times). Computing real transits needs a full ephemeris engine
-  // (see ``transitsOfNote`` signature in agent_data_and_components §10) which
-  // hasn't shipped. Honest empty state until it does — fake transits would
-  // mislead practitioners.
+function TransitsCard({ lat, lng }: { lat: number; lng: number }) {
+  // The real aspects of the current sky, tightest first, from the same
+  // Swiss-Ephemeris chart the Astrology page draws. This card shipped as an
+  // honest empty state while the engine was unported; the engine has long
+  // since arrived.
+  const [chart, setChart] = useState<ChartResponse | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    apiMethods
+      .getChart({ when: new Date().toISOString(), latitude: lat, longitude: lng })
+      .then((c) => {
+        if (!cancelled) setChart(c);
+      })
+      .catch(() => {
+        // The card simply waits; the rest of Today stands.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [lat, lng]);
+
+  const glyphOf = (id: string): string =>
+    chart?.placements.find((p) => p.body_id === id)?.glyph ?? id;
+  const tightest = [...(chart?.aspects ?? [])].sort((a, b) => a.orb - b.orb).slice(0, 4);
+
   return (
     <article style={cardStyle()}>
       <div style={{ ...sectionLabel, marginBottom: 14 }}>Transits of note</div>
-      <div
-        style={{
-          fontFamily: "var(--font-ui)",
-          fontSize: 12.5,
-          color: "var(--ink-mute)",
-          lineHeight: 1.5,
-        }}
-      >
-        Aspect calculations come online with the ephemeris engine.
-      </div>
+      {chart === null ? (
+        <Skeleton kind="text" width="70%" />
+      ) : tightest.length === 0 ? (
+        <div
+          style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 12.5,
+            color: "var(--ink-mute)",
+            lineHeight: 1.5,
+          }}
+        >
+          No close configurations in the sky right now.
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: 8 }}>
+          {tightest.map((a) => (
+            <div
+              key={`${a.body_a}-${a.body_b}-${a.kind}`}
+              style={{
+                display: "flex",
+                alignItems: "baseline",
+                gap: 8,
+                fontFamily: "var(--font-ui)",
+                fontSize: 13,
+                color: "var(--ink)",
+              }}
+            >
+              <span aria-hidden="true" style={{ color: "var(--accent)", fontSize: 15 }}>
+                {glyphOf(a.body_a)} {ASPECT_GLYPHS[a.kind]} {glyphOf(a.body_b)}
+              </span>
+              <span style={{ color: "var(--ink-soft)" }}>
+                {a.body_a} {a.kind} {a.body_b}
+              </span>
+              <span
+                style={{
+                  marginLeft: "auto",
+                  color: "var(--ink-mute)",
+                  fontVariantNumeric: "tabular-nums",
+                  fontSize: 12,
+                }}
+              >
+                {a.orb.toFixed(1)}° orb
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </article>
   );
 }
@@ -887,15 +945,16 @@ export function Today() {
   // slot. The factory rebuilds when the planetary-hour or the calendar day
   // changes — both are stable primitives, so the registration doesn't
   // thrash on every render.
+  const navigate = useNavigate();
   const hourKey = celestial.planetary.startsAt.getTime();
   const dayKey = celestial.now.toDateString();
   useTopbar(
     () => ({
       title: "Today",
       subtitle: buildTopbarSubtitle(celestial),
-      before: <TopbarSearch />,
+      before: <TopbarSearch onOpen={() => navigate("/journal?focus=search")} />,
     }),
-    [hourKey, dayKey],
+    [hourKey, dayKey, navigate],
   );
 
   // PromptDialog supplies the body text once the user types it. We carry
@@ -1047,7 +1106,7 @@ export function Today() {
                       }}
                     >
                       <PlanetaryHourCard c={celestial} />
-                      <TransitsCard c={celestial} />
+                      <TransitsCard lat={location.lat} lng={location.lng} />
                     </div>
                   ),
                 },

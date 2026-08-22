@@ -129,7 +129,8 @@ export function GroupRitualPostMortem() {
           r.egregore_entity_id
             ? {
                 entityName: r.egregore_name ?? "Egregore",
-                entityHref: appHref(`/entities/${r.egregore_entity_id}`),
+                // No /entities/:id route exists — the ledger itself is the surface.
+                entityHref: appHref("/entities"),
               }
             : undefined
         }

@@ -41,12 +41,7 @@ export const STATUS_LABEL: Record<AgentStatus, string> = {
 };
 
 /** Sub-nav keys for the in-surface tabs (rule from `agent_onboarding_H10.md`). */
-export type AgentSubnavKey =
-  | "agents"
-  | "marketplace"
-  | "memory"
-  | "cost"
-  | "settings";
+export type AgentSubnavKey = "agents" | "marketplace" | "memory" | "cost" | "settings";
 
 export const SUBNAV_ITEMS: readonly {
   key: AgentSubnavKey;
@@ -55,7 +50,10 @@ export const SUBNAV_ITEMS: readonly {
 }[] = [
   { key: "agents", label: "Agents", href: "/agents" },
   { key: "marketplace", label: "Marketplace", href: "/agents/marketplace" },
-  { key: "memory", label: "Memory", href: "/agents/memory" },
+  // "memory" is deliberately absent: there is no standalone memory surface
+  // yet, and a subnav entry that lands on the Lost page is a dead end
+  // wearing a menu item. Per-agent memory lives on each agent's own page;
+  // the entry returns when a real surface exists.
   { key: "cost", label: "Cost", href: "/agents/cost" },
   { key: "settings", label: "Settings", href: "/agents/settings/keys" },
 ];

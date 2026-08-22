@@ -5,7 +5,9 @@ import { describe, expect, it, vi } from "vitest";
 import { BEINGS_TABS, BeingsTabs, DEFAULT_HREF_FOR } from "./index.js";
 
 describe("BeingsTabs", () => {
-  it("renders all 8 tabs in canonical order", () => {
+  // Aliases is deliberately absent until its surface is composed — a live
+  // tab into a placeholder teaches people not to trust the tabs.
+  it("renders all 7 tabs in canonical order", () => {
     render(<BeingsTabs />);
     const labels = BEINGS_TABS.map((t) => t.label);
     expect(labels).toEqual([
@@ -16,7 +18,6 @@ describe("BeingsTabs", () => {
       "Initiations",
       "Servitors",
       "Attestations",
-      "Aliases",
     ]);
     for (const label of labels) {
       expect(screen.getByText(label)).toBeInTheDocument();
@@ -25,9 +26,8 @@ describe("BeingsTabs", () => {
 
   it("uses the canonical default routes for each tab", () => {
     const { container } = render(<BeingsTabs />);
-    for (const key of Object.keys(DEFAULT_HREF_FOR) as Array<
-      keyof typeof DEFAULT_HREF_FOR
-    >) {
+    for (const key of Object.keys(DEFAULT_HREF_FOR) as Array<keyof typeof DEFAULT_HREF_FOR>) {
+      if (key === "aliases") continue; // hidden until its surface is composed
       const link = container.querySelector(`a[href="${DEFAULT_HREF_FOR[key]}"]`);
       expect(link).not.toBeNull();
     }
@@ -35,9 +35,7 @@ describe("BeingsTabs", () => {
 
   it("hrefFor override is honored", () => {
     const hrefFor = (k: string) => `/custom/${k}`;
-    const { container } = render(
-      <BeingsTabs active="oaths" hrefFor={hrefFor} />,
-    );
+    const { container } = render(<BeingsTabs active="oaths" hrefFor={hrefFor} />);
     expect(container.querySelector('a[href="/custom/oaths"]')).not.toBeNull();
     expect(container.querySelector('a[href="/custom/entities"]')).not.toBeNull();
   });
@@ -115,17 +113,15 @@ describe("BeingsTabs", () => {
     const Link = ({ to, children }: { to: string; children: React.ReactNode }) => (
       <button data-href={to}>{children}</button>
     );
-    const { container } = render(
-      <BeingsTabs active="entities" LinkComponent={Link as never} />,
-    );
-    expect(container.querySelectorAll("button")).toHaveLength(8);
+    const { container } = render(<BeingsTabs active="entities" LinkComponent={Link as never} />);
+    expect(container.querySelectorAll("button")).toHaveLength(7);
     expect(container.querySelectorAll("a")).toHaveLength(0);
   });
 
   it("each tab is keyboard-focusable", () => {
     const { container } = render(<BeingsTabs />);
     const links = container.querySelectorAll("a");
-    expect(links).toHaveLength(8);
+    expect(links).toHaveLength(7);
     // Links are inherently focusable; no tabindex=-1 anywhere.
     links.forEach((link) => {
       expect(link.getAttribute("tabindex")).not.toBe("-1");

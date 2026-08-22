@@ -50,6 +50,10 @@ export const DEFAULT_SECTIONS: readonly SectionDef[] = [
     title: "Security",
     sub: "Keys, sessions, WebAuthn",
     links: [
+      // First, because it is the credential most people actually have — the
+      // page existed with no way to reach it, which is a security hole
+      // wearing a routing oversight.
+      { label: "Change your password", href: "/settings/password" },
       { label: "Signing keys & rotation", href: "/settings/keys" },
       { label: "Active sessions & devices", href: "/settings/sessions" },
       { label: "WebAuthn enrollment", href: "/settings/webauthn" },
