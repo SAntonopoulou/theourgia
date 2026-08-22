@@ -48,7 +48,13 @@ describe("workingsFromEntries", () => {
     });
     const workings = workingsFromEntries([
       working({ id: "w1", name: "Abramelin" }),
-      item({ id: "i2", workingId: "w1", title: "Evening oration", orderIndex: 1, cadence: "daily" }),
+      item({
+        id: "i2",
+        workingId: "w1",
+        title: "Evening oration",
+        orderIndex: 1,
+        cadence: "daily",
+      }),
       item({ id: "i1", workingId: "w1", title: "Morning oration", orderIndex: 0, perDay: 2 }),
       item({ id: "i9", workingId: "gone", title: "Orphan", orderIndex: 0 }),
     ]);
@@ -56,6 +62,31 @@ describe("workingsFromEntries", () => {
     expect(w?.items.map((i) => i.title)).toEqual(["Morning oration", "Evening oration"]);
     expect(w?.items[0]?.perDay).toBe(2);
     expect(w?.items[1]?.cadence).toBe("daily");
+  });
+
+  it("carries an item's stage, script and rite pointer — the phone's fields", () => {
+    const [w] = workingsFromEntries([
+      working({ id: "w1", name: "Astarte" }),
+      {
+        kind: "working-item",
+        doc: {
+          row: {
+            id: "i1",
+            workingId: "w1",
+            stageId: "s1",
+            script: "At morning, at noon and at night…",
+            ritualId: "r1",
+            title: "The ceremony",
+            orderIndex: 0,
+          },
+        },
+      },
+    ]);
+    expect(w?.items[0]).toMatchObject({
+      stageId: "s1",
+      script: "At morning, at noon and at night…",
+      ritualId: "r1",
+    });
   });
 
   it("marks a working not-yet-begun when it has no start", () => {

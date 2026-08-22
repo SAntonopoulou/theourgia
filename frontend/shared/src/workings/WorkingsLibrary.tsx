@@ -244,6 +244,9 @@ export function WorkingsLibrary({
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 8 }}>
                 {selected.items.map((item) => {
                   const done = performedKeys?.has(`working-item:${item.id}`) ?? false;
+                  const stageName = item.stageId
+                    ? (selected.stages.find((s) => s.id === item.stageId)?.name ?? null)
+                    : null;
                   return (
                     <li
                       key={item.id}
@@ -251,6 +254,7 @@ export function WorkingsLibrary({
                         display: "flex",
                         alignItems: "center",
                         gap: 10,
+                        flexWrap: "wrap",
                         border: "1px solid var(--line)",
                         borderRadius: "var(--r-md, 8px)",
                         padding: "8px 12px",
@@ -280,7 +284,34 @@ export function WorkingsLibrary({
                             : item.cadence === "daily"
                               ? "Daily"
                               : "Once"}
+                          {stageName ? ` · ${stageName}` : ""}
                         </span>
+                        {item.script ? (
+                          <details style={{ marginTop: 4 }}>
+                            <summary
+                              style={{
+                                fontFamily: "var(--font-ui)",
+                                fontSize: 11.5,
+                                color: "var(--accent)",
+                                cursor: "pointer",
+                              }}
+                            >
+                              The words
+                            </summary>
+                            <p
+                              style={{
+                                fontFamily: "var(--font-serif)",
+                                fontSize: 14,
+                                color: "var(--ink-soft)",
+                                lineHeight: 1.6,
+                                whiteSpace: "pre-line",
+                                margin: "6px 0 0",
+                              }}
+                            >
+                              {item.script}
+                            </p>
+                          </details>
+                        ) : null}
                       </span>
                       {onPerform ? (
                         done ? (
