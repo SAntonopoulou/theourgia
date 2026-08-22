@@ -28,6 +28,11 @@ export interface Ruleset {
   /** What it takes to be read — `matter`, or a fixed subject. */
   takes?: string;
   clauses: ElectionClause[];
+  /** The clauses verbatim as the pack carries them — the elector's wire
+   *  format, passed untouched to `POST /astro/elect`. */
+  clausesRaw: unknown[];
+  /** The pack's own warnings about running this ruleset. */
+  cautions: string[];
 }
 
 export interface Matter {
@@ -110,6 +115,8 @@ export function packToElectionTemplates(payload: unknown): ElectionTemplates {
         summary: typeof item.summary === "string" ? item.summary : "",
         takes: typeof item.takes === "string" ? item.takes : undefined,
         clauses: collectClauses(item.clauses),
+        clausesRaw: Array.isArray(item.clauses) ? item.clauses : [],
+        cautions: strings(item.cautions),
       });
     }
   }

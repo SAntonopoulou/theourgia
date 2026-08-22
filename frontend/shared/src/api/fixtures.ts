@@ -964,6 +964,84 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     };
   }
 
+  // /api/v1/astro/elect — one favourable Venus-hour window, one weaker,
+  // one ruled out on the void-Moon veto, so every section renders.
+  if (bare === "/api/v1/astro/elect" && method === "POST") {
+    const at = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString();
+    const finding = (
+      held: boolean,
+      veto: boolean,
+      weight: number,
+      says: string,
+      because: string,
+      detail = "",
+    ) => ({ held, veto, weight, because, says, detail });
+    const strong = [
+      finding(true, true, 1, "The Moon is not void", "the Moon must carry the matter"),
+      finding(true, false, 2, "The hour of Venus", "her hour colours the work"),
+      finding(true, false, 1, "Venus is dignified", "the lady of the work must stand well"),
+      finding(true, false, 2, "Venus is clear of the Sun's fire", "a burnt significator carries nothing"),
+    ];
+    return {
+      name: "A working of Venus",
+      summary: "The hours in which a work of Venus may be begun.",
+      best_possible: 5,
+      samples: 96,
+      step_minutes: 30,
+      favourable: [
+        {
+          start: at(3),
+          end: at(5),
+          score: 5,
+          out_of: 5,
+          fraction: 1,
+          vetoed: false,
+          findings: strong,
+        },
+      ],
+      weaker: [
+        {
+          start: at(8),
+          end: at(11),
+          score: 2,
+          out_of: 5,
+          fraction: 0.4,
+          vetoed: false,
+          findings: [
+            strong[0],
+            finding(false, false, 2, "Not the hour of Venus", "her hour colours the work"),
+            finding(true, false, 1, "Venus is dignified", "the lady of the work must stand well"),
+            finding(
+              false,
+              false,
+              2,
+              "Venus is combust",
+              "a burnt significator carries nothing",
+              "7.2° from the Sun, burnt up",
+            ),
+          ],
+        },
+      ],
+      ruled_out: [
+        {
+          start: at(14),
+          end: at(19),
+          score: 4,
+          out_of: 5,
+          fraction: 0.8,
+          vetoed: true,
+          findings: [
+            finding(false, true, 1, "The Moon is void of course", "the Moon must carry the matter"),
+            ...strong.slice(1),
+          ],
+        },
+      ],
+      dropped: [],
+      void_rule: "thirtyDegrees",
+      attribution: "Swiss Ephemeris (mock fixture)",
+    };
+  }
+
   // /api/v1/astro/moon-course — not void under the Hellenistic default.
   if (bare === "/api/v1/astro/moon-course" && method === "GET") {
     return {

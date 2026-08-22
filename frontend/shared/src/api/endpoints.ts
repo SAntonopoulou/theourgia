@@ -113,6 +113,8 @@ import type {
   MemoryFileContent,
   MemoryListResponse,
   Meta,
+  ElectRequestBody,
+  ElectResponse,
   MoonCourseResponse,
   MyAuditListResponse,
   MyAuditQueryInput,
@@ -1039,6 +1041,20 @@ export function api(client: ApiClient) {
     ): Promise<MoonCourseResponse> {
       const qs = input?.when ? `?when=${encodeURIComponent(input.when)}` : "";
       return client.request<MoonCourseResponse>(`/api/v1/astro/moon-course${qs}`, {
+        signal: opts?.signal,
+      });
+    },
+
+    /** Run an election ruleset over a span — the phone's elector,
+     * server-side, under the caller's saved doctrine. The ruleset is the
+     * election pack's JSON verbatim. */
+    postElect(
+      input: ElectRequestBody,
+      opts?: { signal?: AbortSignal },
+    ): Promise<ElectResponse> {
+      return client.request<ElectResponse>("/api/v1/astro/elect", {
+        method: "POST",
+        json: input,
         signal: opts?.signal,
       });
     },

@@ -329,6 +329,61 @@ export interface MoonCourseResponse {
   attribution: string;
 }
 
+// ─── Elections — the phone's elector, run server-side ──────────────────────
+
+/** One judged clause inside an election window. `says` is the fact and it
+ *  flips with the finding ("The Moon is void of course"); `because` is the
+ *  pack's reason and never flips. */
+export interface ElectFinding {
+  held: boolean;
+  veto: boolean;
+  weight: number;
+  because: string;
+  says: string;
+  detail: string;
+}
+
+/** A run of samples that judged alike, from ``POST /api/v1/astro/elect``. */
+export interface ElectWindow {
+  start: string;
+  end: string;
+  score: number;
+  out_of: number;
+  fraction: number | null;
+  vetoed: boolean;
+  findings: ElectFinding[];
+}
+
+/** Response from ``POST /api/v1/astro/elect``. */
+export interface ElectResponse {
+  name: string;
+  summary: string;
+  best_possible: number;
+  samples: number;
+  step_minutes: number;
+  favourable: ElectWindow[];
+  weaker: ElectWindow[];
+  ruled_out: ElectWindow[];
+  /** Conditions the ruleset asked for that the server cannot answer —
+   *  dropped exactly as the phone drops them, but named. */
+  dropped: string[];
+  void_rule: string;
+  attribution: string;
+}
+
+/** Body for ``POST /api/v1/astro/elect``. `ruleset` is the election pack's
+ *  ruleset JSON verbatim — id/name/summary/clauses as the pack carries it. */
+export interface ElectRequestBody {
+  ruleset: unknown;
+  start: string;
+  end: string;
+  step_minutes: number;
+  latitude: number;
+  longitude: number;
+  subject_body?: string;
+  subject_house?: number;
+}
+
 /** One astronomical event from ``GET /api/v1/events``. */
 export interface AstroEventRead {
   /** "new-moon" · "first-quarter" · "full-moon" · "last-quarter" ·
