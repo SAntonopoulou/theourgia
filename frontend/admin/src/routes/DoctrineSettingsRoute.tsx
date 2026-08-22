@@ -41,7 +41,7 @@ const SOLAR_PHASE: Choice<AstroDoctrineSettings["solar_phase"]>[] = [
     value: "lilly1647",
     label: "William Lilly, 1647",
     detail:
-      "17° under the beams, 8°30′ combust, 17′ cazimi — derived arithmetically from the Sun's aspect orb, not from visibility. Lilly himself: “I know many are against this opinion.”",
+      "17° under the beams, 8°30′ combust, 17′ cazimi — derived arithmetically from the Sun's aspect orb, not from visibility. In Lilly's own words: “I know many are against this opinion.”",
   },
   {
     value: "medievalUnattributed",
@@ -76,7 +76,7 @@ const PREDOMINATOR: Choice<AstroDoctrineSettings["predominator"]>[] = [
   {
     value: "ptolemy",
     label: "Ptolemy — equal, from 5° before the Ascendant",
-    detail: "His own frame (Tetrabiblos); it reaches modern practice via Lilly.",
+    detail: "Ptolemy's own frame (Tetrabiblos); it reaches modern practice via Lilly.",
   },
   {
     value: "paulus",
@@ -90,12 +90,13 @@ const VOID_OF_COURSE: Choice<AstroDoctrineSettings["void_of_course"]>[] = [
     value: "thirtyDegrees",
     label: "Within thirty degrees (Hellenistic)",
     detail:
-      "Kenodromia: the Moon completes no exact configuration within her next 30° of travel, regardless of sign boundaries. Voids are rare under this reading — the rarity is the doctrine. Differs from what most software implements.",
+      "Kenodromia: the Moon completes no exact configuration within its next 30° of travel, regardless of sign boundaries. Voids are rare under this reading — the rarity is the doctrine. Differs from what most software implements.",
   },
   {
     value: "signExit",
     label: "Before leaving the sign (later)",
-    detail: "The familiar modern rule: void until she perfects nothing more in the sign she is in.",
+    detail:
+      "The familiar modern rule: void until the Moon perfects nothing more before leaving the sign.",
   },
 ];
 
@@ -390,7 +391,8 @@ export function DoctrineSettingsRoute() {
             <h3 style={sectionTitle}>Maltreatment</h3>
             <p style={sectionSub}>
               Whether a malefic's sextile counts toward maltreatment. George admits the contest and
-              still awards it in her worked charts; switching it off is the stricter reading.
+              still awards it in George's own worked charts; switching it off is the stricter
+              reading.
             </p>
             <ChoiceGroup
               name="Maltreatment"
