@@ -33,7 +33,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from theourgia.api.deps import CurrentUser, get_db_session
+from theourgia.api.deps import OptionalCurrentUser, get_db_session
 from theourgia.api.routers.v1.user_settings import AstroDoctrineModel, read_astro_doctrine
 
 from theourgia.core.astro import (
@@ -468,7 +468,7 @@ def _serialize_doctrine(req: ChartRequest, doctrine: AstroDoctrineModel) -> Char
 )
 async def astro_chart_doctrine(
     db: Annotated[AsyncSession, Depends(get_db_session)],
-    current_user: CurrentUser,
+    current_user: OptionalCurrentUser,
     when: datetime,
     latitude: float = Query(ge=-90.0, le=90.0),
     longitude: float = Query(ge=-180.0, le=180.0),
