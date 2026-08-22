@@ -26,6 +26,7 @@ import type {
   AstragaloiCastFilters,
   AstragaloiCastRead,
   AstragaloiCorpusMeta,
+  AstroDoctrineSettings,
   AstroEventsResponse,
   AudioAttachmentRecord,
   AwaitingJudgmentRead,
@@ -38,6 +39,7 @@ import type {
   BundledPackageListResponse,
   BundledVoce,
   CastHoraryInput,
+  ChartDoctrineResponse,
   ChartRequestInput,
   ChartResponse,
   CircleRecord,
@@ -986,6 +988,42 @@ export function api(client: ApiClient) {
       });
       return client.request<ChartResponse>(`/api/v1/astro/chart?${qs.toString()}`, {
         signal: opts?.signal,
+      });
+    },
+
+    /**
+     * The server-derived traditional reading of a chart — sect, the
+     * seven Hermetic lots, and the essential dignities of the seven,
+     * computed by the hellenistic engine under the signed-in user's
+     * ``astro.doctrine`` choices (#126).
+     */
+    getChartDoctrine(
+      input: { when: string; latitude: number; longitude: number },
+      opts?: { signal?: AbortSignal },
+    ): Promise<ChartDoctrineResponse> {
+      const qs = new URLSearchParams({
+        when: input.when,
+        latitude: String(input.latitude),
+        longitude: String(input.longitude),
+      });
+      return client.request<ChartDoctrineResponse>(
+        `/api/v1/astro/chart/doctrine?${qs.toString()}`,
+        { signal: opts?.signal },
+      );
+    },
+
+    /** The signed-in user's contested-doctrine choices (``astro.doctrine``). */
+    getAstroDoctrine(opts?: { signal?: AbortSignal }): Promise<AstroDoctrineSettings> {
+      return client.request<AstroDoctrineSettings>("/api/v1/users/me/settings/astro-doctrine", {
+        signal: opts?.signal,
+      });
+    },
+
+    /** Replace the signed-in user's contested-doctrine choices. */
+    putAstroDoctrine(payload: AstroDoctrineSettings): Promise<AstroDoctrineSettings> {
+      return client.request<AstroDoctrineSettings>("/api/v1/users/me/settings/astro-doctrine", {
+        method: "PUT",
+        json: payload,
       });
     },
 

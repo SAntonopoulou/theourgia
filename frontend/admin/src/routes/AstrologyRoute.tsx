@@ -13,6 +13,7 @@ import {
   Button,
   Chart,
   ChartDetail,
+  type ChartDoctrineResponse,
   ChartLegend,
   type ChartResponse,
   EmptyState,
@@ -175,6 +176,12 @@ export function AstrologyRoute() {
 
   const [chart, setChart] = useState<ChartResponse | null>(null);
   const [casting, setCasting] = useState(false);
+  // The server-derived reading (sect, lots, dignities) follows the chart once
+  // the scrub settles; `doctrineFor` names the instant it was computed for,
+  // so a reading lagging the wheel dims instead of tearing.
+  const [doctrine, setDoctrine] = useState<ChartDoctrineResponse | null>(null);
+  const [doctrineFor, setDoctrineFor] = useState<string | null>(null);
+  const doctrineTokenRef = useRef(0);
   const [castError, setCastError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -253,6 +260,33 @@ export function AstrologyRoute() {
       setSaving(false);
     }
   };
+
+  // Fetch the traditional reading for whatever chart is showing, debounced so
+  // a scrub's stream of casts asks for the judgment once, at the settle.
+  useEffect(() => {
+    if (!chart) {
+      setDoctrine(null);
+      setDoctrineFor(null);
+      return;
+    }
+    doctrineTokenRef.current += 1;
+    const token = doctrineTokenRef.current;
+    const { instant, latitude, longitude } = chart;
+    const timer = setTimeout(() => {
+      apiMethods
+        .getChartDoctrine({ when: instant, latitude, longitude })
+        .then((r) => {
+          if (token !== doctrineTokenRef.current) return;
+          setDoctrine(r);
+          setDoctrineFor(instant);
+        })
+        .catch(() => {
+          // Quiet — the previous reading stays (dimmed as stale); the next
+          // settled cast retries.
+        });
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [chart]);
 
   // Seed the location from the user's saved setting, then cast "now" once.
   useEffect(() => {
@@ -681,7 +715,11 @@ export function AstrologyRoute() {
             </div>
           </div>
           <div style={{ marginTop: 28 }}>
-            <ChartDetail chart={chart} />
+            <ChartDetail
+              chart={chart}
+              doctrine={doctrine}
+              doctrineStale={doctrineFor !== chart.instant}
+            />
           </div>
         </div>
       ) : casting ? (

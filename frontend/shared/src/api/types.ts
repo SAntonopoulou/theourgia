@@ -233,6 +233,69 @@ export interface ChartResponse {
   attribution: string;
 }
 
+/** Sect block in a doctrine response — the frame the reading opens with. */
+export interface ChartSectRead {
+  sect: "diurnal" | "nocturnal";
+  /** The luminary leading the sect (body id). */
+  light: string;
+  /** The benefic of the sect, and the malefic contrary to it (body ids). */
+  benefic: string;
+  malefic_contrary: string;
+  /** The Sun stands within a degree of the horizon — shown, never decided. */
+  is_borderline: boolean;
+}
+
+/** One Hermetic lot from a doctrine response. */
+export interface ChartLotRead {
+  id: string;
+  label: string;
+  longitude: number;
+}
+
+/** The essential-dignity judgment of one planet, server-derived. */
+export interface ChartDignityRead {
+  body_id: string;
+  sign: string;
+  domicile_lord: string;
+  exaltation_lord: string | null;
+  triplicity_lord: string;
+  bound_lord: string;
+  decan_lord: string;
+  held: string[];
+  debilities: string[];
+  peregrine: boolean;
+}
+
+/** The practitioner's rulings on the contested doctrines (``astro.doctrine``).
+ *  Values are the canonical engine's enum identifiers — the phone parses the
+ *  same strings. */
+export interface AstroDoctrineSettings {
+  solar_phase: "paulus" | "lilly1647" | "medievalUnattributed";
+  predominator:
+    | "porphyry"
+    | "dorotheus"
+    | "valensWholeSign"
+    | "valensQuadrant"
+    | "ptolemy"
+    | "paulus";
+  exaltation_degrees: "signLevel" | "degree";
+  saturn_exaltation_degree: number;
+  venus_exaltation_degree: number;
+  maltreatment_contested_sextile: boolean;
+  void_of_course: "signBounded" | "orbBased";
+}
+
+/** Response from ``GET /api/v1/astro/chart/doctrine`` — the server-derived
+ *  traditional reading (#126 retired the client-side derivation). */
+export interface ChartDoctrineResponse {
+  sect: ChartSectRead;
+  lots: ChartLotRead[];
+  dignities: ChartDignityRead[];
+  /** The choices this reading was computed under. */
+  doctrine: AstroDoctrineSettings;
+  attribution: string;
+}
+
 /** One astronomical event from ``GET /api/v1/events``. */
 export interface AstroEventRead {
   /** "new-moon" · "first-quarter" · "full-moon" · "last-quarter" ·

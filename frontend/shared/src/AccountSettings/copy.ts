@@ -8,6 +8,7 @@
 
 export type SectionKey =
   | "practices"
+  | "astro-doctrine"
   | "packs"
   | "appearance"
   | "identity"

@@ -671,6 +671,11 @@ const RitualFeed = lazy(() =>
 const AppearanceRoute = lazy(() =>
   import("./routes/AppearanceRoute.js").then((m) => ({ default: m.AppearanceRoute })),
 );
+const DoctrineSettingsRoute = lazy(() =>
+  import("./routes/DoctrineSettingsRoute.js").then((m) => ({
+    default: m.DoctrineSettingsRoute,
+  })),
+);
 const PracticesSettingsRoute = lazy(() =>
   import("./routes/PracticesSettingsRoute.js").then((m) => ({
     default: m.PracticesSettingsRoute,
@@ -1161,6 +1166,7 @@ function ShellRoutes() {
                 practices" from Today lands straight on them (20 Aug). Now the
                 dedicated page, not the retired hub's practices tab. */}
             <Route path="/settings/practices" element={<PracticesSettingsRoute />} />
+            <Route path="/settings/astro-doctrine" element={<DoctrineSettingsRoute />} />
             <Route path="/comments-moderation" element={<CommentModerationRoute />} />
             <Route path="/settings/keys" element={<KeyRotationRoute />} />
             <Route path="/settings/webauthn" element={<WebAuthnEnrollmentRoute />} />

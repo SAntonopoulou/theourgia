@@ -45,6 +45,16 @@ const PACKS_SECTION = {
   ],
 };
 
+// The contested astrological doctrines (#125): where the tradition holds two
+// opinions the practitioner chooses; the engine reads the choice everywhere
+// it computes. Sits beside Practices — doctrine is how the practice is kept.
+const DOCTRINE_SECTION = {
+  key: "astro-doctrine" as const,
+  title: "Astrological doctrine",
+  sub: "Where the tradition holds two opinions, choose yours — combustion orbs, the Predominator, exaltation degrees, and more",
+  links: [{ label: "Choose your doctrine", href: appHref("/settings/astro-doctrine") }],
+};
+
 // Appearance is the one real surface rescued from the retired /settings/
 // preferences hub — theme, language, font roles, basic a11y switches. It
 // belongs on the single hub, not a parallel one.
@@ -60,6 +70,7 @@ const APPEARANCE_SECTION = {
 // internal link through appHref() once at module scope.
 const SECTIONS = [
   PRACTICE_SECTION,
+  DOCTRINE_SECTION,
   PACKS_SECTION,
   APPEARANCE_SECTION,
   ...AccountSettingsCopy.DEFAULT_SECTIONS.map((section) => ({

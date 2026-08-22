@@ -24,7 +24,7 @@ from __future__ import annotations
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -913,3 +913,157 @@ async def put_my_maps(
     )
     await db.commit()
     return MapsRead(maps=payload.maps)
+
+
+# ─── contested astrological doctrines (astro.doctrine) ───────────────────
+#
+# Sophia's standing rule (22 Aug 2026, recorded in the phone repo's
+# docs/ASTRO-DOCTRINE-DECISIONS.md): where the tradition genuinely holds two
+# opinions the practitioner chooses between them; where it holds one, we
+# implement the one. This key stores the choices; the defaults are the
+# ledger's. Synced per user — the phone reads the same key, so every string
+# value is the CANONICAL Dart enum identifier (PredominatorAuthority et al.),
+# never a re-spelling. The Saturn/Venus degrees validate against the
+# hellenistic engine's own attested data, so a rejected reading (Saturn 19°,
+# an OCR artefact of George's Table 15) can never be stored as doctrine.
+
+ASTRO_DOCTRINE_KEY = "astro.doctrine"
+
+
+def _attested_exaltation_degrees(planet: "Planet") -> frozenset[int]:
+    """The default degree plus every ATTESTED variant — nothing rejected."""
+    from theourgia.core.astro.hellenistic.dignities import exaltation_of
+
+    e = exaltation_of(planet)
+    if e is None:  # pragma: no cover — Saturn and Venus both have exaltations
+        return frozenset()
+    return frozenset({e.degree, *(v.degree for v in e.selectable_variants)})
+
+
+class AstroDoctrineModel(BaseModel):
+    """One practitioner's rulings on the genuinely contested doctrines."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    #: Solar-phase orbs. Default Paulus ch. 14 verbatim (15° beams / 9°
+    #: combust / 3° extreme / cazimi in the heart). The presets are honestly
+    #: labelled: Lilly 1647 derived his 17° / 8°30′ arithmetically from
+    #: aspect orbs, and the 12° value has no named ancient author.
+    solar_phase: Literal["paulus", "lilly1647", "medievalUnattributed"] = "paulus"
+    #: Which procedure names the Predominator. Identifiers are the phone's
+    #: PredominatorAuthority enum names; each carries its own house frame.
+    predominator: Literal[
+        "porphyry",
+        "dorotheus",
+        "valensWholeSign",
+        "valensQuadrant",
+        "ptolemy",
+        "paulus",
+    ] = "valensWholeSign"
+    #: Exaltations read sign-level by default (the Hellenistic emphasis);
+    #: degree mode is the refinement. The SIGNS are unanimous — no option.
+    exaltation_degrees: Literal["signLevel", "degree"] = "signLevel"
+    #: Saturn 21° Libra (majority of sources) vs 20° (Paulus, via George).
+    saturn_exaltation_degree: int = 21
+    #: Venus 27° Pisces (near-unanimous) vs 26° (Porphyry's lone dissent).
+    venus_exaltation_degree: int = 27
+    #: Maltreatment counts the contested sextile (George's worked charts do);
+    #: off is the stricter reading.
+    maltreatment_contested_sextile: bool = True
+    #: Void of course: next application within the sign (Hellenistic) vs
+    #: within orb regardless of sign (the later definition).
+    void_of_course: Literal["signBounded", "orbBased"] = "signBounded"
+
+    @field_validator("saturn_exaltation_degree")
+    @classmethod
+    def _saturn_degree_attested(cls, v: int) -> int:
+        from theourgia.core.astro.hellenistic.bodies import Planet
+
+        allowed = _attested_exaltation_degrees(Planet.SATURN)
+        if v not in allowed:
+            raise ValueError(
+                f"Saturn's exaltation degree must be one of {sorted(allowed)} "
+                "(the attested readings); other values are not doctrine."
+            )
+        return v
+
+    @field_validator("venus_exaltation_degree")
+    @classmethod
+    def _venus_degree_attested(cls, v: int) -> int:
+        from theourgia.core.astro.hellenistic.bodies import Planet
+
+        allowed = _attested_exaltation_degrees(Planet.VENUS)
+        if v not in allowed:
+            raise ValueError(
+                f"Venus's exaltation degree must be one of {sorted(allowed)} "
+                "(the attested readings); other values are not doctrine."
+            )
+        return v
+
+
+async def read_astro_doctrine(db: AsyncSession, user_id) -> AstroDoctrineModel:
+    """The user's doctrine choices, defaults where unset.
+
+    Salvages field-by-field: one malformed choice falls back to its default
+    without dragging the user's other rulings down with it. Shared with the
+    astro endpoints — the engine reads this, the chart stays clean.
+    """
+    stmt = select(UserSetting).where(
+        UserSetting.user_id == user_id, UserSetting.key == ASTRO_DOCTRINE_KEY
+    )
+    row = (await db.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        return AstroDoctrineModel()
+    try:
+        import json
+
+        value = json.loads(row.value_json)
+    except (ValueError, TypeError):
+        return AstroDoctrineModel()
+    if not isinstance(value, dict):
+        return AstroDoctrineModel()
+    known = {k: v for k, v in value.items() if k in AstroDoctrineModel.model_fields}
+    try:
+        return AstroDoctrineModel(**known)
+    except ValidationError as exc:
+        bad = {e["loc"][0] for e in exc.errors() if e["loc"]}
+        salvaged = {k: v for k, v in known.items() if k not in bad}
+        try:
+            return AstroDoctrineModel(**salvaged)
+        except ValidationError:
+            return AstroDoctrineModel()
+
+
+@router.get(
+    "/users/me/settings/astro-doctrine",
+    summary="Read the signed-in user's contested-doctrine choices",
+    description=(
+        "Returns the practitioner's rulings on the genuinely contested "
+        "astrological doctrines, or the ledger defaults where unset."
+    ),
+    response_model=AstroDoctrineModel,
+)
+async def get_my_astro_doctrine(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> AstroDoctrineModel:
+    if current_user is None:
+        raise UnauthorizedError("doctrine settings require authentication")
+    return await read_astro_doctrine(db, current_user.id)
+
+
+@router.put(
+    "/users/me/settings/astro-doctrine",
+    summary="Update the signed-in user's contested-doctrine choices",
+    response_model=AstroDoctrineModel,
+)
+async def put_my_astro_doctrine(
+    payload: AstroDoctrineModel,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> AstroDoctrineModel:
+    if current_user is None:
+        raise UnauthorizedError("doctrine settings require authentication")
+    await _upsert_value(db, current_user.id, ASTRO_DOCTRINE_KEY, payload.model_dump())
+    await db.commit()
+    return payload

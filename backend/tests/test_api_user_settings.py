@@ -478,3 +478,117 @@ async def test_charts_put_refuses_a_mapped_column_on_a_custom_scale() -> None:
     )
     with pytest.raises(ValidationFailedError):
         await put_my_correspondence_charts(payload, None, _User())
+
+
+# ─── astro.doctrine — the contested-doctrine choices ─────────────────────
+
+
+def test_astro_doctrine_defaults_are_the_ledger() -> None:
+    # The defaults recorded in the phone repo's ASTRO-DOCTRINE-DECISIONS.md.
+    from theourgia.api.routers.v1.user_settings import AstroDoctrineModel
+
+    d = AstroDoctrineModel()
+    assert d.solar_phase == "paulus"
+    assert d.predominator == "valensWholeSign"
+    assert d.exaltation_degrees == "signLevel"
+    assert d.saturn_exaltation_degree == 21
+    assert d.venus_exaltation_degree == 27
+    assert d.maltreatment_contested_sextile is True
+    assert d.void_of_course == "signBounded"
+
+
+def test_astro_doctrine_values_are_the_phone_enum_names() -> None:
+    # The setting syncs to the phone, whose Dart enums parse these verbatim.
+    from theourgia.api.routers.v1.user_settings import AstroDoctrineModel
+
+    predominator = AstroDoctrineModel.model_fields["predominator"]
+    args = predominator.annotation.__args__
+    assert set(args) == {
+        "porphyry",
+        "dorotheus",
+        "valensWholeSign",
+        "valensQuadrant",
+        "ptolemy",
+        "paulus",
+    }
+
+
+def test_astro_doctrine_saturn_degree_must_be_attested() -> None:
+    # 21 (majority) and 20 (Paulus via George) stand; 19 is the OCR artefact
+    # George's Table 15 scan produced and must never be storable as doctrine.
+    from theourgia.api.routers.v1.user_settings import AstroDoctrineModel
+
+    assert AstroDoctrineModel(saturn_exaltation_degree=20).saturn_exaltation_degree == 20
+    with pytest.raises(ValidationError):
+        AstroDoctrineModel(saturn_exaltation_degree=19)
+
+
+def test_astro_doctrine_venus_degree_must_be_attested() -> None:
+    from theourgia.api.routers.v1.user_settings import AstroDoctrineModel
+
+    assert AstroDoctrineModel(venus_exaltation_degree=26).venus_exaltation_degree == 26
+    with pytest.raises(ValidationError):
+        AstroDoctrineModel(venus_exaltation_degree=25)
+
+
+def test_astro_doctrine_degree_options_come_from_the_engine() -> None:
+    # The validator reads the hellenistic module's attested variants, so the
+    # setting can never drift from what the canon actually records.
+    from theourgia.api.routers.v1.user_settings import _attested_exaltation_degrees
+    from theourgia.core.astro.hellenistic.bodies import Planet
+
+    assert _attested_exaltation_degrees(Planet.SATURN) == frozenset({21, 20})
+    assert _attested_exaltation_degrees(Planet.VENUS) == frozenset({27, 26})
+
+
+def test_astro_doctrine_rejects_extras() -> None:
+    from theourgia.api.routers.v1.user_settings import AstroDoctrineModel
+
+    with pytest.raises(ValidationError):
+        AstroDoctrineModel(house_system="placidus")
+
+
+def test_astro_doctrine_route_registered() -> None:
+    from theourgia.api.app import create_app
+
+    app = create_app()
+    paths = set(app.openapi()["paths"].keys())
+    assert "/api/v1/users/me/settings/astro-doctrine" in paths
+
+
+@pytest.mark.anyio
+async def test_read_astro_doctrine_defaults_when_unset() -> None:
+    from theourgia.api.routers.v1.user_settings import read_astro_doctrine
+
+    d = await read_astro_doctrine(_Session(None), "user-1")
+    assert d.predominator == "valensWholeSign"
+
+
+@pytest.mark.anyio
+async def test_read_astro_doctrine_salvages_field_by_field() -> None:
+    # One malformed choice falls back to its default without dragging the
+    # user's other rulings down with it.
+    import json
+
+    from theourgia.api.routers.v1.user_settings import read_astro_doctrine
+
+    stored = {
+        "solar_phase": "lilly1647",
+        "saturn_exaltation_degree": 19,  # the rejected artefact
+        "void_of_course": "orbBased",
+        "some_future_field": "ignored",
+    }
+    d = await read_astro_doctrine(_Session(_Row(json.dumps(stored))), "user-1")
+    assert d.solar_phase == "lilly1647"
+    assert d.void_of_course == "orbBased"
+    assert d.saturn_exaltation_degree == 21
+
+
+@pytest.mark.anyio
+async def test_read_astro_doctrine_tolerates_garbage() -> None:
+    from theourgia.api.routers.v1.user_settings import read_astro_doctrine
+
+    d = await read_astro_doctrine(_Session(_Row("not json")), "user-1")
+    assert d.solar_phase == "paulus"
+    d = await read_astro_doctrine(_Session(_Row('["a list"]')), "user-1")
+    assert d.exaltation_degrees == "signLevel"

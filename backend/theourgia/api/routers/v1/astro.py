@@ -6,6 +6,7 @@ I-A additions (profections, transits-to-natal, today-context):
 * ``GET  /api/v1/calendar/today``         — multi-calendar today
 * ``GET  /api/v1/astro/chart``            — compute and return a chart
 * ``GET  /api/v1/astro/now``              — current sky state (compact chart)
+* ``GET  /api/v1/astro/chart/doctrine``   — sect, lots, dignities (server-derived)
 * ``GET  /api/v1/astro/planetary-hours``  — for a date + location
 * ``GET  /api/v1/astro/profections``      — annual profection + year lord
 * ``GET  /api/v1/astro/transits``         — transiting aspects to natal
@@ -26,10 +27,14 @@ attribution per the AGPL-3.0 license obligations (see
 from __future__ import annotations
 
 from datetime import UTC, date as date_cls, datetime, timedelta
-from typing import Literal
+from typing import Annotated, Literal
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from theourgia.api.deps import CurrentUser, get_db_session
+from theourgia.api.routers.v1.user_settings import AstroDoctrineModel, read_astro_doctrine
 
 from theourgia.core.astro import (
     ATTRIBUTION,
@@ -264,6 +269,232 @@ async def astro_now(
         zodiac=Zodiac(zodiac),
         house_system=HouseSystem(house_system),
     ))
+
+
+# ════════════════════════════════════════════════════════════════════════
+# /astro/chart/doctrine — the server-derived traditional reading
+# ════════════════════════════════════════════════════════════════════════
+#
+# The sect, the lots, and the essential dignities of the seven, computed by
+# the hellenistic engine rather than re-derived on the client (#126 retired
+# the TS copy, whose sect came from house numbers — an approximation the
+# degree-based rule here replaces). Honours the signed-in practitioner's
+# ``astro.doctrine`` choices; anonymous callers get the ledger defaults.
+
+
+class SectRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    sect: Literal["diurnal", "nocturnal"]
+    #: The luminary leading the sect, and the sect's own benefic / the
+    #: malefic contrary to it — the frame the reading opens with.
+    light: str
+    benefic: str
+    malefic_contrary: str
+    #: The Sun stands within a degree of the horizon: the determination is
+    #: shown, not silently decided. No ancient source resolves this case.
+    is_borderline: bool
+
+
+class LotRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    label: str
+    longitude: float
+
+
+class DignityRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    body_id: str
+    sign: str
+    domicile_lord: str
+    exaltation_lord: str | None
+    triplicity_lord: str
+    bound_lord: str
+    decan_lord: str
+    held: list[str]
+    debilities: list[str]
+    peregrine: bool
+
+
+class ChartDoctrineResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    sect: SectRead
+    lots: list[LotRead]
+    dignities: list[DignityRead]
+    #: The choices this reading was computed under — what was honoured.
+    doctrine: AstroDoctrineModel
+    attribution: str
+
+
+def _effective_exaltation_degree(planet, doctrine: AstroDoctrineModel) -> int | None:
+    """The ordinal exaltation degree in force — the canonical value, except
+    where the practitioner chose an attested variant (Saturn, Venus)."""
+    from theourgia.core.astro.hellenistic import bodies as hbodies
+    from theourgia.core.astro.hellenistic import dignities as hdig
+
+    e = hdig.exaltation_of(planet)
+    if e is None:
+        return None
+    if planet is hbodies.Planet.SATURN:
+        return doctrine.saturn_exaltation_degree
+    if planet is hbodies.Planet.VENUS:
+        return doctrine.venus_exaltation_degree
+    return e.degree
+
+
+def _judge_planet(planet, lon: float, chart_sect, doctrine: AstroDoctrineModel) -> DignityRead:
+    """The essential-dignity judgment of one planet at one longitude.
+
+    Pure — no ephemeris — so the golden tests can put Saturn at any degree of
+    Libra and watch the practitioner's degree choice change the verdict.
+    """
+    from theourgia.core.astro.hellenistic import dignities as hdig
+    from theourgia.core.astro.hellenistic.zodiac import degree_in_sign, sign_of_longitude
+
+    sign = sign_of_longitude(lon)
+    deg_in = degree_in_sign(lon)
+
+    domicile_lord = hdig.domicile_lord_of(sign)
+    exaltation_lord = hdig.exaltation_ruler_of(sign)
+    triplicity_lord = hdig.triplicity_lord_of(sign, chart_sect)
+    bound_lord = hdig.bound_lord_of(sign, deg_in)
+    decan_lord = hdig.decan_ruler_of(sign, deg_in)
+
+    held: list[str] = []
+    if domicile_lord is planet:
+        held.append("domicile")
+    if exaltation_lord is planet:
+        held.append("exaltation")
+        # Degree mode: the throne itself. An ordinal-degree match against the
+        # practitioner's chosen reading (Saturn 21° vs 20°, Venus 27° vs 26°)
+        # — a refinement of the sign-level rank, never a gate on it.
+        if doctrine.exaltation_degrees == "degree":
+            chosen = _effective_exaltation_degree(planet, doctrine)
+            if chosen is not None and hdig.ordinal_degree(deg_in) == chosen:
+                held.append("exaltation degree")
+    if triplicity_lord is planet:
+        held.append("triplicity")
+    if bound_lord is planet:
+        held.append("bound")
+    if decan_lord is planet:
+        held.append("decan")
+
+    debilities: list[str] = []
+    if hdig.adversity_lord_of(sign) is planet:
+        debilities.append("detriment")
+    if hdig.fall_ruler_of(sign) is planet:
+        debilities.append("fall")
+        if doctrine.exaltation_degrees == "degree":
+            chosen = _effective_exaltation_degree(planet, doctrine)
+            if chosen is not None and hdig.ordinal_degree(deg_in) == chosen:
+                debilities.append("fall degree")
+
+    return DignityRead(
+        body_id=planet.id,
+        sign=sign.label,
+        domicile_lord=domicile_lord.id,
+        exaltation_lord=exaltation_lord.id if exaltation_lord else None,
+        triplicity_lord=triplicity_lord.id,
+        bound_lord=bound_lord.id,
+        decan_lord=decan_lord.id,
+        held=held,
+        debilities=debilities,
+        peregrine=not held and not debilities,
+    )
+
+
+def _serialize_doctrine(req: ChartRequest, doctrine: AstroDoctrineModel) -> ChartDoctrineResponse:
+    from theourgia.core.astro.hellenistic import bodies as hbodies
+    from theourgia.core.astro.hellenistic import lots as hlots
+    from theourgia.core.astro.hellenistic import sect as hsect
+
+    result = compute_chart(req)
+    # Doctrine reads tropical longitudes regardless of the wheel's zodiac
+    # setting — the Hellenistic judgment is a tropical system.
+    lons = {p.body.id: p.tropical.longitude for p in result.placements}
+    asc = result.houses.ascendant
+
+    det = hsect.determine(lons["sun"], asc)
+    sect_name: Literal["diurnal", "nocturnal"] = (
+        "diurnal" if det.sect is hsect.Sect.DIURNAL else "nocturnal"
+    )
+    sect_read = SectRead(
+        sect=sect_name,
+        light=hsect.light_of(det.sect).id,
+        benefic=hsect.benefic_of(det.sect).id,
+        malefic_contrary=hsect.malefic_contrary_to(det.sect).id,
+        is_borderline=det.is_borderline,
+    )
+
+    lot_values = hlots.all_lots(
+        hlots.LotInputs(
+            ascendant=asc,
+            sun=lons["sun"],
+            moon=lons["moon"],
+            mercury=lons["mercury"],
+            venus=lons["venus"],
+            mars=lons["mars"],
+            jupiter=lons["jupiter"],
+            saturn=lons["saturn"],
+            sect=det.sect,
+        )
+    )
+    lots_read = [
+        LotRead(id=lot.english.lower(), label=lot.english, longitude=lon)
+        for lot, lon in lot_values.items()
+    ]
+
+    dignities_read = [
+        _judge_planet(planet, lons[planet.id], det.sect, doctrine)
+        for planet in hbodies.Planet
+        if not planet.is_node and planet.id in lons
+    ]
+
+    return ChartDoctrineResponse(
+        sect=sect_read,
+        lots=lots_read,
+        dignities=dignities_read,
+        doctrine=doctrine,
+        attribution=ATTRIBUTION,
+    )
+
+
+@router.get(
+    "/astro/chart/doctrine", response_model=ChartDoctrineResponse, tags=["astro"]
+)
+async def astro_chart_doctrine(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+    when: datetime,
+    latitude: float = Query(ge=-90.0, le=90.0),
+    longitude: float = Query(ge=-180.0, le=180.0),
+) -> ChartDoctrineResponse:
+    """The traditional reading of a chart: sect, lots, essential dignities.
+
+    Signed-in callers get their own ``astro.doctrine`` rulings honoured;
+    anonymous callers the ledger defaults.
+    """
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+    doctrine = (
+        await read_astro_doctrine(db, current_user.id)
+        if current_user is not None
+        else AstroDoctrineModel()
+    )
+    return _serialize_doctrine(
+        ChartRequest(
+            instant=when,
+            latitude=latitude,
+            longitude=longitude,
+            zodiac=Zodiac("tropical"),
+            house_system=HouseSystem("whole-sign"),
+        ),
+        doctrine,
+    )
 
 
 # ════════════════════════════════════════════════════════════════════════

@@ -43,10 +43,64 @@ const mocks = vi.hoisted(() => {
     aspects: [],
     attribution: "Swiss Ephemeris",
   };
+  // The server-derived reading for the chart above: the Sun below the
+  // horizon (arc from the Descendant ≥ 180°) makes it nocturnal, and the
+  // nocturnal Fortune is Asc + Sun − Moon = 147.5°.
+  const DOCTRINE = {
+    sect: {
+      sect: "nocturnal",
+      light: "moon",
+      benefic: "venus",
+      malefic_contrary: "saturn",
+      is_borderline: false,
+    },
+    lots: [
+      { id: "fortune", label: "Fortune", longitude: 147.5 },
+      { id: "spirit", label: "Spirit", longitude: 237.1 },
+    ],
+    dignities: [
+      {
+        body_id: "sun",
+        sign: "Leo",
+        domicile_lord: "sun",
+        exaltation_lord: null,
+        triplicity_lord: "jupiter",
+        bound_lord: "saturn",
+        decan_lord: "jupiter",
+        held: ["domicile"],
+        debilities: [],
+        peregrine: false,
+      },
+      {
+        body_id: "moon",
+        sign: "Aries",
+        domicile_lord: "mars",
+        exaltation_lord: "sun",
+        triplicity_lord: "jupiter",
+        bound_lord: "jupiter",
+        decan_lord: "mars",
+        held: [],
+        debilities: [],
+        peregrine: true,
+      },
+    ],
+    doctrine: {
+      solar_phase: "paulus",
+      predominator: "valensWholeSign",
+      exaltation_degrees: "signLevel",
+      saturn_exaltation_degree: 21,
+      venus_exaltation_degree: 27,
+      maltreatment_contested_sextile: true,
+      void_of_course: "signBounded",
+    },
+    attribution: "Swiss Ephemeris",
+  };
   return {
     CHART,
+    DOCTRINE,
     getMyLocation: vi.fn(() => Promise.resolve({ lat: 41.0, lng: -80.0 })),
     getChart: vi.fn(() => Promise.resolve(CHART)),
+    getChartDoctrine: vi.fn(() => Promise.resolve(DOCTRINE)),
   };
 });
 
@@ -54,6 +108,7 @@ vi.mock("../../data/api.js", () => ({
   apiMethods: {
     getMyLocation: mocks.getMyLocation,
     getChart: mocks.getChart,
+    getChartDoctrine: mocks.getChartDoctrine,
   },
 }));
 
@@ -62,6 +117,7 @@ import { AstrologyRoute } from "../AstrologyRoute.js";
 afterEach(() => {
   mocks.getMyLocation.mockClear();
   mocks.getChart.mockClear();
+  mocks.getChartDoctrine.mockClear();
 });
 
 describe("AstrologyRoute", () => {
@@ -81,9 +137,12 @@ describe("AstrologyRoute", () => {
     // The angles are read off the returned houses.
     expect(screen.getByText(/Ascendant/)).toBeInTheDocument();
 
-    // The traditional reading is derived and shown: the Sun below the horizon
-    // (house 5) makes this a nocturnal chart, and the Lots are named.
-    expect(screen.getByText(/nocturnal/i)).toBeInTheDocument();
+    // The traditional reading is fetched from the server (debounced behind the
+    // cast) and shown: sect, then the Lots by name.
+    expect(await screen.findByText(/nocturnal/i, undefined, { timeout: 3000 })).toBeInTheDocument();
     expect(screen.getByText("Fortune")).toBeInTheDocument();
+    expect(mocks.getChartDoctrine).toHaveBeenCalledWith(
+      expect.objectContaining({ latitude: 41.0, longitude: -80.0 }),
+    );
   });
 });
