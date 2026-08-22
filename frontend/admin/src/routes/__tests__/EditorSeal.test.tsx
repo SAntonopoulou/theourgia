@@ -53,6 +53,10 @@ const mocks = vi.hoisted(() => {
     tags: [],
     tradition_tags: [],
     publish_on_death: false,
+    slug: null,
+    meta_description: "",
+    categories: [],
+    scheduled_publish_at: null,
   };
   const SEALED_DETAIL = { ...DETAIL, body: "", sealed: true };
   const ENVELOPE = JSON.stringify({ v: 1, iv: "aXY=", ct: "Y3Q=" });
@@ -203,8 +207,9 @@ describe("Editor — seal flow (v1-033)", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Visibility · Personal · Sealed" }));
     expect(screen.queryByText(/click to unseal/)).not.toBeInTheDocument();
     expect(screen.getByText("Sealed — tap to read")).toBeInTheDocument();
-    // Publish is gated (the backend refuses sealed publishes too).
-    expect(screen.getByRole("button", { name: "Publish" })).toBeDisabled();
+    // Publishing is gated (the backend refuses sealed publishes too):
+    // the panel toggle disables outright for sealed entries (v1-044).
+    expect(screen.getByRole("button", { name: /Draft ▾/ })).toBeDisabled();
   });
 
   it("reads a sealed entry by fetching + decrypting in memory", async () => {

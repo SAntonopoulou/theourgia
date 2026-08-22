@@ -129,6 +129,7 @@ from theourgia.api.routers.v1 import imports_day_one as v1_imports_day_one
 from theourgia.api.routers.v1 import audio as v1_audio
 from theourgia.api.routers.v1 import wellbeing as v1_wellbeing
 from theourgia.api.routers import feeds as app_feeds
+from theourgia.api.routers import public_pages
 
 __all__ = ["register_routers"]
 
@@ -147,6 +148,11 @@ def register_routers(app: FastAPI) -> None:
     # Unversioned vault feed endpoints (RSS / Atom / JSON Feed).
     # Feed readers subscribe to stable URLs; we don't version them.
     app.include_router(app_feeds.router, tags=["feeds"])
+
+    # v1-044 — server-rendered public post pages + sitemap (the
+    # journal-as-CMS batch). Root-level: the frontend Caddy proxies
+    # /blog/* and /sitemap.xml here.
+    app.include_router(public_pages.router, tags=["blog"])
 
     # Versioned API surface (v1)
     v1 = APIRouter(prefix="/api/v1")

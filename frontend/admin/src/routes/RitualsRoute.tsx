@@ -9,6 +9,7 @@
  */
 
 import {
+  ConfirmDialog,
   KeepingSheet,
   type KeepingValues,
   type RecordEntryWrite,
@@ -178,10 +179,10 @@ export function RitualsRoute() {
     }
   };
 
+  // v1-044 — deletion asks in the app's own voice, never a browser alert.
+  const [pendingDelete, setPendingDelete] = useState<Rite | null>(null);
+
   const remove = async (rite: Rite): Promise<void> => {
-    if (!window.confirm(`Delete "${rite.name || "this rite"}"? It is removed on the phone too.`)) {
-      return;
-    }
     setBusy(true);
     try {
       await deleteRitual(rite);
@@ -214,7 +215,7 @@ export function RitualsRoute() {
           }
           onSave={(d) => void save(d)}
           onCancel={() => setEditing(null)}
-          onDelete={editing.rite ? () => void remove(editing.rite as Rite) : undefined}
+          onDelete={editing.rite ? () => setPendingDelete(editing.rite) : undefined}
           busy={busy}
         />
       ) : (
@@ -315,6 +316,20 @@ export function RitualsRoute() {
           />
         </>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        tone="destructive"
+        title={`Delete "${pendingDelete?.name || "this rite"}"?`}
+        body="It is removed here and on the phone."
+        confirmLabel="Delete"
+        onConfirm={() => {
+          const rite = pendingDelete;
+          setPendingDelete(null);
+          if (rite) void remove(rite);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
 
       {sheet ? (
         <KeepingSheet

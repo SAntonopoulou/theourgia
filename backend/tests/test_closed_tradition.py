@@ -441,6 +441,8 @@ async def test_publish_with_open_tradition_tag_succeeds() -> None:
         _Result(),
         _Result(scalar=0),
         _Result(scalar=_setting_row("hopi, diné")),
+        # v1-044 — publish claims a slug; the derived candidate is free.
+        _Result(scalar=None),
     ])
     read = await publish_entry(row.id, session, _user())  # type: ignore[arg-type]
     assert read.published_at is not None
@@ -455,6 +457,8 @@ async def test_empty_setting_allows_everything() -> None:
         _Result(),
         _Result(scalar=0),
         _Result(scalar=None),  # no instance_setting row
+        # v1-044 — publish claims a slug; the derived candidate is free.
+        _Result(scalar=None),
     ])
     read = await publish_entry(row.id, session, _user())  # type: ignore[arg-type]
     assert read.published_at is not None

@@ -10,6 +10,7 @@
  */
 
 import {
+  ConfirmDialog,
   KeepingSheet,
   type KeepingValues,
   type RecordEntryWrite,
@@ -209,10 +210,10 @@ export function WorkingsRoute() {
     }
   };
 
+  // v1-044 — deletion asks in the app's own voice, never a browser alert.
+  const [pendingDelete, setPendingDelete] = useState<Working | null>(null);
+
   const remove = async (w: Working): Promise<void> => {
-    if (!window.confirm(`Delete "${w.name || "this working"}"? It is removed on the phone too.`)) {
-      return;
-    }
     setBusy(true);
     try {
       await deleteWorking({
@@ -297,7 +298,7 @@ export function WorkingsRoute() {
           }
           onSave={(d, r) => void save(d, r)}
           onCancel={() => setEditing(null)}
-          onDelete={editing.working ? () => void remove(editing.working as Working) : undefined}
+          onDelete={editing.working ? () => setPendingDelete(editing.working) : undefined}
           busy={busy}
         />
       ) : (
@@ -399,6 +400,20 @@ export function WorkingsRoute() {
           />
         </>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        tone="destructive"
+        title={`Delete "${pendingDelete?.name || "this working"}"?`}
+        body="The whole operation — phases and all — is removed here and on the phone."
+        confirmLabel="Delete"
+        onConfirm={() => {
+          const w = pendingDelete;
+          setPendingDelete(null);
+          if (w) void remove(w);
+        }}
+        onCancel={() => setPendingDelete(null)}
+      />
 
       {sheet ? (
         <KeepingSheet

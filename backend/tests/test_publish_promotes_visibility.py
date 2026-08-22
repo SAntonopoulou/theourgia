@@ -93,7 +93,8 @@ def test_blog_detail_route_registered() -> None:
         for r in blog_module.router.routes
         for m in getattr(r, "methods", set()) - {"HEAD", "OPTIONS"}
     }
-    assert ("/blog/posts/{post_id}", "GET") in paths_methods
+    # v1-044 — the detail route now answers to slug or id.
+    assert ("/blog/posts/{slug_or_id}", "GET") in paths_methods
 
 
 def test_blog_detail_endpoint_applies_public_filter() -> None:

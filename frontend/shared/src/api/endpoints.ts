@@ -1008,6 +1008,15 @@ export function api(client: ApiClient) {
     },
 
     /** Transition a draft to `published_at = now`. */
+    /** v1-044 — take the entry back to draft: visibility personal, any
+     *  pending schedule cleared. Slug and first-published date kept. */
+    unpublishEntry(id: string, opts?: { signal?: AbortSignal }): Promise<EntryDetailRecord> {
+      return client.request<EntryDetailRecord>(`/api/v1/entries/${id}/unpublish`, {
+        method: "POST",
+        signal: opts?.signal,
+      });
+    },
+
     publishEntry(id: string, opts?: { signal?: AbortSignal }): Promise<EntryDetailRecord> {
       return client.request<EntryDetailRecord>(`/api/v1/entries/${id}/publish`, {
         method: "POST",

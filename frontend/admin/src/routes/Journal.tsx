@@ -30,6 +30,7 @@
  */
 
 import {
+  ConfirmDialog,
   type EntryRecord,
   type EntryType,
   SealedExcludedCallout,
@@ -44,7 +45,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
-import { createEntry } from "../data/useEntries.js";
+import { createEntry, publishEntry, unpublishEntry } from "../data/useEntries.js";
 
 // ─── Static maps ────────────────────────────────────────────────────────────
 
@@ -346,15 +347,25 @@ function EntryRow({
   now,
   onOpen,
   onArchive,
+  onPublish,
+  onUnpublish,
 }: {
   entry: EntryRecord;
   isLast: boolean;
   now: Date;
   onOpen: (id: string) => void;
   onArchive: (entry: EntryRecord) => void;
+  onPublish?: (entry: EntryRecord) => void;
+  onUnpublish?: (entry: EntryRecord) => void;
 }) {
   const color = TYPE_COLOR[entry.type];
   const label = TYPE_LABEL[entry.type];
+  // v1-044 — publish state on the row, with its quick action beside it.
+  const scheduledFuture =
+    entry.scheduled_publish_at != null &&
+    new Date(entry.scheduled_publish_at).getTime() > now.getTime();
+  const isPublic = entry.visibility === "public";
+  const stateChip = isPublic ? (scheduledFuture ? "Scheduled" : "Published") : null;
   return (
     <article
       className="entry-row"
@@ -402,6 +413,22 @@ function EntryRow({
           >
             {relativeTime(entry.created_at, now)}
           </span>
+          {stateChip !== null ? (
+            <span
+              style={{
+                fontFamily: "var(--font-ui)",
+                fontSize: 10.5,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "var(--accent)",
+                border: "1px solid var(--accent)",
+                borderRadius: 999,
+                padding: "1px 8px",
+              }}
+            >
+              {stateChip}
+            </span>
+          ) : null}
         </div>
         <div
           style={{
@@ -425,6 +452,42 @@ function EntryRow({
         {/* Tag chips + visibility marker — both stubbed until backend supports
             tags + ACL. Empty row keeps the layout honest. */}
       </div>
+      {/* v1-044 — the publish state changes from the row too. Hover-revealed
+          with the delete, same stop-propagation rules. */}
+      {onPublish && onUnpublish ? (
+        <button
+          type="button"
+          className="entry-row__delete"
+          aria-label={
+            isPublic
+              ? `Revert ${entry.title || "entry"} to draft`
+              : `Publish ${entry.title || "entry"}`
+          }
+          title={isPublic ? "Revert to draft" : "Publish"}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isPublic) onUnpublish(entry);
+            else onPublish(entry);
+          }}
+          onKeyDown={(e) => e.stopPropagation()}
+          style={{
+            flex: "none",
+            alignSelf: "center",
+            border: "none",
+            background: "transparent",
+            color: "var(--ink-mute)",
+            cursor: "pointer",
+            fontSize: 12,
+            fontFamily: "var(--font-ui)",
+            lineHeight: 1,
+            padding: 6,
+            borderRadius: "var(--r-sm, 6px)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {isPublic ? "→ draft" : "Publish"}
+        </button>
+      ) : null}
       {/* Delete (archive) — stops propagation so it doesn't also open the
           entry; the row itself is a role="button". Keydown is swallowed too,
           or Enter on the button would bubble up and open the entry. */}
@@ -463,12 +526,16 @@ function GroupedSection({
   now,
   onOpen,
   onArchive,
+  onPublish,
+  onUnpublish,
 }: {
   heading: string;
   entries: EntryRecord[];
   now: Date;
   onOpen: (id: string) => void;
   onArchive: (entry: EntryRecord) => void;
+  onPublish?: (entry: EntryRecord) => void;
+  onUnpublish?: (entry: EntryRecord) => void;
 }) {
   if (entries.length === 0) return null;
   return (
@@ -503,6 +570,8 @@ function GroupedSection({
             now={now}
             onOpen={onOpen}
             onArchive={onArchive}
+            onPublish={onPublish}
+            onUnpublish={onUnpublish}
           />
         ))}
       </div>
@@ -933,23 +1002,56 @@ export function Journal() {
     navigate(`/editor/${id}`);
   }
 
-  async function archiveEntry(entry: EntryRecord): Promise<void> {
-    const name = entry.title?.trim() || "this entry";
-    if (
-      !window.confirm(
-        `Delete “${name}”? It is removed from your journal. This can’t be undone here.`,
-      )
-    ) {
-      return;
-    }
+  // v1-044 — deletion asks in the app's own voice (a dialog), never a
+  // browser alert. The row's ✕ sets the pending entry; the dialog does
+  // the deed.
+  const [pendingDelete, setPendingDelete] = useState<EntryRecord | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+
+  async function confirmDelete(): Promise<void> {
+    if (pendingDelete === null) return;
+    setDeleteBusy(true);
     try {
-      await apiMethods.archiveEntry(entry.id);
+      await apiMethods.archiveEntry(pendingDelete.id);
       Toast.push({ tone: "success", title: "Entry deleted" });
+      setPendingDelete(null);
       await entries.refresh();
     } catch (e) {
       Toast.push({
         tone: "error",
         title: "Could not delete entry",
+        body: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
+
+  // v1-044 — publish state changes from the timeline row too: the
+  // controls live where the work is, not only in the editor.
+  async function quickPublish(entry: EntryRecord): Promise<void> {
+    try {
+      await publishEntry(entry.id);
+      Toast.push({ tone: "success", title: `Published "${entry.title || "entry"}"` });
+      await entries.refresh();
+    } catch (e) {
+      Toast.push({
+        tone: "error",
+        title: "Publish failed",
+        body: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }
+
+  async function quickUnpublish(entry: EntryRecord): Promise<void> {
+    try {
+      await unpublishEntry(entry.id);
+      Toast.push({ tone: "success", title: "Back to draft" });
+      await entries.refresh();
+    } catch (e) {
+      Toast.push({
+        tone: "error",
+        title: "That didn't take",
         body: e instanceof Error ? e.message : String(e),
       });
     }
@@ -1167,28 +1269,36 @@ export function Journal() {
                   entries={grouped.today}
                   now={now}
                   onOpen={openEntry}
-                  onArchive={archiveEntry}
+                  onArchive={setPendingDelete}
+                  onPublish={quickPublish}
+                  onUnpublish={quickUnpublish}
                 />
                 <GroupedSection
                   heading={groupHeading("thisWeek", now)}
                   entries={grouped.thisWeek}
                   now={now}
                   onOpen={openEntry}
-                  onArchive={archiveEntry}
+                  onArchive={setPendingDelete}
+                  onPublish={quickPublish}
+                  onUnpublish={quickUnpublish}
                 />
                 <GroupedSection
                   heading={groupHeading("thisMonth", now)}
                   entries={grouped.thisMonth}
                   now={now}
                   onOpen={openEntry}
-                  onArchive={archiveEntry}
+                  onArchive={setPendingDelete}
+                  onPublish={quickPublish}
+                  onUnpublish={quickUnpublish}
                 />
                 <GroupedSection
                   heading={groupHeading("earlier", now)}
                   entries={grouped.earlier}
                   now={now}
                   onOpen={openEntry}
-                  onArchive={archiveEntry}
+                  onArchive={setPendingDelete}
+                  onPublish={quickPublish}
+                  onUnpublish={quickUnpublish}
                 />
               </>
             )}
@@ -1210,6 +1320,16 @@ export function Journal() {
           </aside>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        tone="destructive"
+        title={`Delete “${pendingDelete?.title?.trim() || "this entry"}”?`}
+        body="It leaves your journal. If it was published, its public page goes with it."
+        confirmLabel={deleteBusy ? "Deleting…" : "Delete"}
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setPendingDelete(null)}
+      />
     </>
   );
 }

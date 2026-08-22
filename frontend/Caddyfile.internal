@@ -117,6 +117,17 @@
         file_server
     }
 
+    # v1-044 — the journal's public posts and the sitemap are
+    # server-rendered by the backend (full SEO surface: canonical,
+    # OG, JSON-LD). /blog itself (the listing) stays the static site;
+    # /blog/{slug} matches here and goes to the backend.
+    handle /blog/* {
+        reverse_proxy backend:8000
+    }
+    handle /sitemap.xml {
+        reverse_proxy backend:8000
+    }
+
     # The pack distribution — one source for the app and the site.
     # Artifacts are versioned in their filenames (slug-vN.mbf) and so may
     # be cached as immutable; the feed is the one thing that must always

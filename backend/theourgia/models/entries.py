@@ -157,6 +157,37 @@ class Entry(IDMixin, TimestampMixin, SoftDeleteMixin, table=True):
         description="Short preview shown in lists. ≤ 1024 chars.",
     )
 
+    # — CMS surface (v1-044, the journal-as-CMS batch) ——————————
+    slug: Optional[str] = Field(
+        default=None,
+        sa_column=Column(String(320), nullable=True, unique=True, index=True),
+        description=(
+            "URL slug for the public post page (/blog/{slug}). Custom or "
+            "auto-derived from the title on first publish. Unique across "
+            "the vault; NULL for entries never published. Kept after "
+            "soft-delete so a dead URL is never silently reassigned."
+        ),
+    )
+
+    meta_description: str = Field(
+        default="",
+        sa_column=Column(String(320), nullable=False, server_default=""),
+        description=(
+            "SEO meta description for the public post page. Empty falls "
+            "back to the excerpt."
+        ),
+    )
+
+    categories: list[str] = Field(
+        default_factory=list,
+        sa_column=Column(JSONB, nullable=False, server_default="[]"),
+        description=(
+            "Editorial categories (the curated shelf a post sits on), as "
+            "against free-form tags. Rendered as articleSection in the "
+            "public page's structured data."
+        ),
+    )
+
     glyph: str = Field(
         default="feather",
         sa_column=Column(String(64), nullable=False, server_default="feather"),

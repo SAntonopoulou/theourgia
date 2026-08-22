@@ -104,7 +104,15 @@ let ENTRY_ID_SEQ = 0;
  */
 type EntryMeta = Pick<
   EntryDetailRecord,
-  "visibility" | "sealed" | "published_at" | "tags" | "tradition_tags" | "publish_on_death"
+  | "visibility"
+  | "sealed"
+  | "published_at"
+  | "tags"
+  | "tradition_tags"
+  | "publish_on_death"
+  | "slug"
+  | "meta_description"
+  | "categories"
 >;
 const ENTRY_META: Map<string, EntryMeta> = new Map();
 
@@ -139,6 +147,10 @@ function entryMeta(id: string): EntryMeta {
       tags: [],
       tradition_tags: [],
       publish_on_death: false,
+      // v1-044 — the CMS surface.
+      slug: null,
+      meta_description: "",
+      categories: [],
     }
   );
 }
@@ -550,13 +562,55 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
   if (path === "/api/v1/meta") return META;
   if (path === "/api/v1/admin/health") {
     const probes = [
-      { id: "database", label: "Database", status: "operational", status_label: "Operational", detail: "PostgreSQL reachable" },
-      { id: "migrations", label: "Migrations", status: "operational", status_label: "Up to date", detail: "head 0085" },
-      { id: "backups", label: "Backups", status: "operational", status_label: "Healthy", detail: "last success 3h ago" },
-      { id: "federation", label: "Federation", status: "pending", status_label: "Disabled", detail: "transport off (opt-in)" },
-      { id: "plugins", label: "Plugins", status: "operational", status_label: "Loaded", detail: "0 active" },
-      { id: "storage", label: "Object storage", status: "operational", status_label: "LOCAL", detail: "backend=local" },
-      { id: "agents", label: "AI agents", status: "pending", status_label: "Disabled", detail: "no daemon configured (opt-in)" },
+      {
+        id: "database",
+        label: "Database",
+        status: "operational",
+        status_label: "Operational",
+        detail: "PostgreSQL reachable",
+      },
+      {
+        id: "migrations",
+        label: "Migrations",
+        status: "operational",
+        status_label: "Up to date",
+        detail: "head 0085",
+      },
+      {
+        id: "backups",
+        label: "Backups",
+        status: "operational",
+        status_label: "Healthy",
+        detail: "last success 3h ago",
+      },
+      {
+        id: "federation",
+        label: "Federation",
+        status: "pending",
+        status_label: "Disabled",
+        detail: "transport off (opt-in)",
+      },
+      {
+        id: "plugins",
+        label: "Plugins",
+        status: "operational",
+        status_label: "Loaded",
+        detail: "0 active",
+      },
+      {
+        id: "storage",
+        label: "Object storage",
+        status: "operational",
+        status_label: "LOCAL",
+        detail: "backend=local",
+      },
+      {
+        id: "agents",
+        label: "AI agents",
+        status: "pending",
+        status_label: "Disabled",
+        detail: "no daemon configured (opt-in)",
+      },
     ];
     return {
       probes,
@@ -681,16 +735,53 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
       preset: "hellenic",
       mode: null,
       stations: [
-        { transition: "sunrise", at: at(6), godform: "Helios", direction: "the East", short_invocation: "Hail Helios, rising", observed_at: null, note: null, mode: null },
-        { transition: "noon", at: at(12), godform: "Helios", direction: "the height", short_invocation: "Hail Helios, triumphant at the height", observed_at: null, note: null, mode: null },
-        { transition: "sunset", at: at(18), godform: "Helios", direction: "the West", short_invocation: "Hail Helios, setting", observed_at: null, note: null, mode: null },
-        { transition: "midnight", at: at(0), godform: "Helios", direction: "the deep", short_invocation: "Hail Helios, hidden in the deep", observed_at: null, note: null, mode: null },
+        {
+          transition: "sunrise",
+          at: at(6),
+          godform: "Helios",
+          direction: "the East",
+          short_invocation: "Hail Helios, rising",
+          observed_at: null,
+          note: null,
+          mode: null,
+        },
+        {
+          transition: "noon",
+          at: at(12),
+          godform: "Helios",
+          direction: "the height",
+          short_invocation: "Hail Helios, triumphant at the height",
+          observed_at: null,
+          note: null,
+          mode: null,
+        },
+        {
+          transition: "sunset",
+          at: at(18),
+          godform: "Helios",
+          direction: "the West",
+          short_invocation: "Hail Helios, setting",
+          observed_at: null,
+          note: null,
+          mode: null,
+        },
+        {
+          transition: "midnight",
+          at: at(0),
+          godform: "Helios",
+          direction: "the deep",
+          short_invocation: "Hail Helios, hidden in the deep",
+          observed_at: null,
+          note: null,
+          mode: null,
+        },
       ],
     };
   }
 
   if (bare === "/api/v1/resh/config") {
-    if (method === "GET") return { ...MOCK_RESH_CONFIG, stations: { ...MOCK_RESH_CONFIG.stations } };
+    if (method === "GET")
+      return { ...MOCK_RESH_CONFIG, stations: { ...MOCK_RESH_CONFIG.stations } };
     if (method === "PUT") {
       const input = (body ?? {}) as {
         preset?: string;
@@ -718,7 +809,12 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
   if (bare === "/api/v1/resh/adorations") {
     if (method === "GET") return [];
     if (method === "POST") {
-      const input = (body ?? {}) as { transition?: string; civil_date?: string | null; mode?: string; note?: string | null };
+      const input = (body ?? {}) as {
+        transition?: string;
+        civil_date?: string | null;
+        mode?: string;
+        note?: string | null;
+      };
       const now = new Date().toISOString();
       return {
         id: `adoration-${Date.now()}`,
@@ -917,61 +1013,142 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
   // .dc.html's demo month), whatever range was requested.
   if (bare === "/api/v1/events" && method === "GET") {
     const srcOvid = {
-      kind: "primary", title: "Fasti VI.249–348", author: "Ovid",
-      year: 8, locator: "VI.249", notes: "The fullest surviving account of the rites.",
+      kind: "primary",
+      title: "Fasti VI.249–348",
+      author: "Ovid",
+      year: 8,
+      locator: "VI.249",
+      notes: "The fullest surviving account of the rites.",
     };
     const srcBNP = {
-      kind: "scholarly", title: "Religions of Rome, I", author: "Beard, North & Price",
-      year: 1998, locator: "pp. 51–52", notes: "",
+      kind: "scholarly",
+      title: "Religions of Rome, I",
+      author: "Beard, North & Price",
+      year: 1998,
+      locator: "pp. 51–52",
+      notes: "",
     };
     const srcHesiod = {
-      kind: "primary", title: "Works and Days, l.770", author: "Hesiod",
-      year: -700, locator: "770", notes: "“the first of the month … a holy day.”",
+      kind: "primary",
+      title: "Works and Days, l.770",
+      author: "Hesiod",
+      year: -700,
+      locator: "770",
+      notes: "“the first of the month … a holy day.”",
     };
     const srcHutton = {
-      kind: "scholarly", title: "The Stations of the Sun", author: "Ronald Hutton",
-      year: 1996, locator: "ch. 31", notes: "How much of the midsummer fire is medieval, not ancient.",
+      kind: "scholarly",
+      title: "The Stations of the Sun",
+      author: "Ronald Hutton",
+      year: 1996,
+      locator: "ch. 31",
+      notes: "How much of the midsummer fire is medieval, not ancient.",
     };
     return {
       start: "2026-06-01T00:00:00+00:00",
       end: "2026-07-01T00:00:00+00:00",
       astronomical: [
-        { kind: "last-quarter", instant: "2026-06-08T12:00:00+00:00", body: "moon", sign: "Pisces", meta: {} },
-        { kind: "new-moon", instant: "2026-06-15T12:00:00+00:00", body: "moon", sign: "Gemini", meta: {} },
-        { kind: "solstice", instant: "2026-06-21T12:00:00+00:00", body: "sun", sign: "Cancer", meta: {} },
-        { kind: "first-quarter", instant: "2026-06-22T12:00:00+00:00", body: "moon", sign: "Virgo", meta: {} },
-        { kind: "full-moon", instant: "2026-06-29T12:00:00+00:00", body: "moon", sign: "Sagittarius", meta: {} },
+        {
+          kind: "last-quarter",
+          instant: "2026-06-08T12:00:00+00:00",
+          body: "moon",
+          sign: "Pisces",
+          meta: {},
+        },
+        {
+          kind: "new-moon",
+          instant: "2026-06-15T12:00:00+00:00",
+          body: "moon",
+          sign: "Gemini",
+          meta: {},
+        },
+        {
+          kind: "solstice",
+          instant: "2026-06-21T12:00:00+00:00",
+          body: "sun",
+          sign: "Cancer",
+          meta: {},
+        },
+        {
+          kind: "first-quarter",
+          instant: "2026-06-22T12:00:00+00:00",
+          body: "moon",
+          sign: "Virgo",
+          meta: {},
+        },
+        {
+          kind: "full-moon",
+          instant: "2026-06-29T12:00:00+00:00",
+          body: "moon",
+          sign: "Sagittarius",
+          meta: {},
+        },
       ],
       festivals: [
         {
-          festival_id: "vestalia", name: "Vestalia", tradition: "roman",
-          label: "7–15 June", start: "2026-06-07T00:00:00+00:00", end: "2026-06-15T23:59:59+00:00",
-          description: "The festival of Vesta, when the penus Vestae — the inner store of the goddess’s temple — was opened to the matrons of Rome.",
-          practice: "Mola salsa offered and the hearth honoured through the week; on the Ides the temple was ritually swept and the sweepings carried to the Tiber.",
-          sources: [srcOvid, srcBNP], source_count: 2,
+          festival_id: "vestalia",
+          name: "Vestalia",
+          tradition: "roman",
+          label: "7–15 June",
+          start: "2026-06-07T00:00:00+00:00",
+          end: "2026-06-15T23:59:59+00:00",
+          description:
+            "The festival of Vesta, when the penus Vestae — the inner store of the goddess’s temple — was opened to the matrons of Rome.",
+          practice:
+            "Mola salsa offered and the hearth honoured through the week; on the Ides the temple was ritually swept and the sweepings carried to the Tiber.",
+          sources: [srcOvid, srcBNP],
+          source_count: 2,
         },
         {
-          festival_id: "deipnon", name: "Deipnon", tradition: "hekatean",
-          label: "dark of the moon", start: "2026-06-14T00:00:00+00:00", end: "2026-06-14T23:59:59+00:00",
-          description: "Hekate’s Supper, laid at a three-way crossing on the last night of the lunar month, when the moon has gone dark.",
-          practice: "A meal — eggs, garlic, sprat, a cake — set down at the crossroads and not looked back upon; the house purged for the month’s turning.",
+          festival_id: "deipnon",
+          name: "Deipnon",
+          tradition: "hekatean",
+          label: "dark of the moon",
+          start: "2026-06-14T00:00:00+00:00",
+          end: "2026-06-14T23:59:59+00:00",
+          description:
+            "Hekate’s Supper, laid at a three-way crossing on the last night of the lunar month, when the moon has gone dark.",
+          practice:
+            "A meal — eggs, garlic, sprat, a cake — set down at the crossroads and not looked back upon; the house purged for the month’s turning.",
           sources: [
-            { kind: "primary", title: "Against Conon §39", author: "Demosthenes", year: -341, locator: "§39", notes: "On the crossroads suppers of Hekate." },
-          ], source_count: 1,
+            {
+              kind: "primary",
+              title: "Against Conon §39",
+              author: "Demosthenes",
+              year: -341,
+              locator: "§39",
+              notes: "On the crossroads suppers of Hekate.",
+            },
+          ],
+          source_count: 1,
         },
         {
-          festival_id: "noumenia", name: "Noumenia", tradition: "greek",
-          label: "first crescent", start: "2026-06-16T00:00:00+00:00", end: "2026-06-16T23:59:59+00:00",
-          description: "The first visible sliver of the new moon — the first day of the Hellenic month, sacred to the gods of the household.",
-          practice: "The hearth re-lit; Hestia, Apollon Noumenios and Zeus Herkeios honoured; the home set in order for the new month.",
-          sources: [srcHesiod], source_count: 1,
+          festival_id: "noumenia",
+          name: "Noumenia",
+          tradition: "greek",
+          label: "first crescent",
+          start: "2026-06-16T00:00:00+00:00",
+          end: "2026-06-16T23:59:59+00:00",
+          description:
+            "The first visible sliver of the new moon — the first day of the Hellenic month, sacred to the gods of the household.",
+          practice:
+            "The hearth re-lit; Hestia, Apollon Noumenios and Zeus Herkeios honoured; the home set in order for the new month.",
+          sources: [srcHesiod],
+          source_count: 1,
         },
         {
-          festival_id: "litha", name: "Litha · Midsummer", tradition: "wheel-of-the-year",
-          label: "summer solstice", start: "2026-06-21T00:00:00+00:00", end: "2026-06-21T23:59:59+00:00",
-          description: "The Wheel’s midsummer station — the longest day, the sun at the height of its strength before the turn toward winter.",
-          practice: "Bonfires kept through the short night; herbs gathered at their peak; the sun’s zenith marked and its decline acknowledged.",
-          sources: [srcHutton], source_count: 1,
+          festival_id: "litha",
+          name: "Litha · Midsummer",
+          tradition: "wheel-of-the-year",
+          label: "summer solstice",
+          start: "2026-06-21T00:00:00+00:00",
+          end: "2026-06-21T23:59:59+00:00",
+          description:
+            "The Wheel’s midsummer station — the longest day, the sun at the height of its strength before the turn toward winter.",
+          practice:
+            "Bonfires kept through the short night; herbs gathered at their peak; the sun’s zenith marked and its decline acknowledged.",
+          sources: [srcHutton],
+          source_count: 1,
         },
       ],
       attribution: "Swiss Ephemeris (mock fixture)",

@@ -91,6 +91,13 @@ export interface EntryRecord {
   glyph: string;
   created_at: string; // ISO 8601
   updated_at: string; // ISO 8601
+  /** v1-044 — publish state in the LIST shape too, so timeline rows can
+   *  carry their status chip and quick actions without a detail fetch.
+   *  Optional: older wire shapes simply omit them. */
+  visibility?: EntityVisibility;
+  published_at?: string | null;
+  scheduled_publish_at?: string | null;
+  slug?: string | null;
 }
 
 /**
@@ -135,6 +142,10 @@ export interface EntryDetailRecord extends EntryRecord {
    * sweep publishes flagged, unsealed entries.
    */
   publish_on_death: boolean;
+  /** v1-044 — the CMS surface. */
+  slug: string | null;
+  meta_description: string;
+  categories: string[];
 }
 
 /** Input for ``PATCH /api/v1/entries/{id}/body``. */
@@ -285,6 +296,13 @@ export interface CreateEntryInput {
   tradition_tags?: string[];
   /** Publish when memorial mode activates (v1-018). Defaults false. */
   publish_on_death?: boolean;
+  /** v1-044 — the CMS surface. Slug: custom URL words; "" clears so the
+   *  next publish derives afresh from the title. */
+  slug?: string | null;
+  meta_description?: string;
+  categories?: string[];
+  /** ISO instant to hold publication until; null clears the schedule. */
+  scheduled_publish_at?: string | null;
 }
 
 /**

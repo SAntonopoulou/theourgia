@@ -16,6 +16,8 @@ should also flip ``Entry.owner_id`` to NOT NULL.
 from __future__ import annotations
 
 import logging
+import re
+import unicodedata
 from base64 import b64encode
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Literal
@@ -125,6 +127,11 @@ class EntryRead(BaseModel):
     tradition_tags: list[str] = []
     # v1-018 — posthumous publication flag (plan/15 §13).
     publish_on_death: bool = False
+    # v1-044 — the CMS surface: the post's own URL, its search-result
+    # description, and the curated shelf it sits on.
+    slug: str | None = None
+    meta_description: str = ""
+    categories: list[str] = []
 
 
 class EntryCreate(BaseModel):
@@ -162,6 +169,10 @@ class EntryCreate(BaseModel):
     # v1-018 — publish this entry when memorial mode activates (and
     # posthumous publications are enabled on the memorial config).
     publish_on_death: bool = False
+    # v1-044 — the CMS surface.
+    slug: str | None = Field(default=None, max_length=320)
+    meta_description: str = Field(default="", max_length=320)
+    categories: list[str] = Field(default_factory=list)
 
 
 class EntryWindowCounts(BaseModel):
@@ -218,6 +229,71 @@ def _normalize_tags(items: list[str], field: str) -> list[str]:
     return cleaned
 
 
+# ── v1-044: slugs — the post's own URL ───────────────────────────
+
+_SLUG_MAX_LENGTH = 128
+_SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+
+
+def _slugify(title: str) -> str:
+    """Derive a URL slug from a title: lowercase ASCII-ish, hyphens.
+
+    Greek and other non-Latin titles transliterate poorly by machine;
+    what cannot be carried is dropped, and a title that yields nothing
+    falls back to ``entry`` (unique-ified by the caller). A custom
+    slug is always the better answer for those — the field exists.
+    """
+    lowered = unicodedata.normalize("NFKD", title).encode("ascii", "ignore").decode()
+    lowered = lowered.lower()
+    lowered = re.sub(r"[^a-z0-9]+", "-", lowered).strip("-")
+    lowered = re.sub(r"-{2,}", "-", lowered)
+    return lowered[:_SLUG_MAX_LENGTH].strip("-") or "entry"
+
+
+def _normalize_slug(raw: str) -> str:
+    """Validate a custom slug — 422 with the rule spelled out."""
+    candidate = raw.strip().lower()
+    if not _SLUG_PATTERN.fullmatch(candidate) or len(candidate) > _SLUG_MAX_LENGTH:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=(
+                "A slug is lowercase letters, digits and single hyphens "
+                f"(at most {_SLUG_MAX_LENGTH} characters) — e.g. "
+                "'the-deipnon-kept-properly'."
+            ),
+        )
+    return candidate
+
+
+async def _assert_slug_free(
+    session: AsyncSession, slug: str, *, entry_id: UUID | None,
+) -> None:
+    """409 when another entry (deleted ones included — a dead URL is
+    never reassigned) already holds ``slug``."""
+    stmt = select(Entry.id).where(Entry.slug == slug)
+    if entry_id is not None:
+        stmt = stmt.where(Entry.id != entry_id)
+    taken = (await session.execute(stmt.limit(1))).scalar_one_or_none()
+    if taken is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"The slug '{slug}' is already taken by another entry.",
+        )
+
+
+async def _unique_slug_from_title(session: AsyncSession, title: str) -> str:
+    """An auto-slug that is free — '-2', '-3'… suffixed until it is."""
+    base = _slugify(title)
+    candidate = base
+    suffix = 2
+    while True:
+        stmt = select(Entry.id).where(Entry.slug == candidate).limit(1)
+        if (await session.execute(stmt)).scalar_one_or_none() is None:
+            return candidate
+        candidate = f"{base[: _SLUG_MAX_LENGTH - len(str(suffix)) - 1]}-{suffix}"
+        suffix += 1
+
+
 async def _reject_closed_tradition_public(
     session: AsyncSession, tradition_tags: list[str],
 ) -> None:
@@ -268,6 +344,9 @@ def _to_read(row: Entry) -> EntryRead:
         tags=list(row.tags),
         tradition_tags=list(row.tradition_tags),
         publish_on_death=row.publish_on_death,
+        slug=row.slug,
+        meta_description=row.meta_description,
+        categories=list(row.categories),
     )
 
 
@@ -373,6 +452,13 @@ async def create_entry(
     if payload.visibility == "public":
         await _reject_closed_tradition_public(session, tradition_tags)
 
+    # v1-044 — a custom slug at birth, validated and claimed now.
+    slug: str | None = None
+    if payload.slug is not None and payload.slug.strip() != "":
+        slug = _normalize_slug(payload.slug)
+        await _assert_slug_free(session, slug, entry_id=None)
+    categories = _normalize_tags(payload.categories, "categories")
+
     # b108-2hy — auto-stamp on create. Compute the astro + calendar
     # snapshots at entry-birth so the entry always carries context
     # about WHERE in the moon cycle + WHICH sun sign it was made.
@@ -455,6 +541,9 @@ async def create_entry(
         tags=tags,
         tradition_tags=tradition_tags,
         publish_on_death=payload.publish_on_death,
+        slug=slug,
+        meta_description=payload.meta_description.strip(),
+        categories=categories,
         parent_id=UUID(payload.parent_id) if payload.parent_id else None,
         scheduled_publish_at=payload.scheduled_publish_at,
         authored_by_persona_id=(
@@ -512,6 +601,14 @@ class EntryUpdate(BaseModel):
     tradition_tags: list[str] | None = None
     # v1-018 — None means unchanged.
     publish_on_death: bool | None = None
+    # v1-044 — the CMS surface. Slug: None means unchanged, "" clears it
+    # (the next publish derives a fresh one from the title). Schedule:
+    # tri-state via model_fields_set — absent means unchanged, an
+    # explicit null clears the schedule, a datetime sets it.
+    slug: str | None = Field(default=None, max_length=320)
+    meta_description: str | None = Field(default=None, max_length=320)
+    categories: list[str] | None = None
+    scheduled_publish_at: datetime | None = None
 
 
 def _refuse_sealed_plaintext_patch(row: Entry, payload: EntryUpdate) -> None:
@@ -628,6 +725,21 @@ async def update_entry(
         row.tradition_tags = new_tradition_tags
     if payload.publish_on_death is not None:
         row.publish_on_death = payload.publish_on_death
+    # v1-044 — the CMS surface.
+    if payload.slug is not None:
+        if payload.slug.strip() == "":
+            row.slug = None
+        else:
+            candidate = _normalize_slug(payload.slug)
+            if candidate != row.slug:
+                await _assert_slug_free(session, candidate, entry_id=row.id)
+                row.slug = candidate
+    if payload.meta_description is not None:
+        row.meta_description = payload.meta_description.strip()
+    if payload.categories is not None:
+        row.categories = _normalize_tags(payload.categories, "categories")
+    if "scheduled_publish_at" in payload.model_fields_set:
+        row.scheduled_publish_at = payload.scheduled_publish_at
     await session.commit()
     await session.refresh(row)
     return _to_read(row)
@@ -735,6 +847,12 @@ async def apply_publish(
     if row.visibility != EntryVisibility.PUBLIC:
         row.visibility = EntryVisibility.PUBLIC
         changed = True
+    # v1-044 — a public post gets a URL of its own. Custom slugs are set
+    # in the editor; publishing without one derives it from the title,
+    # unique-ified, so /blog/{slug} always exists for a published post.
+    if row.slug is None:
+        row.slug = await _unique_slug_from_title(session, row.title)
+        changed = True
     if changed:
         # Late import: keeps the federation stack out of the router's
         # import graph for instances that never touch it.
@@ -790,6 +908,51 @@ async def publish_entry(
             edit_summary="Before publish",
         )
     if await apply_publish(session, row):
+        await session.commit()
+        await session.refresh(row)
+    return _to_read(row)
+
+
+@router.post(
+    "/entries/{entry_id}/unpublish",
+    summary="Revert an entry to draft",
+    description=(
+        "Takes the entry off the public blog: visibility back to "
+        "personal, any pending schedule cleared. published_at and the "
+        "slug are KEPT — the first-published date is history, and the "
+        "URL stays reserved so republishing brings the same address "
+        "back rather than minting a duplicate."
+    ),
+    response_model=EntryRead,
+)
+async def unpublish_entry(
+    entry_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> EntryRead:
+    stmt = select(Entry).where(
+        Entry.id == entry_id,
+        Entry.deleted_at.is_(None),
+        Entry.owner_id == current_user.id,
+    )
+    row = (await session.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        raise HTTPException(status_code=404, detail=f"Entry {entry_id} not found")
+    changed = (
+        row.visibility != EntryVisibility.PERSONAL
+        or row.scheduled_publish_at is not None
+    )
+    if changed:
+        # A meaningful state transition — restore point, like publish.
+        await snapshot_revision_guarded(
+            session,
+            row,
+            edited_by=current_user.id,
+            force=True,
+            edit_summary="Before revert to draft",
+        )
+        row.visibility = EntryVisibility.PERSONAL
+        row.scheduled_publish_at = None
         await session.commit()
         await session.refresh(row)
     return _to_read(row)

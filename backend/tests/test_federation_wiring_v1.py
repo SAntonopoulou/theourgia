@@ -826,6 +826,8 @@ async def test_apply_publish_never_fails_on_enqueue_error(monkeypatch) -> None:
 
     row = SimpleNamespace(
         id=uuid4(),
+        title="A working, broadcast",
+        slug=None,
         encryption_mode=EncryptionMode.NONE,
         tradition_tags=[],
         published_at=None,
@@ -833,6 +835,7 @@ async def test_apply_publish_never_fails_on_enqueue_error(monkeypatch) -> None:
     )
     db = _FakeSession([
         _Result(scalar=None),  # closed-tradition instance setting read
+        _Result(scalar=None),  # v1-044 — slug uniqueness check (free)
     ])
     changed = await apply_publish(db, row)
     assert changed is True
@@ -856,6 +859,10 @@ async def test_apply_publish_idempotent_republish_skips_broadcast(
 
     row = SimpleNamespace(
         id=uuid4(),
+        title="A working, already out",
+        # v1-044 — a published post always holds its slug, so a
+        # republish issues no slug query and changes nothing.
+        slug="a-working-already-out",
         encryption_mode=EncryptionMode.NONE,
         tradition_tags=[],
         published_at=datetime.now(tz=UTC),

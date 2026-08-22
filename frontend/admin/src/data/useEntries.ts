@@ -50,6 +50,14 @@ export function updateEntryBody(id: string, input: UpdateEntryBodyInput) {
   return apiMethods.updateEntryBody(id, input);
 }
 
+export function unpublishEntry(id: string) {
+  return apiMethods.unpublishEntry(id);
+}
+
+export function patchEntry(id: string, patch: Parameters<typeof apiMethods.updateEntry>[1]) {
+  return apiMethods.updateEntry(id, patch);
+}
+
 export function publishEntry(id: string) {
   return apiMethods.publishEntry(id);
 }

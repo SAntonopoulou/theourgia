@@ -52,9 +52,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import { apiMethods } from "../data/api.js";
+import { publicHref } from "../lib/publicHref.js";
 import {
   createEntry,
+  patchEntry,
   publishEntry,
+  unpublishEntry,
   updateEntryBody,
   useBooks,
   useEntities,
@@ -789,58 +792,240 @@ function SaveStatusIndicator({ status }: { status: SaveStatus }) {
   );
 }
 
-interface PublishCtaProps {
+interface PublishPanelProps {
   entryId: string | null;
   publishedAt: string | null;
+  visibility: EntityVisibility;
+  scheduledAt: string | null;
   /** Sealed entries can never publish (defence in depth — the
-   *  backend refuses too); the CTA disables rather than 403ing. */
+   *  backend refuses too); the controls disable rather than 403ing. */
   sealed: boolean;
-  onPublished: (next: EntryDetailRecord) => void;
+  slug: string | null;
+  onState: (next: EntryDetailRecord) => void;
 }
 
-function PublishCta({ entryId, publishedAt, sealed, onPublished }: PublishCtaProps) {
+/** The one place the publish state is READ and every way it is
+ *  CHANGED: publish now, schedule for later, revert to draft — with
+ *  the public URL a click away once it exists. The same actions also
+ *  live on the journal's timeline rows (v1-044): controls where the
+ *  work is, not where the code happens to be. */
+function PublishPanel({
+  entryId,
+  publishedAt,
+  visibility,
+  scheduledAt,
+  sealed,
+  slug,
+  onState,
+}: PublishPanelProps) {
+  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const disabled = entryId === null || busy || publishedAt !== null || sealed;
+  const [scheduleDraft, setScheduleDraft] = useState("");
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDocClick(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
+
+  const scheduledFuture = scheduledAt !== null && new Date(scheduledAt).getTime() > Date.now();
+  const isLive = visibility === "public" && publishedAt !== null && !scheduledFuture;
+  const stateLabel = isLive
+    ? "Published"
+    : visibility === "public" && scheduledFuture
+      ? "Scheduled"
+      : "Draft";
+
+  async function run(work: () => Promise<EntryDetailRecord>, done: string): Promise<void> {
+    if (entryId === null) return;
+    setBusy(true);
+    try {
+      const next = await work();
+      onState(next);
+      Toast.push({ tone: "success", title: done });
+      setOpen(false);
+    } catch (cause) {
+      Toast.push({
+        tone: "error",
+        title: "That didn't take",
+        body: cause instanceof Error ? cause.message : "Unknown error",
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const menuButton: React.CSSProperties = {
+    display: "block",
+    width: "100%",
+    textAlign: "left",
+    padding: "8px 12px",
+    border: "none",
+    borderRadius: "var(--r-sm, 6px)",
+    background: "transparent",
+    color: "var(--ink)",
+    fontFamily: "var(--font-ui)",
+    fontSize: 13,
+    cursor: "pointer",
+  };
 
   return (
-    <button
-      type="button"
-      onClick={async () => {
-        if (entryId === null) return;
-        setBusy(true);
-        try {
-          const next = await publishEntry(entryId);
-          onPublished(next);
-          Toast.push({
-            tone: "success",
-            title: "Published",
-            body: "The entry is now visible at its public URL.",
-          });
-        } catch (cause) {
-          Toast.push({
-            tone: "error",
-            title: "Publish failed",
-            body: cause instanceof Error ? cause.message : "Unknown error",
-          });
-        } finally {
-          setBusy(false);
-        }
-      }}
-      disabled={disabled}
-      style={{
-        padding: "8px 16px",
-        borderRadius: "var(--r-md)",
-        background: disabled ? "var(--bg-3)" : "var(--accent)",
-        color: disabled ? "var(--ink-mute)" : "var(--accent-ink)",
-        fontFamily: "var(--font-ui)",
-        fontWeight: 700,
-        fontSize: 13,
-        border: "none",
-        cursor: disabled ? "not-allowed" : "pointer",
-      }}
-    >
-      {publishedAt ? "Published" : "Publish"}
-    </button>
+    <div ref={rootRef} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        disabled={entryId === null || sealed}
+        aria-expanded={open}
+        data-role="publish-panel-toggle"
+        style={{
+          padding: "8px 16px",
+          borderRadius: "var(--r-md)",
+          background: isLive ? "var(--bg-2)" : "var(--accent)",
+          color: isLive ? "var(--ink)" : "var(--accent-ink)",
+          fontFamily: "var(--font-ui)",
+          fontWeight: 700,
+          fontSize: 13,
+          border: isLive ? "1px solid var(--line)" : "none",
+          cursor: entryId === null || sealed ? "not-allowed" : "pointer",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {stateLabel} ▾
+      </button>
+      {open ? (
+        <div
+          role="menu"
+          style={{
+            position: "absolute",
+            right: 0,
+            top: "calc(100% + 8px)",
+            zIndex: 60,
+            minWidth: 280,
+            padding: 10,
+            border: "1px solid var(--line)",
+            borderRadius: "var(--r-md, 10px)",
+            background: "var(--bg-2)",
+            boxShadow: "0 12px 40px color-mix(in srgb, var(--ink) 25%, transparent)",
+          }}
+        >
+          <p
+            style={{
+              margin: "2px 2px 10px",
+              fontFamily: "var(--font-ui)",
+              fontSize: 12,
+              color: "var(--ink-mute)",
+              lineHeight: 1.5,
+            }}
+          >
+            {isLive
+              ? `Published ${new Date(publishedAt ?? "").toLocaleDateString()} — live at /blog/${slug ?? "…"}.`
+              : stateLabel === "Scheduled"
+                ? `Goes live ${new Date(scheduledAt ?? "").toLocaleString()}.`
+                : "A draft — only you can see it."}
+          </p>
+          {!isLive || scheduledFuture ? (
+            <button
+              type="button"
+              disabled={busy}
+              style={{ ...menuButton, color: "var(--accent)", fontWeight: 600 }}
+              onClick={() =>
+                void run(async () => {
+                  if (scheduledFuture) {
+                    await patchEntry(entryId ?? "", { scheduled_publish_at: null });
+                  }
+                  return publishEntry(entryId ?? "");
+                }, "Published")
+              }
+            >
+              Publish now
+            </button>
+          ) : null}
+          <div style={{ padding: "6px 12px" }}>
+            <label
+              style={{
+                display: "block",
+                fontFamily: "var(--font-ui)",
+                fontSize: 11,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                color: "var(--ink-mute)",
+                marginBottom: 4,
+              }}
+            >
+              Schedule for later
+            </label>
+            <div style={{ display: "flex", gap: 6 }}>
+              <input
+                type="datetime-local"
+                value={scheduleDraft}
+                onChange={(e) => setScheduleDraft(e.target.value)}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  padding: "6px 8px",
+                  border: "1px solid var(--line)",
+                  borderRadius: "var(--r-sm, 6px)",
+                  background: "var(--bg)",
+                  color: "var(--ink)",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 12.5,
+                }}
+              />
+              <button
+                type="button"
+                disabled={busy || scheduleDraft === ""}
+                style={{
+                  padding: "6px 12px",
+                  border: "1px solid var(--accent)",
+                  borderRadius: "var(--r-sm, 6px)",
+                  background: "var(--accent-soft)",
+                  color: "var(--ink)",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 12.5,
+                  cursor: busy || scheduleDraft === "" ? "default" : "pointer",
+                }}
+                onClick={() =>
+                  void run(async () => {
+                    const at = new Date(scheduleDraft).toISOString();
+                    await patchEntry(entryId ?? "", { scheduled_publish_at: at });
+                    // Scheduling means "publish, held until then": the same
+                    // publish path claims the slug and flips visibility; the
+                    // public queries hold it back until the moment passes.
+                    return publishEntry(entryId ?? "");
+                  }, "Scheduled")
+                }
+              >
+                Set
+              </button>
+            </div>
+          </div>
+          {visibility === "public" ? (
+            <button
+              type="button"
+              disabled={busy}
+              style={menuButton}
+              onClick={() => void run(() => unpublishEntry(entryId ?? ""), "Back to draft")}
+            >
+              Revert to draft
+            </button>
+          ) : null}
+          {isLive && slug ? (
+            <a
+              href={publicHref(`/blog/${slug}`)}
+              target="_blank"
+              rel="noreferrer"
+              style={{ ...menuButton, textDecoration: "none", color: "var(--ink-soft)" }}
+            >
+              View the public page ↗
+            </a>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -905,6 +1090,12 @@ export function Editor() {
   // v1-001: flexible tags + tradition tags.
   const [tags, setTags] = useState<string[]>([]);
   const [traditionTags, setTraditionTags] = useState<string[]>([]);
+  // v1-044: the CMS surface — slug, meta description, categories,
+  // and the pending schedule the publish panel reads.
+  const [slug, setSlug] = useState<string>("");
+  const [metaDescription, setMetaDescription] = useState<string>("");
+  const [categories, setCategories] = useState<string[]>([]);
+  const [scheduledAt, setScheduledAt] = useState<string | null>(null);
 
   // Hydrate from detail on first successful fetch.
   useEffect(() => {
@@ -924,6 +1115,10 @@ export function Editor() {
       setTitle(detail.data.title ?? "");
       setTags(detail.data.tags ?? []);
       setTraditionTags(detail.data.tradition_tags ?? []);
+      setSlug(detail.data.slug ?? "");
+      setMetaDescription(detail.data.meta_description ?? "");
+      setCategories(detail.data.categories ?? []);
+      setScheduledAt(detail.data.scheduled_publish_at ?? null);
     }
   }, [detail.status, detail.data, entryId]);
 
@@ -1157,11 +1352,19 @@ export function Editor() {
         />
       ),
       after: (
-        <PublishCta
+        <PublishPanel
           entryId={entryId}
           publishedAt={publishedAt}
+          visibility={visibility}
+          scheduledAt={scheduledAt}
           sealed={sealed}
-          onPublished={(next) => setPublishedAt(next.published_at)}
+          slug={slug || null}
+          onState={(next) => {
+            setPublishedAt(next.published_at);
+            setVisibility(next.visibility);
+            setScheduledAt(next.scheduled_publish_at ?? null);
+            setSlug(next.slug ?? "");
+          }}
         />
       ),
     }),
@@ -1174,6 +1377,8 @@ export function Editor() {
       visibility,
       sealed,
       publishOnDeath,
+      scheduledAt,
+      slug,
       onVisibilityChange,
     ],
   );
@@ -1272,6 +1477,156 @@ export function Editor() {
             onChange={(next) => void onTagsChange("tradition_tags", next)}
             placeholder="Add a tradition"
           />
+          <EntryTagsRow
+            label="Categories"
+            values={categories}
+            onChange={(next) => {
+              setCategories(next);
+              if (entryId !== null) {
+                void patchEntry(entryId, { categories: next }).catch((cause) => {
+                  Toast.push({
+                    tone: "warning",
+                    title: "Categories didn't save",
+                    body: cause instanceof Error ? cause.message : "Try again.",
+                  });
+                });
+              }
+            }}
+            placeholder="Add a category"
+          />
+        </div>
+
+        {/* v1-044 — the post's public face: its URL words and the line a
+            search result shows. Inline, not buried — the CMS surface is
+            the point of this journal. */}
+        <div
+          data-role="entry-post-settings"
+          style={{
+            display: "grid",
+            gap: 10,
+            marginBottom: 16,
+            padding: "12px 14px",
+            border: "1px solid var(--line)",
+            borderRadius: "var(--r-md, 10px)",
+            background: "var(--bg-2)",
+          }}
+        >
+          <label
+            style={{
+              display: "grid",
+              gap: 4,
+              fontFamily: "var(--font-ui)",
+              fontSize: 11,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "var(--ink-mute)",
+            }}
+          >
+            Slug — the post's address
+            <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span
+                style={{
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 13,
+                  textTransform: "none",
+                  letterSpacing: 0,
+                  color: "var(--ink-mute)",
+                }}
+              >
+                /blog/
+              </span>
+              <input
+                type="text"
+                value={slug}
+                placeholder="derived from the title on publish"
+                onChange={(e) => setSlug(e.target.value)}
+                onBlur={() => {
+                  if (entryId === null) return;
+                  const trimmed = slug.trim();
+                  if (trimmed === (detail.data?.slug ?? "")) return;
+                  void patchEntry(entryId, { slug: trimmed })
+                    .then((next) => setSlug((next as { slug?: string | null }).slug ?? ""))
+                    .catch((cause) => {
+                      setSlug(detail.data?.slug ?? "");
+                      Toast.push({
+                        tone: "warning",
+                        title: "That slug didn't take",
+                        body: cause instanceof Error ? cause.message : "Try another.",
+                      });
+                    });
+                }}
+                aria-label="Post slug"
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  padding: "6px 9px",
+                  border: "1px solid var(--line)",
+                  borderRadius: "var(--r-sm, 6px)",
+                  background: "var(--bg)",
+                  color: "var(--ink)",
+                  fontFamily: "ui-monospace, monospace",
+                  fontSize: 13,
+                  textTransform: "none",
+                  letterSpacing: 0,
+                }}
+              />
+            </span>
+          </label>
+          <label
+            style={{
+              display: "grid",
+              gap: 4,
+              fontFamily: "var(--font-ui)",
+              fontSize: 11,
+              letterSpacing: "0.06em",
+              textTransform: "uppercase",
+              color: "var(--ink-mute)",
+            }}
+          >
+            <span>
+              Meta description — the search-result line
+              <span
+                style={{
+                  marginLeft: 8,
+                  color:
+                    metaDescription.length > 160 ? "var(--warn, var(--accent))" : "var(--ink-mute)",
+                }}
+              >
+                {metaDescription.length}/160
+              </span>
+            </span>
+            <textarea
+              value={metaDescription}
+              rows={2}
+              placeholder="One or two honest sentences — what a searcher finds here. Falls back to the excerpt."
+              onChange={(e) => setMetaDescription(e.target.value)}
+              onBlur={() => {
+                if (entryId === null) return;
+                if (metaDescription === (detail.data?.meta_description ?? "")) return;
+                void patchEntry(entryId, { meta_description: metaDescription }).catch((cause) => {
+                  Toast.push({
+                    tone: "warning",
+                    title: "The description didn't save",
+                    body: cause instanceof Error ? cause.message : "Try again.",
+                  });
+                });
+              }}
+              aria-label="Meta description"
+              style={{
+                padding: "6px 9px",
+                border: "1px solid var(--line)",
+                borderRadius: "var(--r-sm, 6px)",
+                background: "var(--bg)",
+                color: "var(--ink)",
+                fontFamily: "var(--font-ui)",
+                fontSize: 13,
+                lineHeight: 1.5,
+                resize: "vertical",
+                textTransform: "none",
+                letterSpacing: 0,
+              }}
+            />
+          </label>
         </div>
         {(() => {
           const astroLabel = formatAstroSnapshot(detail.data?.astro_snapshot);

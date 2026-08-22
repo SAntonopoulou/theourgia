@@ -28,6 +28,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from theourgia.api.deps import get_db_session
+from theourgia.core.config import get_settings
 from theourgia.api.routers.v1.entries import EntryRead, _to_read
 from theourgia.models.entries import EncryptionMode, Entry, EntryType, EntryVisibility
 
@@ -46,7 +47,12 @@ class BlogPostsResponse(BaseModel):
 
 
 async def _fetch_published_posts(
-    session: AsyncSession, *, limit: int = 100, offset: int = 0,
+    session: AsyncSession,
+    *,
+    limit: int = 100,
+    offset: int = 0,
+    category: str | None = None,
+    tag: str | None = None,
 ) -> tuple[list[Entry], int]:
     """Every public, non-encrypted, non-soft-deleted entry.
 
@@ -73,6 +79,11 @@ async def _fetch_published_posts(
         )
         .order_by(Entry.created_at.desc())
     )
+    # v1-044 — archive filters: the curated shelf, or a free-form tag.
+    if category is not None:
+        base = base.where(Entry.categories.contains([category]))
+    if tag is not None:
+        base = base.where(Entry.tags.contains([tag]))
 
     from sqlalchemy import func
 
@@ -92,8 +103,12 @@ async def list_blog_posts(
     session: Annotated[AsyncSession, Depends(get_db_session)],
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
+    category: str | None = Query(default=None, max_length=64),
+    tag: str | None = Query(default=None, max_length=64),
 ) -> BlogPostsResponse:
-    rows, total = await _fetch_published_posts(session, limit=limit, offset=offset)
+    rows, total = await _fetch_published_posts(
+        session, limit=limit, offset=offset, category=category, tag=tag,
+    )
     return BlogPostsResponse(
         posts=[_to_read(row) for row in rows],
         total=total,
@@ -111,39 +126,58 @@ async def list_blog_posts(
 
 
 @router.get(
-    "/blog/posts/{post_id}",
+    "/blog/posts/{slug_or_id}",
     response_model=EntryRead,
     tags=["blog"],
 )
 async def get_blog_post(
-    post_id: UUID,
+    slug_or_id: str,
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> EntryRead:
-    """One public post + its full body.
+    """One public post + its full body, addressed by slug or by id.
 
-    Same filters as the list endpoint (visibility=public,
-    non-encrypted, not deleted, scheduled window elapsed).
-    Non-matching IDs 404 rather than 403 so we don't disclose
-    the existence of a private entry.
+    Slugs are the canonical address (v1-044); UUIDs keep old links
+    alive. Same filters as the list endpoint. Non-matching addresses
+    404 rather than 403 so we don't disclose the existence of a
+    private entry.
     """
     now = datetime.now(tz=UTC)
-    stmt = (
-        select(Entry)
-        .where(Entry.id == post_id)
-        .where(Entry.deleted_at.is_(None))
-        .where(Entry.visibility == EntryVisibility.PUBLIC)
-        .where(Entry.encryption_mode == EncryptionMode.NONE)
-        .where(
-            (Entry.scheduled_publish_at.is_(None))
-            | (Entry.scheduled_publish_at <= now)
+
+    def _public(stmt):  # noqa: ANN001, ANN202
+        return (
+            stmt.where(Entry.deleted_at.is_(None))
+            .where(Entry.visibility == EntryVisibility.PUBLIC)
+            .where(Entry.encryption_mode == EncryptionMode.NONE)
+            .where(
+                (Entry.scheduled_publish_at.is_(None))
+                | (Entry.scheduled_publish_at <= now)
+            )
         )
-    )
+
+    stmt = _public(select(Entry).where(Entry.slug == slug_or_id))
     row = (await session.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        try:
+            as_uuid = UUID(slug_or_id)
+        except ValueError:
+            as_uuid = None
+        if as_uuid is not None:
+            stmt = _public(select(Entry).where(Entry.id == as_uuid))
+            row = (await session.execute(stmt)).scalar_one_or_none()
     if row is None:
         raise HTTPException(
             status.HTTP_404_NOT_FOUND, "Post not found.",
         )
     return _to_read(row)
+
+
+
+
+def _post_url(row: Entry) -> str:
+    """The post's canonical public address — slug when it has one."""
+    settings = get_settings()
+    base = (settings.base_url or "https://theourgia.com").rstrip("/")
+    return f"{base}/blog/{row.slug or row.id}"
 
 
 @router.get(
@@ -165,6 +199,7 @@ async def atom_feed(
         entries_xml.append(
             f"  <entry>\n"
             f"    <id>urn:theourgia:entry:{row.id}</id>\n"
+            f'    <link rel="alternate" type="text/html" href="{escape(_post_url(row))}"/>\n'
             f"    <title>{escape(row.title)}</title>\n"
             f"    <updated>{updated}</updated>\n"
             f"    <published>{published}</published>\n"
@@ -203,6 +238,7 @@ async def rss_feed(
         items_xml.append(
             f"  <item>\n"
             f"    <guid isPermaLink=\"false\">urn:theourgia:entry:{row.id}</guid>\n"
+            f"    <link>{escape(_post_url(row))}</link>\n"
             f"    <title>{escape(row.title)}</title>\n"
             f"    <pubDate>{pub}</pubDate>\n"
             f"    <description>{escape(row.excerpt)}</description>\n"
@@ -235,6 +271,7 @@ async def json_feed(
     for row in rows:
         items.append({
             "id": f"urn:theourgia:entry:{row.id}",
+            "url": _post_url(row),
             "title": row.title,
             "summary": row.excerpt,
             "date_published": (row.scheduled_publish_at or row.created_at).isoformat(),
