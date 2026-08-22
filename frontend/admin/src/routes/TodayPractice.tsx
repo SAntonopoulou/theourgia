@@ -280,7 +280,8 @@ export function TodayLunarRow({ lat, lng }: { lat: number; lng: number }) {
 
   const now = Date.now();
   const stations = today.data.stations;
-  const nextKey = stations.find((s) => s.at && new Date(s.at).getTime() > now)?.key ?? null;
+  const nextStation = stations.find((s) => s.at && new Date(s.at).getTime() > now) ?? null;
+  const nextKey = nextStation?.key ?? null;
 
   return (
     <section
@@ -323,25 +324,62 @@ export function TodayLunarRow({ lat, lng }: { lat: number; lng: number }) {
           {activeSet ? `Set: ${activeSet.name} — edit →` : "Choose an adoration set →"}
         </Link>
       </div>
-      <div
-        style={{
-          padding: "14px 17px",
-          display: "grid",
-          gap: 12,
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-        }}
-      >
-        {stations.map((s) => (
-          <LunarStationCard
-            key={s.key}
-            glyph={LUNAR_GLYPH[s.key] ?? "·"}
-            label={s.label}
-            timeLabel={lunarTimeLabel(s.at)}
-            script={wordAtStation(activeSet, s.key).trim()}
-            isNext={s.key === nextKey}
-            isPassed={!!s.at && new Date(s.at).getTime() < now}
+      <div style={{ padding: "14px 17px", display: "flex", flexDirection: "column", gap: 13 }}>
+        {/* Next adoration hero — the same card the solar rite leads with,
+            wearing the Moon's own glyph and light. Sophia, 22 Aug: the
+            upcoming lunar adoration deserves the hero the solar one has. */}
+        {nextStation?.at ? (
+          <ReshNextAdoration
+            label={nextStation.label}
+            emblem={
+              <span aria-hidden="true" style={{ fontSize: 30, lineHeight: 1 }}>
+                {LUNAR_GLYPH[nextStation.key] ?? "☽"}
+              </span>
+            }
+            emblemColor="var(--moon-light)"
+            adoration={{
+              godform: "",
+              direction: "",
+              invocation: wordAtStation(activeSet, nextStation.key).trim(),
+            }}
+            stationMin={minuteOfDayLocal(nextStation.at)}
+            stationMinUtc={minuteOfDayUtc(nextStation.at)}
+            countdown={fmtCountdown(new Date(nextStation.at).getTime() - now)}
+            liturgyAction={
+              <Link
+                to="/adorations/lunar"
+                style={{
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 12.5,
+                  color: "var(--accent)",
+                  textDecoration: "none",
+                }}
+              >
+                {activeSet ? "Edit the words →" : "Choose an adoration set →"}
+              </Link>
+            }
           />
-        ))}
+        ) : null}
+
+        <div
+          style={{
+            display: "grid",
+            gap: 12,
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+          }}
+        >
+          {stations.map((s) => (
+            <LunarStationCard
+              key={s.key}
+              glyph={LUNAR_GLYPH[s.key] ?? "·"}
+              label={s.label}
+              timeLabel={lunarTimeLabel(s.at)}
+              script={wordAtStation(activeSet, s.key).trim()}
+              isNext={s.key === nextKey}
+              isPassed={!!s.at && new Date(s.at).getTime() < now}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );

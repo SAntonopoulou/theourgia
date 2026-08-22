@@ -8,7 +8,9 @@
  * right, and an "Open full liturgy →" link slot.
  *
  * The countdown string is computed by the caller — this primitive
- * does not own a clock.
+ * does not own a clock. It also serves the LUNAR hero: a caller with no
+ * solar station passes `label` + `emblem` (and the Moon's own colour)
+ * and everything else reads the same.
  */
 
 import type { CSSProperties, ReactNode } from "react";
@@ -16,10 +18,19 @@ import type { CSSProperties, ReactNode } from "react";
 import { RESH_STATION_META, type ReshAdoration, type ReshStation, formatMinute } from "./resh.js";
 
 export interface ReshNextAdorationProps {
-  station: ReshStation;
+  /** The solar station, for the emblem + label lookups. Absent for a
+   *  non-solar caller (the lunar hero), which supplies `label` and
+   *  `emblem` itself. */
+  station?: ReshStation;
   /** Display-label override — H12's Dawn/Noon/Dusk/Night relabel is a
    *  prop-level rename, not a fork. Defaults to the static meta label. */
   label?: string;
+  /** Medallion override — the lunar hero puts its station glyph here.
+   *  Defaults to the solar station's icon. */
+  emblem?: ReactNode;
+  /** Medallion colour. The sun's warmth by default; the Moon passes her
+   *  own light. */
+  emblemColor?: string;
   adoration: ReshAdoration;
   /** Local minute-of-day for the upcoming station. */
   stationMin: number;
@@ -37,6 +48,8 @@ export interface ReshNextAdorationProps {
 export function ReshNextAdoration({
   station,
   label,
+  emblem,
+  emblemColor = "var(--sun-warm)",
   adoration,
   stationMin,
   stationMinUtc,
@@ -45,7 +58,7 @@ export function ReshNextAdoration({
   className,
   style,
 }: ReshNextAdorationProps) {
-  const stationLabel = label ?? RESH_STATION_META[station].label;
+  const stationLabel = label ?? (station ? RESH_STATION_META[station].label : "");
   return (
     <div
       className={className}
@@ -85,21 +98,24 @@ export function ReshNextAdoration({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "var(--sun-warm)",
+            color: emblemColor,
           }}
         >
-          <svg
-            width="40"
-            height="40"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={1.4}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d={RESH_STATION_META[station].iconPath} />
-          </svg>
+          {emblem ??
+            (station ? (
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.4}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d={RESH_STATION_META[station].iconPath} />
+              </svg>
+            ) : null)}
         </span>
 
         <div style={{ flex: 1, minWidth: 200 }}>
