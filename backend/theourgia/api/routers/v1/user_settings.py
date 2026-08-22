@@ -469,6 +469,231 @@ async def put_my_correspondences(
     return CorrespondencesRead(tables=payload.tables)
 
 
+# ─── correspondence charts v2 (the phone's §10, mirrored) ───────────
+#
+# The phone (22 Aug, NOTE_FROM_THE_PHONE-correspondences-v2.md; its
+# docs/CORRESPONDENCES-DESIGN.md §10) supersedes the free-form tables
+# above with authored CHARTS: rows down a scale — a canonical taxonomy
+# family, or the practitioner's own — columns across, each column
+# carrying ITS OWN source, because the honest unit of attribution is the
+# claim, not the table. A blank cell is absent, never an empty string. A
+# mapped column (categoryKey set, canonical scale only) stands in the
+# subject lookup beside the packs' values; custom scales never leak
+# there. Charts and columns soft-delete.
+#
+# Field names are camelCase to match the phone's JSON exactly — one name
+# across both platforms. Same key/value storage, one blob per user; the
+# legacy ``correspondences.custom`` tables are converted on read until
+# the first write of the new key.
+
+CORRESPONDENCE_CHARTS_KEY = "correspondences.charts"
+
+
+class ChartSourceModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(min_length=1, max_length=300)
+    author: str | None = Field(default=None, max_length=200)
+    year: int | None = None
+    note: str | None = Field(default=None, max_length=500)
+
+
+class ChartRowModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    key: str = Field(min_length=1, max_length=64)
+    label: str = Field(min_length=1, max_length=200)
+    glyph: str | None = Field(default=None, max_length=8)
+
+
+class ChartColumnModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1, max_length=64)
+    caption: str = Field(min_length=1, max_length=200)
+    #: Absent means the practitioner's own claim — "Yours", never anonymous.
+    source: ChartSourceModel | None = None
+    #: Set (canonical charts only), the column's cells stand in the lookup.
+    categoryKey: str | None = Field(default=None, max_length=64)
+    commentary: str = Field(default="", max_length=5000)
+    #: Tombstone (ISO-8601). Hidden, not erased — its cells stay for undelete.
+    deletedAt: str | None = Field(default=None, max_length=40)
+
+
+class ChartCellModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    #: Never blank: a blank cell is the ABSENT entry, not an empty string.
+    value: str = Field(min_length=1, max_length=2000)
+    note: str | None = Field(default=None, max_length=2000)
+
+
+class CorrespondenceChartModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1, max_length=64)
+    name: str = Field(min_length=1, max_length=200)
+    #: A canonical taxonomy family key, or None for a scale of the
+    #: practitioner's own (whose rows live in ``rows``).
+    scaleFamily: str | None = Field(default=None, max_length=64)
+    commentary: str = Field(default="", max_length=20000)
+    #: Custom-scale rows, in the practitioner's order. Empty for canonical
+    #: charts — their rows are the canon's, drawn client-side.
+    rows: list[ChartRowModel] = Field(default_factory=list, max_length=2000)
+    columns: list[ChartColumnModel] = Field(default_factory=list, max_length=64)
+    #: columnId → rowKey → cell.
+    cells: dict[str, dict[str, ChartCellModel]] = Field(default_factory=dict)
+    deletedAt: str | None = Field(default=None, max_length=40)
+
+
+class CorrespondenceChartsRead(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    charts: list[CorrespondenceChartModel]
+
+
+class CorrespondenceChartsWrite(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    charts: list[CorrespondenceChartModel] = Field(default_factory=list, max_length=200)
+
+
+def _chart_from_legacy(table: CustomCorrespondenceTable) -> CorrespondenceChartModel:
+    """A legacy free-form table, recast as a custom-scale chart.
+
+    Its subjects become rows, its bare column names become sourceless
+    columns (which read as the practitioner's own — which they were), and
+    blank cells are simply not carried over. Ids derive from the table's,
+    stably, so a second read converts to the same chart.
+    """
+    rows = [
+        ChartRowModel(key=f"{table.id}:r{i}", label=r.subject)
+        for i, r in enumerate(table.rows)
+    ]
+    columns = [
+        ChartColumnModel(id=f"{table.id}:c{i}", caption=caption)
+        for i, caption in enumerate(table.columns)
+    ]
+    by_caption = {c.caption: c.id for c in reversed(columns)}
+    cells: dict[str, dict[str, ChartCellModel]] = {}
+    for i, r in enumerate(table.rows):
+        for caption, value in r.cells.items():
+            column_id = by_caption.get(caption)
+            if column_id is None or not value.strip():
+                continue
+            cells.setdefault(column_id, {})[f"{table.id}:r{i}"] = ChartCellModel(
+                value=value.strip()
+            )
+    return CorrespondenceChartModel(
+        id=table.id,
+        name=table.title,
+        rows=rows,
+        columns=columns,
+        cells=cells,
+    )
+
+
+async def read_correspondence_charts(
+    db: AsyncSession, user_id
+) -> list[CorrespondenceChartModel]:
+    """The user's charts; malformed entries dropped. With nothing written
+    under the new key yet, the legacy tables are converted on the fly —
+    nothing is migrated in place until the user saves."""
+    stmt = select(UserSetting).where(
+        UserSetting.user_id == user_id, UserSetting.key == CORRESPONDENCE_CHARTS_KEY
+    )
+    row = (await db.execute(stmt)).scalar_one_or_none()
+    if row is None:
+        legacy = await read_custom_correspondences(db, user_id)
+        return [_chart_from_legacy(t) for t in legacy]
+    try:
+        import json
+
+        value = json.loads(row.value_json)
+    except (ValueError, TypeError):
+        return []
+    if not isinstance(value, list):
+        return []
+    charts: list[CorrespondenceChartModel] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        try:
+            charts.append(CorrespondenceChartModel(**item))
+        except ValidationError:
+            continue
+    return charts
+
+
+@router.get(
+    "/users/me/settings/correspondence-charts",
+    summary="Read the signed-in user's authored correspondence charts",
+    description=(
+        "The phone's §10 model: rows down a scale, columns each under their "
+        "own source. Legacy free-form tables are converted on read until the "
+        "first save."
+    ),
+    response_model=CorrespondenceChartsRead,
+)
+async def get_my_correspondence_charts(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> CorrespondenceChartsRead:
+    if current_user is None:
+        raise UnauthorizedError("correspondence charts require authentication")
+    return CorrespondenceChartsRead(
+        charts=await read_correspondence_charts(db, current_user.id)
+    )
+
+
+@router.put(
+    "/users/me/settings/correspondence-charts",
+    summary="Replace the signed-in user's authored correspondence charts",
+    response_model=CorrespondenceChartsRead,
+)
+async def put_my_correspondence_charts(
+    payload: CorrespondenceChartsWrite,
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: CurrentUser,
+) -> CorrespondenceChartsRead:
+    if current_user is None:
+        raise UnauthorizedError("correspondence charts require authentication")
+
+    ids = [c.id for c in payload.charts]
+    if len(ids) != len(set(ids)):
+        raise ValidationFailedError("Every chart needs its own id; found a duplicate.")
+    for chart in payload.charts:
+        column_ids = [c.id for c in chart.columns]
+        if len(column_ids) != len(set(column_ids)):
+            raise ValidationFailedError(
+                f"Chart {chart.id!r}: every column needs its own id; found a duplicate."
+            )
+        known_columns = set(column_ids)
+        for column_id in chart.cells:
+            if column_id not in known_columns:
+                raise ValidationFailedError(
+                    f"Chart {chart.id!r}: cells name a column {column_id!r} it does not have."
+                )
+        # A mapped column stands in the lookup, which is drawn on the canon's
+        # scales — a custom scale has no subjects there to stand under.
+        if chart.scaleFamily is None:
+            for column in chart.columns:
+                if column.categoryKey is not None:
+                    raise ValidationFailedError(
+                        f"Chart {chart.id!r}: a custom-scale chart cannot map "
+                        f"column {column.id!r} into the lookup."
+                    )
+
+    await _upsert_value(
+        db,
+        current_user.id,
+        CORRESPONDENCE_CHARTS_KEY,
+        [c.model_dump() for c in payload.charts],
+    )
+    await db.commit()
+    return CorrespondenceChartsRead(charts=payload.charts)
+
+
 # ─── adoration sets (choose whose adoration each station is) ────────
 #
 # Sophia, 20 Aug: with lunar (or solar) adorations enabled, you must be able to

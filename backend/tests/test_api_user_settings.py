@@ -300,3 +300,181 @@ async def test_read_maps_parses_and_drops_bad() -> None:
     maps = await read_maps(_Session(row), "u")
     assert [m.id for m in maps] == ["map1"]
     assert maps[0].nodes[0].name == "Kether"
+
+
+# ─── correspondence charts v2 (the phone's §10, mirrored) ───────────
+
+
+def test_chart_cell_refuses_a_blank_value() -> None:
+    # A blank cell is the ABSENT entry — an empty string may never pose as one.
+    from theourgia.api.routers.v1.user_settings import ChartCellModel
+
+    with pytest.raises(ValidationError):
+        ChartCellModel(value="")
+
+
+def test_chart_column_without_a_source_is_allowed() -> None:
+    # Absent source reads as the practitioner's own claim, never anonymous.
+    from theourgia.api.routers.v1.user_settings import ChartColumnModel
+
+    column = ChartColumnModel(id="c1", caption="Metals")
+    assert column.source is None
+    assert column.categoryKey is None
+
+
+def test_charts_route_registered() -> None:
+    from theourgia.api.app import create_app
+
+    paths = set(create_app().openapi()["paths"].keys())
+    assert "/api/v1/users/me/settings/correspondence-charts" in paths
+
+
+class _SeqSession:
+    """Answers successive queries with successive preset rows."""
+
+    def __init__(self, *rows: object) -> None:
+        self._rows = list(rows)
+
+    async def execute(self, *_a: object, **_k: object) -> _Result:
+        return _Result(self._rows.pop(0))
+
+
+@pytest.mark.anyio
+async def test_read_charts_defaults_to_legacy_conversion() -> None:
+    # With nothing under the new key, the old free-form tables come back as
+    # custom-scale charts: subjects → rows, bare captions → sourceless
+    # columns, blank cells not carried. Stable ids, so a second read agrees.
+    import json
+
+    from theourgia.api.routers.v1.user_settings import read_correspondence_charts
+
+    legacy = {
+        "id": "t1",
+        "title": "My 777",
+        "columns": ["Metal", "Stone"],
+        "rows": [
+            {"subject": "Mars", "cells": {"Metal": "Iron", "Stone": ""}},
+            {"subject": "Luna", "cells": {"Stone": "Moonstone"}},
+        ],
+    }
+    charts = await read_correspondence_charts(
+        _SeqSession(None, _Row(json.dumps([legacy]))), "u"
+    )
+    assert [c.id for c in charts] == ["t1"]
+    chart = charts[0]
+    assert chart.scaleFamily is None
+    assert [r.label for r in chart.rows] == ["Mars", "Luna"]
+    assert [c.caption for c in chart.columns] == ["Metal", "Stone"]
+    assert all(c.source is None for c in chart.columns)
+    metal, stone = chart.columns
+    assert chart.cells[metal.id][chart.rows[0].key].value == "Iron"
+    # The blank Stone cell for Mars was never a value; only Luna's survives.
+    assert chart.cells[stone.id] == {
+        chart.rows[1].key: chart.cells[stone.id][chart.rows[1].key]
+    }
+    assert chart.cells[stone.id][chart.rows[1].key].value == "Moonstone"
+
+
+@pytest.mark.anyio
+async def test_read_charts_prefers_the_new_key_and_drops_bad() -> None:
+    import json
+
+    from theourgia.api.routers.v1.user_settings import read_correspondence_charts
+
+    good = {
+        "id": "ch1",
+        "name": "Planetary table",
+        "scaleFamily": "planet",
+        "columns": [
+            {
+                "id": "c1",
+                "caption": "Metals",
+                "source": {"title": "Occult Philosophy", "author": "Agrippa", "year": 1533},
+                "categoryKey": "metal",
+            }
+        ],
+        "cells": {"c1": {"planet.mars": {"value": "Iron"}}},
+    }
+    row = _Row(json.dumps([good, {"id": "broken"}, 7]))
+    charts = await read_correspondence_charts(_Session(row), "u")
+    assert [c.id for c in charts] == ["ch1"]
+    assert charts[0].columns[0].source.author == "Agrippa"
+    assert charts[0].cells["c1"]["planet.mars"].value == "Iron"
+
+
+@pytest.mark.anyio
+async def test_charts_put_rejects_duplicate_chart_ids() -> None:
+    from theourgia.api.errors import ValidationFailedError
+    from theourgia.api.routers.v1.user_settings import (
+        CorrespondenceChartModel,
+        CorrespondenceChartsWrite,
+        put_my_correspondence_charts,
+    )
+
+    class _User:
+        id = "u"
+
+    payload = CorrespondenceChartsWrite(
+        charts=[
+            CorrespondenceChartModel(id="ch1", name="A"),
+            CorrespondenceChartModel(id="ch1", name="B"),
+        ]
+    )
+    # The guard raises before the db is ever touched.
+    with pytest.raises(ValidationFailedError):
+        await put_my_correspondence_charts(payload, None, _User())
+
+
+@pytest.mark.anyio
+async def test_charts_put_rejects_cells_naming_a_missing_column() -> None:
+    from theourgia.api.errors import ValidationFailedError
+    from theourgia.api.routers.v1.user_settings import (
+        ChartColumnModel,
+        CorrespondenceChartModel,
+        CorrespondenceChartsWrite,
+        put_my_correspondence_charts,
+    )
+
+    class _User:
+        id = "u"
+
+    payload = CorrespondenceChartsWrite(
+        charts=[
+            CorrespondenceChartModel(
+                id="ch1",
+                name="T",
+                scaleFamily="planet",
+                columns=[ChartColumnModel(id="c1", caption="A")],
+                cells={"ghost": {"planet.mars": {"value": "X"}}},
+            )
+        ]
+    )
+    with pytest.raises(ValidationFailedError):
+        await put_my_correspondence_charts(payload, None, _User())
+
+
+@pytest.mark.anyio
+async def test_charts_put_refuses_a_mapped_column_on_a_custom_scale() -> None:
+    # Mirrored from the phone: a custom scale never leaks into the lookup.
+    from theourgia.api.errors import ValidationFailedError
+    from theourgia.api.routers.v1.user_settings import (
+        ChartColumnModel,
+        CorrespondenceChartModel,
+        CorrespondenceChartsWrite,
+        put_my_correspondence_charts,
+    )
+
+    class _User:
+        id = "u"
+
+    payload = CorrespondenceChartsWrite(
+        charts=[
+            CorrespondenceChartModel(
+                id="ch1",
+                name="Free-form",
+                columns=[ChartColumnModel(id="c1", caption="C", categoryKey="metal")],
+            )
+        ]
+    )
+    with pytest.raises(ValidationFailedError):
+        await put_my_correspondence_charts(payload, None, _User())

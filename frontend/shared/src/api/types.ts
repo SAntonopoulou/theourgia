@@ -407,6 +407,13 @@ export interface CustomCorrespondencesResponse {
   tables: CustomCorrespondenceTable[];
 }
 
+/** Response of ``GET/PUT /api/v1/users/me/settings/correspondence-charts`` —
+ *  the authored charts of the phone's §10 model. The chart shape itself lives
+ *  in ``correspondence/ownCharts.ts``, one definition for wire and UI. */
+export interface CorrespondenceChartsResponse {
+  charts: import("../correspondence/ownCharts.js").OwnChart[];
+}
+
 /** One lunar station of the day — the lunar counterpart of a Resh solar
  *  transition. `at` is an ISO instant, or null where the moon gives no such
  *  event (polar days). */

@@ -7,6 +7,7 @@
  * the wire isn't connected yet.
  */
 
+import type { OwnChart } from "../correspondence/ownCharts.js";
 import type { ApiClient } from "./client.js";
 import type {
   AdorationSet,
@@ -44,6 +45,7 @@ import type {
   ConsecrateToolPayload,
   ContractRead,
   ContractStatusWire,
+  CorrespondenceChartsResponse,
   CreateAgentInstallInput,
   CreateAltarInput,
   CreateBanishingLogInput,
@@ -1166,6 +1168,28 @@ export function api(client: ApiClient) {
     }): Promise<CustomCorrespondencesResponse> {
       return client.request<CustomCorrespondencesResponse>(
         "/api/v1/users/me/settings/correspondences",
+        { method: "PUT", json: input },
+      );
+    },
+
+    /** The user's authored correspondence charts — the phone's §10 model:
+     *  rows down a scale, columns each under their own source. Legacy
+     *  free-form tables are converted on read until the first save. */
+    getMyCorrespondenceCharts(opts?: {
+      signal?: AbortSignal;
+    }): Promise<CorrespondenceChartsResponse> {
+      return client.request<CorrespondenceChartsResponse>(
+        "/api/v1/users/me/settings/correspondence-charts",
+        { signal: opts?.signal },
+      );
+    },
+
+    /** Replace the whole set of authored charts. */
+    putMyCorrespondenceCharts(input: {
+      charts: OwnChart[];
+    }): Promise<CorrespondenceChartsResponse> {
+      return client.request<CorrespondenceChartsResponse>(
+        "/api/v1/users/me/settings/correspondence-charts",
         { method: "PUT", json: input },
       );
     },

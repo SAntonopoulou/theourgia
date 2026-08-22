@@ -410,6 +410,26 @@ export {
   valueIn,
 } from "./correspondence/packCorrespondences.js";
 export {
+  chartRows,
+  columnAttribution,
+  livingCharts,
+  livingColumns,
+  mappedColumnTables,
+  type OwnChart,
+  type OwnChartCell,
+  type OwnChartColumn,
+  type OwnChartRow,
+  type OwnChartSource,
+} from "./correspondence/ownCharts.js";
+export {
+  familyMembers,
+  TAXONOMY_CATEGORIES,
+  TAXONOMY_SUBJECTS,
+  type TaxonomyCategory,
+  taxonomyFamilies,
+  type TaxonomySubject,
+} from "./correspondence/taxonomy.js";
+export {
   DirectionalFrameReference,
   type DirectionalFrameReferenceProps,
 } from "./directionalFrame/DirectionalFrameReference.js";
