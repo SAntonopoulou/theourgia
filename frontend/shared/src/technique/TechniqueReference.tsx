@@ -7,12 +7,16 @@
  * from installed astro-technique packs, read client-side.
  */
 
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import type { Technique } from "./packTechniques.js";
 
 export interface TechniqueReferenceProps {
   techniques: readonly Technique[];
+  /** What the engine computed for this technique, for this nativity, now —
+   *  rendered between the summary and the reading. The seam made visible:
+   *  everything numeric came from the engine, everything said from the pack. */
+  resultFor?: (technique: Technique) => ReactNode;
   className?: string;
   style?: CSSProperties;
 }
@@ -37,7 +41,13 @@ function ProvenanceBadge({ provenance }: { provenance: string }) {
   );
 }
 
-function TechniqueCard({ technique }: { technique: Technique }) {
+function TechniqueCard({
+  technique,
+  result,
+}: {
+  technique: Technique;
+  result?: ReactNode;
+}) {
   return (
     <section
       style={{
@@ -58,6 +68,8 @@ function TechniqueCard({ technique }: { technique: Technique }) {
           {technique.summary}
         </p>
       )}
+
+      {result ? <div style={{ marginTop: 14 }}>{result}</div> : null}
 
       {technique.reading.length > 0 && (
         <ol style={{ margin: "14px 0 0", paddingLeft: 20 }}>
@@ -146,7 +158,12 @@ function TechniqueCard({ technique }: { technique: Technique }) {
   );
 }
 
-export function TechniqueReference({ techniques, className, style }: TechniqueReferenceProps) {
+export function TechniqueReference({
+  techniques,
+  resultFor,
+  className,
+  style,
+}: TechniqueReferenceProps) {
   if (techniques.length === 0) {
     return (
       <div className={className} style={{ padding: "16px 4px", ...style }}>
@@ -165,7 +182,11 @@ export function TechniqueReference({ techniques, className, style }: TechniqueRe
       className={className}
     >
       {techniques.map((technique) => (
-        <TechniqueCard key={technique.key} technique={technique} />
+        <TechniqueCard
+          key={technique.key}
+          technique={technique}
+          result={resultFor?.(technique)}
+        />
       ))}
     </div>
   );

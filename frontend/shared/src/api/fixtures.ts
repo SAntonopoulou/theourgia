@@ -1042,6 +1042,100 @@ export function defaultFixtures(path: string, init?: RequestInit): unknown {
     };
   }
 
+  // /api/v1/astro/profections — a fixed nativity's year and month.
+  if (bare?.startsWith("/api/v1/astro/profections") && method === "GET") {
+    return {
+      birth: "1990-04-12T08:30:00Z",
+      on_date: new Date().toISOString().slice(0, 10),
+      age: 36,
+      profected_house: 1,
+      profected_sign: 7,
+      profected_sign_name: "Libra",
+      year_lord: "venus",
+      month_house: 5,
+      month_sign: 11,
+      month_sign_name: "Aquarius",
+      month_lord: "saturn",
+      ascendant_sign: 7,
+      ascendant_sign_name: "Libra",
+      attribution: "Swiss Ephemeris (mock fixture)",
+    };
+  }
+
+  // /api/v1/astro/releasing — a Leo general period opened into its months.
+  if (bare?.startsWith("/api/v1/astro/releasing") && method === "GET") {
+    const url = new URL(`http://x${path}`);
+    const pathParam = url.searchParams.get("path") ?? "";
+    const period = (
+      level: number,
+      sign: number,
+      name: string,
+      lord: string,
+      startYear: number,
+      untilYear: number,
+      index: number,
+      extra: Record<string, unknown> = {},
+    ) => ({
+      level,
+      sign,
+      sign_name: name,
+      lord,
+      start: `${startYear}-06-01T00:00:00Z`,
+      until: `${untilYear}-06-01T00:00:00Z`,
+      house_from_lot: ((sign - 5 + 12) % 12) + 1,
+      is_loosing_of_the_bond: false,
+      is_completion_period: false,
+      is_peak: false,
+      is_truncated: false,
+      holds_now: false,
+      index,
+      ...extra,
+    });
+    const level1 = [
+      period(1, 5, "Leo", "sun", 1990, 2009, 0),
+      period(1, 6, "Virgo", "mercury", 2009, 2029, 1, { holds_now: true }),
+      period(1, 7, "Libra", "venus", 2029, 2037, 2),
+      period(1, 8, "Scorpio", "mars", 2037, 2052, 3, { is_peak: true }),
+    ];
+    const months = [
+      period(2, 6, "Virgo", "mercury", 2025, 2027, 0),
+      period(2, 7, "Libra", "venus", 2027, 2028, 1, { holds_now: true }),
+      period(2, 8, "Scorpio", "mars", 2028, 2029, 2, {
+        is_loosing_of_the_bond: true,
+      }),
+    ];
+    return {
+      birth: "1990-04-12T08:30:00Z",
+      at: new Date().toISOString(),
+      from_lot: url.searchParams.get("from_lot") ?? "fortune",
+      start_sign: 5,
+      start_sign_name: "Leo",
+      fortune_sign: 5,
+      fortune_sign_name: "Leo",
+      chain: [
+        { ...level1[1], holds_now: true },
+        { ...months[1], holds_now: true },
+        period(3, 9, "Sagittarius", "jupiter", 2026, 2026, 4, { holds_now: true }),
+        period(4, 1, "Aries", "mars", 2026, 2026, 2, { holds_now: true }),
+      ],
+      path: pathParam ? [level1[1]] : [],
+      shown: pathParam ? months : level1,
+      attribution: "Swiss Ephemeris (mock fixture)",
+    };
+  }
+
+  // /api/v1/users/me/settings/astro-nativity — a saved nativity, so the
+  // techniques render computed; PUT echoes.
+  if (bare === "/api/v1/users/me/settings/astro-nativity") {
+    if (method === "PUT") return body;
+    return {
+      name: "Mine",
+      birth: "1990-04-12T08:30:00Z",
+      latitude: 37.9838,
+      longitude: 23.7275,
+    };
+  }
+
   // /api/v1/astro/moon-course — not void under the Hellenistic default.
   if (bare === "/api/v1/astro/moon-course" && method === "GET") {
     return {

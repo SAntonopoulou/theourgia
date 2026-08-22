@@ -113,9 +113,12 @@ import type {
   MemoryFileContent,
   MemoryListResponse,
   Meta,
+  AstroNativity,
   ElectRequestBody,
   ElectResponse,
   MoonCourseResponse,
+  ProfectionResponse,
+  ReleasingResponse,
   MyAuditListResponse,
   MyAuditQueryInput,
   MySessionsListResponse,
@@ -1056,6 +1059,65 @@ export function api(client: ApiClient) {
         method: "POST",
         json: input,
         signal: opts?.signal,
+      });
+    },
+
+    /** The annual + monthly profection for a birth, on a date. */
+    getProfections(
+      input: { birth: string; latitude: number; longitude: number; on_date?: string },
+      opts?: { signal?: AbortSignal },
+    ): Promise<ProfectionResponse> {
+      const qs = new URLSearchParams({
+        birth: input.birth,
+        latitude: String(input.latitude),
+        longitude: String(input.longitude),
+      });
+      if (input.on_date) qs.set("on_date", input.on_date);
+      return client.request<ProfectionResponse>(
+        `/api/v1/astro/profections?${qs.toString()}`,
+        { signal: opts?.signal },
+      );
+    },
+
+    /** Zodiacal releasing from Fortune or Spirit: the chain holding "now"
+     * and one level of the descent, chosen by an indexed path. */
+    getReleasing(
+      input: {
+        birth: string;
+        latitude: number;
+        longitude: number;
+        from_lot?: "fortune" | "spirit";
+        at?: string;
+        path?: string;
+      },
+      opts?: { signal?: AbortSignal },
+    ): Promise<ReleasingResponse> {
+      const qs = new URLSearchParams({
+        birth: input.birth,
+        latitude: String(input.latitude),
+        longitude: String(input.longitude),
+      });
+      if (input.from_lot) qs.set("from_lot", input.from_lot);
+      if (input.at) qs.set("at", input.at);
+      if (input.path) qs.set("path", input.path);
+      return client.request<ReleasingResponse>(
+        `/api/v1/astro/releasing?${qs.toString()}`,
+        { signal: opts?.signal },
+      );
+    },
+
+    /** The signed-in user's saved nativity. 404 until one is saved. */
+    getAstroNativity(opts?: { signal?: AbortSignal }): Promise<AstroNativity> {
+      return client.request<AstroNativity>("/api/v1/users/me/settings/astro-nativity", {
+        signal: opts?.signal,
+      });
+    },
+
+    /** Save the signed-in user's nativity. */
+    putAstroNativity(payload: AstroNativity): Promise<AstroNativity> {
+      return client.request<AstroNativity>("/api/v1/users/me/settings/astro-nativity", {
+        method: "PUT",
+        json: payload,
       });
     },
 

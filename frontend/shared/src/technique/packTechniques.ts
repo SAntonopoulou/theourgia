@@ -19,6 +19,8 @@ export interface Technique {
   primitive?: string;
   /** `attested`, `reconstructed` — how sure the source is. */
   provenance?: string;
+  /** Which lot a releasing runs from — `fortune` or `spirit`. */
+  from?: string;
   summary: string;
   /** How the sources say to read it, step by step. */
   reading: string[];
@@ -67,6 +69,7 @@ export function packToTechniques(payload: unknown): Technique[] {
       name,
       primitive: typeof item.primitive === "string" ? item.primitive : undefined,
       provenance: typeof item.provenance === "string" ? item.provenance : undefined,
+      from: typeof item.from === "string" ? item.from : undefined,
       summary: typeof item.summary === "string" ? item.summary : "",
       reading: strings(item.reading),
       houses: houses(item.houses),

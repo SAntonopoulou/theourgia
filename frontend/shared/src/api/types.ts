@@ -384,6 +384,67 @@ export interface ElectRequestBody {
   subject_house?: number;
 }
 
+// ─── Timing techniques — profections, releasing, the saved nativity ─────────
+
+/** Response from ``GET /api/v1/astro/profections`` — the annual profection
+ *  with the monthly (a twelfth of the actual year) beside it. */
+export interface ProfectionResponse {
+  birth: string;
+  on_date: string;
+  age: number;
+  profected_house: number;
+  profected_sign: number;
+  profected_sign_name: string;
+  year_lord: string;
+  month_house: number;
+  month_sign: number;
+  month_sign_name: string;
+  month_lord: string;
+  ascendant_sign: number;
+  ascendant_sign_name: string;
+  attribution: string;
+}
+
+/** One period of zodiacal releasing, any level. */
+export interface ReleasingPeriodRead {
+  level: number;
+  sign: number;
+  sign_name: string;
+  lord: string;
+  start: string;
+  until: string;
+  house_from_lot: number;
+  is_loosing_of_the_bond: boolean;
+  is_completion_period: boolean;
+  is_peak: boolean;
+  is_truncated: boolean;
+  holds_now: boolean;
+  index: number;
+}
+
+/** Response from ``GET /api/v1/astro/releasing``. */
+export interface ReleasingResponse {
+  birth: string;
+  at: string;
+  from_lot: string;
+  start_sign: number;
+  start_sign_name: string;
+  fortune_sign: number;
+  fortune_sign_name: string;
+  chain: ReleasingPeriodRead[];
+  path: ReleasingPeriodRead[];
+  shown: ReleasingPeriodRead[];
+  attribution: string;
+}
+
+/** The saved nativity the techniques run against (``astro.nativity``). */
+export interface AstroNativity {
+  name: string;
+  birth: string;
+  latitude: number;
+  longitude: number;
+}
+
 /** One astronomical event from ``GET /api/v1/events``. */
 export interface AstroEventRead {
   /** "new-moon" · "first-quarter" · "full-moon" · "last-quarter" ·
