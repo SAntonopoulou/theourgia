@@ -1878,15 +1878,23 @@ export function Editor() {
         .ed-details > summary::after { content: " ▾"; }
         .ed-details[open] > summary::after { content: " ▴"; }
         .ed-details > .ed-rail-content { padding: 4px 0 14px; }
-        /* The page scrolls as one; the format toolbar keeps its seat. */
+        /* The page scrolls as one; the format toolbar keeps its seat —
+           and sits AS WIDE AS THE WRITING, not as a full-bleed band
+           (Sophia, 22 Aug). The component sets its border/background
+           inline, so the border override needs the stronger hand. */
         .theourgia-editor {
           overflow: visible;
         }
-        [data-editor-toolbar] {
+        .ed-main [data-editor-toolbar] {
           position: sticky;
-          top: 0;
+          top: 8px;
           z-index: 20;
-          background: var(--bg);
+          max-width: 720px;
+          width: calc(100% - 24px);
+          box-sizing: border-box;
+          margin: 0 auto 6px;
+          border: 1px solid var(--line) !important;
+          border-radius: var(--r-md, 10px);
         }
         .theourgia-editor .ProseMirror {
           padding: 8px 28px 120px;
