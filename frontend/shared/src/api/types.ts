@@ -298,6 +298,37 @@ export interface ChartDoctrineResponse {
   attribution: string;
 }
 
+/** One planetary hour from ``GET /api/v1/astro/planetary-hours``. */
+export interface PlanetaryHourRead {
+  index: number;
+  ruler: string;
+  glyph: string;
+  start: string;
+  end: string;
+  is_day: boolean;
+}
+
+/** Response from ``GET /api/v1/astro/planetary-hours``. */
+export interface PlanetaryHoursResponse {
+  date: string;
+  latitude: number;
+  longitude: number;
+  current_hour_index: number | null;
+  hours: PlanetaryHourRead[];
+}
+
+/** Response from ``GET /api/v1/astro/moon-course`` — the Moon's course
+ *  under both void-of-course doctrines, the caller's rule named. */
+export interface MoonCourseResponse {
+  instant: string;
+  next_sign_ingress: string;
+  void_thirty_degrees: boolean;
+  void_sign_exit: boolean;
+  rule: string;
+  void: boolean;
+  attribution: string;
+}
+
 /** One astronomical event from ``GET /api/v1/events``. */
 export interface AstroEventRead {
   /** "new-moon" · "first-quarter" · "full-moon" · "last-quarter" ·

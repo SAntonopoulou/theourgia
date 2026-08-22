@@ -37,6 +37,7 @@ export * from "./VocesLibrary/index.js";
 export * from "./WorkshopModals/index.js";
 export * from "./NewsletterEditor/index.js";
 export * from "./Chart/index.js";
+export * from "./PlanetaryHours/index.js";
 export * from "./Chip/index.js";
 export * from "./Contracts/index.js";
 export * from "./CrossJournalSearch/index.js";

@@ -498,6 +498,60 @@ async def astro_chart_doctrine(
 
 
 # ════════════════════════════════════════════════════════════════════════
+# /astro/moon-course — void of course, live, under the caller's doctrine
+# ════════════════════════════════════════════════════════════════════════
+
+
+class MoonCourseResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    instant: datetime
+    next_sign_ingress: datetime
+    #: Both rules, always — the disagreement is the interesting part.
+    void_thirty_degrees: bool
+    void_sign_exit: bool
+    #: The rule the caller's doctrine chose, and its verdict.
+    rule: str
+    void: bool
+    attribution: str
+
+
+@router.get("/astro/moon-course", response_model=MoonCourseResponse, tags=["astro"])
+async def astro_moon_course(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    current_user: OptionalCurrentUser,
+    when: datetime | None = Query(default=None),
+) -> MoonCourseResponse:
+    """Whether the Moon runs void at ``when`` (default now), under both
+    doctrines, with the caller's own rule named. Location-independent."""
+    from theourgia.core.astro.void_of_course import (
+        is_void_of_course,
+        moon_next_sign_ingress,
+    )
+
+    instant = when or datetime.now(tz=UTC)
+    if instant.tzinfo is None:
+        instant = instant.replace(tzinfo=UTC)
+    doctrine = (
+        await read_astro_doctrine(db, current_user.id)
+        if current_user is not None
+        else AstroDoctrineModel()
+    )
+    thirty = is_void_of_course(instant, rule="thirtyDegrees")
+    sign_exit = is_void_of_course(instant, rule="signExit")
+    rule = doctrine.void_of_course
+    return MoonCourseResponse(
+        instant=instant,
+        next_sign_ingress=moon_next_sign_ingress(instant),
+        void_thirty_degrees=thirty,
+        void_sign_exit=sign_exit,
+        rule=rule,
+        void=thirty if rule == "thirtyDegrees" else sign_exit,
+        attribution=ATTRIBUTION,
+    )
+
+
+# ════════════════════════════════════════════════════════════════════════
 # /astro/planetary-hours
 # ════════════════════════════════════════════════════════════════════════
 

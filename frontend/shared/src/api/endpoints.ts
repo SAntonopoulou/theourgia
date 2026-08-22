@@ -113,6 +113,7 @@ import type {
   MemoryFileContent,
   MemoryListResponse,
   Meta,
+  MoonCourseResponse,
   MyAuditListResponse,
   MyAuditQueryInput,
   MySessionsListResponse,
@@ -121,6 +122,7 @@ import type {
   OathStatusWire,
   OfferingRead,
   PendulumReadingRecord,
+  PlanetaryHoursResponse,
   PlanetarySquareWire,
   PracticeRecord,
   PracticeStatusWrite,
@@ -1010,6 +1012,35 @@ export function api(client: ApiClient) {
         `/api/v1/astro/chart/doctrine?${qs.toString()}`,
         { signal: opts?.signal },
       );
+    },
+
+    /** The twenty-four planetary hours for the date containing `when`
+     * (default: now), at a location. Feeds the hours ring. */
+    getPlanetaryHours(
+      input: { latitude: number; longitude: number; when?: string },
+      opts?: { signal?: AbortSignal },
+    ): Promise<PlanetaryHoursResponse> {
+      const qs = new URLSearchParams({
+        latitude: String(input.latitude),
+        longitude: String(input.longitude),
+      });
+      if (input.when) qs.set("when", input.when);
+      return client.request<PlanetaryHoursResponse>(
+        `/api/v1/astro/planetary-hours?${qs.toString()}`,
+        { signal: opts?.signal },
+      );
+    },
+
+    /** Whether the Moon runs void at `when` (default now), under both
+     * doctrines, with the caller's own rule named. */
+    getMoonCourse(
+      input?: { when?: string },
+      opts?: { signal?: AbortSignal },
+    ): Promise<MoonCourseResponse> {
+      const qs = input?.when ? `?when=${encodeURIComponent(input.when)}` : "";
+      return client.request<MoonCourseResponse>(`/api/v1/astro/moon-course${qs}`, {
+        signal: opts?.signal,
+      });
     },
 
     /** The signed-in user's contested-doctrine choices (``astro.doctrine``). */

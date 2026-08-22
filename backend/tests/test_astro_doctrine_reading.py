@@ -226,3 +226,23 @@ def test_unknown_rule_reads_as_the_default() -> None:
     assert is_void_of_course(moment, rule="orbBased") == is_void_of_course(
         moment, rule="thirtyDegrees"
     )
+
+
+def test_moon_course_endpoint_registered_and_rule_dispatch() -> None:
+    from theourgia.api.app import create_app
+
+    paths = set(create_app().openapi()["paths"].keys())
+    assert "/api/v1/astro/moon-course" in paths
+
+
+@pytest.mark.anyio
+async def test_moon_course_reports_both_rules_and_the_callers_verdict() -> None:
+    from theourgia.api.routers.v1.astro import astro_moon_course
+
+    got = await astro_moon_course(None, None, when=datetime(2026, 8, 22, 12, 0, tzinfo=UTC))
+    assert got.rule == "thirtyDegrees"  # the ledger default for anonymous
+    assert got.void == got.void_thirty_degrees
+    # The subset property, restated at the endpoint: thirty-void ⇒ sign-exit void.
+    if got.void_thirty_degrees:
+        assert got.void_sign_exit
+    assert got.next_sign_ingress > got.instant
