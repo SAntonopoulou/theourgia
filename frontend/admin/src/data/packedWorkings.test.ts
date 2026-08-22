@@ -122,6 +122,7 @@ describe("adoptWorkingDrafts", () => {
       {
         name: "W",
         summary: "",
+        packTitle: "",
         stages: [],
         items: [{ title: "T", cadence: "everyFortnight", perDay: 1, script: "" }],
       },

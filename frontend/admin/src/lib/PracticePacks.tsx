@@ -33,9 +33,13 @@ export interface PracticePacksProps {
   kinds: readonly string[];
   /** Called after a successful install, so adopt lists can refresh. */
   onInstalled?: () => void;
+  /** Inside the library dialog: show only what is NOT yet installed, as a
+   *  plain strip (installed packs are already speaking through the
+   *  offerings themselves). Renders nothing when everything is in. */
+  installedCollapsed?: boolean;
 }
 
-export function PracticePacks({ kinds, onInstalled }: PracticePacksProps) {
+export function PracticePacks({ kinds, onInstalled, installedCollapsed }: PracticePacksProps) {
   const feed = useApiCall(() => fetchPackFeed());
   const installed = useApiCall((signal) => apiMethods.bundlesInstalled({ signal }));
   const [open, setOpen] = useState(false);
@@ -50,6 +54,75 @@ export function PracticePacks({ kinds, onInstalled }: PracticePacksProps) {
   const isInstalled = (pack: FeedPack): boolean =>
     justInstalled.has(pack.id) || installedSlugs.some((s) => slugMatches(s, pack.id));
   const toInstall = relevant.filter((p) => !isInstalled(p)).length;
+
+  // In the library dialog: a plain strip of what is not yet installed —
+  // nothing at all once everything relevant is in.
+  if (installedCollapsed) {
+    if (toInstall === 0 || installed.data === undefined) return null;
+    return (
+      <div
+        style={{
+          marginTop: 14,
+          padding: "12px 16px",
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-md, 10px)",
+          background: "var(--bg-2)",
+          display: "grid",
+          gap: 8,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-ui)",
+            fontSize: 10.5,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: "var(--ink-mute)",
+          }}
+        >
+          Packs not yet installed
+        </span>
+        {relevant
+          .filter((p) => !isInstalled(p))
+          .map((pack) => (
+            <div key={pack.id} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 13,
+                  color: "var(--ink)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {pack.title}
+              </span>
+              <button
+                type="button"
+                disabled={busyId !== null}
+                onClick={() => void install(pack)}
+                style={{
+                  border: "1px solid var(--accent)",
+                  borderRadius: 8,
+                  padding: "4px 12px",
+                  background: busyId === pack.id ? "var(--bg-2)" : "var(--accent-soft)",
+                  color: "var(--ink)",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 12,
+                  cursor: busyId !== null ? "default" : "pointer",
+                  flexShrink: 0,
+                }}
+              >
+                {busyId === pack.id ? "Installing…" : "Install"}
+              </button>
+            </div>
+          ))}
+      </div>
+    );
+  }
 
   async function install(pack: FeedPack): Promise<void> {
     if (inFlight.current) return;

@@ -21,6 +21,8 @@ export interface PackedSitting {
   /** A warning that travels with the form. Several breath techniques are not
    *  safe for everybody; a pack's caution must never be dropped on adopt. */
   caution: string;
+  /** The pack it came from — the library's source line and filter. */
+  packTitle: string;
 }
 
 function str(v: unknown): string {
@@ -35,7 +37,7 @@ function num(v: unknown, fallback: number): number {
   return fallback;
 }
 
-export function packedSittingsFromPayload(payload: unknown): PackedSitting[] {
+export function packedSittingsFromPayload(payload: unknown, packTitle = ""): PackedSitting[] {
   const items =
     payload && typeof payload === "object" && Array.isArray((payload as { items?: unknown }).items)
       ? ((payload as { items: unknown[] }).items ?? [])
@@ -52,6 +54,7 @@ export function packedSittingsFromPayload(payload: unknown): PackedSitting[] {
       kind: str(row.kind) || "sitting",
       minutes: num(row.minutes, 10),
       caution: str(row.caution),
+      packTitle,
     });
   }
   return out;
@@ -69,7 +72,7 @@ export async function fetchPackedSittings(
   const slugs = installed.bundles.map((b) => b.slug);
   const payloads = await installedPackPayloads(feed, slugs, "sitting-forms");
   const all = payloads
-    .flatMap((p) => packedSittingsFromPayload(p.payload))
+    .flatMap((p) => packedSittingsFromPayload(p.payload, p.pack.title))
     .filter((s) => s.kind === kind);
   const seen = new Set<string>();
   return all.filter((s) => {

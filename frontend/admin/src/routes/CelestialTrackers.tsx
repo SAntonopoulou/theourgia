@@ -99,22 +99,32 @@ export function CelestialTrackers({
         gap: 16,
       }}
     >
-      <div>
-        <SunArcDiagram
-          daylightFraction={sun.daylightFraction}
-          isDay={sun.isDay}
-          caption={sun.isDay ? "The sun is above the horizon." : "The sun is below the horizon."}
-        />
-        {solarOn ? <Streak label="Solar adorations" text={streakLine(solarStreak)} /> : null}
-      </div>
-      <div>
-        <MoonArcDiagram
-          aboveFraction={moon.aboveFraction}
-          isUp={moon.isUp}
-          caption={moon.isUp ? "The moon is above the horizon." : "The moon is below the horizon."}
-        />
-        {lunarOn ? <Streak label="Lunar adorations" text={streakLine(lunarStreak)} /> : null}
-      </div>
+      {/* Each arc belongs to its own practice: the lunar page (or a
+          switched-off solar discipline) must not show the sun's course,
+          and the other way round — the flags gate the arc, not only the
+          streak line beneath it. */}
+      {solarOn ? (
+        <div>
+          <SunArcDiagram
+            daylightFraction={sun.daylightFraction}
+            isDay={sun.isDay}
+            caption={sun.isDay ? "The sun is above the horizon." : "The sun is below the horizon."}
+          />
+          <Streak label="Solar adorations" text={streakLine(solarStreak)} />
+        </div>
+      ) : null}
+      {lunarOn ? (
+        <div>
+          <MoonArcDiagram
+            aboveFraction={moon.aboveFraction}
+            isUp={moon.isUp}
+            caption={
+              moon.isUp ? "The moon is above the horizon." : "The moon is below the horizon."
+            }
+          />
+          <Streak label="Lunar adorations" text={streakLine(lunarStreak)} />
+        </div>
+      ) : null}
     </section>
   );
 }

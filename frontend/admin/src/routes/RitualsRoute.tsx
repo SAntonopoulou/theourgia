@@ -20,7 +20,7 @@ import {
   ritesFromEntries,
   useTopbar,
 } from "@theourgia/shared";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   amendObservance,
@@ -28,9 +28,14 @@ import {
   keepObservance,
   writeRitual,
 } from "../data/keepObservance.js";
-import { type PackedRite, adoptRite, usePackedRites } from "../data/packedRites.js";
+import {
+  type PackedRite,
+  adoptRite,
+  flattenRiteScript,
+  usePackedRites,
+} from "../data/packedRites.js";
 import { useMyLocation } from "../data/useLocation.js";
-import { PracticePacks } from "../lib/PracticePacks.js";
+import { AdoptLibrary, type AdoptOffering } from "../lib/AdoptLibrary.js";
 import { apiGet } from "../lib/api.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
 
@@ -91,30 +96,25 @@ export function RitualsRoute() {
     };
   }, []);
 
-  // Rites offered by installed packs, adopted into owned rituals — the
-  // phone's model: install a pack in Settings, adopt on the practice page.
+  // The library: what installed rite packs offer, browsed and adopted in a
+  // dialog — the page itself stays the practitioner's own rites.
   const packedRites = usePackedRites();
-  const adoptInFlight = useRef(false);
-  const [adoptBusy, setAdoptBusy] = useState(false);
-  const adoptPackedRite = async (rite: PackedRite): Promise<void> => {
-    if (adoptInFlight.current) return;
-    adoptInFlight.current = true;
-    setAdoptBusy(true);
-    try {
-      await adoptRite(rite);
-      await refresh();
-      Toast.push({ tone: "success", title: `Adopted "${rite.name}"` });
-    } catch (e) {
-      Toast.push({
-        tone: "warning",
-        title: "That didn't adopt",
-        body: e instanceof Error ? e.message : "Check your connection and try again.",
-      });
-    } finally {
-      adoptInFlight.current = false;
-      setAdoptBusy(false);
-    }
-  };
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const heldNames = new Set((rites ?? []).map((r) => r.name.trim().toLowerCase()));
+  const packedByKey = new Map<string, PackedRite>();
+  const offerings: AdoptOffering[] = (packedRites.data ?? []).map((rite, i) => {
+    const key = `${rite.name}-${i}`;
+    packedByKey.set(key, rite);
+    return {
+      key,
+      name: rite.name,
+      summary: rite.summary,
+      badges: rite.steps.length > 0 ? [`${rite.steps.length} steps`] : [],
+      packTitle: rite.packTitle || undefined,
+      held: heldNames.has(rite.name.trim().toLowerCase()),
+      sections: [{ title: "The rite, as written", body: flattenRiteScript(rite) }],
+    };
+  });
 
   const perform = async (rite: Rite): Promise<void> => {
     setBusy(true);
@@ -219,20 +219,67 @@ export function RitualsRoute() {
         />
       ) : (
         <>
-          <p
+          {/* One composed head: what this page is, and the two ways in —
+              write a rite, or open the library of what your packs offer. */}
+          <div
             style={{
-              margin: "0 0 20px",
-              fontFamily: "var(--font-ui)",
-              fontSize: 14,
-              color: "var(--ink-soft)",
-              lineHeight: 1.5,
-              maxWidth: 560,
+              display: "flex",
+              alignItems: "flex-end",
+              justifyContent: "space-between",
+              gap: 16,
+              flexWrap: "wrap",
+              marginBottom: 22,
             }}
           >
-            Write a rite as one field — <code>(instructions)</code> for what the body does,{" "}
-            <code>#</code> for a section, <code>*a name*</code> to vibrate — perform it to keep it,
-            and it crosses to the phone.
-          </p>
+            <p
+              style={{
+                margin: 0,
+                fontFamily: "var(--font-ui)",
+                fontSize: 13.5,
+                color: "var(--ink-soft)",
+                lineHeight: 1.55,
+                maxWidth: 480,
+              }}
+            >
+              Write a rite as one field — <code>(instructions)</code> for what the body does,{" "}
+              <code>#</code> for a section, <code>*a name*</code> to vibrate — perform it to keep
+              it, and it crosses to the phone.
+            </p>
+            <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => setLibraryOpen(true)}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "var(--r-md, 10px)",
+                  border: "1px solid var(--line)",
+                  background: "var(--bg-2)",
+                  color: "var(--ink-soft)",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                The library{offerings.length > 0 ? ` · ${offerings.length}` : ""}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditing({ rite: null })}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "var(--r-md, 10px)",
+                  border: "1px solid var(--accent)",
+                  background: "var(--accent-soft)",
+                  color: "var(--ink)",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                New rite
+              </button>
+            </div>
+          </div>
 
           {error ? (
             <p style={{ fontFamily: "var(--font-ui)", fontSize: 13.5, color: "var(--danger)" }}>
@@ -243,108 +290,29 @@ export function RitualsRoute() {
           ) : (
             <RitesLibrary
               rites={rites}
+              emptyMessage="No rites of your own yet. Open the library to adopt one from your installed packs, or write your own."
               onPerform={(r) => void perform(r)}
               onEdit={(r) => setEditing({ rite: r })}
-              onNew={() => setEditing({ rite: null })}
             />
           )}
 
-          {/* The rite packs themselves, installable here — the phone's
-              in-context packs sheet, so nobody leaves the rite to go find
-              the rite's pack. */}
-          <PracticePacks kinds={["rite"]} onInstalled={() => void packedRites.refetch()} />
-
-          {/* Rites on offer from installed packs — already-adopted ones
-              (same name, same words) stay listed; adopting twice simply
-              makes a second copy of one's own, as on the phone. */}
-          {(packedRites.data ?? []).length > 0 ? (
-            <div
-              style={{
-                marginTop: 26,
-                border: "1px solid var(--line)",
-                borderRadius: "var(--r-lg, 14px)",
-                padding: 16,
-                background: "var(--bg-2)",
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: "var(--font-ui)",
-                  fontSize: 11,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                  color: "var(--ink-mute)",
-                  marginBottom: 10,
-                }}
-              >
-                From installed packs
-              </div>
-              <div style={{ display: "grid", gap: 8 }}>
-                {(packedRites.data ?? []).map((rite, i) => (
-                  <div
-                    key={`${rite.name}-${i}`}
-                    style={{ display: "flex", alignItems: "center", gap: 12 }}
-                  >
-                    <span
-                      style={{
-                        flex: 1,
-                        minWidth: 0,
-                        fontFamily: "var(--font-ui)",
-                        fontSize: 14,
-                        color: "var(--ink)",
-                      }}
-                    >
-                      {rite.name}
-                      {rite.summary.length > 0 ? (
-                        <span
-                          style={{
-                            display: "block",
-                            color: "var(--ink-mute)",
-                            fontSize: 12.5,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {rite.summary}
-                        </span>
-                      ) : null}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={adoptBusy}
-                      onClick={() => void adoptPackedRite(rite)}
-                      style={{
-                        border: "1px solid var(--line)",
-                        borderRadius: 8,
-                        padding: "5px 12px",
-                        background: "transparent",
-                        color: "var(--ink-soft)",
-                        fontFamily: "var(--font-ui)",
-                        fontSize: 12.5,
-                        cursor: adoptBusy ? "default" : "pointer",
-                        flexShrink: 0,
-                      }}
-                    >
-                      Adopt
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <p
-                style={{
-                  margin: "10px 0 0",
-                  fontFamily: "var(--font-ui)",
-                  fontSize: 12,
-                  color: "var(--ink-mute)",
-                  lineHeight: 1.5,
-                }}
-              >
-                Adopting copies the rite into one of your own to edit and perform — a pack is a
-                source, never a link, and nothing is scheduled on your behalf.
-              </p>
-            </div>
-          ) : null}
+          <AdoptLibrary
+            open={libraryOpen}
+            onClose={() => setLibraryOpen(false)}
+            title="Rites"
+            intro="What your installed packs offer this practice. Adopting copies a rite into one of your own to edit and perform — a pack is a source, never a link, and nothing is scheduled on your behalf."
+            kinds={["rite"]}
+            offerings={offerings}
+            emptyText="None of your installed packs carries rites yet. Install one above and its rites appear here."
+            onAdopt={async (o) => {
+              const rite = packedByKey.get(o.key);
+              if (rite) {
+                await adoptRite(rite);
+                await refresh();
+              }
+            }}
+            onInstalled={() => void packedRites.refetch()}
+          />
         </>
       )}
 

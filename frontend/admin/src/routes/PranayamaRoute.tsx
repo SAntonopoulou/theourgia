@@ -25,7 +25,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { amendObservance, keepObservance } from "../data/keepObservance.js";
 import { type PackedSitting, adoptSitting, usePackedSittings } from "../data/packedSittings.js";
 import { useMyLocation } from "../data/useLocation.js";
-import { PracticePacks } from "../lib/PracticePacks.js";
+import { AdoptLibrary, type AdoptOffering } from "../lib/AdoptLibrary.js";
 import { apiGet } from "../lib/api.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
 
@@ -104,29 +104,25 @@ export function PranayamaRoute() {
     void loadForms();
   }, [loadForms]);
 
-  // Breath forms offered by installed packs, adopted into owned forms.
+  // The library: breath forms on offer from installed packs, browsed and
+  // adopted in a dialog. The page itself stays the pacer and your own forms.
   const packedBreaths = usePackedSittings("breath");
-  const adoptInFlight = useRef(false);
-  const [adoptBusy, setAdoptBusy] = useState(false);
-  const adoptPackedBreath = async (form: PackedSitting): Promise<void> => {
-    if (adoptInFlight.current) return;
-    adoptInFlight.current = true;
-    setAdoptBusy(true);
-    try {
-      await adoptSitting(form);
-      await loadForms();
-      Toast.push({ tone: "success", title: `Adopted "${form.name}"` });
-    } catch (e) {
-      Toast.push({
-        tone: "warning",
-        title: "That didn't adopt",
-        body: e instanceof Error ? e.message : "Check your connection and try again.",
-      });
-    } finally {
-      adoptInFlight.current = false;
-      setAdoptBusy(false);
-    }
-  };
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const heldFormNames = new Set(forms.map((f) => f.name.trim().toLowerCase()));
+  const packedByKey = new Map<string, PackedSitting>();
+  const breathOfferings: AdoptOffering[] = (packedBreaths.data ?? []).map((s, i) => {
+    const key = `${s.name}-${i}`;
+    packedByKey.set(key, s);
+    return {
+      key,
+      name: s.name,
+      summary: s.detail,
+      badges: [`${s.minutes} min`],
+      caution: s.caution || undefined,
+      packTitle: s.packTitle || undefined,
+      held: heldFormNames.has(s.name.trim().toLowerCase()),
+    };
+  });
 
   /** Take a form up: its length becomes the round count at the current ratio. */
   const useForm = (form: MeditationPlanSummary): void => {
@@ -468,29 +464,67 @@ export function PranayamaRoute() {
       {/* Your breath forms — adopted from packs, synced with the phone. The
           one in use lends its guidance, its name to the keeping, and its
           length to the round count. */}
-      {forms.length > 0 ? (
+      <div
+        style={{
+          marginTop: 30,
+          textAlign: "left",
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-lg, 14px)",
+          padding: 16,
+          background: "var(--bg-2)",
+        }}
+      >
         <div
           style={{
-            marginTop: 30,
-            textAlign: "left",
-            border: "1px solid var(--line)",
-            borderRadius: "var(--r-lg, 14px)",
-            padding: 16,
-            background: "var(--bg-2)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+            marginBottom: 10,
           }}
         >
-          <div
+          <span
             style={{
               fontFamily: "var(--font-ui)",
               fontSize: 11,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
               color: "var(--ink-mute)",
-              marginBottom: 10,
             }}
           >
             Your breath forms
-          </div>
+          </span>
+          <button
+            type="button"
+            onClick={() => setLibraryOpen(true)}
+            style={{
+              border: "1px solid var(--line)",
+              borderRadius: 999,
+              padding: "4px 12px",
+              background: "transparent",
+              color: "var(--ink-soft)",
+              fontFamily: "var(--font-ui)",
+              fontSize: 12,
+              cursor: "pointer",
+            }}
+          >
+            The library{breathOfferings.length > 0 ? ` · ${breathOfferings.length}` : ""}
+          </button>
+        </div>
+        {forms.length === 0 ? (
+          <p
+            style={{
+              margin: 0,
+              fontFamily: "var(--font-serif)",
+              fontSize: 13.5,
+              color: "var(--ink-mute)",
+              lineHeight: 1.6,
+            }}
+          >
+            No forms of your own yet. The library holds what your installed packs offer — a form in
+            use lends its guidance, its name to the keeping, and its length to the rounds.
+          </p>
+        ) : (
           <div style={{ display: "grid", gap: 8 }}>
             {forms.map((form) => {
               const inUse = form.id === formId;
@@ -547,101 +581,26 @@ export function PranayamaRoute() {
               );
             })}
           </div>
-        </div>
-      ) : null}
-
-      {/* The sitting packs themselves, installable in context — breath forms
-          arrive in the same packs as sittings. */}
-      <div style={{ textAlign: "left" }}>
-        <PracticePacks kinds={["sitting"]} onInstalled={() => void packedBreaths.refetch()} />
+        )}
       </div>
 
-      {/* Breath forms on offer from installed packs. */}
-      {(packedBreaths.data ?? []).length > 0 ? (
-        <div
-          style={{
-            marginTop: 16,
-            textAlign: "left",
-            border: "1px solid var(--line)",
-            borderRadius: "var(--r-lg, 14px)",
-            padding: 16,
-            background: "var(--bg-2)",
-          }}
-        >
-          <div
-            style={{
-              fontFamily: "var(--font-ui)",
-              fontSize: 11,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: "var(--ink-mute)",
-              marginBottom: 10,
-            }}
-          >
-            From installed packs
-          </div>
-          <div style={{ display: "grid", gap: 8 }}>
-            {(packedBreaths.data ?? []).map((form, i) => (
-              <div
-                key={`${form.name}-${i}`}
-                style={{ display: "flex", alignItems: "center", gap: 12 }}
-              >
-                <span
-                  style={{
-                    flex: 1,
-                    fontFamily: "var(--font-ui)",
-                    fontSize: 14,
-                    color: "var(--ink)",
-                  }}
-                >
-                  {form.name}
-                  <span style={{ color: "var(--ink-mute)", fontSize: 12.5 }}>
-                    {" "}
-                    · {form.minutes} min
-                  </span>
-                  {form.caution.length > 0 ? (
-                    <span
-                      title={form.caution}
-                      style={{ color: "var(--warning, var(--accent))", fontSize: 12.5 }}
-                    >
-                      {" "}
-                      · take care
-                    </span>
-                  ) : null}
-                </span>
-                <button
-                  type="button"
-                  disabled={adoptBusy}
-                  onClick={() => void adoptPackedBreath(form)}
-                  style={{
-                    border: "1px solid var(--line)",
-                    borderRadius: 8,
-                    padding: "5px 12px",
-                    background: "transparent",
-                    color: "var(--ink-soft)",
-                    fontFamily: "var(--font-ui)",
-                    fontSize: 12.5,
-                    cursor: adoptBusy ? "default" : "pointer",
-                  }}
-                >
-                  Adopt
-                </button>
-              </div>
-            ))}
-          </div>
-          <p
-            style={{
-              margin: "10px 0 0",
-              fontFamily: "var(--font-ui)",
-              fontSize: 12,
-              color: "var(--ink-mute)",
-              lineHeight: 1.5,
-            }}
-          >
-            Adopting copies it into a breath form of your own — a pack is a source, never a link.
-          </p>
-        </div>
-      ) : null}
+      <AdoptLibrary
+        open={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        title="Breath forms"
+        intro="The breath forms your installed packs offer. Adopting copies one into a form of your own — its caution travels with it, and nothing is dropped."
+        kinds={["sitting"]}
+        offerings={breathOfferings}
+        emptyText="None of your installed packs carries breath forms yet. Install one above and its forms appear here."
+        onAdopt={async (o) => {
+          const s = packedByKey.get(o.key);
+          if (s) {
+            await adoptSitting(s);
+            await loadForms();
+          }
+        }}
+        onInstalled={() => void packedBreaths.refetch()}
+      />
 
       {sheet ? (
         <KeepingSheet

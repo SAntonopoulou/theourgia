@@ -61,7 +61,9 @@ describe("parsePackFeed", () => {
     if (!cards) return;
     expect(cards.id).toBe("theourgia.cards.general");
     expect(cards.version).toBe(1);
-    expect(cards.title).toBe("Cards & spreads 1");
+    // The feed bakes the version into <title>; the parser strips it — the
+    // version rides in its own field and surfaces print it themselves.
+    expect(cards.title).toBe("Cards & spreads");
     expect(cards.description).toContain("seventy-eight &");
     expect(cards.mbfUrl).toBe("https://theourgia.com/packs/theourgia-cards-general-v1.mbf");
     expect(cards.bytes).toBe(2869);

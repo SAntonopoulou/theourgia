@@ -74,6 +74,7 @@ describe("flattenRiteScript", () => {
       name: "A mass",
       summary: "",
       script: "",
+      packTitle: "",
       roles: [
         { id: "priest", name: "Priest", detail: "" },
         { id: "deacon", name: "Deacon", detail: "at the door" },

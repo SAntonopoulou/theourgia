@@ -58,10 +58,16 @@ export function parsePackFeed(xml: string): FeedPack[] {
     const attrs = enclosure?.[1] ?? "";
     const url = attrs.match(/url="([^"]+)"/)?.[1] ?? "";
     if (!id || !url) continue;
+    const version = Number(field(block, "pack:version")) || 1;
+    // The feed bakes the version into <title> ("The Keybearers' Rites 3");
+    // surfaces show the version beside the title, so the bare name reads
+    // better everywhere. The version rides in its own field regardless.
+    const rawTitle = field(block, "title");
+    const title = rawTitle.replace(new RegExp(`\\s+${version}$`), "");
     packs.push({
       id,
-      version: Number(field(block, "pack:version")) || 1,
-      title: field(block, "title"),
+      version,
+      title,
       description: field(block, "description"),
       mbfUrl: url,
       bytes: Number(attrs.match(/length="(\d+)"/)?.[1] ?? 0),

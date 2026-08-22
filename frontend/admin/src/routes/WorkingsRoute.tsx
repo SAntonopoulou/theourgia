@@ -22,7 +22,7 @@ import {
   useTopbar,
   workingsFromEntries,
 } from "@theourgia/shared";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   amendObservance,
@@ -30,9 +30,14 @@ import {
   keepObservance,
   writeWorking,
 } from "../data/keepObservance.js";
-import { type PackedWorking, adoptWorking, usePackedWorkings } from "../data/packedWorkings.js";
+import {
+  type PackedWorking,
+  type PackedWorkingItem,
+  adoptWorking,
+  usePackedWorkings,
+} from "../data/packedWorkings.js";
 import { useMyLocation } from "../data/useLocation.js";
-import { PracticePacks } from "../lib/PracticePacks.js";
+import { AdoptLibrary, type AdoptOffering } from "../lib/AdoptLibrary.js";
 import { apiGet } from "../lib/api.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
 
@@ -128,30 +133,32 @@ export function WorkingsRoute() {
     };
   }, []);
 
-  // Workings offered by installed packs, adopted whole — phases, items,
-  // scripts and per-phase cadences. Nothing is begun on adopt.
+  // The library: whole operations on offer from installed packs, browsed and
+  // adopted in a dialog. The page itself stays the operations you are running.
   const packedWorkings = usePackedWorkings();
-  const adoptInFlight = useRef(false);
-  const [adoptBusy, setAdoptBusy] = useState(false);
-  const adoptPackedWorking = async (w: PackedWorking): Promise<void> => {
-    if (adoptInFlight.current) return;
-    adoptInFlight.current = true;
-    setAdoptBusy(true);
-    try {
-      await adoptWorking(w);
-      await refresh();
-      Toast.push({ tone: "success", title: `Adopted "${w.name}"` });
-    } catch (e) {
-      Toast.push({
-        tone: "warning",
-        title: "That didn't adopt",
-        body: e instanceof Error ? e.message : "Check your connection and try again.",
-      });
-    } finally {
-      adoptInFlight.current = false;
-      setAdoptBusy(false);
-    }
-  };
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const heldNames = new Set((workings ?? []).map((w) => w.name.trim().toLowerCase()));
+  const packedByKey = new Map<string, PackedWorking>();
+  const offerings: AdoptOffering[] = (packedWorkings.data ?? []).map((w, i) => {
+    const key = `${w.name}-${i}`;
+    packedByKey.set(key, w);
+    return {
+      key,
+      name: w.name,
+      summary: w.summary,
+      badges: [
+        ...(w.stages.length > 0
+          ? [`${w.stages.length} ${w.stages.length === 1 ? "phase" : "phases"}`]
+          : []),
+        ...(w.items.length > 0
+          ? [`${w.items.length} ${w.items.length === 1 ? "practice" : "practices"} throughout`]
+          : []),
+      ],
+      packTitle: w.packTitle || undefined,
+      held: heldNames.has(w.name.trim().toLowerCase()),
+      sections: workingSections(w),
+    };
+  });
 
   const save = async (draft: WorkingDraft, removed: WorkingDraft["items"]): Promise<void> => {
     const existing = editing?.working;
@@ -295,20 +302,67 @@ export function WorkingsRoute() {
         />
       ) : (
         <>
-          <p
+          {/* One composed head: what this page is, and the two ways in —
+              begin an operation, or open the library of what packs offer. */}
+          <div
             style={{
-              margin: "0 0 20px",
-              fontFamily: "var(--font-ui)",
-              fontSize: 14,
-              color: "var(--ink-soft)",
-              lineHeight: 1.5,
-              maxWidth: 560,
+              display: "flex",
+              alignItems: "flex-end",
+              justifyContent: "space-between",
+              gap: 16,
+              flexWrap: "wrap",
+              marginBottom: 22,
             }}
           >
-            A working is a rite kept over time — begin one here with the items a day asks of it, or
-            mark what a synced working asks as you perform it. Phase criteria stay the
-            practitioner’s to declare on the phone.
-          </p>
+            <p
+              style={{
+                margin: 0,
+                fontFamily: "var(--font-ui)",
+                fontSize: 13.5,
+                color: "var(--ink-soft)",
+                lineHeight: 1.55,
+                maxWidth: 480,
+              }}
+            >
+              A working is a rite kept over time — begin one with the items a day asks of it, or
+              mark what a running operation asks as you perform it. Phase criteria stay yours to
+              declare.
+            </p>
+            <div style={{ display: "flex", gap: 10, flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={() => setLibraryOpen(true)}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "var(--r-md, 10px)",
+                  border: "1px solid var(--line)",
+                  background: "var(--bg-2)",
+                  color: "var(--ink-soft)",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                The library{offerings.length > 0 ? ` · ${offerings.length}` : ""}
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditing({ working: null })}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: "var(--r-md, 10px)",
+                  border: "1px solid var(--accent)",
+                  background: "var(--accent-soft)",
+                  color: "var(--ink)",
+                  fontFamily: "var(--font-ui)",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                Begin a working
+              </button>
+            </div>
+          </div>
 
           {error ? (
             <p style={{ fontFamily: "var(--font-ui)", fontSize: 13.5, color: "var(--danger)" }}>
@@ -319,114 +373,30 @@ export function WorkingsRoute() {
           ) : (
             <WorkingsLibrary
               workings={workings}
+              emptyMessage="No operations yet. Open the library to adopt one whole from your installed packs — phases and all — or begin your own."
               onPerform={(i, w) => void perform(i, w)}
               performedKeys={performedKeys}
-              onNew={() => setEditing({ working: null })}
               onEdit={(w) => setEditing({ working: w })}
             />
           )}
 
-          {/* The working packs themselves, installable in context. */}
-          <PracticePacks kinds={["working"]} onInstalled={() => void packedWorkings.refetch()} />
-
-          {/* Operations on offer from installed packs — adopted whole:
-              phases, items, scripts, per-phase cadences. Nothing begins
-              until the practitioner starts it. */}
-          {(packedWorkings.data ?? []).length > 0 ? (
-            <div
-              style={{
-                marginTop: 26,
-                border: "1px solid var(--line)",
-                borderRadius: "var(--r-lg, 14px)",
-                padding: 16,
-                background: "var(--bg-2)",
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: "var(--font-ui)",
-                  fontSize: 11,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                  color: "var(--ink-mute)",
-                  marginBottom: 10,
-                }}
-              >
-                From installed packs
-              </div>
-              <div style={{ display: "grid", gap: 8 }}>
-                {(packedWorkings.data ?? []).map((w, i) => (
-                  <div
-                    key={`${w.name}-${i}`}
-                    style={{ display: "flex", alignItems: "center", gap: 12 }}
-                  >
-                    <span
-                      style={{
-                        flex: 1,
-                        minWidth: 0,
-                        fontFamily: "var(--font-ui)",
-                        fontSize: 14,
-                        color: "var(--ink)",
-                      }}
-                    >
-                      {w.name}
-                      <span style={{ color: "var(--ink-mute)", fontSize: 12.5 }}>
-                        {" "}
-                        ·{" "}
-                        {w.stages.length > 0
-                          ? `${w.stages.length} ${w.stages.length === 1 ? "phase" : "phases"}`
-                          : `${w.items.length} ${w.items.length === 1 ? "item" : "items"}`}
-                      </span>
-                      {w.summary.length > 0 ? (
-                        <span
-                          style={{
-                            display: "block",
-                            color: "var(--ink-mute)",
-                            fontSize: 12.5,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {w.summary}
-                        </span>
-                      ) : null}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={adoptBusy}
-                      onClick={() => void adoptPackedWorking(w)}
-                      style={{
-                        border: "1px solid var(--line)",
-                        borderRadius: 8,
-                        padding: "5px 12px",
-                        background: "transparent",
-                        color: "var(--ink-soft)",
-                        fontFamily: "var(--font-ui)",
-                        fontSize: 12.5,
-                        cursor: adoptBusy ? "default" : "pointer",
-                        flexShrink: 0,
-                      }}
-                    >
-                      Adopt
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <p
-                style={{
-                  margin: "10px 0 0",
-                  fontFamily: "var(--font-ui)",
-                  fontSize: 12,
-                  color: "var(--ink-mute)",
-                  lineHeight: 1.5,
-                }}
-              >
-                Adopting copies the whole operation — phases and all — into one of your own. Writing
-                it out and starting it are different acts; nothing begins until you start it.
-              </p>
-            </div>
-          ) : null}
+          <AdoptLibrary
+            open={libraryOpen}
+            onClose={() => setLibraryOpen(false)}
+            title="Workings"
+            intro="Whole operations from your installed packs — phases, items, scripts and each phase's say over the daily practices. Adopting copies the operation into one of your own; writing it out and starting it are different acts, and nothing begins until you start it."
+            kinds={["working"]}
+            offerings={offerings}
+            emptyText="None of your installed packs carries workings yet. Install one above and its operations appear here."
+            onAdopt={async (o) => {
+              const w = packedByKey.get(o.key);
+              if (w) {
+                await adoptWorking(w);
+                await refresh();
+              }
+            }}
+            onInstalled={() => void packedWorkings.refetch()}
+          />
         </>
       )}
 
@@ -441,4 +411,47 @@ export function WorkingsRoute() {
       ) : null}
     </section>
   );
+}
+
+function cadenceWord(cadence: string, perDay: number): string {
+  return cadence === "timesADay" ? `${perDay}\u00d7 a day` : cadence === "once" ? "once" : "daily";
+}
+
+function itemLines(items: readonly PackedWorkingItem[]): string {
+  return items
+    .map(
+      (it) =>
+        `\u2022 ${it.title} \u2014 ${cadenceWord(it.cadence, it.perDay)}${it.script ? `\n${it.script}` : ""}`,
+    )
+    .join("\n\n");
+}
+
+/** The detail pane of one packed working: the throughout practices, then each
+ *  phase with its length, its criterion and its own items \u2014 readable, so the
+ *  operation can be weighed whole before it is adopted. */
+function workingSections(w: PackedWorking): { title: string; body: string }[] {
+  const sections: { title: string; body: string }[] = [];
+  if (w.items.length > 0) {
+    sections.push({ title: "Throughout \u2014 first day to last", body: itemLines(w.items) });
+  }
+  w.stages.forEach((stage, i) => {
+    const lines: string[] = [];
+    if (stage.untilSky !== null) {
+      lines.push(
+        `Kept until the sky reaches it \u2014 ${stage.untilSky.count} ${stage.untilSky.kind}.`,
+      );
+    } else {
+      lines.push(stage.days === 1 ? "One day." : `${stage.days} days.`);
+    }
+    if (stage.opensAfter !== null) {
+      lines.push(`Opens ${stage.opensAfter.count} ${stage.opensAfter.kind} after the one before.`);
+    }
+    if (stage.criterion) lines.push(stage.criterion);
+    if (stage.items.length > 0) lines.push(itemLines(stage.items));
+    sections.push({
+      title: `${i + 1} \u00b7 ${stage.name}`,
+      body: lines.join("\n\n"),
+    });
+  });
+  return sections;
 }

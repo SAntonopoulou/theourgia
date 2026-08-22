@@ -20,7 +20,6 @@ import {
   useTopbar,
 } from "@theourgia/shared";
 import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
 
 import {
   ADORATION_SETS_KEY,
@@ -34,7 +33,7 @@ import {
   writeStationAdoration,
 } from "../data/adorationRecords.js";
 import { useMyLocation } from "../data/useLocation.js";
-import { PracticePacks } from "../lib/PracticePacks.js";
+import { AdoptLibrary, type AdoptOffering } from "../lib/AdoptLibrary.js";
 import { CelestialTrackers } from "./CelestialTrackers.js";
 import { TodayLunarRow, TodayRiteRow } from "./TodayPractice.js";
 
@@ -67,6 +66,20 @@ export function AdorationSetsRoute({
   const sets = all.filter((s) => s.body === body);
   const packed = usePackedAdorationSets();
   const offered = (packed.data ?? []).filter((s) => s.body === body);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const heldSetNames = new Set(sets.map((s) => s.name.trim().toLowerCase()));
+  const offerings: AdoptOffering[] = offered.map((p, i) => ({
+    key: `${p.name}-${i}`,
+    name: p.name,
+    summary: `The words for the ${body === "lunar" ? "moon's" : "sun's"} four stations, given whole — adopt to make them a set of your own, then activate it to put them on Today.`,
+    badges: [`${p.adorations.length} adoration${p.adorations.length === 1 ? "" : "s"}`],
+    held: heldSetNames.has(p.name.trim().toLowerCase()),
+    sections: p.adorations.map((a, j) => ({
+      title:
+        a.title || (a.stationKeys.length > 0 ? a.stationKeys.join(" · ") : `Adoration ${j + 1}`),
+      body: a.script,
+    })),
+  }));
   const location = useMyLocation({ enabled: true });
   const [busy, setBusy] = useState(false);
   // ⚠ A ref, not `busy`: `setBusy(true)` is async, so a second click (or a
@@ -156,118 +169,30 @@ export function AdorationSetsRoute({
         >
           Your sets
         </h2>
-        <Button
-          variant="quiet"
-          disabled={busy}
-          onClick={() =>
-            void guard(async () => {
-              await createAdorationSet(body, "Untitled set");
-            })
-          }
-        >
-          New set
-        </Button>
-      </div>
-
-      {/* The adoration packs themselves, installable in context. */}
-      <div style={{ marginBottom: 20, marginTop: -4 }}>
-        <PracticePacks kinds={["adoration-set"]} onInstalled={() => void packed.refetch()} />
-      </div>
-
-      <div
-        style={{
-          border: "1px solid var(--line)",
-          borderRadius: "var(--r-lg, 14px)",
-          padding: 16,
-          marginBottom: 20,
-          background: "var(--bg-2)",
-        }}
-      >
-        <div
-          style={{
-            fontFamily: "var(--font-ui)",
-            fontSize: 11,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            color: "var(--ink-mute)",
-            marginBottom: 10,
-          }}
-        >
-          From installed packs
-        </div>
-        {offered.length === 0 ? (
-          <p
-            style={{
-              margin: 0,
-              fontFamily: "var(--font-ui)",
-              fontSize: 13,
-              color: "var(--ink-mute)",
-              lineHeight: 1.5,
-            }}
+        <div style={{ display: "flex", gap: 10 }}>
+          <Button variant="quiet" onClick={() => setLibraryOpen(true)}>
+            The library{offerings.length > 0 ? ` · ${offerings.length}` : ""}
+          </Button>
+          <Button
+            variant="quiet"
+            disabled={busy}
+            onClick={() =>
+              void guard(async () => {
+                await createAdorationSet(body, "Untitled set");
+              })
+            }
           >
-            None of your installed packs offers {body} adoration sets yet.{" "}
-            <Link to="/packs" style={{ color: "var(--accent)" }}>
-              Browse &amp; install packs
-            </Link>{" "}
-            — the Keybearers’ Adorations carries a set — then adopt it here.
-          </p>
-        ) : (
-          <>
-            <div style={{ display: "grid", gap: 8 }}>
-              {offered.map((p, i) => (
-                <div
-                  key={`${p.name}-${i}`}
-                  style={{ display: "flex", alignItems: "center", gap: 12 }}
-                >
-                  <span
-                    style={{
-                      flex: 1,
-                      fontFamily: "var(--font-ui)",
-                      fontSize: 14,
-                      color: "var(--ink)",
-                    }}
-                  >
-                    {p.name}
-                    <span style={{ color: "var(--ink-mute)", fontSize: 12.5 }}>
-                      {" "}
-                      · {p.adorations.length} station{p.adorations.length === 1 ? "" : "s"}
-                    </span>
-                  </span>
-                  <Button
-                    variant="quiet"
-                    disabled={busy}
-                    onClick={() =>
-                      void guard(async () => {
-                        await adoptAdorationSet({ body, name: p.name, adorations: p.adorations });
-                      })
-                    }
-                  >
-                    Adopt
-                  </Button>
-                </div>
-              ))}
-            </div>
-            <p
-              style={{
-                margin: "10px 0 0",
-                fontFamily: "var(--font-ui)",
-                fontSize: 12,
-                color: "var(--ink-mute)",
-                lineHeight: 1.5,
-              }}
-            >
-              Adopting copies the words into a set of your own to edit and activate — a pack is a
-              source, never a link.
-            </p>
-          </>
-        )}
+            New set
+          </Button>
+        </div>
       </div>
 
       {query.isPending ? (
         <p style={{ fontFamily: "var(--font-ui)", color: "var(--ink-mute)" }}>Loading…</p>
       ) : sets.length === 0 ? (
         <p style={{ fontFamily: "var(--font-ui)", fontSize: 13.5, color: "var(--ink-mute)" }}>
-          No sets yet. “New set” starts one — then give each station its words and activate it.
+          No sets yet. Open the library to adopt one from your installed packs, or start your own —
+          then give each station its words and activate it.
         </p>
       ) : (
         <div style={{ display: "grid", gap: 20 }}>
@@ -363,6 +288,24 @@ export function AdorationSetsRoute({
           ))}
         </div>
       )}
+
+      <AdoptLibrary
+        open={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        title={body === "lunar" ? "Lunar adorations" : "Solar adorations"}
+        intro="The adoration sets your installed packs offer this body. Adopting copies the words into a set of your own to edit and activate — a pack is a source, never a link, and nothing goes active until you make it so."
+        kinds={["adoration-set"]}
+        offerings={offerings}
+        emptyText="None of your installed packs offers sets for this body yet. Install one above and its sets appear here."
+        onAdopt={async (o) => {
+          const p = offered.find((x, i) => `${x.name}-${i}` === o.key);
+          if (p) {
+            await adoptAdorationSet({ body, name: p.name, adorations: p.adorations });
+            await refresh();
+          }
+        }}
+        onInstalled={() => void packed.refetch()}
+      />
     </section>
   );
 }

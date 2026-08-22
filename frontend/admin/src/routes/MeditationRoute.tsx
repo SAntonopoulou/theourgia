@@ -27,7 +27,7 @@ import {
 } from "../data/keepObservance.js";
 import { type PackedSitting, adoptSitting, usePackedSittings } from "../data/packedSittings.js";
 import { useMyLocation } from "../data/useLocation.js";
-import { PracticePacks } from "../lib/PracticePacks.js";
+import { AdoptLibrary, type AdoptOffering } from "../lib/AdoptLibrary.js";
 import { apiGet } from "../lib/api.js";
 import { MOCK_LOCATION } from "../mocks/today.js";
 
@@ -120,28 +120,25 @@ export function MeditationRoute() {
     void loadPlans();
   }, [loadPlans]);
 
-  // Sittings offered by installed packs, and adopting one into an owned plan.
+  // The library: sittings on offer from installed packs, browsed and adopted
+  // in a dialog. The page itself stays the practitioner's saved sits.
   const packedSittings = usePackedSittings("sitting");
-  const adoptInFlight = useRef(false);
-  const adoptPackedSitting = async (sitting: PackedSitting): Promise<void> => {
-    if (adoptInFlight.current) return;
-    adoptInFlight.current = true;
-    setPlanBusy(true);
-    try {
-      await adoptSitting(sitting);
-      await loadPlans();
-      Toast.push({ tone: "success", title: `Adopted "${sitting.name}"` });
-    } catch (e) {
-      Toast.push({
-        tone: "warning",
-        title: "That didn't adopt",
-        body: e instanceof Error ? e.message : "Check your connection and try again.",
-      });
-    } finally {
-      adoptInFlight.current = false;
-      setPlanBusy(false);
-    }
-  };
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const heldNames = new Set(plans.map((p) => p.name.trim().toLowerCase()));
+  const packedByKey = new Map<string, PackedSitting>();
+  const sittingOfferings: AdoptOffering[] = (packedSittings.data ?? []).map((s, i) => {
+    const key = `${s.name}-${i}`;
+    packedByKey.set(key, s);
+    return {
+      key,
+      name: s.name,
+      summary: s.detail,
+      badges: [`${s.minutes} min`],
+      caution: s.caution || undefined,
+      packTitle: s.packTitle || undefined,
+      held: heldNames.has(s.name.trim().toLowerCase()),
+    };
+  });
 
   const keepSitting = async (): Promise<void> => {
     setKeepBusy(true);
@@ -394,92 +391,41 @@ export function MeditationRoute() {
                 >
                   ＋ New sit
                 </button>
-              </div>
-            </div>
-            <div style={{ maxWidth: 460, margin: "0 auto 24px" }}>
-              {/* The sitting packs themselves, installable in context. */}
-              <PracticePacks
-                kinds={["sitting"]}
-                onInstalled={() => void packedSittings.refetch()}
-              />
-            </div>
-            {(packedSittings.data ?? []).length > 0 ? (
-              <div
-                style={{
-                  maxWidth: 460,
-                  margin: "0 auto 24px",
-                  border: "1px solid var(--line)",
-                  borderRadius: "var(--r-lg, 14px)",
-                  padding: 16,
-                  background: "var(--bg-2)",
-                }}
-              >
-                <div
+                <button
+                  type="button"
+                  onClick={() => setLibraryOpen(true)}
                   style={{
+                    border: "1px dashed var(--line)",
+                    borderRadius: 999,
+                    padding: "6px 12px",
+                    background: "transparent",
+                    color: "var(--ink-soft)",
                     fontFamily: "var(--font-ui)",
-                    fontSize: 11,
-                    letterSpacing: "0.06em",
-                    textTransform: "uppercase",
-                    color: "var(--ink-mute)",
-                    marginBottom: 10,
+                    fontSize: 12.5,
+                    cursor: "pointer",
                   }}
                 >
-                  From installed packs
-                </div>
-                <div style={{ display: "grid", gap: 8 }}>
-                  {(packedSittings.data ?? []).map((s, i) => (
-                    <div
-                      key={`${s.name}-${i}`}
-                      style={{ display: "flex", alignItems: "center", gap: 12 }}
-                    >
-                      <span
-                        style={{
-                          flex: 1,
-                          fontFamily: "var(--font-ui)",
-                          fontSize: 14,
-                          color: "var(--ink)",
-                        }}
-                      >
-                        {s.name}
-                        <span style={{ color: "var(--ink-mute)", fontSize: 12.5 }}>
-                          {" "}
-                          · {s.minutes} min
-                        </span>
-                      </span>
-                      <button
-                        type="button"
-                        disabled={planBusy}
-                        onClick={() => void adoptPackedSitting(s)}
-                        style={{
-                          border: "1px solid var(--line)",
-                          borderRadius: 8,
-                          padding: "5px 12px",
-                          background: "transparent",
-                          color: "var(--ink-soft)",
-                          fontFamily: "var(--font-ui)",
-                          fontSize: 12.5,
-                          cursor: planBusy ? "default" : "pointer",
-                        }}
-                      >
-                        Adopt
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <p
-                  style={{
-                    margin: "10px 0 0",
-                    fontFamily: "var(--font-ui)",
-                    fontSize: 12,
-                    color: "var(--ink-mute)",
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Adopting copies it into a sitting of your own to edit and use — a pack is a
-                  source, never a link.
-                </p>
+                  The library{sittingOfferings.length > 0 ? ` · ${sittingOfferings.length}` : ""}
+                </button>
               </div>
-            ) : null}
+            </div>
+            <AdoptLibrary
+              open={libraryOpen}
+              onClose={() => setLibraryOpen(false)}
+              title="Sittings"
+              intro="The sitting forms your installed packs offer. Adopting copies one into a sit of your own to edit and use — a pack is a source, never a link."
+              kinds={["sitting"]}
+              offerings={sittingOfferings}
+              emptyText="None of your installed packs carries sitting forms yet. Install one above and its forms appear here."
+              onAdopt={async (o) => {
+                const s = packedByKey.get(o.key);
+                if (s) {
+                  await adoptSitting(s);
+                  await loadPlans();
+                }
+              }}
+              onInstalled={() => void packedSittings.refetch()}
+            />
           </>
         )
       ) : null}

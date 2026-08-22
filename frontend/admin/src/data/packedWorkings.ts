@@ -29,14 +29,14 @@ interface PackedSpan {
   offsetDays: number;
 }
 
-interface PackedWorkingItem {
+export interface PackedWorkingItem {
   title: string;
   cadence: string;
   perDay: number;
   script: string;
 }
 
-interface PackedWorkingStage {
+export interface PackedWorkingStage {
   name: string;
   days: number;
   runs: PackedSpan | null;
@@ -60,6 +60,8 @@ export interface PackedWorking {
   stages: PackedWorkingStage[];
   /** Items of the whole undertaking — first day to last, whatever the phase. */
   items: PackedWorkingItem[];
+  /** The pack it came from — the library's source line and filter. */
+  packTitle: string;
 }
 
 function str(v: unknown): string {
@@ -108,7 +110,7 @@ function itemFrom(v: unknown): PackedWorkingItem | null {
   };
 }
 
-export function packedWorkingsFromPayload(payload: unknown): PackedWorking[] {
+export function packedWorkingsFromPayload(payload: unknown, packTitle = ""): PackedWorking[] {
   const items =
     payload && typeof payload === "object" && Array.isArray((payload as { items?: unknown }).items)
       ? ((payload as { items: unknown[] }).items ?? [])
@@ -129,6 +131,7 @@ export function packedWorkingsFromPayload(payload: unknown): PackedWorking[] {
     out.push({
       name,
       summary: str(row.summary),
+      packTitle,
       items: Array.isArray(row.items)
         ? (row.items as unknown[]).flatMap((it) => itemFrom(it) ?? [])
         : [],
@@ -176,7 +179,7 @@ export async function fetchPackedWorkings(): Promise<PackedWorking[]> {
   const [feed, installed] = await Promise.all([fetchPackFeed(), apiMethods.bundlesInstalled()]);
   const slugs = installed.bundles.map((b) => b.slug);
   const payloads = await installedPackPayloads(feed, slugs, "ritual-set");
-  const all = payloads.flatMap((p) => packedWorkingsFromPayload(p.payload));
+  const all = payloads.flatMap((p) => packedWorkingsFromPayload(p.payload, p.pack.title));
   const seen = new Set<string>();
   return all.filter((w) => {
     const key = `${w.name} ${w.stages.length} ${w.items.map((i) => i.title).join("|")}`;
