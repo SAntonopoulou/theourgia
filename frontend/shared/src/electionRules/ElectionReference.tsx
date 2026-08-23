@@ -1,10 +1,14 @@
 /**
- * ElectionReference — the web reference for the election rules.
+ * ElectionReference — the election rules, shown and chosen.
  *
- * Not an elector: the phone scrubs a chart through time to find the hours a
- * matter may be begun. Here the rules are shown as themselves — the sixteen
- * matters, each with its place and significators, and the five rulesets read
- * clause by clause, every clause with the reason the corpus gives it.
+ * Two halves, exported separately so the elections page can place them
+ * apart: `MattersChooser` renders the matters (and any ruleset no matter
+ * reads through) as the cards the practitioner CLICKS to choose what the
+ * election is for — the full card, place and significators and summary,
+ * is the picker, not a caption beside one. `RulesetsReference` is the
+ * reading: each ruleset clause by clause, every clause with the reason
+ * the corpus gives it. `ElectionReference` still composes both inert,
+ * for surfaces that only show.
  */
 
 import type { CSSProperties } from "react";
@@ -21,18 +25,29 @@ function titleCase(slug: string): string {
   return slug.charAt(0).toUpperCase() + slug.slice(1);
 }
 
-function MatterRow({ matter, rulesetName }: { matter: Matter; rulesetName: string }) {
-  return (
-    <li
-      style={{
-        listStyle: "none",
-        marginBottom: 12,
-        paddingBottom: 10,
-        borderBottom: "1px solid var(--line)",
-      }}
-    >
+function MatterRow({
+  matter,
+  rulesetName,
+  chosen,
+  onChoose,
+}: {
+  matter: Matter;
+  rulesetName: string;
+  chosen?: boolean;
+  onChoose?: () => void;
+}) {
+  const body = (
+    <>
       <div style={{ display: "flex", gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
-        <span style={{ fontFamily: "var(--font-display)", fontSize: 15 }}>{matter.name}</span>
+        <span
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: 15,
+            color: chosen ? "var(--accent)" : "var(--ink)",
+          }}
+        >
+          {matter.name}
+        </span>
         {matter.house > 0 && (
           <span
             style={{
@@ -66,6 +81,42 @@ function MatterRow({ matter, rulesetName }: { matter: Matter; rulesetName: strin
           read as — {rulesetName}
         </div>
       )}
+    </>
+  );
+
+  if (!onChoose) {
+    return (
+      <li
+        style={{
+          listStyle: "none",
+          marginBottom: 12,
+          paddingBottom: 10,
+          borderBottom: "1px solid var(--line)",
+        }}
+      >
+        {body}
+      </li>
+    );
+  }
+  return (
+    <li style={{ listStyle: "none", marginBottom: 10 }}>
+      <button
+        type="button"
+        aria-pressed={chosen}
+        onClick={onChoose}
+        style={{
+          display: "block",
+          width: "100%",
+          textAlign: "left",
+          cursor: "pointer",
+          padding: "10px 14px",
+          borderRadius: "var(--r-md, 10px)",
+          border: `1px solid ${chosen ? "var(--accent)" : "var(--line)"}`,
+          background: chosen ? "var(--accent-soft, var(--bg-2))" : "var(--bg-2)",
+        }}
+      >
+        {body}
+      </button>
     </li>
   );
 }
@@ -135,6 +186,85 @@ function RulesetCard({ ruleset }: { ruleset: Ruleset }) {
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+export interface MattersChooserProps {
+  templates: ElectionTemplates;
+  /** Rulesets no matter reads through — offered directly, as themselves. */
+  directRulesets?: readonly Ruleset[];
+  chosenMatterKey?: string | null;
+  chosenRulesetId?: string | null;
+  onChooseMatter: (matter: Matter) => void;
+  onChooseRuleset?: (ruleset: Ruleset) => void;
+  className?: string;
+  style?: CSSProperties;
+}
+
+/** The matters as the picker: the whole card — place, significators,
+ *  summary, the ruleset it is read as — is what the practitioner clicks. */
+export function MattersChooser({
+  templates,
+  directRulesets = [],
+  chosenMatterKey,
+  chosenRulesetId,
+  onChooseMatter,
+  onChooseRuleset,
+  className,
+  style,
+}: MattersChooserProps) {
+  const rulesetName = new Map(templates.rulesets.map((r) => [r.id, r.name]));
+  return (
+    <ul className={className} style={{ padding: 0, margin: 0, ...style }}>
+      {templates.matters.map((matter) => (
+        <MatterRow
+          key={matter.key}
+          matter={matter}
+          rulesetName={rulesetName.get(matter.ruleset) ?? ""}
+          chosen={matter.key === chosenMatterKey}
+          onChoose={() => onChooseMatter(matter)}
+        />
+      ))}
+      {directRulesets.map((ruleset) => (
+        <MatterRow
+          key={ruleset.id}
+          matter={{
+            key: ruleset.id,
+            name: ruleset.name,
+            house: 0,
+            significators: [],
+            ruleset: "",
+            summary: ruleset.summary,
+          }}
+          rulesetName=""
+          chosen={chosenMatterKey == null && ruleset.id === chosenRulesetId}
+          onChoose={() => onChooseRuleset?.(ruleset)}
+        />
+      ))}
+    </ul>
+  );
+}
+
+/** The rulesets clause by clause — the reading, apart from the choosing. */
+export function RulesetsReference({
+  rulesets,
+  className,
+  style,
+}: {
+  rulesets: readonly Ruleset[];
+  className?: string;
+  style?: CSSProperties;
+}) {
+  if (rulesets.length === 0) return null;
+  return (
+    <section className={className} style={style}>
+      <h2 style={{ fontFamily: "var(--font-display)", fontSize: 20, margin: "0 0 12px" }}>
+        The rulesets
+      </h2>
+      {rulesets.map((ruleset) => (
+        <RulesetCard key={ruleset.id} ruleset={ruleset} />
+      ))}
     </section>
   );
 }

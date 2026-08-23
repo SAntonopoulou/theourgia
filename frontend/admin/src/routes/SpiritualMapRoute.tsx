@@ -91,7 +91,10 @@ export function SpiritualMapRoute() {
         ]);
         const slugs = installed.bundles.map((b) => b.slug);
         const disabled = await fetchDisabledModuleIds().catch(() => []);
-        const found = await installedPackPayloads(feed, slugs, "spiritual-map", disabled);
+        // "spiritual-maps" is the payload key the dist builder actually
+        // publishes (payloads/spiritual-maps.json) — checked against the
+        // artifacts on the feed, not the phone's internal kind name.
+        const found = await installedPackPayloads(feed, slugs, "spiritual-maps", disabled);
         const parsed = found.flatMap((f) => packToSpiritualMaps(f.payload));
         if (!cancelled) setPackMaps(parsed);
       } catch {

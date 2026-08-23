@@ -3,11 +3,13 @@ import { describe, expect, it } from "vitest";
 import { placeNodes } from "./MapFigureView.js";
 import { packToSpiritualMaps } from "./packSpiritualMaps.js";
 
+/** The dist builder's published wrapper — items with ref "maps:*",
+ *  as the real artifacts on the feed carry it. */
 const payload = {
-  kind: "spiritual-map",
-  maps: [
+  kind: "spiritual-maps",
+  items: [
     {
-      id: "tetraktys",
+      ref: "maps:the-tetraktys",
       name: "The Tetraktys",
       tradition: "pythagorean",
       summary: "Ten positions in four rows.",
@@ -26,7 +28,23 @@ const payload = {
         { nodes: ["n2", "ghost"] },
       ],
     },
-    { name: "" },
+    { ref: "maps:unnamed" },
+  ],
+};
+
+/** The phone's raw shape — still readable. */
+const rawPayload = {
+  maps: [
+    {
+      id: "tree",
+      name: "The Tree",
+      nodes: [
+        { id: "a", name: "Kether", number: 1, x: 0, y: 0 },
+        { id: "b", name: "Malkuth", number: 10, x: 0, y: 4 },
+      ],
+      edges: [{ from: "a", to: "b" }],
+      lines: [],
+    },
   ],
 };
 
@@ -36,6 +54,8 @@ describe("packToSpiritualMaps", () => {
     expect(maps).toHaveLength(1);
     const map = maps[0];
     expect(map?.name).toBe("The Tetraktys");
+    // Identity from the ref slug, since items carry no id field.
+    expect(map?.id).toBe("the-tetraktys");
     expect(map?.nodes).toHaveLength(4);
     // The edge to a ghost node is dropped; the good edge stands.
     expect(map?.edges).toEqual([{ from: "n1", to: "n2" }]);
@@ -43,6 +63,15 @@ describe("packToSpiritualMaps", () => {
     expect(map?.lines).toEqual([{ nodeIds: ["n2", "n3"] }]);
     // Null number is meaningful: the tradition names, not numbers, it.
     expect(map?.nodes[3]?.number).toBeNull();
+  });
+});
+
+describe("packToSpiritualMaps — the phone's raw shape", () => {
+  it("still reads maps[]", () => {
+    const maps = packToSpiritualMaps(rawPayload);
+    expect(maps).toHaveLength(1);
+    expect(maps[0]?.id).toBe("tree");
+    expect(maps[0]?.edges).toHaveLength(1);
   });
 });
 

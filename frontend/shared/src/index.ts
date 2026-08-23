@@ -443,6 +443,9 @@ export {
 export {
   ElectionReference,
   type ElectionReferenceProps,
+  MattersChooser,
+  type MattersChooserProps,
+  RulesetsReference,
 } from "./electionRules/ElectionReference.js";
 // The written rites, read from the synced record (the web mirror of the phone's
 // Rituals screen).

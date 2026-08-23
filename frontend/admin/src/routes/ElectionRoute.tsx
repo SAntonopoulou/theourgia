@@ -14,9 +14,10 @@
 import {
   type ElectFinding,
   type ElectionTemplates,
-  ElectionReference,
   type ElectResponse,
   type ElectWindow,
+  MattersChooser,
+  RulesetsReference,
   fetchPackFeed,
   installedPackPayloads,
   type Matter,
@@ -45,11 +46,6 @@ const CHALDEAN: { key: string; glyph: string; label: string }[] = [
 const GLYPH: Record<string, string> = Object.fromEntries(
   CHALDEAN.map((b) => [b.key, b.glyph]),
 );
-
-const ORDINALS = [
-  "", "first", "second", "third", "fourth", "fifth", "sixth", "seventh",
-  "eighth", "ninth", "tenth", "eleventh", "twelfth",
-];
 
 /** The server computes at most this many charts per asking. */
 const MAX_SAMPLES = 1500;
@@ -371,37 +367,24 @@ export function ElectionRoute() {
             different set of rules. Money is the second place and Jupiter;
             study is the ninth and Mercury.
           </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-            {templates.matters.map((m) => (
-              <Pill
-                key={m.key}
-                label={`${m.name} · the ${ORDINALS[m.house] ?? ""} place`}
-                chosen={m.key === matterKey}
-                onClick={() => {
-                  setMatterKey(m.key);
-                  setDirectRulesetId(null);
-                  setSignificator(null);
-                  setResult(null);
-                }}
-              />
-            ))}
-            {directRulesets.map((r) => (
-              <Pill
-                key={r.id}
-                label={r.name}
-                chosen={r.id === directRulesetId && matterKey === null}
-                onClick={() => {
-                  setDirectRulesetId(r.id);
-                  setMatterKey(null);
-                  setSignificator(null);
-                  setResult(null);
-                }}
-              />
-            ))}
-          </div>
-          {ruleset?.summary ? (
-            <p style={{ ...caption, margin: "10px 0 0" }}>{ruleset.summary}</p>
-          ) : null}
+          <MattersChooser
+            templates={templates}
+            directRulesets={directRulesets}
+            chosenMatterKey={matterKey}
+            chosenRulesetId={directRulesetId}
+            onChooseMatter={(m) => {
+              setMatterKey(m.key);
+              setDirectRulesetId(null);
+              setSignificator(null);
+              setResult(null);
+            }}
+            onChooseRuleset={(r) => {
+              setDirectRulesetId(r.id);
+              setMatterKey(null);
+              setSignificator(null);
+              setResult(null);
+            }}
+          />
           {ruleset?.cautions.length ? (
             <div style={{ ...caption, margin: "8px 0 0", color: "var(--warn, var(--ink-soft))" }}>
               {ruleset.cautions.map((line) => (
@@ -593,7 +576,12 @@ export function ElectionRoute() {
         </section>
       )}
 
-      {noRules ? null : <ElectionReference templates={templates} />}
+      {noRules ? null : (
+        <RulesetsReference
+          rulesets={templates.rulesets}
+          style={{ maxWidth: 720, margin: "0 auto", padding: "8px 4px 40px" }}
+        />
+      )}
     </div>
   );
 }

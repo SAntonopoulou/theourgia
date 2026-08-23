@@ -1,5 +1,12 @@
 /**
- * Read a `spiritual-map` pack payload into drawable figures.
+ * Read a spiritual-map pack payload into drawable figures.
+ *
+ * The published wire format is the MBF reshape the dist builder emits —
+ * `payloads/spiritual-maps.json`, `{ kind, items }` with each map doc
+ * inline on an item whose `ref` is `maps:<slug>` (checked against the
+ * real artifacts on theourgia.com, not assumed). The phone's raw
+ * `{ maps: [...] }` shape is accepted too, so a payload from either
+ * side of the seam reads.
  *
  * Coordinates come from the pack and only the pack — a triangular lattice
  * of ten and a Tree of three pillars have no layout in common, and a
@@ -48,10 +55,22 @@ function strings(value: unknown): string[] {
 }
 
 export function packToSpiritualMaps(payload: unknown): PackSpiritualMap[] {
-  const maps = (payload as { maps?: unknown })?.maps;
-  if (!Array.isArray(maps)) return [];
+  const box = payload as { maps?: unknown; items?: unknown } | null;
+  // The dist reshape carries each map as an items[] entry (ref "maps:*");
+  // the phone's raw payload carries them under maps[].
+  const docs: unknown[] = Array.isArray(box?.items)
+    ? box.items.filter(
+        (it): it is Record<string, unknown> =>
+          it !== null &&
+          typeof it === "object" &&
+          typeof (it as Record<string, unknown>).ref === "string" &&
+          ((it as Record<string, unknown>).ref as string).startsWith("maps:"),
+      )
+    : Array.isArray(box?.maps)
+      ? box.maps
+      : [];
   const out: PackSpiritualMap[] = [];
-  for (const raw of maps) {
+  for (const raw of docs) {
     if (raw === null || typeof raw !== "object") continue;
     const doc = raw as Record<string, unknown>;
     const name = typeof doc.name === "string" ? doc.name : "";
@@ -90,8 +109,13 @@ export function packToSpiritualMaps(payload: unknown): PackSpiritualMap[] {
       );
       if (ids.length >= 2) lines.push({ nodeIds: ids });
     }
+    const refSlug =
+      typeof doc.ref === "string" && doc.ref.startsWith("maps:") ? doc.ref.slice("maps:".length) : "";
     out.push({
-      id: typeof doc.id === "string" && doc.id ? doc.id : name.toLowerCase().replace(/\s+/g, "-"),
+      id:
+        typeof doc.id === "string" && doc.id
+          ? doc.id
+          : refSlug || name.toLowerCase().replace(/\s+/g, "-"),
       name,
       tradition: typeof doc.tradition === "string" ? doc.tradition : "",
       summary: typeof doc.summary === "string" ? doc.summary : "",
