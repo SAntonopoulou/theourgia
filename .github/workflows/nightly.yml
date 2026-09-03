@@ -1,18 +1,16 @@
 # Theourgia nightly workflow
 #
-# **Cron schedule disabled as of 2026-06-21.** During v0.x development
-# we don't want a daily run burning Actions minutes on a project that
-# isn't yet shipping. The workflow remains intact and can still be
-# triggered manually via the Actions tab (workflow_dispatch). The
-# nightly cron will be re-enabled at v1.0 alongside the rest of CI.
+# **No cron — manual dispatch only (Sophia's ruling, 3 Sept 2026).** A
+# schedule was quietly re-added on 2026-07-20 under a "v1.0" note while
+# the project was still v0.x, and it then FAILED every night from at
+# least 30 Aug onward — burning Actions minutes daily to produce a red
+# X nobody read. The workflow stays intact for manual runs from the
+# Actions tab. If a cron is ever wanted again, it is Sophia's call, it
+# goes in alongside a green run, and this header records the date.
 
 name: nightly
 
 on:
-  # Re-enable post-v1.0:
-  # v1.0: nightly deep-audit cron re-enabled 2026-07-20.
-  schedule:
-    - cron: "0 3 * * *"
   workflow_dispatch:
 
 permissions:
